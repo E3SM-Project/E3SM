@@ -713,6 +713,7 @@
              <executable></executable>
            </mpirun>
            <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
              <arguments>
                <arg name="num_tasks">__num_tasks__</arg>
              </arguments>
@@ -748,7 +749,11 @@
            <walltimes>
              <walltime default="true">04:00:00</walltime>
            </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
            <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
              <arguments>
                <arg name="num_tasks">__num_tasks__</arg>
              </arguments>
@@ -777,6 +782,24 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+         <batch_system name="pbs">
+           <queues>
+             <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
+           <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
+             <arguments>
+               <arg name="num_tasks">__num_tasks__</arg>
+             </arguments>
+           </mpirun>
+         </batch_system>
+         
 </machine>
 
 <machine MACH="pleiades-ivy">
@@ -800,6 +823,23 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+         <batch_system name="pbs">
+           <queues>
+             <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
+           <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
+             <arguments>
+               <arg name="num_tasks">__num_tasks__</arg>
+             </arguments>
+           </mpirun>
+         </batch_system>
 </machine>
 
 <machine MACH="sierra">
