@@ -518,7 +518,6 @@ sub doResubmit()
         
         my $submitargs = $self->getSubmitArguments($runscript);
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $runscript";
-        my $owd = getcwd;
         open (my $W, "<", "./workflowhostfile" ) or die "could not open workflow host file, $!";
         my $text = <$W>;
         close $W;
