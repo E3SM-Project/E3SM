@@ -670,7 +670,7 @@
     <executable></executable>
   </mpirun>
   <mpirun mpilib="default">
-    <executable>mpiexec_mpt<executable>  
+    <executable>mpiexec_mpt</executable>  
     <arguments>
       <arg name="mpi">--mpi=none</arg>
       <arg name="num_tasks">-n=__num_tasks__</arg>
