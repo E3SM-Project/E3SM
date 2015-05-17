@@ -11,8 +11,9 @@ module BGCReactionsCenturyType
 ! Questions for thought/things to do: Should I consider redox flucutation here (specifically redox lag)? It also
 ! seems necessary to create a separate subroutine to account for that, rather than using the ch4 code.
 
+! this code uses the operator automated down-regulation scheme
 ! !USES
-
+!
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use clm_varctl            , only : iulog
   use shr_kind_mod          , only : r8 => shr_kind_r8
@@ -614,7 +615,6 @@ contains
   !calculate potential respiration rates by summarizing all om decomposition pathways
   call calc_potential_aerobic_hr(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, cn_ratios, cp_ratios, centurybgc_vars, pot_decay_rates, &
     soilstate_vars%cellsand_col(bounds%begc:bounds%endc,lbj:ubj), pot_co2_hr, pot_nh3_immob)      
-
   
   !calculate fraction of anerobic environment
   call calc_anaerobic_frac(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, temperature_vars%t_soisno_col(bounds%begc:bounds%endc,lbj:ubj),&
@@ -639,12 +639,6 @@ contains
      plantsoilnutrientflux_vars%plant_minn_uptake_potential_col(bounds%begc:bounds%endc), &
      nuptake_prof(bounds%begc:bounds%endc,1:ubj),                            &
      k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj))
-
-  call calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime,centurybgc_vars             , &
-     k_decay(centurybgc_vars%lid_nh4_nit_reac, bounds%begc:bounds%endc, lbj:ubj), pot_nh3_immob            , &
-     k_decay(centurybgc_vars%lid_plant_minn_up_reac, bounds%begc:bounds%endc ,1:ubj)                       , &
-     tracerstate_vars%tracer_conc_mobile_col(bounds%begc:bounds%endc, lbj:ubj, betrtracer_vars%id_trc_nh3x), &
-     nh4_compet(bounds%begc:bounds%endc,1:ubj))
   
   !apply root distribution here
   call apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
@@ -847,6 +841,7 @@ contains
    use CNCarbonStateType        , only : carbonstate_type
    use CNNitrogenStateType      , only : nitrogenstate_type
    use CNNitrogenFluxType       , only : nitrogenflux_type
+   use BGCCenturySubMod         , only : assign_OM_CNpools, assign_nitrogen_hydroloss
    
 
     ! !ARGUMENTS:
@@ -971,12 +966,15 @@ contains
   !local variables
   integer :: lk, jj
   real(r8) :: cascade_matrix(nstvars, Extra_inst%nr)
+  logical  :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
   real(r8) :: reaction_rates(Extra_inst%nr)
   
   
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
-      Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_compet, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
+      Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_compet, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
+  
+      
   !if(lpr)then
   !  print*,'reac',centurybgc_vars%lid_no3,reaction_rates(centurybgc_vars%lid_no3_den_reac)
   !  print*,reaction_rates
@@ -1035,121 +1033,119 @@ contains
 !    print*,'reac',centurybgc_vars%lid_nh4,reaction_rates(centurybgc_vars%lid_nh4_nit_reac)
 !    print*,reaction_rates
 !  endif
+
+  call apply_nutrient_down_regulation(nitrogen_limit_flag, ystate(centurybgc_vars%lid_nh4), ystate(centurybgc_vars%lid_no3), &
+     dtime, cascade_matrix, reaction_rates)
+  
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
   
   end subroutine one_box_century_bgc
 !-------------------------------------------------------------------------------  
-  subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
-  
-  use clm_varcon               , only : natomw, catomw  
-  use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
-  use CNCarbonStateType        , only : carbonstate_type
-  use CNNitrogenStateType      , only : nitrogenstate_type  
-  use tracerstatetype          , only : tracerstate_type
-  use BetrTracerType           , only : betrtracer_type
-  use clm_varpar               , only : nlevtrc_soil 
-  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
-  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
-  integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
-  type(tracerstate_type)             , intent(in) :: tracerstate_vars
-  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
-  type(carbonstate_type)             , intent(inout) :: carbonstate_vars
-  type(nitrogenstate_type)           , intent(inout) :: nitrogenstate_vars
   
   
-  integer, parameter :: i_soil1 = 5
-  integer, parameter :: i_soil2 = 6
-  integer, parameter :: i_soil3 = 7
+  subroutine apply_nutrient_down_regulation(nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
   
-  integer :: fc, c, j, k
-  associate(                                                     &
-  id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
-  id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
-  decomp_cpools_vr   => carbonstate_vars%decomp_cpools_vr_col  , &
-  decomp_npools_vr   => nitrogenstate_vars%decomp_npools_vr_col, &
-  smin_no3_vr_col    => nitrogenstate_vars%smin_no3_vr_col     , &
-  smin_nh4_vr_col    => nitrogenstate_vars%smin_nh4_vr_col     , &
-  sminn_vr_col       => nitrogenstate_vars%sminn_vr_col        , &
-  tracer_conc_mobile => tracerstate_vars%tracer_conc_mobile_col, &
-  tracer_conc_solid_passive => tracerstate_vars%tracer_conc_solid_passive_col, &
-  c_loc              => centurybgc_vars%c_loc                  , &
-  n_loc              => centurybgc_vars%n_loc                  , &
-  lit1               => centurybgc_vars%lit1                   , &
-  lit2               => centurybgc_vars%lit2                   , &  
-  lit3               => centurybgc_vars%lit3                   , &  
-  som1               => centurybgc_vars%som1                   , &  
-  som2               => centurybgc_vars%som2                   , &    
-  som3               => centurybgc_vars%som3                   , &      
-  cwd                => centurybgc_vars%cwd                    , &
-  nelms              => centurybgc_vars%nelms                    &
+  logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
+  real(r8), intent(in) :: smin_nh4
+  real(r8), intent(in) :: smin_no3
+  real(r8), intent(in) :: dtime
+  real(r8), intent(inout) :: cascade_matrix(nstvars, Extra_inst%nr)
+  real(r8), intent(inout) :: reaction_rates(Extra_inst%nr)
+  
+  real(r8) :: decomp_plant_minn_demand
+  real(r8) :: tot_nh4_demand
+  real(r8) :: tot_no3_demand
+  real(r8) :: decomp_plant_residual_minn_demand
+  real(r8) :: smin_nh4_to_decomp_plant
+  real(r8) :: smin_no3_to_decomp_plant
+  real(r8) :: tot_sminn_to_decomp_plant
+  real(r8) :: frac_nh4_to_decomp_plant
+  real(r8) :: alpha
+  integer  :: reac
+  
+  associate(                                                         & !
+    nom_pools             => centurybgc_vars%nom_pools             , & !
+    lid_nh4               => centurybgc_vars%lid_nh4               , & !
+    lid_no3               => centurybgc_vars%lid_no3               , & !    
+    lid_plant_minn        => centurybgc_vars%lid_plant_minn        , & !
+    lid_minn_nh4_immob    => centurybgc_vars%lid_minn_nh4_immob    , & !
+    lid_minn_no3_immob    => centurybgc_vars%lid_minn_no3_immob    , & !
+    lid_minn_nh4_plant    => centurybgc_vars%lid_minn_nh4_plant    , & !
+    lid_minn_no3_plant    => centurybgc_vars%lid_minn_no3_plant    , & !
+    lid_nh4_nit           => centurybgc_vars%lid_nh4_nit           , & !
+    lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
+    lid_nh4_nit_reac      => centurybgc_vars%lid_nh4_nit_reac      , & !
+    lid_no3_den_reac      => centurybgc_vars%lid_no3_den_reac        & !
   )
   
-  
-    do j = 1, nlevtrc_soil
-      do fc = 1, num_soilc
-        c = filter_soilc(fc)
-    
-        smin_no3_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_no3x)*natomw
-        smin_nh4_vr_col(c,j) = tracer_conc_mobile(c,j,id_trc_nh3x)*natomw
-        sminn_vr_col   (c,j) = smin_no3_vr_col(c,j) + smin_nh4_vr_col(c,j)
-
-        k = lit1; decomp_cpools_vr(c,j,i_met_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-        k = lit2; decomp_cpools_vr(c,j,i_cel_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-        k = lit3; decomp_cpools_vr(c,j,i_lig_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-        k = cwd ; decomp_cpools_vr(c,j,i_cwd    ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-        k = som1; decomp_cpools_vr(c,j,i_soil1  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-        k = som2; decomp_cpools_vr(c,j,i_soil2  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-        k = som3; decomp_cpools_vr(c,j,i_soil3  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+c_loc) * catomw
-      
-        k = lit1; decomp_npools_vr(c,j,i_met_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-        k = lit2; decomp_npools_vr(c,j,i_cel_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-        k = lit3; decomp_npools_vr(c,j,i_lig_lit) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-        k = cwd ; decomp_npools_vr(c,j,i_cwd    ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-        k = som1; decomp_npools_vr(c,j,i_soil1  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-        k = som2; decomp_npools_vr(c,j,i_soil2  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-        k = som3; decomp_npools_vr(c,j,i_soil3  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-      
-      enddo        
-    enddo
-
-  
-  end associate
-  end subroutine assign_OM_CNpools
-!-------------------------------------------------------------------------------    
-  subroutine assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
-  
-  !
-  ! DESCRIPTION
-  ! feedback the nitrogen hydrological fluxes, this comes after tracer mass balance, so the flux is with the unit of st/m2/s
-  use tracerfluxType           , only : tracerflux_type
-  use BetrTracerType           , only : betrtracer_type
-  use CNNitrogenFluxType       , only : nitrogenflux_type
-  use clm_varcon               , only : natomw 
-  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
-  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
-  integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
-  type(tracerflux_type)              , intent(in) :: tracerflux_vars
-  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
-  type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars    
-  
-  integer :: fc, c
-  !get nitrogen leaching, and loss through surface runoff
-  
-  associate(                                     &
-  id_trc_no3x => betrtracer_vars%id_trc_no3x     &
-  )
-  
-  do fc = 1, num_soilc
-    c = filter_soilc(fc)
-    nitrogenflux_vars%smin_no3_leached_col(c) = tracerflux_vars%tracer_flx_totleached_col(c,id_trc_no3x)*natomw
-    nitrogenflux_vars%smin_no3_runoff_col(c)  = tracerflux_vars%tracer_flx_surfrun_col(c,id_trc_no3x)*natomw
+  decomp_plant_minn_demand = 0._r8
+  do reac = 1,  nom_pools
+    if(nitrogen_limit_flag(lr))then
+      decomp_plant_minn_demand = decomp_plant_minn_demand - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+    endif
   enddo
   
+  !add nitrogen demand from plant
+  decomp_plant_minn_demand = decomp_plant_minn_demand - reaction_rates(lid_plant_minn_up_reac) * cascade_matrix(lid_nh4, reac)
+    
+  !in clm-century, nh4 is first competed between decomposer immobilization, plant and nitrification
+  reac = lid_nh4_nit_reac
+  tot_nh4_demand = decomp_plant_minn_demand - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
+  
+  if(tot_nh4_demand*dtime>smin_nh4)then
+    !nitrifiers, decomposers and plants are nh4 limited
+    alpha = smin_nh4/(tot_nh4_demand*dtime)
+    smin_nh4_to_decomp_plant = smin_nh4 * (decomp_plant_minn_demand/tot_nh4_demand)
+    decomp_plant_residual_minn_demand = decomp_plant_minn_demand - smin_nh4_to_decomp_plant
+    !downregulate nitrification
+    reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha    
+  endif
+  
+  reac = lid_no3_den_reac  
+  tot_no3_demand = residual_minn_demand_decomp_plant - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
+  !then no3 is competed between denitrification and residual request from decomposer immobilization and plant demand  
+  if(tot_no3_demand * dtime>smin_no3)then
+    !denitrifiers, decomposers and plants are no3 limited
+    alpha = smin_no3/(tot_no3_demand*dtime)    
+    reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
+    
+    smin_no3_to_decomp_plant = smin_no3 * (residual_minn_demand_decomp_plant/tot_no3_demand)
+  endif
+  
+  tot_sminn_to_decomp_plant = smin_nh4_to_decomp_plant + smin_no3_to_decomp_plant
+  
+  if(tot_sminn_to_decomp_plant > decomp_plant_minn_demand * dtime)then
+    alpha = 1._r8
+  else
+    alpha = tot_sminn_to_decomp_plant/(decomp_plant_minn_demand * dtime)
+  endif
+  frac_nh4_to_decomp_plant = smin_nh4_to_decomp_plant/tot_sminn_to_decomp_plant
+  
+  !revise the stoichiometry matix elements
+  !for decomposers
+  
+  do reac = 1,  nom_pools
+    if(nitrogen_limit_flag(lr))then
+      reaction_rates(reac) = reaction_rates(reac) * alpha
+      cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant)
+      cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    
+      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+      cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
+    endif
+  enddo
+  
+  !for plant
+  reac = lid_plant_minn_up_reac
+  reaction_rates(reac) = reaction_rates(reac) * alpha
+  cascade_matrix(lid_nh4, reac)        = -frac_nh4_to_decomp_plant
+  cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant)
+  
+  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
+  cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
+
+  
   end associate
-  end subroutine assign_nitrogen_hydroloss
-  
-  
-  
-  
+  end subroutine apply_nutrient_down_regulation  
 end module BGCReactionsCenturyType
