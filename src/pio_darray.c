@@ -1,7 +1,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 #define PIO_WRITE_BUFFERING 1
-
+#define MPIO_ONESIDED 1
 PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=33554432; 
 static void *CN_bpool=NULL; 
@@ -1266,12 +1266,14 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
-      if(rcnt>0 && vdesc->request != NC_REQ_NULL && vdesc->fillrequest != NC_REQ_NULL){
-	if(file->iosystem->io_rank < 2) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+      if(rcnt>0 && vdesc->request == NC_REQ_NULL && vdesc->fillrequest == NC_REQ_NULL){
+	//	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
 	rcnt=0;
       }
 #endif
+      //      printf("%s %d %d %d %d %d \n",__FILE__,__LINE__,i,rcnt,vdesc->request,vdesc->fillrequest);
+
       if(vdesc->request != NC_REQ_NULL){
 	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
 	vdesc->request = NC_REQ_NULL;
@@ -1285,6 +1287,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
       rcnt=0;
 #endif
+
     }
     if(rcnt>0){
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
