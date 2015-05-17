@@ -929,7 +929,7 @@
         </walltimes>
       </batch_system>
       <mpirun mpilib="mpi-serial">
-        <executable>mpirun.lsf</executable>
+        <executable></executable>
       </mpirun>
       <mpirun mpilib="default" threaded="false">
         <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/launch </executable>

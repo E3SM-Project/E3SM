@@ -341,6 +341,7 @@ sub getBatchUtils
     # eval fails, then we know the machine-specific class doesn't exist. 
     my $rv = eval 
     { 
+        require $machclassname;
         bless $batchutils, $machclassname;
         $batchutils->can('submitJobs');
         1;
@@ -351,10 +352,15 @@ sub getBatchUtils
     {
         return $batchutils;
     }
+    else
+	{
+		print "machine-specific error found, $@";
+	}
 
     # Now try to create the batch-system specific class. 
     $rv = eval 
     { 
+        require $batchclassname;
         bless $batchutils, $batchclassname; 
         $batchutils->can('submitJobs');
         1;
@@ -367,6 +373,8 @@ sub getBatchUtils
     }
     else    
     {
+		print "batch-specific error found, $@";
+		bless $batchutils, "Batch::BatchUtils";
         return $batchutils;
     }
 
