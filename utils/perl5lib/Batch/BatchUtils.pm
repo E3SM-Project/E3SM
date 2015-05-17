@@ -57,6 +57,11 @@ sub new
 	$self->{dependencyqueue} = undef;
 	return $self;
 }
+sub _check()
+{
+    my $self = shift;
+    return 1;
+}
 #==============================================================================
 # Get the batch system type for this machine. 
 #==============================================================================
@@ -341,9 +346,10 @@ sub getBatchUtils
     # eval fails, then we know the machine-specific class doesn't exist. 
     my $rv = eval 
     { 
-        require $machclassname;
+        #$machclassname->new(%params);
+        #require $machclassname;
         bless $batchutils, $machclassname;
-        $batchutils->can('submitJobs');
+        $batchutils->_test();
         1;
     };
     # If we don't get an error, return the machine-specific 
@@ -360,10 +366,11 @@ sub getBatchUtils
     # Now try to create the batch-system specific class. 
     $rv = eval 
     { 
-        require $batchclassname;
+        #$batchclassname->new(%params);
+        #require $batchclassname;
         bless $batchutils, $batchclassname; 
-        $batchutils->can('submitJobs');
-        1;
+        $batchutils->_test();
+        #1;
     };
 
     # Return the batch-system specific class if we don't get an error
@@ -602,6 +609,11 @@ sub getSubmitArguments()
         
     #print "submit args are now: $submitargs\n";
     return $submitargs;
+}
+
+sub _test()
+{
+    my $self = shift;
 }
 
 1;
