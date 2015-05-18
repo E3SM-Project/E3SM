@@ -169,6 +169,7 @@ sub submitSingleJob()
 	my $dependarg = '';
 	my $submitargs = '';
     $submitargs = $self->getSubmitArguments($dependentJobId);
+	$submitargs = '' if ! defined $submitargs;
 	#if(defined $dependentJobId)
 	#{
 	#	#$dependarg = $self->getDependString($dependentJobId);	
@@ -242,8 +243,8 @@ sub dependencyCheck()
 	# we always want to run the CESM test or run again..
 	if(-e "$config{'CASE'}.test")
 	{
-		#my $jobname = "$config{'CASE'}.test";
-		#$self->addDependentJob($jobname);
+		my $jobname = "$config{'CASE'}.test";
+		$self->addDependentJob($jobname);
         return;
 	}
 	else
