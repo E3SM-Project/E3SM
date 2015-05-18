@@ -71,7 +71,6 @@
     <directives>
       <directive> -N __job_id__</directive>
       <directive> -q __queue__</directive>
-      <directive> -l nodes=__num_nodes__:ppn=__tasks_per_node__ </directive>
       <directive> -l walltime=__wall_time__</directive>
       <directive default="n"> -r __rerunnable__ </directive>
       <directive> -j oe __output_error_path__ </directive>
@@ -96,6 +95,11 @@
      </directives>
    </batch_system>
 
+    <batch_system MACH="edison" version="x.y">
+      <directives>
+	<directive>-l mppwidth=__mppwidth__</directive>
+      </directives>
+    </batch_system> 
 
     <batch_system MACH="eos" version="x.y">
     <directives>
@@ -119,7 +123,6 @@
     <directives>
       <directive>-A __project__</directive>
       <directive>-l nodes=__num_nodes__:ppn=__tasks_per_node__:xe</directive>
-      <directive>-l walltime=__wall_time__</directive>
     </directives>
    </batch_system>
   

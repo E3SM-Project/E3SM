@@ -327,7 +327,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>24</PES_PER_NODE>
-      <!-- pbscray is for crays.. -->
+      <!-- pbs is for crays.. -->
     <batch_system type="pbs" version="x.y">
       <queues>
         <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
@@ -370,7 +370,7 @@
          <GMAKE_J>16</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>16</PES_PER_NODE>
-         <batch_system name="pbs" version="0.0">
+         <batch_system type="pbs" version="0.0">
          <queues>
            <queue walltimemin="0:00" walltimemax="4:00" jobmin="0" jobmax="9999">ampsrt</queue>
          </queues>
@@ -408,7 +408,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="05:59:00" jobmin="1" jobmax="9999" default="true">standard</queue>
            </queues>
@@ -447,7 +447,7 @@
          <PES_PER_NODE>16</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-         <batch_system name="pbsornl" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
@@ -494,7 +494,7 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
              <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
@@ -601,7 +601,7 @@
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-         <batch_system name="pbscray" version="x.y">
+         <batch_system type="pbs" version="x.y">
             <queues>
                <queue walltimemax="00:30:00" jomin="1" jobmax="512" default="true">debug</queue>
             </queues>
@@ -640,7 +640,7 @@
          <GMAKE_J>12</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
 	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
-     <batch_system name="slurm" version="x.y">
+     <batch_system type="slurm" version="x.y">
        <queues>
          <queue jobmin="1" jobmax="480" default="true">normal</queue>
        </queues>
@@ -704,7 +704,7 @@
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-         <batch_system name="cobalt">
+         <batch_system type="cobalt">
            <queues>
              <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
            </queues>
@@ -751,7 +751,7 @@
   <GMAKE_J>4</GMAKE_J>
   <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <batch_system name="cobalt">
+  <batch_system type="cobalt">
   <queues>
       <queue waltimemin="0" walltimemax="360" jobmin="0" jobmax="1536" default="true">default</queue>
       <queue waltimemin="0" walltimemax="60" jobmin="0" jobmax="1536">debug</queue>
@@ -798,7 +798,7 @@
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
   <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-  <batch_system name="slurm">
+  <batch_system type="slurm">
     <queues>
       <queue walltimemin="0" walltimemax="00:59:00" jobmin="0" jobmax="9999" default="true">queue</queue>
     </queues>
@@ -841,7 +841,7 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
-         <batch_system name="pbs">
+         <batch_system type="pbs">
            <queues>
              <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
            </queues>
@@ -881,7 +881,7 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
-         <batch_system name="pbs">
+         <batch_system type="pbs">
            <queues>
              <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
            </queues>
@@ -921,7 +921,7 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
-         <batch_system name="pbs">
+         <batch_system type="pbs">
            <queues>
              <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
            </queues>
@@ -962,7 +962,7 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
-         <batch_system name="pbs">
+         <batch_system type="pbs">
            <queues>
              <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
            </queues>
@@ -1048,7 +1048,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-         <batch_system name="pbscray">
+         <batch_system type="pbs">
             <queues>
               <queue walltimemax="24:00" default="true">batch</queue>
               <queue walltimemax="24:00">debug</queue>
@@ -1093,7 +1093,7 @@
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>16</PES_PER_NODE>
         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-        <batch_system name="lsf" version="9.1">
+        <batch_system type="lsf" version="9.1">
         <queues>
           <queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
           <queue walltimemax="2:00" jobmin="9" jobmax="4096">small</queue>
