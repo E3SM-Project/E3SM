@@ -54,9 +54,11 @@ sub resubmitCheck()
 {
 	if($config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
 	{
-		my $batchutils = new Batch::BatchUtils(machine => $config{'MACH'}, machroot => $config{'CCSM_MACHDIR'},  
-                                        caseroot => $config{'CASEROOT'}, caseconfig => \%config);
-		$batchutils->doResubmit();
+
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, caseconfig => \%config, caseroot => $caseroot,
+                                                              ccsmroot => $cimeroot, compiler => $compiler, machine => $machine,
+                                                              machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
+    $batchutils->doResubmit($islastjob, $resubmit, $scriptname);
 	}
 }
 main(@ARGV) unless caller;

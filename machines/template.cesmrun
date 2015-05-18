@@ -400,12 +400,13 @@ sub resubmitCheck()
 
     my $islastjob = 'FALSE';
     my $resubmit = $config{'RESUBMIT'};
+
     if(defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
     {
         $islastjob = 'TRUE';
     }
 
-    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, $caseconfig => \%config, caseroot => $caseroot, 
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, caseconfig => \%config, caseroot => $caseroot,
                                                               ccsmroot => $cimeroot, compiler => $compiler, machine => $machine,
                                                               machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
     $batchutils->doResubmit($islastjob, $resubmit, $scriptname);
