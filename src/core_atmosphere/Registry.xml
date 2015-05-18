@@ -975,7 +975,7 @@
                 <nml_option name="config_greeness_update"            type="character"     default_value="24:00:00"   in_defaults="false"/>
                 <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
 
-                <nml_option name="config_physics_suite"              type="character"     default_value="wrf"        in_defaults="true"/>
+                <nml_option name="config_physics_suite"              type="character"     default_value="mesoscale_reference"  in_defaults="true"/>
 
                 <nml_option name="config_microp_scheme"              type="character"     default_value="suite"      in_defaults="false"/>
                 <nml_option name="config_convection_scheme"          type="character"     default_value="suite"      in_defaults="false"/>
