@@ -98,6 +98,25 @@
       <directive default="/bin/bash" >-S __shell__ -V </directive>
     </directives>
    </batch_system>
+  
+    <batch_system type="pbsornl" version="x.y">
+    <batch_query args="-f" >qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <directives>
+      <directive>-A __project__</directive>
+      <directive>-N __job_id__</directive>
+      <directive>-q __queue__</directive>
+      <directive>-l mppwidth=__mppwidth__</directive>
+      <directive>-l walltime=__wall_time__</directive>
+      <directive>-j  oe __output_error_path__ </directive>
+      <directive>-l  nodes=__num_nodes__</directive>
+       <directive default="ae"  >-m __mail_options__ </directive>
+      <directive default="/bin/bash" >-S __shell__ -V </directive>
+    </directives>
+   </batch_system> 
 
   <batch_system type="pbsbluewaters" version="x.y">
     <batch_query args="-f" >qstat</batch_query>

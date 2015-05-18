@@ -282,7 +282,7 @@ sub _computeValues
 	# add all the calculated numbers as instance data. 
 	$self->{'totaltasks'} = $totaltasks;
 	$self->{'taskpernode'} = $taskpernode;
-        $self->{'taskpernuma'} $taskpernode / 2;
+        $self->{'taskpernuma'}  = $taskpernode / 2;
 	$self->{'maxthreads'} = $maxthreads;
 	$self->{'minthreads'} = $minthreads;
 	$self->{'taskgeom'} = $taskgeom;
