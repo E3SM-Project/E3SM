@@ -447,7 +447,7 @@
          <PES_PER_NODE>16</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-         <batch_system name="pbs" version="x.y">
+         <batch_system name="pbsornl" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
