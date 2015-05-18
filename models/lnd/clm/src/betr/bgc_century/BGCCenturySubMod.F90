@@ -1355,18 +1355,23 @@ module BGCCenturySubMod
       reac=lit1_dek_reac
       cascade_matrix_hr(reac)  =  CNDecompBgcParamsInst%rf_l1s1_bgc 
       cascade_matrix_nh3(reac) =  safe_div(1._r8,cn_ratios(lit1,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l1s1_bgc,cn_ratios(som1,c,j))
-  
+      
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
   !reaction 2, lit2 -> som1
   !lit2 + 0.5 o2  -> 0.5 som1 + 0.5 co2 + (1/cn_ratios(lit2)-0.5/cn_ratios(som1)) +(1/cp_ratios(lit2)-0.5/cp_ratios(som1))
       reac = lit2_dek_reac
       cascade_matrix_hr(reac)  =  CNDecompBgcParamsInst%rf_l2s1_bgc
       cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(lit2,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l2s1_bgc,cn_ratios(som1,c,j))
+
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
   
   !reaction 3, lit3 -> som2
   !lit3 + 0.5 o2 -> 0.5 som2 + 0.5 co2
       reac = lit3_dek_reac
       cascade_matrix_hr(reac)  =  CNDecompBgcParamsInst%rf_l3s2_bgc
       cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(lit3,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_l3s2_bgc,cn_ratios(som2,c,j))
+
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
     
   !reaction 4, the partition into som2 and som3 is soil texture dependent, som1->som2, som3
   !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
@@ -1379,6 +1384,8 @@ module BGCCenturySubMod
   
       cascade_matrix_hr(reac)  = ftxt      
       cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(som1,c,j))-safe_div(f1,cn_ratios(som2,c,j))-safe_div(f2,cn_ratios(som3,c,j))
+
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
       
   !reaction 5, som2 -> som1, som3
   !som2 + 0.55 o2 -> 0.42 som1 + 0.03som3 + 0.55co2 + (1/cn_ratios(som2)-0.42/cn_ratios(som1)-0.03/cn_ratios(som3)) + (1/cp_raitos(som2)-0.42/cp_ratios(som1)-0.03/cp_ratios(som3))
@@ -1386,19 +1393,26 @@ module BGCCenturySubMod
       cascade_matrix_hr(reac)   =  CNDecompBgcParamsInst%rf_s2s1_bgc
       cascade_matrix_nh3(reac)  = safe_div(1._r8,cn_ratios(som2,c,j))-0.93_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som1,c,j)) &
                                                 -0.07_r8*safe_div(1._r8-CNDecompBgcParamsInst%rf_s2s1_bgc,cn_ratios(som3,c,j))
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
+
   !reaction 6, s3 -> s1
   !som3 + 0.55 o2 -> 0.45*som1 + 0.55co2 + (1/cn_ratios(som3)-0.45/cn_ratios(som1)) + (1/cp_ratios(som3)-0.45/cp_ratios(som1))
       reac = som3_dek_reac
       cascade_matrix_hr(reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
       cascade_matrix_nh3(reac)= safe_div(1._r8,cn_ratios(som3,c,j)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1,c,j))
 
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
+      
   !cwd -> lit1, lit2
       reac = cwd_dek_reac
       cascade_matrix_nh3(reac) = safe_div(1._r8,cn_ratios(cwd,c,j)) - safe_div(CNDecompBgcParamsInst%cwd_fcel_bgc,cn_ratios(lit2,c,j)) - &
                              safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3,c,j))
+                             
+      cascade_matrix_nh3(reac) = min(cascade_matrix_nh3(reac) , 0._r8)      
+                             
   !obtain the potential respiration  
       pot_co2_hr(c,j) = dot_sum(cascade_matrix_hr, pot_decay_rates(:, c, j))  !mol CO2/m3/s
-      pot_nh3_immob(c,j) = dot_sum(cascade_matrix_nh3,pot_decay_rates(:,c,j))!mol NH3/m3/s
+      pot_nh3_immob(c,j) = dot_sum(cascade_matrix_nh3,pot_decay_rates(:,c,j)) !mol NH3/m3/s, this does not include mineralization
     enddo  
   enddo
   end associate

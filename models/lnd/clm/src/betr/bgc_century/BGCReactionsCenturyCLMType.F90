@@ -1042,6 +1042,8 @@ contains
   
   subroutine apply_nutrient_down_regulation(nstvars, nreactions, nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
   
+  !
+  ! this down regulation does not consider the extra nitrogen made available from mineralization
   integer , intent(in) :: nstvars
   integer , intent(in) :: nreactions
   logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
