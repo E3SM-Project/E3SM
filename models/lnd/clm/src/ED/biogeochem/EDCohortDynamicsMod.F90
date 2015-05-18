@@ -211,6 +211,7 @@ contains
        currentcohort%balive -currentcohort%bl- currentcohort%br - currentcohort%bsw, currentcohort%status_coh,currentcohort%balive
        write(iulog,*) 'actual vs predicted balive',ideal_balive,currentcohort%balive ,ratio_balive,leaf_frac
        write(iulog,*) 'leaf,root,stem',currentcohort%bl,currentcohort%br,currentcohort%bsw
+       write(iulog,*) 'pft',ft,pftcon%evergreen(ft),pftcon%season_decid(ft),leaves_off_switch
     endif
     currentCohort%b   = currentCohort%bdead + currentCohort%balive
 

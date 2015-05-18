@@ -487,7 +487,6 @@ contains
           )
 
        ! Determine seconds off current time step
-     
        dtime = get_step_size()
        call get_curr_date (year, month, day, secs)
 

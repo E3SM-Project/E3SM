@@ -38,13 +38,17 @@ contains
     ! !ARGUMENTS:
     integer                        , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                        , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(cnveg_carbonstate_type)   , intent(in)    :: cnveg_carbonstate_inst
+    type(cnveg_carbonstate_type)   , intent(inout) :: cnveg_carbonstate_inst
+    ! TODO(SPM, 012315) - c13_cnveg_carbonstate_inst and
+    ! c14_cnveg_carbonstate_inst are not used in this routine.
+    ! cnveg_carbonflux_inst and cnveg_nitrogenstate are used and set and should
+    ! be INOUT
     type(cnveg_carbonstate_type)   , intent(in)    :: c13_cnveg_carbonstate_inst
     type(cnveg_carbonstate_type)   , intent(in)    :: c14_cnveg_carbonstate_inst
     type(cnveg_carbonflux_type)    , intent(inout) :: cnveg_carbonflux_inst
     type(cnveg_carbonflux_type)    , intent(inout) :: c13_cnveg_carbonflux_inst
     type(cnveg_carbonflux_type)    , intent(inout) :: c14_cnveg_carbonflux_inst
-    type(cnveg_nitrogenstate_type) , intent(in)    :: cnveg_nitrogenstate_inst
+    type(cnveg_nitrogenstate_type) , intent(inout) :: cnveg_nitrogenstate_inst
     type(cnveg_nitrogenflux_type)  , intent(inout) :: cnveg_nitrogenflux_inst
     !
     ! !LOCAL VARIABLES:

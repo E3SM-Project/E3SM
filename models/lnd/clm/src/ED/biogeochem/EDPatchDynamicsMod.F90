@@ -1096,7 +1096,11 @@ contains
     rp%frac_burnt           = (dp%frac_burnt*dp%area + rp%frac_burnt*rp%area)/(dp%area + rp%area)
     rp%burnt_frac_litter(:) = (dp%burnt_frac_litter(:)*dp%area + rp%burnt_frac_litter(:)*rp%area)/(dp%area + rp%area)
     rp%btran_ft(:)          = (dp%btran_ft(:)*dp%area + rp%btran_ft(:)*rp%area)/(dp%area + rp%area)
-    
+    rp%dleaf_litter_dt(:)   = (dp%dleaf_litter_dt(:)*dp%area + rp%dleaf_litter_dt(:)*rp%area)/(dp%area+rp%area)
+    rp%leaf_litter_in(:)    = (dp%leaf_litter_in(:)*dp%area  + rp%leaf_litter_in(:)*rp%area)/(dp%area+rp%area)
+    rp%leaf_litter_out(:)   = (dp%leaf_litter_out(:)*dp%area + rp%leaf_litter_out(:)*rp%area)/(dp%area+rp%area)
+
+
     rp%area = rp%area + dp%area !THIS MUST COME AT THE END!
 
     !insert donor cohorts into recipient patch

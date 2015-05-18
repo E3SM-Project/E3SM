@@ -149,8 +149,6 @@ contains
          fsun_z       =>    surfalb_inst%fsun_z_patch         & ! Output: [real(r8) (:,:) ] sunlit fraction of canopy layer
          )
 
-       
-
       ! TODO (mv, 2014-10-29) the filter here is different than below 
       ! this is needed to have the VOC's be bfb - this needs to be
       ! re-examined int he future
@@ -281,7 +279,7 @@ contains
                          sb = (90._r8 - (acos(cosz)*180/pi)) * (pi / 180._r8)
                          chil(p) = xl(ft) !min(max(xl(ft), -0.4_r8), 0.6_r8 )
                          if (abs(chil(p)) <= 0.01_r8) then
-                            chil = 0.01_r8
+                            chil(p) = 0.01_r8
                          end if
                          phi1b(p,ft) = 0.5_r8 - 0.633_r8*chil(p) - 0.330_r8*chil(p)*chil(p)
                          phi2b(p,ft) = 0.877_r8 * (1._r8 - 2._r8*phi1b(p,ft)) !0 = horiz leaves, 1 - vert leaves.
@@ -725,16 +723,23 @@ contains
                                   ! Absorbed radiation, shaded and sunlit portions of leaf layers
                                   !here we get one unit of diffuse radiation... how much of
                                   !it is absorbed?
-                                  do iv = 1, currentPatch%nrad(L,ft)
-                                     if (radtype==1)then
-                                        currentPatch%fabd_sha_z(L,ft,iv) = Abs_dif_z(ft,iv) * (1._r8 - currentPatch%f_sun(L,ft,iv))
-                                        currentPatch%fabd_sun_z(L,ft,iv) = Abs_dif_z(ft,iv) * currentPatch%f_sun(L,ft,iv) + &
-                                             Abs_dir_z(ft,iv)
-                                     else
-                                        currentPatch%fabi_sha_z(L,ft,iv) = Abs_dif_z(ft,iv) * (1._r8 - currentPatch%f_sun(L,ft,iv))
-                                        currentPatch%fabi_sun_z(L,ft,iv) = Abs_dif_z(ft,iv) * currentPatch%f_sun(L,ft,iv)
-                                     end if
-                                  end do
+
+                                  if (ib == 1) then ! only set the absorbed PAR for the visible light band. 
+                                    do iv = 1, currentPatch%nrad(L,ft)
+                                       if (radtype==1) then
+                                          currentPatch%fabd_sha_z(L,ft,iv) = Abs_dif_z(ft,iv) * &
+                                             (1._r8 - currentPatch%f_sun(L,ft,iv))
+                                          currentPatch%fabd_sun_z(L,ft,iv) = Abs_dif_z(ft,iv) * &
+                                               currentPatch%f_sun(L,ft,iv) + &
+                                               Abs_dir_z(ft,iv)
+                                       else
+                                          currentPatch%fabi_sha_z(L,ft,iv) = Abs_dif_z(ft,iv) * &
+                                               (1._r8 - currentPatch%f_sun(L,ft,iv))
+                                          currentPatch%fabi_sun_z(L,ft,iv) = Abs_dif_z(ft,iv) * &
+                                               currentPatch%f_sun(L,ft,iv)
+                                       endif
+                                    end do
+                                  endif ! ib 
 
                                   !==============================================================================!
                                   ! Sum fluxes
@@ -886,7 +891,7 @@ contains
                                write(iulog,*) 'cp',currentPatch%area, currentPatch%patchno
                                write(iulog,*) 'albgrd(c,ib)',albgrd(c,ib)
 
-                               !                               albd(p,ib) = albd(p,ib) + error
+                               albd(p,ib) = albd(p,ib) + error
                             end if
                          else
 
@@ -910,7 +915,7 @@ contains
                                write(iulog,*) 'CAP',currentPatch%canopy_area_profile(1,1:2,1)
 
 
-                               !                               albi(p,ib) = albi(p,ib) + error
+                               albi(p,ib) = albi(p,ib) + error
                             end if
 
 

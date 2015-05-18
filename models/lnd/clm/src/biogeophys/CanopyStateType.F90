@@ -523,7 +523,7 @@ contains
        end do
     end if
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
        call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_col) 

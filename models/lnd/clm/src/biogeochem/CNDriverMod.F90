@@ -28,12 +28,12 @@ module CNDriverMod
   use WaterfluxType                   , only : waterflux_type
   use atm2lndType                     , only : atm2lnd_type
   use SoilStateType                   , only : soilstate_type
-  use CanopyStateType                 , only : canopystate_type
   use TemperatureType                 , only : temperature_type 
   use PhotosynthesisMod               , only : photosyns_type
   use ch4Mod                          , only : ch4_type
   use EnergyFluxType                  , only : energyflux_type
   use SoilHydrologyType               , only : soilhydrology_type
+  use EDCLMLinkMod                    , only : ed_clm_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -77,6 +77,7 @@ contains
        c13_cnveg_carbonflux_inst, c13_cnveg_carbonstate_inst,                              &
        c14_cnveg_carbonflux_inst, c14_cnveg_carbonstate_inst,                              &
        cnveg_nitrogenflux_inst, cnveg_nitrogenstate_inst,                                  &
+       ed_clm_inst,                                                                        &
        soilbiogeochem_carbonflux_inst, soilbiogeochem_carbonstate_inst,                    &
        c13_soilbiogeochem_carbonflux_inst, c13_soilbiogeochem_carbonstate_inst,            &
        c14_soilbiogeochem_carbonflux_inst, c14_soilbiogeochem_carbonstate_inst,            &
@@ -141,6 +142,7 @@ contains
     type(cnveg_carbonstate_type)            , intent(inout) :: c14_cnveg_carbonstate_inst
     type(cnveg_nitrogenflux_type)           , intent(inout) :: cnveg_nitrogenflux_inst
     type(cnveg_nitrogenstate_type)          , intent(inout) :: cnveg_nitrogenstate_inst
+    type(ed_clm_type)                       , intent(in)    :: ed_clm_inst
     type(soilbiogeochem_state_type)         , intent(inout) :: soilbiogeochem_state_inst
     type(soilbiogeochem_carbonflux_type)    , intent(inout) :: soilbiogeochem_carbonflux_inst
     type(soilbiogeochem_carbonstate_type)   , intent(inout) :: soilbiogeochem_carbonstate_inst
@@ -454,15 +456,18 @@ contains
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
     call CStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
          cnveg_state_inst, cnveg_carbonflux_inst, cnveg_carbonstate_inst, &
+         ed_clm_inst,                                                     &
          soilbiogeochem_carbonflux_inst)
     if ( use_c13 ) then
        call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnveg_state_inst, c13_cnveg_carbonflux_inst, c13_cnveg_carbonstate_inst, &
+            ed_clm_inst,                                                     &
             c13_soilbiogeochem_carbonflux_inst)
     end if
     if ( use_c14 ) then
        call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnveg_state_inst, c14_cnveg_carbonflux_inst, c14_cnveg_carbonstate_inst, &
+            ed_clm_inst,                                                     &
             c14_soilbiogeochem_carbonflux_inst)
     end if
 

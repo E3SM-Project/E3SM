@@ -435,7 +435,7 @@ contains
 
 	       !RF - copied this from the CLM trunk code, but where did it come from, and how can we make these consistant? 
 	       !jmax25top(FT) = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top(FT)
-	       jmax25top(FT) = 0.167_r8 * vcmax25top(FT)
+	       jmax25top(FT) = 1.67_r8 * vcmax25top(FT)
 	       tpu25top(FT)  = 0.167_r8 * vcmax25top(FT)
 	       kp25top(FT)   = 20000._r8 * vcmax25top(FT)
 
@@ -776,7 +776,13 @@ contains
                               enddo !sunsha loop
                               !average leaf-level stomatal resistance rate over sun and shade leaves... 
                               rs_z(cl,ft,iv)  = 1._r8/gs_z(cl,ft,iv) 
+                           else !No leaf area. This layer is present only because of stems. (leaves are off, or have reduced to 0
+                              currentPatch%psn_z(cl,ft,iv) = 0._r8
+                              rs_z(CL,FT,iv) = min(rsmax0, 1._r8/bbb(FT) * cf)
+                           
                            end if !is there leaf area? 
+                           
+                           
                         end if    ! night or day 
                      end do   ! iv canopy layer 
                   end if    ! present(L,ft) ? rd_array
@@ -811,8 +817,8 @@ contains
                      !------------------------------------------------------------------------------
                      ! Convert from umolC/m2leaf/s to umolC/indiv/s ( x canopy area x 1m2 leaf area). 
                      tree_area = currentCohort%c_area/currentCohort%n
-                     if(currentCohort%nv > 1)then
-
+                     if (currentCohort%nv > 1) then !is there canopy, and are the leaves on?
+ 
                         currentCohort%gpp_clm  = sum(currentPatch%psn_z(cl,ft,1:currentCohort%nv-1) * &
                              currentPatch%elai_profile(cl,ft,1:currentCohort%nv-1)) * tree_area
                         currentCohort%rd       = sum(lmr_z(cl,ft,1:currentCohort%nv-1)    * &
