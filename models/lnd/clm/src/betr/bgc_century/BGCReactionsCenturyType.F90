@@ -62,7 +62,6 @@ implicit none
      real(r8), pointer :: conv_f(:)              !converting factor for first order sink
      real(r8), pointer :: conc_f(:)              !external forcing strength
      real(r8)          :: n2_n2o_ratio_denit     !ratio of n2 to n2o during denitrification
-     real(r8)          :: nh4_compet             !ratio of available nh4 to no3
      real(r8)          :: cellsand               !sand content
      logical,  pointer :: is_zero_order(:)
      integer           :: nr                     !number of reactions involved
@@ -118,7 +117,7 @@ contains
    end subroutine DDeallocate
 !-------------------------------------------------------------------------------   
 
-   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, nh4_compet_r, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
+   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
    use BeTRTracerType              , only : betrtracer_type
   
    class(Extra_type) :: this
@@ -126,7 +125,6 @@ contains
    real(r8), dimension(:), intent(in) :: cp_r
    real(r8), dimension(:), intent(in) :: k_d
    real(r8)              , intent(in) :: n2_n2o_r_denit
-   real(r8)              , intent(in) :: nh4_compet_r
    real(r8)              , intent(in) :: cell_sand
    type(BeTRtracer_type ), intent(in) :: betrtracer_vars   
    real(r8)              , intent(in) :: gas2bulkcef(1:betrtracer_vars%nvolatile_tracers)
@@ -144,7 +142,6 @@ contains
    this%cp_ratios(1:n2) = cp_r
    
    this%n2_n2o_ratio_denit = n2_n2o_r_denit
-   this%nh4_compet      = nh4_compet_r
    this%cellsand           = cell_sand
    this%k_decay            = k_d
    
@@ -556,7 +553,6 @@ contains
   real(r8) :: n2_n2o_ratio_denit(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nh4_no3_ratio(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: nuptake_prof(bounds%begc:bounds%endc,1:ubj)
-  real(r8) :: nh4_compet(bounds%begc:bounds%endc, 1:ubj)
   real(r8) :: pscal 
   
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
@@ -654,7 +650,7 @@ contains
       if(j<jtops(c))cycle   
       !assign parameters for stoichiometric matrix calculation
       call Extra_inst%AAssign(cn_r=cn_ratios(:,c,j),cp_r=cp_ratios(:,c,j), k_d=k_decay(:,c,j), &
-        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j), nh4_compet_r=nh4_compet(c,j)                 , &
+        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j)                  , &
         cell_sand=soilstate_vars%cellsand_col(c,j), betrtracer_vars=betrtracer_vars          , &
         gas2bulkcef=tracercoeff_vars%gas2bulkcef_mobile_col(c,j,:)                           , &
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
@@ -860,7 +856,7 @@ contains
 
   call assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
   
-  call assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
+  call assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars, centurybgc_vars)
   
   end subroutine betr_alm_flux_statevar_feedback
   
@@ -972,7 +968,7 @@ contains
   
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
-      Extra_inst%n2_n2o_ratio_denit, Extra_inst%nh4_compet, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
+      Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
   
       
   !if(lpr)then
@@ -1034,7 +1030,7 @@ contains
 !    print*,reaction_rates
 !  endif
 
-  call apply_nutrient_down_regulation(nitrogen_limit_flag, ystate(centurybgc_vars%lid_nh4), ystate(centurybgc_vars%lid_no3), &
+  call apply_nutrient_down_regulation(nstvars, Extra_inst%nr, nitrogen_limit_flag, ystate(centurybgc_vars%lid_nh4), ystate(centurybgc_vars%lid_no3), &
      dtime, cascade_matrix, reaction_rates)
   
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
@@ -1044,22 +1040,24 @@ contains
 !-------------------------------------------------------------------------------  
   
   
-  subroutine apply_nutrient_down_regulation(nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
+  subroutine apply_nutrient_down_regulation(nstvars, nreactions, nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
   
+  integer , intent(in) :: nstvars
+  integer , intent(in) :: nreactions
   logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
   real(r8), intent(in) :: smin_nh4
   real(r8), intent(in) :: smin_no3
   real(r8), intent(in) :: dtime
-  real(r8), intent(inout) :: cascade_matrix(nstvars, Extra_inst%nr)
-  real(r8), intent(inout) :: reaction_rates(Extra_inst%nr)
+  real(r8), intent(inout) :: cascade_matrix(nstvars, nreactions)
+  real(r8), intent(inout) :: reaction_rates(nreactions)
   
-  real(r8) :: decomp_plant_minn_demand
-  real(r8) :: tot_nh4_demand
-  real(r8) :: tot_no3_demand
-  real(r8) :: decomp_plant_residual_minn_demand
-  real(r8) :: smin_nh4_to_decomp_plant
-  real(r8) :: smin_no3_to_decomp_plant
-  real(r8) :: tot_sminn_to_decomp_plant
+  real(r8) :: decomp_plant_minn_demand_flx
+  real(r8) :: tot_nh4_demand_flx
+  real(r8) :: tot_no3_demand_flx
+  real(r8) :: decomp_plant_residual_minn_demand_flx
+  real(r8) :: smin_nh4_to_decomp_plant_flx
+  real(r8) :: smin_no3_to_decomp_plant_flx
+  real(r8) :: tot_sminn_to_decomp_plant_flx
   real(r8) :: frac_nh4_to_decomp_plant
   real(r8) :: alpha
   integer  :: reac
@@ -1079,54 +1077,67 @@ contains
     lid_no3_den_reac      => centurybgc_vars%lid_no3_den_reac        & !
   )
   
-  decomp_plant_minn_demand = 0._r8
+  decomp_plant_minn_demand_flx = 0._r8
   do reac = 1,  nom_pools
-    if(nitrogen_limit_flag(lr))then
-      decomp_plant_minn_demand = decomp_plant_minn_demand - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+    if(nitrogen_limit_flag(reac))then
+      decomp_plant_minn_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
     endif
   enddo
   
   !add nitrogen demand from plant
-  decomp_plant_minn_demand = decomp_plant_minn_demand - reaction_rates(lid_plant_minn_up_reac) * cascade_matrix(lid_nh4, reac)
+  reac = lid_plant_minn_up_reac
+  decomp_plant_minn_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
     
   !in clm-century, nh4 is first competed between decomposer immobilization, plant and nitrification
   reac = lid_nh4_nit_reac
-  tot_nh4_demand = decomp_plant_minn_demand - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
+  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
   
-  if(tot_nh4_demand*dtime>smin_nh4)then
+  if(tot_nh4_demand_flx*dtime>smin_nh4)then
     !nitrifiers, decomposers and plants are nh4 limited
-    alpha = smin_nh4/(tot_nh4_demand*dtime)
-    smin_nh4_to_decomp_plant = smin_nh4 * (decomp_plant_minn_demand/tot_nh4_demand)
-    decomp_plant_residual_minn_demand = decomp_plant_minn_demand - smin_nh4_to_decomp_plant
+    alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
+    smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
+    decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
     !downregulate nitrification
     reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha    
+  else
+    !none is nh4 limited
+    smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx
+    decomp_plant_residual_minn_demand_flx = 0._r8
   endif
-  
+
+
   reac = lid_no3_den_reac  
-  tot_no3_demand = residual_minn_demand_decomp_plant - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
+  tot_no3_demand_flx = decomp_plant_residual_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_no3 ,reac)
+
   !then no3 is competed between denitrification and residual request from decomposer immobilization and plant demand  
-  if(tot_no3_demand * dtime>smin_no3)then
+  if(tot_no3_demand_flx * dtime>smin_no3)then
     !denitrifiers, decomposers and plants are no3 limited
-    alpha = smin_no3/(tot_no3_demand*dtime)    
+    alpha = smin_no3/(tot_no3_demand_flx*dtime)    
     reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
     
-    smin_no3_to_decomp_plant = smin_no3 * (residual_minn_demand_decomp_plant/tot_no3_demand)
-  endif
-  
-  tot_sminn_to_decomp_plant = smin_nh4_to_decomp_plant + smin_no3_to_decomp_plant
-  
-  if(tot_sminn_to_decomp_plant > decomp_plant_minn_demand * dtime)then
-    alpha = 1._r8
+    smin_no3_to_decomp_plant_flx = smin_no3 * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
   else
-    alpha = tot_sminn_to_decomp_plant/(decomp_plant_minn_demand * dtime)
+    smin_no3_to_decomp_plant_flx = tot_no3_demand_flx * dtime
   endif
-  frac_nh4_to_decomp_plant = smin_nh4_to_decomp_plant/tot_sminn_to_decomp_plant
   
+  tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
+  if(tot_sminn_to_decomp_plant_flx < decomp_plant_minn_demand_flx)then
+    !plant & decomp are nitrogen limited
+    alpha = tot_sminn_to_decomp_plant_flx/decomp_plant_minn_demand_flx
+  else
+    alpha = 1._r8
+  endif
+
+  if(smin_nh4_to_decomp_plant_flx>=tot_sminn_to_decomp_plant_flx)then
+    frac_nh4_to_decomp_plant = 1._r8
+  else
+    frac_nh4_to_decomp_plant = smin_nh4_to_decomp_plant_flx/tot_sminn_to_decomp_plant_flx
+  endif
   !revise the stoichiometry matix elements
   !for decomposers
   
   do reac = 1,  nom_pools
-    if(nitrogen_limit_flag(lr))then
+    if(nitrogen_limit_flag(reac))then
       reaction_rates(reac) = reaction_rates(reac) * alpha
       cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant)
       cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
@@ -1144,8 +1155,6 @@ contains
   
   cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
-
-  
   end associate
   end subroutine apply_nutrient_down_regulation  
 end module BGCReactionsCenturyType

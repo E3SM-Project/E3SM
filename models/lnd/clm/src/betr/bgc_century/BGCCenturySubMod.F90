@@ -373,7 +373,6 @@ module BGCCenturySubMod
   real(r8)                      , intent(in) :: cp_ratios(centurybgc_vars%nom_pools)
   real(r8)                      , intent(in) :: n2_n2o_ratio_denit                   !ratio of n2 to n2o during denitrification
   real(r8)                      , intent(in) :: pct_sand
-  
   real(r8)                      , intent(out) :: cascade_matrix(nstvars, nreactions)
   logical                       , intent(out) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
   
@@ -459,8 +458,6 @@ module BGCCenturySubMod
   cascade_matrix = 0._r8
   nitrogen_limit_flag = .false.
   !higher [nh4] makes lower [no3] competitiveness 
-  compet_decomp_no3_scal = 1._r8- nh4_comp
-  compet_plant_no3_scal  = 1._r8- nh4_comp
   !note all reactions are in the form products - substrates = 0, therefore
   !mass balance is automatically ensured.
   !set up first order reactions
@@ -1798,7 +1795,7 @@ module BGCCenturySubMod
   end subroutine calc_nutrient_compet_rescal
 
   
-  subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars)
+  subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars, centurybgc_vars)
   
   use clm_varcon               , only : natomw, catomw  
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
@@ -1811,6 +1808,7 @@ module BGCCenturySubMod
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter  
   type(tracerstate_type)             , intent(in) :: tracerstate_vars
+  type(centurybgc_type)              , intent(in) :: centurybgc_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
   type(carbonstate_type)             , intent(inout) :: carbonstate_vars
   type(nitrogenstate_type)           , intent(inout) :: nitrogenstate_vars
@@ -1821,6 +1819,7 @@ module BGCCenturySubMod
   integer, parameter :: i_soil3 = 7
   
   integer :: fc, c, j, k
+
   associate(                                                     &
   id_trc_no3x        => betrtracer_vars%id_trc_no3x            , &
   id_trc_nh3x        => betrtracer_vars%id_trc_nh3x            , &  
