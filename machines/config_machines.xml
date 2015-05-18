@@ -112,6 +112,22 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>16</PES_PER_NODE>
+         <batch_system name="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="10:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">10:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpirun</executable>
+           <arguments>
+             <arg name="machine_file">-hostfile $ENV{'PBS_JOBID'}</arg>
+             <arg name="tasks_per_node"> -ppn __tasks_per_node__</arg>
+             <arg name="num_tasks"> -n __num_tasks__</arg>
+           </arguments>
+         </mpirun>
 </machine>
 
 <machine MACH="babbageKnc">
@@ -137,6 +153,22 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>192</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>60</PES_PER_NODE>
+         <batch_system name="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="04:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpirun.mic</executable>
+           <arguments>
+             <arg name="machine_file">-hostfile $ENV{'PBS_JOBID'}</arg>
+             <arg name="tasks_per_node"> -ppn __tasks_per_node__</arg>
+             <arg name="num_tasks"> -n __num_tasks__</arg>
+           </arguments>
+         </mpirun>
 </machine>
 
 <machine MACH="bluewaters">
@@ -199,6 +231,30 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>1</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <batch_system name="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">00:59:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+           <executable>mpirun</executable>
+           <arguments>
+             <arg name="machine_file">-hostfile $ENV{'PBS_JOBID'}</arg>
+             <arg name="tasks_per_node"> -ppn __tasks_per_node__</arg>
+             <arg name="num_tasks"> -n __num_tasks__</arg>
+           </arguments>
+         </mpirun>
+         <mpirun mpilib="openmpi">
+           <executable>ompirun</executable>
+           <arguments>
+           </arguments>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+           <executable></executable>
+         </mpirun>
 </machine>
 
 <machine MACH="eastwind">
@@ -221,6 +277,33 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+         <batch_system name="slurm" version="x.y">
+           <queues>
+             <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">0:59:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="mvapich">
+           <executable>srun</executable>
+           <arguments>
+             <arg name="num_tasks"> --ntasks=__num_tasks__</arg>
+             <arg name="cpubind"> --cpu_bind=sockets</arg>
+             <arg name="cpubind"> --cpu_bind=verbose</arg>
+             <arg name="killonbadexit"> --kill-on-bad-exit</arg>
+           </arguments>
+         </mpirun>
+         <mpirun mpilib="mvapich2">
+           <executable>srun</executable>
+           <arguments>
+             <arg name="mpinone"> --mpi=none</arg>
+             <arg name="num_tasks"> --ntasks=__num_tasks__</arg>
+             <arg name="cpubind"> --cpu_bind=sockets</arg>
+             <arg name="cpubind"> --cpu_bind=verbose</arg>
+             <arg name="killonbadexit"> --kill-on-bad-exit</arg>
+           </arguments>
+         </mpirun>
 </machine>
 
 <machine MACH="edison">
@@ -287,6 +370,22 @@
          <GMAKE_J>16</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>16</PES_PER_NODE>
+         <batch_system name="pbs" version="0.0">
+         <queues>
+           <queue walltimemin="0:00" walltimemax="4:00" jobmin="0" jobmax="9999">ampsrt</queue>
+         </queues>
+         <walltimes>
+          <walltime default="true">1:30</walltime>
+          <walltime ccsm_estcost="0">2:50</walltime>
+          <walltime ccsm_estcost="1">4:00</walltime>
+         </walltimes>
+         <mpirun mpilib="ibm">
+           <executable>mpirun.lsf</executable>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+           <executable></executable>
+         </mpirun>
+         </batch_system>
 </machine>
 
 <machine MACH="evergreen">
@@ -309,6 +408,21 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+         <batch_system name="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="05:59:00" jobmin="1" jobmax="9999" default="true">standard</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">02:59:00</walltime>
+             <walltime ccsm_estcost="2" default="true">02:59:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpirun</executable>
+           <arguments>
+             <arg name="num_tasks"> -np __num_tasks__ </arg>
+           </arguments>
+         </mpirun>
 </machine>
 
 <machine MACH="eos">
@@ -332,6 +446,24 @@
          <PES_PER_NODE>16</PES_PER_NODE>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+         <batch_system name="pbs" version="x.y">
+           <queues>
+             <queue jobmin="1" jobmax="371">short</queue>
+             <queue jobmin="372" jobmax="9999">short</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">01:15:00</walltime>
+             <walltime ccsm_estcost="1">01:50:00</walltime>
+             <walltime ccsm_estcost="3">05:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+           <executable>aprun</executable>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+           <executable></executable>
+         </mpirun>
+         
 </machine>
 
 <machine MACH="goldbach">
@@ -713,6 +845,7 @@
              <executable></executable>
            </mpirun>
            <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
              <arguments>
                <arg name="num_tasks">__num_tasks__</arg>
              </arguments>
@@ -748,7 +881,11 @@
            <walltimes>
              <walltime default="true">04:00:00</walltime>
            </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
            <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
              <arguments>
                <arg name="num_tasks">__num_tasks__</arg>
              </arguments>
@@ -777,6 +914,24 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+         <batch_system name="pbs">
+           <queues>
+             <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
+           <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
+             <arguments>
+               <arg name="num_tasks">__num_tasks__</arg>
+             </arguments>
+           </mpirun>
+         </batch_system>
+         
 </machine>
 
 <machine MACH="pleiades-ivy">
@@ -800,6 +955,23 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <CCSM_BASELINE>/nobackup/fvitt/cesm_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
+         <batch_system name="pbs">
+           <queues>
+             <queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">04:00:00</walltime>
+           </walltimes>
+           <mpirun mpilib="mpi-serial">
+             <executable></executable>
+           </mpirun>
+           <mpirun mpilib="default">
+             <executable>mpiexec_mpt</executable>
+             <arguments>
+               <arg name="num_tasks">__num_tasks__</arg>
+             </arguments>
+           </mpirun>
+         </batch_system>
 </machine>
 
 <machine MACH="sierra">

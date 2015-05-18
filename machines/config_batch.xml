@@ -66,6 +66,22 @@
     </directives>
   </batch_system>
 
+  <batch_system type="pbspleiades" version="x.y">
+    <batch_query args="-f" >qstat</batch_query>
+    <batch_submit>qsub </batch_submit>
+    <batch_directive>#PBS</batch_directive>
+    <jobid_pattern>^(\d+)\.</jobid_pattern>
+    <depend_string> -W depend=afterok:jobid</depend_string>
+    <directives>
+      <directive> -N __job_id__</directive>
+      <directive> -q __queue__</directive>
+      <directive> -l walltime=__wall_time__</directive>
+      <directive> -j oe __output_error_path__ </directive>
+      <directive default="/bin/bash" > -S __shell__ -V </directive>
+      <directive> -W group_list=__project__ </directive>
+    </directives>
+  </batch_system>
+
   <batch_system type="pbscray" version="x.y">
     <batch_query args="-f" >qstat</batch_query>
     <batch_submit>qsub </batch_submit>
