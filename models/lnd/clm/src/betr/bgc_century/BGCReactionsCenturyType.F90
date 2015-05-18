@@ -1059,6 +1059,7 @@ contains
   real(r8) :: smin_no3_to_decomp_plant_flx
   real(r8) :: tot_sminn_to_decomp_plant_flx
   real(r8) :: frac_nh4_to_decomp_plant
+  real(r8) :: gross_min_nh4_flx
   real(r8) :: alpha
   integer  :: reac
   
@@ -1078,19 +1079,23 @@ contains
   )
   
   decomp_plant_minn_demand_flx = 0._r8
+  gross_min_nh4_flx = 0._r8
   do reac = 1,  nom_pools
     if(nitrogen_limit_flag(reac))then
       decomp_plant_minn_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+    else
+      gross_min_nh4_flx = gross_min_nh4_flx + reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
     endif
   enddo
   
   !add nitrogen demand from plant
   reac = lid_plant_minn_up_reac
   decomp_plant_minn_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+  
     
   !in clm-century, nh4 is first competed between decomposer immobilization, plant and nitrification
   reac = lid_nh4_nit_reac
-  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
+  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
   
   if(tot_nh4_demand_flx*dtime>smin_nh4)then
     !nitrifiers, decomposers and plants are nh4 limited

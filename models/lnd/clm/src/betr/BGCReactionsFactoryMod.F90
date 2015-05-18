@@ -48,6 +48,12 @@ implicit none
   case ("century_bgc")
     is_active_betr_bgc = .true.
     allocate(bgc_reaction, source=bgc_reaction_CENTURY_type())
+  case ("century_bgcclm")
+    is_active_betr_bgc = .true.
+    allocate(bgc_reaction, source=bgc_reaction_CENTURY_clm_type())
+  case ("century_bgcECA")
+    is_active_betr_bgc = .true.
+    allocate(bgc_reaction, source=bgc_reaction_CENTURY_ECA_type())    
   case ("betr_sminn")
     !this must be used together with clm45bgc
     do_betr_leaching = .true.
