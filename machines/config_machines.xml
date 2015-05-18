@@ -441,6 +441,7 @@
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <PES_PER_NODE>16</PES_PER_NODE>
@@ -448,8 +449,7 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <batch_system name="pbs" version="x.y">
            <queues>
-             <queue jobmin="1" jobmax="371">short</queue>
-             <queue jobmin="372" jobmax="9999">short</queue>
+             <queue jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
            <walltimes>
              <walltime default="true">01:15:00</walltime>
@@ -459,6 +459,13 @@
          </batch_system>
          <mpirun mpilib="mpich">
            <executable>aprun</executable>
+           <arguments>
+             <arg name="hyperthreading" default="2"> -j __hyperthreading__</arg>
+             <arg name="tasks_per_numa" > -S __tasks_per_numa__</arg>
+             <arg name="num_tasks" > -n __num_tasks__</arg>
+             <arg name="tasks_per_node" > -N __tasks_per_node__</arg>
+             <arg name="thread_count" > -d __thread_count__</arg>
+           </arguments>
          </mpirun>
          <mpirun mpilib="mpi-serial">
            <executable></executable>

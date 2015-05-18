@@ -282,6 +282,7 @@ sub _computeValues
 	# add all the calculated numbers as instance data. 
 	$self->{'totaltasks'} = $totaltasks;
 	$self->{'taskpernode'} = $taskpernode;
+        $self->{'taskpernuma'} $taskpernode / 2;
 	$self->{'maxthreads'} = $maxthreads;
 	$self->{'minthreads'} = $minthreads;
 	$self->{'taskgeom'} = $taskgeom;
@@ -305,6 +306,8 @@ sub _computeValues
 		$ptile = $self->{'MAX_TASKS_PER_NODE'} / $self->{'maxthreads'};
 	}
 	$self->{'ptile'} = $ptile;
+
+	# Calc
 
 }
 
@@ -426,6 +429,14 @@ sub taskPerNode()
 	return $self->{'taskpernode'};
 }
 
+#==============================================================================
+# get the tasks per numa
+#==============================================================================
+sub taskPerNuma()
+{	
+        my $self = shift;
+	return $self->{'taskpernuma'};
+}
 
 #==============================================================================
 # get the pe layout document for insertion into the run script

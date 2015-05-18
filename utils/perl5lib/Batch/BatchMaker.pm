@@ -45,9 +45,9 @@ sub new
 		config => $params{'config'}           || undef,
 		machine     => $params{'machine'}     || undef,
 		scriptsroot => $params{'scriptsroot'} || undef,
-	    cimeroot  => $params{'cimeroot'} || undef,
-        machroot    => $params{'machroot'}    || ".",
-        mpilib      => $params{'mpilib'}      || undef,
+	        cimeroot  => $params{'cimeroot'} || undef,
+                machroot    => $params{'machroot'}    || ".",
+                mpilib      => $params{'mpilib'}      || undef,
 	};
     $self->{'ccsmroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 	#print Dumper $self;
@@ -337,6 +337,7 @@ sub setTaskInfo()
 	$self->{'taskmaker'} = $taskmaker;
 	$self->{'sumpes'} = $taskmaker->sumPES();
 	$self->{'tasks_per_node'} = $taskmaker->taskPerNode();
+	$self->{'tasks_per_numa'} = $taskmaker->taskPerNuma();
 	$self->{'fullsum'} = $taskmaker->sumOnly();
 	$self->{'task_count'} = $taskmaker->sumOnly();
 	$self->{'sumtasks'} = $taskmaker->sumTasks();
@@ -519,8 +520,8 @@ sub setCESMRun()
 		{
 			my $attrName = $attr->getName();
 			my $attrValue = $attr->getValue();
-			#print "attr Name: $attrName \n";
-			#print "attr Value: $attrValue \n";
+			print "attr Name: $attrName \n";
+			print "attr Value: $attrValue \n";
 			#print Dumper $attr;
 			if(defined $self->{$attrName} && (lc $self->{$attrName} eq $attrValue))
 			{
@@ -582,6 +583,7 @@ sub setCESMRun()
 				my $matchedString = $1;
 				my $stringToReplace = $matchedString;
 				$stringToReplace =~ s/__//g;
+				print "string to replace: $stringToReplace\n";
 
 				# the actual argument is stored here, 
 				# this way we can transform the thing as we
@@ -607,6 +609,9 @@ sub setCESMRun()
 					my $instanceVar = $self->{$stringToReplace};
 					$argValue =~ s/$matchedString/$instanceVar/g;
 					#$argValue = $actualArg;
+					#print "default attribute: $defaultAttr\n";
+					print "matched string: $matchedString\n";
+					print "actual argument is now: $argValue\n";
 				}
 				elsif(! defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
 				{	
@@ -708,13 +713,9 @@ sub setTaskInfo()
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
     $self->{'mppsize'} = $self->{'mppsum'};
 
-    print "cray setTaskInfo\n";
-    print "mppsum: ", $self->{'mppsum'}, "\n";
-    print "mppsize: ", $self->{'mppsize'}, "\n";
 
     if($self->{'mppsize'} % $maxTasksPerNode > 0)
     {
-        print "mppsize not mod max tasks per node\n";
         my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
         $mppnodes += 1;
         $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
@@ -937,6 +938,9 @@ E2
 package Batch::BatchMaker_titan;
 use base qw( Batch::BatchMaker );
 
+package Batch::BatchMaker_eos;
+use base qw( Batch::BatchMaker );
+
 #==============================================================================
 # Subclass that is specific to yellowstone.  We inherit from the BatchMaker_lsf 
 # class, then inherit from the base class. 
@@ -953,16 +957,6 @@ sub setBatchDirectives()
 {
 	my $self = shift;
 	$self->SUPER::setBatchDirectives();
-	#if(($self->{sumtasks} * $self->{maxthreads}) <= 8)
-	#{
-	#	$self->{queue} = "caldera";
-	#	$self->{batchdirectives} =~ s/__queue_exclusive__//g ;
-	#}
-	#else
-	#{
-	#	$self->{batchdirectives} =~ s/__queue_exclusive__/-x/g ;
-	#}
-
 }
 sub setTaskInfo()
 {
