@@ -23,6 +23,21 @@
     </directives>
   </batch_system>
 
+   <batch_system type="cobalt" version="x.y">
+     <batch_query>qstat</batch_query>
+     <batch_submit>bash</batch_submit>
+     <batch_directive></batch_directive>
+     <jobid_pattern>(\d+)</jobid_pattern>
+     <depend_string> --dependencies</depend_string>
+     <submit_args>
+       <arg flag="-A" name="project"/>
+       <arg flag="-t" name="wall_time"/>
+       <arg flag="-n" name="num_nodes"/>
+       <arg flag="-q" name="queue"/>
+       <arg flag="--mode script"/>
+     </submit_args>
+   </batch_system>
+
   <batch_system type="lsf" version="9.1">
     <batch_query args=" -w" >bjobs</batch_query>
     <batch_submit>bsub</batch_submit>
@@ -56,7 +71,6 @@
     <directives>
       <directive> -N __job_id__</directive>
       <directive> -q __queue__</directive>
-      <directive> -l nodes=__num_nodes__:ppn=__tasks_per_node__ </directive>
       <directive> -l walltime=__wall_time__</directive>
       <directive default="n"> -r __rerunnable__ </directive>
       <directive> -j oe __output_error_path__ </directive>
@@ -66,76 +80,6 @@
     </directives>
   </batch_system>
 
-  <batch_system type="pbspleiades" version="x.y">
-    <batch_query args="-f" >qstat</batch_query>
-    <batch_submit>qsub </batch_submit>
-    <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
-    <depend_string> -W depend=afterok:jobid</depend_string>
-    <directives>
-      <directive> -N __job_id__</directive>
-      <directive> -q __queue__</directive>
-      <directive> -l walltime=__wall_time__</directive>
-      <directive> -j oe __output_error_path__ </directive>
-      <directive default="/bin/bash" > -S __shell__ -V </directive>
-      <directive> -W group_list=__project__ </directive>
-    </directives>
-  </batch_system>
-
-  <batch_system type="pbscray" version="x.y">
-    <batch_query args="-f" >qstat</batch_query>
-    <batch_submit>qsub </batch_submit>
-    <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
-    <depend_string> -W depend=afterok:jobid</depend_string>
-    <directives>
-      <directive>-N __job_id__</directive>
-      <directive>-q __queue__</directive>
-      <directive>-l mppwidth=__mppwidth__</directive>
-      <directive>-l walltime=__wall_time__</directive>
-      <directive>-j  oe __output_error_path__ </directive>
-       <directive default="ae"  >-m __mail_options__ </directive>
-      <directive default="/bin/bash" >-S __shell__ -V </directive>
-    </directives>
-   </batch_system>
-  
-    <batch_system type="pbsornl" version="x.y">
-    <batch_query args="-f" >qstat</batch_query>
-    <batch_submit>qsub </batch_submit>
-    <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
-    <depend_string> -W depend=afterok:jobid</depend_string>
-    <directives>
-      <directive>-A __project__</directive>
-      <directive>-N __job_id__</directive>
-      <directive>-q __queue__</directive>
-      <directive>-l mppwidth=__mppwidth__</directive>
-      <directive>-l walltime=__wall_time__</directive>
-      <directive>-j  oe __output_error_path__ </directive>
-      <directive>-l  nodes=__num_nodes__</directive>
-       <directive default="ae"  >-m __mail_options__ </directive>
-      <directive default="/bin/bash" >-S __shell__ -V </directive>
-    </directives>
-   </batch_system> 
-
-  <batch_system type="pbsbluewaters" version="x.y">
-    <batch_query args="-f" >qstat</batch_query>
-    <batch_submit>qsub </batch_submit>
-    <batch_directive>#PBS</batch_directive>
-    <jobid_pattern>^(\d+)\.</jobid_pattern>
-    <depend_string> -W depend=afterok:jobid</depend_string>
-    <directives>
-      <directive>-A __project__</directive>
-      <directive>-N __job_id__</directive>
-      <directive>-q __queue__</directive>
-      <directive>-l nodes=__num_nodes__:ppn=__tasks_per_node__:xe</directive>
-      <directive>-l walltime=__wall_time__</directive>
-      <directive>-j  oe __output_error_path__ </directive>
-       <directive default="ae"  >-m __mail_options__ </directive>
-      <directive default="/bin/bash" >-S __shell__ -V </directive>
-    </directives>
-   </batch_system>
-  
    <batch_system type="slurm" version="x.y">
      <batch_query>squeue</batch_query>
      <batch_submit>sbatch</batch_submit>
@@ -150,20 +94,39 @@
        <directive> --qos=__queue__</directive>
      </directives>
    </batch_system>
-   <batch_system type="cobalt" version="x.y">
-     <batch_query>qstat</batch_query>
-     <batch_submit>bash</batch_submit>
-     <batch_directive></batch_directive>
-     <jobid_pattern>(\d+)</jobid_pattern>
-     <depend_string> --dependencies</depend_string>
-     <submit_args>
-       <arg flag="-A" name="project"/>
-       <arg flag="-t" name="wall_time"/>
-       <arg flag="-n" name="num_nodes"/>
-       <arg flag="-q" name="queue"/>
-       <arg flag="--mode script"/>
-     </submit_args>
+
+    <batch_system MACH="edison" version="x.y">
+      <directives>
+	<directive>-l mppwidth=__mppwidth__</directive>
+      </directives>
+    </batch_system> 
+
+    <batch_system MACH="eos" version="x.y">
+    <directives>
+      <directive>-A __project__</directive>
+      <directive>-l mppwidth=__mppwidth__</directive>
+      <directive>-l  nodes=__num_nodes__</directive>
+    </directives>
+   </batch_system> 
+
+
+
+  <batch_system MACH="pleiades" version="x.y">
+    <directives>
+      <directive> -W group_list=__project__ </directive>
+    </directives>
+  </batch_system>
+
+
+
+  <batch_system MACH="bluewaters" version="x.y">
+    <directives>
+      <directive>-A __project__</directive>
+      <directive>-l nodes=__num_nodes__:ppn=__tasks_per_node__:xe</directive>
+    </directives>
    </batch_system>
+  
+
 
 </config_batch>
 
