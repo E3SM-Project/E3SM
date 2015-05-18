@@ -714,17 +714,14 @@ sub checkOptions
   }
 
   # verify that required directories exist. 
-  foreach my $dir ( qw / cimeroot baselineroot / )
-  {
-    if( defined($opts{$dir}))
-    {
-      if(! -d $opts{$dir})
-      {
-        die "** Directory $dir does NOT exist ($opts{$dir})\n";
-      }
+    die "** Directory cimeroot does NOT exist ($opts{cimeroot})\n"  if(! -d $opts{cimeroot});    
+    if(! -d $opts{baselineroot}){
+	if(! defined $opts{'compare'} && ! defined $opts{'generate'}){
+	    warn "WARNING: Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}else{
+	    die "** Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}
     }
-  }
-
   # The specifed compare directory should exist under the specified 
   # $BASELINEROOT/$compare. Die if it does not. 
   if(defined $opts{'baselineroot'} && defined $opts{'compare'})

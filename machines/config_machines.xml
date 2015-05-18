@@ -328,7 +328,7 @@
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>24</PES_PER_NODE>
       <!-- pbscray is for crays.. -->
-    <batch_system name="pbscray" version="x.y">
+    <batch_system type="pbs" version="x.y">
       <queues>
         <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
       </queues>
