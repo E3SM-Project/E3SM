@@ -394,7 +394,7 @@ module li_tendency
 !!!        ! Do nothing
 !!!     case default  !===================================================
 !!!        write(stderrUnit,*) trim(config_tracer_advection), ' is not a valid tracer advection option.'
-!!!        call mpas_dmpar_abort(dminfo)
+!!!        call mpas_dmpar_global_abort(dminfo)
 !!!     end select  !===================================================
 
    !--------------------------------------------------------------------
