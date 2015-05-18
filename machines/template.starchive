@@ -58,7 +58,8 @@ sub resubmitCheck()
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $case, caseconfig => \%config, caseroot => $caseroot,
                                                               ccsmroot => $cimeroot, compiler => $compiler, machine => $machine,
                                                               machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
-    $batchutils->doResubmit($islastjob, $resubmit, $scriptname);
+    #$batchutils->doResubmit($islastjob, $resubmit, $scriptname);
+    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname);
 	}
 }
 main(@ARGV) unless caller;

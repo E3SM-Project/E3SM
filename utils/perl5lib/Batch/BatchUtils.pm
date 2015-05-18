@@ -109,11 +109,9 @@ sub getJobID()
 	my $self = shift;
 	my $jobstring = shift;
 	chomp $jobstring;
-	#print "jobstring : |$jobstring|\n";
 	my $xml = XML::LibXML->new(no_blanks => 1);
     my $batchconfig = $xml->parse_file($self->{'configbatch'});
     my $root = $batchconfig->getDocumentElement();
-	#print "self batchtype:" ,  $self->{'batchtype'} , "\n";
 	my @jobidpatterns = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/jobid_pattern");
 	if(!@jobidpatterns)
 	{
@@ -123,12 +121,10 @@ sub getJobID()
 	my $jobid = undef;
 	my $jobidpat = $jobidpatterns[0]->textContent();
 	my $pattern  = qr($jobidpat);
-	#print "pattern: $pattern\n";
 	if($jobstring =~ /$pattern/ )
 	{
 		$jobid = $1;
 	}
-	#print "job id is now: $jobid\n";
 	return $jobid;
 }
 
@@ -168,8 +164,11 @@ sub submitSingleJob()
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
-    $submitargs = $self->getSubmitArguments($dependentJobId);
-	$submitargs = '' if ! defined $submitargs;
+    $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+	if(! defined $submitargs && length($submitargs) <= 0)
+	{
+	    $submitargs = '' ;
+	}
 	#if(defined $dependentJobId)
 	#{
 	#	#$dependarg = $self->getDependString($dependentJobId);	
@@ -182,10 +181,9 @@ sub submitSingleJob()
 		$ENV{'islastjob'} = 'TRUE';
 	}
 	print "Submitting CESM job script $scriptname\n";
-	print "config batchredirect: $config{'BATCHREDIRECT'}\n";
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
     
-	print "runcmd is $runcmd\n";
+	print "submitting command $runcmd\n";
 	open (my $RUN, "-|", $runcmd) or die "cannot run the command \"$runcmd\"";
 
 	my $output = <$RUN>;
@@ -208,6 +206,7 @@ sub doResubmit()
 	my $self = shift;
     my $islastjob = shift;
     my $resubmit = shift;
+	
     # If the islastjob flag is true, and resubmit is > 0,  do the dependency
     # check and job resubmission again 
     if($islastjob eq 'TRUE' && $resubmit > 0)
@@ -302,13 +301,65 @@ sub addDependentJob()
 }
 
 #==============================================================================
-# Get the qsub submission arguments.  This is really only necessary for the ALCF
-# workflow, so the base class method is blank for now. 
 #==============================================================================
 sub getSubmitArguments()
 {
     my $self = shift;
-    my $jobname = shift;
+    # We need the script name and the dependent job id.
+    my $scriptname = shift;
+    my $dependentjobid = shift;
+
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
+                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
+                                                  machroot => $self->{machroot}, machine => $self->{machine},
+                                                  compiler => $self->{compiler} );
+
+
+    # Find the submit arguments for this particular batch system.
+    my $xml = XML::LibXML->new(no_blanks => 1);
+    my $batchconfig = $xml->parse_file($self->{'configbatch'});
+    my $root = $batchconfig->getDocumentElement();
+
+    my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
+
+    my $submitargs = '';
+
+    if(@dependargs)
+	{
+		foreach my $dependarg(@dependargs)
+    	{
+
+    	    my $argFlag = $dependarg->getAttribute('flag');
+    	    my $argName = $dependarg->getAttribute('name');
+    	    if(defined $argName && length($argName) > 0)
+    	    {
+    	        # Get the actual data field from the BatchMaker class.
+    	        my $field = $batchmaker->getField($argName);
+    	        if(! defined $field)
+    	        {
+    	            die "$argName not defined! Aborting...";
+    	        }
+    	        else
+    	        {
+    	            $submitargs .= " $argFlag $field";
+    	        }
+    	    }
+    	    # If the argName isn't defined,
+    	    elsif(defined $argFlag && ! defined $argName)
+    	    {
+    	        $submitargs .= " $argFlag";
+    	    }
+    	}
+	}
+
+    if(defined $dependentjobid)
+	{
+		my $dependArg = $self->getDependString($dependentjobid);
+		$submitargs .= " $dependArg ";
+	}
+
+	return $submitargs;
+
 }
 
 
@@ -361,7 +412,7 @@ sub getBatchUtils
     }
     else
 	{
-		print "machine-specific error found, $@";
+		bless $batchutils, "Batch::BatchUtils";
 	}
 
     # Now try to create the batch-system specific class. 
@@ -381,7 +432,7 @@ sub getBatchUtils
     }
     else    
     {
-		print "batch-specific error found, $@";
+		#print "batch-specific error found, $@";
 		bless $batchutils, "Batch::BatchUtils";
         return $batchutils;
     }
@@ -433,8 +484,6 @@ sub submitJobs()
     my $self = shift;
     my $depjobid = shift;
     my %depqueue = %{$self->{dependencyqueue}};
-    #print Dumper $self;
-    #print Dumper \%depqueue;
 
     # Get the first job sequence number. 
     my $firstjobseqnum = (sort {$a <=> $b } keys %depqueue)[0];
@@ -449,15 +498,14 @@ sub submitJobs()
 
 sub submitSingleJob()
 {
-	my $self = shift;
-	my $scriptname = shift;
-	my $dependentJobId = shift;
-	my $islastjob = shift;
+    my $self = shift;
+    my $scriptname = shift;
+    my $dependentJobId = shift;
+    my $islastjob = shift;
     my $workflowhostfile = "./workflowhostfile";
     if(! -e $workflowhostfile)
     {
         open (my $W, ">", $workflowhostfile) or die "could not open workflow host file, $!";
-        #map { print $W "key: $_ | value: $ENV{$_}\n" } sort keys %ENV;
         if(defined $ENV{'HOST'})
         {
             print $W $ENV{'HOST'} . "\n";
@@ -502,10 +550,6 @@ sub doResubmit()
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
     }
 
-    print "in doResubmit\n";
-    print "scriptname: $scriptname\n";
-    print "islastjob: $islastjob\n";
-    print "resubmit: $resubmit\n";
     if($scriptname =~ /archive/ && $islastjob eq 'TRUE' && $resubmit > 0)
     {
         my $newresubmit = $config{'RESUBMIT'} - 1;
@@ -548,7 +592,6 @@ sub getSubmitArguments()
     my $scriptname = shift;
     my $dependentjobid = shift;
 
-    # get ourselves a Mira-specific BatchMaker 
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
                                                   mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
                                                   machroot => $self->{machroot}, machine => $self->{machine},
