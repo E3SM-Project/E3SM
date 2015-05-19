@@ -6,6 +6,13 @@ if ($PHASE == set_batch) then
 
 source ./Tools/ccsm_getenv || exit -1
 
+if !(-d /project/projectdirs/${PROJECT}) then
+  echo "  PROJECT in env_case.xml must be set to a valid project name."
+  echo "  This can be specified in create_newcase with the -project parameter"
+  echo "  or by setting a PROJECT environment variable before executing create_newcase."
+  exit -1
+endif
+
 set mppsize = `${CASEROOT}/Tools/taskmaker.pl -sumtasks`
 if ( $mppsize % ${MAX_TASKS_PER_NODE} > 0) then
   @ mppnodes = $mppsize / ${MAX_TASKS_PER_NODE}
@@ -53,16 +60,9 @@ else
   @ mppwidth = 1
 endif
 
-# allow project to be determined implicitly
-if (${PROJECT} == "PROJECT_UNSET") then
-    set account_line = "###PBS -A "
-else
-    set account_line = "#PBS -A ${PROJECT}"
-endif
-
 cat >! $file << EOF1
 #!/bin/csh -f
-${account_line}
+#PBS -A ${PROJECT}
 #PBS -N ${jobname}
 #PBS -q regular
 #PBS -l mppwidth=${mppwidth}
@@ -85,15 +85,142 @@ set myaprun = "-j 2 $myaprun "
 #endif
 
 cat >> ${CASEROOT}/${CASE}.run << EOF1
-sleep 25
+# -------------------------------------------------------------------------
+# Run the model
+# -------------------------------------------------------------------------
+
+set string = \`qstat -f \$PBS_JOBID | grep ctime\`
+echo "job \$PBS_JOBID created: \$string" >>& \$CASEROOT/CaseStatus
+
+set string = \`qstat -f \$PBS_JOBID | grep qtime\`
+echo "job \$PBS_JOBID queued: \$string" >>& \$CASEROOT/CaseStatus
+
+set string = \`qstat -f \$PBS_JOBID | grep etime\`
+echo "job \$PBS_JOBID eligible to run: \$string" >>& \$CASEROOT/CaseStatus
+
+set string = \`qstat -f \$PBS_JOBID | grep start_time\`
+echo "job \$PBS_JOBID started: \$string" >>& \$CASEROOT/CaseStatus
+
+set syslog_id = 0
+if (\$SAVE_TIMING == 'TRUE') then
+
+  if (-d \$SAVE_TIMING_DIR) then
+    cd \$SAVE_TIMING_DIR
+    if !(-d performance_archive) then
+      mkdir performance_archive
+      chmod 777 performance_archive
+    endif
+    cd performance_archive
+    if !(-d \$CCSMUSER) then
+      mkdir \$CCSMUSER
+      chmod 775 \$CCSMUSER
+    endif
+    cd \$CCSMUSER
+    if !(-d \$CASE) then
+      mkdir \$CASE
+      chmod 775 \$CASE
+    endif
+    cd \$CASE
+    if !(-d \$LID) then
+      mkdir \$LID
+      chmod 775 \$LID
+    endif
+    cd \$LID
+    if !(-d checkpoints) then
+      mkdir checkpoints
+      chmod 775 checkpoints
+    endif
+
+    xtprocadmin > xtprocadmin.\$LID
+    qstat -f > qstatf.\$LID
+    qstat -f \$PBS_JOBID > qstatf_jobid.\$LID
+    xtnodestat > xtnodestat.\$LID
+    showq > showq.\$LID
+    chmod a+r *
+
+    gzip xtprocadmin.\$LID qstatf.\$LID qstatf_jobid.\$LID xtnodestat.\$LID showq.\$LID
+
+    mkdir CaseDocs.\$LID
+    chmod 775 CaseDocs.\$LID
+    cd CaseDocs.\$LID
+    cp -p \$CASEROOT/CaseDocs/* .
+    cp -p \$CASEROOT/*.run .
+    cp -p \$CASEROOT/*.xml .
+    cp -p \$CASEROOT/user_nl_* .
+    cp -p \$CASEROOT/env_mach_specific .
+    cp -p \$CASEROOT/Macros .
+    cp -p \$CASEROOT/README.case .
+    if (-f \$CASEROOT/Depends.\$MACH) then
+      cp -p \$CASEROOT/Depends.\$MACH .
+    endif
+    if (-f \$CASEROOT/Depends.\$COMPILER) then
+      cp -p \$CASEROOT/Depends.\$COMPILER .
+    endif
+    if (-f \$CASEROOT/Depends.\$MACH.\$COMPILER) then
+      cp -p \$CASEROOT/Depends.\$MACH.\$COMPILER .
+    endif
+    chmod a+r *
+
+    cd \$CASEROOT/Tools
+    if (\$SYSLOG_N > 0) then
+      touch \$RUNDIR/cesm.log.\$LID
+      csh \$CASEROOT/Tools/mach_syslog \$SYSLOG_N \$PBS_JOBID \$LID \$RUNDIR \$RUNDIR/timing/checkpoints \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/checkpoints &
+      set syslog_id = \$!
+    endif
+  endif
+
+endif
+
 cd \$RUNDIR
+
+sleep 25
+
+set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
+echo "aprun started \$sdate" >>& \$CASEROOT/CaseStatus
 echo "\`date\` -- CSM EXECUTION BEGINS HERE" 
 
 setenv OMP_NUM_THREADS ${maxthrds}
 aprun ${myaprun} >&! cesm.log.\$LID
+if (\$syslog_id != 0) kill \$syslog_id
 wait
 
 echo "\`date\` -- CSM EXECUTION HAS FINISHED" 
+
+set sdate = \`date +"%Y-%m-%d %H:%M:%S"\`
+echo "aprun ended \$sdate" >>& \$CASEROOT/CaseStatus
+
+if (\$SAVE_TIMING == 'TRUE') then
+
+  if (-d \$SAVE_TIMING_DIR) then
+    cd \$SAVE_TIMING_DIR
+    if !(-d performance_archive) then
+      mkdir performance_archive
+      chmod 777 performance_archive
+    endif
+    cd performance_archive
+    if !(-d \$CCSMUSER) then
+      mkdir \$CCSMUSER
+      chmod 775 \$CCSMUSER
+    endif
+    cd \$CCSMUSER
+    if !(-d \$CASE) then
+      mkdir \$CASE
+      chmod 775 \$CASE
+    endif
+    cd \$CASE
+    if !(-d \$LID) then
+      mkdir \$LID
+      chmod 775 \$LID
+    endif
+    cd \$LID
+
+    cd \$CASEROOT
+    set string = \`ls \$PBS_JOBID*OU\`
+    cp -p \$string \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
+    chmod a+r \$SAVE_TIMING_DIR/performance_archive/\$CCSMUSER/\$CASE/\$LID/\$string.\$LID
+  endif
+
+endif
 
 EOF1
 
@@ -101,16 +228,9 @@ EOF1
 else if ($PHASE == set_larch) then
 #################################################################################
 
-# allow project to be determined implicitly
-if (${PROJECT} == "PROJECT_UNSET") then
-    set account_line = "###PBS -A "
-else
-    set account_line = "#PBS -A ${PROJECT}"
-endif
-
 cat >! $CASEROOT/${CASE}.l_archive << EOF1
 #! /bin/csh -f
-${account_line}
+#PBS -A ${PROJECT}
 #PBS -N ${CASE}.l_archive
 #PBS -q xfer
 #PBS -l walltime=02:00:00
