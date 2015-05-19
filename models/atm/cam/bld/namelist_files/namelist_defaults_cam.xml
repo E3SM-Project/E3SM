@@ -1095,8 +1095,8 @@
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
 
 <!-- BSINGH - Flag (when .TRUE.)calculates solar zenith angle averaged over a time step.
-     In current default method solar zenith angle is held constant over time -->
-<sol_insolation_bug_fix>             .false.  </sol_insolation_bug_fix>
+     In default model solar zenith angle is held constant over time -->
+<use_rad_dt_cosz>             .false.  </use_rad_dt_cosz>
 
 
 

@@ -5,20 +5,17 @@
 
 MODULE shr_orb_mod
 
-   use shr_kind_mod
+   use shr_kind_mod, only: SHR_KIND_R8, SHR_KIND_IN
    use shr_sys_mod
    use shr_const_mod
    use shr_log_mod, only: s_loglev  => shr_log_Level
    use shr_log_mod, only: s_logunit => shr_log_Unit
-   use avg_slr_insol_mod, only: avg_slr_insol_init, avg_slr_insol        !Add an algorithm for calculation of solar zenith 
-                                                                         !angle (zlj, 2015.02.19) implemented by BSINGH (04/21/2015)
 
    IMPLICIT none
 
    !----------------------------------------------------------------------------
    ! PUBLIC: Interfaces and global data
    !----------------------------------------------------------------------------
-   public :: shr_orb_mod_init
    public :: shr_orb_cosz
    public :: shr_orb_params
    public :: shr_orb_decl
@@ -40,51 +37,11 @@ MODULE shr_orb_mod
    real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MIN  =   0.0_SHR_KIND_R8 ! min value for mvelp
    real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MAX  = 360.0_SHR_KIND_R8 ! max value for mvelp
 
-   !BSINGH: Added a logical flag
-   logical :: sol_insolation_bug_fix = .false. ! Logical to decide whether to invoke subroutine avg_slr_insol
-
 !===============================================================================
 CONTAINS
 !===============================================================================
 
-
-subroutine shr_orb_mod_init(sol_insolation_bug_fix_in, dtime, iradsw)
-   !----------------------------------------------------------------------------
-   !
-   ! Subroutine to initialize some global variables needed in this module
-   !--------------- Code History -----------------------------------------------
-   !
-   ! Original Author: Balwinder Singh
-   ! Date:            Apr/2015
-   !
-   ! This subroutine is called from:
-   !    subroutine read_namelist [/models/atm/cam/src/control/runtime_opts.F90]
-   !----------------------------------------------------------------------------
-  
-   !Args
-   logical, intent(in) :: sol_insolation_bug_fix_in ! Logical to decide whether to invoke subroutine avg_slr_insol
-   integer, intent(in) :: dtime                     ! timestep size (s)
-   integer, intent(in) :: iradsw                    ! freq. of shortwave radiation calc in time steps (positive)
-                                                    ! or hours (negative).
-
-   !Initialize the logical to decide whether to invoke subroutine avg_slr_insol to
-   !calculate solar zenith angle(zlj, 2015.02.19) averaged over a time step.
-   !In current default method solar zenith angle is held constant over time.
-
-   !NOTE: This logical flag is *temporary*. It should be REMOVED after we decide
-   !to call subroutine avg_slr_insol by default
-
-   sol_insolation_bug_fix = sol_insolation_bug_fix_in
-
-   if(sol_insolation_bug_fix) then
-      !Initialize radiation time step in avg_slr_insol.F90
-      call avg_slr_insol_init(dtime, iradsw)
-   endif
-
-
-end subroutine shr_orb_mod_init
-
-real(SHR_KIND_R8) FUNCTION shr_orb_cosz(jday,lat,lon,declin)
+real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg)
 
    !----------------------------------------------------------------------------
    !
@@ -103,19 +60,159 @@ real(SHR_KIND_R8) FUNCTION shr_orb_cosz(jday,lat,lon,declin)
    real   (SHR_KIND_R8),intent(in) :: lat    ! Centered latitude (radians)
    real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
    real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination (radians)
+   real   (SHR_KIND_R8),intent(in), optional   :: dt_avg ! if present and set non-zero, then use in the 
+                                                         ! average cosz calculation
+   logical :: use_dt_avg
 
    !----------------------------------------------------------------------------
 
-   shr_orb_cosz = sin(lat)*sin(declin) - &
-   &              cos(lat)*cos(declin)*cos(jday*2.0_SHR_KIND_R8*pi + lon)
+   use_dt_avg = .false.
+   if (present(dt_avg)) then
+      if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
+   end if
 
-   if (sol_insolation_bug_fix) then !implemented by BSINGH (04/21/2015)
-      ! Add new algorithm for calculation of solar zenith angle(zlj, 2015.02.19) 
-      ! which computes average over the time step
-      call avg_slr_insol(lat, lon, declin, jday, shr_orb_cosz)
-   endif
+
+   ! If dt for the average cosz is specified, then call the shr_orb_avg_cosz
+   if (use_dt_avg) then
+      shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+   else
+      shr_orb_cosz = sin(lat)*sin(declin) - &
+      &              cos(lat)*cos(declin)*cos(jday*2.0_SHR_KIND_R8*pi + lon)
+   end if
 
 END FUNCTION shr_orb_cosz
+
+!=======================================================================
+! A New Algorithm for Calculation of Cosine Solar Zenith Angle
+! Author: Linjiong Zhou
+! E-mail: linjiongzhou@hotmail.com
+! Date  : 2015.02.22
+! Ref.  : Zhou et al., GRL, 2015
+!=======================================================================
+
+real (SHR_KIND_R8) pure function shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+
+    use shr_const_mod, only : pi => shr_const_pi
+
+    implicit none
+
+!-----------------------------------------------------------------------
+! In/Out Arguements
+
+    real(SHR_KIND_R8), intent(in) :: jday   ! Julian calendar day (1.xx to 365.xx)
+    real(SHR_KIND_R8), intent(in) :: lat    ! latitude (radian)
+    real(SHR_KIND_R8), intent(in) :: lon    ! longitude (radian)
+    real(SHR_KIND_R8), intent(in) :: declin ! solar declination (radian)
+    real(SHR_KIND_R8), intent(in) :: dt_avg ! dt for averaged cosz calculation
+
+!-----------------------------------------------------------------------
+! Local Arguments
+
+    real(SHR_KIND_R8),parameter :: piover2 = pi/2.0_SHR_KIND_R8
+    real(SHR_KIND_R8),parameter :: twopi   = pi*2.0_SHR_KIND_R8
+
+    real(SHR_KIND_R8) :: aa, bb
+    real(SHR_KIND_R8) :: del, phi
+    real(SHR_KIND_R8) :: cos_h, h
+    real(SHR_KIND_R8) :: t1, t2, dt
+    real(SHR_KIND_R8) :: tt1, tt2, tt3, tt4
+
+!-----------------------------------------------------------------------
+! Compute Half-day Length
+
+    ! adjust latitude so that its tangent will be defined
+    if (lat ==  piover2) then
+        del = lat - 1.0e-05_SHR_KIND_R8
+    else if (lat ==  -piover2) then
+        del = lat + 1.0e-05_SHR_KIND_R8
+    else
+        del = lat
+    end if
+
+    ! adjust declination so that its tangent will be defined
+    if (declin == piover2) then
+        phi = declin - 1.0e-05_SHR_KIND_R8
+    else if (declin == -piover2) then
+        phi = declin + 1.0e-05_SHR_KIND_R8
+    else
+        phi = declin
+    end if
+
+    ! define the cosine of the half-day length
+    ! adjust for cases of all daylight or all night
+    cos_h = - tan(del) * tan(phi)
+    if (cos_h <= -1.0_SHR_KIND_R8) then
+        h = pi
+    else if (cos_h >= 1.0_SHR_KIND_R8) then
+        h = 0.0_SHR_KIND_R8
+    else
+        h = acos(cos_h)
+    end if
+
+!-----------------------------------------------------------------------
+! Define Local Time t and t + dt
+
+    ! adjust t to be between -pi and pi
+    t1 = (jday - int(jday)) * twopi + lon - pi
+
+    if (t1 >=  pi) then
+       t1 = t1 - twopi
+    else if (t1 < -pi) then
+       t1 = t1 + twopi
+    end if
+
+    dt = dt_avg / 86400.0_SHR_KIND_R8 * twopi
+    t2 = t1 + dt
+
+!-----------------------------------------------------------------------
+! Compute Cosine Solar Zenith angle
+
+    ! define terms needed in the cosine zenith angle equation
+    aa = sin(lat) * sin(declin)
+    bb = cos(lat) * cos(declin)
+
+    ! define the hour angle
+    ! force it to be between -h and h
+    ! consider the situation when the night period is too short
+    if (t2 >= pi .and. t1 <= pi .and. pi - h <= dt) then
+        tt2 = h
+        tt1 = min(max(t1, -h)       ,         h)
+        tt4 = min(max(t2, twopi - h), twopi + h)
+        tt3 = twopi - h
+    else if (t2 >= -pi .and. t1 <= -pi .and. pi - h <= dt) then
+        tt2 = - twopi + h
+        tt1 = min(max(t1, -twopi - h), -twopi + h)
+        tt4 = min(max(t2, -h)        ,          h)
+        tt3 = -h
+    else
+        if (t2 > pi) then
+            tt2 = min(max(t2 - twopi, -h), h)
+        else if (t2 < - pi) then
+            tt2 = min(max(t2 + twopi, -h), h)
+        else
+            tt2 = min(max(t2 ,        -h), h)
+        end if
+        if (t1 > pi) then
+            tt1 = min(max(t1 - twopi, -h), h)
+        else if (t1 < - pi) then
+            tt1 = min(max(t1 + twopi, -h), h)
+        else
+            tt1 = min(max(t1        , -h), h)
+        end if
+        tt4 = 0.0_SHR_KIND_R8
+        tt3 = 0.0_SHR_KIND_R8
+    end if
+
+    ! perform a time integration to obtain cosz if desired
+    ! output is valid over the period from t to t + dt
+    if (tt2 > tt1 .or. tt4 > tt3) then
+        shr_orb_avg_cosz = (aa * (tt2 - tt1) + bb * (sin(tt2) - sin(tt1))) / dt + &
+               (aa * (tt4 - tt3) + bb * (sin(tt4) - sin(tt3))) / dt
+    else
+        shr_orb_avg_cosz = 0.0_SHR_KIND_R8
+    end if
+
+end function shr_orb_avg_cosz
 
 !===============================================================================
 

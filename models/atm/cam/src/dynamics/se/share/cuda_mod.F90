@@ -24,8 +24,10 @@ module cuda_mod
 #if USE_CUDA_FORTRAN
 
 ! NP > 4 is not supported due to shared memory constraints
+!BSINGH -  NAG compiler doesn't support "#error" CPP directive.
+!Therefore, getting rid of "#" preceding "error" so that the code still fails at compile time
 #if NP > 4
-#error CUDA Fortran build only supported with NP <= 4
+error CUDA Fortran build only supported with NP <= 4
 #endif
 
 #define PAD 1

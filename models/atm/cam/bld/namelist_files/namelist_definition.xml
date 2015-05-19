@@ -3137,14 +3137,14 @@ Return fluxes per band in addition to the total fluxes.
 Default: FALSE
 </entry>
 
-<entry id="sol_insolation_bug_fix" type="logical"   category="radiation"
+<entry id="use_rad_dt_cosz" type="logical"  category="radiation"
        group="cam_inparm" valid_values="" >
+If true, then use the radiation timestep for all cosz calculations.
 NOTE: This logical flag is *temporary*. It should be REMOVED after we decide
-to call subroutine avg_slr_insol by default from shr_orb_mod.F90.
-When .TRUE. the model calculate solar zenith angle averaged over a time step.
-In current default method solar zenith angle is held constant over time.
-Default: .FALSE.
+to make this functionality default
+Default: FALSE
 </entry>
+
 
 <entry id="mode_defs" type="char*256(60)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >

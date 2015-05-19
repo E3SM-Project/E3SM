@@ -261,6 +261,7 @@ contains
     use cam_control_mod,  only : nsrest        ! Variable to determine if this is an initial run or a restart/branch
     use time_manager,     only : get_nstep                        ! Routine to get current time step
     use physconst,        only : rairv, mbarv                     ! Constituent dependent rair and mbar
+    use orbit,            only: zenith
      
     implicit none
 
