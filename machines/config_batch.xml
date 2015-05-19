@@ -122,8 +122,8 @@
 
   <batch_system MACH="bluewaters" version="x.y">
     <directives>
-      <directive>-A __project__</directive>
-      <directive>-l nodes=__num_nodes__:ppn=__tasks_per_node__:xe</directive>
+       <directive>-A __project__</directive>
+       <directive>-l nodes=__num_nodes__:ppn=__tasks_per_node__:xe</directive>
     </directives>
    </batch_system>
    

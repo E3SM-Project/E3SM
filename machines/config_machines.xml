@@ -191,7 +191,7 @@
          <SUPPORTED_BY>jedwards -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J> 8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-         <batch_system name="pbsbluewaters" version="x.y">
+         <batch_system type="pbs" version="x.y">
              <queues>
                 <queue default="true">normal</queue>
              </queues>
