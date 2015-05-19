@@ -117,6 +117,7 @@
       use short_lived_species,only: get_short_lived_species
       use physics_buffer,    only : physics_buffer_desc
       use phys_control,      only : waccmx_is
+      use orbit,             only : zenith
 
 !-----------------------------------------------------------------------
 !        ... dummy arguments

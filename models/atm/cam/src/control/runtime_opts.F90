@@ -277,7 +277,7 @@ integer :: irad_always   ! Specifies length of time in timesteps (positive)
 logical :: spectralflux  ! calculate fluxes (up and down) per band. Default: FALSE
 
 !BSINGH - Flag to add solar insolation bug fix in /models/csm_share/shr/shr_orb_mod.F90
-logical :: sol_insolation_bug_fix  ! **temporary** flag for fixing solar insolation bug 
+logical :: use_rad_dt_cosz  ! if true, uses the radiation dt for all cosz calculations
 
 ! SCM Options
 logical  :: single_column
@@ -380,7 +380,6 @@ contains
 #if ( defined OFFLINE_DYN )
    use metdata,             only: metdata_readnl
 #endif
-   use shr_orb_mod,         only: shr_orb_mod_init
 
 !---------------------------Arguments-----------------------------------
 
@@ -472,7 +471,7 @@ contains
   namelist /cam_inparm/ print_energy_errors
 
   ! radiative heating calculation options
-  namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always, spectralflux, sol_insolation_bug_fix
+  namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always, spectralflux, use_rad_dt_cosz
 
   ! scam
   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
@@ -513,7 +512,8 @@ contains
       iradlw_out      = iradlw,     &
       iradae_out      = iradae,     &
       irad_always_out = irad_always, &
-      spectralflux_out = spectralflux )
+      spectralflux_out = spectralflux,&
+      use_rad_dt_cosz_out = use_rad_dt_cosz )
 
    if (present(single_column_in)) then
       call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
@@ -696,21 +696,13 @@ contains
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors )
 
-   !BSINGH(04/24/2015): call shr_orb_mod_init to set sol_insolation_bug_fix.
-   !This is a temporary variable which should be removed after we decide
-   !to make this fix defualt in the code
-   !This call also initializes radiation time step using 'dtime' and iradsw'
-   !Inserted here to avoid reading these namelist variables again in 
-   !/models/csm_share/shr/avg_slr_insol.F90
-   call shr_orb_mod_init(sol_insolation_bug_fix, dtime, iradsw)
-
    call radiation_setopts( dtime, nhtfrq(1), &
       iradsw_in      = iradsw,     &
       iradlw_in      = iradlw,     &
       iradae_in      = iradae,     &
       irad_always_in = irad_always, &
-      spectralflux_in = spectralflux )
-
+      spectralflux_in = spectralflux,&
+      use_rad_dt_cosz_in = use_rad_dt_cosz )
 ! 
 ! Set runtime options for single column mode
 !
@@ -969,7 +961,7 @@ subroutine distnl
    call mpibcast (spectralflux,1, mpilog, 0, mpicom)
    
    !BSINGH
-   call mpibcast (sol_insolation_bug_fix,1, mpilog, 0, mpicom)
+    call mpibcast (use_rad_dt_cosz,1,mpilog,0,mpicom)
 
 end subroutine distnl
 #endif

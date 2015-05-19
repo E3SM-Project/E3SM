@@ -779,9 +779,9 @@ else {
 add_default($nl, 'ncdata', %atts);
 
 #BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
-#In current default method solar zenith angle is held constant over time.
+#In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'sol_insolation_bug_fix','val'=>'.false.');
+add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
 
 
 #
