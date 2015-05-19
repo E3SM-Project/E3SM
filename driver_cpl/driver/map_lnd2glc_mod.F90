@@ -106,9 +106,9 @@ contains
     ! needs to be a pointer to satisfy the MCT interface
     real(r8), pointer :: data_g(:)
 
-    ! ice fraction on the glc grid
+    ! whether each point on the glc grid is ice-covered (1) or ice-free (0)
     ! needs to be a pointer to satisfy the MCT interface
-    real(r8), pointer :: glc_frac(:)
+    real(r8), pointer :: glc_ice_covered(:)
 
     ! ice topographic height on the glc grid
     ! needs to be a pointer to satisfy the MCT interface
@@ -135,9 +135,9 @@ contains
     ! Extract necessary fields from g2x_g
     ! ------------------------------------------------------------------------
 
-    allocate(glc_frac(lsize_g))
+    allocate(glc_ice_covered(lsize_g))
     allocate(glc_topo(lsize_g))
-    call mct_aVect_exportRattr(g2x_g, 'Sg_ice_covered', glc_frac)
+    call mct_aVect_exportRattr(g2x_g, 'Sg_ice_covered', glc_ice_covered)
     call mct_aVect_exportRattr(g2x_g, 'Sg_topo', glc_topo)
 
     ! ------------------------------------------------------------------------
@@ -145,7 +145,7 @@ contains
     ! ------------------------------------------------------------------------
 
     allocate(glc_elevclass(lsize_g))
-    call get_glc_elevation_classes(glc_frac, glc_topo, glc_elevclass)
+    call get_glc_elevation_classes(glc_ice_covered, glc_topo, glc_elevclass)
     
     ! ------------------------------------------------------------------------
     ! Map elevation class 0 (bare land)
@@ -188,46 +188,47 @@ contains
 
     deallocate(data_g_oneEC)
     deallocate(data_g)
-    deallocate(glc_frac)
+    deallocate(glc_ice_covered)
     deallocate(glc_topo)
     deallocate(glc_elevclass)
     
   end subroutine map_lnd2glc
 
   !-----------------------------------------------------------------------
-  subroutine get_glc_elevation_classes(glc_frac, glc_topo, glc_elevclass)
+  subroutine get_glc_elevation_classes(glc_ice_covered, glc_topo, glc_elevclass)
     !
     ! !DESCRIPTION:
     ! Get the elevation class of each point on the glc grid.
     !
     ! For grid cells that are ice-free, the elevation class is set to 0.
     !
-    ! All arguments (glc_frac, glc_topo and glc_elevclass) must be the same size.
+    ! All arguments (glc_ice_covered, glc_topo and glc_elevclass) must be the same size.
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    real(r8), intent(in)  :: glc_frac(:)       ! ice fraction
-    real(r8), intent(in)  :: glc_topo(:)       ! ice topographic height
-    integer , intent(out) :: glc_elevclass(:)  ! elevation class
+    real(r8), intent(in)  :: glc_ice_covered(:) ! ice-covered (1) vs. ice-free (0)
+    real(r8), intent(in)  :: glc_topo(:)        ! ice topographic height
+    integer , intent(out) :: glc_elevclass(:)   ! elevation class
     !
     ! !LOCAL VARIABLES:
     integer :: npts
     integer :: glc_pt
     integer :: err_code
+
+    ! Tolerance for checking whether ice_covered is 0 or 1
+    real(r8), parameter :: ice_covered_tol = 1.e-13
     
     character(len=*), parameter :: subname = 'get_glc_elevation_classes'
     !-----------------------------------------------------------------------
 
     npts = size(glc_elevclass)
-    SHR_ASSERT((size(glc_frac) == npts), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT((size(glc_ice_covered) == npts), errMsg(__FILE__, __LINE__))
     SHR_ASSERT((size(glc_topo) == npts), errMsg(__FILE__, __LINE__))
 
     do glc_pt = 1, npts
-       if (glc_frac(glc_pt) > 0._r8) then
-          ! We treat any frac > 0 as ice-covered. This is appropriate if frac is always
-          ! 0/1, which is the case right now. The lnd -> glc downscaling code would need
-          ! to be reworked if frac were a continuous quantity.
+       if (abs(glc_ice_covered(glc_pt) - 1._r8) < ice_covered_tol) then
+          ! This is an ice-covered point
 
           call glc_get_elevation_class(glc_topo(glc_pt), glc_elevclass(glc_pt), err_code)
           if ( err_code == GLC_ELEVCLASS_ERR_NONE .or. &
@@ -243,9 +244,16 @@ contains
              write(logunit,*) glc_errcode_to_string(err_code)
              call shr_sys_abort(subname//': ERROR getting elevation class')
           end if
-       else
+       else if (abs(glc_ice_covered(glc_pt) - 0._r8) < ice_covered_tol) then
           ! This is a bare land point (no ice)
           glc_elevclass(glc_pt) = 0
+       else
+          ! glc_ice_covered is some value other than 0 or 1
+          ! The lnd -> glc downscaling code would need to be reworked if we wanted to
+          ! handle a continuous fraction between 0 and 1.
+          write(logunit,*) subname, ': ERROR: glc_ice_covered must be 0 or 1'
+          write(logunit,*) 'glc_pt, glc_ice_covered = ', glc_pt, glc_ice_covered(glc_pt)
+          call shr_sys_abort(subname//': ERROR: glc_ice_covered must be 0 or 1')
        end if
     end do
        
