@@ -144,7 +144,7 @@ contains
     integer :: nv, mode
     integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
-
+    integer :: nvarmult
 
     nullify(compmap)
 
@@ -285,7 +285,17 @@ contains
                 call MPI_Reduce(wall(1), wall(2), 1, MPI_DOUBLE_PRECISION, MPI_MAX, 0, comm, ierr)
                 if(mype==0) then
                    ! print out performance in MB/s
-                   print *, 'write ',rearr, ntasks, nvars, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+		   nvarmult = 0
+#ifdef VARINT
+                   nvarmult = nvarmult+1
+#endif
+#ifdef VARREAL
+                   nvarmult = nvarmult+1
+#endif
+#ifdef VARDOUBLE
+                   nvarmult = nvarmult+2
+#endif
+                   print *, 'write ',rearr, ntasks, nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY
   call print_memusage()
 #endif
@@ -371,7 +381,17 @@ contains
                    if(errorcnt > 0) then
                       print *,'ERROR: INPUT/OUTPUT data mismatch ',errorcnt
                    endif
-                   print *, 'read ',rearr, ntasks,nvars, nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+		   nvarmult = 0
+#ifdef VARINT
+                   nvarmult = nvarmult+1
+#endif
+#ifdef VARREAL
+                   nvarmult = nvarmult+1
+#endif
+#ifdef VARDOUBLE
+                   nvarmult = nvarmult+2
+#endif
+                   print *, 'read ',rearr, ntasks,nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY 
   call print_memusage()
 #endif

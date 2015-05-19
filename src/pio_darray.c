@@ -1,3 +1,11 @@
+/** @file   pio_darray.c
+ *  @brief  This file contains the routines that read and write distributed arrays in PIO
+ *
+ *  
+ *  @author Jim Edwards
+ *  @bug No Known bugs
+ */
+
 #include <pio.h>
 #include <pio_internal.h>
 #define PIO_WRITE_BUFFERING 1
@@ -6,8 +14,13 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=33554432; 
 static void *CN_bpool=NULL; 
 static PIO_Offset maxusage=0;
-
- // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
+/** @brief Set the pio buffer size limit, this is the size of the data buffer on the IO nodes.
+ *
+ *
+ *  The pio_buffer_size_limit will only apply to files opened after the setting is changed.  
+ *  @param limit the size of the buffer on the IO nodes
+ *  @return The previous limit setting.
+ */
  PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
  {
    PIO_Offset oldsize; 
@@ -16,6 +29,11 @@ static PIO_Offset maxusage=0;
      PIO_BUFFER_SIZE_LIMIT=limit;
    return(oldsize);
  }
+
+/** @brief Initialize the compute buffer to size PIO_CNBUFFER_LIMIT
+ *
+ *  This routine initializes the compute buffer pool if the bget memory management is used.
+ */
 
 void compute_buffer_init(iosystem_desc_t ios)
 {
@@ -39,6 +57,9 @@ void compute_buffer_init(iosystem_desc_t ios)
 #endif
 }
 
+/** @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
+ *
+ */
 
 
  int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF, void *fillvalue)
@@ -253,7 +274,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 	   if(vdesc->request != NC_REQ_NULL){
 	     printf("%s %d %d\n",__FILE__,__LINE__,vid);
 	   }
-
+	   vdesc->distributed = true;
 	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
 				  IOBUF, iodesc->llen, iodesc->basetype, &(vdesc->request));
 	   if(vdesc->request == NC_REQ_NULL){
@@ -284,6 +305,13 @@ void compute_buffer_init(iosystem_desc_t ios)
 
    return ierr;
  }
+
+/** @brief Write a set of one or more aggregated arrays to output file
+ *        
+ *   This routine is used if aggregation is enabled, data is already on the
+ *   io-tasks
+ */
+
 
 int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[], 
 			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
@@ -522,9 +550,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, llen, basetype, &(vdesc->request));
 	     */
-	   if(vdesc->request != NC_REQ_NULL){
-	     printf("%s %d %d\n",__FILE__,__LINE__,vid[nv]);
-	   }
+	     if(vdesc->request != NC_REQ_NULL){
+	       printf("%s %d %d\n",__FILE__,__LINE__,vid[nv]);
+	     }
+	     vdesc->distributed = true;
 	     ierr = ncmpi_bput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, llen, basetype, &(vdesc->request));
 
@@ -556,6 +585,12 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 
    return ierr;
  }
+
+/** @brief Write one or more arrays with the same IO decomposition to the file
+ *
+ *
+ */
+
 
 int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue[], bool flushtodisk)
  {
@@ -686,6 +721,12 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
  }
 #ifdef PIO_WRITE_BUFFERING
+/** @brief Write a distributed array to the output file. 
+ *
+ *  This routine aggregates output on the compute nodes and only sends it to the IO nodes when the
+ *  compute buffer is full or when a flush is triggered.  
+ */ 
+
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -884,6 +925,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
  }
 #else
+/** @brief Write a distributed array to the output file 
+ *
+ *  This version of the routine does not buffer, all data is communicated to the io tasks 
+ *  before the routine returns
+ */
+
+
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -953,7 +1001,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  }
 #endif
 
-
+/** @brief read interface to io library
+ *
+ */
 
 int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF)
 {
@@ -1261,24 +1311,35 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     int request[2*PIO_MAX_VARS];
     int status[2*PIO_MAX_VARS];
     int rcnt=0;
+    bool prev_dist=false;
+    int prev_record=-1;
+    
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
-      if(rcnt>0 && vdesc->request == NC_REQ_NULL && vdesc->fillrequest == NC_REQ_NULL){
-	//	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+      if(rcnt>0 && (prev_dist!= vdesc->distributed ||
+		    prev_record != vdesc->record ||
+		    (vdesc->request == NC_REQ_NULL && 
+		     vdesc->fillrequest == NC_REQ_NULL))){
+	if(file->iosystem->io_rank==0) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
 	rcnt=0;
       }
+      prev_record = vdesc->record;
+      prev_dist = vdesc->distributed;
+      
 #endif
       //      printf("%s %d %d %d %d %d \n",__FILE__,__LINE__,i,rcnt,vdesc->request,vdesc->fillrequest);
 
       if(vdesc->request != NC_REQ_NULL){
+	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,rcnt,vdesc->request,vdesc->distributed, vdesc->record);
 	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
 	vdesc->request = NC_REQ_NULL;
       }
       if(vdesc->fillrequest != NC_REQ_NULL){
+	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d\n",__FILE__,__LINE__,rcnt,vdesc->fillrequest, vdesc->distributed);
 	request[rcnt++]=max(vdesc->fillrequest,NC_REQ_NULL);
 	vdesc->fillrequest = NC_REQ_NULL;
       }
@@ -1290,6 +1351,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 
     }
     if(rcnt>0){
+	if(file->iosystem->io_rank==0) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
   }

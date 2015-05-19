@@ -50,6 +50,7 @@ typedef struct var_desc_t
 {
   int record; 
   int ndims;
+  bool distributed;
   int request; // used for pnetcdf iput calls
   int fillrequest; //used for fill in pnetcdf iput for subset rearranger
 } var_desc_t;

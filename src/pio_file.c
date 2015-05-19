@@ -45,6 +45,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 #ifdef _PNETCDF
     file->varlist[i].request = NC_REQ_NULL;
     file->varlist[i].fillrequest = NC_REQ_NULL;
+    file->varlist[i].distributed = false;
 #endif
   }
 
@@ -162,6 +163,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 #ifdef _PNETCDF
     file->varlist[i].request = NC_REQ_NULL;
     file->varlist[i].fillrequest = NC_REQ_NULL;
+    file->varlist[i].distributed = false;
 #endif
   }
 
