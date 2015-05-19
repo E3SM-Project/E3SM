@@ -52,7 +52,7 @@ sub new
     {
         die "Could not determine batch system type for machine $self->{machine}";
     }
-    $self->{'batchtype'} = $batchtypes[0]->getAttribute('name');
+    $self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
 
 	$self->{dependencyqueue} = undef;
 	return $self;
@@ -112,18 +112,34 @@ sub getJobID()
 	my $xml = XML::LibXML->new(no_blanks => 1);
     my $batchconfig = $xml->parse_file($self->{'configbatch'});
     my $root = $batchconfig->getDocumentElement();
-	my @jobidpatterns = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/jobid_pattern");
-	if(!@jobidpatterns)
+	my @machjobidpatterns = $root->findnodes("/config_batch/batch_system[\@MACH=\'$self->{machine}\']/jobid_pattern");
+	my $jobidpat;
+	if(@machjobidpatterns)
 	{
-		die "could not find job id pattern for batch system type $self->{'batchtype'}";
+		$jobidpat = $machjobidpatterns[0]->textContent();
+	}
+	else
+	{
+		my @basejobidpatterns = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/jobid_pattern");
+		if(!@basejobidpatterns)
+		{
+			die "could not find job id pattern for batch system type $self->{'batchtype'}";
+		}
+		else
+		{
+			$jobidpat = $basejobidpatterns[0]->textContent();
+		}
 	}
 	
 	my $jobid = undef;
-	my $jobidpat = $jobidpatterns[0]->textContent();
 	my $pattern  = qr($jobidpat);
 	if($jobstring =~ /$pattern/ )
 	{
 		$jobid = $1;
+	}
+	else
+	{
+		die " could not ascertain dependent job id... aborting";
 	}
 	return $jobid;
 }
@@ -461,8 +477,7 @@ sub getBatchSystemType()
         die "Could not determine batch system type for machine $machine";
     }
     #my $batchtype = $batchsystems[0]->textContent();
-    my $batchtype = $batchsystems[0]->getAttribute('name');
-    #print "Found batch type $batchtype\n";
+    my $batchtype = $batchsystems[0]->getAttribute('type');
     return $batchtype;
 }
 

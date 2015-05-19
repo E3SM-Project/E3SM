@@ -102,6 +102,7 @@
     </batch_system> 
 
     <batch_system MACH="eos" version="x.y">
+    <jobid_pattern>^(\d+)</jobid_pattern>
     <directives>
       <directive>-A __project__</directive>
       <directive>-l mppwidth=__mppwidth__</directive>
