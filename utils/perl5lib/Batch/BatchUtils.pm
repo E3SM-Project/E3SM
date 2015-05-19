@@ -177,6 +177,7 @@ sub submitSingleJob()
 	my $scriptname = shift;
 	my $dependentJobId = shift;
 	my $islastjob = shift;
+	print "in submitSingleJob: islastjob: $islastjob\n";
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
@@ -196,6 +197,10 @@ sub submitSingleJob()
 	{
 		$ENV{'islastjob'} = 'TRUE';
 	}
+	else
+	{
+		$ENV{'islastjob'} = 'FALSE';
+	}
 	print "Submitting CESM job script $scriptname\n";
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
     
@@ -204,7 +209,7 @@ sub submitSingleJob()
 
 	my $output = <$RUN>;
 	chomp $output;	
-	print "submit output: |$output|\n";
+	#print "submit output: |$output|\n";
 	
     #print "last dependent job number: $lastjobseqnum\n";
     #print "last dependent job: ", @{$depqueue{$lastjobseqnum}} ,  "\n";
