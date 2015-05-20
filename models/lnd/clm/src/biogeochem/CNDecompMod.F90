@@ -20,6 +20,10 @@ module CNDecompMod
   use CNStateType            , only : cnstate_type
   use CNNitrogenStateType    , only : nitrogenstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
+  !!  add phosphorus  -X. YANG
+  use PhosphorusStateType    , only : phosphorusstate_type
+  use PhosphorusFluxType     , only : phosphorusflux_type
+
   use CNCarbonStateType      , only : carbonstate_type
   use CNCarbonFluxType       , only : carbonflux_type
   use PhotosynthesisType     , only : photosyns_type
@@ -82,7 +86,8 @@ contains
        photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars, &
        cnstate_vars, ch4_vars, &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-       nitrogenstate_vars, nitrogenflux_vars, crop_vars)
+       nitrogenstate_vars, nitrogenflux_vars, crop_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !USES:
     use CNAllocationMod , only: CNAllocation
@@ -106,6 +111,9 @@ contains
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+    !! add phosphorus --
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(crop_type)          , intent(in)    :: crop_vars
     !
     ! !LOCAL VARIABLES:
@@ -113,10 +121,14 @@ contains
     integer :: fc                                                                                      !lake filter column index
     real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
     real(r8):: pmnf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral N flux, from one pool to another
+    real(r8):: pmpf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential mineral P flux, from one pool to another
     real(r8):: immob(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential N immobilization
+    real(r8):: immob_p(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential P immobilization
     real(r8):: ratio                                                                                   !temporary variable
     real(r8):: dnp                                                                                     !denitrification proportion
     real(r8):: cn_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
+    real(r8):: cp_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
+    real(r8):: cp_decomp_pools_new(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)               !C:P ratio of new SOM
     integer, parameter :: i_atm = 0
     ! For methane code
     real(r8):: phr_vr(bounds%begc:bounds%endc,1:nlevdecomp)                                            !potential HR (gC/m3/s)
@@ -127,13 +139,19 @@ contains
          cascade_donor_pool               =>    decomp_cascade_con%cascade_donor_pool                  , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool            =>    decomp_cascade_con%cascade_receiver_pool               , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
          floating_cn_ratio_decomp_pools   =>    decomp_cascade_con%floating_cn_ratio_decomp_pools      , & ! Input:  [logical  (:)     ]  TRUE => pool has fixed C:N ratio                   
+         floating_cp_ratio_decomp_pools   =>    decomp_cascade_con%floating_cp_ratio_decomp_pools      , & ! Input:  [logical  (:)     ]  TRUE => pool has fixed C:P ratio                   
          initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                    , & ! Input:  [real(r8) (:)     ]  c:n ratio for initialization of pools             
-
-         fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization (no units) 
+         initial_cp_ratio                 =>    decomp_cascade_con%initial_cp_ratio                    , & ! Input:  [real(r8) (:)     ]  c:p ratio for initialization of pools             
+  
+         is_cwd                           =>    decomp_cascade_con%is_cwd                              , &
+!
+         fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization for N(no units) 
+         fpi_p_vr                         =>    cnstate_vars%fpi_p_vr_col                              , & ! Input:  [real(r8) (:,:)   ]  fraction of potential immobilization for P (no units) 
          rf_decomp_cascade                =>    cnstate_vars%rf_decomp_cascade_col                     , & ! Input:  [real(r8) (:,:,:) ]  respired fraction in decomposition step (frac)
          pathfrac_decomp_cascade          =>    cnstate_vars%pathfrac_decomp_cascade_col               , & ! Input:  [real(r8) (:,:,:) ]  what fraction of C leaving a given pool passes through a given transition (frac)
 
          decomp_npools_vr                 =>    nitrogenstate_vars%decomp_npools_vr_col                , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+         decomp_ppools_vr                 =>    phosphorusstate_vars%decomp_ppools_vr_col              , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
          decomp_cpools_vr                 =>    carbonstate_vars%decomp_cpools_vr_col                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
 
@@ -147,7 +165,15 @@ contains
          net_nmin_vr                      =>    nitrogenflux_vars%net_nmin_vr_col                      , & ! Output: [real(r8) (:,:)   ]                                                  
          gross_nmin                       =>    nitrogenflux_vars%gross_nmin_col                       , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)          
          net_nmin                         =>    nitrogenflux_vars%net_nmin_col                         , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)            
-         
+         !!! add phosphorus  
+         decomp_cascade_ptransfer_vr      =>    phosphorusflux_vars%decomp_cascade_ptransfer_vr_col      , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
+         decomp_cascade_sminp_flux_vr     =>    phosphorusflux_vars%decomp_cascade_sminp_flux_vr_col     , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
+         potential_immob_p_vr             =>    phosphorusflux_vars%potential_immob_p_vr_col               , & ! Output: [real(r8) (:,:)   ]                                                  
+         gross_pmin_vr                    =>    phosphorusflux_vars%gross_pmin_vr_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
+         net_pmin_vr                      =>    phosphorusflux_vars%net_pmin_vr_col                      , & ! Output: [real(r8) (:,:)   ]                                                  
+         gross_pmin                       =>    phosphorusflux_vars%gross_pmin_col                       , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)          
+         net_pmin                         =>    phosphorusflux_vars%net_pmin_col                         , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)            
+
          decomp_cascade_hr_vr             =>    carbonflux_vars%decomp_cascade_hr_vr_col               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_k                         =>    carbonflux_vars%decomp_k_col                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
@@ -158,6 +184,7 @@ contains
       ! set initial values for potential C and N fluxes
       p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
       pmnf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8
+      pmpf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8    !! initial values for potential P fluxes
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
@@ -183,6 +210,32 @@ contains
          end if
       end do
 
+      !! calculate c:p ratios of applicable pools
+      do l = 1, ndecomp_pools
+         if ( floating_cp_ratio_decomp_pools(l) ) then
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  if ( decomp_ppools_vr(c,j,l) > 0._r8 ) then
+                     cp_decomp_pools(c,j,l) = decomp_cpools_vr(c,j,l) / decomp_ppools_vr(c,j,l)
+                  end if
+               end do
+            end do
+         else
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  cp_decomp_pools(c,j,l) = initial_cp_ratio(l)
+               end do
+            end do
+         end if
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               cp_decomp_pools_new(c,j,l) = initial_cp_ratio(l)
+            end do
+         end do
+      end do
       ! calculate the non-nitrogen-limited fluxes
       ! these fluxes include the  "/ dt" term to put them on a
       ! per second basis, since the rate constants have been
@@ -216,9 +269,30 @@ contains
                   else   ! CWD -> litter
                      pmnf_decomp_cascade(c,j,k) = 0._r8
                   end if
+                  !!! add phosphorus fluxes
+                  if ( .not. is_cwd( (cascade_receiver_pool(k)) ) ) then  !! not transition of cwd to litter
+
+                     if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
+                        ratio = 0._r8
+
+                        if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
+!                           ratio = cp_decomp_pools(c,j,cascade_receiver_pool(k))/cp_decomp_pools(c,j,cascade_donor_pool(k))
+                           ratio = cp_decomp_pools_new(c,j,cascade_receiver_pool(k))/cp_decomp_pools(c,j,cascade_donor_pool(k))
+                        endif
+
+                        pmpf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(c,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
+                             / cp_decomp_pools_new(c,j,cascade_receiver_pool(k)) )
+
+                     else   ! 100% respiration
+                        pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(c,j,k) / cp_decomp_pools(c,j,cascade_donor_pool(k))
+                     endif
+
+                  else   ! CWD -> litter
+                     pmpf_decomp_cascade(c,j,k) = 0._r8
+                  end if
+
                end if
             end do
-
          end do
       end do
 
@@ -228,6 +302,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             immob(c,j) = 0._r8
+            immob_p(c,j) = 0._r8
          end do
       end do
       do k = 1, ndecomp_cascade_transitions
@@ -239,6 +314,11 @@ contains
                else
                   gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - pmnf_decomp_cascade(c,j,k)
                end if
+               if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
+                  immob_p(c,j) = immob_p(c,j) + pmpf_decomp_cascade(c,j,k)
+               else
+                  gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
+               end if
             end do
          end do
       end do
@@ -247,6 +327,7 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             potential_immob_vr(c,j) = immob(c,j)
+            potential_immob_p_vr(c,j) = immob_p(c,j)
          end do
       end do
 
@@ -286,7 +367,8 @@ contains
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
            carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
-           nitrogenstate_vars, nitrogenflux_vars)
+           nitrogenstate_vars, nitrogenflux_vars,&
+           phosphorusstate_vars,phosphorusflux_vars)
 
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
@@ -312,6 +394,28 @@ contains
          end if
       end do
 
+
+      !! calculate c:p ratios of applicable pools
+      do l = 1, ndecomp_pools
+         if ( floating_cp_ratio_decomp_pools(l) ) then
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  if ( decomp_ppools_vr(c,j,l) > 0._r8 ) then
+                     cp_decomp_pools(c,j,l) = decomp_cpools_vr(c,j,l) / decomp_ppools_vr(c,j,l)
+                  end if
+               end do
+            end do
+         else
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  cp_decomp_pools(c,j,l) = initial_cp_ratio(l)
+               end do
+            end do
+         end if
+      end do
+
       ! upon return from CNAllocation, the fraction of potential immobilization
       ! has been set (cnstate_vars%fpi_vr_col). now finish the decomp calculations.
       ! Only the immobilization steps are limited by fpi_vr (pmnf > 0)
@@ -324,16 +428,33 @@ contains
                c = filter_soilc(fc)
 
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
-                  if ( pmnf_decomp_cascade(c,j,k) > 0._r8 ) then
-                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
+                  if ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) > 0._r8 ) then    ! N and P co-limitation
+                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) ) 
+                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
                      if (.not. use_nitrif_denitrif) then
                         sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
                      end if
-                  else
+                  elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation 
+                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
+                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
+                     if (.not. use_nitrif_denitrif) then
+                        sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
+                     end if
+                  elseif ( pmnf_decomp_cascade(c,j,k) < 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation 
+                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_p_vr(c,j)
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
+                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
+
                      if (.not. use_nitrif_denitrif) then
                         sminn_to_denit_decomp_cascade_vr(c,j,k) = -CNDecompParamsInst%dnp * pmnf_decomp_cascade(c,j,k)
                      end if
+                  elseif ( pmnf_decomp_cascade(c,j,k) < 0._r8 .and. pmpf_decomp_cascade(c,j,k) <=  0._r8 ) then  ! No limitation 
+                     if (.not. use_nitrif_denitrif) then
+                        sminn_to_denit_decomp_cascade_vr(c,j,k) = -CNDecompParamsInst%dnp * pmnf_decomp_cascade(c,j,k)
+                     end if
+
                   end if
                   decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
                   decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(c,j,k)
@@ -342,23 +463,35 @@ contains
                   else
                      decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   endif
+                  !!! phosphorus fluxes
+                  if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
+                     decomp_cascade_ptransfer_vr(c,j,k) = p_decomp_cpool_loss(c,j,k) / cp_decomp_pools(c,j,cascade_donor_pool(k))
+                  else
+                     decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
+                  endif
                   if ( cascade_receiver_pool(k) /= 0 ) then
                      decomp_cascade_sminn_flux_vr(c,j,k) = pmnf_decomp_cascade(c,j,k)
+                     decomp_cascade_sminp_flux_vr(c,j,k) = pmpf_decomp_cascade(c,j,k)
                   else  ! keep sign convention negative for terminal pools
                      decomp_cascade_sminn_flux_vr(c,j,k) = - pmnf_decomp_cascade(c,j,k)
+                     decomp_cascade_sminp_flux_vr(c,j,k) = - pmpf_decomp_cascade(c,j,k)
                   endif
                   net_nmin_vr(c,j) = net_nmin_vr(c,j) - pmnf_decomp_cascade(c,j,k)
+                  net_pmin_vr(c,j) = net_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
                else
                   decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
+                  decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
                   if (.not. use_nitrif_denitrif) then
                      sminn_to_denit_decomp_cascade_vr(c,j,k) = 0._r8
                   end if
                   decomp_cascade_sminn_flux_vr(c,j,k) = 0._r8
+                  decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                end if
 
             end do
          end do
       end do
+
 
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
@@ -397,6 +530,8 @@ contains
             c = filter_soilc(fc)
             net_nmin(c) = net_nmin(c) + net_nmin_vr(c,j) * dzsoi_decomp(j)
             gross_nmin(c) = gross_nmin(c) + gross_nmin_vr(c,j) * dzsoi_decomp(j)   
+            net_pmin(c) = net_pmin(c) + net_pmin_vr(c,j) * dzsoi_decomp(j)
+            gross_pmin(c) = gross_pmin(c) + gross_pmin_vr(c,j) * dzsoi_decomp(j)   
          end do
       end do
 

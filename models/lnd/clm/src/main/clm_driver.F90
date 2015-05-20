@@ -50,6 +50,7 @@ module clm_driver
   use CNVegStructUpdateMod   , only : CNVegStructUpdate 
   use CNAnnualUpdateMod      , only : CNAnnualUpdate
   use CNBalanceCheckMod      , only : BeginCBalance, BeginNBalance, CBalanceCheck, NBalanceCheck
+  use CNBalanceCheckMod      , only : BeginPBalance, PBalanceCheck
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   use CNFireMod              , only : CNFireInterp
   use CNDVDriverMod          , only : CNDVDriver, CNDVHIST
@@ -80,6 +81,8 @@ module clm_driver
   use clm_initializeMod      , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
   use clm_initializeMod      , only : nitrogenstate_vars
   use clm_initializeMod      , only : nitrogenflux_vars
+  use clm_initializeMod      , only : phosphorusstate_vars
+  use clm_initializeMod      , only : phosphorusflux_vars
   use clm_initializeMod      , only : dgvs_vars
   use clm_initializeMod      , only : crop_vars
   use clm_initializeMod      , only : cnstate_vars
@@ -262,6 +265,13 @@ contains
                filter(nc)%num_soilc, filter(nc)%soilc, &
                nitrogenstate_vars)
 
+          
+
+          call BeginPBalance(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               phosphorusstate_vars)
+
+
           call carbonflux_vars%ZeroDWT(bounds_clump)
           if (use_c13) then
              call c13_carbonflux_vars%ZeroDWT(bounds_clump)
@@ -270,9 +280,11 @@ contains
              call c14_carbonflux_vars%ZeroDWT(bounds_clump)
           end if
           call nitrogenflux_vars%ZeroDWT(bounds_clump)
+          call phosphorusflux_vars%ZeroDWT(bounds_clump)
 
           call carbonstate_vars%ZeroDWT(bounds_clump)
           call nitrogenstate_vars%ZeroDWT(bounds_clump)
+          call phosphorusstate_vars%ZeroDWT(bounds_clump)
 
           call t_stopf('begcnbal')
        end if
@@ -330,7 +342,9 @@ contains
     if (use_cn) then
        call t_startf('ndep_interp')
        ! PET: switching CN timestep
+#ifndef CPL_BYPASS
        call ndep_interp(bounds_proc, atm2lnd_vars)
+#endif
        call CNFireInterp(bounds_proc)
        call t_stopf('ndep_interp')
     end if
@@ -663,7 +677,8 @@ contains
                   nitrogenflux_vars, nitrogenstate_vars,                        &
                   atm2lnd_vars, waterstate_vars, waterflux_vars,                &
                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
-                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars)
+                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+                  phosphorusflux_vars,phosphorusstate_vars)
 
              call CNAnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -679,6 +694,7 @@ contains
                      filter(nc)%num_nolakep, filter(nc)%nolakep, &
                      waterstate_vars, canopystate_vars)
              end if
+             call t_stopf('ecosysdyn')
 
           end if  ! end of if-use_cn
 
@@ -700,8 +716,6 @@ contains
           call EDbio_vars%SetValues( 0._r8 )
           
        end if  ! end of if-use_ed
-
-       call t_stopf('ecosysdyn')
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')
@@ -754,7 +768,8 @@ contains
                   c13_carbonflux_vars, c13_carbonstate_vars,            &
                   c14_carbonflux_vars, c14_carbonstate_vars, dgvs_vars, &
                   nitrogenflux_vars, nitrogenstate_vars,                &
-                  waterstate_vars, waterflux_vars, frictionvel_vars, canopystate_vars)
+                  waterstate_vars, waterflux_vars, frictionvel_vars, canopystate_vars,&
+                  phosphorusflux_vars,phosphorusstate_vars)
 
              if (doalb) then   
                 call CNVegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp, &
@@ -788,6 +803,11 @@ contains
                 call NBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      nitrogenstate_vars, nitrogenflux_vars)
+
+
+                call PBalanceCheck(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     phosphorusstate_vars, phosphorusflux_vars)
 
                 call t_stopf('cnbalchk')
              end if
@@ -1034,7 +1054,8 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars, rdate=rdate )
+               waterflux_vars, waterstate_vars, EDbio_vars,&
+               phosphorusstate_vars,phosphorusflux_vars,rdate=rdate)
 
           call t_stopf('clm_drv_io_wrest')
        end if
@@ -1354,7 +1375,9 @@ contains
     else
 
        if (masterproc) then
+#ifndef CPL_BYPASS
           write(iulog,*)'clm: completed timestep ',nstep
+#endif
           call shr_sys_flush(iulog)
        end if
 

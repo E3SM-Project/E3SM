@@ -66,6 +66,13 @@ module CNStateType
      real(r8) , pointer :: fpi_col                     (:)     ! col fraction of potential immobilization (no units) 
      real(r8),  pointer :: fpg_col                     (:)     ! col fraction of potential gpp (no units)
 
+     !!! add phosphorus  -X. YANG
+
+     integer  ,pointer  :: isoilorder                  (:)     ! col global soil order data
+     real(r8) , pointer :: fpi_p_vr_col                (:,:)   ! col fraction of potential immobilization (no units) 
+     real(r8) , pointer :: fpi_p_col                   (:)     ! col fraction of potential immobilization (no units) 
+     real(r8),  pointer :: fpg_p_col                   (:)     ! col fraction of potential gpp (no units)
+
      real(r8) , pointer :: rf_decomp_cascade_col       (:,:,:) ! col respired fraction in decomposition step (frac)
      real(r8) , pointer :: pathfrac_decomp_cascade_col (:,:,:) ! col what fraction of C leaving a given pool passes through a given transition (frac) 
      real(r8) , pointer :: nfixation_prof_col          (:,:)   ! col (1/m) profile for N fixation additions 
@@ -121,6 +128,14 @@ module CNStateType
      real(r8), pointer :: annmax_retransn_patch        (:)     ! patch annual max of retranslocated N pool (gN/m2)
      real(r8), pointer :: downreg_patch                (:)     ! patch fractional reduction in GPP due to N limitation (DIM)
      real(r8), pointer :: rc14_atm_patch               (:)     ! patch C14O2/C12O2 in atmosphere
+
+
+     !!! add phosphorus  -X. YANG
+     real(r8), pointer :: p_allometry_patch            (:)     ! patch P allocation index (DIM)
+     real(r8), pointer :: tempmax_retransp_patch       (:)     ! patch temporary annual max of retranslocated P pool (gP/m2)
+     real(r8), pointer :: annmax_retransp_patch        (:)     ! patch annual max of retranslocated P pool (gP/m2)
+
+
 
      integer           :: CropRestYear                        ! restart year from initial conditions file - increment as time elapses
 
@@ -209,6 +224,11 @@ contains
     allocate(this%fpi_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_vr_col          (:,:) = nan
     allocate(this%fpi_col             (begc:endc))                   ; this%fpi_col             (:)   = nan
     allocate(this%fpg_col             (begc:endc))                   ; this%fpg_col             (:)   = nan
+    !!! add phosphours related variables
+    allocate(this%isoilorder            (begc:endc))                   ; 
+    allocate(this%fpi_p_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_p_vr_col          (:,:) = nan
+    allocate(this%fpi_p_col             (begc:endc))                   ; this%fpi_p_col             (:)   = nan
+    allocate(this%fpg_p_col             (begc:endc))                   ; this%fpg_p_col             (:)   = nan
 
     allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); 
     this%rf_decomp_cascade_col(:,:,:) = nan
@@ -270,6 +290,12 @@ contains
     allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = nan
     allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = nan
     allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan
+
+
+    !! add phosphorus -X.YANG
+    allocate(this%p_allometry_patch           (begp:endp)) ;    this%p_allometry_patch           (:) = nan
+    allocate(this%tempmax_retransp_patch      (begp:endp)) ;    this%tempmax_retransp_patch      (:) = nan
+    allocate(this%annmax_retransp_patch       (begp:endp)) ;    this%annmax_retransp_patch       (:) = nan
 
   end subroutine InitAllocate
 
@@ -353,8 +379,12 @@ contains
     if ( nlevdecomp_full > 1 ) then
        this%fpi_col(begc:endc) = spval
        call hist_addfld1d (fname='FPI', units='proportion', &
-            avgflag='A', long_name='fraction of potential immobilization', &
+            avgflag='A', long_name='fraction of potential immobilization of nitrogen', &
             ptr_col=this%fpi_col)
+       this%fpi_p_col(begc:endc) = spval
+       call hist_addfld1d (fname='FPI_P', units='proportion', &
+            avgflag='A', long_name='fraction of potential immobilization of phosphorus', &
+            ptr_col=this%fpi_p_col)
     endif
 
     if (nlevdecomp > 1) then
@@ -364,13 +394,22 @@ contains
     endif
     this%fpi_vr_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='FPI'//trim(vr_suffix), units='proportion', type2d='levdcmp', & 
-         avgflag='A', long_name='fraction of potential immobilization', &
+         avgflag='A', long_name='fraction of potential immobilization of nitrogen', &
          ptr_col=this%fpi_vr_col)
+    this%fpi_p_vr_col(begc:endc,:) = spval
+    call hist_addfld_decomp (fname='FPI_P'//trim(vr_suffix), units='proportion', type2d='levdcmp', & 
+         avgflag='A', long_name='fraction of potential immobilization of phosphorus', &
+         ptr_col=this%fpi_p_vr_col)
 
     this%fpg_col(begc:endc) = spval
     call hist_addfld1d (fname='FPG', units='proportion', &
-         avgflag='A', long_name='fraction of potential gpp', &
+         avgflag='A', long_name='fraction of potential gpp due to N limitation', &
          ptr_col=this%fpg_col)
+
+    this%fpg_p_col(begc:endc) = spval
+    call hist_addfld1d (fname='FPG_P', units='proportion', &
+         avgflag='A', long_name='fraction of potential gpp due to P limitation', &
+         ptr_col=this%fpg_p_col)
 
     this%annsum_counter_col(begc:endc) = spval
     call hist_addfld1d (fname='ANNSUM_COUNTER', units='s', &
@@ -527,6 +566,25 @@ contains
          avgflag='A', long_name='fractional reduction in GPP due to N limitation', &
          ptr_patch=this%downreg_patch, default='inactive')
 
+
+    !! add phosphorus -X.YANG
+    this%p_allometry_patch(begp:endp) = spval
+    call hist_addfld1d (fname='P_ALLOMETRY', units='none', &
+         avgflag='A', long_name='P allocation index', &
+         ptr_patch=this%p_allometry_patch, default='inactive')
+
+    this%tempmax_retransp_patch(begp:endp) = spval
+    call hist_addfld1d (fname='TEMPMAX_RETRANSP', units='gP/m^2', &
+         avgflag='A', long_name='temporary annual max of retranslocated P pool', &
+         ptr_patch=this%tempmax_retransp_patch, default='inactive')
+
+    this%annmax_retransp_patch(begp:endp) = spval
+    call hist_addfld1d (fname='ANNMAX_RETRANSP', units='gP/m^2', &
+         avgflag='A', long_name='annual max of retranslocated P pool', &
+         ptr_patch=this%annmax_retransp_patch, default='inactive')
+
+
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -546,6 +604,7 @@ contains
     integer               :: g,l,c,p,n,j,m            ! indices
     real(r8) ,pointer     :: gdp (:)                  ! global gdp data (needs to be a pointer for use in ncdio)
     real(r8) ,pointer     :: peatf (:)                ! global peatf data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: soilorder_rdin (:)       ! global soil order data (needs to be a pointer for use in ncdio)
     integer  ,pointer     :: abm (:)                  ! global abm data (needs to be a pointer for use in ncdio)
     real(r8) ,pointer     :: gti (:)                  ! read in - fmax (needs to be a pointer for use in ncdio)
     integer               :: dimid                    ! dimension id
@@ -613,6 +672,23 @@ contains
     deallocate(peatf)
 
     ! --------------------------------------------------------------------
+    ! Read in soilorder data 
+    ! --------------------------------------------------------------------
+
+!    allocate(soilorder_rdin(bounds%begg:bounds%endg))
+!    call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+!    end if
+    do c = bounds%begc, bounds%endc
+       g = col%gridcell(c)
+!       isoilorder(c) = soilorder_rdin(g)
+       this%isoilorder(c) = 12
+    end do
+!    deallocate(soilorder_rdin)
+
+
+    ! --------------------------------------------------------------------
     ! Read in ABM data 
     ! --------------------------------------------------------------------
 
@@ -654,8 +730,11 @@ contains
           this%farea_burned_col   (c) = spval
           this%fpi_col            (c) = spval
           this%fpg_col            (c) = spval
+          this%fpi_p_col          (c) = spval
+          this%fpg_p_col          (c) = spval
           do j = 1,nlevdecomp_full
              this%fpi_vr_col(c,j) = spval
+             this%fpi_p_vr_col(c,j) = spval
           end do
        end if
 
@@ -674,6 +753,7 @@ contains
 
           ! initialize fpi_vr so that levels below nlevsoi are not nans
           this%fpi_vr_col(c,1:nlevdecomp_full)          = 0._r8 
+          this%fpi_p_vr_col(c,1:nlevdecomp_full)          = 0._r8 
           this%som_adv_coef_col(c,1:nlevdecomp_full)    = 0._r8 
           this%som_diffus_coef_col(c,1:nlevdecomp_full) = 0._r8 
 
@@ -717,6 +797,11 @@ contains
           this%tempmax_retransn_patch(p)      = spval
           this%annmax_retransn_patch(p)       = spval
           this%downreg_patch(p)               = spval
+
+          this%p_allometry_patch(p)           = spval
+          this%tempmax_retransp_patch(p)      = spval
+          this%annmax_retransp_patch(p)       = spval
+ 
        end if
     end do
        
@@ -757,6 +842,10 @@ contains
           this%tempmax_retransn_patch(p)      = 0._r8
           this%annmax_retransn_patch(p)       = 0._r8
           this%downreg_patch(p)               = 0._r8
+
+          this%p_allometry_patch(p)           = 0._r8
+          this%tempmax_retransp_patch(p)      = 0._r8
+          this%annmax_retransp_patch(p)       = 0._r8
        end if
     end do
 
@@ -917,17 +1006,43 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%downreg_patch) 
 
+
+    call restartvar(ncid=ncid, flag=flag, varname='p_allometry', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%p_allometry_patch) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='tempmax_retransp', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%tempmax_retransp_patch) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='annmax_retransp', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%annmax_retransp_patch) 
+
     if (use_vertsoilc) then
        ptr2d => this%fpi_vr_col
        call restartvar(ncid=ncid, flag=flag, varname='fpi_vr', xtype=ncd_double,  &
             dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='fraction of potential immobilization',  units='unitless', &
+            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+       ptr2d => this%fpi_p_vr_col
+       call restartvar(ncid=ncid, flag=flag, varname='fpi_p_vr', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     else
        ptr1d => this%fpi_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
        call restartvar(ncid=ncid, flag=flag, varname='fpi', xtype=ncd_double,  &
             dim1name='column', &
-            long_name='fraction of potential immobilization',  units='unitless', &
+            long_name='fraction of potential immobilization of nitrogen',  units='unitless', &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       ptr1d => this%fpi_p_vr_col(:,1) ! nlevdecomp = 1; so treat as 1D variable
+       call restartvar(ncid=ncid, flag=flag, varname='fpi_p', xtype=ncd_double,  &
+            dim1name='column', &
+            long_name='fraction of potential immobilization of phosphorus',  units='unitless', &
             interpinic_flag='interp' , readvar=readvar, data=ptr1d)
     end if
 

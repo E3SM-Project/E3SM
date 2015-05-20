@@ -76,6 +76,15 @@ module EcophysConType
      real(r8), allocatable :: fleafcn       (:)   ! C:N during grain fill; leaf (crop)
      real(r8), allocatable :: ffrootcn      (:)   ! C:N during grain fill; froot (crop)
      real(r8), allocatable :: fstemcn       (:)   ! C:N during grain fill; stem (crop)
+
+
+     real(r8), allocatable :: leafcp        (:)   ! leaf C:P (gC/gP)
+     real(r8), allocatable :: lflitcp       (:)   ! leaf litter C:P (gC/gP)
+     real(r8), allocatable :: frootcp       (:)   ! fine root C:P (gC/gP)
+     real(r8), allocatable :: livewdcp      (:)   ! live wood (phloem and ray parenchyma) C:P (gC/gP)
+     real(r8), allocatable :: deadwdcp      (:)   ! dead wood (xylem and heartwood) C:P (gC/gP)
+     real(r8), allocatable :: graincp       (:)   ! grain C:P (gC/gP) for prognostic crop model
+
   end type Ecophyscon_type
 
   type(ecophyscon_type), public :: ecophyscon ! patch ecophysiological constants structure
@@ -94,6 +103,7 @@ contains
     use pftvarcon , only : flivewd, fcur, lf_flab, lf_fcel, lf_flig, fr_flab, fr_fcel, fr_flig
     use pftvarcon , only : leaf_long, evergreen, stress_decid, season_decid
     use pftvarcon , only : fertnitro, graincn, fleafcn, ffrootcn, fstemcn, dwood
+    use pftvarcon , only : leafcp,lflitcp, frootcp, livewdcp, deadwdcp,graincp
     !
     ! !LOCAL VARIABLES:
     integer :: m, ib
@@ -148,6 +158,14 @@ contains
     allocate(ecophyscon%ffrootcn      (0:numpft))        ; ecophyscon%ffrootcn     (:)   =nan
     allocate(ecophyscon%fstemcn       (0:numpft))        ; ecophyscon%fstemcn      (:)   =nan
 
+
+    allocate(ecophyscon%leafcp        (0:numpft))        ; ecophyscon%leafcp       (:)   =nan
+    allocate(ecophyscon%lflitcp       (0:numpft))        ; ecophyscon%lflitcp      (:)   =nan
+    allocate(ecophyscon%frootcp       (0:numpft))        ; ecophyscon%frootcp      (:)   =nan
+    allocate(ecophyscon%livewdcp      (0:numpft))        ; ecophyscon%livewdcp     (:)   =nan
+    allocate(ecophyscon%deadwdcp      (0:numpft))        ; ecophyscon%deadwdcp     (:)   =nan
+    allocate(ecophyscon%graincp       (0:numpft))        ; ecophyscon%graincp      (:)   =nan
+
     do m = 0,numpft
 
        if (m <= ntree) then
@@ -201,6 +219,14 @@ contains
        ecophyscon%fleafcn(m)      = fleafcn(m)
        ecophyscon%ffrootcn(m)     = ffrootcn(m)
        ecophyscon%fstemcn(m)      = fstemcn(m)
+
+       ecophyscon%leafcp(m)       = leafcp(m)
+       ecophyscon%lflitcp(m)      = lflitcp(m)
+       ecophyscon%frootcp(m)      = frootcp(m)
+       ecophyscon%livewdcp(m)     = livewdcp(m)
+       ecophyscon%deadwdcp(m)     = deadwdcp(m)
+       ecophyscon%graincp(m)      = graincp(m)
+
     end do
   end subroutine ecophysconInit
 
