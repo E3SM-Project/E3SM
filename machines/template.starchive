@@ -36,7 +36,6 @@ my %config;
 
 sub main
 {
-	$ENV{'maxthrds'} = 1;
 
     # First, get the configuration from every xml file.
     my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
