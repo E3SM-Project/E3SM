@@ -164,7 +164,21 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (mpas_pool_type), pointer :: am_test_compute_intervalPool
+      type (block_type), pointer :: block
+      real (kind=RKIND), pointer :: test_compute_interval_counter
+
       err = 0
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'am_test_compute_interval', am_test_compute_intervalPool)
+         call mpas_pool_get_array(am_test_compute_intervalPool, 'test_compute_interval_counter',test_compute_interval_counter)
+
+         test_compute_interval_counter = 0
+
+         block => block % next
+      end do
 
    end subroutine ocn_init_test_compute_interval!}}}
 
@@ -221,13 +235,14 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: am_test_compute_interval
+      character (len=StrKIND), pointer :: xtime
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
       integer :: iTracer, k, iCell
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
-      real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge
+      real (kind=RKIND), pointer :: test_compute_interval_counter
 
       err = 0
 
@@ -235,7 +250,19 @@ contains
 
       call mpas_timer_start("compute_test_compute_interval", .false., am_test_compute_intervalTimer)
 
-      write(6,*) 'in ocn_compute_test_compute_interval, time = '
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'am_test_compute_interval', am_test_compute_intervalPool)
+         call mpas_pool_get_array(am_test_compute_intervalPool, 'test_compute_interval_counter',test_compute_interval_counter)
+
+         test_compute_interval_counter = test_compute_interval_counter + 1
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+         block => block % next
+      end do
+
+      write(6,'(3A,F10.1)') 'in ocn_compute_test_compute_interval, time = ', trim(xtime), &
+         ',   test_compute_interval_counter = ',test_compute_interval_counter
 
       call mpas_timer_stop("test_compute_interval", am_test_compute_intervalTimer)
 
