@@ -177,7 +177,6 @@ sub submitSingleJob()
 	my $scriptname = shift;
 	my $dependentJobId = shift;
 	my $islastjob = shift;
-	print "in submitSingleJob: islastjob: $islastjob\n";
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
@@ -186,13 +185,7 @@ sub submitSingleJob()
 	{
 	    $submitargs = '' ;
 	}
-	#if(defined $dependentJobId)
-	#{
-	#	#$dependarg = $self->getDependString($dependentJobId);	
-    #    $submitargs = $self->getSubmitArguments($dependentJobId);
-	#	#print "depend arg: $dependarg\n";
-    #    print "submit args: $submitargs\n";
-	#}
+
 	if($islastjob)
 	{
 		$ENV{'islastjob'} = 'TRUE';
@@ -204,15 +197,21 @@ sub submitSingleJob()
 	print "Submitting CESM job script $scriptname\n";
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
     
-	print "submitting command $runcmd\n";
-	open (my $RUN, "-|", $runcmd) or die "cannot run the command \"$runcmd\"";
+	my $output;
 
-	my $output = <$RUN>;
+	eval {
+        open (my $RUN, "-|", $runcmd) // die "job submission failed, $!";
+        $output = <$RUN>;
+		close $RUN or die "job submission failed: |$?|, |$!|"
+	};
+	my $exitstatus = ($?>>8);
+	if($exitstatus != 0)
+	{
+		print "Job submission failed\n";
+		exit(1);
+	}
+		
 	chomp $output;	
-	#print "submit output: |$output|\n";
-	
-    #print "last dependent job number: $lastjobseqnum\n";
-    #print "last dependent job: ", @{$depqueue{$lastjobseqnum}} ,  "\n";
 	
 	my $jobid = $self->getJobID($output);
 	return $jobid;
