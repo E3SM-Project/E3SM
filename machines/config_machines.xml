@@ -1117,7 +1117,7 @@
         <executable>MP_PE_AFFINITY= MP_TASK_AFFINITY= MP_CPU_BIND_LIST= mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/hybrid_launch </executable>
       </mpirun>
       <mpirun compiler="gnu">
-        <executable></executable>
+        <executable>mpirun.lsf </executable>
       </mpirun>
 </machine>
 
