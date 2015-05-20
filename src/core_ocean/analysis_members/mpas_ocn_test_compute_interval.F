@@ -7,36 +7,18 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_TEST_AM
+!  ocn_test_compute_interval
 !
-!> \brief MPAS ocean analysis core member: TEST_AM
-!> \author FILL_IN_AUTHOR
-!> \date   FILL_IN_DATE
+!> \brief MPAS ocean analysis core member: test_compute_interval
+!> \author Mark Petersen
+!> \date   May 2015
 !> \details
-!>  MPAS ocean analysis core member: TEST_AM
-!>  In order to add a new analysis member, do the following:
-!>  1. Copy these to your new analysis member name:
-!>     cp mpas_ocn_TEST_AM.F mpas_ocn_your_new_name.F
-!>     cp Registry_ocn_TEST_AM.xml Registry_ocn_your_new_name.xml
-!>  
-!>  2. In those two new files, replace the following text:
-!>     TEST_AM, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically TEST_AM uses underscores, like your_new_name
-!>  
-!>  3. Add a #include line for your registry to
-!>     Registry_analysis_members.xml
-!>  
-!>  4. In mpas_ocn_analysis_driver.F, add calls for your analysis member
-!>     by copying lines with TEST_AM.
-!>  
-!>  5. In src/core_ocean/analysis_members/Makefile, add your
-!>     new analysis member everywhere you see
-!>     mpas_ocn_global_stats.o
+!>  MPAS ocean analysis core member: test_compute_interval
 !>  
 !
 !-----------------------------------------------------------------------
 
-module ocn_TEST_AM
+module ocn_test_compute_interval
 
    use mpas_grid_types
    use mpas_timer
@@ -63,11 +45,11 @@ module ocn_TEST_AM
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_TEST_AM, &
-             ocn_init_TEST_AM, &
-             ocn_compute_TEST_AM, &
-             ocn_restart_TEST_AM, &
-             ocn_finalize_TEST_AM
+   public :: ocn_setup_packages_test_compute_interval, &
+             ocn_init_test_compute_interval, &
+             ocn_compute_test_compute_interval, &
+             ocn_restart_test_compute_interval, &
+             ocn_finalize_test_compute_interval
 
    !--------------------------------------------------------------------
    !
@@ -75,7 +57,7 @@ module ocn_TEST_AM
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: am_TEST_AMTimer
+   type (timer_node), pointer :: am_test_compute_intervalTimer
 
 !***********************************************************************
 
@@ -83,7 +65,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_TEST_AM
+!  routine ocn_setup_packages_test_compute_interval
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -94,7 +76,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_TEST_AM(configPool, packagePool, err)!{{{
+   subroutine ocn_setup_packages_test_compute_interval(configPool, packagePool, err)!{{{
 
       use mpas_packages
 
@@ -125,32 +107,32 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: am_TEST_AMActive
+      logical, pointer :: am_test_compute_intervalActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'am_TEST_AMActive', am_TEST_AMActive)
+      call mpas_pool_get_package(packagePool, 'am_test_compute_intervalActive', am_test_compute_intervalActive)
 
       ! turn on package for this analysis member
-      am_TEST_AMActive = .true.
+      am_test_compute_intervalActive = .true.
 
-   end subroutine ocn_setup_packages_TEST_AM!}}}
+   end subroutine ocn_setup_packages_test_compute_interval!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_init_TEST_AM
+!  routine ocn_init_test_compute_interval
 !
 !> \brief   Initialize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    May 2015
 !> \details 
 !>  This routine conducts all initializations required for the 
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_TEST_AM(domain, err)!{{{
+   subroutine ocn_init_test_compute_interval(domain, err)!{{{
 
       use mpas_packages
 
@@ -184,22 +166,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_init_TEST_AM!}}}
+   end subroutine ocn_init_test_compute_interval!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_TEST_AM
+!  routine ocn_compute_test_compute_interval
 !
 !> \brief   Compute MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    May 2015
 !> \details 
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_TEST_AM(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_test_compute_interval(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -231,14 +213,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: am_TEST_AMPool
+      type (mpas_pool_type), pointer :: am_test_compute_intervalPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: am_TEST_AM
+      type (mpas_pool_type), pointer :: am_test_compute_interval
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -251,83 +233,28 @@ contains
 
       dminfo = domain % dminfo
 
-print *, 'in ocn_compute_TEST_AM'
+      call mpas_timer_start("compute_test_compute_interval", .false., am_test_compute_intervalTimer)
 
-      call mpas_timer_start("compute_TEST_AM", .false., am_TEST_AMTimer)
+      write(6,*) 'in ocn_compute_test_compute_interval, time = '
 
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'am_TEST_AM', am_TEST_AMPool)
+      call mpas_timer_stop("test_compute_interval", am_test_compute_intervalTimer)
 
-         ! Here are some example variables which may be needed for your analysis member
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
-
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
-
-         ! Computations which are functions of nCells, nEdges, or nVertices 
-         ! must be placed within this block loop
-         ! Here are some example loops
-         do iCell = 1,nCellsSolve
-            do k = 1, maxLevelCell(iCell)
-               do iTracer = 1, num_tracers
-               ! computations on tracers(iTracer,k, iCell)
-               end do
-            end do
-         end do
-
-         block => block % next
-      end do
-
-      ! mpi gather/scatter calls may be placed here.
-      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
-!      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
-!      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
-!      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
-
-      ! Even though some variables do not include an index that is decomposed amongst 
-      ! domain partitions, we assign them within a block loop so that all blocks have the
-      ! correct values for writing output.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'am_TEST_AM', am_TEST_AMPool)
-
-         ! assignment of final am_TEST_AM variables could occur here.
-
-         block => block % next
-      end do
-
-      call mpas_timer_stop("TEST_AM", am_TEST_AMTimer)
-
-   end subroutine ocn_compute_TEST_AM!}}}
+   end subroutine ocn_compute_test_compute_interval!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_TEST_AM
+!  routine ocn_restart_test_compute_interval
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    May 2015
 !> \details 
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_TEST_AM(domain, err)!{{{
+   subroutine ocn_restart_test_compute_interval(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -359,22 +286,22 @@ print *, 'in ocn_compute_TEST_AM'
 
       err = 0
 
-   end subroutine ocn_restart_TEST_AM!}}}
+   end subroutine ocn_restart_test_compute_interval!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_TEST_AM
+!  routine ocn_finalize_test_compute_interval
 !
 !> \brief   Finalize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    May 2015
 !> \details 
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_TEST_AM(domain, err)!{{{
+   subroutine ocn_finalize_test_compute_interval(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -406,8 +333,8 @@ print *, 'in ocn_compute_TEST_AM'
 
       err = 0
 
-   end subroutine ocn_finalize_TEST_AM!}}}
+   end subroutine ocn_finalize_test_compute_interval!}}}
 
-end module ocn_TEST_AM
+end module ocn_test_compute_interval
 
 ! vim: foldmethod=marker

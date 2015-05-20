@@ -29,7 +29,7 @@ module ocn_analysis_driver
    use ocn_surface_area_weighted_averages
    use ocn_zonal_mean
    use ocn_okubo_weiss
-   use ocn_TEST_AM
+   use ocn_test_compute_interval
 
    implicit none
    private
@@ -116,7 +116,7 @@ contains
       logical, pointer :: config_use_zonal_mean 
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_TEST_AM
+      logical, pointer :: config_use_test_compute_interval
 
       err = 0
 
@@ -145,9 +145,9 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(configPool, 'config_use_TEST_AM', config_use_TEST_AM)
-      if (config_use_TEST_AM) then
-         call ocn_setup_packages_TEST_AM(configPool, packagePool, err_tmp)
+      call mpas_pool_get_config(configPool, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      if (config_use_test_compute_interval) then
+         call ocn_setup_packages_test_compute_interval(configPool, packagePool, err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -201,8 +201,8 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_TEST_AM
-      character (len=StrKIND), pointer :: config_TEST_AM_compute_interval
+      logical, pointer :: config_use_test_compute_interval
+      character (len=StrKIND), pointer :: config_test_compute_interval_compute_interval
       type (MPAS_Clock_type), pointer :: clock
       type (MPAS_Time_Type) :: startTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
@@ -236,13 +236,13 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_TEST_AM', config_use_TEST_AM)
-      if (config_use_TEST_AM) then
-         call ocn_init_TEST_AM(domain, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      if (config_use_test_compute_interval) then
+         call ocn_init_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
 
-         call mpas_pool_get_config(domain % configs, 'config_TEST_AM_compute_interval',config_TEST_AM_compute_interval)
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_TEST_AM_compute_interval, ierr=err_tmp)
+         call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_interval',config_test_compute_interval_compute_interval)
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_test_compute_interval_compute_interval, ierr=err_tmp)
          call mpas_add_clock_alarm(clock, TestAMAlarmID, startTime, alarmTimeStep, ierr=err_tmp)
 
       endif
@@ -300,7 +300,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg, config_AM_sfc_area_weighted_avg_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
-      logical, pointer :: config_use_TEST_AM, config_TEST_AM_compute_startup
+      logical, pointer :: config_use_test_compute_interval, config_test_compute_interval_compute_startup
 
       err = 0
 
@@ -343,11 +343,11 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_TEST_AM', config_use_TEST_AM)
-      call mpas_pool_get_config(domain % configs, 'config_TEST_AM_compute_startup', config_TEST_AM_compute_startup)
-      if (config_use_TEST_AM.and.config_TEST_AM_compute_startup) then
+      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_startup', config_test_compute_interval_compute_startup)
+      if (config_use_test_compute_interval.and.config_test_compute_interval_compute_startup) then
          call mpas_timer_start('io_write', .false.)
-         call ocn_compute_TEST_AM(domain, timeLevel, err_tmp)
+         call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -403,7 +403,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_TEST_AM
+      logical, pointer :: config_use_test_compute_interval
       type (MPAS_Clock_type), pointer :: clock
 
       err = 0
@@ -442,17 +442,17 @@ contains
          endif
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_TEST_AM', config_use_TEST_AM)
-      if (config_use_TEST_AM) then
+      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      if (config_use_test_compute_interval) then
          ! Compute analysis member when called for compute:
          if (mpas_is_alarm_ringing(clock, TestAMAlarmID, ierr=err_tmp)) then
             call mpas_reset_clock_alarm(clock, TestAMAlarmID, ierr=err_tmp)
-            call ocn_compute_TEST_AM(domain, timeLevel, err_tmp)
+            call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
          endif
 
          ! Compute analysis member just before output:
-         !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEST_AMOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-         !   call ocn_compute_TEST_AM(domain, timeLevel, err_tmp)
+         !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='test_compute_intervalOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         !   call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
          !endif
 
       endif
@@ -507,7 +507,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_TEST_AM
+      logical, pointer :: config_use_test_compute_interval
 
       err = 0
 
@@ -535,9 +535,9 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_TEST_AM', config_use_TEST_AM)
-      if (config_use_TEST_AM) then
-         call ocn_restart_TEST_AM(domain, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      if (config_use_test_compute_interval) then
+         call ocn_restart_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
@@ -594,7 +594,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg 
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_TEST_AM
+      logical, pointer :: config_use_test_compute_interval
 
       err = 0
 
@@ -642,13 +642,13 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_TEST_AM', config_use_TEST_AM)
-      if (config_use_TEST_AM) then
+      call mpas_pool_get_config(ocnConfigs, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      if (config_use_test_compute_interval) then
           call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(stream_manager, streamID='TEST_AMOutput', ierr=err_tmp)
+          call mpas_stream_mgr_write(stream_manager, streamID='test_compute_intervalOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEST_AMOutput', ierr=err_tmp)
+          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='test_compute_intervalOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
          err = ior(err, err_tmp)
       endif
@@ -703,7 +703,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_TEST_AM
+      logical, pointer :: config_use_test_compute_interval
 
       err = 0
 
@@ -731,9 +731,9 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_TEST_AM', config_use_TEST_AM)
-      if (config_use_TEST_AM) then
-         call ocn_finalize_TEST_AM(domain, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
+      if (config_use_test_compute_interval) then
+         call ocn_finalize_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
