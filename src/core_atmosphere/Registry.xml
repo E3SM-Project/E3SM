@@ -82,7 +82,6 @@
                 <nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"  in_defaults="false"/>
                 <nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
-                <nml_option name="config_pio_format"                 type="character"     default_value="pnetcdf"            in_defaults="false"/>
         </nml_record>
 
         <nml_record name="decomposition" in_defaults="true">
