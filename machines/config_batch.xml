@@ -47,18 +47,18 @@
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
     <directives>
-      <directive                       > -n {_task_count_} </directive>
-      <directive                       > -R "span[ptile={_ptile_}]"</directive>
-      <directive                       > -q {_queue_} </directive>
+      <directive                       > -n {{ task_count }} </directive>
+      <directive                       > -R "span[ptile={{ ptile }}]"</directive>
+      <directive                       > -q {{ queue }} </directive>
       <directive                       > -N  </directive>
-      <directive default="poe"         > -a {_poe_} </directive>
-      <!-- <directive default="n"           > -x {_queue_exclusive_} </directive> -->
-      <directive            > -x {_queue_exclusive_} </directive>
-      <directive default="cesm.stdout" > -o {_cesm_stdout_}.%J  </directive>
-      <directive default="cesm.stderr" > -e {_cesm_stderr_}.%J  </directive>
-      <directive                       > -J {_job_id_} </directive>
-      <directive                       > -W {_wall_time_} </directive>
-      <directive                       > -P {_account_}  </directive>
+      <directive default="poe"         > -a {{ poe }} </directive>
+      <!-- <directive default="n"           > -x {{ queue_exclusive }} </directive> -->
+      <directive            > -x {{ queue_exclusive }} </directive>
+      <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
+      <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
+      <directive                       > -J {{ job_id }} </directive>
+      <directive                       > -W {{ wall_time }} </directive>
+      <directive                       > -P {{ account }}  </directive>
     </directives>
   </batch_system>
 
@@ -69,14 +69,14 @@
     <jobid_pattern>^(\d+)\.</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <directives>
-      <directive> -N {_job_id_}</directive>
-      <directive> -q {_queue_}</directive>
-      <directive> -l walltime={_wall_time_}</directive>
-      <directive default="n"> -r {_rerunnable_} </directive>
-      <directive> -j oe {_output_error_path_} </directive>
-      <directive default="ae"  > -m {_mail_options_} </directive>
-      <directive default="/bin/bash" > -S {_shell_} -V </directive>
-      <directive> -P {_account_} </directive>
+      <directive> -N {{ job_id }}</directive>
+      <directive> -q {{ queue }}</directive>
+      <directive> -l walltime={{ wall_time }}</directive>
+      <directive default="n"> -r {{ rerunnable }} </directive>
+      <directive> -j oe {{ output_error_path }} </directive>
+      <directive default="ae"  > -m {{ mail_options }} </directive>
+      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive> -P {{ account }} </directive>
     </directives>
   </batch_system>
 
@@ -87,47 +87,47 @@
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
      <directives>
-       <directive> -J {_job_id_}</directive>
-       <directive> --time={_wall_time_} </directive>
-       <directive> --nodes={_num_nodes_}</directive>
-       <directive> --ntasks-per-node={_tasks_per_node_}</directive>
-       <directive> --qos={_queue_}</directive>
+       <directive> -J {{ job_id }}</directive>
+       <directive> --time={{ wall_time }} </directive>
+       <directive> --nodes={{ num_nodes }}</directive>
+       <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
+       <directive> --qos={{ queue }}</directive>
      </directives>
    </batch_system>
 
     <batch_system MACH="edison" version="x.y">
       <directives>
-	<directive>-l mppwidth={_mppwidth_}</directive>
+	<directive>-l mppwidth={{ mppwidth }}</directive>
       </directives>
     </batch_system> 
 
     <batch_system MACH="eos" version="x.y">
     <jobid_pattern>^(\d+)</jobid_pattern>
     <directives>
-      <directive>-A {_project_}</directive>
-      <directive>-l mppwidth={_mppwidth_}</directive>
-      <directive>-l  nodes={_num_nodes_}</directive>
+      <directive>-A {{ project }}</directive>
+      <directive>-l mppwidth={{ mppwidth }}</directive>
+      <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
    </batch_system> 
 
 
   <batch_system MACH="pleiades" version="x.y">
     <directives>
-      <directive> -W group_list={_project_} </directive>
+      <directive> -W group_list={{ project }} </directive>
     </directives>
   </batch_system>
 
 
   <batch_system MACH="bluewaters" version="x.y">
     <directives>
-      <directive>-A {_project_}</directive>
-      <directive>-l nodes={_num_nodes_}:ppn={_tasks_per_node_}:xe</directive>
+      <directive>-A {{ project }}</directive>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
     </directives>
    </batch_system>
    
   <batch_system MACH="goldbach" version="x.y">
     <directives>
-      <directive>-l nodes={_num_nodes_}:ppn={_tasks_per_node_}</directive>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
     </directives>
   </batch_system>
   

@@ -2,7 +2,7 @@
 #------------------------------------------------------------------------------
 # Batch system directives
 #------------------------------------------------------------------------------
-{_batchdirectives_}
+{{ batchdirectives }}
 use POSIX qw(strftime);
 use File::Path;
 use File::Copy;
@@ -13,8 +13,8 @@ use Data::Dumper;
 use Cwd;
 use Getopt::Long;
 my $scriptname = $0;
-my $caseroot = "{_caseroot_}";
-my $cimeroot = "{_cimeroot_}";
+my $caseroot = "{{ caseroot }}";
+my $cimeroot = "{{ cimeroot }}";
 chdir $caseroot;
 my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
@@ -27,13 +27,13 @@ require Module::ModuleLoader;
 require Batch::BatchUtils;
 
 # Set OMP_NUM_THREADS
-$ENV{'OMP_NUM_THREADS'} = {_thread_count_};
+$ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
 
 
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
 #------------------------------------------------------------------------------
-{_pedocumentation_}
+{{ pedocumentation }}
 # -------------------------------------------------------------------------
 # global data needed by the script, stuff like the max number of threads, 
 # -------------------------------------------------------------------------
@@ -291,7 +291,7 @@ sub runCESM()
 	my $localtime = localtime;
 	print "$localtime CESM EXECUTION BEGINS HERE\n";
 	# Run the model
-	{_mpirun_}
+	{{ mpirun }}
 	$localtime = localtime;
 	print "$localtime CESM EXECUTION HAS FINISHED\n";
 }

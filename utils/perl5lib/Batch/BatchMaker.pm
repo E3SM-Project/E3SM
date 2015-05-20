@@ -99,12 +99,12 @@ sub transformVars()
     {
         # loop through directive line, replacing each string enclosed with
         # double underscores with the necessary values.
-        while($line =~ /({_\w+_})/)
+        while($line =~ /({{ \w+ }})/)
         {
             my $needstransform = $1;
             my $var = $needstransform;
-            $var =~ s/{_//g;
-            $var =~ s/_}//g;
+            $var =~ s/{{ //g;
+            $var =~ s/ }}//g;
             print "needs transform: $needstransform\n";
             print "var : $var\n";
 
@@ -119,7 +119,7 @@ sub transformVars()
     $text = join("\n", @lines);
 	# recursively call this function if we still have things to transform, 
 	# otherwise return the transformed text
-    if($text =~ /{_\w+_}/)
+    if($text =~ /{{ \w+ }}/)
     {
         $self->transformVars($text);
     }
@@ -292,12 +292,12 @@ sub setBatchDirectives()
 		my $dvalue = $directive->textContent();
 		my $valueToUse = undef;
 		
-		while($dvalue =~ /({_\w+_})/)
+		while($dvalue =~ /({{ \w+ }})/)
 		{
 			my $matchedString = $1;
 			my $stringToReplace = $matchedString;
-			$stringToReplace =~ s/{_//g;
-			$stringToReplace =~ s/_}//g;
+			$stringToReplace =~ s/{{ //g;
+			$stringToReplace =~ s/ }}//g;
 			my $actualValue;
 			
 			if(! defined $self->{$stringToReplace} && $directive->hasAttribute('default'))
@@ -580,13 +580,14 @@ sub setCESMRun()
 			# actual value if defined, the default value if defined and no
 			# instance variable exists, or discard the argument completely 
 			# if neither are defined. 
-			while($argValue =~ /({_\w+_})/)
+			while($argValue =~ /({{ \w+ }})/)
 			{
 				# get the matched string, and get the
 				# string we need to replace without the underscores. 
 				my $matchedString = $1;
 				my $stringToReplace = $matchedString;
-				$stringToReplace =~ s/__//g;
+				$stringToReplace =~ s/{{ //g;
+				$stringToReplace =~ s/ }}//g;
 				print "string to replace: $stringToReplace\n";
 
 				# the actual argument is stored here, 
@@ -775,7 +776,7 @@ sub transformVars()
     #print $self->{'cimeroot'} . "\n";
     #print Dumper $self;
     #print "Mira transformVars\n";
-    $text =~ s/{_batchdirectives_}//g;
+    $text =~ s/{{ batchdirectives }}//g;
     $text = $self->SUPER::transformVars($text);
 }
 
@@ -833,7 +834,7 @@ sub transformVars()
     my $self = shift;
     my $text = shift;
     print "Cetus transformVars\n";
-    $text =~ s/{_batchdirectives_}//g;
+    $text =~ s/{{ batchdirectives }}//g;
     $text = $self->SUPER::transformVars($text);
 }
 
@@ -889,7 +890,7 @@ sub transformVars()
 {
     my $self = shift;
     my $text = shift;
-    $text =~ s/{_batchdirectives_}//g;
+    $text =~ s/{{ batchdirectives }}//g;
     $text = $self->SUPER::transformVars($text);
 }
 
