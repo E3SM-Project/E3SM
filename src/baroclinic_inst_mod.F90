@@ -235,6 +235,30 @@ if (qsize>=3) then
 endif
 
 
+! if we run a test case with 10 tracers, assume we want to reproduce the AVEC benchmarks
+! using SJ's test tracers:
+if (qsize==10) then
+   do ie=nets,nete
+      do j=1,np
+      do i=1,np
+         term = sin(9.*elem(ie)%spherep(i,j)%lon)*sin(9.*elem(ie)%spherep(i,j)%lat)
+
+         do k=1,nlev
+         do idex=4,qsize
+            if ( term < 0. ) then
+               elem(ie)%state%Q(i,j,k,idex) = 0
+            else
+               elem(ie)%state%Q(i,j,k,idex) = 1
+            endif
+         enddo
+         enddo
+      enddo
+      enddo
+   enddo
+endif
+
+
+
 !=======================================================================================================!
  end subroutine 
 
