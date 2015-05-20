@@ -567,7 +567,9 @@
           write(0,*) 'Troubles finding level ', pconst,' above ground.'
           write(0,*) 'Problems first occur at (',icol,')'
           write(0,*) 'Surface pressure = ',p(1,icol),' hPa.'
-          call mpas_dmpar_global_abort('ERROR: Error_in_finding_100_hPa_up')
+          write(0,*) '*** MSLP field will not be computed'
+          slp(:) = 0.0
+          return
        end if
    
     end do
