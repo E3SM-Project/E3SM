@@ -539,20 +539,17 @@ contains
       do iCell=1,nCellsSolve
         if(latCell(iCell).lt. 60.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(6,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt. 15.0*dtr) workMask(iCell) = 0.0_RKIND
         if(latCell(iCell).lt.-15.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(6,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt.-50.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(6,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
@@ -561,7 +558,6 @@ contains
         if(lonCell(iCell).lt.210.0*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.270.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(6,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
@@ -570,7 +566,6 @@ contains
         if(lonCell(iCell).lt.160.0*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.210.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(6,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
@@ -579,10 +574,8 @@ contains
         if(lonCell(iCell).lt.190.0*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.240.0*dtr) workMask(iCell) = 0.0_RKIND
       enddo
-      write(6,*) ' Nino 3.4 ', sum(workMask)
    else
       ! global (do nothing!)
-      write(6,*) ' Global ', sum(workMask)
    endif
 
    end subroutine compute_mask!}}}
