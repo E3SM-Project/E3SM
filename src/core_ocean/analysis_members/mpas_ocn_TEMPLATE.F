@@ -33,6 +33,11 @@
 !>     new analysis member everywhere you see
 !>     mpas_ocn_global_stats.o
 !>  
+!>  6. Make sure that in Registry_ocn_your_new_name.xml
+!>     <stream name="SHORTTEMPLATEOutput"
+!>     is sufficiently short, i.e. 50 characters or less.  This name
+!>     does not need to match any others.
+!>  
 !
 !-----------------------------------------------------------------------
 

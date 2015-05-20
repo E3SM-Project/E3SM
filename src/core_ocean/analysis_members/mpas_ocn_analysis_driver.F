@@ -61,7 +61,7 @@ module ocn_analysis_driver
    !
    !--------------------------------------------------------------------
 
-   character (len=*), parameter :: TestAMAlarmID = 'TestAMAlarm'
+   character (len=*), parameter :: test_compute_intervalAlarmID = 'test_compute_intervalAlarm'
 
 !***********************************************************************
 
@@ -239,11 +239,15 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
       if (config_use_test_compute_interval) then
          call ocn_init_test_compute_interval(domain, err_tmp)
+
          err = ior(err, err_tmp)
 
          call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_interval',config_test_compute_interval_compute_interval)
          call mpas_set_timeInterval(alarmTimeStep, timeString=config_test_compute_interval_compute_interval, ierr=err_tmp)
-         call mpas_add_clock_alarm(clock, TestAMAlarmID, startTime, alarmTimeStep, ierr=err_tmp)
+         ! Use startTime+alarmTimeStep for start time so that compute is not called at beginning.  This means
+         ! compute_startup must be true to compute at the beginning.
+         ! WARNING: right now compute time is tied to the restart time for this particular simulation.
+         call mpas_add_clock_alarm(clock, test_compute_intervalAlarmID, startTime+alarmTimeStep, alarmTimeStep, ierr=err_tmp)
 
       endif
 
@@ -445,8 +449,8 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
       if (config_use_test_compute_interval) then
          ! Compute analysis member when called for compute:
-         if (mpas_is_alarm_ringing(clock, TestAMAlarmID, ierr=err_tmp)) then
-            call mpas_reset_clock_alarm(clock, TestAMAlarmID, ierr=err_tmp)
+         if (mpas_is_alarm_ringing(clock, test_compute_intervalAlarmID, ierr=err_tmp)) then
+            call mpas_reset_clock_alarm(clock, test_compute_intervalAlarmID, ierr=err_tmp)
             call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
          endif
 
