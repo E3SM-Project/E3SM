@@ -196,10 +196,10 @@ program prim_main
   if (hybrid%masterthread) then 
      open(unit=447,file=trim(output_dir) // "/output_dir_test",iostat=ierr)
      if ( ierr==0 ) then
-        print *,'Directory ',output_dir, ' does exist: initialing IO'
+        print *,'Directory ',trim(output_dir), ' does exist: initialing IO'
         close(447)
      else
-        print *,'Error creating file in directory ',output_dir
+        print *,'Error creating file in directory ',trim(output_dir)
         call haltmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
      end if
   endif
