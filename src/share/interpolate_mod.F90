@@ -118,7 +118,7 @@ module interpolate_mod
 
   ! static data, used by bilin_phys2gll()
   ! shared by all threads.  only allocate if subroutine will be used
-  type (ghostBuffertr_t)                      :: ghostbuf_tr
+  type (ghostBuffertr_t), save               :: ghostbuf_tr
   integer  :: nphys_init=0
   integer  :: index_l(np),index_r(np)
   real(kind=real_kind),allocatable :: weights(:,:,:,:,:) ! np,np,2,2,nelemd
