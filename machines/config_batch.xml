@@ -124,6 +124,14 @@
       <directive>-l nodes={_num_nodes_}:ppn={_tasks_per_node_}:xe</directive>
     </directives>
    </batch_system>
+   
+  <batch_system MACH="goldbach" version="x.y">
+    <directives>
+      <directive>-l nodes={_num_nodes_}:ppn={_tasks_per_node_}</directive>
+    </directives>
+  </batch_system>
+  
+
 
 </config_batch>
 
