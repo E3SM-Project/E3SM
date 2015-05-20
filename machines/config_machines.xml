@@ -200,14 +200,13 @@
              </walltimes>
          </batch_system>
          <mpirun mpilib="default">
-             <executable name="aprun">
+             <executable>aprun</executable>
              <arguments>
                 <arg name="num_tasks"> -n {{ num_tasks }}</arg>
-                <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
+                <!-- <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg> -->
                 <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
                 <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
-             </executable>
          </mpirun>
 </machine>
 
