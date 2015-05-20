@@ -10,28 +10,52 @@
 #SBATCH --time=1:00:00
 #
 
+set wdir = ~/scratch1/sweqx
+set HOMME = ~/codes/homme
+set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
+set input = $HOMME/test/sw_conservative
 
-set wdir = ~/scratch1/swirl
-set src = ~/codes/homme/build/sweqx
-set input = ~/codes/homme/test/sw_conservative
-set NCPU = 1
+set builddir = $wdir/bld
+set rundir = $wdir/swtc2ref
+mkdir -p $rundir
+mkdir -p $wdir/bld
+cd $builddir
 
-if ( ${?PBS_NODEFILE} ) then
-   set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
-endif
+set NP = 4
+set limiter = 8
+
+
+set NCPU = 4
 if ( ${?SLURM_NNODES} ) then
-   # SLURM_NNODES  = number of nodes
-   # hard to tell how many cores per nodes
    # set NCPU to zero, and mpirun will use the max allowed
    set NCPU = 0
 endif
 echo NCPU = $NCPU
 
 
-set build = 0
-set make = 0
-set NP = 7
-set limiter = 0
+#configure the model
+set conf = 1
+set make = 1
+#cmake:
+cd $builddir
+if ( $conf == 1 ) then
+   rm -rf CMakeFiles CMakeCache.txt
+   cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=$NP $HOMME
+   make -j4 clean
+   make -j4 sweqx
+   exit
+endif
+if ( $make == 1 ) then
+   make -j4 sweqx
+    if ($status) exit
+endif
+set exe = $builddir/src/sweqx/sweqx
+
+
+
+cd $rundir
+mkdir movies
+
 
 
 set nu = 0
@@ -92,25 +116,6 @@ endif
 
 
 
-if ( $build == 1 ) then
-   cd $src
-   ./configure   NP=$NP PLEV=4  \
-    --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH
-   make depends
-   make -j4 clean
-   make -j4 sweqx
-   mv sweqx sweqx.swirl
-   exit
-endif
-if ( $make == 1 ) then
-   cd src
-   make -j4 sweqx
-   if ($status) exit
-   mv sweqx sweqx.swirl
-endif
-
-
-
 # output units: 0,1,2 = timesteps, days, hours
 set OUTUNITS = 2  
 set OUTFREQ =  30  # output 0,1.25,2.5,3.75,5.0 days
@@ -159,7 +164,7 @@ sed s/statefreq.\*/"statefreq = $sfreq"/  \
 > input.nl
 
 date
-mpirun -np $NCPU $src/sweqx.swirl < input.nl | tee  sweq.out
+mpirun -np $NCPU $exe < input.nl | tee  sweq.out
 date
 # if timing was turned on, get sweq cost:
 grep sweq HommeSWTime | sort | tail -1
