@@ -20,13 +20,13 @@ module glc_elevclass_mod
   ! Public interfaces
   !--------------------------------------------------------------------------
 
-  public :: glc_elevclass_init   ! initialize GLC elevation class data
-  public :: glc_elevclass_clean  ! deallocate memory allocated here
+  public :: glc_elevclass_init            ! initialize GLC elevation class data
+  public :: glc_elevclass_clean           ! deallocate memory allocated here
   public :: glc_get_num_elevation_classes ! get the number of elevation classes
-  public :: glc_get_elevation_class ! get the elevation class index for a given elevation
-  public :: glc_mean_elevation_virtual ! get the mean elevation of a virtual elevation class
-  public :: glc_elevclass_as_string ! returns a string corresponding to a given elevation class
-  public :: glc_errcode_to_string ! convert an error code into a string describing the error
+  public :: glc_get_elevation_class       ! get the elevation class index for a given elevation
+  public :: glc_mean_elevation_virtual    ! get the mean elevation of a virtual elevation class
+  public :: glc_elevclass_as_string       ! returns a string corresponding to a given elevation class
+  public :: glc_errcode_to_string         ! convert an error code into a string describing the error
   
   interface glc_elevclass_init
      module procedure glc_elevclass_init_default
