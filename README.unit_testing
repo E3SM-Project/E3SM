@@ -1,8 +1,2 @@
-# To run all unit tests on yellowstone, run the following commands:
-
-# Do this once per login
-module load cmake
-unit_test_dir=/glade/scratch/$USER/unit_tests_cime
-
-# Here is the main command
-CTEST_OUTPUT_ON_FAILURE=1 tools/unit_testing/run_tests.py --build-dir=$unit_test_dir --test-spec-dir=. --compiler=intel  --build-type=CESM_DEBUG
+# To run all CIME unit tests on yellowstone, run the following command:
+tools/unit_testing/run_tests.py --test-spec-dir=. --compiler=intel
