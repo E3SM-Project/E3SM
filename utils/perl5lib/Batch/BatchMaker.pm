@@ -45,9 +45,9 @@ sub new
 		config => $params{'config'}           || undef,
 		machine     => $params{'machine'}     || undef,
 		scriptsroot => $params{'scriptsroot'} || undef,
-	        cimeroot  => $params{'cimeroot'} || undef,
-                machroot    => $params{'machroot'}    || ".",
-                mpilib      => $params{'mpilib'}      || undef,
+	    cimeroot  => $params{'cimeroot'} || undef,
+        machroot    => $params{'machroot'}    || ".",
+        mpilib      => $params{'mpilib'}      || undef,
 	};
     $self->{'ccsmroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 	#print Dumper $self;
@@ -99,11 +99,12 @@ sub transformVars()
     {
         # loop through directive line, replacing each string enclosed with
         # double underscores with the necessary values.
-        while($line =~ /(__\w+__)/)
+        while($line =~ /({_\w+_})/)
         {
             my $needstransform = $1;
             my $var = $needstransform;
-            $var =~ s/__//g;
+            $var =~ s/{_//g;
+            $var =~ s/_}//g;
             print "needs transform: $needstransform\n";
             print "var : $var\n";
 
@@ -118,7 +119,7 @@ sub transformVars()
     $text = join("\n", @lines);
 	# recursively call this function if we still have things to transform, 
 	# otherwise return the transformed text
-    if($text =~ /__\w+__/)
+    if($text =~ /{_\w+_}/)
     {
         $self->transformVars($text);
     }
@@ -291,11 +292,12 @@ sub setBatchDirectives()
 		my $dvalue = $directive->textContent();
 		my $valueToUse = undef;
 		
-		while($dvalue =~ /(__\w+__)/)
+		while($dvalue =~ /({_\w+_})/)
 		{
 			my $matchedString = $1;
 			my $stringToReplace = $matchedString;
-			$stringToReplace =~ s/__//g;
+			$stringToReplace =~ s/{_//g;
+			$stringToReplace =~ s/_}//g;
 			my $actualValue;
 			
 			if(! defined $self->{$stringToReplace} && $directive->hasAttribute('default'))
@@ -578,7 +580,7 @@ sub setCESMRun()
 			# actual value if defined, the default value if defined and no
 			# instance variable exists, or discard the argument completely 
 			# if neither are defined. 
-			while($argValue =~ /(__\w+__)/)
+			while($argValue =~ /({_\w+_})/)
 			{
 				# get the matched string, and get the
 				# string we need to replace without the underscores. 
@@ -773,7 +775,7 @@ sub transformVars()
     #print $self->{'cimeroot'} . "\n";
     #print Dumper $self;
     #print "Mira transformVars\n";
-    $text =~ s/__batchdirectives__//g;
+    $text =~ s/{_batchdirectives_}//g;
     $text = $self->SUPER::transformVars($text);
 }
 
@@ -831,7 +833,7 @@ sub transformVars()
     my $self = shift;
     my $text = shift;
     print "Cetus transformVars\n";
-    $text =~ s/__batchdirectives__//g;
+    $text =~ s/{_batchdirectives_}//g;
     $text = $self->SUPER::transformVars($text);
 }
 
@@ -887,8 +889,7 @@ sub transformVars()
 {
     my $self = shift;
     my $text = shift;
-    print "Mira transformVars\n";
-    $text =~ s/__batchdirectives__//g;
+    $text =~ s/{_batchdirectives_}//g;
     $text = $self->SUPER::transformVars($text);
 }
 

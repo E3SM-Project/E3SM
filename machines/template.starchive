@@ -2,7 +2,7 @@
 #------------------------------------------------------------------------------
 # Batch system directives
 #------------------------------------------------------------------------------
-__batchdirectives__
+{_batchdirectives_}
 use POSIX qw(strftime);
 use File::Path;
 use File::Copy;
@@ -10,8 +10,8 @@ use File::Spec;
 use File::Basename;
 use XML::LibXML;
 my $scriptname = $0;
-my $caseroot = "__caseroot__";
-my $cimeroot = "__cimeroot__";
+my $caseroot = "{_caseroot_}";
+my $cimeroot = "{_cimeroot_}";
 chdir $caseroot;
 my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
@@ -29,7 +29,7 @@ my %config;
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
 #------------------------------------------------------------------------------
-__pedocumentation__
+{_pedocumentation_}
 # -------------------------------------------------------------------------
 # global data needed by the script, stuff like the max number of threads,
 # -------------------------------------------------------------------------

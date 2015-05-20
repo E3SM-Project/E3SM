@@ -7,8 +7,8 @@
 # <ocn_diags_pes>##</ocn_diags_pes> 
 # 
 
-__batchdirectives__
-mpirun=__mpirun__
+{_batchdirectives_}
+mpirun={_mpirun_}
 
 # xmlquery to get POSTPROCESS_VIRTUALENV, BATCHSUBMIT variable settings
 virtualEnvDir=`./xmlquery POSTPROCESS_VIRTUALENV -value`

@@ -7,7 +7,7 @@ use File::Basename;
 use XML::LibXML;
 my $toolsdir = "./Tools";
 push(@INC, $toolsdir);
-my $perl5lib = "__ccsmroot__/cime/utils/perl5lib";
+my $perl5lib = "{_cimeroot_}/cime/utils/perl5lib";
 push(@INC, $perl5lib);
 require ConfigCase;
 require Run::RunChecks;
@@ -17,11 +17,11 @@ require ModuleLoader;
 #------------------------------------------------------------------------------
 # Batch system directives
 #------------------------------------------------------------------------------
-__batchdirectives__
+{_batchdirectives_}
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
 #------------------------------------------------------------------------------
-__pedocumentation__
+{_pedocumentation_}
 # -------------------------------------------------------------------------
 # global data needed by the script, stuff like the max number of threads,
 # -------------------------------------------------------------------------
