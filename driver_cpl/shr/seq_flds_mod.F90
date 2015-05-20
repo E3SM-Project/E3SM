@@ -142,11 +142,6 @@ module seq_flds_mod
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
 
-   ! TODO(wjs, 2015-01-20) get rid of this variable, instead relying on
-   ! glc_get_num_elevation_classes from glc_elevclass_mod. However, I can't get rid of
-   ! this right now because dlnd uses it.
-   integer            :: seq_flds_glc_nec    ! number of glc elevation classes
-
    !----------------------------------------------------------------------------
    ! metadata
    !----------------------------------------------------------------------------
@@ -380,7 +375,6 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
-     seq_flds_glc_nec = glc_nec
      call glc_elevclass_init(glc_nec)
      
      !---------------------------------------------------------------------------
