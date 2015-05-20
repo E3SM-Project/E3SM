@@ -25,6 +25,7 @@ module CNDecompCascadeConType
 
      !-- properties of each decomposing pool
      logical           , pointer  :: floating_cn_ratio_decomp_pools(:) ! TRUE => pool has fixed C:N ratio
+     logical           , pointer  :: floating_cp_ratio_decomp_pools(:) ! TRUE => pool has fixed C:N ratio
      character(len=8)  , pointer  :: decomp_pool_name_restart(:)       ! name of pool for restart files
      character(len=8)  , pointer  :: decomp_pool_name_history(:)       ! name of pool for history files
      character(len=20) , pointer  :: decomp_pool_name_long(:)          ! name of pool for netcdf long names
@@ -33,6 +34,7 @@ module CNDecompCascadeConType
      logical           , pointer  :: is_soil(:)                        ! TRUE => pool is a soil pool
      logical           , pointer  :: is_cwd(:)                         ! TRUE => pool is a cwd pool
      real(r8)          , pointer  :: initial_cn_ratio(:)               ! c:n ratio for initialization of pools
+     real(r8)          , pointer  :: initial_cp_ratio(:)               ! c:n ratio for initialization of pools
      real(r8)          , pointer  :: initial_stock(:)                  ! initial concentration for seeding at spinup
      logical           , pointer  :: is_metabolic(:)                   ! TRUE => pool is metabolic material
      logical           , pointer  :: is_cellulose(:)                   ! TRUE => pool is cellulose
@@ -59,6 +61,7 @@ contains
 
     !-- properties of each decomposing pool
     allocate(decomp_cascade_con%floating_cn_ratio_decomp_pools(0:ndecomp_pools))
+    allocate(decomp_cascade_con%floating_cp_ratio_decomp_pools(0:ndecomp_pools))
     allocate(decomp_cascade_con%decomp_pool_name_restart(0:ndecomp_pools))
     allocate(decomp_cascade_con%decomp_pool_name_history(0:ndecomp_pools))
     allocate(decomp_cascade_con%decomp_pool_name_long(0:ndecomp_pools))
@@ -67,6 +70,7 @@ contains
     allocate(decomp_cascade_con%is_soil(0:ndecomp_pools))
     allocate(decomp_cascade_con%is_cwd(0:ndecomp_pools))
     allocate(decomp_cascade_con%initial_cn_ratio(0:ndecomp_pools))
+    allocate(decomp_cascade_con%initial_cp_ratio(0:ndecomp_pools))
     allocate(decomp_cascade_con%initial_stock(0:ndecomp_pools))
     allocate(decomp_cascade_con%is_metabolic(0:ndecomp_pools))
     allocate(decomp_cascade_con%is_cellulose(0:ndecomp_pools))
@@ -80,6 +84,7 @@ contains
 
     !-- first initialization of properties of each decomposing pool
     decomp_cascade_con%floating_cn_ratio_decomp_pools(0:ndecomp_pools) = .false.
+    decomp_cascade_con%floating_cp_ratio_decomp_pools(0:ndecomp_pools) = .false.
     decomp_cascade_con%decomp_pool_name_history(0:ndecomp_pools)       = ''
     decomp_cascade_con%decomp_pool_name_restart(0:ndecomp_pools)       = ''
     decomp_cascade_con%decomp_pool_name_long(0:ndecomp_pools)          = ''
@@ -88,6 +93,7 @@ contains
     decomp_cascade_con%is_soil(0:ndecomp_pools)                        = .false.
     decomp_cascade_con%is_cwd(0:ndecomp_pools)                         = .false.
     decomp_cascade_con%initial_cn_ratio(0:ndecomp_pools)               = nan
+    decomp_cascade_con%initial_cp_ratio(0:ndecomp_pools)               = nan
     decomp_cascade_con%initial_stock(0:ndecomp_pools)                  = nan
     decomp_cascade_con%is_metabolic(0:ndecomp_pools)                   = .false.
     decomp_cascade_con%is_cellulose(0:ndecomp_pools)                   = .false.
