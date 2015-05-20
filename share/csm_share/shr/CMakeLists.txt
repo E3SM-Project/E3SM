@@ -1,6 +1,6 @@
 set(genf90_files shr_infnan_mod.F90.in shr_assert_mod.F90.in)
 
-process_genf90_source_list("${genf90_files}" ${CMAKE_CURRENT_SOURCE_DIR}
+process_genf90_source_list("${genf90_files}" ${CMAKE_CURRENT_BINARY_DIR}
   share_genf90_sources)
 
 sourcelist_to_parent(share_genf90_sources)
