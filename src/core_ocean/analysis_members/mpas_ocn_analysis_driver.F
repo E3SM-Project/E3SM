@@ -61,6 +61,8 @@ module ocn_analysis_driver
    !
    !--------------------------------------------------------------------
 
+   character (len=*), parameter :: TestAMAlarmID = 'TestAMAlarm'
+
 !***********************************************************************
 
 contains
@@ -200,8 +202,15 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_TEST_AM
+      character (len=StrKIND), pointer :: config_TEST_AM_compute_interval
+      type (MPAS_Clock_type), pointer :: clock
+      type (MPAS_Time_Type) :: startTime
+      type (MPAS_TimeInterval_type) :: alarmTimeStep
 
       err = 0
+
+      clock => domain % clock
+      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, err_tmp)
 
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
@@ -231,7 +240,13 @@ contains
       if (config_use_TEST_AM) then
          call ocn_init_TEST_AM(domain, err_tmp)
          err = ior(err, err_tmp)
+
+         call mpas_pool_get_config(domain % configs, 'config_TEST_AM_compute_interval',config_TEST_AM_compute_interval)
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_TEST_AM_compute_interval, ierr=err_tmp)
+         call mpas_add_clock_alarm(clock, TestAMAlarmID, startTime, alarmTimeStep, ierr=err_tmp)
+
       endif
+
 
    end subroutine ocn_analysis_init!}}}
 
@@ -389,13 +404,15 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_TEST_AM
+      type (MPAS_Clock_type), pointer :: clock
 
       err = 0
+      clock => domain % clock
 
       timeLevel=1
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
-         ! This analysis member is computed just before output:
+         ! Compute analysis member just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          endif 
@@ -403,7 +420,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
-         ! This analysis member is computed just before output:
+         ! Compute analysis member just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='sfcAreaOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
          endif
@@ -411,7 +428,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
-         ! This analysis member is computed just before output:
+         ! Compute analysis member just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
          endif
@@ -419,7 +436,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
       if (config_use_okubo_weiss) then
-         ! This analysis member is computed just before output:
+         ! Compute analysis member just before output:
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='okuboWeissOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
          endif
@@ -427,10 +444,17 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_TEST_AM', config_use_TEST_AM)
       if (config_use_TEST_AM) then
-         ! This analysis member is computed just before output:
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEST_AMOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         ! Compute analysis member when called for compute:
+         if (mpas_is_alarm_ringing(clock, TestAMAlarmID, ierr=err_tmp)) then
+            call mpas_reset_clock_alarm(clock, TestAMAlarmID, ierr=err_tmp)
             call ocn_compute_TEST_AM(domain, timeLevel, err_tmp)
          endif
+
+         ! Compute analysis member just before output:
+         !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEST_AMOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         !   call ocn_compute_TEST_AM(domain, timeLevel, err_tmp)
+         !endif
+
       endif
 
    end subroutine ocn_analysis_compute!}}}
