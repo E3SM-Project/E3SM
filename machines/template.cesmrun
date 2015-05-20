@@ -26,6 +26,9 @@ require Depends::Checks;
 require Module::ModuleLoader;
 require Batch::BatchUtils;
 
+# Set OMP_NUM_THREADS
+$ENV{'OMP_NUM_THREADS'} = {_thread_count_};
+
 
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
