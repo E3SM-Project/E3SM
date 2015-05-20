@@ -248,14 +248,24 @@ contains
         nbuf=nlyr*4*(np+max_corner_elem)*nelemd
     endif
 
+! DO NOT REMOVE THIS NEXT BARRIER
+! MT: This initial barrier fixes a long standing issue with Intel compilers on
+! two different platforms.  Without this barrier, edge buffers initialized from
+! within the threaded region would not work in a reproducable way with certain
+! thread combinations.  I cant explain why, but this fixes that issue on Edison
+!$OMP BARRIER
+
+
+!$OMP MASTER
     edge%nlyr=nlyr
     edge%nbuf=nbuf
+!$OMP END MASTER
+!$OMP BARRIER
+
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
 
-#if (defined HORIZ_OPENMP)
-    !$OMP MASTER
-#endif
 
+!$OMP MASTER
     iam = par%rank
     allocate(edge%putmap(max_neigh_edges,nelemd))
     allocate(edge%getmap(max_neigh_edges,nelemd))
@@ -328,7 +338,6 @@ endif
     else
        nlen=nthreadshoriz
     endif
-print *,'nthreadshoriz: ',nthreadshoriz
      
     allocate(edge%moveLength(nlen))
     allocate(edge%movePtr(nlen))
@@ -413,9 +422,10 @@ print *,'nthreadshoriz: ',nthreadshoriz
     edge%buf    (:)=0.0D0
     edge%receive(:)=0.0D0
 
-#if (defined HORIZ_OPENMP)
-    !$OMP END MASTER
-#endif
+!$OMP END MASTER
+! MT: This next barrier is also needed - threads cannot start using edge()
+! until MASTER is done initializing it
+!$OMP BARRIER
 
 !JMD DEBUGGING print statements 
 !if(present(NewMethod)) then 
@@ -631,6 +641,8 @@ print *,'nthreadshoriz: ',nthreadshoriz
     in = edge%putmap(north,ielem)
     iw = edge%putmap(west,ielem)
     if (edge%nlyr < (kptr+vlyr) ) then
+       print *,'edge%nlyr = ',edge%nlyr
+       print *,'kptr+vlyr = ',kptr+vlyr
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
 #if (defined COLUMN_OPENMP)
