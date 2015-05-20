@@ -300,9 +300,6 @@ contains
       workBufferMinReduced=0.0
       workBufferMaxReduced=0.0
 
-      ! loop over all ocean regions
-      do iRegion=1,nOceanRegionsTmp
-
       ! get pointers to analysis member arrays
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amLayerVolWeightedAvg', amLayerVolWeightedAvgPool)
       call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'minValueWithinOceanLayerRegion', minValueWithinOceanLayerRegion)
@@ -312,28 +309,29 @@ contains
       call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'maxValueWithinOceanVolumeRegion', maxValueWithinOceanVolumeRegion)
       call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'avgValueWithinOceanVolumeRegion', avgValueWithinOceanVolumeRegion)
 
-      ! get pointers to scratch variables
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'layerVolWeightedAvgScratch', scratchPool)
-      call mpas_pool_get_field(scratchPool, 'workArrayLayerVolume', workArrayField)
-      call mpas_pool_get_field(scratchPool, 'workMaskLayerVolume', workMaskField)
-      call mpas_pool_get_field(scratchPool, 'workMinLayerVolume', workMinField)
-      call mpas_pool_get_field(scratchPool, 'workMaxLayerVolume', workMaxField)
-      call mpas_pool_get_field(scratchPool, 'workSumLayerVolume', workSumField)
-      call mpas_allocate_scratch_field(workArrayField, .true.)
-      call mpas_allocate_scratch_field(workMaskField, .true.)
-      call mpas_allocate_scratch_field(workMinField, .true.)
-      call mpas_allocate_scratch_field(workMaxField, .true.)
-      call mpas_allocate_scratch_field(workSumField, .true.)
-      workArray => workArrayField % array
-      workMask => workMaskField % array
-      workMin => workMinField % array
-      workMax => workMaxField % array
-      workSum => workSumField % array
-
       ! loop over blocks
       ! NOTE: code is not valid for multiple blocks !
       block => domain % blocklist
       do while (associated(block))
+
+         ! get pointers to scratch variables
+         call mpas_pool_get_subpool(block % structs, 'layerVolWeightedAvgScratch', scratchPool)
+         call mpas_pool_get_field(scratchPool, 'workArrayLayerVolume', workArrayField)
+         call mpas_pool_get_field(scratchPool, 'workMaskLayerVolume', workMaskField)
+         call mpas_pool_get_field(scratchPool, 'workMinLayerVolume', workMinField)
+         call mpas_pool_get_field(scratchPool, 'workMaxLayerVolume', workMaxField)
+         call mpas_pool_get_field(scratchPool, 'workSumLayerVolume', workSumField)
+         call mpas_allocate_scratch_field(workArrayField, .true.)
+         call mpas_allocate_scratch_field(workMaskField, .true.)
+         call mpas_allocate_scratch_field(workMinField, .true.)
+         call mpas_allocate_scratch_field(workMaxField, .true.)
+         call mpas_allocate_scratch_field(workSumField, .true.)
+         workArray => workArrayField % array
+         workMask => workMaskField % array
+         workMin => workMinField % array
+         workMax => workMaxField % array
+         workSum => workSumField % array
+
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -375,6 +373,14 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
 
+         ! initialize buffers
+         workBufferSum(:) = 0.0
+         workBufferMin(:) = +1.0e20
+         workBufferMax(:) = -1.0e20
+
+         ! loop over all ocean regions
+         do iRegion=1,nOceanRegionsTmp
+
          ! loop over the vertical
          do iLevel=1,nVertLevels
 
@@ -404,17 +410,25 @@ contains
             ! store data in buffer in order to allow only three dmpar calls
             do iDataField=1,nDefinedDataFields
               kBuffer = kBuffer+1
-              workBufferSum(kBuffer) = workSum(iDataField)
-              workBufferMin(kBuffer) = workMin(iDataField)
-              workBufferMax(kBuffer) = workMax(iDataField)
+              workBufferSum(kBuffer) = workBufferSum(kBuffer) + workSum(iDataField)
+              workBufferMin(kBuffer) = min(workBufferMin(kBuffer), workMin(iDataField))
+              workBufferMax(kBuffer) = max(workBufferMax(kBuffer), workMax(iDataField))
             enddo
 
          enddo ! iLevel
 
+         end do ! iRegion
+         kBuffer = 0
+
+         ! deallocate scratch fields
+         call mpas_deallocate_scratch_field(workArrayField, .true.)
+         call mpas_deallocate_scratch_field(workMaskField, .true.)
+         call mpas_deallocate_scratch_field(workMinField, .true.)
+         call mpas_deallocate_scratch_field(workMaxField, .true.)
+         call mpas_deallocate_scratch_field(workSumField, .true.)
+
          block => block % next
       end do
-
-      end do ! iRegion
 
       ! communication
       call mpas_dmpar_sum_real_array(dminfo, kBufferLength, workBufferSum, workBufferSumReduced )
@@ -474,13 +488,6 @@ contains
          avgValueWithinOceanLayerRegion(2,iLevel,iRegion) = avgValueWithinOceanLayerRegion(2,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(1,iLevel,iRegion),1.0e-8)
       enddo
       enddo
-
-      ! deallocate scratch fields
-      call mpas_deallocate_scratch_field(workArrayField, .true.)
-      call mpas_deallocate_scratch_field(workMaskField, .true.)
-      call mpas_deallocate_scratch_field(workMinField, .true.)
-      call mpas_deallocate_scratch_field(workMaxField, .true.)
-      call mpas_deallocate_scratch_field(workSumField, .true.)
 
       ! deallocate buffers
       deallocate(workBufferSumReduced)
