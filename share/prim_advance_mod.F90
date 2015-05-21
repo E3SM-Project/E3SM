@@ -2251,7 +2251,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            if (0<ntrac) then
-             temp =  dptens(:,:,:,ie)/dt - temp
+             temp =  dptens(:,:,:,ie) - temp
+             temp =  temp/dt
              kptr=3*nlev
              desc = elem(ie)%desc
              
