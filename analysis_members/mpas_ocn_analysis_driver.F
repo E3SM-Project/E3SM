@@ -30,6 +30,7 @@ module ocn_analysis_driver
    use ocn_zonal_mean
    use ocn_okubo_weiss
    use ocn_test_compute_interval
+!   use ocn_TEMPLATE
 
    implicit none
    private
@@ -62,6 +63,10 @@ module ocn_analysis_driver
    !--------------------------------------------------------------------
 
    character (len=*), parameter :: test_compute_intervalAlarmID = 'test_compute_intervalAlarm'
+
+   ! To use a compute interval using config_TEMPLATE_compute_interval, copy the following.
+   ! Otherwise, compute is only called just before write, as managed by the stream.
+   !character (len=*), parameter :: TEMPLATEAlarmID = 'TEMPLATEAlarm'
 
 !***********************************************************************
 
@@ -117,6 +122,7 @@ contains
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_test_compute_interval
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
@@ -150,6 +156,12 @@ contains
          call ocn_setup_packages_test_compute_interval(configPool, packagePool, err_tmp)
          err = ior(err, err_tmp)
       endif
+
+!      call mpas_pool_get_config(configPool, 'config_use_TEMPLATE', config_use_TEMPLATE)
+!      if (config_use_TEMPLATE) then
+!         call ocn_setup_packages_TEMPLATE(configPool, packagePool, err_tmp)
+!         err = ior(err, err_tmp)
+!      endif
 
    end subroutine ocn_analysis_setup_packages!}}}
 
@@ -202,10 +214,16 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_test_compute_interval
-      character (len=StrKIND), pointer :: config_test_compute_interval_compute_interval
+!      logical, pointer :: config_use_TEMPLATE
+
       type (MPAS_Clock_type), pointer :: clock
       type (MPAS_Time_Type) :: startTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
+
+      character (len=StrKIND), pointer :: config_test_compute_interval_compute_interval
+   ! To use a compute interval using config_TEMPLATE_compute_interval, copy the following.
+   ! Otherwise, compute is only called just before write, as managed by the stream.
+!      character (len=StrKIND), pointer :: config_TEMPLATE_compute_interval
 
       err = 0
 
@@ -239,7 +257,6 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
       if (config_use_test_compute_interval) then
          call ocn_init_test_compute_interval(domain, err_tmp)
-
          err = ior(err, err_tmp)
 
          call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_interval',config_test_compute_interval_compute_interval)
@@ -251,6 +268,21 @@ contains
 
       endif
 
+      ! call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+      ! if (config_use_TEMPLATE) then
+      !    call ocn_init_TEMPLATE(domain, err_tmp)
+      !    err = ior(err, err_tmp)
+
+      !    ! To use a compute interval using config_TEMPLATE_compute_interval, uncomment the following.
+      !    ! Otherwise, compute is only called just before write, as managed by the stream.
+      !    call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_interval',config_TEMPLATE_compute_interval)
+      !    call mpas_set_timeInterval(alarmTimeStep, timeString=config_TEMPLATE_compute_interval, ierr=err_tmp)
+      !    ! Use startTime+alarmTimeStep for start time so that compute is not called at beginning.  This means
+      !    ! compute_startup must be true to compute at the beginning.
+      !    ! WARNING: right now compute time is tied to the restart time for this particular simulation.
+      !    call mpas_add_clock_alarm(clock, TEMPLATEAlarmID, startTime+alarmTimeStep, alarmTimeStep, ierr=err_tmp)
+
+      ! endif
 
    end subroutine ocn_analysis_init!}}}
 
@@ -305,6 +337,7 @@ contains
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
       logical, pointer :: config_use_test_compute_interval, config_test_compute_interval_compute_startup
+!      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
 
       err = 0
 
@@ -343,18 +376,32 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_okubo_weiss_compute_startup', config_okubo_weiss_compute_startup)
       if (config_use_okubo_weiss.and.config_okubo_weiss_compute_startup) then
          call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
+         call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(stream_manager, streamID='okuboWeissOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
       call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_startup', config_test_compute_interval_compute_startup)
       if (config_use_test_compute_interval.and.config_test_compute_interval_compute_startup) then
-         call mpas_timer_start('io_write', .false.)
          call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
-         call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
+
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+!      call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_startup', config_TEMPLATE_compute_startup)
+!      if (config_use_TEMPLATE.and.config_TEMPLATE_compute_startup) then
+
+!         ! This line is to compute on start-up:
+!         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+
+!         ! This line is to write on start-up:
+!         call mpas_timer_start('io_write', .false.)
+!         call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', forceWriteNow=.true., ierr=err_tmp)
+!         call mpas_timer_stop('io_write')
+!         err = ior(err, err_tmp)
+!      endif
 
    end subroutine ocn_analysis_compute_startup!}}}
 
@@ -408,6 +455,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_test_compute_interval
+!      logical, pointer :: config_use_TEMPLATE
       type (MPAS_Clock_type), pointer :: clock
 
       err = 0
@@ -461,6 +509,26 @@ contains
 
       endif
 
+      ! call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+      ! if (config_use_TEMPLATE) then
+           ! When adding a new analysis member, you may choose when to compute: 
+           ! 1. using config_TEMPLATE_compute_interval
+           ! 2. just before stream output
+           ! or both.  Uncomment these sections accordingly.
+
+      !    ! Compute analysis member when called for compute, using config_TEMPLATE_compute_interval
+      !    if (mpas_is_alarm_ringing(clock, TEMPLATEAlarmID, ierr=err_tmp)) then
+      !       call mpas_reset_clock_alarm(clock, TEMPLATEAlarmID, ierr=err_tmp)
+      !       call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+      !    endif
+
+      !    ! Compute analysis member just before stream output:
+      !    !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+      !    !   call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+      !    !endif
+
+      ! endif
+
    end subroutine ocn_analysis_compute!}}}
 
 !***********************************************************************
@@ -512,6 +580,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_test_compute_interval
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
@@ -544,6 +613,12 @@ contains
          call ocn_restart_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
+
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+!      if (config_use_TEMPLATE) then
+!         call ocn_restart_TEMPLATE(domain, err_tmp)
+!         err = ior(err, err_tmp)
+!      endif
 
    end subroutine ocn_analysis_restart!}}}
 
@@ -599,6 +674,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_test_compute_interval
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
@@ -657,6 +733,17 @@ contains
          err = ior(err, err_tmp)
       endif
 
+      ! call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+      ! if (config_use_TEMPLATE) then
+      !     call mpas_timer_start('io_write', .false.)
+      !     call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+      !     call mpas_timer_stop('io_write')
+      !     call mpas_timer_start('io_reset_alarms', .false.)
+      !     call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+      !     call mpas_timer_stop('io_reset_alarms')
+      !    err = ior(err, err_tmp)
+      ! endif
+
    end subroutine ocn_analysis_write!}}}
 
 !***********************************************************************
@@ -708,6 +795,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_test_compute_interval
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
@@ -740,6 +828,12 @@ contains
          call ocn_finalize_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
+
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+!      if (config_use_TEMPLATE) then
+!         call ocn_finalize_TEMPLATE(domain, err_tmp)
+!         err = ior(err, err_tmp)
+!      endif
 
    end subroutine ocn_analysis_finalize!}}}
 
