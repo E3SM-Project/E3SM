@@ -223,6 +223,7 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: waterMassFractionalDistribution
       real (kind=RKIND), dimension(:,:,:), pointer :: potentialDensityOfTSDiagram
+      real (kind=RKIND), dimension(:,:,:), pointer :: zPositionOfTSDiagram
       real (kind=RKIND), dimension(:,:),   pointer :: waterMassCensusTemperatureValues
       real (kind=RKIND), dimension(:,:),   pointer :: waterMassCensusSalinityValues
 
@@ -230,6 +231,7 @@ contains
       real (kind=RKIND), dimension(:,:),   pointer :: layerThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:),   pointer :: potentialDensity
+      real (kind=RKIND), dimension(:,:),   pointer :: zMid
 
       ! pointers to data in mesh pool
       ! (note: nOceanRegionsTmpCensus, lonCell, latCell to be removed when region mask is intent(in))
@@ -244,7 +246,7 @@ contains
       integer :: iCell, iRegion, iLevel, iTracer, iTemperatureBin, iSalinityBin, err_tmp
       real (kind=RKIND), pointer :: minTemperature, maxTemperature
       real (kind=RKIND), pointer :: minSalinity, maxSalinity
-      real (kind=RKIND) :: deltaTemperature, deltaSalinity, temperature, salinity, density, volume
+      real (kind=RKIND) :: deltaTemperature, deltaSalinity, temperature, salinity, density, zPosition, volume
 
       ! package flag
       logical, pointer :: amWaterMassCensusPkgActive
@@ -275,17 +277,18 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nSalinityBins', nSalinityBins)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTemperatureBinsP1', nTemperatureBinsP1)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nSalinityBinsP1', nSalinityBinsP1)
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nCells', nCells)
 
       ! allocate buffer for message passing
       kBuffer=0
-      kBufferLength=2*nOceanRegionsTmpCensus*nTemperatureBins*nSalinityBins
+      kBufferLength=3*nOceanRegionsTmpCensus*nTemperatureBins*nSalinityBins
       allocate(workBufferSum(kBufferLength))
       allocate(workBufferSumReduced(kBufferLength))
       workBufferSum=0.0
       workBufferSumReduced=0.0
 
+      ! all code below will go away when regionMask is intent(in)
       ! allocate region mask and fill array
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nCells', nCells)
       allocate(workMask(nCells))
       allocate(regionMask(nOceanRegionsTmpCensus,nCells))
       block => domain % blocklist
@@ -303,6 +306,7 @@ contains
          enddo
          block => block % next
       enddo
+      ! all code above will go away when regionMask is intent(in)
 
       ! get pointers to analysis member arrays
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amWaterMassCensus', amWaterMassCensusPool)
@@ -310,6 +314,7 @@ contains
       call mpas_pool_get_array(amWaterMassCensusPool, 'waterMassCensusSalinityValues', waterMassCensusSalinityValues)
       call mpas_pool_get_array(amWaterMassCensusPool, 'waterMassFractionalDistribution', waterMassFractionalDistribution)
       call mpas_pool_get_array(amWaterMassCensusPool, 'potentialDensityOfTSDiagram', potentialDensityOfTSDiagram)
+      call mpas_pool_get_array(amWaterMassCensusPool, 'zPositionOfTSDiagram', zPositionOfTSDiagram)
 
       ! get run-time configure variables
       call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_minTemperature', minTemperature)
@@ -330,8 +335,12 @@ contains
         enddo
       enddo ! iRegion
        
+      ! initialize intent(out) of this analysis member
+      waterMassFractionalDistribution(:,:,:)=0.0
+      potentialDensityOfTSDiagram(:,:,:)=0.0
+      zPositionOfTSDiagram(:,:,:)=0.0
+
       ! loop over blocks
-      ! NOTE: code is not valid for multiple blocks !
       block => domain % blocklist
       do while (associated(block))
          ! get pointers to pools
@@ -351,11 +360,8 @@ contains
          ! get pointers to data needed for analysis
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
+         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
-
-         ! initialize intent(out) of this analysis member
-         waterMassFractionalDistribution(:,:,:)=0.0
-         potentialDensityOfTSDiagram(:,:,:)=0.0
 
          ! loop over and bin all data 
          do iCell=1,nCellsSolve
@@ -365,6 +371,7 @@ contains
            temperature = tracers(index_temperature,iLevel,iCell)
            salinity = tracers(index_salinity,iLevel,iCell)
            density = potentialDensity(iLevel,iCell)
+           zPosition = zMid(iLevel,iCell)
            volume = layerThickness(iLevel,iCell) * areaCell(iCell)
 
            ! find temperature bin, cycle if bin is out of range
@@ -385,6 +392,9 @@ contains
              potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
                        potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)  &
                        + density * volume * regionMask(iRegion,iCell)
+             zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
+                       zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)  &
+                       + zPosition * volume * regionMask(iRegion,iCell)
            enddo
 
          enddo   ! iLevel
@@ -402,6 +412,8 @@ contains
         workBufferSum(kBuffer) = waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
         kBuffer = kBuffer+1
         workBufferSum(kBuffer) = potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)
+        kBuffer = kBuffer+1
+        workBufferSum(kBuffer) = zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)
       enddo
       enddo
       enddo
@@ -418,6 +430,8 @@ contains
         waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
         kBuffer = kBuffer+1
         potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
+        kBuffer = kBuffer+1
+        zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
       enddo
       enddo
       enddo
@@ -429,11 +443,14 @@ contains
         potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
           potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
           max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8)
+        zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
+          zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
+          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8)
       enddo
       enddo
       enddo
 
-      ! use workBufferSum as workspace to find total volume for each each
+      ! use workBufferSum as workspace to find total volume for each region
       workBufferSum = 0.0
       do iTemperatureBin=1,nTemperatureBins
       do iSalinityBin=1,nSalinityBins
