@@ -219,6 +219,7 @@ sub submitSingleJob()
 
 
 #==============================================================================
+# Base class doResubmit
 # Check to see if the next set of jobs needs to be submitted.  
 #==============================================================================
 sub doResubmit()
@@ -551,6 +552,8 @@ sub doResubmit()
 
     print "in doResubmit: scriptname: $scriptname\n";
     my %config = %{$self->{'caseconfig'}};
+	# On Mira/Cetus, if we're in doResubmit, and we are being called by the run
+    # script, we need to ssh to tukey and submit the short-term archiver. 
     if($scriptname =~ /run/)
     {
         my $starchivescript = $scriptname;
@@ -569,6 +572,9 @@ sub doResubmit()
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
     }
 
+	# If we're being called by the short-term archiver, and we actually need to resubmit
+	# something, then ssh from the tukey compute nodes to tukeylogin1, then ssh back to 
+    # either mira or cetuslac1, and resubmit the run. 
     if($scriptname =~ /archive/ && $islastjob eq 'TRUE' && $resubmit > 0)
     {
         my $newresubmit = $config{'RESUBMIT'} - 1;

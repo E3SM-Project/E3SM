@@ -50,10 +50,7 @@ sub new
         mpilib      => $params{'mpilib'}      || undef,
 	};
     $self->{'ccsmroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
-	#print Dumper $self;
-    #print "BatchMaker constructor params: \n";
-    #print Dumper \%params;
-    #print "BatchMaker cimeroot: $self->{'cimeroot'}\n";
+
 	# make sure that the required args are supplied
 	foreach my $reqarg(@requiredargs)
 	{
@@ -63,15 +60,11 @@ sub new
 		}
 	}
 	# set up paths to the template files, this could and should be extracted out somehow??
-	# TODO extract??
 	$self->{'job_id'} = $self->{'case'};
 	$self->{'output_error_path'} = $self->{'case'};
 	$self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
 	$self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
-	$self->{'runtemplate'} = "$self->{'machroot'}/template.cesmrun";
-	#$self->{'starchivetemplate'} = "$self->{'machroot'}/template.starchive";
-	#$self->{'pyreshapertemplate'} = "$self->{'machroot'}/template.tseries_generate";
-	#$self->{'ltarchivetemplate'} = "$self->{'machroot'}/template.ltarchive";
+
 	# we need ConfigCase, and ProjectTools. 
 	my $casetoolsdir = "$self->{'caseroot'}/Tools";
 	push(@INC, $casetoolsdir);
@@ -84,9 +77,8 @@ sub new
 	return $self;
 }
 #==============================================================================
-# Do the double-underscore substitution for any double-underscore variable
-# transformed variables may themselves have variables to transform, so 
-# the function is recursive..
+# Do the variable substitution for any variables that need transforms 
+# recursively. 
 #==============================================================================
 sub transformVars()
 {
@@ -94,29 +86,28 @@ sub transformVars()
     my $text = shift;
 	
     my @lines = split(/\n/, $text);
-    #print Dumper \$self;
     foreach my $line(@lines)
     {
         # loop through directive line, replacing each string enclosed with
-        # double underscores with the necessary values.
+        # template characters with the necessary values.
         while($line =~ /({{ \w+ }})/)
         {
             my $needstransform = $1;
             my $var = $needstransform;
             $var =~ s/{{ //g;
             $var =~ s/ }}//g;
-            print "needs transform: $needstransform\n";
-            print "var : $var\n";
+            #print "needs transform: $needstransform\n";
+            #print "var : $var\n";
 
             if(defined $self->{$var} )
             {
                 $line =~ s/$needstransform/$self->{$var}/g;
             }
-            #else { exit(1);}
             
         }
     }
     $text = join("\n", @lines);
+
 	# recursively call this function if we still have things to transform, 
 	# otherwise return the transformed text
     if($text =~ /{{ \w+ }}/)
@@ -189,9 +180,7 @@ sub makeBatchScript()
 	$self->setWallTime();
 	$self->setProject();
 	$self->setBatchDirectives();
-	#print "after setBatchDirectives\n";
 	$self->setCESMRun();
-	#print "after setCESMRun\n";
 	$self->writeBatchScript($inputfilename, $outputfilename);
 }
 
@@ -214,6 +203,10 @@ sub getBatchSystemTypeForMachine()
 	
 }
 
+#==============================================================================
+# Get batch directives, optionally setting up the data needed if not already 
+# done. 
+#==============================================================================
 sub getBatchDirectives()
 {
 	my $self = shift;
@@ -231,6 +224,11 @@ sub getBatchDirectives()
 	return $self->{'batchdirectives'};
 
 }
+#==============================================================================
+# Get a particular field of data from the instance data that gets stored 
+# in this object.  There should really be a separate BatchData class, but
+# this is good enough for now.  
+#==============================================================================
 sub getField()
 {
     my $self = shift;
