@@ -838,7 +838,6 @@ contains
    use CNCarbonStateType        , only : carbonstate_type
    use CNNitrogenStateType      , only : nitrogenstate_type
    use CNNitrogenFluxType       , only : nitrogenflux_type
-   use BGCCenturySubMod         , only : assign_OM_CNpools, assign_nitrogen_hydroloss
    
 
     ! !ARGUMENTS:

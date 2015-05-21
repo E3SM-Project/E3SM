@@ -24,7 +24,7 @@ module BGCReactionsCenturyECAType
   use clm_varcon            , only : spval
   use clm_varctl            , only : spinup_state  
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
-  use BGCCenturySubMod     
+  use BGCCenturySubCoreMod     
   use LandunitType          , only : lun
   use ColumnType            , only : col 
   use landunit_varcon       , only : istsoil, istcrop    
@@ -837,7 +837,6 @@ contains
    use CNCarbonStateType        , only : carbonstate_type
    use CNNitrogenStateType      , only : nitrogenstate_type
    use CNNitrogenFluxType       , only : nitrogenflux_type
-   use BGCCenturySubMod         , only : assign_OM_CNpools, assign_nitrogen_hydroloss
    
 
     ! !ARGUMENTS:

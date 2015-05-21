@@ -840,7 +840,6 @@ contains
    use CNCarbonStateType        , only : carbonstate_type
    use CNNitrogenStateType      , only : nitrogenstate_type
    use CNNitrogenFluxType       , only : nitrogenflux_type
-   use BGCCenturySubMod         , only : assign_OM_CNpools, assign_nitrogen_hydroloss
    
 
     ! !ARGUMENTS:
@@ -1101,7 +1100,7 @@ contains
     
   if(gross_min_nh4_to_decomp_flx >= decomp_minn_demand_flx)then
     !decomposer is not nitrogen limited
-    gross_minn_nh4_to_minn_flx = gross_min_nh4_to_decomp_flx - decomp_minn_demand_flx
+    !gross_minn_nh4_to_minn_flx = gross_min_nh4_to_decomp_flx - decomp_minn_demand_flx
     
     !mineral nitrogen is competed between nitrifiers, denitrifiers and plants
     
@@ -1112,9 +1111,9 @@ contains
     !in clm-century, nh4 is first competed between plant and nitrification
     reac = lid_nh4_nit_reac
   
-    tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
+    !tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
     
-    if()then    
+    if(.true.)then    
     !if demand is greater than overall nh4 availability
 
     else
@@ -1125,7 +1124,7 @@ contains
     
   else
     !decomposer is nitrogen limited
-    decomp_minn_residual_demand_flx   = decomp_minn_demand_flx - gross_min_nh4_to_decomp_flx
+    !decomp_minn_residual_demand_flx   = decomp_minn_demand_flx - gross_min_nh4_to_decomp_flx
     
     !mineral nitrogen is competed between everyone
     !add nitrogen demand from plant

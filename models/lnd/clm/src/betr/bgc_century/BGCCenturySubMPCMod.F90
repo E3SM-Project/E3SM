@@ -107,7 +107,7 @@ module BGCCenturySubMPCMod
     lid_at_rt_reac=> centurybgc_vars%lid_at_rt_reac     , & !
     lid_no3_den  => centurybgc_vars%lid_no3_den         , & !
     lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
-    
+    lid_nh4_mpcbuf   => centurybgc_vars%lid_nh4_mpcbuf  , &  
     lid_nh4_nit_reac => centurybgc_vars%lid_nh4_nit_reac, & !
     lid_no3_den_reac => centurybgc_vars%lid_no3_den_reac, & !
     lid_n2_aere_reac => centurybgc_vars%lid_n2_aere_reac      , & !

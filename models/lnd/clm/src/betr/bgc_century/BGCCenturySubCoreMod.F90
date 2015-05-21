@@ -256,7 +256,6 @@ module BGCCenturySubCoreMod
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
   
-  use BGCCenturySubCoreMod  , only : centurybgc_type
   
   type(bounds_type)            , intent(in) :: bounds
   integer                      , intent(in) :: lbj, ubj
