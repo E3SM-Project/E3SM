@@ -135,11 +135,11 @@ module perf_mod
    logical, private   :: perf_ovhd_measurement = def_perf_ovhd_measurement
                          ! measure overhead of profiling directly
 
-#ifdef HAVE_NANOTIME
-   integer, parameter :: def_perf_timer = GPTLnanotime         ! default
-#else
 #ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
+#else
+#ifdef HAVE_NANOTIME
+   integer, parameter :: def_perf_timer = GPTLnanotime         ! default
 #else
 #ifdef CPRIBM
    integer,parameter :: def_perf_timer = GPTLread_real_time
