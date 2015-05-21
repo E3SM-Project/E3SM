@@ -62,6 +62,7 @@
                 <var_array name="waterMassCensusSalinityValues"/>
                 <var_array name="waterMassFractionalDistribution"/>
                 <var_array name="potentialDensityOfTSDiagram"/>
+                <var_array name="zPositionOfTSDiagram"/>
         </stream>
 </streams>
 <var_struct name="amWaterMassCensus" time_levs="1" packages="amWaterMassCensusPkg">
@@ -88,5 +89,11 @@
                  dimensions="nTemperatureBins nSalinityBins nOceanRegionsTmpCensus Time"
                  units="kg m^{-3}"
                  description="volume-weighted potential density of each (T,S) bin"
+        />
+        <var name="zPositionOfTSDiagram"
+                 type="real"
+                 dimensions="nTemperatureBins nSalinityBins nOceanRegionsTmpCensus Time"
+                 units="kg m^{-3}"
+                 description="volume-weighted vertical position of each (T,S) bin"
         />
 </var_struct>
