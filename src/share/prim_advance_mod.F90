@@ -2207,6 +2207,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                                            eta_ave_w*nu_scale_top*nu_top*laplace_fluxes/hypervis_subcycle
                 endif
               endif
+
+              ! NOTE: we will DSS all tendicies, EXCEPT for dp3d, where we DSS the new state
+              elem(ie)%state%dp3d(:,:,k,nt) = elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%spheremp(:,:)&
+                   + dt*dptens(:,:,k,ie)
+              
            enddo
 
 
@@ -2215,7 +2220,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            kptr=nlev
            call edgeVpack(edge3,vtens(:,:,:,:,ie),2*nlev,kptr,ie)
            kptr=3*nlev
-           call edgeVpack(edge3,dptens(:,:,:,ie),nlev,kptr,ie)
+           call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
         enddo
 
 
@@ -2230,37 +2235,26 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            kptr=3*nlev
            if (0<ntrac) then
              do k=1,nlev
-               temp(:,:,k) = dptens(:,:,k,ie) / elem(ie)%spheremp
+               temp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt) / elem(ie)%spheremp  ! STATE before DSS 
              enddo
              corners = 0.0d0
-             corners(1:np,1:np,:) = dptens(:,:,:,ie)
+             corners(1:np,1:np,:) = elem(ie)%state%dp3d(:,:,:,nt) ! fill in interior data of STATE*mass
            endif
-           call edgeVunpack(edge3, dptens(:,:,:,ie), nlev, kptr, ie)
+           call edgeVunpack(edge3, elem(ie)%state%dp3d(:,:,:,nt), nlev, kptr, ie)
 
-
-           ! apply inverse mass matrix, accumulate tendencies
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-           do k=1,nlev
-              vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
-              vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
-              ttens(:,:,k,ie)=dt*ttens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-              dptens(:,:,k,ie)=dt*dptens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-           enddo
 
 
            if (0<ntrac) then
-             temp =  dptens(:,:,:,ie) - temp
-             temp =  temp/dt
              kptr=3*nlev
              desc = elem(ie)%desc
              
              call edgeDGVunpack(edge3, corners, nlev, kptr, ie) 
-             
              corners = corners/dt
              
              do k=1,nlev
+               temp(:,:,k) =  elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,nt) - temp(:,:,k)
+               temp(:,:,k) =  temp(:,:,k)/dt
+
                call distribute_flux_at_corners(cflux, corners(:,:,k), desc%getmapP)
  
                cflux(1,1,:)   = elem(ie)%rspheremp(1,  1) * cflux(1,1,:)  
@@ -2272,6 +2266,20 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  eta_ave_w*subcell_dss_fluxes(temp(:,:,k), np, nc, elem(ie)%metdet,cflux)/hypervis_subcycle
              end do
            endif
+
+
+
+           ! apply inverse mass matrix, accumulate tendencies
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
+           do k=1,nlev
+              vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
+              vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
+              ttens(:,:,k,ie)=dt*ttens(:,:,k,ie)*elem(ie)%rspheremp(:,:)
+              
+              elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt)*elem(ie)%rspheremp(:,:)
+           enddo
 
            ! apply hypervis to u -> u+utens:
            ! E0 = dpdn * .5*u dot u + dpdn * T  + dpdn*PHIS
@@ -2294,8 +2302,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     heating = (vtens(i,j,1,k,ie)*v1  + vtens(i,j,2,k,ie)*v2 )
                     elem(ie)%state%T(i,j,k,nt)=elem(ie)%state%T(i,j,k,nt) &
                          +ttens(i,j,k,ie)-heating/cp
-                    elem(ie)%state%dp3d(i,j,k,nt)=elem(ie)%state%dp3d(i,j,k,nt) + &
-                         dptens(i,j,k,ie)
+                    !elem(ie)%state%dp3d(i,j,k,nt)=elem(ie)%state%dp3d(i,j,k,nt) + &
+                    !     dptens(i,j,k,ie)
                  enddo
               enddo
            enddo
