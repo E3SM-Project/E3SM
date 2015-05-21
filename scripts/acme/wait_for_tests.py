@@ -278,8 +278,12 @@ def parse_test_status_file(file_contents, status_file_path, check_throughput=Fal
     for line in file_contents.splitlines():
         if (len(line.split()) == 2):
             status, test_name = line.split()
+            # just take the first one
             if (real_test_name is None):
-                real_test_name = test_name # just take the first one
+                try:
+                    real_test_name = acme_util.normalize_case_id(test_name)
+                except:
+                    real_test_name = test_name
 
             verbose_print("Test: '%s' has status '%s'" % (test_name, status))
 
