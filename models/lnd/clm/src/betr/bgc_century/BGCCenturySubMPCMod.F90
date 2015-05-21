@@ -1,4 +1,4 @@
-module BGCCenturySubMod
+module BGCCenturySubMPCMod
 #include "shr_assert.h"
 !
 ! DESCRIPTION
@@ -16,6 +16,11 @@ module BGCCenturySubMod
 
   public :: calc_cascade_matrix
   
+  !eta defines the coupling strength between decomposer's demand of nitrogen and the mineralization from its peers
+  real(r8), parameter :: eta = 1._r8
+  
+ contains
+  
 
 
 
@@ -31,7 +36,7 @@ module BGCCenturySubMod
   use clm_varcon                , only : nitrif_n2o_loss_frac
   use BGCCenturyParMod          , only : CNDecompBgcParamsInst, NutrientCompetitionParamsInst
   use MathfuncMod               , only : safe_div
-  use BGCCenturySubCoreMod      , only : centurybgc_type
+  use BGCCenturySubCoreMod  , only : centurybgc_type
   
   integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
@@ -155,6 +160,11 @@ module BGCCenturySubMod
     !rate dependent.     
     !it requires nitrogen uptake
     nitrogen_limit_flag(reac) = .true.
+    
+  else
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac)
   endif
   !----------------------------------------------------------------------  
   !reaction 2, lit2 -> s1
@@ -176,7 +186,10 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     !it requires nitrogen uptake  
     nitrogen_limit_flag(reac) = .true.    
-  
+  else
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac)  
   endif
   !----------------------------------------------------------------------  
   !reaction 3, lit3->s2
@@ -199,7 +212,10 @@ module BGCCenturySubMod
     !it requires nitrogen uptake 
     nitrogen_limit_flag(reac) = .true.   
 
-
+  else
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac)  
   endif
   !----------------------------------------------------------------------  
   !double check those stoichiometry parameters
@@ -230,7 +246,10 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then  
     !it requires nitrogen uptake  
     nitrogen_limit_flag(reac) = .true.
- 
+  else
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac)  
   endif
   !----------------------------------------------------------------------  
   !reaction 5, som2->som1, som3
@@ -256,7 +275,10 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     !it requires nitrogen uptake
     nitrogen_limit_flag(reac) = .true.    
-
+  else
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac)  
   endif
   !----------------------------------------------------------------------  
   !reaction 6, s3-> s1
@@ -277,8 +299,11 @@ module BGCCenturySubMod
   primvarid(reac) = (som3-1)*nelms+c_loc
   if(cascade_matrix(lid_nh4, reac)<0._r8)then    
     !it requires nitrogen uptake
-    nitrogen_limit_flag(reac) = .true.    
- 
+    nitrogen_limit_flag(reac) = .true.
+  else  
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac) 
   endif
   !----------------------------------------------------------------------  
   !reaction 7, the partition into lit1 and lit2 is nutrient dependent, respires co2?
@@ -300,7 +325,10 @@ module BGCCenturySubMod
   if(cascade_matrix(lid_nh4, reac)<0._r8)then     
     !it requires nitrogen uptake
     nitrogen_limit_flag(reac) = .true.    
-
+  else
+    !mineralizing pathway, put a fraction eta to the
+    cascade_matrix(lid_nh4_mpcbuf, reac) = cascade_matrix(lid_nh4, reac) * eta
+    cascade_matrix(lid_nh4, reac)        = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_nh4_mpcbuf, reac)  
   endif
   
   !----------------------------------------------------------------------  
@@ -372,6 +400,8 @@ module BGCCenturySubMod
   end associate
   end subroutine calc_cascade_matrix
 
+
   
   
-end module BGCCenturySubMod
+  
+end module BGCCenturySubMPCMod

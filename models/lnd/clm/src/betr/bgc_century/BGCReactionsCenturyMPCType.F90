@@ -1,4 +1,4 @@
-module BGCReactionsCenturyType
+module BGCReactionsCenturyMPCType
 
 #include "shr_assert.h"
 
@@ -11,7 +11,8 @@ module BGCReactionsCenturyType
 ! Questions for thought/things to do: Should I consider redox flucutation here (specifically redox lag)? It also
 ! seems necessary to create a separate subroutine to account for that, rather than using the ch4 code.
 
-! this code uses the operator automated down-regulation scheme
+! this code uses the operator automated down-regulation scheme, with a special focus on priority of nitrogen from
+! gross mineralization
 ! !USES
 !
   use shr_log_mod           , only : errMsg => shr_log_errMsg
@@ -24,8 +25,8 @@ module BGCReactionsCenturyType
   use clm_varcon            , only : spval
   use clm_varctl            , only : spinup_state  
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
-  use BGCCenturySubMod
-  use BGCCenturySubCoreMod  
+  use BGCCenturySubCoreMod
+  use BGCCenturySubMPCMod   
   use LandunitType          , only : lun
   use ColumnType            , only : col 
   use landunit_varcon       , only : istsoil, istcrop    
@@ -35,12 +36,13 @@ implicit none
   private
   !
   ! !PUBLIC TYPES:
-  public :: bgc_reaction_CENTURY_type
+  public :: bgc_reaction_CENTURY_MPC_type
+  
   type(centurybgc_type), private :: centurybgc_vars
 
   integer, private :: lpr
   type, extends(bgc_reaction_type) :: &
-  bgc_reaction_CENTURY_type
+  bgc_reaction_CENTURY_MPC_type
   private
   contains
    procedure :: Init_betrbgc                  ! initialize betr bgc
@@ -52,7 +54,7 @@ implicit none
    procedure :: readParams
    procedure :: init_betr_alm_bgc_coupler         ! update state vars using other bgc parts in alm
    procedure :: betr_alm_flux_statevar_feedback
-  end type bgc_reaction_CENTURY_type
+  end type bgc_reaction_CENTURY_MPC_type
 
   
    type, private :: Extra_type
@@ -74,10 +76,10 @@ implicit none
    type(Extra_type), private :: Extra_inst   
   
   
-  interface bgc_reaction_CENTURY_type
+  interface bgc_reaction_CENTURY_MPC_type
     module procedure constructor
 
-  end interface bgc_reaction_CENTURY_type
+  end interface bgc_reaction_CENTURY_MPC_type
 
 
 contains
@@ -182,10 +184,10 @@ contains
    end subroutine AAssign
    
 !-------------------------------------------------------------------------------
-  type(bgc_reaction_CENTURY_type) function constructor()
+  type(bgc_reaction_CENTURY_MPC_type) function constructor()
   !
   ! ! DESCRIPTION
-  ! create an object of type bgc_reaction_CENTURY_type.
+  ! create an object of type bgc_reaction_CENTURY_MPC_type.
   ! Right now it is purposely left empty
 
   end function constructor
@@ -201,7 +203,7 @@ contains
   use BeTRTracerType              , only : betrtracer_type
   
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_CENTURY_MPC_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds  
   type(BeTRtracer_type )          ,  intent(in) :: betrtracer_vars
   type(tracerboundarycond_type)   ,  intent(in) :: tracerboundarycond_vars
@@ -233,7 +235,7 @@ contains
   use BeTRTracerType        , only : betrtracer_type
   use MathfuncMod           , only : addone
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_CENTURY_MPC_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
   type(BeTRtracer_type )          , intent(inout) :: betrtracer_vars
@@ -249,7 +251,7 @@ contains
   
   !ncid%fh=10
 
-  call centurybgc_vars%Init(bounds, lbj, ubj)
+  call centurybgc_vars%Init(bounds, lbj, ubj, do_mpc=.true.)
 
   nelm =centurybgc_vars%nelms
   c_loc=centurybgc_vars%c_loc
@@ -440,7 +442,7 @@ contains
   use WaterfluxType         , only : waterflux_type  
 
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_CENTURY_MPC_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: num_soilc                 ! number of columns in column filter
   integer                         , intent(in) :: filter_soilc(:)            ! column filter
@@ -514,7 +516,7 @@ contains
   use CNNitrogenFluxType       , only : nitrogenflux_type  
   use CNNitrogenStateType      , only : nitrogenstate_type
   !ARGUMENTS
-  class(bgc_reaction_CENTURY_type)   , intent(in) :: this
+  class(bgc_reaction_CENTURY_MPC_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -701,7 +703,7 @@ contains
   use tracercoeffType       , only : tracercoeff_type
   use BeTRTracerType        , only : betrtracer_type
   
-  class(bgc_reaction_CENTURY_type),    intent(in) :: this
+  class(bgc_reaction_CENTURY_MPC_type),    intent(in) :: this
 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -729,7 +731,7 @@ contains
   use BeTRTracerType           , only : BeTRTracer_Type
   use ncdio_pio               , only : file_desc_t
   use BGCCenturyParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams, readCentCNAllocParams                                       
-  class(bgc_reaction_CENTURY_type) , intent(in)    :: this  
+  class(bgc_reaction_CENTURY_MPC_type) , intent(in)    :: this  
   type(BeTRTracer_Type)            , intent(inout) :: betrtracer_vars  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
   
@@ -757,7 +759,7 @@ contains
     use clm_varcon               , only : spval, ispval
     
     ! !ARGUMENTS:
-    class(bgc_reaction_CENTURY_type) , intent(in)    :: this    
+    class(bgc_reaction_CENTURY_MPC_type) , intent(in)    :: this    
     type(bounds_type)                 , intent(in)    :: bounds
     type(BeTRTracer_Type)             , intent(in)    :: betrtracer_vars
     type(waterstate_type)             , intent(in)    :: waterstate_vars    
@@ -842,7 +844,7 @@ contains
    
 
     ! !ARGUMENTS:
-    class(bgc_reaction_CENTURY_type) , intent(in)    :: this    
+    class(bgc_reaction_CENTURY_MPC_type) , intent(in)    :: this    
    type(bounds_type)          , intent(in) :: bounds                             ! bounds   
    integer                    , intent(in) :: num_soilc                               ! number of columns in column filter
    integer                    , intent(in) :: filter_soilc(:)                          ! column filter
@@ -874,7 +876,7 @@ contains
   use landunit_varcon          , only : istsoil, istcrop
   
   ! !ARGUMENTS:
-  class(bgc_reaction_CENTURY_type) , intent(in)    :: this     
+  class(bgc_reaction_CENTURY_MPC_type) , intent(in)    :: this     
   type(bounds_type)                  , intent(in) :: bounds
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
@@ -1054,6 +1056,7 @@ contains
   real(r8), intent(inout) :: reaction_rates(nreactions)
   
   real(r8) :: decomp_plant_minn_demand_flx
+  real(r8) :: decomp_minn_demand_flx
   real(r8) :: tot_nh4_demand_flx
   real(r8) :: tot_no3_demand_flx
   real(r8) :: decomp_plant_residual_minn_demand_flx
@@ -1061,14 +1064,17 @@ contains
   real(r8) :: smin_no3_to_decomp_plant_flx
   real(r8) :: tot_sminn_to_decomp_plant_flx
   real(r8) :: frac_nh4_to_decomp_plant
-  real(r8) :: gross_min_nh4_flx
+  real(r8) :: gross_min_nh4_to_decomp_flx  
+  real(r8) :: gross_min_nh4_to_minn_flx
   real(r8) :: alpha
   integer  :: reac
+
   
   associate(                                                         & !
     nom_pools             => centurybgc_vars%nom_pools             , & !
     lid_nh4               => centurybgc_vars%lid_nh4               , & !
-    lid_no3               => centurybgc_vars%lid_no3               , & !    
+    lid_no3               => centurybgc_vars%lid_no3               , & !
+    lid_nh4_mpcbuf        => centurybgc_vars%lid_nh4_mpcbuf        , & !
     lid_plant_minn        => centurybgc_vars%lid_plant_minn        , & !
     lid_minn_nh4_immob    => centurybgc_vars%lid_minn_nh4_immob    , & !
     lid_minn_no3_immob    => centurybgc_vars%lid_minn_no3_immob    , & !
@@ -1081,78 +1087,58 @@ contains
   )
   
   decomp_plant_minn_demand_flx = 0._r8
-  gross_min_nh4_flx = 0._r8
+  decomp_minn_demand_flx = 0._r8
+  gross_min_nh4_to_decomp_flx  = 0._r8
   do reac = 1,  nom_pools
     if(nitrogen_limit_flag(reac))then
-      decomp_plant_minn_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+      decomp_minn_demand_flx = decomp_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
     else
-      gross_min_nh4_flx = gross_min_nh4_flx + reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+      !gross mineralized nitrogen that goes directly to decomposers
+      gross_min_nh4_to_decomp_flx  = gross_min_nh4_to_decomp_flx  + reaction_rates(reac) * cascade_matrix(lid_nh4_mpcbuf, reac)
     endif
   enddo
   
-  !add nitrogen demand from plant
-  reac = lid_plant_minn_up_reac
-  decomp_plant_minn_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
-  
     
-  !in clm-century, nh4 is first competed between decomposer immobilization, plant and nitrification
-  reac = lid_nh4_nit_reac
-  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
-  
-  if(tot_nh4_demand_flx*dtime>smin_nh4)then
-    !nitrifiers, decomposers and plants are nh4 limited
-    alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
-    smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
-    decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
-    !downregulate nitrification
-    reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha    
-  else
-    !none is nh4 limited
-    smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx
-    decomp_plant_residual_minn_demand_flx = 0._r8
-  endif
-
-
-  reac = lid_no3_den_reac  
-  tot_no3_demand_flx = decomp_plant_residual_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_no3 ,reac)
-
-  !then no3 is competed between denitrification and residual request from decomposer immobilization and plant demand  
-  if(tot_no3_demand_flx * dtime>smin_no3)then
-    !denitrifiers, decomposers and plants are no3 limited
-    alpha = smin_no3/(tot_no3_demand_flx*dtime)    
-    reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
+  if(gross_min_nh4_to_decomp_flx >= decomp_minn_demand_flx)then
+    !decomposer is not nitrogen limited
+    gross_minn_nh4_to_minn_flx = gross_min_nh4_to_decomp_flx - decomp_minn_demand_flx
     
-    smin_no3_to_decomp_plant_flx = smin_no3 * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
-  else
-    smin_no3_to_decomp_plant_flx = tot_no3_demand_flx * dtime
-  endif
-  
-  tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
-  if(tot_sminn_to_decomp_plant_flx < decomp_plant_minn_demand_flx)then
-    !plant & decomp are nitrogen limited
-    alpha = tot_sminn_to_decomp_plant_flx/decomp_plant_minn_demand_flx
-  else
-    alpha = 1._r8
-  endif
-
-  if(smin_nh4_to_decomp_plant_flx>=tot_sminn_to_decomp_plant_flx)then
-    frac_nh4_to_decomp_plant = 1._r8
-  else
-    frac_nh4_to_decomp_plant = smin_nh4_to_decomp_plant_flx/tot_sminn_to_decomp_plant_flx
-  endif
-  !revise the stoichiometry matix elements
-  !for decomposers
-  
-  do reac = 1,  nom_pools
-    if(nitrogen_limit_flag(reac))then
-      reaction_rates(reac) = reaction_rates(reac) * alpha
-      cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant)
-      cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+    !mineral nitrogen is competed between nitrifiers, denitrifiers and plants
     
-      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
-      cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
+    !add nitrogen demand from plant
+    reac = lid_plant_minn_up_reac
+    decomp_plant_minn_demand_flx = - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+
+    !in clm-century, nh4 is first competed between plant and nitrification
+    reac = lid_nh4_nit_reac
+  
+    tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
+    
+    if()then    
+    !if demand is greater than overall nh4 availability
+
+    else
+    
     endif
-  enddo
+    
+    !compete for nitrate
+    
+  else
+    !decomposer is nitrogen limited
+    decomp_minn_residual_demand_flx   = decomp_minn_demand_flx - gross_min_nh4_to_decomp_flx
+    
+    !mineral nitrogen is competed between everyone
+    !add nitrogen demand from plant
+    reac = lid_plant_minn_up_reac
+    decomp_plant_minn_demand_flx = decomp_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4, reac)
+
+    !compete for nh4
+    
+    !compete for no3
+    
+  endif
+
+  !summarize    
   
   !for plant
   reac = lid_plant_minn_up_reac
@@ -1164,4 +1150,4 @@ contains
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
   end associate
   end subroutine apply_nutrient_down_regulation  
-end module BGCReactionsCenturyType
+end module BGCReactionsCenturyMPCType

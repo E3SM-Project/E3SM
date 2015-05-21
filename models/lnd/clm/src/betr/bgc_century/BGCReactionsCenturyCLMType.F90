@@ -24,7 +24,8 @@ module BGCReactionsCenturyCLMType
   use clm_varcon            , only : spval
   use clm_varctl            , only : spinup_state  
   use tracer_varcon         , only : bndcond_as_conc, bndcond_as_flux
-  use BGCCenturySubMod     
+  use BGCCenturySubCoreMod
+  use BGCCenturySubMod   
   use LandunitType          , only : lun
   use ColumnType            , only : col 
   use landunit_varcon       , only : istsoil, istcrop    
