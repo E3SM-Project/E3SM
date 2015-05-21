@@ -368,12 +368,12 @@ contains
            volume = layerThickness(iLevel,iCell) * areaCell(iCell)
 
            ! find temperature bin, cycle if bin is out of range
-           iTemperatureBin = int(temperature-minTemperature)/deltaTemperature + 1
+           iTemperatureBin = int((temperature-minTemperature)/deltaTemperature) + 1
            if (iTemperatureBin < 1) cycle
            if (iTemperatureBin > nTemperatureBins) cycle
 
            ! find salinity bin, cycle if bin is out of range
-           iSalinityBin = int(salinity-minSalinity)/deltaSalinity + 1
+           iSalinityBin = int((salinity-minSalinity)/deltaSalinity) + 1
            if (iSalinityBin < 1) cycle
            if (iSalinityBin > nSalinityBins) cycle
 
