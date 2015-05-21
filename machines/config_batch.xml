@@ -110,13 +110,72 @@
     </directives>
    </batch_system> 
 
+   <batch_system MACH="gaea" version="x.y">
+   <directives>
+     <directive>-A cpo</directive>
+     <directive>-l {{ partition }}</directive>
+     <directive>-l size={{ mppsize }}</directive>
+	 <directive>-E </directive>
+	 <directive>-d {{ rundir }}</directive>
+     <directive>-o {{ rundir }}/{{ case }}.out </directive>
+     <directive>-S /bin/bash -V </directive>
+   </directives>
+   </batch_system>
 
-  <batch_system MACH="pleiades" version="x.y">
+   <batch_system MACH="hera">
+   <batch_directive>#MSUB</batch_directive>
+   <directives>
+     <directive>-A ees</directive>
+     <directive>-l gres=lscratchd</directive>
+   </directives>
+   </batch_system>
+
+
+  <batch_system MACH="pleiades-has" version="x.y">
     <directives>
-      <directive> -W group_list={{ project }} </directive>
-      <directive> -P {{ account }} </directive>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-P {{ account }} </directive>
+      <directive>-L select={{ pbsrs }}</directive>
+      <directive>-l place=scatter:excl</directive>
     </directives>
   </batch_system>
+
+  <batch_system MACH="pleiades-ivy" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-P {{ account }} </directive>
+      <directive>-L select={{ pbsrs }}</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+  <batch_system MACH="pleiades-san" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-P {{ account }} </directive>
+      <directive>-L select={{ pbsrs }}</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+  <batch_system MACH="pleiades-wes" version="x.y">
+    <directives>
+      <directive>-W group_list={{ project }} </directive>
+      <directive>-P {{ account }} </directive>
+      <directive>-L select={{ pbsrs }}</directive>
+      <directive>-l place=scatter:excl</directive>
+    </directives>
+  </batch_system>
+
+   <batch_system MACH="sierra">
+   <batch_directive>#MSUB</batch_directive>
+   <directives>
+     <directive>-V </directive>
+     <directive>-A ees </directive>
+     <directive>-l nodes={{ num_nodes }}</directive>
+     <directive>-l gres=lscratchd</directive>
+   </directives>
+   </batch_system>
 
 
   <batch_system MACH="bluewaters" version="x.y">

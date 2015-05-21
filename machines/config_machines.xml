@@ -325,26 +325,26 @@
          <SUPPORTED_BY>cseg</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-	 <PES_PER_NODE>24</PES_PER_NODE>
-      <!-- pbs is for crays.. -->
-    <batch_system type="pbs" version="x.y">
-      <queues>
-        <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
-      </queues>
-      <walltimes>
-        <walltime default="true">00:30:00</walltime>
-      </walltimes>
-    </batch_system>
-    <mpirun mpilib="default">
-      <executable>aprun</executable>
-      <arguments>
-        <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
-        <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-        <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-        <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-        <arg name="thread_count" > -d {{ thread_count }}</arg>
-      </arguments>
-    </mpirun>
+    	 <PES_PER_NODE>24</PES_PER_NODE>
+          <!-- pbs is for crays.. -->
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">00:30:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>aprun</executable>
+           <arguments>
+             <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+             <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
+             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+             <arg name="thread_count" > -d {{ thread_count }}</arg>
+           </arguments>
+         </mpirun>
 </machine>
 
 
@@ -535,8 +535,8 @@
 
 <machine MACH="gaea">
          <DESC>NOAA XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi</COMPILERS>
-	 <MPILIBS>mpich,mpi-serial</MPILIBS>
+	     <COMPILERS>pgi</COMPILERS>
+	     <MPILIBS>mpich,mpi-serial</MPILIBS>
          <RUNDIR>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/run</RUNDIR>
          <EXEROOT>/lustre/fs/scratch/Julio.T.Bacmeister/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CESMSCRATCHROOT>
@@ -553,6 +553,30 @@
          <SUPPORTED_BY>julio -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J> 8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="01:00:00" jobmin="1" jobmax="860">debug</queue>
+             <queue walltimemax="24:00:00" jobmin="861" jobmax="99999" default="true">batch</queue>
+           </queues>
+           <walltimes>
+              <walltime default="true">00:45:00</walltime>
+              <walltime ccsm_estcost="1">01:50:00</walltime>
+              <walltime ccsm_estcost="3">05:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>aprun</executable>
+           <arguments>
+             <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+             <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
+             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+             <arg name="thread_count" > -d {{ thread_count }}</arg>
+           </arguments>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+           <executable></executable>
+         </mpirun>
 </machine>
 
 
@@ -578,6 +602,20 @@
          <SUPPORTED_BY>mirin1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <batch_system type="slurm" version="x.y">
+            <queues>
+               <queue walltimemax="12:00:00" jomin="1" jobmax="9999" default="true">pbatch</queue>
+            </queues>
+            <walltimes>
+               <walltime default="true">12:00:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+            <executable>srun</executable>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+            <executable></executable>
+         </mpirun>
 </machine>
 
 <machine MACH="hopper">
@@ -659,29 +697,6 @@
 </machine>
 
 
-<machine MACH="juqueen">
-         <DESC>FZJ IBM BG/Q, os is CNK, 16 pes/node, batch system is LoadLeveler</DESC>
-         <COMPILERS>ibm</COMPILERS>
-         <MPILIBS>ibm</MPILIBS>
-         <RUNDIR>$ENV{WORK}/$CASE/run</RUNDIR>
-         <EXEROOT>$ENV{WORK}/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>$ENV{WORK}</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>$ENV{WORK}/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>$ENV{WORK}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
-         <CCSM_BASELINE>$ENV{WORK}/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>$ENV{WORK}/tools/cprnc/cprnc</CCSM_CPRNC>
-         <OS>BGQ</OS>
-         <BATCHQUERY>llq</BATCHQUERY>
-         <BATCHSUBMIT>llsubmit</BATCHSUBMIT>
-		 <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>dennis -at- ucar.edu</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-</machine>
-
-
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <COMPILERS>ibm</COMPILERS>
@@ -730,53 +745,6 @@
          </mpirun>
 </machine>
 
-<machine MACH="tukey">
-  <DESC>ANL IBM data analysis/visualization cluster, os is BGP, 16 pes/node, batch system is cobalt</DESC>
-  <COMPILERS>ibm</COMPILERS>
-  <MPILIBS>ibm</MPILIBS>
-  <CESMSCRATCHROOT>/projects/$PROJECT/usr/$ENV{USER}</CESMSCRATCHROOT>
-  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-  <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
-  <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-  <DOUT_S_ROOT>/projects/$PROJECT/usr/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-  <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
-  <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
-  <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
-  <OS>BGQ</OS>
-  <BATCHQUERY>qstat</BATCHQUERY>
-  <BATCHSUBMIT>csh</BATCHSUBMIT>
-  <SUPPORTED_BY>   mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-  <GMAKE_J>4</GMAKE_J>
-  <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-  <batch_system type="cobalt">
-  <queues>
-      <queue waltimemin="0" walltimemax="360" jobmin="0" jobmax="1536" default="true">default</queue>
-      <queue waltimemin="0" walltimemax="60" jobmin="0" jobmax="1536">debug</queue>
-    </queues>
-    <walltimes>
-      <walltime default="true">90</walltime>
-      <walltime ccsm_estcost="-3">180</walltime>
-      <walltime ccsm_estcost="0">360</walltime>
-    </walltimes>
-  </batch_system>
-  <mpirun mpilib="mpi-serial">
-    <!-- don't need anything here, the default_run_suffix will be enough for mpi-serial -->
-    <executable></executable>
-  </mpirun>
-  <mpirun mpilib="default">
-    <executable>runjob :</executable>
-    <arguments>
-      <arg name="label">--label short</arg>
-      <arg name="num_tasks"> -n {{ num_tasks }}</arg>
-      <arg name="locargs"> \$LOCARGS</arg>
-      <arg name="envs"> --envs BG_THREADLAYOUT=1 --envs OMP_STACKSIZE=32m --envs OMP_NUM_THREADS={{ num_threads }}</arg>
-      <arg name="colon"> : </arg>
-    </arguments>
-  </mpirun>
-</machine>
-
 <machine MACH="olympus">
   <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
   <OS>LINUX</OS>
@@ -803,6 +771,7 @@
     </queues>
   <walltimes>
     <walltime default="true">00:59:00</walltime>
+    <walltime ccsm_estcost="2" >08:59:00</walltime>
   </walltimes>
   <mpirun mpilib="mpi-serial">
     <executable></executable>
@@ -1001,29 +970,20 @@
          <SUPPORTED_BY>mirin1 -at- llnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-</machine>
-
-<machine MACH="stampede">
-        <DESC>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</DESC>
-        <OS>LINUX</OS>
-        <COMPILERS>intel,intelmic,intel14,intelmic14</COMPILERS>
-        <MPILIBS>impi,mvapich2,mpi-serial</MPILIBS>
-        <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
-        <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
-        <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
-        <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
-        <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-        <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-        <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
-        <CCSM_BASELINE>/scratch/projects/xsede/CESM/ccsm_baselines</CCSM_BASELINE>
-        <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
-        <BATCHQUERY>squeue</BATCHQUERY>
-        <BATCHSUBMIT>sbatch</BATCHSUBMIT>
-		<BATCHREDIRECT></BATCHREDIRECT>
-        <SUPPORTED_BY>srinathv -at- ucar.edu</SUPPORTED_BY>
-        <GMAKE_J>8</GMAKE_J>
-        <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-        <PES_PER_NODE>16</PES_PER_NODE>
+         <batch_system type="slurm" version="x.y">
+           <queues>
+             <queue default="true">pbatch</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">12:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>srun</executable>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+           <executable></executable>
+         </mpirun>
 </machine>
 
 <machine MACH="titan">

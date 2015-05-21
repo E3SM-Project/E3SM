@@ -860,17 +860,44 @@ E2
 }
 
 
+package Batch::BatchMaker_gaea;
+use base qw (Batch::BatchMaker );
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 
-#==============================================================================
-# Subclass that is specific to yellowstone.  We inherit from the BatchMaker_lsf 
-# class, then inherit from the base class. 
-#==============================================================================
-#package Batch::BatchMaker_yellowstone;
-#use base qw( Batch::BatchMaker_lsf );
-#use Data::Dumper;
-#sub _test()
-#{
-#	my $self = shift;
-#	return 1;
-#}
+sub setTaskInfo()
+{
+    my $self = shift;
+    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+	my $mppsize = $taskmaker->sumOnly();
+    my $config = $taskmaker->{'config'};
+    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+
+    if($mppsize % $maxTasksPerNode > 0)
+	{
+		my $mppnodes = $mppsize / $maxTasksPerNode;
+		$mppnodes = $mppnodes + 1;
+		$mppsize = $mppnodes * $maxTasksPerNode;
+	}
+	$self->{'mppsize'} = $mppsize;
+    $self->SUPER::setTaskInfo();
+}
+
+sub setQueue()
+{
+	my $self = shift;
+	if($self->{'mppsize'} > 860)
+	{
+		$self->{'queue'} = "batch";
+		$self->{'partition'} = "c2";
+	}
+	else
+	{
+		$self->{'queue'} = "debug";
+		$self->{'partition'} = "c1";
+	}
+}
 1;
