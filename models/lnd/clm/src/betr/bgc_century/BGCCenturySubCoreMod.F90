@@ -26,7 +26,8 @@ module BGCCenturySubCoreMod
   public :: calc_decompK_multiply_scalar
   public :: calc_nuptake_prof  
   public :: calc_plant_nitrogen_uptake_prof
-  public :: calc_extneral_bgc_input
+  public :: bgcstate_ext_update_bfdecomp
+  public :: bgcstate_ext_update_afdecomp
   public :: set_reaction_order
   public :: calc_nutrient_compet_rescal
   public :: assign_nitrogen_hydroloss
@@ -1282,7 +1283,7 @@ module BGCCenturySubCoreMod
  
   !-----------------------------------------------------------------------  
 
-  subroutine calc_extneral_bgc_input(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
+  subroutine bgcstate_ext_update_bfdecomp(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, y0, cn_ratios, cp_ratios)
 
 
@@ -1311,13 +1312,6 @@ module BGCCenturySubCoreMod
   integer :: k, fc, c, j
  
   associate(                                                                         & !  
-    lit1           => centurybgc_vars%lit1                                         , & !
-    lit2           => centurybgc_vars%lit2                                         , & !
-    lit3           => centurybgc_vars%lit3                                         , & !
-    som1           => centurybgc_vars%som1                                         , & !
-    som2           => centurybgc_vars%som2                                         , & !
-    som3           => centurybgc_vars%som3                                         , & !
-    cwd            => centurybgc_vars%cwd                                          , & !
     lid_nh4        => centurybgc_vars%lid_nh4                                      , & !
     lid_no3        => centurybgc_vars%lid_no3                                      , & !
     nelm           => centurybgc_vars%nelms                                        , & !
@@ -1327,29 +1321,27 @@ module BGCCenturySubCoreMod
     id_trc_no3x    => betrtracer_vars%id_trc_no3x                                  , & !   
     ngwmobile_tracers => betrtracer_vars%ngwmobile_tracers                         , & !
     tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col              , & !
-    bgc_cpool_inputs_vr => carbonflux_vars%bgc_cpool_inputs_vr_col                 , & !
-    bgc_npool_inputs_vr => nitrogenflux_vars%bgc_npool_inputs_vr_col               , & !
+    bgc_cpool_ext_inputs_vr => carbonflux_vars%bgc_cpool_ext_inputs_vr_col                 , & !
+    bgc_npool_ext_inputs_vr => nitrogenflux_vars%bgc_npool_ext_inputs_vr_col               , & !
     sminn_nh4_input_vr  => nitrogenflux_vars%sminn_nh4_input_vr_col                , & !
     sminn_no3_input_vr  => nitrogenflux_vars%sminn_no3_input_vr_col                  & 
   )
   
 
 
-    !delta_nh4 =0._r8
-    !delta_no3 =0._r8
-    !delta_somn =0._r8
+
 
   do k = 1, ndecomp_pools
     do j = 1, ubj
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        y0((k-1)*nelm+c_loc,c,j) = y0((k-1)*nelm+c_loc,c,j) + bgc_cpool_inputs_vr(c,j,k)/catomw
-        y0((k-1)*nelm+n_loc,c,j) = y0((k-1)*nelm+n_loc,c,j) + bgc_npool_inputs_vr(c,j,k)/natomw
+        y0((k-1)*nelm+c_loc,c,j) = y0((k-1)*nelm+c_loc,c,j) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
+        y0((k-1)*nelm+n_loc,c,j) = y0((k-1)*nelm+n_loc,c,j) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
         cn_ratios(k, c,j) = safe_div(y0((k-1)*nelm+c_loc,c,j), y0((k-1)*nelm+n_loc,c,j))
         
-        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_inputs_vr(c,j,k)/catomw
-        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_inputs_vr(c,j,k)/natomw
-        !delta_somn = delta_somn + bgc_npool_inputs_vr(c,j,k)*col%dz(c,j)
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
+        !delta_somn = delta_somn + bgc_npool_ext_inputs_vr(c,j,k)*col%dz(c,j)
       enddo
     enddo
   enddo
@@ -1362,20 +1354,69 @@ module BGCCenturySubCoreMod
 
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) + sminn_no3_input_vr(c,j)/natomw
       tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) + sminn_nh4_input_vr(c,j)/natomw
-      !if(c==15695)then
-      !  delta_nh4=delta_nh4+sminn_nh4_input_vr(c,j)*col%dz(c,j)
-      !  delta_no3=delta_no3+sminn_no3_input_vr(c,j)*col%dz(c,j)
-      !endif
     enddo
-    !if(c==15695)then
-    !  print*,'-------------------'
-    !  print*,'somnn input',delta_somn
-    !  print*,'sminn input',delta_nh4+delta_no3
-    !endif
+
   enddo
   
   end associate
-  end subroutine calc_extneral_bgc_input
+  end subroutine bgcstate_ext_update_bfdecomp
+  !-----------------------------------------------------------------------  
+
+  subroutine bgcstate_ext_update_afdecomp(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
+    centurybgc_vars, betrtracer_vars, tracerflux_vars, yf)
+
+
+  use MathfuncMod              , only :  safe_div
+  use CNCarbonFluxType         , only : carbonflux_type
+  use CNNitrogenFluxType       , only : nitrogenflux_type    
+  use BetrTracerType           , only : betrtracer_type 
+  use tracerstatetype          , only : tracerstate_type 
+  use clm_varcon               , only : catomw, natomw
+  use tracerfluxType           , only : tracerflux_type
+  type(bounds_type)                  , intent(in) :: bounds                             ! bounds
+  integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
+  integer                            , intent(in) :: filter_soilc(:)                          ! column filter
+  integer                            , intent(in) :: lbj, ubj
+  type(carbonflux_type)              , intent(in) :: carbonflux_vars
+  type(nitrogenflux_type)            , intent(in) :: nitrogenflux_vars
+  type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
+  type(centurybgc_type)              , intent(in) :: centurybgc_vars 
+  type(tracerflux_type)              , intent(inout) :: tracerflux_vars 
+  real(r8)                           , intent(inout) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)  
+  
+  real(r8) :: delta_no3, delta_nh4
+  real(r8) :: delta_somn
+  integer :: k, fc, c, j
+ 
+  associate(                                                                         & !  
+    nelm           => centurybgc_vars%nelms                                        , & !
+    c_loc          => centurybgc_vars%c_loc                                        , & !
+    n_loc          => centurybgc_vars%n_loc                                        , & !
+    tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col              , & !
+    bgc_cpool_ext_inputs_vr => carbonflux_vars%bgc_cpool_ext_inputs_vr_col         , & !
+    bgc_npool_ext_inputs_vr => nitrogenflux_vars%bgc_npool_ext_inputs_vr_col         & !
+  )
+  
+
+
+    !delta_nh4 =0._r8
+    !delta_no3 =0._r8
+    !delta_somn =0._r8
+
+  do k = 1, ndecomp_pools
+    do j = 1, ubj
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        yf((k-1)*nelm+c_loc,c,j) = yf((k-1)*nelm+c_loc,c,j) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
+        yf((k-1)*nelm+n_loc,c,j) = yf((k-1)*nelm+n_loc,c,j) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
+        
+      enddo
+    enddo
+  enddo
+
+  
+  end associate
+  end subroutine bgcstate_ext_update_afdecomp  
  !-----------------------------------------------------------------------  
   subroutine apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     rr_col, root_prof_col, rr_col_vr)

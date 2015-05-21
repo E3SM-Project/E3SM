@@ -223,7 +223,9 @@ module CNNitrogenFluxType
      real(r8), pointer :: sminn_no3_input_col                       (:)     !col no3 input, gN/m2
      real(r8), pointer :: sminn_nh4_input_col                       (:)     !col nh4 input, gN/m2
      real(r8), pointer :: sminn_input_col                           (:)     !col minn input, gN/m2
-     real(r8), pointer :: bgc_npool_inputs_vr_col                   (:,:,:) !col organic nitrogen input, gN/m3/time step
+     real(r8), pointer :: bgc_npool_ext_inputs_vr_col                   (:,:,:) !col organic nitrogen input, gN/m3/time step
+     real(r8), pointer :: bgc_npool_ext_loss_vr_col                   (:,:,:) !col extneral organic nitrogen loss, gN/m3/time step
+     
      real(r8), pointer :: bgc_npool_inputs_col                      (:,:)   !col organic N input, gN/m2/time step
      ! ---------- NITRIF_DENITRIF  ---------------------
 
@@ -582,7 +584,9 @@ contains
     allocate(this%sminn_nh4_input_col         (begc:endc))                   ; this%sminn_nh4_input_col              (:) = nan
     allocate(this%sminn_no3_input_col         (begc:endc))                   ; this%sminn_no3_input_col              (:) = nan
     allocate(this%sminn_input_col      (begc:endc)) ; this%sminn_input_col           (:) = nan
-    allocate(this%bgc_npool_inputs_vr_col     (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_inputs_vr_col      (:,:,:) = nan
+    allocate(this%bgc_npool_ext_inputs_vr_col     (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_ext_inputs_vr_col      (:,:,:) = nan
+    allocate(this%bgc_npool_ext_loss_vr_col     (begc:endc,1:nlevdecomp_full,ndecomp_pools)) ;this%bgc_npool_ext_loss_vr_col      (:,:,:) = nan
+
     allocate(this%bgc_npool_inputs_col        (begc:endc,ndecomp_pools))     ;this%bgc_npool_inputs_col              (:,:) = nan
      
     allocate(this%smin_no3_massdens_vr_col    (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_massdens_vr_col         (:,:) = nan
@@ -1239,13 +1243,22 @@ contains
         ptr_col=data2dptr, default='inactive')
     
     do k = 1, ndecomp_pools
-      this%bgc_npool_inputs_vr_col(begc:endc, :, k) = spval    
-      data2dptr => this%bgc_npool_inputs_vr_col(:,:,k)
+      this%bgc_npool_ext_inputs_vr_col(begc:endc, :, k) = spval    
+      data2dptr => this%bgc_npool_ext_inputs_vr_col(:,:,k)
       fieldname='BGC_NPOOL_INPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
       longname='N input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
-      call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
+      call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
         avgflag='A', long_name=longname, &
         ptr_col=data2dptr, default='inactive')
+
+      this%bgc_npool_ext_loss_vr_col(begc:endc, :, k) = spval    
+      data2dptr => this%bgc_npool_ext_loss_vr_col(:,:,k)
+      fieldname='BGC_NPOOL_EXT_LOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+      longname='N LOSS to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+      call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
+        avgflag='A', long_name=longname, &
+        ptr_col=data2dptr, default='inactive')
+        
     enddo
     
     
@@ -2277,7 +2290,8 @@ contains
           i = filter_column(fi)
           this%decomp_npools_leached_col(i,k) = value_column
           this%m_decomp_npools_to_fire_col(i,k) = value_column
-          this%bgc_npool_inputs_vr_col (i,:,k) = value_column
+          this%bgc_npool_ext_inputs_vr_col (i,:,k) = value_column
+          this%bgc_npool_ext_loss_vr_col (i,:,k) = value_column          
           this%bgc_npool_inputs_col (i,k) = value_column
        end do
     end do
@@ -2664,7 +2678,9 @@ contains
              this%decomp_npools_leached_col(c,l) = &
                   this%decomp_npools_leached_col(c,l) + &
                   this%decomp_npools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
-             this%bgc_npool_inputs_col(c,l) = this%bgc_npool_inputs_col(c,l) + this%bgc_npool_inputs_vr_col(c,j,l)*dzsoi_decomp(j)
+                  
+             this%bgc_npool_inputs_col(c,l) = this%bgc_npool_inputs_col(c,l) + &
+                (this%bgc_npool_ext_inputs_vr_col(c,j,l)-this%bgc_npool_ext_loss_vr_col(c,j,l))*dzsoi_decomp(j)
           end do
        end do
 

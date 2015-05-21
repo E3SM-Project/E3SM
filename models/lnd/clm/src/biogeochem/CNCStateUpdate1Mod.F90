@@ -134,13 +134,13 @@ contains
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! phenology and dynamic land cover fluxes
-            cf%bgc_cpool_inputs_vr_col(c,j,i_met_lit) = &
+            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
                  ( cf%phenology_c_to_litr_met_c_col(c,j) + cf%dwt_frootc_to_litr_met_c_col(c,j) ) *dt
-            cf%bgc_cpool_inputs_vr_col(c,j,i_cel_lit) = &
+            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
                  ( cf%phenology_c_to_litr_cel_c_col(c,j) + cf%dwt_frootc_to_litr_cel_c_col(c,j) ) *dt
-            cf%bgc_cpool_inputs_vr_col(c,j,i_lig_lit) = &
+            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
                  ( cf%phenology_c_to_litr_lig_c_col(c,j) + cf%dwt_frootc_to_litr_lig_c_col(c,j) ) *dt
-            cf%bgc_cpool_inputs_vr_col(c,j,i_cwd) = &
+            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
                  ( cf%dwt_livecrootc_to_cwdc_col(c,j) + cf%dwt_deadcrootc_to_cwdc_col(c,j) ) *dt
          enddo
       enddo  

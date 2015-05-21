@@ -576,7 +576,7 @@ contains
   ! an reformulation of the nitrogen fixation cycle)
   !I did this in a quick and dirty way. 
   
-  call calc_extneral_bgc_input(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
+  call bgcstate_ext_update_bfdecomp(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, y0, cn_ratios, cp_ratios)
   
   !calculate nitrogen uptake profile
@@ -670,7 +670,10 @@ contains
       !endif
     enddo
   enddo  
-!  pause 
+!  pause
+  call bgcstate_ext_update_afdecomp(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
+    centurybgc_vars, betrtracer_vars, tracerflux_vars, yf)
+    
   !retrieve the flux variable
   call retrieve_flux_vars(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nstvars, dtime, yf, y0, &
      centurybgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)

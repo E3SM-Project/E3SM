@@ -102,12 +102,12 @@ contains
             c = filter_soilc(fc)      
             ! column level nitrogen fluxes from fire
             ! pft-level wood to column-level CWD (uncombusted wood)
-            nf%bgc_npool_inputs_vr_col(c,j,i_cwd) = nf%bgc_npool_inputs_vr_col(c,j,i_cwd) + nf%fire_mortality_n_to_cwdn_col(c,j) * dt
+            nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd) + nf%fire_mortality_n_to_cwdn_col(c,j) * dt
 
             ! pft-level wood to column-level litter (uncombusted wood)
-            nf%bgc_npool_inputs_vr_col(c,j,i_met_lit) = nf%bgc_npool_inputs_vr_col(c,j,i_met_lit) + nf%m_n_to_litr_met_fire_col(c,j)* dt
-            nf%bgc_npool_inputs_vr_col(c,j,i_cel_lit) = nf%bgc_npool_inputs_vr_col(c,j,i_cel_lit) + nf%m_n_to_litr_cel_fire_col(c,j)* dt
-            nf%bgc_npool_inputs_vr_col(c,j,i_lig_lit) = nf%bgc_npool_inputs_vr_col(c,j,i_lig_lit) + nf%m_n_to_litr_lig_fire_col(c,j)* dt
+            nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%m_n_to_litr_met_fire_col(c,j)* dt
+            nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%m_n_to_litr_cel_fire_col(c,j)* dt
+            nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%m_n_to_litr_lig_fire_col(c,j)* dt
          end do ! end of column loop
         end do
         
@@ -117,7 +117,7 @@ contains
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               nf%bgc_npool_inputs_vr_col(c,j,l) = nf%bgc_npool_inputs_vr_col(c,j,l) - nf%m_decomp_npools_to_fire_vr_col(c,j,l) * dt
+               nf%bgc_npool_ext_loss_vr_col(c,j,l) = nf%bgc_npool_ext_loss_vr_col(c,j,l) + nf%m_decomp_npools_to_fire_vr_col(c,j,l) * dt
             end do
           end do
         end do        

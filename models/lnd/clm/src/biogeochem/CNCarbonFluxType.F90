@@ -354,7 +354,8 @@ module CNCarbonFluxType
      real(r8), pointer :: cwdc_loss_col                             (:)     ! (gC/m2/s) col-level coarse woody debris C loss
      real(r8), pointer :: litterc_loss_col                          (:)     ! (gC/m2/s) col-level litter C loss
 
-     real(r8), pointer :: bgc_cpool_inputs_vr_col                   (:, :, :)  ! col-level organic carbon input gC/m3 /time step
+     real(r8), pointer :: bgc_cpool_ext_inputs_vr_col               (:, :, :)  ! col-level extneral organic carbon input gC/m3 /time step
+     real(r8), pointer :: bgc_cpool_ext_loss_vr_col                 (:, :, :)  ! col-level extneral organic carbon loss gC/m3 /time step
      ! patch averaged to column variables - to remove need for pcf_a instance
      real(r8), pointer :: rr_col                                    (:)     ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
      real(r8), pointer :: ar_col                                    (:)     ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)      
@@ -663,7 +664,9 @@ contains
      allocate(this%prod100c_loss_col                 (begc:endc))                  ; this%prod100c_loss_col         (:)  =nan
      allocate(this%product_closs_col                 (begc:endc))                  ; this%product_closs_col         (:)  =nan
 
-     allocate(this%bgc_cpool_inputs_vr_col           (begc:endc, 1:nlevdecomp_full,ndecomp_pools));this%bgc_cpool_inputs_vr_col (:,:,:) = nan
+     allocate(this%bgc_cpool_ext_inputs_vr_col       (begc:endc, 1:nlevdecomp_full,ndecomp_pools));this%bgc_cpool_ext_inputs_vr_col (:,:,:) = nan
+     allocate(this%bgc_cpool_ext_loss_vr_col         (begc:endc, 1:nlevdecomp_full,ndecomp_pools));this%bgc_cpool_ext_loss_vr_col   (:,:,:) = nan
+     
      allocate(this%lf_conv_cflux_col                 (begc:endc))                  ; this%lf_conv_cflux_col         (:)  =nan
      allocate(this%lithr_col                         (begc:endc))                  ; this%lithr_col                 (:)  =nan
      allocate(this%somhr_col                         (begc:endc))                  ; this%somhr_col                 (:)  =nan
@@ -3014,13 +3017,22 @@ contains
 
      ctag=get_carbontag(carbon_type)
      do k = 1, ndecomp_pools
-       this%bgc_cpool_inputs_vr_col(begc:endc, :, k) = spval    
-       data2dptr => this%bgc_cpool_inputs_vr_col(:,:,k)
-       fieldname='BGC_'//trim(ctag)//'POOL_INPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       this%bgc_cpool_ext_inputs_vr_col(begc:endc, :, k) = spval    
+       data2dptr => this%bgc_cpool_ext_inputs_vr_col(:,:,k)
+       fieldname='BGC_'//trim(ctag)//'POOL_EXT_INPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
        longname=trim(ctag)//' input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
-       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3/s',  type2d='levdcmp', &
+       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
          avgflag='A', long_name=longname, &
          ptr_col=data2dptr, default='inactive')
+
+       this%bgc_cpool_ext_loss_vr_col(begc:endc, :, k) = spval    
+       data2dptr => this%bgc_cpool_ext_loss_vr_col(:,:,k)
+       fieldname='BGC_'//trim(ctag)//'POOL_EXT_LOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       longname=trim(ctag)//' loss of '//trim(decomp_cascade_con%decomp_pool_name_history(k))
+       call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
+         avgflag='A', long_name=longname, &
+         ptr_col=data2dptr, default='inactive')
+         
      enddo
      !-------------------------------
      ! C13 flux variables - native to column 
@@ -4022,7 +4034,8 @@ contains
           i = filter_column(fi)
           this%decomp_cpools_leached_col(i,k) = value_column
           this%m_decomp_cpools_to_fire_col(i,k) = value_column
-          this%bgc_cpool_inputs_vr_col(i,:, k) = value_column
+          this%bgc_cpool_ext_inputs_vr_col(i,:, k) = value_column
+          this%bgc_cpool_ext_loss_vr_col(i,:, k) = value_column
        end do
     end do
 
