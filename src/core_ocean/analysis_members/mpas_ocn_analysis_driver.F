@@ -348,8 +348,9 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_compute_startup', config_AM_water_mass_census_compute_startup)
        if (config_use_AM_water_mass_census.and.config_AM_water_mass_census_compute_startup) then
-          call mpas_timer_start('io_write', .false.)
           call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
+          call mpas_timer_start('io_write', .false.)
+          call mpas_stream_mgr_write(stream_manager, streamID='waterMassOutput', forceWriteNow=.true., ierr=err_tmp)
           call mpas_timer_stop('io_write')
           err = ior(err, err_tmp)
        endif
