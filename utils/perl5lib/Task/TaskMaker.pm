@@ -51,17 +51,14 @@ sub new
 	{
  	    my $toolsdir = $self->{'caseroot'} . "/Tools";
 	    require ConfigCase;
-    	#my $cfgref = ConfigCase->new("$self->{'caseroot'}/Tools/config_definition.xml", "$self->{'caseroot'}/env_build.xml");
     	my $cfgref = ConfigCase->new("$self->{'caseroot'}/Tools/config_definition.xml", "env_build.xml");
     	%config = $cfgref->getAllResolved();
 		$self->{'config'} = \%config;
 	}
-	#print Dumper \%config;
 	
 	# Use the layout strings to pull the layout information out of the config
 	foreach my $layoutstring(@{$self->{'layoutstrings'}})
 	{
-		#$self->{$layoutstring} = $self->{'config'}->get('layoutstring');
 		$self->{$layoutstring} = $config{$layoutstring};
 	}
 	
@@ -82,8 +79,6 @@ sub new
 	my @nthrds = ( $config{'NTHRDS_CPL'}, $config{'NTHRDS_ATM'}, $config{'NTHRDS_LND'}, $config{'NTHRDS_ROF'}, $config{'NTHRDS_ICE'}, $config{'NTHRDS_OCN'}, 
 				       $config{'NTHRDS_GLC'}, $config{'NTHRDS_WAV'} );
 	$self->{'nthrds'} = \@nthrds;
-    #print "nthrds: @nthrds\n";
-    #print "self nthrds: $self->{'nthrds'}\n";
 
 	my @rootpe = ( $config{'ROOTPE_CPL'}, $config{'ROOTPE_ATM'}, $config{'ROOTPE_LND'}, $config{'ROOTPE_ROF'}, $config{'ROOTPE_ICE'}, $config{'ROOTPE_OCN'}, 
 				       $config{'ROOTPE_GLC'}, $config{'ROOTPE_WAV'} );
@@ -109,12 +104,12 @@ sub new
 sub _getConfig
 {
 	my $self = shift;
-	#print Dumper $self;
+
 	my $toolsdir = $self->{'caseroot'} . "/Tools";
 	require ConfigCase;
 	
 	my $config = ConfigCase->new("$self->{'caseroot'}/Tools/config_definition.xml", "$self->{'caseroot'}/env_build.xml");
-	#print Dumper $config;
+
 	$config->getAllResolved();
 	return $config;
 }
@@ -127,12 +122,11 @@ sub _computeValues
 
 	my $self = shift;
 	my $totaltasks = 0;
-	#print ref @{$self->{ntasks}} . "\n";
 	my @ntasks = @{$self->{ntasks}};
-	#print Dumper \@ntasks;
 	my @nthrds = @{$self->{nthrds}};
 	my @rootpe = @{$self->{rootpe}};
 	my @pstrid = @{$self->{pstrid}};
+
 	for(my $i = 0; $i <= $#ntasks; $i++)
 	{
 		my $n = $ntasks[$i]; 
@@ -205,13 +199,11 @@ sub _computeValues
 	# but before checking for max and summing..
 	my $minthreads = $maxt[0];
 	my $maxthreads = $maxt[0];
-	#print Dumper \@maxt;
+
 	my @sumthreads;
 	$sumthreads[0] = 0;
 	for(my $c1 = 1; $c1 < $totaltasks; $c1++)
 	{
-		#print "c1: $c1\n";
-		#print "maxt[c1]: $maxt[$c1]\n";
 		if($maxt[$c1] < $minthreads) { $minthreads = $maxt[$c1];} 	
 		if($maxt[$c1] < 1)           { $maxt[$c1] = 1;} 	
 		if($maxt[$c1] > $maxthreads) { $maxthreads = $maxt[$c1] ;} 	
@@ -244,12 +236,10 @@ sub _computeValues
 		{
 			$taskgeom = $taskgeom.",$c1";
 		}
-		#print "c1: $c1\n";
-		#print "maxt[c1]: $maxt[$c1]\n";
+
 		$threadgeom = $threadgeom . ":$maxt[$c1]";
 		if($maxt[$c1]  != $threadcount)
 		{
-			#print "taskpernode: $taskpernode\n";
 			print "self Max_TASKS_PER_NODE: $self->{'MAX_TASKS_PER_NODE'}\n";
 			print "threadcount $threadcount\n";
 			$taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
@@ -264,7 +254,6 @@ sub _computeValues
 		{
 			$taskcount += 1;
 		}
-		#print "task count: $taskcount\n";
 	}
 	
 	$fullsum = $fullsum + $sum;
@@ -282,15 +271,13 @@ sub _computeValues
 	# add all the calculated numbers as instance data. 
 	$self->{'totaltasks'} = $totaltasks;
 	$self->{'taskpernode'} = $taskpernode;
-        $self->{'taskpernuma'}  = $taskpernode / 2;
+    $self->{'taskpernuma'}  = $taskpernode / 2;
 	$self->{'maxthreads'} = $maxthreads;
 	$self->{'minthreads'} = $minthreads;
 	$self->{'taskgeom'} = $taskgeom;
 	$self->{'threadgeom'} = $threadgeom;
 	$self->{'taskcount'} = $taskcount;
 	$self->{'threadcount'} = $threadcount;
-	#print "threadcount: $threadcount\n";
-	#print "self threadcount: ", $self->{'threadcount'} , "\n";
 	$self->{'aprun'}  .= " -S $taskpernode -d $threadcount \${EXEROOT}/cesm.exe";
 	$self->{'nodecount'} = $taskcount / $taskpernode; 
 
@@ -299,7 +286,6 @@ sub _computeValues
 	$self->{'pbsrs'} = $pbsrs . "$self->{nodecount}:ncpus=$self->{'MAX_TASKS_PER_NODE'}:mpiprocs=${taskpernode}:ompthreads=${threadcount}:model=";
 
 	# Finally, calculate ptile..  
-	#print "max tasks per node: ", $self->{'MAX_TASKS_PER_NODE'}, "\n";
 	my $ptile = $self->{'MAX_TASKS_PER_NODE'} / 2;
 	if($self->{'maxthreads'} > 1)
 	{
@@ -307,7 +293,6 @@ sub _computeValues
 	}
 	$self->{'ptile'} = $ptile;
 
-	# Calc
 
 }
 
@@ -321,7 +306,7 @@ sub sumPES
 }
 
 #==============================================================================
-# get the sum only?? 
+# get the sum only 
 #==============================================================================
 sub sumOnly
 {
@@ -391,9 +376,8 @@ sub nodeCount()
 }
 
 #==============================================================================
-# TODO refactor
-# This could probably be moved to the batch configuration file. 
-# for now, we construct the aprun line here. 
+# TODO remove the aprun stuff from this module
+# It is being constructed properly via XML configuration files. 
 #==============================================================================
 sub APRun()
 {
@@ -403,7 +387,7 @@ sub APRun()
 
 #==============================================================================
 # get the PBSRS string.  This should probably be refactored a better method ???
-# TODO refactor
+# TODO remove...
 #==============================================================================
 sub PBSRS()
 {
@@ -434,7 +418,7 @@ sub taskPerNode()
 #==============================================================================
 sub taskPerNuma()
 {	
-        my $self = shift;
+    my $self = shift;
 	return $self->{'taskpernuma'};
 }
 

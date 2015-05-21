@@ -233,12 +233,13 @@ if (! $clean ) {
 	
     my $inputbatchscript = "$xmlvars{'CCSM_MACHDIR'}/template.cesmrun";
     my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
-    print "input batch script: $inputbatchscript\n";
-    print "output batch script: $outputbatchscript\n";
     $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
     print "Creating batch script $case.st_archive\n";
     $batchmaker->overrideNodeCount(1);
     $batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
+    print "Creating batch script $case.lt_archive\n";
+    $batchmaker->overrideNodeCount(1);
+    $batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
 
 	# Make a copy of env_mach_pes.xml in order to be able 
 	# to check that it does not change once cesm_setup is invoked

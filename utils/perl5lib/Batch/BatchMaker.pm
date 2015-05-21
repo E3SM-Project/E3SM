@@ -290,6 +290,8 @@ sub setBatchDirectives()
 		my $dvalue = $directive->textContent();
 		my $valueToUse = undef;
 		
+		# Do the variable transform if necessary. 
+        # strip the special characters
 		while($dvalue =~ /({{ \w+ }})/)
 		{
 			my $matchedString = $1;
@@ -298,23 +300,30 @@ sub setBatchDirectives()
 			$stringToReplace =~ s/ }}//g;
 			my $actualValue;
 			
+            # If the instance data for the variable doesn't exist, and we have a default, 
+            # use the default value we find. 
 			if(! defined $self->{$stringToReplace} && $directive->hasAttribute('default'))
 			{
 				$actualValue = $directive->getAttribute('default');
 				$directiveLine .= $actualValue;
 				$dvalue =~ s/$matchedString/$actualValue/g;
 			}
+			# If we DO have instance data for the variable, and there is no default, use the 
+            # instance data. 
 			elsif(! $directive->hasAttribute('default') &&  defined $self->{$stringToReplace})
 			{
 				$actualValue = $self->{$stringToReplace};
 				$dvalue =~ s/$matchedString/$actualValue/g;
 			}
+			# If we don't have either instance data to use, or a default value we can use, 
+            # get rid of the variable entirely. 
 			elsif(! $directive->hasAttribute('default') && ! defined $self->{$stringToReplace})
 			{
 				$dvalue = '';
 			}
-			#print "dvalue: $dvalue\n";
 		}
+		# If we have data in the dvalue for the directive, add the directive 
+        # to our batchdirectives instance data. 
 		if(length($dvalue) > 0)
 		{
 
@@ -333,7 +342,6 @@ sub setBatchDirectives()
 sub setTaskInfo()
 {
 	my $self = shift;
-	#print "base setTaskInfo\n";
 	chdir $self->{'caseroot'};
 	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
 	$self->{'taskmaker'} = $taskmaker;
@@ -349,7 +357,6 @@ sub setTaskInfo()
 	$self->{'threadgeometry'} = $taskmaker->threadGeometry();
 	$self->{'taskcount'} = $taskmaker->taskCount();
 	$self->{'num_nodes'} = $taskmaker->nodeCount();
-    #print "num_nodes; $self->{'num_nodes'}\n";
 	$self->{'thread_count'} = $taskmaker->threadCount();
 	$self->{'pedocumentation'} = $taskmaker->document();
 	$self->{'ptile'}       = $taskmaker->ptile();
@@ -380,6 +387,7 @@ sub setWallTime()
 	
 	# loop through the walltime values, and set the walltime based on the reported EST_COST of the run. 
 	my @walltimes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/walltimes/walltime");
+
 	# go through the walltime elements, and if our estimated cost is greater than the element's estimated cost, 
 	# then set the walltime. 
 	foreach my $welem(@walltimes)
@@ -395,7 +403,6 @@ sub setWallTime()
 	if (! defined $self->{'wall_time'})
 	{
 		my @defwtimeelems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/walltimes/walltime[\@default=\'true\']");
-		#print Dumper @defwtimeelems;
 		if(@defwtimeelems)
 		{
 			my $defaultelem = $defwtimeelems[0];
@@ -486,11 +493,13 @@ sub setCESMRun()
 	my $batchparser = $self->{'batchparser'};
 	my $configmachinesparser = $self->{'configmachinesparser'};
 	
+	# get the default run suffix, this should be the same for all machines. 
 	my @suffixes = $configmachinesparser->findnodes("/config_machines/default_run_suffix");
 	if(! @suffixes)
 	{
 		die "no default run suffix defined!";
 	}
+  
 	my $defaultrunsuffix = $suffixes[0]->textContent();
 	# get the batch system type for this machine.  
 	my @batchtype = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system");
@@ -502,14 +511,13 @@ sub setCESMRun()
 		die $msg;
 	}
 
-    $self->{'batchsystem'} = $batchtype[0]->getAttribute('name');
+    $self->{'batchsystem'} = $batchtype[0]->getAttribute('type');
 	my $config = $self->{'config'};
 	
 	# First, get all the mpirun elements.  
 	my @mpielems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/mpirun");
 	my $chosenmpielem = undef;
 	
-	#my $mpimatch = 1;
 	# Iterate through all the mpi elements. 
 	foreach my $mpielem(@mpielems)
 	{
@@ -522,14 +530,10 @@ sub setCESMRun()
 		{
 			my $attrName = $attr->getName();
 			my $attrValue = $attr->getValue();
-			print "attr Name: $attrName \n";
-			print "attr Value: $attrValue \n";
-			#print Dumper $attr;
+			#print "attr Name: $attrName \n";
+			#print "attr Value: $attrValue \n";
 			if(defined $self->{$attrName} && (lc $self->{$attrName} eq $attrValue))
 			{
-				#print "attribute match found\n";
-				#print "attr Value: $attrValue\n";
-				#print "self attr value: ", $self->{$attrName} , "\n";
 				$match = 1;
 				last;
 			}
@@ -540,6 +544,7 @@ sub setCESMRun()
 		}
 	}
 	
+	# if we don't have an mpirun command, find the default. 
 	if(! defined $chosenmpielem)
 	{
 		my @defaultmpielems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/mpirun[\@mpilib=\'default\']");
@@ -555,14 +560,14 @@ sub setCESMRun()
 	my $mpiargstring = '';
 	my $executableString = undef;
 	my @exeelems = $chosenmpielem->findnodes("./executable");
-	#print Dumper \@exeelems;
-	# Iterate through the executable elements
+
+	# Iterate through the executable elements, get the mpirun, etc 
+    # arguments. 
 	foreach my $exeelem(@exeelems)
 	{
 		$executableString = $exeelem->textContent();
         
 		my @arguments = $chosenmpielem->findnodes("./arguments/arg");
-		#print Dumper \@arguments;
 		
 		# Iterate through the arg elements..
 		foreach my $arg(@arguments)
@@ -586,35 +591,25 @@ sub setCESMRun()
 				my $stringToReplace = $matchedString;
 				$stringToReplace =~ s/{{ //g;
 				$stringToReplace =~ s/ }}//g;
-				print "string to replace: $stringToReplace\n";
 
 				# the actual argument is stored here, 
 				# this way we can transform the thing as we
 				# need to 
-				#my $actualArg =  $argValue;
-				#print Dumper $arg;
 				
 				# if we don't have an instance variable, and we do have a default value, 
 				# use the default value for the double underscore substitution. 
 				if(! defined $self->{$stringToReplace} && $arg->hasAttribute('default'))
 				{
-					#print "setting argValue $argValue to default..\n";
-					
 					my $defaultAttr = $arg->getAttribute('default');
-					#print "default attribute: $defaultAttr\n";
-					#print "matched string: $matchedString\n";
 					$argValue =~ s/$matchedString/$defaultAttr/g;
-					#print "actual argument is now: $argValue\n";
 	
 				}
 				elsif( defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
 				{
 					my $instanceVar = $self->{$stringToReplace};
 					$argValue =~ s/$matchedString/$instanceVar/g;
-					#$argValue = $actualArg;
-					#print "default attribute: $defaultAttr\n";
-					print "matched string: $matchedString\n";
-					print "actual argument is now: $argValue\n";
+					#print "matched string: $matchedString\n";
+					#print "actual argument is now: $argValue\n";
 				}
 				elsif(! defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
 				{	
@@ -638,7 +633,6 @@ sub writeBatchScript()
 	my $self = shift;
 	my $inputfilename = shift;
 	my $outputfilename = shift;
-	#my $batchfiletype = shift;
 	my $batchtemplate = '';
 	open (my $RUNTMPL, "<", $inputfilename) or die "could not open run template $inputfilename, $!";
 	my $templatetext = join("", <$RUNTMPL>);
@@ -670,44 +664,93 @@ sub overrideNodeCount()
 # Simple factory class to get the right BatchMaker class for each machine.  
 # The only downside to this strategy is that we have to have a BatchMaker_${machine} 
 # class for every machine we port. 
-# TODO: REFACTOR this so that we first search for a class that matches the machine name, 
-# if the machine name is not found, then return the class that matches the name of the
-# scheduling system, which we should ALWAYS have!!
+# TODO: REFACTOR this so that if no machine or batch class is found, then the base
+# class is returned. 
 #==============================================================================
 package Batch::BatchFactory;
 use Data::Dumper;
-sub getBatchMaker
+sub getBatchMaker()
 {
 	my (%params) = @_;
-    #print "batchfactory params before BatchMaker new:\n";
-    #print Dumper \%params;
 	if(! defined $params{'machine'})
 	{
 		die "BatchFactory: params{'machine'} must be defined!";
 	}
 	
+	
 	my $machine = $params{'machine'};
-	# New up the base class, at 'bless-time' it will 
-	# be blessed with the appropriate class name. 
 	my $batchmaker = Batch::BatchMaker->new(%params);
-	my $classname = "Batch::BatchMaker_" . $machine;
-    
-	bless $batchmaker, $classname;
-	return $batchmaker;
+	my $subclassname = "Batch::BatchMaker_" . $machine;
+	if($params{'machine'} =~ /pleiades/)
+	{
+		my $newmachname = $params{'machine'};
+		$newmachname =~ s/-/_/g;
+		$subclassname = "Batch::BatchMaker_" . $newmachname;
+	}
+
+	# Try to call the _test method on the class. 
+	# If we get an error, it means the class doesn't
+	# exist, and we need to return an instance of the base
+	# class. 
+	my $rv = eval
+	{
+		bless $batchmaker, $subclassname;
+		$batchmaker->_test();
+		1;
+	};
+
+	if(! $@)
+	{
+		return $batchmaker;
+	}
+	else
+	{
+		bless $batchmaker, "Batch::BatchMaker";
+		return $batchmaker;	
+	}
 }
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_lsf;
 use base qw (Batch::BatchMaker);
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_pbs;
 use base qw (Batch::BatchMaker);
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_slurm;
 use base qw (Batch::BatchMaker);
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_cray;
 use base qw(Batch::BatchMaker);
 use Data::Dumper;
 use POSIX;
+
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 sub setTaskInfo()
 {
     my $self = shift;
@@ -725,13 +768,18 @@ sub setTaskInfo()
     }
 	$self->{'mppwidth'} = $self->{'mppsize'};
 
-    #print "mppsize: $self->{'mppsize'} \n";
-    #print "mppwidth: $self->{'mppwidth'} \n";
     $self->SUPER::setTaskInfo();
 }
 
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_edison;
 use base qw (Batch::BatchMaker_cray);
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 sub setTaskInfo()
 {
 	my $self = shift;
@@ -740,40 +788,41 @@ sub setTaskInfo()
     $self->SUPER::setTaskInfo();
 }
 
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_hopper;
 use base qw (Batch::BatchMaker_cray);
 use Data::Dumper;
 use POSIX;
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 sub setTaskInfo()
 {
 	my $self = shift;
 	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-    print "hopper setTaskInfo\n";
 	$self->{'mppsum'} = $taskmaker->sumOnly();
     $self->SUPER::setTaskInfo();
 }
 
-package Batch::BatchMaker_bluewaters;
-use base qw (Batch::BatchMaker);
 
-package Batch::BatchMaker_goldbach;
-use base qw (Batch::BatchMaker);
-
-package Batch::BatchMaker_janus;
-use base qw (Batch::BatchMaker);
-
+#==============================================================================
+#==============================================================================
 package Batch::BatchMaker_mira;
 use base qw (Batch::BatchMaker );
 use Data::Dumper;
+sub _test()
+{
+	my $self = shift;
+	return 1;
+}
 # Mira does not need batch directives..
 sub transformVars()
 {
     my $self = shift;
     my $text = shift;
-    #print "mira transformVars cimeroot: \n";
-    #print $self->{'cimeroot'} . "\n";
-    #print Dumper $self;
-    #print "Mira transformVars\n";
     $text =~ s/{{ batchdirectives }}//g;
     $text = $self->SUPER::transformVars($text);
 }
@@ -791,16 +840,6 @@ sub setCESMRun()
     $self->SUPER::setCESMRun();
     my $mpirun = $self->{'mpirun'};
 
-#    my $code1 =<<'E1';
-#if($ENV{'COBALT_JOBID'} == 0 && $config{'MPILIB'} != 'mpi-serial') {
-#        print "COBALT_JOBID not set, submitting job\n";
-#E1
-# 
-#    my $code2 =<<"E2";
-#        print "qsub -n $self->{'num_nodes'} -t $self->{'wall_time'} --mode \$0 -backend";
-#        qx( "qsub -n $self->{'num_nodes'} -t $self->{'wall_time'} --mode \$0 -backend");
-#    }
-#E2
     my $code1 =<<'E1';
 my $LOCARGS = "--block $ENV{'COBALT_PARTNAME'}";
     if(defined $ENV{'COBALT_CORNER'})
@@ -815,155 +854,23 @@ E1
     my $code2=<<"E2";
     $mpirun
 E2
-    #my $code = "$code1\n$code2\n$code3\n$code4";
     my $code = "$code1\n$code2\n";
     $self->{'mpirun'} = "$code\n";
-    print "mpirun is now: ", $self->{'mpirun'} . "\n";
-    print "num_nodes: $self->{'num_nodes'}\n";
-    #$self->SUPER::setCESMRun();
     
 }
 
-package Batch::BatchMaker_cetus;
-use base qw (Batch::BatchMaker );
-# Mira does not need batch directives..
-sub transformVars()
-{
-    my $self = shift;
-    my $text = shift;
-    print "Cetus transformVars\n";
-    $text =~ s/{{ batchdirectives }}//g;
-    $text = $self->SUPER::transformVars($text);
-}
 
-sub setBatchDirectives()
-{
-    my $self = shift;
-    $self->{'batchdirectives'} = undef;
-}
-
-sub setCESMRun()
-{
-    my $self = shift;
-    $self->SUPER::setCESMRun();
-    my $mpirun = $self->{'mpirun'};
-
-    my $code1 =<<'E1';
-if($ENV{'COBALT_JOBID'} == 0 && $config{'MPILIB'} != 'mpi-serial') {
-        print "COBALT_JOBID not set, submitting job\n";
-E1
-
-    my $code2 =<<"E2";
-        print "qsub -n $self->{'num_nodes'} -t $self->{'wall_time'} --mode \$0 -backend";
-        qx( "qsub -n $self->{'num_nodes'} -t $self->{'wall_time'} --mode \$0 -backend");
-    }
-E2
-    my $code3 =<<'E3';
-    else
-    {
-        my $LOCARGS = "--block $ENV{'COBALT_PARTNAME'}";
-        if(defined $ENV{'COBALT_CORNER'})
-        {
-            $LOCARGS .= "--corner $ENV{'COBALT_CORNER'}";
-        }
-        if(defined $ENV{'COBALT_SHAPE'})
-        {
-            $LOCARGS .= "--shape $ENV{'COBALT_CORNER'}";
-        }
-E3
-    my $code4=<<"E4";
-        $mpirun
-    }
-E4
-    my $code = "$code1\n$code2\n$code3\n$code4";
-    $self->{'mpirun'} = "$code\n";
-    print "mpirun is now: ", $self->{'mpirun'} . "\n";
-    #$self->SUPER::setCESMRun();
-
-}
-package Batch::BatchMaker_tukey;
-use base qw (Batch::BatchMaker );
-# Mira does not need batch directives..
-sub transformVars()
-{
-    my $self = shift;
-    my $text = shift;
-    $text =~ s/{{ batchdirectives }}//g;
-    $text = $self->SUPER::transformVars($text);
-}
-
-sub setBatchDirectives()
-{
-    my $self = shift;
-    $self->{'batchdirectives'} = undef;
-}
-
-sub setCESMRun()
-{
-    my $self = shift;
-    $self->SUPER::setCESMRun();
-    my $mpirun = $self->{'mpirun'};
-
-#    my $code1 =<<'E1';
-#if($ENV{'COBALT_JOBID'} == 0 && $config{'MPILIB'} != 'mpi-serial') {
-#        print "COBALT_JOBID not set, submitting job\n";
-#E1
-#
-#    my $code2 =<<"E2";
-#        print "qsub -n $self->{'num_nodes'} -t $self->{'wall_time'} --mode \$0 -backend";
-#        qx( "qsub -n $self->{'num_nodes'} -t $self->{'wall_time'} --mode \$0 -backend");
-#    }
-#E2
-    my $code1 =<<'E1';
-    my $LOCARGS = "--block $ENV{'COBALT_PARTNAME'}";
-    if(defined $ENV{'COBALT_CORNER'})
-    {
-        $LOCARGS .= "--corner $ENV{'COBALT_CORNER'}";
-    }
-    if(defined $ENV{'COBALT_SHAPE'})
-    {
-        $LOCARGS .= "--shape $ENV{'COBALT_CORNER'}";
-    }
-E1
-    my $code2=<<"E2";
-        $mpirun
-    }
-E2
-    #my $code = "$code1\n$code2\n$code3\n$code4";
-    my $code = "$code1\n$code2\n";
-    $self->{'mpirun'} = "$code\n";
-    print "mpirun is now: ", $self->{'mpirun'} . "\n";
-    #$self->SUPER::setCESMRun();
-
-}
-
-package Batch::BatchMaker_titan;
-use base qw( Batch::BatchMaker );
-
-package Batch::BatchMaker_eos;
-use base qw( Batch::BatchMaker );
 
 #==============================================================================
 # Subclass that is specific to yellowstone.  We inherit from the BatchMaker_lsf 
 # class, then inherit from the base class. 
 #==============================================================================
-package Batch::BatchMaker_yellowstone;
-use base qw( Batch::BatchMaker_lsf );
-use Data::Dumper;
-#==============================================================================
-# Overridden setBatchDirectives for yellowstone.  Call the base class 
-# method first.  
-# Then, check to see if we want to be exclusive to a node or not.  
-#==============================================================================
-sub setBatchDirectives()
-{
-	my $self = shift;
-	$self->SUPER::setBatchDirectives();
-}
-sub setTaskInfo()
-{
-	my $self = shift;
-	$self->SUPER::setTaskInfo();
-}
-
+#package Batch::BatchMaker_yellowstone;
+#use base qw( Batch::BatchMaker_lsf );
+#use Data::Dumper;
+#sub _test()
+#{
+#	my $self = shift;
+#	return 1;
+#}
 1;

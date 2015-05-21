@@ -2,6 +2,8 @@
 #==============================================================================
 # File:  BatchUtils.pm
 # Purpose:  Utility class for submitting jobs, and managing dependencies.  
+# PLEASE NOTE: for each subclass you define, you MUST add a _test() method 
+# to the subclass for the factory to work 
 #
 #==============================================================================
 use strict;
@@ -12,7 +14,6 @@ use Cwd;
 use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
-#push(@INC, "/gpfs/mira-fs0/projects/CESM_Atmos/usr/shollenb/devsandboxes/cesm1_3_workflow_batch/cime/utils/perl5lib/");
 use lib '.';
 #==============================================================================
 # Base class constructor.  required args are the case name, caseroot, cime/cesmroot, 
@@ -255,6 +256,7 @@ sub doResubmit()
 #==============================================================================
 # If we need to resubmit a CESM job + post-run jobs, this subroutine will check the 
 # env*.xml variables to see which jobs need to be resubmitted.  
+# For now, we are only handling cesm runs and the short-term archiver. 
 #==============================================================================
 sub dependencyCheck()
 {
@@ -322,6 +324,8 @@ sub addDependentJob()
 }
 
 #==============================================================================
+# Base class getSubmitArguments.  If we need to have submit arguments to qsub, 
+# then this method will pull them out and set them up.  
 #==============================================================================
 sub getSubmitArguments()
 {
@@ -330,6 +334,7 @@ sub getSubmitArguments()
     my $scriptname = shift;
     my $dependentjobid = shift;
 
+	# Get a BatchMaker instance, we need its instance data. 
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
                                                   mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
                                                   machroot => $self->{machroot}, machine => $self->{machine},
@@ -365,7 +370,8 @@ sub getSubmitArguments()
     	            $submitargs .= " $argFlag $field";
     	        }
     	    }
-    	    # If the argName isn't defined,
+    	    # If the argName isn't defined, just use the argflag, there;s
+            # no data to replace.  
     	    elsif(defined $argFlag && ! defined $argName)
     	    {
     	        $submitargs .= " $argFlag";
@@ -373,6 +379,8 @@ sub getSubmitArguments()
     	}
 	}
 
+    # If we have a dependent job id, we need to get the depend string
+    # for this particular setup, and add it to the submit arguments. 
     if(defined $dependentjobid)
 	{
 		my $dependArg = $self->getDependString($dependentjobid);
@@ -380,7 +388,6 @@ sub getSubmitArguments()
 	}
 
 	return $submitargs;
-
 }
 
 
@@ -451,9 +458,10 @@ sub getBatchUtils
     {
         return $batchutils;
     }
+	# just to make sure, if we're here, we should be returning the
+    # base class BatchUtils
     else    
     {
-		#print "batch-specific error found, $@";
 		bless $batchutils, "Batch::BatchUtils";
         return $batchutils;
     }
@@ -481,7 +489,6 @@ sub getBatchSystemType()
     {
         die "Could not determine batch system type for machine $machine";
     }
-    #my $batchtype = $batchsystems[0]->textContent();
     my $batchtype = $batchsystems[0]->getAttribute('type');
     return $batchtype;
 }
@@ -489,7 +496,11 @@ sub getBatchSystemType()
 
 #==============================================================================
 # Mira/ALCF specific BatchUtils class, since the workflow for ALCF has to be 
-# completely different.  
+# completely different. 
+# Current workflow: 
+# Run the CESM run on Mira or Cetus.  When done, ssh over to tukeylogin1 and submit 
+# the short-term archive run.  If we need to continue and resubmit, we will then 
+# ssh back to either Mira or Cetus and resubmit the CESM run.  
 #==============================================================================
 package Batch::BatchUtils_mira;
 use base qw( Batch::BatchUtils );
@@ -497,7 +508,9 @@ use Data::Dumper;
 use Cwd;
 
 #==============================================================================
-# Overridden submitJobs() method for Mira.  
+# Overridden submitJobs() method for Mira. 
+# For ALCF, we really only want this method to submit the CESM run. 
+# The short-term archiver and resubmission will be handled elsewhere. 
 #==============================================================================
 sub submitJobs()
 {
@@ -516,6 +529,13 @@ sub submitJobs()
     $depjobid = $self->submitSingleJob($firstjobname, $depjobid, 0);
 }
 
+#==============================================================================
+# ALCF-specific single job submission. 
+# The trick with ALCF is when we need to know which machine to ssh back to 
+# to resubmit the CESM run.
+# So, write a 'workflowhostfile' which contains the hostname we need to ssh back to 
+# to resubmit the run. 
+#==============================================================================
 sub submitSingleJob()
 {
     my $self = shift;
@@ -542,6 +562,7 @@ sub submitSingleJob()
 #==============================================================================
 # Mira-specific doResubmit call.  If this is called from the cesm run, then we 
 # have to ssh over to tukey and run the short-term archiver. 
+# If called from the short-term archiver, 
 #==============================================================================
 sub doResubmit()
 {
@@ -550,7 +571,6 @@ sub doResubmit()
     my $resubmit = shift;
     my $scriptname = shift;
 
-    print "in doResubmit: scriptname: $scriptname\n";
     my %config = %{$self->{'caseconfig'}};
 	# On Mira/Cetus, if we're in doResubmit, and we are being called by the run
     # script, we need to ssh to tukey and submit the short-term archiver. 
@@ -568,7 +588,6 @@ sub doResubmit()
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         #my $cmd = "ssh tukeylogin1 qsub  -A CESM_Atmos -t 60 -n 1 -q default --mode script ./$starchivescript";
         my $runcmd = "ssh tukeylogin1 $submitstuff";
-        print "runcmd is: $runcmd\n";
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
     }
 
@@ -607,8 +626,10 @@ sub doResubmit()
     
 }
 
+#==============================================================================
 # If we need arguments when we submit a job, this is where we will add them.
 # This is really specific to Mira/ALFC, no center requires qsub submit arguments. 
+#==============================================================================
 sub getSubmitArguments()
 {
     my $self = shift;
@@ -664,21 +685,25 @@ sub getSubmitArguments()
         }
     }
 
+	# Get the dependent job id if necessary..
     if(defined $dependentjobid)
     {
         my $dependArg = $self->getDependString($dependentjobid);
         $submitargs .= " $dependArg";
     }
     # Need to add the --cwd argument to the submit args if this is the st_archive script
+	# so the archive script will run out of the CASEROOT
     if(defined $scriptname && $scriptname =~ /archive/)
     {
         $submitargs .= " --cwd $self->{'caseroot'} ";
     }
         
-    #print "submit args are now: $submitargs\n";
     return $submitargs;
 }
 
+#==============================================================================
+# Red herring class so the factory will work. 
+#==============================================================================
 sub _test()
 {
     my $self = shift;
