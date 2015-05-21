@@ -101,7 +101,7 @@
         <BATCHSUBMIT>sbatch &lt;</BATCHSUBMIT>
         <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
         <GMAKE_J>4</GMAKE_J>
-        <MAX_TASKS_PER_NODE>8 </MAX_TASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>16 </MAX_TASKS_PER_NODE>
 </machine>
 
 <machine MACH="bluewaters">
