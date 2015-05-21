@@ -241,6 +241,14 @@ module atm_core
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+  
+      do iCell=1,nCells 
+         invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
+      end do
+
       if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
          call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
       end if
@@ -262,14 +270,6 @@ module atm_core
                             uReconstructZonal,         &
                             uReconstructMeridional     &
                            )
-
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
-      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-  
-      do iCell=1,nCells 
-         invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
-      end do
    
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at least one physics
