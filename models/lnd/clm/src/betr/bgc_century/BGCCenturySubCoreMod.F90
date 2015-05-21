@@ -1321,8 +1321,8 @@ module BGCCenturySubCoreMod
     id_trc_no3x    => betrtracer_vars%id_trc_no3x                                  , & !   
     ngwmobile_tracers => betrtracer_vars%ngwmobile_tracers                         , & !
     tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col              , & !
-    bgc_cpool_ext_inputs_vr => carbonflux_vars%bgc_cpool_ext_inputs_vr_col                 , & !
-    bgc_npool_ext_inputs_vr => nitrogenflux_vars%bgc_npool_ext_inputs_vr_col               , & !
+    bgc_cpool_ext_loss_vr => carbonflux_vars%bgc_cpool_ext_loss_vr_col                 , & !
+    bgc_npool_ext_loss_vr => nitrogenflux_vars%bgc_npool_ext_loss_vr_col               , & !
     sminn_nh4_input_vr  => nitrogenflux_vars%sminn_nh4_input_vr_col                , & !
     sminn_no3_input_vr  => nitrogenflux_vars%sminn_no3_input_vr_col                  & 
   )
@@ -1335,12 +1335,12 @@ module BGCCenturySubCoreMod
     do j = 1, ubj
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        y0((k-1)*nelm+c_loc,c,j) = y0((k-1)*nelm+c_loc,c,j) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
-        y0((k-1)*nelm+n_loc,c,j) = y0((k-1)*nelm+n_loc,c,j) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
+        y0((k-1)*nelm+c_loc,c,j) = y0((k-1)*nelm+c_loc,c,j) - bgc_cpool_ext_loss_vr(c,j,k)/catomw
+        y0((k-1)*nelm+n_loc,c,j) = y0((k-1)*nelm+n_loc,c,j) - bgc_npool_ext_loss_vr(c,j,k)/natomw
         cn_ratios(k, c,j) = safe_div(y0((k-1)*nelm+c_loc,c,j), y0((k-1)*nelm+n_loc,c,j))
         
-        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
-        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) - bgc_cpool_ext_loss_vr(c,j,k)/catomw
+        tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) - bgc_npool_ext_loss_vr(c,j,k)/natomw
         !delta_somn = delta_somn + bgc_npool_ext_inputs_vr(c,j,k)*col%dz(c,j)
       enddo
     enddo

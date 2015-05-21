@@ -3019,7 +3019,7 @@ contains
      do k = 1, ndecomp_pools
        this%bgc_cpool_ext_inputs_vr_col(begc:endc, :, k) = spval    
        data2dptr => this%bgc_cpool_ext_inputs_vr_col(:,:,k)
-       fieldname='BGC_'//trim(ctag)//'POOL_EXT_INPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       fieldname='BGC_'//trim(ctag)//'POOL_EINPUT_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
        longname=trim(ctag)//' input to '//trim(decomp_cascade_con%decomp_pool_name_history(k))
        call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
          avgflag='A', long_name=longname, &
@@ -3027,7 +3027,7 @@ contains
 
        this%bgc_cpool_ext_loss_vr_col(begc:endc, :, k) = spval    
        data2dptr => this%bgc_cpool_ext_loss_vr_col(:,:,k)
-       fieldname='BGC_'//trim(ctag)//'POOL_EXT_LOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
+       fieldname='BGC_'//trim(ctag)//'POOL_ELOSS_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'_vr'
        longname=trim(ctag)//' loss of '//trim(decomp_cascade_con%decomp_pool_name_history(k))
        call hist_addfld_decomp (fname=fieldname, units='g'//ctag//'/m^3',  type2d='levdcmp', &
          avgflag='A', long_name=longname, &
