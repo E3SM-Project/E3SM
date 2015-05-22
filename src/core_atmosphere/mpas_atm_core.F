@@ -241,6 +241,14 @@ module atm_core
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+  
+      do iCell=1,nCells 
+         invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
+      end do
+
       if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
          call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
       end if
@@ -262,14 +270,6 @@ module atm_core
                             uReconstructZonal,         &
                             uReconstructMeridional     &
                            )
-
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
-      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-  
-      do iCell=1,nCells 
-         invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
-      end do
    
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at least one physics
@@ -329,7 +329,7 @@ module atm_core
       use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_io_streams, only : MPAS_STREAM_LATEST_BEFORE
+      use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
    
       implicit none
@@ -346,6 +346,9 @@ module atm_core
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer :: itimestep
 
+      integer :: stream_dir
+      character(len=StrKIND) :: input_stream, read_time
+
       type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
 
       ! For high-frequency diagnostics output
@@ -361,9 +364,10 @@ module atm_core
       ! Avoid writing a restart file at the initial time
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
-      ! Also, for restart runs, avoid writing the initial history fields to avoid overwriting those from the preceding run
+      ! Also, for restart runs, avoid writing the initial history or diagnostics fields to avoid overwriting those from the preceding run
       if (config_do_restart) then
          call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='output', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+         call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='diagnostics', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end if
 
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
@@ -404,14 +408,28 @@ module atm_core
          !
          ! Read external field updates
          !
-         call MPAS_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=ierr)
-         if (ierr /= MPAS_STREAM_MGR_NOERR) then
-            write(0,*) ' '
-            write(0,*) '********************************************************************************'
-            write(0,*) 'Error reading one or more input streams'
-            call mpas_dmpar_global_abort('********************************************************************************')
-         end if
-         call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+         call MPAS_stream_mgr_begin_iteration(domain % streamManager, ierr=ierr)
+         do while (MPAS_stream_mgr_get_next_stream(domain % streamManager, streamID=input_stream, directionProperty=stream_dir))
+            if (stream_dir == MPAS_STREAM_INPUT .or. stream_dir == MPAS_STREAM_INPUT_OUTPUT) then
+               if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID=input_stream, &
+                                                  direction=MPAS_STREAM_INPUT, ierr=ierr)) then
+                  call MPAS_stream_mgr_read(domain % streamManager, streamID=input_stream, whence=MPAS_STREAM_LATEST_BEFORE, &
+                                            actualWhen=read_time, ierr=ierr)
+                  if (ierr /= MPAS_STREAM_MGR_NOERR) then
+                     write(0,*) ' '
+                     write(0,*) '********************************************************************************'
+                     write(0,*) 'Error reading input stream '//trim(input_stream)
+                     call mpas_dmpar_global_abort('********************************************************************************')
+                  end if
+
+                  write(0,*) '----------------------------------------------------------------------'
+                  write(0,*) '  Read '''//trim(input_stream)//''' input stream valid at '//trim(read_time)
+                  write(0,*) '----------------------------------------------------------------------'
+
+                  call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID=input_stream, direction=MPAS_STREAM_INPUT, ierr=ierr)
+               end if
+            end if
+         end do
 
          call mpas_timer_start("time integration")
          call atm_do_timestep(domain, dt, itimestep)
@@ -470,9 +488,11 @@ module atm_core
          ! Only after we've successfully written the restart file should we we
          !    write the restart_timestamp file
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
-            open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
-            write(22,*) trim(timeStamp)
-            close(22)
+            if (domain % dminfo % my_proc_id == 0) then
+               open(22,file=trim(config_restart_timestamp_name),form='formatted',status='replace')
+               write(22,*) trim(timeStamp)
+               close(22)
+            end if
          end if
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)

@@ -93,9 +93,9 @@ module mpas_subdriver
             character(kind=c_char), dimension(*), intent(in) :: xmlname
             character(kind=c_char), dimension(*), intent(in) :: streamname
             integer(kind=c_int), intent(inout) :: comm
-            character(kind=c_char), dimension(*), intent(in) :: filename
-            character(kind=c_char), dimension(*), intent(in) :: ref_time
-            character(kind=c_char), dimension(*), intent(in) :: filename_interval
+            character(kind=c_char), dimension(*), intent(out) :: filename
+            character(kind=c_char), dimension(*), intent(out) :: ref_time
+            character(kind=c_char), dimension(*), intent(out) :: filename_interval
             character(kind=c_char), dimension(*), intent(out) :: io_type
             integer(kind=c_int), intent(out) :: ierr
          end subroutine xml_stream_get_attributes

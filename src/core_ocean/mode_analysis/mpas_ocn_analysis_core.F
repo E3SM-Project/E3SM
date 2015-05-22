@@ -433,6 +433,8 @@ module ocn_core
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       endif
 
+      err = iErr
+
    end function ocn_core_run!}}}
    
    function ocn_core_finalize(domain) result(iErr)!{{{
