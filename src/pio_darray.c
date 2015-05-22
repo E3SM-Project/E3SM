@@ -1,3 +1,11 @@
+/** @file   pio_darray.c
+ *  @brief  This file contains the routines that read and write distributed arrays in PIO
+ *
+ *  
+ *  @author Jim Edwards
+ *  @bug No Known bugs
+ */
+
 #include <pio.h>
 #include <pio_internal.h>
 #define PIO_WRITE_BUFFERING 1
@@ -6,8 +14,13 @@ PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=33554432; 
 static void *CN_bpool=NULL; 
 static PIO_Offset maxusage=0;
-
- // Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
+/** @brief Set the pio buffer size limit, this is the size of the data buffer on the IO nodes.
+ *
+ *
+ *  The pio_buffer_size_limit will only apply to files opened after the setting is changed.  
+ *  @param limit the size of the buffer on the IO nodes
+ *  @return The previous limit setting.
+ */
  PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
  {
    PIO_Offset oldsize; 
@@ -16,6 +29,11 @@ static PIO_Offset maxusage=0;
      PIO_BUFFER_SIZE_LIMIT=limit;
    return(oldsize);
  }
+
+/** @brief Initialize the compute buffer to size PIO_CNBUFFER_LIMIT
+ *
+ *  This routine initializes the compute buffer pool if the bget memory management is used.
+ */
 
 void compute_buffer_init(iosystem_desc_t ios)
 {
@@ -39,6 +57,9 @@ void compute_buffer_init(iosystem_desc_t ios)
 #endif
 }
 
+/** @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
+ *
+ */
 
 
  int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF, void *fillvalue)
@@ -253,7 +274,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 	   if(vdesc->request != NC_REQ_NULL){
 	     printf("%s %d %d\n",__FILE__,__LINE__,vid);
 	   }
-
+	   vdesc->distributed = true;
 	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
 				  IOBUF, iodesc->llen, iodesc->basetype, &(vdesc->request));
 	   if(vdesc->request == NC_REQ_NULL){
@@ -284,6 +305,13 @@ void compute_buffer_init(iosystem_desc_t ios)
 
    return ierr;
  }
+
+/** @brief Write a set of one or more aggregated arrays to output file
+ *        
+ *   This routine is used if aggregation is enabled, data is already on the
+ *   io-tasks
+ */
+
 
 int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[], 
 			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
@@ -518,16 +546,18 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	       }
 	     }
 	     bufptr = (void *)((char *) IOBUF + nv*tsize*llen);
-	     /*
+	     if(vdesc->request != NC_REQ_NULL){
+	       printf("%s %d %d\n",__FILE__,__LINE__,vid[nv]);
+	     }
+	     vdesc->distributed = true;
+
+
 	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, llen, basetype, &(vdesc->request));
-	     */
-	   if(vdesc->request != NC_REQ_NULL){
-	     printf("%s %d %d\n",__FILE__,__LINE__,vid[nv]);
-	   }
+	     /*
 	     ierr = ncmpi_bput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, llen, basetype, &(vdesc->request));
-
+	     */
 	     if(vdesc->request == NC_REQ_NULL){
 	       vdesc->request = PIO_REQ_NULL;  //keeps wait calls in sync
 	     }
@@ -557,15 +587,21 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
    return ierr;
  }
 
+/** @brief Write one or more arrays with the same IO decomposition to the file
+ *
+ *
+ */
+
+
 int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue[], bool flushtodisk)
  {
    iosystem_desc_t *ios;
    file_desc_t *file;
    io_desc_t *iodesc;
-   void *iobuf;
+
    int vsize, rlen;
    int ierr;
-   void *fillbuf = NULL;
+   var_desc_t *vdesc0;
 
    ierr = PIO_NOERR;
 
@@ -585,8 +621,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
      return PIO_EBADID;
    }
-   iobuf = NULL;
-
+    
+   vdesc0 = file->varlist+vid[0];
+   
    pioassert(nvars>0,"nvars <= 0",__FILE__,__LINE__);
 
    ios = file->iosystem;
@@ -595,13 +632,16 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(iodesc->llen>0){
      rlen = iodesc->maxiobuflen*nvars;
    }
+   if(vdesc0->iobuf != NULL){
+     piodie("Attempt to overwrite existing io buffer",__FILE__,__LINE__);
+   }
    if(iodesc->rearranger>0){
      if(rlen>0){
        //       printf("rlen = %ld\n",rlen);
        MPI_Type_size(iodesc->basetype, &vsize);	
-       iobuf = malloc((size_t) vsize* (size_t) rlen);
-       //       iobuf = bget((size_t) vsize* (size_t) rlen);
-       if(iobuf==NULL){
+       //iobuf = malloc((size_t) vsize* (size_t) rlen);
+       vdesc0->iobuf = bget((size_t) vsize* (size_t) rlen);
+       if(vdesc0->iobuf==NULL){
 	 printf("%s %d %d %ld\n",__FILE__,__LINE__,nvars,vsize*rlen);
 	 piomemerror(*ios,(size_t) rlen*(size_t) vsize, __FILE__,__LINE__);
        }
@@ -609,25 +649,26 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 if(vsize==4){
 	   for(int nv=0;nv < nvars; nv++){
 	     for(int i=0;i<iodesc->maxiobuflen;i++){
-	       ((float *)iobuf)[i+nv*(iodesc->maxiobuflen)] = ((float *)fillvalue)[nv];
+	       ((float *) vdesc0->iobuf)[i+nv*(iodesc->maxiobuflen)] = ((float *)fillvalue)[nv];
 	     }
 	   }
 	 }else if(vsize==8){
 	   for(int nv=0;nv < nvars; nv++){
 	     for(int i=0;i<iodesc->maxiobuflen;i++){
-	       ((double *)iobuf)[i+nv*(iodesc->maxiobuflen)] = ((double *)fillvalue)[nv];
+	       ((double *)vdesc0->iobuf)[i+nv*(iodesc->maxiobuflen)] = ((double *)fillvalue)[nv];
 	     }
 	   }
 	 }
        }
      }
-     
-     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
+   
+     ierr = rearrange_comp2io(*ios, iodesc, array, vdesc0->iobuf, nvars);
 
-   }else{
-     iobuf = array;
-   }
-
+   }/*  this is wrong, need to think about it
+   else{
+     vdesc0->iobuf = array;
+     } */
+ 
    switch(file->iotype){
    case PIO_IOTYPE_PNETCDF:
    case PIO_IOTYPE_NETCDF:
@@ -635,17 +676,21 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    case PIO_IOTYPE_NETCDF4C:
      if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
 	iodesc->holegridsize>0){
-       fillbuf = bget(iodesc->holegridsize*vsize*nvars);
+       if(vdesc0->fillbuf != NULL){
+	 piodie("Attempt to overwrite existing buffer",__FILE__,__LINE__);
+       }
+
+       vdesc0->fillbuf = bget(iodesc->holegridsize*vsize*nvars);
        if(vsize==4){
 	 for(int nv=0;nv<nvars;nv++){
 	   for(int i=0;i<iodesc->holegridsize;i++){
-	     ((float *) fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
+	     ((float *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
 	   }
 	 }
        }else if(vsize==8){
 	 for(int nv=0;nv<nvars;nv++){
 	   for(int i=0;i<iodesc->holegridsize;i++){
-	     ((double *) fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
+	     ((double *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
 	   }
 	 }
        }
@@ -654,7 +699,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 					iodesc->ndims, iodesc->basetype, iodesc->gsize,
 					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
 					iodesc->holegridsize, iodesc->num_aiotasks,
-					fillbuf, frame);
+					vdesc0->fillbuf, frame);
        for(int nv=0;nv<nvars;nv++){
 	 var_desc_t  *vdesc = file->varlist+vid[nv];
 	 vdesc->fillrequest = vdesc->request;
@@ -667,25 +712,22 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 				      iodesc->ndims, iodesc->basetype, iodesc->gsize,
 				      iodesc->maxregions, iodesc->firstregion, iodesc->llen,
 				      iodesc->maxiobuflen, iodesc->num_aiotasks,
-				      iobuf, frame);     
+				      vdesc0->iobuf, frame);     
    }
    
    flush_output_buffer(file, flushtodisk, 0);
+ 
 
-   //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
-   if(iobuf != NULL && iobuf != array){
-     //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
-     free(iobuf);
-     //     brel(iobuf);
-     //  printf("%s %d\n",__FILE__,__LINE__);
-   }
-   if(fillbuf != NULL){
-       brel(fillbuf);
-   }
    return ierr;
 
  }
 #ifdef PIO_WRITE_BUFFERING
+/** @brief Write a distributed array to the output file. 
+ *
+ *  This routine aggregates output on the compute nodes and only sends it to the IO nodes when the
+ *  compute buffer is full or when a flush is triggered.  
+ */ 
+
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -881,9 +923,16 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
 
    return ierr;
-
+ 
  }
 #else
+/** @brief Write a distributed array to the output file 
+ *
+ *  This version of the routine does not buffer, all data is communicated to the io tasks 
+ *  before the routine returns
+ */
+
+
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -953,7 +1002,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  }
 #endif
 
-
+/** @brief read interface to io library
+ *
+ */
 
 int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF)
 {
@@ -1261,22 +1312,36 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     int request[2*PIO_MAX_VARS];
     int status[2*PIO_MAX_VARS];
     int rcnt=0;
+    bool prev_dist=false;
+    int prev_record=-1;
+    int prev_type=0;
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
-      if(rcnt>0 && vdesc->request != NC_REQ_NULL && vdesc->fillrequest != NC_REQ_NULL){
-	if(file->iosystem->io_rank < 2) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+      if(rcnt>0 && (prev_type != vdesc->type ||
+		    prev_dist != vdesc->distributed ||
+		    prev_record != vdesc->record ||
+		    (vdesc->request == NC_REQ_NULL && 
+		     vdesc->fillrequest == NC_REQ_NULL))){
+	if(file->iosystem->io_rank==0) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
 	rcnt=0;
       }
+      prev_record = vdesc->record;
+      prev_dist = vdesc->distributed;
+      prev_type = vdesc->type;
 #endif
+      //      printf("%s %d %d %d %d %d \n",__FILE__,__LINE__,i,rcnt,vdesc->request,vdesc->fillrequest);
+
       if(vdesc->request != NC_REQ_NULL){
+	//	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,i,vdesc->request,vdesc->distributed, vdesc->record, vdesc->type);
 	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
 	vdesc->request = NC_REQ_NULL;
       }
       if(vdesc->fillrequest != NC_REQ_NULL){
+	//if(file->iosystem->io_rank==0) printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,vdesc->fillrequest, vdesc->distributed);
 	request[rcnt++]=max(vdesc->fillrequest,NC_REQ_NULL);
 	vdesc->fillrequest = NC_REQ_NULL;
       }
@@ -1285,10 +1350,27 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
       rcnt=0;
 #endif
+
     }
     if(rcnt>0){
+      if(file->iosystem->io_rank==0){
+	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+	print_trace(NULL);
+      }
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
+    for(int i=0; i<PIO_MAX_VARS; i++){
+      vdesc = file->varlist+i;
+      if(vdesc->iobuf != NULL){
+	brel(vdesc->iobuf);
+	vdesc->iobuf=NULL;
+      }
+      if(vdesc->fillbuf != NULL){
+	brel(vdesc->fillbuf);
+	vdesc->fillbuf=NULL;
+      }
+    }
+
   }
 #ifdef TIMING
   GPTLstop("PIO:flush_output_buffer");
