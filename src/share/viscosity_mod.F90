@@ -284,6 +284,14 @@ logical var_coef1
       kptr=3*nlev
       call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, ie)
       
+
+      if (ntrac>0) then
+      do k=1,nlev
+         tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
+         dpflux(:,:,:,k,ie) = subcell_Laplace_fluxes(tmp, deriv, elem(ie), np, nc) 
+      enddo
+      endif
+
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,v,tmp,tmp2)
@@ -299,16 +307,6 @@ logical var_coef1
               var_coef=.true.,nu_ratio=nu_ratio2)
 
       enddo
-
-      if (ntrac>0) then
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,tmp2)
-#endif
-      do k=1,nlev
-         dpflux(:,:,:,k,ie) = subcell_Laplace_fluxes(tmp2, deriv, elem(ie), np, nc) 
-      enddo
-      endif
-
    enddo
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
