@@ -9,7 +9,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 #define PIO_WRITE_BUFFERING 1
-#define MPIO_ONESIDED 1
+
 PIO_Offset PIO_BUFFER_SIZE_LIMIT=10485760; // 10MB default limit
 bufsize PIO_CNBUFFER_LIMIT=33554432; 
 static void *CN_bpool=NULL; 
@@ -546,17 +546,18 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	       }
 	     }
 	     bufptr = (void *)((char *) IOBUF + nv*tsize*llen);
-	     /*
-	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
-				    bufptr, llen, basetype, &(vdesc->request));
-	     */
 	     if(vdesc->request != NC_REQ_NULL){
 	       printf("%s %d %d\n",__FILE__,__LINE__,vid[nv]);
 	     }
 	     vdesc->distributed = true;
+
+
+	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
+				    bufptr, llen, basetype, &(vdesc->request));
+	     /*
 	     ierr = ncmpi_bput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, llen, basetype, &(vdesc->request));
-
+	     */
 	     if(vdesc->request == NC_REQ_NULL){
 	       vdesc->request = PIO_REQ_NULL;  //keeps wait calls in sync
 	     }
@@ -597,10 +598,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    iosystem_desc_t *ios;
    file_desc_t *file;
    io_desc_t *iodesc;
-   void *iobuf;
+
    int vsize, rlen;
    int ierr;
-   void *fillbuf = NULL;
+   var_desc_t *vdesc0;
 
    ierr = PIO_NOERR;
 
@@ -620,8 +621,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
      return PIO_EBADID;
    }
-   iobuf = NULL;
-
+    
+   vdesc0 = file->varlist+vid[0];
+   
    pioassert(nvars>0,"nvars <= 0",__FILE__,__LINE__);
 
    ios = file->iosystem;
@@ -630,13 +632,16 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(iodesc->llen>0){
      rlen = iodesc->maxiobuflen*nvars;
    }
+   if(vdesc0->iobuf != NULL){
+     piodie("Attempt to overwrite existing io buffer",__FILE__,__LINE__);
+   }
    if(iodesc->rearranger>0){
      if(rlen>0){
        //       printf("rlen = %ld\n",rlen);
        MPI_Type_size(iodesc->basetype, &vsize);	
-       iobuf = malloc((size_t) vsize* (size_t) rlen);
-       //       iobuf = bget((size_t) vsize* (size_t) rlen);
-       if(iobuf==NULL){
+       //iobuf = malloc((size_t) vsize* (size_t) rlen);
+       vdesc0->iobuf = bget((size_t) vsize* (size_t) rlen);
+       if(vdesc0->iobuf==NULL){
 	 printf("%s %d %d %ld\n",__FILE__,__LINE__,nvars,vsize*rlen);
 	 piomemerror(*ios,(size_t) rlen*(size_t) vsize, __FILE__,__LINE__);
        }
@@ -644,25 +649,26 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 if(vsize==4){
 	   for(int nv=0;nv < nvars; nv++){
 	     for(int i=0;i<iodesc->maxiobuflen;i++){
-	       ((float *)iobuf)[i+nv*(iodesc->maxiobuflen)] = ((float *)fillvalue)[nv];
+	       ((float *) vdesc0->iobuf)[i+nv*(iodesc->maxiobuflen)] = ((float *)fillvalue)[nv];
 	     }
 	   }
 	 }else if(vsize==8){
 	   for(int nv=0;nv < nvars; nv++){
 	     for(int i=0;i<iodesc->maxiobuflen;i++){
-	       ((double *)iobuf)[i+nv*(iodesc->maxiobuflen)] = ((double *)fillvalue)[nv];
+	       ((double *)vdesc0->iobuf)[i+nv*(iodesc->maxiobuflen)] = ((double *)fillvalue)[nv];
 	     }
 	   }
 	 }
        }
      }
-     
-     ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, nvars);
+   
+     ierr = rearrange_comp2io(*ios, iodesc, array, vdesc0->iobuf, nvars);
 
-   }else{
-     iobuf = array;
-   }
-
+   }/*  this is wrong, need to think about it
+   else{
+     vdesc0->iobuf = array;
+     } */
+ 
    switch(file->iotype){
    case PIO_IOTYPE_PNETCDF:
    case PIO_IOTYPE_NETCDF:
@@ -670,17 +676,21 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    case PIO_IOTYPE_NETCDF4C:
      if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
 	iodesc->holegridsize>0){
-       fillbuf = bget(iodesc->holegridsize*vsize*nvars);
+       if(vdesc0->fillbuf != NULL){
+	 piodie("Attempt to overwrite existing buffer",__FILE__,__LINE__);
+       }
+
+       vdesc0->fillbuf = bget(iodesc->holegridsize*vsize*nvars);
        if(vsize==4){
 	 for(int nv=0;nv<nvars;nv++){
 	   for(int i=0;i<iodesc->holegridsize;i++){
-	     ((float *) fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
+	     ((float *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
 	   }
 	 }
        }else if(vsize==8){
 	 for(int nv=0;nv<nvars;nv++){
 	   for(int i=0;i<iodesc->holegridsize;i++){
-	     ((double *) fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
+	     ((double *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
 	   }
 	 }
        }
@@ -689,7 +699,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 					iodesc->ndims, iodesc->basetype, iodesc->gsize,
 					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
 					iodesc->holegridsize, iodesc->num_aiotasks,
-					fillbuf, frame);
+					vdesc0->fillbuf, frame);
        for(int nv=0;nv<nvars;nv++){
 	 var_desc_t  *vdesc = file->varlist+vid[nv];
 	 vdesc->fillrequest = vdesc->request;
@@ -702,21 +712,12 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 				      iodesc->ndims, iodesc->basetype, iodesc->gsize,
 				      iodesc->maxregions, iodesc->firstregion, iodesc->llen,
 				      iodesc->maxiobuflen, iodesc->num_aiotasks,
-				      iobuf, frame);     
+				      vdesc0->iobuf, frame);     
    }
    
    flush_output_buffer(file, flushtodisk, 0);
+ 
 
-   //printf("%s %d %ld\n",__FILE__,__LINE__,iobuf);
-   if(iobuf != NULL && iobuf != array){
-     //     printf("%s %d 0x%.16X\n",__FILE__,__LINE__,iobuf);
-     free(iobuf);
-     //     brel(iobuf);
-     //  printf("%s %d\n",__FILE__,__LINE__);
-   }
-   if(fillbuf != NULL){
-       brel(fillbuf);
-   }
    return ierr;
 
  }
@@ -922,7 +923,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
 
    return ierr;
-
+ 
  }
 #else
 /** @brief Write a distributed array to the output file 
@@ -1313,13 +1314,14 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     int rcnt=0;
     bool prev_dist=false;
     int prev_record=-1;
-    
+    int prev_type=0;
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
-      if(rcnt>0 && (prev_dist!= vdesc->distributed ||
+      if(rcnt>0 && (prev_type != vdesc->type ||
+		    prev_dist != vdesc->distributed ||
 		    prev_record != vdesc->record ||
 		    (vdesc->request == NC_REQ_NULL && 
 		     vdesc->fillrequest == NC_REQ_NULL))){
@@ -1329,17 +1331,17 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
       }
       prev_record = vdesc->record;
       prev_dist = vdesc->distributed;
-      
+      prev_type = vdesc->type;
 #endif
       //      printf("%s %d %d %d %d %d \n",__FILE__,__LINE__,i,rcnt,vdesc->request,vdesc->fillrequest);
 
       if(vdesc->request != NC_REQ_NULL){
-	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d %d\n",__FILE__,__LINE__,rcnt,vdesc->request,vdesc->distributed, vdesc->record);
+	//	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,i,vdesc->request,vdesc->distributed, vdesc->record, vdesc->type);
 	request[rcnt++] = max(vdesc->request,NC_REQ_NULL);
 	vdesc->request = NC_REQ_NULL;
       }
       if(vdesc->fillrequest != NC_REQ_NULL){
-	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d\n",__FILE__,__LINE__,rcnt,vdesc->fillrequest, vdesc->distributed);
+	//if(file->iosystem->io_rank==0) printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,vdesc->fillrequest, vdesc->distributed);
 	request[rcnt++]=max(vdesc->fillrequest,NC_REQ_NULL);
 	vdesc->fillrequest = NC_REQ_NULL;
       }
@@ -1351,9 +1353,24 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 
     }
     if(rcnt>0){
-	if(file->iosystem->io_rank==0) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+      if(file->iosystem->io_rank==0){
+	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+	print_trace(NULL);
+      }
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
+    for(int i=0; i<PIO_MAX_VARS; i++){
+      vdesc = file->varlist+i;
+      if(vdesc->iobuf != NULL){
+	brel(vdesc->iobuf);
+	vdesc->iobuf=NULL;
+      }
+      if(vdesc->fillbuf != NULL){
+	brel(vdesc->fillbuf);
+	vdesc->fillbuf=NULL;
+      }
+    }
+
   }
 #ifdef TIMING
   GPTLstop("PIO:flush_output_buffer");
