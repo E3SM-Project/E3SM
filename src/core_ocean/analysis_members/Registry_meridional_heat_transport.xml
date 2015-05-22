@@ -48,7 +48,6 @@
 			<var name="xtime"/>
 			<var name="binCenterMerHeatTrans"/>
 			<var name="binBoundaryMerHeatTrans"/>
-			<var name="volumeZonalSumMHT"/>
 			<var name="meridionalHeatTransportLatZ"/>
 			<var name="meridionalHeatTransportLat"/>
 		</stream>
@@ -59,9 +58,6 @@
 		/>
 		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
 			 description="Coordinate of lower edge of meridional heat transport bin, either in latitude or y, for plotting."
-		/>
-		<var name="volumeZonalSumMHT" type="real" dimensions="nVertLevels nMerHeatTransBins Time" units="m^{3}"
-			 description="Total volume in zonal bin, for normalization" 
 		/>
 		<var name="meridionalHeatTransportLatZ" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 Time" units="petawatts"
 			 description="Northward meridional heat transport, by level, at northern bin boundary."
