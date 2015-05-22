@@ -1046,6 +1046,10 @@ contains
   subroutine apply_nutrient_down_regulation(nstvars, nreactions, nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
   
   ! this down-regulation considers nitrogen made available from gross mineralization
+  use clm_varctl,   only : CNAllocate_Carbon_only
+  use MathfuncMod,  only : safe_div
+  
+  
   integer , intent(in) :: nstvars
   integer , intent(in) :: nreactions
   logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
@@ -1063,7 +1067,9 @@ contains
   real(r8) :: smin_no3_to_decomp_plant_flx
   real(r8) :: tot_sminn_to_decomp_plant_flx
   real(r8) :: frac_nh4_to_decomp_plant
-  real(r8) :: gross_min_nh4_flx
+  real(r8) :: supp_nh4_to_decomp_plant_flx
+  real(r8) :: frac_supp_nh4_to_decomp_plant
+  real(r8) :: gross_min_nh4_flx  
   real(r8) :: alpha
   integer  :: reac
   
@@ -1074,8 +1080,9 @@ contains
     lid_plant_minn        => centurybgc_vars%lid_plant_minn        , & !
     lid_minn_nh4_immob    => centurybgc_vars%lid_minn_nh4_immob    , & !
     lid_minn_no3_immob    => centurybgc_vars%lid_minn_no3_immob    , & !
-    lid_minn_nh4_plant    => centurybgc_vars%lid_minn_nh4_plant    , & !
+    lid_minn_nh4_plant    => centurybgc_vars%lid_minn_nh4_plant    , & !    
     lid_minn_no3_plant    => centurybgc_vars%lid_minn_no3_plant    , & !
+    lid_nh4_supp          => centurybgc_vars%lid_nh4_supp          , & !   
     lid_nh4_nit           => centurybgc_vars%lid_nh4_nit           , & !
     lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
     lid_nh4_nit_reac      => centurybgc_vars%lid_nh4_nit_reac      , & !
@@ -1102,12 +1109,24 @@ contains
   tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
   
   if(tot_nh4_demand_flx*dtime>smin_nh4)then
-    !nitrifiers, decomposers and plants are nh4 limited
-    alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
-    smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
-    decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
-    !downregulate nitrification
-    reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha    
+    if(CNAllocate_Carbon_only())then
+      
+      !nitrifier uses what it is provided
+      !plant use the remaining nh4 and request external supply from supp nh4
+      alpha = safe_div(smin_nh4, reaction_rates(reac)*dtime)
+      reaction_rates(reac) = reaction_rates(reac) * min(alpha, 1._r8)
+      
+      smin_nh4_to_decomp_plant_flx = smin_nh4/dtime+reaction_rates(reac)*cascade_matrix(lid_nh4,reac) 
+      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx      
+      
+    else
+      !nitrifiers, decomposers and plants are nh4 limited
+      alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
+      smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
+      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
+      !downregulate nitrification
+      reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha
+    endif
   else
     !none is nh4 limited
     smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx

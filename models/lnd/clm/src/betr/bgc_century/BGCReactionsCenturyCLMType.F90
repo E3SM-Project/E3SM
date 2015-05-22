@@ -1109,7 +1109,7 @@ contains
 
       !nitrifier uses what it is provided
       !plant use the remaining nh4 and request external supply from supp nh4
-      alpha = safe_div(smin_nh4, reaction_rates(reac)*dtime)
+      alpha = safe_div(smin_nh4, -reaction_rates(reac)*dtime)
       reaction_rates(reac) = reaction_rates(reac) * min(alpha, 1._r8)
       
       smin_nh4_to_decomp_plant_flx = smin_nh4/dtime+reaction_rates(reac)*cascade_matrix(lid_nh4,reac)
