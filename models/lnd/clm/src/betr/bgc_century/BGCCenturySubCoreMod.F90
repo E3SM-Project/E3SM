@@ -9,7 +9,7 @@ module BGCCenturySubCoreMod
   use clm_varcon         , only : spval  
   use clm_varpar         , only : ndecomp_pools
   use ColumnType         , only : col
-  use clm_varctl         , only : spinup_state  
+  use clm_varctl         , only : spinup_state,iulog
   implicit none
   save
   private
@@ -487,7 +487,7 @@ module BGCCenturySubCoreMod
         smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
         smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
         supplement_to_sminn_vr(c,j) = (y0(centurybgc_vars%lid_nh4_supp, c, j) - yf(centurybgc_vars%lid_nh4_supp, c, j))*natomw/dtime
-        
+
         hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
         f_nit_vr    (c,j)  = (yf(centurybgc_vars%lid_nh4_nit,c, j) - y0(centurybgc_vars%lid_nh4_nit,c, j))*natomw/dtime
         f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime
