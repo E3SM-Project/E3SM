@@ -1048,7 +1048,8 @@ contains
   !
   ! this down regulation does not consider the extra nitrogen made available from mineralization
   use clm_varctl,   only : CNAllocate_Carbon_only
-  
+  use MathfuncMod,  only : safe_div
+ 
   integer , intent(in) :: nstvars
   integer , intent(in) :: nreactions
   logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
@@ -1104,7 +1105,7 @@ contains
   
   if(tot_nh4_demand_flx*dtime>smin_nh4)then
     !nitrifiers, decomposers and plants are nh4 limited
-    if(CNAllocate_Carbon_only)then
+    if(CNAllocate_Carbon_only())then
 
       !nitrifier uses what it is provided
       !plant use the remaining nh4 and request external supply from supp nh4
@@ -1136,7 +1137,7 @@ contains
 
   !then no3 is competed between denitrification and residual request from decomposer immobilization and plant demand  
   if(tot_no3_demand_flx * dtime>smin_no3)then
-    if(CNAllocate_Carbon_only)then
+    if(CNAllocate_Carbon_only())then
       !denitrifiers is given what is available
       alpha = min(smin_no3/(tot_no3_demand_flx*dtime),1._r8)    
       reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
@@ -1154,7 +1155,7 @@ contains
   endif
   
   tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
-  if(CNAllocate_Carbon_only)then
+  if(CNAllocate_Carbon_only())then
     supp_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx - tot_sminn_to_decomp_plant_flx
     tot_sminn_to_decomp_plant_flx = decomp_plant_minn_demand_flx
   else
@@ -1173,7 +1174,7 @@ contains
     frac_supp_nh4_to_decomp_plant=0._r8
   else
     frac_nh4_to_decomp_plant = smin_nh4_to_decomp_plant_flx/tot_sminn_to_decomp_plant_flx
-    frac_supp_nh4_to_decomp_plant=supp_nh4_to_decomp_plant_flx/tot_smin_to_decomp_plant_flx
+    frac_supp_nh4_to_decomp_plant=supp_nh4_to_decomp_plant_flx/tot_sminn_to_decomp_plant_flx
   endif
   !revise the stoichiometry matix elements
   !for decomposers

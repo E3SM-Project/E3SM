@@ -163,7 +163,7 @@ module BGCCenturySubCoreMod
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
   ! 
   use MathfuncMod            , only : addone
-  
+  use clm_varctl             , only : CNAllocate_Carbon_only 
   class(centurybgc_type) :: this
   logical   , intent(in) :: do_mpc
   
