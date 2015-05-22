@@ -37,7 +37,7 @@ implicit none
   ! !PUBLIC TYPES:
   public :: bgc_reaction_CENTURY_clm_type
   type(centurybgc_type), private :: centurybgc_vars
-
+  logical :: ldebug
   integer, private :: lpr
   type, extends(bgc_reaction_type) :: &
   bgc_reaction_CENTURY_clm_type
@@ -232,6 +232,7 @@ contains
   use ncdio_pio             , only : file_desc_t
   use BeTRTracerType        , only : betrtracer_type
   use MathfuncMod           , only : addone
+  use clm_varctl, only : cnallocate_carbon_only_set
   
   class(bgc_reaction_CENTURY_clm_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
@@ -245,10 +246,11 @@ contains
   integer :: nelm, itemp_mem
   integer :: itemp, itemp_vgrp, itemp_v, itemp_grp
   integer :: c_loc, n_loc, trcid
+  logical :: carbon_only = .true.
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
-
+  call cnallocate_carbon_only_set(carbon_only)
   call centurybgc_vars%Init(bounds, lbj, ubj)
 
   nelm =centurybgc_vars%nelms
@@ -657,13 +659,20 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8 
-      
+!      if(c==1311 .and. get_nstep()>=155)then
+        
+!        ldebug=.true.
+!      else
+!        ldebug=.false.
+!      endif 
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j) 
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose   
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
 !      print*,'cjp',c,j,pscal
-      
+!      if(ldebug)then
+!        print*,'cj',c,j,y0(centurybgc_vars%lid_nh4_supp,c,j),yf(centurybgc_vars%lid_nh4_supp,c,j)
+!      endif 
       !if(pscal>0._r8)pause
       !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
       !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
@@ -1038,7 +1047,10 @@ contains
   
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
-  
+!  if(ldebug)then
+!    print*,'dydt',dydt(centurybgc_vars%lid_nh4_supp),ystate(centurybgc_vars%lid_nh4_supp),centurybgc_vars%lid_nh4_supp
+!    print*,reaction_rates(1:Extra_inst%nr)
+!  endif 
   end subroutine one_box_century_bgc
 !-------------------------------------------------------------------------------  
   
@@ -1139,8 +1151,8 @@ contains
   if(tot_no3_demand_flx * dtime>smin_no3)then
     if(CNAllocate_Carbon_only())then
       !denitrifiers is given what is available
-      alpha = min(smin_no3/(tot_no3_demand_flx*dtime),1._r8)    
-      reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
+      alpha = safe_div(smin_no3/dtime,-reaction_rates(reac)*cascade_matrix(lid_no3,reac))    
+      reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*min(alpha,1._r8)
       smin_no3_to_decomp_plant_flx = smin_no3/dtime + reaction_rates(lid_no3_den_reac ) * cascade_matrix(lid_no3 ,reac)
     else
       !denitrifiers, decomposers and plants are no3 limited
@@ -1200,6 +1212,10 @@ contains
   
   cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
+!  if(ldebug)then
+!    print*,'supp',frac_supp_nh4_to_decomp_plant,frac_nh4_to_decomp_plant
+!    print*,'casc',cascade_matrix(lid_nh4_supp, :)
+!  endif
   end associate
   end subroutine apply_nutrient_down_regulation  
 end module BGCReactionsCenturyCLMType
