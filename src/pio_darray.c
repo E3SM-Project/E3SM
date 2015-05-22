@@ -1190,8 +1190,8 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	  }
 
 	  if(tmp_bufsize>0){
-             startlist[rrlen] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
-             countlist[rrlen] = (PIO_Offset *) malloc(fndims * sizeof(PIO_Offset));
+             startlist[rrlen] = (PIO_Offset *) bget(fndims * sizeof(PIO_Offset));
+             countlist[rrlen] = (PIO_Offset *) bget(fndims * sizeof(PIO_Offset));
 
 	    for(int j=0;j<fndims; j++){
 	      startlist[rrlen][j] = start[j];
@@ -1204,8 +1204,8 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    ierr = ncmpi_get_varn_all(file->fh, vid, rrlen, startlist, 
 				      countlist, IOBUF, iodesc->llen, iodesc->basetype);
 	    for(i=0;i<rrlen;i++){
-	      free(startlist[i]);
-	      free(countlist[i]);
+	      brel(startlist[i]);
+	      brel(countlist[i]);
 	    }
 	  }
 	}
