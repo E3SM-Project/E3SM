@@ -3,13 +3,29 @@
 PHYSICS=-DDO_PHYSICS
 #PHYSICS=
 
-OBJS = mpas_atm_mpas_core.o \
+OBJS = mpas_atm_core.o \
+       mpas_atm_core_interface.o \
        mpas_atm_interp_diagnostics.o
 
 all: physcore dycore atmcore
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
+core_input_gen:
+	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
+	( cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.atmosphere in_defaults=true )
+	( cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.atmosphere stream_list.atmosphere. listed )
+
+gen_includes:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
+	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+
+post_build:
+	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
+	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
+	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
 physcore:
 	( cd physics; $(MAKE) all )
@@ -23,7 +39,9 @@ dycore:
 atmcore: physcore dycore $(OBJS)
 	ar -ru libdycore.a $(OBJS) dynamics/*.o libphys/*.o
 
-mpas_atm_mpas_core.o: dycore mpas_atm_interp_diagnostics.o
+mpas_atm_core_interface.o: mpas_atm_core.o
+
+mpas_atm_core.o: dycore mpas_atm_interp_diagnostics.o
 
 clean:
 	( cd physics; $(MAKE) clean )
@@ -36,6 +54,7 @@ clean:
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
 	$(RM) *.i
+	$(RM) -r default_inputs
 
 .F.o:
 	$(RM) $@ $*.mod

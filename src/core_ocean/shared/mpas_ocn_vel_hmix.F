@@ -22,7 +22,8 @@
 
 module ocn_vel_hmix
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use ocn_vel_hmix_del2
    use ocn_vel_hmix_leith

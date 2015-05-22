@@ -11,6 +11,7 @@ else
 	EXE_NAME=ocean*_model
 	NAMELIST_SUFFIX=ocean*
 endif
+override CPPFLAGS += -DCORE_OCEAN
 
 report_builds:
 	@echo "CORE=ocean MODE=analysis"

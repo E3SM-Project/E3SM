@@ -32,12 +32,11 @@
          ! Fill in members of dst_cursor from src_cursor
          !
          if (.not. local_copy_only) then
-            allocate(dst_cursor % ioinfo)
-            dst_cursor % ioinfo = src_cursor % ioinfo
             dst_cursor % block => src_cursor % block
             dst_cursor % fieldName = src_cursor % fieldName
             dst_cursor % isVarArray = src_cursor % isVarArray
             dst_cursor % isActive = src_cursor % isActive
+            dst_cursor % isDecomposed = src_cursor % isDecomposed
             dst_cursor % hasTimeDimension = src_cursor % hasTimeDimension
             dst_cursor % sendList => src_cursor % sendList
             dst_cursor % recvList => src_cursor % recvList

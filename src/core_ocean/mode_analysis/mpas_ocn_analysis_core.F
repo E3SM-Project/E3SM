@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  mpas_core
+!  ocn_core
 !
 !> \brief Main driver for MPAS ocean analysis core in post-processing mode
 !> \author Mark Petersen
@@ -19,7 +19,7 @@
 !
 !-----------------------------------------------------------------------
 
-module mpas_core
+module ocn_core
 
    use mpas_framework
    use mpas_timekeeping
@@ -46,7 +46,7 @@ module mpas_core
 
 !***********************************************************************
 !
-!  routine mpas_core_init
+!  routine ocn_core_init
 !
 !> \brief   Initialize MPAS-Ocean analysis post-processing core
 !> \author  Mark Petersen
@@ -57,15 +57,15 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)!{{{
+   function ocn_core_init(domain, startTimeStamp) result(err)!{{{
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_stream_manager
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       character(len=*), intent(out) :: startTimeStamp
 
       type (block_type), pointer :: block
@@ -101,8 +101,8 @@ module mpas_core
       !
       ! Read input data for model
       !
-      call MPAS_stream_mgr_read(stream_manager, streamID='input', ierr=err)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err)
 
       dminfo = domain % dminfo
       err = 0
@@ -135,7 +135,7 @@ module mpas_core
          block => block % next
       end do
 
-   end subroutine mpas_core_init!}}}
+   end function ocn_core_init!}}}
 
 !***********************************************************************
 !
@@ -224,7 +224,8 @@ module mpas_core
 !-----------------------------------------------------------------------
    subroutine mpas_init_block(block, dt, err)!{{{
    
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_rbf_interpolation
       use mpas_vector_operations
       use mpas_vector_reconstruction
@@ -359,7 +360,7 @@ module mpas_core
 
 !***********************************************************************
 !
-!  routine mpas_core_run
+!  routine ocn_core_run
 !
 !> \brief   Main driver for MPAS-Ocean time-stepping
 !> \author  Mark Petersen
@@ -370,17 +371,17 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, stream_manager)!{{{
+   function ocn_core_run(domain) result(err)!{{{
    
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_timer
    
       implicit none
    
       type (domain_type), intent(inout) :: domain
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
    
       integer :: itimestep
       real (kind=RKIND) :: dt
@@ -399,6 +400,8 @@ module mpas_core
       type (MPAS_timeInterval_type) :: timeStep
       character (len=StrKIND), pointer :: config_dt
       logical, pointer :: config_write_output_on_startup
+
+      err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_dt', config_dt)
       call mpas_pool_get_config(ocnConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
@@ -427,127 +430,31 @@ module mpas_core
 
       if (config_write_output_on_startup) then
          call ocn_analysis_compute(domain, err) 
-         call mpas_stream_mgr_write(stream_manager, ierr=ierr)
+         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       endif
 
-   end subroutine mpas_core_run!}}}
+      err = iErr
+
+   end function ocn_core_run!}}}
    
-   subroutine mpas_core_finalize(domain, stream_manager)!{{{
+   function ocn_core_finalize(domain) result(iErr)!{{{
    
-      use mpas_grid_types
-      use mpas_stream_manager
+      use mpas_derived_types
+      use mpas_decomp
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
-      integer :: ierr
+      integer :: iErr
+
+      iErr = 0
 
       call mpas_destroy_clock(clock, ierr)
 
-   end subroutine mpas_core_finalize!}}}
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-!***********************************************************************
-!
-!  routine mpas_core_setup_packages
-!
-!> \brief   Package setup routine
-!> \author  Doug Jacobsen
-!> \date    November 2013
-!> \details 
-!>  This routine is intended to correctly configure the packages for this MPAS
-!>   core. It can use any Fortran logic to properly configure packages, and it
-!>   can also make use of any namelist options. All variables in the model are
-!>   *not* allocated until after this routine is called.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(configPool, packagePool, ierr)!{{{
+   end function ocn_core_finalize!}}}
 
-      use mpas_packages
-
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      integer, intent(out) :: ierr
-
-      integer :: err_tmp
-
-      ierr = 0
-
-      call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
-      ierr = ior(ierr, err_tmp)
-
-   end subroutine mpas_core_setup_packages!}}}
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_setup_clock
-   !
-   !> \brief   Pacakge setup routine
-   !> \author  Michael Duda
-   !> \date    6 August 2014
-   !> \details 
-   !>  The purpose of this routine is to allow the core to set up a simulation
-   !>  clock that will be used by the I/O subsystem for timing reads and writes
-   !>  of I/O streams.
-   !>  This routine is called from the superstructure after the framework 
-   !>  has been initialized but before any fields have been allocated and 
-   !>  initial fields have been read from input files. However, all namelist
-   !>  options are available.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_clock(core_clock, configs, ierr)!{{{
-
-      implicit none
-
-      type (MPAS_Clock_type), intent(inout) :: core_clock
-      type (mpas_pool_type), intent(inout) :: configs
-      integer, intent(out) :: ierr
-
-      call ocn_simulation_clock_init(core_clock, configs, ierr)
-
-   end subroutine mpas_core_setup_clock!}}}
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_get_mesh_stream
-   !
-   !> \brief   Returns the name of the stream containing mesh information
-   !> \author  Michael Duda
-   !> \date    8 August 2014
-   !> \details 
-   !>  This routine returns the name of the I/O stream containing dimensions,
-   !>  attributes, and mesh fields needed by the framework bootstrapping 
-   !>  routine. At the time this routine is called, only namelist options 
-   !>  are available.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_get_mesh_stream(configs, stream, ierr)!{{{
-
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: configs
-      character(len=*), intent(out) :: stream
-      integer, intent(out) :: ierr
-
-      logical, pointer :: config_do_restart
-
-      ierr = 0
-
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         ierr = 1
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
-
-   end subroutine mpas_core_get_mesh_stream!}}}
-
-end module mpas_core
+end module ocn_core
 
 ! vim: foldmethod=marker
