@@ -315,7 +315,7 @@ contains
 
     call drydepvel_inst%Init(bounds)
 
-    if (use_cn) then
+    if (use_cn .or. use_ed ) then
 
        ! Note - always initialize the memory for the c13_xxx_inst and
        ! c14_xxx_inst data structure so that they can be used in 
@@ -364,6 +364,10 @@ contains
        end if
        call soilbiogeochem_nitrogenflux_inst%Init(bounds) 
 
+    end if
+
+    if ( use_cn ) then 
+
        ! Initalize cnveg carbon and nitrogen types
 
        call cnveg_carbonstate_inst%Init(bounds, carbon_type='c12', ratio=1._r8)
@@ -375,7 +379,9 @@ contains
           call c14_cnveg_carbonstate_inst%Init(bounds, carbon_type='c14', ratio=c14ratio, &
                c12_cnveg_carbonstate_inst=cnveg_carbonstate_inst)
        end if
+
        call cnveg_carbonflux_inst%Init(bounds, carbon_type='c12')
+
        if (use_c13) then
           call c13_cnveg_carbonflux_inst%Init(bounds, carbon_type='c13')
        end if
@@ -502,7 +508,7 @@ contains
        call ch4_inst%restart(bounds, ncid, flag=flag)
     end if
 
-    if (use_cn) then
+    if (use_cn .or. use_ed) then
 
        call soilbiogeochem_carbonstate_inst%restart(bounds, ncid, flag=flag, carbon_type='c12')
        if (use_c13) then
@@ -514,6 +520,9 @@ contains
                c12_soilbiogeochem_carbonstate_inst=soilbiogeochem_carbonstate_inst)
        end if
        call soilbiogeochem_carbonflux_inst%restart(bounds, ncid, flag=flag)
+    endif
+    if ( use_cn ) then
+       
        call soilbiogeochem_nitrogenstate_inst%restart(bounds, ncid, flag=flag)
        call soilbiogeochem_nitrogenflux_inst%restart(bounds, ncid, flag=flag)
 
@@ -538,6 +547,7 @@ contains
     end if
 
     if (use_ed) then
+       call ED_Phenology_inst%restart(bounds, ncid, flag=flag)
        call EDRest ( bounds, ncid, flag, ed_allsites_inst(bounds%begg:bounds%endg), &
             ed_clm_inst, ed_phenology_inst, waterstate_inst, canopystate_inst )
     end if

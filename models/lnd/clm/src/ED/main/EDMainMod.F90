@@ -5,6 +5,7 @@ module EDMainMod
   ! ============================================================================
 
   use shr_kind_mod         , only : r8 => shr_kind_r8
+  use spmdMod              , only : masterproc
   use decompMod            , only : bounds_type
   use clm_varctl           , only : iulog
   use atm2lndType          , only : atm2lnd_type
@@ -113,7 +114,9 @@ contains
     call ed_clm_inst%ed_clm_link( bounds, ed_allsites_inst(bounds%begg:bounds%endg),  &
          ed_phenology_inst, waterstate_inst, canopystate_inst)
 
-    write(iulog,*) 'leaving ed model',bounds%begg,bounds%endg,dayDiffInt
+    if (masterproc) then
+      write(iulog,*) 'leaving ed model',bounds%begg,bounds%endg,dayDiffInt
+    end if
 
   end subroutine ed_driver
 
@@ -321,11 +324,12 @@ contains
 
        do p = 1,numpft_ed
           if(currentPatch%leaf_litter(p)<small_no)then
-            write(iulog,*) 'negative leaf litter', currentPatch%leaf_litter(p),CurrentSite%lat,CurrentSite%lon
+            write(iulog,*) 'negative leaf litter numerical error', currentPatch%leaf_litter(p),CurrentSite%lat,CurrentSite%lon,&
+            currentPatch%dleaf_litter_dt(p),currentPatch%leaf_litter_in(p),currentPatch%leaf_litter_out(p),currentpatch%age
             currentPatch%leaf_litter(p) = small_no
           endif
           if(currentPatch%root_litter(p)<small_no)then
-               write(iulog,*) 'negative root litter', currentPatch%root_litter(p), &
+               write(iulog,*) 'negative root litter numerical error', currentPatch%root_litter(p), &
                currentPatch%droot_litter_dt(p)* udata%deltat, &
                CurrentSite%lat,CurrentSite%lon
             currentPatch%root_litter(p) = small_no

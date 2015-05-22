@@ -103,6 +103,7 @@ contains
     ! ============================================================================
 
     type(ed_cohort_type), intent(in) :: cohort_in       
+    real(r8) :: slascaler ! changes the target biomass according to the SLA
 
     if(cohort_in%dbh < 0._r8.or.cohort_in%pft == 0.or.cohort_in%dbh > 1000_r8)then
        write(iulog,*) 'problems in bleaf',cohort_in%dbh,cohort_in%pft
@@ -111,12 +112,17 @@ contains
     if(cohort_in%dbh <= EDecophyscon%max_dbh(cohort_in%pft))then
        bleaf = 0.0419_r8 * (cohort_in%dbh**1.56) * EDecophyscon%wood_density(cohort_in%pft)**0.55_r8
     else  
-       bleaf = 0.0419_r8 * (EDecophyscon%max_dbh(cohort_in%pft)**1.56) * EDecophyscon%wood_density(cohort_in%pft)**0.55_r8       
-    endif
-
+       bleaf = 0.0419_r8 * (EDecophyscon%max_dbh(cohort_in%pft)**1.56) * EDecophyscon%wood_density(cohort_in%pft)**0.55_r8      
+    endif  
+    slascaler = 0.03_r8/pftcon%slatop(cohort_in%pft)
+    bleaf = bleaf * slascaler
+    
+    !write(*,*) 'bleaf',bleaf, slascaler,cohort_in%pft
+    
     !Adjust for canopies that have become so deep that their bottom layer is not producing any carbon... 
     !nb this will change the allometry and the effects of this remain untested. RF. April 2014  
-    bleaf = bleaf*cohort_in%canopy_trim
+    
+     bleaf = bleaf * cohort_in%canopy_trim
 
     return
   end function Bleaf
