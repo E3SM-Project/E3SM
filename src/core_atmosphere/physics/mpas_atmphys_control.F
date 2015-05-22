@@ -90,7 +90,7 @@
  !
  ! Setup schemes according to the selected physics suite
  !
- if (trim(config_physics_suite) == 'wrf') then
+ if (trim(config_physics_suite) == 'mesoscale_reference') then
 
     if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'wsm6'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'tiedtke'

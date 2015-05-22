@@ -526,11 +526,11 @@ module init_atm_cases
       write(0,*) ' hx computation complete '
 
       do k=1,nz
-		
+
 !           sh(k) is the stretching specified for height surfaces
 
             sh(k) = (real(k-1)*dz/zt)**str 
-				
+
 !           to specify specific heights zc(k) for coordinate surfaces,
 !           input zc(k) and define sh(k) = zc(k)/zt
 !           zw(k) is the hieght of zeta surfaces
@@ -549,7 +549,7 @@ module init_atm_cases
  
             ah(k) = 1.-cos(.5*pii*(k-1)*dz/zt)**6
 !            ah(k) = 0.
-	    write(0,*) ' k, sh, zw, ah ',k,sh(k),zw(k),ah(k)
+            write(0,*) ' k, sh, zw, ah ',k,sh(k),zw(k),ah(k)
       end do
       do k=1,nz1
          dzw (k) = zw(k+1)-zw(k)
@@ -583,9 +583,9 @@ module init_atm_cases
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 
       do iCell=1,nCells
-        do k=1,nz	
+        do k=1,nz
           zgrid(k,iCell) = (1.-ah(k))*(sh(k)*(zt-hx(k,iCell))+hx(k,iCell))  &
-                         + ah(k) * sh(k)* zt	
+                         + ah(k) * sh(k)* zt
         end do
         do k=1,nz1
           zz (k,iCell) = (zw(k+1)-zw(k))/(zgrid(k+1,iCell)-zgrid(k,iCell))
@@ -634,9 +634,9 @@ module init_atm_cases
                     +(1.6*cos(phi)**3                                   &
                          *(sin(phi)**2+2./3.)-pii/4.)*r_earth*omega_e)
 
-        do k=1,nz	
+        do k=1,nz
           zgrid_2d(k,i) = (1.-ah(k))*(sh(k)*(zt-hx_1d)+hx_1d)  &
-                         + ah(k) * sh(k)* zt	
+                         + ah(k) * sh(k)* zt
         end do
         do k=1,nz1
           zz_2d(k,i) = (zw(k+1)-zw(k))/(zgrid_2d(k+1,i)-zgrid_2d(k,i))
@@ -690,7 +690,7 @@ module init_atm_cases
           end do
 
           do itrp = 1,25
-            do k=1,nz1				
+            do k=1,nz1
               rr_2d(k,i)  = (pp_2d(k,i)/(rgas*zz_2d(k,i)) - rb_2d(k,i)*(tt(k)-t0b))/tt(k)
             end do
 
@@ -821,9 +821,9 @@ module init_atm_cases
             tt(k) = temperature_1d(k)*(1.+1.61*scalars(index_qv,k,i))
 
           end do
-		
+
           do itrp = 1,25
-            do k=1,nz1				
+            do k=1,nz1
               rr(k,i)  = (pp(k,i)/(rgas*zz(k,i)) - rb(k,i)*(tt(k)-t0b))/tt(k)
             end do
 
@@ -852,7 +852,7 @@ module init_atm_cases
 
         end do  ! end outer iteration loop itr
 
-        do k=1,nz1	
+        do k=1,nz1
           p (k,i) = ((ppb(k,i)+pp(k,i))/p0)**(rgas/cp)
           t (k,i) = tt(k)/p(k,i)
           rt (k,i) = t(k,i)*rr(k,i)+rb(k,i)*(t(k,i)-tb(k,i))
@@ -1410,11 +1410,11 @@ module init_atm_cases
       write(0,*) ' hx computation complete '
 
       do k=1,nz
-		
+
 !           sh(k) is the stretching specified for height surfaces
 
             zc(k) = zt*(real(k-1)*dz/zt)**str 
-				
+
 !           to specify specific heights zc(k) for coordinate surfaces,
 !           input zc(k) 
 !           zw(k) is the hieght of zeta surfaces
@@ -1433,7 +1433,7 @@ module init_atm_cases
  
 !            ah(k) = 1.-cos(.5*pii*(k-1)*dz/zt)**6
             ah(k) = 1.
-!	    write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)			
+!            write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)
       end do
       do k=1,nz1
          dzw (k) = zw(k+1)-zw(k)
@@ -1465,9 +1465,9 @@ module init_atm_cases
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 
       do iCell=1,nCells
-        do k=1,nz	
+        do k=1,nz
             zgrid(k,iCell) = ah(k)*(zc(k)*(1.-hx(k,iCell)/zt)+hx(k,iCell)) &
-                           + (1.-ah(k)) * zc(k)	
+                           + (1.-ah(k)) * zc(k)
         end do
         do k=1,nz1
           zz (k,iCell) = (zw(k+1)-zw(k))/(zgrid(k+1,iCell)-zgrid(k,iCell))
@@ -1998,11 +1998,11 @@ module init_atm_cases
 !      write(0,*) ' dz = ',dz
 
       do k=1,nz
-		
+
 !           sh(k) is the stretching specified for height surfaces
 
             zc(k) = zt*(real(k-1)*dz/zt)**str 
-				
+
 !           to specify specific heights zc(k) for coordinate surfaces,
 !           input zc(k) 
 !           zw(k) is the hieght of zeta surfaces
@@ -2021,7 +2021,7 @@ module init_atm_cases
  
 !            ah(k) = 1.-cos(.5*pii*(k-1)*dz/zt)**6
             ah(k) = 1.
-!	    write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)			
+!            write(0,*) ' k, zc, zw, ah ',k,zc(k),zw(k),ah(k)
       end do
       do k=1,nz1
          dzw (k) = zw(k+1)-zw(k)
@@ -2614,6 +2614,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: p_fg
       real (kind=RKIND), dimension(:,:), pointer :: st_fg
       real (kind=RKIND), dimension(:,:), pointer :: sm_fg
+      real (kind=RKIND), dimension(:), pointer :: soilz
 
       call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
@@ -2898,7 +2899,7 @@ module init_atm_cases
          end do
 
       else
-	
+
          do k=1,nz
             ah(k) = 1.-zw(k)/zt
          end do
@@ -3033,7 +3034,7 @@ module init_atm_cases
 !     Height of coordinate levels (calculation of zgrid)
 
       do iCell=1,nCells
-         do k=1,nz	
+         do k=1,nz
             zgrid(k,iCell) = zw(k) + ah(k)*hx(k,iCell)
          end do
          do k=1,nz1
@@ -3156,6 +3157,14 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
 
       call read_met_close()
 
+      if (.not. allocated(maskslab)) then
+         write(0,*) '********************************************************************************'
+         write(0,*) 'LANDSEA field not found in  meteorological data file '//   &
+                     trim(config_met_prefix)//':'//config_start_time(1:13)
+         write(0,*) '********************************************************************************'
+         call mpas_dmpar_abort(dminfo)
+      end if
+
       edge_mask(:) = 1
 
 
@@ -3277,7 +3286,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
             else if (field % iproj == PROJ_GAUSS) then
                call map_set(PROJ_GAUSS, proj, &
                             nlat = nint(field % deltalat), &
-                            loninc = real(field % deltalon,RKIND), &
+                            loninc = 360.0_RKIND / real(field % nx,RKIND), &
                             lat1 = real(field % startlat,RKIND), &
                             lon1 = real(field % startlon,RKIND))
 !                            nxmax = nint(360.0 / field % deltalon), &
@@ -3785,9 +3794,17 @@ write(0,*) 'Interpolating SKINTEMP'
                      call latlon_to_ij(proj, lat, lon, x, y)
                   end if
                   if (ndims == 1) then
-                     destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     if (maskval /= -1.0) then
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     else
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                     end if
                   else if (ndims == 2) then
-                     destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     if (maskval /= -1.0) then
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+                     else
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                     end if
                   end if
                else
                   if (ndims == 1) then
@@ -3808,14 +3825,41 @@ write(0,*) 'Interpolating SKINTEMP'
 
       call read_met_close()
 
-      ! Fix for isobaric data
-      if (minval(p_fg(:,:)) == 0.0) then
+
+      !
+      ! Check how many distinct levels we actually found in the meteorological data
+      !
+      do k=1,config_nfglevels
+         if (vert_level(k) == -1.0) exit 
+      end do
+      nfglevels_actual = k-1
+      write(0,*) '*************************************************'
+      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
+      write(0,*) '*************************************************'
+
+
+      ! 
+      ! For isobaric data, fill in the 3-d pressure field; otherwise, ensure
+      ! that the surface pressure and height fields are filled in
+      ! 
+      if (minval(p_fg(1:nfglevels_actual,1:nCellsSolve)) == 0.0 .and. &
+          maxval(p_fg(1:nfglevels_actual,1:nCellsSolve)) == 0.0) then
          write(0,*) 'Setting pressure field for isobaric data'
          do k=1,config_nfglevels
             if (vert_level(k) /= 200100.0) then
                p_fg(k,:) = vert_level(k)
             else
                p_fg(k,:) = psfc(:)
+            end if
+         end do
+      else
+         call mpas_pool_get_array(fg, 'z', z_fg)
+         call mpas_pool_get_array(fg, 'soilz', soilz)
+         write(0,*) 'Assuming model-level input data'
+         do k=1,config_nfglevels
+            if (vert_level(k) == 200100.0) then
+               p_fg(k,:) = psfc(:)
+               z_fg(k,:) = soilz(:)
             end if
          end do
       end if
@@ -3842,7 +3886,10 @@ do iCell=1,nCells
       end do
 
       do k = 1, config_nfgsoillevels
-         if (sm_fg(k,iCell) <= 0.0) write(0,*) 'Bad sm_fg ', k, iCell
+         if (sm_fg(k,iCell) <= 0.0) then
+            write(0,*) 'Bad sm_fg ', sm_fg(k,iCell), k, iCell
+            sm_fg(k,iCell) = 0.001
+         end if
       end do
       !LDF end.
 
@@ -3958,23 +4005,11 @@ write(0,*) 'PROCESSING SEAICE'
       ! Compute normal wind component and store in fg % u
       !  
       do iEdge=1,nEdges
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             u_fg(k,iEdge) = cos(angleEdge(iEdge)) * u_fg(k,iEdge) &
                           + sin(angleEdge(iEdge)) * v_fg(k,iEdge)
          end do
       end do
-
-
-      !
-      ! Check how many distinct levels we actually found in the meteorological data
-      !
-      do k=1,config_nfglevels
-         if (vert_level(k) == -1.0) exit 
-      end do
-      nfglevels_actual = k-1
-      write(0,*) '*************************************************'
-      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
-      write(0,*) '*************************************************'
 
       !  
       ! Vertically interpolate meteorological data

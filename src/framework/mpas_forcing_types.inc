@@ -1,8 +1,8 @@
   ! abstract interface for variable interface function
   abstract interface
      function variable_interval(currentTime) result(variableInterval)
-	   import MPAS_Time_type
-	   import MPAS_TimeInterval_type
+       import MPAS_Time_type
+       import MPAS_TimeInterval_type
        type(MPAS_Time_type), intent(in) :: currentTime
        type(MPAS_TimeInterval_type) :: variableInterval
      end function variable_interval
