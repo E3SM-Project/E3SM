@@ -531,6 +531,18 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
+             <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">02:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpiexec</executable>
+         </mpirun>
 </machine>
 
 <machine MACH="gaea">
@@ -1057,7 +1069,7 @@
           <queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
           <queue walltimemax="2:00" jobmin="9" jobmax="4096">small</queue>
           <queue walltimemax="12:00" jobmin="0" jobmax="16384" default="true">regular</queue>
-          <queue walltimemax="12:00" jobmin="16385" jobmax="65536">small</queue>
+          <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
         </queues>
         <walltimes>
           <walltime default="true">2:00</walltime>
@@ -1102,6 +1114,32 @@
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
         <PES_PER_NODE>16</PES_PER_NODE>
         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+        <batch_system type="lsf" version="9.1">
+          <queues>
+            <queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
+            <queue walltimemax="2:00" jobmin="9" jobmax="4096">small</queue>
+            <queue walltimemax="12:00" jobmin="0" jobmax="16384" default="true">regular</queue>
+            <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
+          </queues>
+          <walltimes>
+            <walltime default="true">2:00</walltime>
+            <walltime ccsm_estcost="-1">2:00</walltime>
+            <walltime ccsm_estcost="0">4:00</walltime>
+            <walltime ccsm_estcost="1">8:00</walltime>
+          </walltimes>
+        </batch_system>
+        <mpirun mpilib="mpi-serial">
+          <executable></executable>
+        </mpirun>
+        <mpirun mpilib="default" threaded="false">
+          <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/launch </executable>
+        </mpirun>
+        <mpirun mpilib="default" threaded="true">
+          <executable>MP_PE_AFFINITY= MP_TASK_AFFINITY= MP_CPU_BIND_LIST= mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/hybrid_launch </executable>
+        </mpirun>
+        <mpirun compiler="gnu">
+          <executable>mpirun.lsf </executable>
+        </mpirun>
 </machine>
 
 <machine MACH="rosa">
@@ -1124,6 +1162,22 @@
         <SUPPORTED_BY>edouard.davin -at- env.ethz.ch</SUPPORTED_BY>
         <GMAKE_J>12</GMAKE_J>
         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+        <batch_system type="slurm" version="x.y">
+          <queues>
+            <queue default="true">default</queue>
+          </queues>
+          <walltimes>
+            <walltime default="true">01:30:00</walltime>
+          </walltimes>
+          <mpirun mpilib="default">
+            <executable>aprun</executable>
+              <arguments>
+                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
+                <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
+                <arg name="thread_count"> -d {{ thread_count }}</arg>
+              </arguments>
+          </mpirun>
+        </batch_system>
 </machine>
 <default_run_suffix>$config{'EXEROOT'}/cesm.exe >> cesm.log.$LID 2>&amp;1</default_run_suffix>
 </config_machines>

@@ -52,8 +52,7 @@
       <directive                       > -q {{ queue }} </directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
-      <!-- <directive default="n"           > -x {{ queue_exclusive }} </directive> -->
-      <directive            > -x {{ queue_exclusive }} </directive>
+      <directive                       > -x {{ queue_exclusive }} </directive>
       <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
       <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
