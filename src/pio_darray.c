@@ -1300,8 +1300,9 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 
   ierr = ncmpi_inq_buffer_usage(file->fh, &usage);
 
-  if(!force){
+  if(!force && file->iosystem->io_comm != MPI_COMM_NULL){
     usage += addsize;
+
     MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_OFFSET,  MPI_MAX, 
 		  file->iosystem->io_comm);
   }
@@ -1355,7 +1356,6 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     if(rcnt>0){
       if(file->iosystem->io_rank==0){
 	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
-	print_trace(NULL);
       }
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
