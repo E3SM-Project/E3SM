@@ -118,7 +118,7 @@ module piolib_mod
 !<
   interface PIO_freedecomp
      module procedure freedecomp_ios
-     module procedure freedecomp_file
+     module procedure freedecomp_file 
   end interface
 
 !> 
@@ -1363,8 +1363,8 @@ contains
     implicit none
     type (file_desc_t) :: file
     type (io_desc_t) :: iodesc
-
-    call syncfile(file)
+  
+    call syncfile(file)     
 
     call freedecomp_ios(file%iosystem, iodesc)
 

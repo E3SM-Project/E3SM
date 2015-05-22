@@ -50,9 +50,14 @@ typedef struct var_desc_t
 {
   int record; 
   int ndims;
+  int type;
   bool distributed;
   int request; // used for pnetcdf iput calls
   int fillrequest; //used for fill in pnetcdf iput for subset rearranger
+
+  void *fillbuf;
+  void *iobuf;
+
 } var_desc_t;
 
 /**
@@ -113,8 +118,6 @@ typedef struct io_desc_t
   bool handshake;
   bool isend;
   int max_requests;
-
-
   
   MPI_Comm subset_comm;
   struct io_desc_t *next;

@@ -295,6 +295,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
   if(iodesc->rindex != NULL)
     brel(iodesc->rindex);
 
+
   if(iodesc->firstregion != NULL)
     free_region_list(iodesc->firstregion);
 
