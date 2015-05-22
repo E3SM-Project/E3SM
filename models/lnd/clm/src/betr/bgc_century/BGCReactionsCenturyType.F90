@@ -1127,7 +1127,7 @@ contains
     
     smin_no3_to_decomp_plant_flx = smin_no3 * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
   else
-    smin_no3_to_decomp_plant_flx = tot_no3_demand_flx * dtime
+    smin_no3_to_decomp_plant_flx = tot_no3_demand_flx
   endif
   
   tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx

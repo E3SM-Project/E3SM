@@ -92,6 +92,7 @@ module BGCCenturySubCoreMod
   integer :: lid_n2o_paere
   
   integer :: lid_nh4_mpcbuf     !nh4 buffer providing the tight to loose coupling between immobilizing and mineralizing decomposers
+  integer :: lid_nh4_supp
   integer :: nstvars         !number of equations for the state variabile vector
   integer :: nprimvars       !total number of primary variables
   integer :: nreactions      !seven decomposition pathways plus nitrification, denitrification and plant immobilization
@@ -217,6 +218,9 @@ module BGCCenturySubCoreMod
   this%lid_minn_no3_plant = addone(itemp)
   this%lid_nh4_nit    = addone(itemp)
   
+  if(CNAllocate_Carbon_only())then
+    this%lid_nh4_supp = addone(itemp)
+  endif
   !aerechyma transport
   this%lid_o2_paere   = addone(itemp)   !
   if ( spinup_state /= 1 ) then
@@ -454,7 +458,7 @@ module BGCCenturySubCoreMod
    actual_immob_nh4_vr   => nitrogenflux_vars%actual_immob_nh4_vr_col   , & !
    smin_no3_to_plant_vr  => nitrogenflux_vars%smin_no3_to_plant_vr_col  , & !
    smin_nh4_to_plant_vr  => nitrogenflux_vars%smin_nh4_to_plant_vr_col  , & !
-   
+   supplement_to_sminn_vr=> nitrogenflux_vars%supplement_to_sminn_vr_col, & !
    hr_vr                 => carbonflux_vars%hr_vr_col               , & !
    volatileid            => betrtracer_vars%volatileid              , & !
    ngwmobile_tracers     => betrtracer_vars%ngwmobile_tracers       , & !
@@ -482,7 +486,8 @@ module BGCCenturySubCoreMod
         plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
         smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
         smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
-      
+        supplement_to_sminn_vr(c,j) = (y0(centurybgc_vars%lid_nh4_supp, c, j) - yf(centurybgc_vars%lid_nh4_supp, c, j))*natomw/dtime
+        
         hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
         f_nit_vr    (c,j)  = (yf(centurybgc_vars%lid_nh4_nit,c, j) - y0(centurybgc_vars%lid_nh4_nit,c, j))*natomw/dtime
         f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime

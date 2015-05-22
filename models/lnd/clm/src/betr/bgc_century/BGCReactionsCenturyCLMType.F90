@@ -1047,6 +1047,8 @@ contains
   
   !
   ! this down regulation does not consider the extra nitrogen made available from mineralization
+  use clm_varctl,   only : CNAllocate_Carbon_only
+  
   integer , intent(in) :: nstvars
   integer , intent(in) :: nreactions
   logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
@@ -1064,6 +1066,8 @@ contains
   real(r8) :: smin_no3_to_decomp_plant_flx
   real(r8) :: tot_sminn_to_decomp_plant_flx
   real(r8) :: frac_nh4_to_decomp_plant
+  real(r8) :: supp_nh4_to_decomp_plant_flx
+  real(r8) :: frac_supp_nh4_to_decomp_plant
   real(r8) :: alpha
   integer  :: reac
   
@@ -1076,6 +1080,7 @@ contains
     lid_minn_no3_immob    => centurybgc_vars%lid_minn_no3_immob    , & !
     lid_minn_nh4_plant    => centurybgc_vars%lid_minn_nh4_plant    , & !
     lid_minn_no3_plant    => centurybgc_vars%lid_minn_no3_plant    , & !
+    lid_nh4_supp          => centurybgc_vars%lid_nh4_supp          , & !
     lid_nh4_nit           => centurybgc_vars%lid_nh4_nit           , & !
     lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, & !
     lid_nh4_nit_reac      => centurybgc_vars%lid_nh4_nit_reac      , & !
@@ -1099,11 +1104,26 @@ contains
   
   if(tot_nh4_demand_flx*dtime>smin_nh4)then
     !nitrifiers, decomposers and plants are nh4 limited
-    alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
-    smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
-    decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
-    !downregulate nitrification
-    reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha    
+    if(CNAllocate_Carbon_only)then
+
+      !nitrifier uses what it is provided
+      !plant use the remaining nh4 and request external supply from supp nh4
+      alpha = safe_div(smin_nh4, reaction_rates(reac)*dtime)
+      reaction_rates(reac) = reaction_rates(reac) * min(alpha, 1._r8)
+      
+      smin_nh4_to_decomp_plant_flx = smin_nh4/dtime+reaction_rates(reac)*cascade_matrix(lid_nh4,reac)
+      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
+      
+            
+    else
+      alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
+      smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
+      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
+      !downregulate nitrification
+      reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha
+      
+    endif
+    
   else
     !none is nh4 limited
     smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx
@@ -1116,16 +1136,31 @@ contains
 
   !then no3 is competed between denitrification and residual request from decomposer immobilization and plant demand  
   if(tot_no3_demand_flx * dtime>smin_no3)then
-    !denitrifiers, decomposers and plants are no3 limited
-    alpha = smin_no3/(tot_no3_demand_flx*dtime)    
-    reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
+    if(CNAllocate_Carbon_only)then
+      !denitrifiers is given what is available
+      alpha = min(smin_no3/(tot_no3_demand_flx*dtime),1._r8)    
+      reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
+      smin_no3_to_decomp_plant_flx = smin_no3/dtime + reaction_rates(lid_no3_den_reac ) * cascade_matrix(lid_no3 ,reac)
+    else
+      !denitrifiers, decomposers and plants are no3 limited
+      alpha = smin_no3/(tot_no3_demand_flx*dtime)    
+      reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
     
-    smin_no3_to_decomp_plant_flx = smin_no3 * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
+      smin_no3_to_decomp_plant_flx = smin_no3 * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
+            
+    endif  
   else
-    smin_no3_to_decomp_plant_flx = tot_no3_demand_flx * dtime
+    smin_no3_to_decomp_plant_flx = tot_no3_demand_flx 
   endif
   
   tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
+  if(CNAllocate_Carbon_only)then
+    supp_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx - tot_sminn_to_decomp_plant_flx
+    tot_sminn_to_decomp_plant_flx = decomp_plant_minn_demand_flx
+  else
+    supp_nh4_to_decomp_plant_flx = 0._r8
+  endif
+  
   if(tot_sminn_to_decomp_plant_flx < decomp_plant_minn_demand_flx)then
     !plant & decomp are nitrogen limited
     alpha = tot_sminn_to_decomp_plant_flx/decomp_plant_minn_demand_flx
@@ -1135,8 +1170,10 @@ contains
 
   if(smin_nh4_to_decomp_plant_flx>=tot_sminn_to_decomp_plant_flx)then
     frac_nh4_to_decomp_plant = 1._r8
+    frac_supp_nh4_to_decomp_plant=0._r8
   else
     frac_nh4_to_decomp_plant = smin_nh4_to_decomp_plant_flx/tot_sminn_to_decomp_plant_flx
+    frac_supp_nh4_to_decomp_plant=supp_nh4_to_decomp_plant_flx/tot_smin_to_decomp_plant_flx
   endif
   !revise the stoichiometry matix elements
   !for decomposers
@@ -1144,10 +1181,11 @@ contains
   do reac = 1,  nom_pools
     if(nitrogen_limit_flag(reac))then
       reaction_rates(reac) = reaction_rates(reac) * alpha
-      cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant)
-      cascade_matrix(lid_nh4, reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+      cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
+      cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
+      cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
     
-      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
       cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
     endif
   enddo
@@ -1156,9 +1194,10 @@ contains
   reac = lid_plant_minn_up_reac
   reaction_rates(reac) = reaction_rates(reac) * alpha
   cascade_matrix(lid_nh4, reac)        = -frac_nh4_to_decomp_plant
-  cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant)
+  cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
+  cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
   
-  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
+  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
   end associate
   end subroutine apply_nutrient_down_regulation  

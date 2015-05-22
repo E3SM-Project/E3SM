@@ -495,7 +495,8 @@ implicit none
     !
     ! !USES:
     use ncdio_pio , only : file_desc_t,ncd_io
-
+    use clm_varctl, only : cnallocate_carbon_only_set
+    
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -506,6 +507,7 @@ implicit none
     logical            :: readv ! has variable been read in or not
     real(r8)           :: tempr ! temporary to read in parameter
     character(len=100) :: tString ! temp. var for reading
+    logical            :: carbon_only = .false.
     !-----------------------------------------------------------------------
 
     ! read in parameters
@@ -541,6 +543,8 @@ implicit none
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     NutrientCompetitionParamsInst%compet_nit=tempr   
 
+    
+    call cnallocate_carbon_only_set(carbon_only)
   end subroutine readCentCNAllocParams
   
            
