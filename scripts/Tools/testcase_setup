@@ -131,7 +131,6 @@ chdir($caseroot);
 
 push(@INC, $casetools);
 my $perl5libdir = "$cimeroot/utils/perl5lib/";
-print "perl 5 lib dir: $perl5libdir\n";
 push(@INC, $perl5libdir);
 require Batch::BatchMaker;
 require Task::TaskMaker;
