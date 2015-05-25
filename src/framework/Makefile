@@ -62,7 +62,7 @@ mpas_domain_routines.o: mpas_derived_types.o mpas_pool_routines.o
 
 mpas_field_routines.o: mpas_derived_types.o
 
-mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o
+mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o mpas_dmpar.o
 
 mpas_decomp.o: mpas_derived_types.o mpas_stream_manager.o
 
@@ -72,7 +72,7 @@ mpas_dmpar.o: mpas_sort.o streams.o mpas_kind_types.o mpas_derived_types.o mpas_
 
 mpas_sort.o: mpas_kind_types.o mpas_io_units.o
 
-mpas_timekeeping.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o
+mpas_timekeeping.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o mpas_dmpar.o
 
 mpas_timer.o: mpas_kind_types.o mpas_io_units.o mpas_dmpar.o
 
