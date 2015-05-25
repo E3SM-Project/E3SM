@@ -17,6 +17,7 @@ use English;
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
+use Data::Dumper;
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
@@ -326,6 +327,9 @@ my $machdir     = $xmlvars{CCSM_MACHDIR};
 my $ccsmuser    = $xmlvars{CCSMUSER};
 my $mach        = $xmlvars{MACH};
 $project        = $xmlvars{PROJECT};
+my $perl5lib    = "$cimeroot/utils/perl5lib";
+push(@INC, $perl5lib);
+require Batch::BatchMaker;
 
 # --- env_archive.xml doesn't use the id / value pairs do needs to be read from
 # --- config_archive.xml file in the scriptsroot/Tools/ directory
@@ -347,8 +351,21 @@ $sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.l_archive
-my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch ${machdir}/mkbatch.$mach";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+#my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch ${machdir}/mkbatch.$mach";
+#system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+ my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $xmlvars{'CASEROOT'},
+                                                  cimeroot => $cimeroot,
+                                                  case      => $xmlvars{'CASE'},
+                                                  mpilib      => $xmlvars{'MPILIB'},
+                                                  scriptsroot => $xmlvars{'SCRIPTSROOT'},
+                                                  machroot => $xmlvars{'CCSM_MACHDIR'},
+                                                  machine => $xmlvars{'MACH'},
+                                                  compiler => $xmlvars{'COMPILER'});
+
+ my $inputbatchscript = "$xmlvars{'CCSM_MACHDIR'}/template.ltarchive";
+ my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.lt_archive";
+ $batchmaker->overrideNodeCount(1);
+ $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
 
 # --- Create preview_namelist file
 my $file = "${caseroot}/preview_namelists"; 
