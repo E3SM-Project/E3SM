@@ -3575,6 +3575,7 @@ end subroutine cesm_init
  subroutine cesm_final()
 
    use shr_pio_mod, only : shr_pio_finalize
+   use shr_wv_sat_mod, only: wv_sat_final
    implicit none
 
    !------------------------------------------------------------------------
@@ -3608,6 +3609,8 @@ end subroutine cesm_init
    !------------------------------------------------------------------------
    ! End the run cleanly
    !------------------------------------------------------------------------
+
+   call wv_sat_final()
 
    call shr_pio_finalize( )
    
