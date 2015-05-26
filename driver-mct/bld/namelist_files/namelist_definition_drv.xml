@@ -344,6 +344,53 @@ default: SHR_ORB_UNDEF_REAL (1.e36)
 (Not currently used in build-namelist)
 </entry>
 
+<entry
+id="wv_sat_scheme"
+type="char*16"
+category="wv_sat"
+group="seq_infodata_inparm"
+valid_values="GoffGratch,MurphyKoop,Bolton,Flatau">
+Type of water vapor saturation vapor pressure scheme employed. 'GoffGratch' for
+Goff and Gratch (1946); 'MurphyKoop' for Murphy and Koop (2005); 'Bolton' for
+Bolton (1980); 'Flatau' for Flatau, Walko, and Cotton (1992).
+Default: GoffGratch
+</entry>
+
+<entry
+id="wv_sat_transition_start"
+type="real"
+category="wv_sat"
+group="seq_infodata_inparm">
+Width of the liquid-ice transition range in mixed-phase water saturation vapor
+pressure calculations. The range always ends at 0 degrees Celsius, so this
+variable only affects the start of the transition.
+Default: 20K
+
+WARNING: CAM is tuned to the default value of this variable. Because it affects
+so many different parameterizations, changes to this variable may require a
+significant retuning of CAM's cloud physics to give reasonable results.
+</entry>
+
+<entry
+id="wv_sat_use_tables"
+type="logical"
+category="wv_sat"
+group="seq_infodata_inparm">
+Whether or not to produce lookup tables at init time to use as a cache for
+saturation vapor pressure.
+Default: .false.
+</entry>
+
+<entry
+id="wv_sat_table_spacing"
+type="real"
+category="wv_sat"
+group="seq_infodata_inparm">
+Temperature resolution of saturation vapor pressure lookup tables in Kelvin.
+(This is only used if wv_sat_use_tables is .true.)
+Default: 1.0
+</entry>
+
 <entry 
 id="flux_epbal"
 type="char*8"
