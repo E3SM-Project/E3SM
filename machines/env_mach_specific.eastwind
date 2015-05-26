@@ -29,5 +29,6 @@ module load netcdf/4.1.2/pgi
 
 limit coredumpsize 1000000
 limit stacksize unlimited
-
-
+if ( $?PERL ) then
+  printenv
+endif
