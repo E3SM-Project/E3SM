@@ -48,7 +48,7 @@ contains
   end subroutine tearDown
     
   @Test
-  subroutine test_seqMapMap_withOneDestPt_returnsCorrectAV(this)
+  subroutine test_seqMapMap_1DestPt_returnsCorrectAV(this)
     class(TestSeqMap), intent(inout) :: this
     integer, parameter :: npts_source = 3
     integer, parameter :: npts_dest = 1
@@ -91,10 +91,10 @@ contains
          0.25_r8 * data_source(2) + &
          0.25_r8 * data_source(3)
     @assertEqual(expected_data, actual_data, tolerance=tol)
-  end subroutine test_seqMapMap_withOneDestPt_returnsCorrectAV
+  end subroutine test_seqMapMap_1DestPt_returnsCorrectAV
 
   @Test
-  subroutine test_seqMapMap_withTwoDestPts_returnsCorrectAV(this)
+  subroutine test_seqMapMap_2DestPt_returnsCorrectAV(this)
     class(TestSeqMap), intent(inout) :: this
     integer, parameter :: npts_source = 3
     integer, parameter :: npts_dest = 2
@@ -134,6 +134,6 @@ contains
          0.5_r8 * data_source(2) + &
          0.5_r8 * data_source(3)
     @assertEqual(expected_data, actual_data, tolerance=tol)
-  end subroutine test_seqMapMap_withTwoDestPts_returnsCorrectAV
+  end subroutine test_seqMapMap_2DestPt_returnsCorrectAV
   
 end module test_seq_map

@@ -31,11 +31,12 @@ add_subdirectory(utils drv_unit_test_utils)
 # Note that we are including the stub pio in the csm_share library for simplicity.
 add_library(csm_share ${share_sources} ${share_mct_sources} ${share_pio_sources}
   ${pio_sources})
-message("SOURCES: ${share_genf90_sources}")
 declare_generated_dependencies(csm_share "${share_genf90_sources}")
 add_dependencies(csm_share mct_project)
+
 add_library(esmf_wrf_timemgr ${esmf_wrf_timemgr_sources})
 add_dependencies(esmf_wrf_timemgr csm_share)
+
 add_library(drv ${drv_sources})
 add_dependencies(drv csm_share esmf_wrf_timemgr)
 
