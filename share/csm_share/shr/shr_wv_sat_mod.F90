@@ -9,7 +9,7 @@ module shr_wv_sat_mod
 ! Typical usage of this module:
 !
 ! Init:
-! call wv_sat_methods_init(<constants>, errstring)
+! call wv_sat_init(<constants>, errstring)
 !
 ! Get scheme index from a name string:
 ! scheme_idx = wv_sat_get_scheme_idx("GoffGratch")
@@ -57,8 +57,8 @@ module shr_wv_sat_mod
 ! tables are stored in global, thread-shared variables. Therefore the following
 ! procedures are not thread-safe:
 !
-!  - wv_sat_methods_init
-!  - wv_sat_methods_final
+!  - wv_sat_init
+!  - wv_sat_final
 !  - wv_sat_set_default
 !  - wv_sat_make_tables
 !
