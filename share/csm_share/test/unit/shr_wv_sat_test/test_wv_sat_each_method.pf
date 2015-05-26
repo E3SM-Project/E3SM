@@ -72,15 +72,13 @@ subroutine setUp(this)
 
   class(WVSchemeCase), intent(inout) :: this
 
-  real(r8), parameter :: tboil = 373.16_r8
   real(r8), parameter :: epsilo = mwwv/mwdair
 
   character(len=128) :: errstring
 
   type(WVSatTableSpec) :: liquid_table_spec, ice_table_spec, mixed_table_spec
 
-  call wv_sat_init(tmelt, h2otrip, tboil, t_transition, epsilo, &
-       errstring)
+  call wv_sat_init(tmelt, h2otrip, t_transition, epsilo, errstring)
 
   if (errstring /= "") then
      call throw("Error from wv_sat_init: "//trim(errstring))
