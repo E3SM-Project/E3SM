@@ -850,6 +850,12 @@ my $LOCARGS = "--block $ENV{'COBALT_PARTNAME'}";
     {
         $LOCARGS .= "--shape $ENV{'COBALT_CORNER'}";
     }
+    if(defined $ENV{'LOCAL_ARGS'})
+    {
+        $LOCARGS .= " $ENV{LOCAL_ARGS} ";
+    }
+
+
 E1
     my $code2=<<"E2";
     $mpirun
