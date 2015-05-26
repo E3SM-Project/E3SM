@@ -113,7 +113,6 @@ integer, parameter :: rk = selected_real_kind(12)
 
 real(rk) :: tmelt   ! Melting point of water at 1 atm (K)
 real(rk) :: h2otrip ! Triple point temperature of water (K)
-real(rk) :: tboil   ! Boiling point of water at 1 atm (K)
 
 real(rk) :: ttrice  ! Ice-water transition range
 
@@ -195,11 +194,10 @@ contains
 !---------------------------------------------------------------------
 
 ! Get physical constants
-subroutine wv_sat_init(tmelt_in, h2otrip_in, tboil_in, &
-     ttrice_in, epsilo_in, errstring)
+subroutine wv_sat_init(tmelt_in, h2otrip_in, ttrice_in, epsilo_in, &
+     errstring)
   real(rk), intent(in) :: tmelt_in
   real(rk), intent(in) :: h2otrip_in
-  real(rk), intent(in) :: tboil_in
   real(rk), intent(in) :: ttrice_in
   real(rk), intent(in) :: epsilo_in
   character(len=*), intent(out)  :: errstring
@@ -214,7 +212,6 @@ subroutine wv_sat_init(tmelt_in, h2otrip_in, tboil_in, &
 
   tmelt = tmelt_in
   h2otrip = h2otrip_in
-  tboil = tboil_in
   ttrice = ttrice_in
   epsilo = epsilo_in
 
@@ -945,6 +942,11 @@ end function lookup_svp_in_table
 pure function GoffGratch_svp_liquid(t) result(es)
   real(rk), intent(in) :: t  ! Temperature in Kelvin
   real(rk) :: es             ! SVP in Pa
+
+  ! Boiling point of water at 1 atm (K)
+  ! This is not really the most accurate value, but it is the one that the
+  ! Goff & Gratch scheme was designed to use, so we hard-code it.
+  real(rk), parameter :: tboil = 373.16_rk
 
   ! uncertain below -70 C
   es = 10._rk**(-7.90298_rk*(tboil/t-1._rk)+ &
