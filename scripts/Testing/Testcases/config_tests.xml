@@ -25,7 +25,7 @@
           STOP_OPTION="ndays" 
           STOP_N="22" 
           CCSM_TCOST="1"
-          DOUT_S="TRUE" />
+          DOUT_S="FALSE" />
           
 <ccsmtest NAME="ERP"
           DESC="pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days"
@@ -180,6 +180,6 @@
 	  DESC="Short-term archiving restart test"
 	  INFO_DBUG="1"
 	  CCSM_TCOST="-1"
-	  DOUT_S="TRUE" />
+	  DOUT_S="FALSE" />
 
 </config_ccsmtest>

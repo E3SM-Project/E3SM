@@ -25,4 +25,6 @@ soft add +mpiwrapper-xl
 soft add @ibm-compilers-2015-02
 soft add +cmake
 soft add +python
-
+if ( $?PERL ) then
+  printenv
+endif
