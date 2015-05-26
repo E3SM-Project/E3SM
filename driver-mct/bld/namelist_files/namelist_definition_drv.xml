@@ -521,7 +521,7 @@ id="cpl_seq_option"
 type="char*64"
 category="expdef"
 group="seq_infodata_inparm"
-valid_values="CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2"
+valid_values="CESM1_ORIG,CESM1_MOD,CESM1_ORIG_TIGHT,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2">
 Set the coupler sequencing.  See CPL_SEQ_OPTION in env_run.
 default: CESM1_MOD
 </entry>
@@ -1269,7 +1269,7 @@ type="real"
 category="driver" 
 group="seq_infodata_inparm">
 Abort model if coupler timestep wallclock time exceeds this value, ignored if 0,
-if < 0 then use abs(max_cplstep_time)*cktime as the threshold.
+if &lt; 0 then use abs(max_cplstep_time)*cktime as the threshold.
 default: 0 
 </entry>
 
