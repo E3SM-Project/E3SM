@@ -222,7 +222,7 @@ module ocn_forward_mode
       call ocn_sea_ice_init(nVertLevels, err_tmp)
       err = ior(err, err_tmp)
 
-      call ocn_analysis_init(domain, err_tmp)
+      call ocn_analysis_init(domain, stream_manager, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_timer_init(domain)

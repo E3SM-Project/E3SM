@@ -226,7 +226,7 @@ module mpas_core
       err = ior(err, err_tmp)
 
       write(6,*) 'calling ocn_analysis_init'
-      call ocn_analysis_init(domain, err_tmp)
+      call ocn_analysis_init(domain, stream_manager, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_timer_init(domain)

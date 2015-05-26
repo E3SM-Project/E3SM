@@ -3,7 +3,7 @@
 			description="If true, ocean analysis member test_compute_interval is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_test_compute_interval_compute_interval" type="character" default_value="same_as_output" units="unitless"
+		<nml_option name="config_test_compute_interval_compute_interval" type="character" default_value="00-00-01_00:00:00" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="'DDDD_HH:MM:SS', 'same_as_output'"
 		/>

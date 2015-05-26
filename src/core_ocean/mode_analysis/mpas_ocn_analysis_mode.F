@@ -111,7 +111,7 @@ module ocn_analysis_mode
       call ocn_equation_of_state_init(err_tmp)
       err = ior(err, err_tmp)
 
-      call ocn_analysis_init(domain, err_tmp)
+      call ocn_analysis_init(domain, stream_manager, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_init_routines_vert_coord(domain)
