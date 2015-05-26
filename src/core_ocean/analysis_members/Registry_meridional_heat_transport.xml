@@ -57,12 +57,12 @@
 			 description="Central coordinate of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
 		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
-			 description="Coordinate of lower edge of meridional heat transport bin, either in latitude or y, for plotting."
+			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
 		<var name="meridionalHeatTransportLatZ" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 Time" units="petawatts"
-			 description="Northward meridional heat transport, by level, at northern bin boundary."
+			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates, by vertical level."
 		/>
 		<var name="meridionalHeatTransportLat" type="real" dimensions="nMerHeatTransBinsP1 Time" units="petawatts"
-			 description="Northward meridional heat transport at northern bin boundary."
+			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates."
 		/>
 	</var_struct>
