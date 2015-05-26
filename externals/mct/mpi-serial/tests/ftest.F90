@@ -7,12 +7,18 @@
       implicit none
         integer ierr
         integer ec
+	character*(MPI_MAX_LIBRARY_VERSION_STRING) version
+	integer vlen
+
         ec = 0
 #ifdef TEST_INTERNAL
         print *, "Using internal tests"
 #endif
 
         call mpi_init(ierr)
+
+	call MPI_GET_LIBRARY_VERSION(version,vlen,ierr)
+	print *,"MPI Version '",version,"' len=",vlen
 
         call test_contiguous(ec)
         call test_vector(ec)
