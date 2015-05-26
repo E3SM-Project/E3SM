@@ -11,9 +11,16 @@ uwshcu.o
 REDUCED_OPT_OBJS=\
 SatellitePhenologyMod.o
 
+# shr_wv_sat_mod does not need to have better than ~0.1% precision, and benefits
+# enormously from a lower precision in the vector functions.
+REDUCED_PRECISION_OBJS=\
+shr_wv_sat_mod.o
+
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div $<
   $(REDUCED_OPT_OBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O1 $<
+  $(REDUCED_PRECISION_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
 endif
