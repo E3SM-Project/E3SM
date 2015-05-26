@@ -180,6 +180,6 @@
 	  DESC="Short-term archiving restart test"
 	  INFO_DBUG="1"
 	  CCSM_TCOST="-1"
-	  DOUT_S="TRUE" />
+	  DOUT_S="FALSE" />
 
 </config_ccsmtest>
