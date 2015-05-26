@@ -8,6 +8,7 @@ module EDPhysiologyMod
 
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use clm_varctl          , only : iulog 
+  use spmdMod             , only : masterproc
   use TemperatureType     , only : temperature_type
   use SoilStateType       , only : soilstate_type
   use WaterstateType      , only : waterstate_type
@@ -85,6 +86,7 @@ contains
 
     currentPatch%leaf_litter_in(:)   = 0.0_r8
     currentPatch%root_litter_in(:)   = 0.0_r8
+    currentPatch%dleaf_litter_dt(:)     = 0.0_r8
     currentPatch%leaf_litter_out(:)  = 0.0_r8
     currentPatch%root_litter_out(:)  = 0.0_r8
     currentPatch%cwd_AG_in(:)        = 0.0_r8
@@ -118,14 +120,14 @@ contains
        currentPatch%droot_litter_dt(p) = currentPatch%root_litter_in(p) - currentPatch%root_litter_out(p) 
     enddo
 
-    currentPatch%leaf_litter_in(:)  = 0.0_r8
-    currentPatch%root_litter_in(:)  = 0.0_r8
-    currentPatch%leaf_litter_out(:) = 0.0_r8
-    currentPatch%root_litter_out(:) = 0.0_r8
-    currentPatch%CWD_AG_in(:)       = 0.0_r8
-    currentPatch%cwd_bg_in(:)       = 0.0_r8
-    currentPatch%CWD_AG_out(:)      = 0.0_r8
-    currentPatch%cwd_bg_out(:)      = 0.0_r8
+    ! currentPatch%leaf_litter_in(:)  = 0.0_r8
+    ! currentPatch%root_litter_in(:)  = 0.0_r8
+    ! currentPatch%leaf_litter_out(:) = 0.0_r8
+    ! currentPatch%root_litter_out(:) = 0.0_r8
+    ! currentPatch%CWD_AG_in(:)       = 0.0_r8
+    ! currentPatch%cwd_bg_in(:)       = 0.0_r8
+    ! currentPatch%CWD_AG_out(:)      = 0.0_r8
+    ! currentPatch%cwd_bg_out(:)      = 0.0_r8
 
   end subroutine non_canopy_derivs
 
@@ -230,6 +232,8 @@ contains
     !
     ! !USES:
     use clm_varcon, only : tfrz
+    use clm_time_manager, only : get_days_per_year, get_curr_date
+    use clm_time_manager, only : get_ref_date, timemgr_datediff 
     use EDTypesMod, only : udata
     !
     ! !ARGUMENTS:
@@ -247,6 +251,14 @@ contains
     integer  :: ncolddayslim ! critical no days underneath the threshold for leaf drop
     integer  :: i
     integer  :: timesincedleafon,timesincedleafoff,timesinceleafon,timesinceleafoff
+    integer  :: refdate
+    integer  :: curdate
+    
+    integer  :: yr                       ! year (0, ...)
+    integer  :: mon                      ! month (1, ..., 12)
+    integer  :: day                      ! day of month (1, ..., 31)
+    integer  :: sec                      ! seconds of the day
+
     real(r8) :: gdd_threshold
     real(r8) :: a,b,c        ! params of leaf-pn model from botta et al. 2000. 
     real(r8) :: cold_t       ! threshold below which cold days are counted 
@@ -256,12 +268,25 @@ contains
     real(r8) :: off_time     ! minimum number of days between leaf off and leaf on for drought phenology 
     real(r8) :: temp_in_C    ! daily averaged temperature in celcius
     real(r8) :: mindayson 
+    real(r8) :: modelday
+
     !------------------------------------------------------------------------
 
     t_veg24       => temperature_inst%t_veg24_patch ! Input:  [real(r8) (:)]  avg pft vegetation temperature for last 24 hrs    
     ED_GDD_patch  => ed_phenology_inst%ED_GDD_patch ! Input:  [real(r8) (:)]  growing deg. days base 0 deg C (ddays)
 
+
     g = currentSite%clmgcell
+
+
+    call get_curr_date(yr, mon, day, sec)
+    curdate = yr*10000 + mon*100 + day
+    
+    call get_ref_date(yr, mon, day, sec)
+    refdate = yr*10000 + mon*100 + day
+  
+    call timemgr_datediff(refdate, 0, curdate, sec, modelday)
+    if ( masterproc ) write(iulog,*) 'modelday',modelday
 
     ! Parameter of drought decid leaf loss in mm in top layer...FIX(RF,032414) 
     ! - this is arbitrary and poorly understood. Needs work. ED_
@@ -315,11 +340,7 @@ contains
        endif
     enddo
 
-    timesinceleafoff = t - currentSite%leafoffdate
-    if (t < currentSite%leafoffdate)then
-       timesinceleafoff = t +(365-currentSite%leafoffdate)
-    endif
-
+    timesinceleafoff = modelday - currentSite%leafoffdate
     !LEAF ON: COLD DECIDUOUS. Needs to
     !1) have exceeded the growing degree day threshold 
     !2) The leaves should not be on already
@@ -327,17 +348,15 @@ contains
     if (ED_GDD_patch(currentSite%oldest_patch%clm_pno) > gdd_threshold)then
        if (currentSite%status == 1)then
              if (currentSite%ncd >= 1)then
-          currentSite%status = 2     !alter status of site to 'leaves on'
-          currentSite%leafondate = t  !record leaf on date   
-                write(iulog,*) 'leaves on'
+               currentSite%status = 2     !alter status of site to 'leaves on'
+               currentSite%leafondate = t  !record leaf on date   
+               write(iulog,*) 'leaves on'
              endif !ncd
        endif !status
     endif !GDD
 
-    timesinceleafon = t - currentSite%leafondate
-    if (t < currentSite%leafondate)then
-       timesinceleafon = t +(365-currentSite%leafondate)
-       endif
+    timesinceleafon = modelday - currentSite%leafondate
+
 
     !LEAF OFF: COLD THRESHOLD
     !Needs to:
@@ -350,18 +369,18 @@ contains
      if (timesinceleafon > mindayson)then
        if (currentSite%status == 2)then
           currentSite%status = 1        !alter status of site to 'leaves on'
-          currentSite%leafoffdate = t   !record leaf off date   
-          write(iulog,*) 'leaves off'
+          currentSite%leafoffdate = modelday   !record leaf off date   
+          write(iulog,*) 'leaves off cold'
        endif
     endif
     endif
 
     !LEAF OFF: COLD LIFESPAN THRESHOLD
-    if (timesinceleafoff > 360)then !remove leaves after a whole year when there is no 'off' period.  
-       if (currentSite%status == 2)then
+    if(timesinceleafoff > 400)then !remove leaves after a whole year when there is no 'off' period.  
+       if(currentSite%status == 2)then
           currentSite%status = 1        !alter status of site to 'leaves on'
-          currentSite%leafoffdate = t   !record leaf off date   
-          write(iulog,*) 'leaves off'
+          currentSite%leafoffdate = modelday   !record leaf off date   
+          write(iulog,*) 'leaves off time'
        endif
     endif
 
@@ -476,9 +495,14 @@ contains
     ! !LOCAL VARIABLES:
     type(ed_patch_type) , pointer :: currentPatch     
     type(ed_cohort_type), pointer :: currentCohort  
+
+    real(r8)           :: store_output ! the amount of the store to put into leaves - is a barrier against negative storage and C starvation. 
+
     !------------------------------------------------------------------------
 
     currentPatch => CurrentSite%oldest_patch   
+
+    store_output  = 0.5_r8
 
     do while(associated(currentPatch))    
        currentCohort => currentPatch%tallest
@@ -492,7 +516,7 @@ contains
                    if (currentCohort%laimemory <= currentCohort%bstore)then
                       currentCohort%bl = currentCohort%laimemory !extract stored carbon to make new leaves.
                    else
-                      currentCohort%bl = currentCohort%bstore    !we can only put on as much carbon as there is in the store...
+                     currentCohort%bl = currentCohort%bstore * store_output    !we can only put on as much carbon as there is in the store...
                     !nb. Putting all of bstore into leaves is C-starvation suicidal. The tendency for this could be parameterized
                    endif
                    currentCohort%balive = currentCohort%balive + currentCohort%bl  ! Add deployed carbon to alive biomass pool
@@ -525,8 +549,8 @@ contains
                    if (currentCohort%laimemory <= currentCohort%bstore)then
                       currentCohort%bl = currentCohort%laimemory !extract stored carbon to make new leaves.
                    else
-                      currentCohort%bl = currentCohort%bstore !we can only put on as much carbon as there is in the store...
-                   endif
+                    currentCohort%bl = currentCohort%bstore * store_output    !we can only put on as much carbon as there is in the store...
+                    endif
                    currentCohort%balive = currentCohort%balive + currentCohort%bl
                    currentCohort%bstore = currentCohort%bstore - currentCohort%bl ! empty store
                    currentCohort%laimemory = 0.0_r8
@@ -1178,5 +1202,7 @@ contains
          currentPatch%area *udata%deltat!kgC/site/day
 
   end subroutine cwd_out
+
+
 
 end module EDPhysiologyMod

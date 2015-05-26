@@ -1058,11 +1058,18 @@ contains
             subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
     end if
 
-!    if ( use_ed ) then
-!       call init_accum_field (name='ED_GDD0', units='K', &
-!            desc='growing degree-days base 0C from planting', accum_type='runaccum', accum_period=not_used, &
-!            subgrid_type='pft', numlev=1, init_value=0._r8)
-!    end if
+    ! 
+    ! I TODO (SPM , 022615) - along with (II) below, this is removed
+    ! in the ed branch.  Seems like it's covered by the code in 
+    ! EDPhenologyType.F90, but need to double check
+    !
+    !if ( use_ed ) then
+    !
+       !call init_accum_field (name='ED_GDD0', units='K', &
+            !desc='growing degree-days base 0C from planting', accum_type='runaccum', accum_period=not_used, &
+            !subgrid_type='pft', numlev=1, init_value=0._r8)
+    !
+    !end if
 
     if ( crop_prog )then
 
@@ -1168,10 +1175,14 @@ contains
        this%t_ref2m_min_inst_u_patch(begp:endp) =  spval
     end if
 
-!    if ( use_ed ) then
-!       call extract_accum_field ('ED_GDD0', rbufslp, nstep)
-!       this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
-!    end if
+    !
+    ! II TODO (SPM , 022615) - along with (I) above, this is removed
+    ! in the ed branch
+    !
+    !if ( use_ed ) then
+       !call extract_accum_field ('ED_GDD0', rbufslp, nstep)
+       !this%gdd0_patch(begp:endp) = rbufslp(begp:endp)
+    !end if
 
     if ( crop_prog ) then
 
@@ -1185,7 +1196,6 @@ contains
        this%gdd10_patch(begp:endp) = rbufslp(begp:endp)
 
     end if
-
 
     deallocate(rbufslp)
 

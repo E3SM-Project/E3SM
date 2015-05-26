@@ -193,8 +193,10 @@ contains
     ! Read in area, lon, lat
 
     if (istype_domain) then
+
        call ncd_io(ncid=ncid, varname= 'area', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
+
        ! convert from radians**2 to km**2
        ldomain%area = ldomain%area * (re**2)
        if (.not. readvar) call endrun( msg=' ERROR: area NOT on file'//errMsg(__FILE__, __LINE__))
@@ -205,10 +207,13 @@ contains
        
        call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
+
        if (.not. readvar) call endrun( msg=' ERROR: yc NOT on file'//errMsg(__FILE__, __LINE__))
     else
+
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
+
        if (.not. readvar) call endrun( msg=' ERROR: AREA NOT on file'//errMsg(__FILE__, __LINE__))
        
        call ncd_io(ncid=ncid, varname= 'LONGXY', flag='read', data=ldomain%lonc, &
@@ -508,7 +513,11 @@ contains
        write(iulog,*)' ERROR: surfdata/fatmgrid lon/lat mismatch error', rmaxlon,rmaxlat
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    call domain_clean(surfdata_domain)
+
+    !~! TODO(SPM, 022015) - if we deallocate and clean ldomain here, then you
+    !~! get errors in htape_timeconst where the information is needed to write
+    !~! the *.h0* file
+    !~!call domain_clean(surfdata_domain)
 
     ! Obtain special landunit info
 

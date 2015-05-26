@@ -298,10 +298,6 @@ else
   endif
 endif
 
-ifeq ($(COMP_OCN), pop2)
-  INCLDIR += -I$(EXEROOT)/ocn/cvmix
-endif
-
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(SHAREDPATH)/mct
 endif
@@ -582,9 +578,6 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libice.a
      ULIBDEP += $(LIBROOT)/liblnd.a
      ULIBDEP += $(LIBROOT)/libocn.a
-     ifeq ($(COMP_OCN), pop2)
-       ULIBDEP += $(LIBROOT)/libcvmix.a
-     endif
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
@@ -644,9 +637,6 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 
 $(COMPLIB): $(OBJS) 
 	$(AR) -r $(COMPLIB) $(OBJS)
-
-$(LIBROOT)/libcvmix.a:
-	$(MAKE) -f $(CODEROOT)/ocn/pop2/source/cvmix/Makefile SRC_DIR=$(CODEROOT)/ocn/pop2/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<

@@ -254,8 +254,7 @@ contains
        write(iulog,*) 'leaf,root,stem',currentcohort%bl,currentcohort%br,currentcohort%bsw
        write(iulog,*) 'leaves off switch',leaves_off_switch
        write(iulog,*) 'height:',currentcohort%hite
-       
-       
+       write(iulog,*) 'pft',ft,pftcon%evergreen(ft),pftcon%season_decid(ft),leaves_off_switch
     endif
     currentCohort%b   = currentCohort%bdead + currentCohort%balive
 

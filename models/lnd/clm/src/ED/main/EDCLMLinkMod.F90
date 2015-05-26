@@ -9,15 +9,23 @@ module EDCLMLinkMod
   use decompMod        , only : bounds_type
   use clm_varpar       , only : nclmax, nlevcan_ed, numpft, numcft, mxpft
   use clm_varctl       , only : iulog 
-  use EDtypesMod       , only : ed_site_type, ed_cohort_type, ed_patch_type, nlevsclass_ed
+
+  use EDtypesMod       , only : ed_site_type, ed_cohort_type, ed_patch_type
   use EDtypesMod       , only : sclass_ed,nlevsclass_ed,AREA
   use EDParamsMod      , only : ED_val_ag_biomass
-  
+  use EDtypesMod       , only : ncwd
+  use CanopyStateType  , only : canopystate_type
+  use clm_varctl       , only : use_vertsoilc
+
   !
   implicit none
   private
   !
   logical :: DEBUG = .false.  ! for debugging this module (EDCLMLinkMod.F90)
+  
+  ! !PUBLIC DATA MEMBERS 
+  real(r8), public :: cwd_fcel_ed  
+  real(r8), public :: cwd_flig_ed
 
   type, public :: ed_clm_type
 
@@ -74,7 +82,6 @@ module EDCLMLinkMod
      real(r8), pointer, private  :: npp_patch                  (:)   ! (gC/m2/s) patch net primary production
      real(r8), pointer, private  :: gpp_patch                  (:)   ! (gC/m2/s) patch gross primary production 
 
-     
      ! ED currently does not differentiate stems of any size in regards to tracking biomass or fluxes
      ! within a cohort
      ! ED currently does not include stems in the seasonal litter cycling of live trees (only leaves)
@@ -116,6 +123,17 @@ module EDCLMLinkMod
      real(r8), pointer :: ed_m4_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Impact Mortality Rate
      real(r8), pointer :: ed_m5_gd_scpf                 (:,:) ! [Stems/ha/yr] Mean Fire Mortality Rate     
 
+     ! litterfall fluxes of C from ED patches to BGC columns
+
+     real(r8), pointer,  public :: ED_c_to_litr_lab_c_col(:,:)      !total labile    litter coming from ED. gC/m3/s
+     real(r8), pointer,  public :: ED_c_to_litr_cel_c_col(:,:)      !total cellulose litter coming from ED. gC/m3/s
+     real(r8), pointer,  public :: ED_c_to_litr_lig_c_col(:,:)      !total lignin    litter coming from ED. gC/m3/s
+     real(r8), pointer, private :: leaf_prof_col(:,:)               !(1/m) profile of leaves                         
+     real(r8), pointer, private :: froot_prof_col(:,:,:)            !(1/m) profile of fine roots                     
+     real(r8), pointer, private :: croot_prof_col(:,:)              !(1/m) profile of coarse roots                         
+     real(r8), pointer, private :: stem_prof_col(:,:)               !(1/m) profile of leaves                         
+
+
    contains
 
      ! Public routines
@@ -129,7 +147,8 @@ module EDCLMLinkMod
      procedure , private :: ed_update_history_variables
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
-     procedure , private :: InitCold     
+     procedure , private :: InitCold    
+     procedure , private :: flux_into_litter_pools
 
   end type ed_clm_type
 
@@ -160,7 +179,8 @@ contains
     !
     ! !USES: 
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevgrnd
+    use clm_varpar     , only : nlevgrnd, nlevdecomp_full
+    use EDtypesMod     , only : numpft_ed
     !
     ! !ARGUMENTS:
     class (ed_clm_type) :: this 
@@ -169,9 +189,13 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
     integer           :: begg,endg
+    integer           :: begc,endc                                    !bounds 
+
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg = bounds%endg
 
     allocate(this%trimming_patch             (begp:endp))            ; this%trimming_patch             (:) = 0.0_r8    
     allocate(this%canopy_spread_patch        (begp:endp))            ; this%canopy_spread_patch        (:) = 0.0_r8    
@@ -217,7 +241,6 @@ contains
     allocate(this%gpp_patch                  (begp:endp))            ; this%gpp_patch                  (:) = nan
     allocate(this%npp_patch                  (begp:endp))            ; this%npp_patch                  (:) = nan
 
-    begg = bounds%begg; endg = bounds%endg
     allocate(this%ed_gpp_gd_scpf       (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_gpp_gd_scpf        (:,:) = 0.0_r8
     allocate(this%ed_npp_totl_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_totl_gd_scpf   (:,:) = 0.0_r8
     allocate(this%ed_npp_leaf_gd_scpf  (begg:endg,1:nlevsclass_ed*mxpft));  this%ed_npp_leaf_gd_scpf   (:,:) = 0.0_r8
@@ -246,6 +269,16 @@ contains
     allocate(this%ed_m3_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m3_gd_scpf   (:,:) = 0.0_r8
     allocate(this%ed_m4_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m4_gd_scpf   (:,:) = 0.0_r8
     allocate(this%ed_m5_gd_scpf   (begg:endg,1:nlevsclass_ed*mxpft)) ; this%ed_m5_gd_scpf   (:,:) = 0.0_r8
+
+    allocate(this%ED_c_to_litr_lab_c_col     (begc:endc,1:nlevdecomp_full))            ; this%ED_c_to_litr_lab_c_col     (:,:) = nan
+    allocate(this%ED_c_to_litr_cel_c_col     (begc:endc,1:nlevdecomp_full))            ; this%ED_c_to_litr_cel_c_col     (:,:) = nan
+    allocate(this%ED_c_to_litr_lig_c_col     (begc:endc,1:nlevdecomp_full))            ; this%ED_c_to_litr_lig_c_col     (:,:) = nan
+
+    allocate(this%leaf_prof_col              (begc:endc,1:nlevdecomp_full))            ; this%leaf_prof_col              (:,:) = nan
+    allocate(this%froot_prof_col             (begc:endc,1:numpft_ed,1:nlevdecomp_full)); this%froot_prof_col             (:,:,:) = nan
+    allocate(this%croot_prof_col             (begc:endc,1:nlevdecomp_full))            ; this%croot_prof_col             (:,:) = nan
+    allocate(this%stem_prof_col              (begc:endc,1:nlevdecomp_full))            ; this%stem_prof_col              (:,:) = nan
+
 
   end subroutine InitAllocate
 
@@ -455,7 +488,6 @@ contains
          avgflag='A', long_name='net primary production', &
          ptr_patch=this%npp_patch)
 
-
     ! Carbon Flux (grid dimension x scpf)
     ! ==============================================================
     
@@ -526,6 +558,31 @@ contains
     call hist_addfld2d (fname='ED_M5_GD_SCPF',units = 'N/ha/yr', type2d = 'levscpf', &
           avgflag='A', long_name='fire mortality rate by patch and pft/size', &
           ptr_gcell=this%ed_m5_gd_scpf, default='inactive')
+
+    call hist_addfld_decomp (fname='ED_c_to_litr_lab_c',  units='gC/m^2/s', type2d='levdcmp', &
+         avgflag='A', long_name='ED_c_to_litr_lab_c', &
+         ptr_col=this%ED_c_to_litr_lab_c_col)
+
+    call hist_addfld_decomp (fname='ED_c_to_litr_cel_c',  units='gC/m^2/s', type2d='levdcmp', &
+         avgflag='A', long_name='ED_c_to_litr_cel_c', &
+         ptr_col=this%ED_c_to_litr_cel_c_col)
+
+    call hist_addfld_decomp (fname='ED_c_to_litr_lig_c',  units='gC/m^2/s', type2d='levdcmp', &
+         avgflag='A', long_name='ED_c_to_litr_lig_c', &
+         ptr_col=this%ED_c_to_litr_lig_c_col)
+
+    call hist_addfld_decomp (fname='leaf_prof',  units='1/m', type2d='levdcmp', &
+         avgflag='A', long_name='leaf_prof', &
+         ptr_col=this%leaf_prof_col)
+
+    call hist_addfld_decomp (fname='croot_prof',  units='1/m', type2d='levdcmp', &
+         avgflag='A', long_name='croot_prof', &
+         ptr_col=this%croot_prof_col)
+
+    call hist_addfld_decomp (fname='stem_prof',  units='1/m', type2d='levdcmp', &
+         avgflag='A', long_name='stem_prof', &
+         ptr_col=this%stem_prof_col)
+
 
   end subroutine InitHistory
 
@@ -754,6 +811,7 @@ contains
                   !update cohort quantitie s                                  
                   currentCohort => currentPatch%shortest
                   do while(associated(currentCohort))
+     
                      ft = currentCohort%pft
                      currentCohort%livestemn = currentCohort%bsw  / pftcon%leafcn(currentCohort%pft)
 
@@ -828,9 +886,11 @@ contains
                   ! currentPatch%total_canopy_area/currentPatch%area is fraction of this patch cover by plants 
                   ! currentPatch%area/AREA is the fraction of the soil covered by this patch. 
 
-                  clmpatch%wt_ed(p) = min(1.0_r8,(currentPatch%total_canopy_area/currentPatch%area)) * (currentPatch%area/AREA)
+                  clmpatch%wt_ed(p) = min(1.0_r8,(currentPatch%total_canopy_area/currentPatch%area)) * &
+                       (currentPatch%area/AREA)
                   currentPatch%bare_frac_area = (1.0_r8 - min(1.0_r8,currentPatch%total_canopy_area/currentPatch%area)) * &
                        (currentPatch%area/AREA)                 
+
                   ! write(iulog,*) 'bare frac',currentPatch%bare_frac_area
                   total_patch_area = total_patch_area + clmpatch%wt_ed(p) + currentPatch%bare_frac_area
                   total_bare_ground = total_bare_ground + currentPatch%bare_frac_area
@@ -862,7 +922,10 @@ contains
 
       end do !grid loop
 
-      call this%ed_update_history_variables( bounds, ed_allsites_inst(begg:endg), &
+      call this%flux_into_litter_pools(bounds, ed_allsites_inst(begg:endg), firstsoilpatch, &
+           canopystate_inst)
+
+      call this%ed_update_history_variables(bounds, ed_allsites_inst(begg:endg), &
            firstsoilpatch, ed_Phenology_inst, canopystate_inst)
 
     end associate
@@ -968,7 +1031,6 @@ contains
 
          begp                 => bounds%begp                     , &
          endp                 => bounds%endp                       &
-
          )
 
       ! ============================================================================
@@ -1679,4 +1741,341 @@ contains
 
   end subroutine ed_clm_leaf_area_profile
 
+
+  subroutine flux_into_litter_pools(this, bounds, ed_allsites_inst, firstsoilpatch, canopystate_inst)
+    ! Created by Charlie Koven and Rosie Fisher, 2014-2015
+    ! take the flux out of the fragmenting litter pools and port into the decomposing litter pools. 
+    ! in this implementation, decomposing pools are assumed to be humus and non-flammable, whereas fragmenting pools
+    ! are assumed to be physically fragmenting but not respiring. This is a simplification, but allows us to 
+    ! a) reconcile the need to track both chemical fractions (lignin, cellulose, labile) and size fractions (trunk, branch, etc.)
+    ! b) to impose a realistic delay on the surge of nutrients into the litter pools when large CWD is added to the system via mortality
+    
+    ! because of the different subgrid structure, this subroutine includes the functionality that in the big-leaf BGC model, is calculated in SoilBiogeochemVerticalProfileMod
+    
+    ! The ED code is resolved at a daily timestep, but all of the CN-BGC fluxes are passed in as derivatives per second, 
+    ! and then accumulated in the CNStateUpdate routines. One way of doing this is to pass back the CN fluxes per second, 
+    ! and keep them constant for the whole day (making sure they are not overwritten.
+    ! This means that the carbon gets passed back and forth between the photosynthesis code (fast timestepping) to the ED code (slow timestepping), back to the BGC code (fast timestepping).
+    ! This means that the state update for the litter pools and for the CWD pools occurs at different timescales. 
+    
+    use SFParamsMod, only: SF_val_max_decomp
+    use clm_varpar, only : mxpft,nlevdecomp, nlevdecomp_full
+    use EDTypesMod, only : AREA, numpft_ed
+    use SoilBiogeochemVerticalProfileMod, only: exponential_rooting_profile, pftspecific_rootingprofile, rootprof_exp, surfprof_exp
+    use pftconMod, only : pftcon
+    use shr_const_mod, only: SHR_CONST_CDAY
+    use clm_varcon, only : zisoi, dzsoi_decomp, zsoi
+    use ColumnType  , only : col
+    use abortutils  , only : endrun
+    use shr_log_mod , only : errMsg => shr_log_errMsg    
+    use EDParamsMod, only : ED_val_ag_biomass
+    !
+    implicit none   
+    !
+    ! !ARGUMENTS    
+    class(ed_clm_type)                              :: this  
+    type(bounds_type)       , intent(in)            :: bounds  
+    type(ed_site_type)      , intent(inout), target :: ed_allsites_inst( bounds%begg: )
+    integer  :: firstsoilpatch(bounds%begg:bounds%endg) ! the first patch in this gridcell that is soil and thus bare... 
+    type(canopystate_type)  , intent(inout)         :: canopystate_inst
+    !
+    ! !LOCAL VARIABLES:
+    type (ed_patch_type)  , pointer :: currentPatch
+    type (ed_cohort_type) , pointer :: currentCohort
+    type(ed_site_type), pointer :: cs
+    integer c,p,cc,j,g
+    real(r8) time_convert    ! from year to seconds
+    real(r8) mass_convert    ! ED uses kg, CLM uses g
+    integer           :: begp,endp
+    integer           :: begc,endc                                    !bounds 
+    !------------------------------------------------------------------------
+    real(r8) :: cinput_rootfr(bounds%begc:bounds%endc, 1:numpft_ed, 1:nlevdecomp_full)      ! column by pft root fraction used for calculating inputs
+    real(r8) :: croot_prof_perpatch(1:nlevdecomp_full)
+    real(r8) :: surface_prof(1:nlevdecomp_full)
+    integer  :: ft, lev
+    real(r8) :: rootfr_tot(1:numpft_ed), biomass_bg_ft(1:numpft_ed)
+    real(r8) :: surface_prof_tot, leaf_prof_sum, stem_prof_sum, froot_prof_sum, biomass_bg_tot
+    real(r8) :: delta
+    
+    begp = bounds%begp; endp = bounds%endp
+    begc = bounds%begc; endc = bounds%endc
+    
+    !no of seconds in a year. 
+    time_convert =  365.0_r8*SHR_CONST_CDAY
+
+    ! number of grams in a kilogram
+    mass_convert = 1000._r8
+    
+    associate(                                                                                     & 
+         ED_c_to_litr_lab_c        => this%ED_c_to_litr_lab_c_col                             , & ! Output: total labile    litter coming from ED. gC/m3/s
+         ED_c_to_litr_cel_c        => this%ED_c_to_litr_cel_c_col                             , & ! Output: total cellulose litter coming from ED. gC/m3/s
+         ED_c_to_litr_lig_c        => this%ED_c_to_litr_lig_c_col                             , & ! Output: total lignin    litter coming from ED. gC/m3/s
+         leaf_prof                 => this%leaf_prof_col                                      , & ! Output: (1/m) profile of leaves                         
+         froot_prof                => this%froot_prof_col                                     , & ! Output: (1/m) profile of fine roots                     
+         croot_prof                => this%croot_prof_col                                     , & ! Output: (1/m) profile of coarse roots                         
+         stem_prof                 => this%stem_prof_col                                      , & ! Output: (1/m) profile of leaves                         
+         altmax_lastyear_indx      => canopystate_inst%altmax_lastyear_indx_col                 & ! Input:  [integer   (:)   ]frost table depth (m)       
+         )
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! first calculate vertical profiles
+      ! define two types of profiles: 
+      ! (1) a surface profile, for leaves and stem inputs, which is the same for each pft but differs from one column to the next to avoid inputting any C into permafrost
+      ! (2) a fine root profile, which is indexed by both column and pft, differs for each pft and also from one column to the next to avoid inputting any C into permafrost
+      ! (3) a coarse root profile, which is the root-biomass=weighted average of the fine root profiles
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (use_vertsoilc) then
+         
+         ! define a single shallow surface profile for surface additions (leaves, stems, and N deposition)
+         surface_prof(:) = 0._r8
+         do j = 1, nlevdecomp
+            surface_prof(j) = exp(-surfprof_exp * zsoi(j)) / dzsoi_decomp(j)
+         end do
+         
+         ! initialize profiles to zero
+         leaf_prof(begc:endc, :)      = 0._r8
+         froot_prof(begc:endc, 1:numpft_ed, :)     = 0._r8
+         croot_prof(begc:endc, :)     = 0._r8
+         stem_prof(begc:endc, :)      = 0._r8
+         
+         cinput_rootfr(begc:endc, 1:numpft_ed, :)     = 0._r8
+         
+         do c = bounds%begc,bounds%endc
+            
+            ! calculate pft-specific rooting profiles in the absence of permafrost limitations
+            if ( exponential_rooting_profile ) then
+               if ( .not. pftspecific_rootingprofile ) then
+                  ! define rooting profile from exponential parameters
+                  do ft = 1, numpft_ed
+                     do j = 1, nlevdecomp
+                        cinput_rootfr(c,ft,j) = exp(-rootprof_exp * zsoi(j)) / dzsoi_decomp(j)
+                     end do
+                  end do
+               else
+                  ! use beta distribution parameter from Jackson et al., 1996
+                  do ft = 1, numpft_ed
+                     do j = 1, nlevdecomp
+                        cinput_rootfr(c,ft,j) = ( pftcon%rootprof_beta(ft) ** (zisoi(j-1)*100._r8) - &
+                             pftcon%rootprof_beta(ft) ** (zisoi(j)*100._r8) ) &
+                             / dzsoi_decomp(j)
+                     end do
+                  end do
+               endif
+            else
+               do ft = 1,numpft_ed 
+                  do j = 1, nlevdecomp
+                     ! use standard CLM root fraction profiles;
+                     cinput_rootfr(c,ft,j) =  ( .5_r8*( &
+                          exp(-pftcon%roota_par(ft) * col%zi(c,lev-1))  &
+                          + exp(-pftcon%rootb_par(ft) * col%zi(c,lev-1))  &
+                          - exp(-pftcon%roota_par(ft) * col%zi(c,lev))    &
+                          - exp(-pftcon%rootb_par(ft) * col%zi(c,lev))))  / dzsoi_decomp(j)
+                  end do
+               end do
+            endif
+            !
+            !
+            ! now add permafrost constraint: integrate rootfr over active layer of soil column,
+            ! truncate below permafrost table where present, and rescale so that integral = 1
+            do ft = 1,numpft_ed 
+               rootfr_tot(ft) = 0._r8
+            end do
+            surface_prof_tot = 0._r8
+            !
+            do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+               surface_prof_tot = surface_prof_tot + surface_prof(j)  * dzsoi_decomp(j)
+            end do
+            do ft = 1,numpft_ed 
+               do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                  rootfr_tot(ft) = rootfr_tot(ft) + cinput_rootfr(c,ft,j) * dzsoi_decomp(j)
+               end do
+            end do
+            !
+            ! rescale the fine root profile
+            do ft = 1,numpft_ed 
+               if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot(ft) > 0._r8) ) then
+                  ! where there is not permafrost extending to the surface, integrate the profiles over the active layer
+                  ! this is equivalent to integrating over all soil layers outside of permafrost regions
+                  do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                     froot_prof(c,ft,j) = cinput_rootfr(c,ft,j) / rootfr_tot(ft)
+                  end do
+               else
+                  ! if fully frozen, or no roots, put everything in the top layer
+                  froot_prof(c,ft,1) = 1./dzsoi_decomp(1)
+               endif
+            end do
+            !
+            ! rescale the shallow profiles
+            if ( (altmax_lastyear_indx(c) > 0) .and. (surface_prof_tot > 0._r8) ) then
+               ! where there is not permafrost extending to the surface, integrate the profiles over the active layer
+               ! this is equivalent to integrating over all soil layers outside of permafrost regions
+               do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                  ! set all surface processes to shallower profile
+                  leaf_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                  stem_prof(c,j) = surface_prof(j)/ surface_prof_tot
+               end do
+            else
+               ! if fully frozen, or no roots, put everything in the top layer
+               leaf_prof(c,1) = 1./dzsoi_decomp(1)
+               stem_prof(c,1) = 1./dzsoi_decomp(1)
+            endif
+         end do
+         
+      else
+         
+         ! for one layer decomposition model, set profiles to unity
+         leaf_prof(bounds%begc:bounds%endc, :) = 1._r8
+         froot_prof(bounds%begc:bounds%endc, 1:numpft_ed, :) = 1._r8
+         stem_prof(bounds%begc:bounds%endc, :) = 1._r8
+         
+      end if
+      
+      ! sanity check to ensure they integrate to 1
+      do c = bounds%begc,bounds%endc
+         ! check the leaf and stem profiles
+         leaf_prof_sum = 0._r8
+         stem_prof_sum = 0._r8
+         do j = 1, nlevdecomp
+            leaf_prof_sum = leaf_prof_sum + leaf_prof(c,j) *  dzsoi_decomp(j)
+            stem_prof_sum = stem_prof_sum + stem_prof(c,j) *  dzsoi_decomp(j)
+         end do
+         if ( ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
+            write(iulog, *) 'profile sums: ',  leaf_prof_sum, stem_prof_sum
+            write(iulog, *) 'surface_prof: ', surface_prof
+            write(iulog, *) 'surface_prof_tot: ', surface_prof_tot
+            write(iulog, *) 'leaf_prof: ',  leaf_prof(c,:)
+            write(iulog, *) 'stem_prof: ',  stem_prof(c,:)
+            write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
+            write(iulog, *) 'dzsoi_decomp: ',  dzsoi_decomp            
+            call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
+         endif
+         ! now check each fine root profile
+         do ft = 1,numpft_ed 
+            froot_prof_sum = 0._r8
+            do j = 1, nlevdecomp
+               froot_prof_sum = froot_prof_sum + froot_prof(c,ft,j) *  dzsoi_decomp(j)
+            end do
+            if ( ( abs(froot_prof_sum - 1._r8) > delta ) ) then
+               write(iulog, *) 'profile sums: ', froot_prof_sum
+               call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
+            endif
+         end do
+      end do
+      
+      ! zero the column-level C input variables
+      do c = bounds%begc,bounds%endc
+         do j = 1, nlevdecomp
+            ED_c_to_litr_lab_c(c,j) = 0._r8
+            ED_c_to_litr_cel_c(c,j) = 0._r8
+            ED_c_to_litr_lig_c(c,j) = 0._r8
+         end do
+      end do
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! now disaggregate the inputs vertically, using the vertical profiles
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            
+      do g = bounds%begg,bounds%endg
+         if (firstsoilpatch(g) >= 0 .and. ed_allsites_inst(g)%istheresoil) then 
+            currentPatch => ed_allsites_inst(g)%oldest_patch
+            
+           do while(associated(currentPatch))
+              
+              cs => currentpatch%siteptr
+              cc = cs%clmcolumn
+              
+              ! the CWD pools lose information about which PFT they came from; for the stems this doesn't matter as they all have the same profile, 
+              ! however for the coarse roots they may have different profiles.  to approximately recover this information, loop over all cohorts in patch 
+              ! to calculate the total root biomass in that patch of each pft, and then rescale the croot_prof as the weighted average of the froot_prof
+              biomass_bg_ft(1:numpft_ed) = 0._r8
+              currentCohort => currentPatch%tallest
+              do while(associated(currentCohort))      
+                 biomass_bg_ft(currentCohort%pft) = biomass_bg_ft(currentCohort%pft) + currentCohort%b * (currentCohort%n / currentPatch%area) * (1.0_r8-ED_val_ag_biomass)
+                 currentCohort => currentCohort%shorter
+              enddo !currentCohort
+              ! 
+              biomass_bg_tot = 0._r8
+              do ft = 1,numpft_ed 
+                 biomass_bg_tot = biomass_bg_tot + biomass_bg_ft(ft)
+              end do
+              !         
+              do j = 1, nlevdecomp
+                 ! zero this for each patch
+                 croot_prof_perpatch(j) = 0._r8
+              end do
+              !
+              if ( biomass_bg_tot .gt. 0._r8) then
+                 do ft = 1,numpft_ed 
+                    do j = 1, nlevdecomp
+                       croot_prof_perpatch(j) = croot_prof_perpatch(j) + froot_prof(cc,ft,j) * biomass_bg_ft(ft) / biomass_bg_tot
+                    end do
+                 end do
+              else ! no biomass
+                 croot_prof_perpatch(1) = 1./dzsoi_decomp(1)
+              end if
+              !
+              ! add croot_prof as weighted average (weighted by patch area) of croot_prof_perpatch
+              do j = 1, nlevdecomp
+                 croot_prof(cc, j) = croot_prof(cc, j) + croot_prof_perpatch(j) * currentPatch%area / AREA
+              end do
+              !
+              ! now disaggregate, vertically and by decomposition substrate type, the actual fluxes from CWD and litter pools
+              !
+              ! do c = 1, ncwd
+              !    write(iulog,*)'cdk CWD_AG_out', c, currentpatch%CWD_AG_out(c), cwd_fcel_ed, currentpatch%area/AREA
+              !    write(iulog,*)'cdk CWD_BG_out', c, currentpatch%CWD_BG_out(c), cwd_fcel_ed, currentpatch%area/AREA
+              ! end do
+              ! do ft = 1,numpft_ed
+              !    write(iulog,*)'cdk leaf_litter_out', ft, currentpatch%leaf_litter_out(ft), cwd_fcel_ed, currentpatch%area/AREA
+              !    write(iulog,*)'cdk root_litter_out', ft, currentpatch%root_litter_out(ft), cwd_fcel_ed, currentpatch%area/AREA
+              ! end do
+              ! !
+              ! CWD pools fragmenting into decomposing litter pools. 
+              do c = 1, ncwd
+                 do j = 1, nlevdecomp                    
+                    ED_c_to_litr_cel_c(cc,j) = ED_c_to_litr_cel_c(cc,j) + currentpatch%CWD_AG_out(c) * cwd_fcel_ed * currentpatch%area/AREA * stem_prof(cc,j)  
+                    ED_c_to_litr_lig_c(cc,j) = ED_c_to_litr_lig_c(cc,j) + currentpatch%CWD_AG_out(c) * cwd_flig_ed * currentpatch%area/AREA * stem_prof(cc,j)
+                    !
+                    ED_c_to_litr_cel_c(cc,j) = ED_c_to_litr_cel_c(cc,j) + currentpatch%CWD_BG_out(c) * cwd_fcel_ed * currentpatch%area/AREA * croot_prof_perpatch(j)
+                    ED_c_to_litr_lig_c(cc,j) = ED_c_to_litr_lig_c(cc,j) + currentpatch%CWD_BG_out(c) * cwd_flig_ed * currentpatch%area/AREA * croot_prof_perpatch(j)
+                 end do
+              end do
+              
+              ! leaf and fine root pools. 
+              do ft = 1,numpft_ed
+                 do j = 1, nlevdecomp
+                    ED_c_to_litr_lab_c(cc,j) = ED_c_to_litr_lab_c(cc,j) + currentpatch%leaf_litter_out(ft) * pftcon%lf_flab(ft) * currentpatch%area/AREA * leaf_prof(cc,j)
+                    ED_c_to_litr_cel_c(cc,j) = ED_c_to_litr_cel_c(cc,j) + currentpatch%leaf_litter_out(ft) * pftcon%lf_fcel(ft) * currentpatch%area/AREA * leaf_prof(cc,j)
+                    ED_c_to_litr_lig_c(cc,j) = ED_c_to_litr_lig_c(cc,j) + currentpatch%leaf_litter_out(ft) * pftcon%lf_flig(ft) * currentpatch%area/AREA * leaf_prof(cc,j)
+                    !
+                    ED_c_to_litr_lab_c(cc,j) = ED_c_to_litr_lab_c(cc,j) + currentpatch%root_litter_out(ft) * pftcon%fr_flab(ft) * currentpatch%area/AREA * froot_prof(cc,ft,j)
+                    ED_c_to_litr_cel_c(cc,j) = ED_c_to_litr_cel_c(cc,j) + currentpatch%root_litter_out(ft) * pftcon%fr_fcel(ft) * currentpatch%area/AREA * froot_prof(cc,ft,j)
+                    ED_c_to_litr_lig_c(cc,j) = ED_c_to_litr_lig_c(cc,j) + currentpatch%root_litter_out(ft) * pftcon%fr_flig(ft) * currentpatch%area/AREA * froot_prof(cc,ft,j)
+                 enddo
+              end do
+              
+              currentPatch => currentPatch%younger
+           end do !currentPatch
+        end if
+     end do
+     
+     do cc = bounds%begc,bounds%endc
+        do j = 1, nlevdecomp                    
+           ! time unit conversion
+           ED_c_to_litr_lab_c(cc,j)=ED_c_to_litr_lab_c(cc,j) * mass_convert / time_convert
+           ED_c_to_litr_cel_c(cc,j)=ED_c_to_litr_cel_c(cc,j) * mass_convert / time_convert
+           ED_c_to_litr_lig_c(cc,j)=ED_c_to_litr_lig_c(cc,j) * mass_convert / time_convert
+           
+        end do
+     end do
+
+     ! write(iulog,*)'cdk ED_c_to_litr_lab_c: ', ED_c_to_litr_lab_c
+     ! write(iulog,*)'cdk ED_c_to_litr_cel_c: ', ED_c_to_litr_cel_c    
+     ! write(iulog,*)'cdk ED_c_to_litr_lig_c: ', ED_c_to_litr_lig_c
+
+   end associate
+ end subroutine flux_into_litter_pools
+     
+
+     
 end module EDCLMLinkMod
