@@ -1015,7 +1015,7 @@ end function Bolton_svp_ice
 
 ! "Flatau" scheme modified from CLUBB, based on:
 !
-! ``Polynomial Fits to Saturation Vapor Pressure'' Falatau, Walko,
+! ``Polynomial Fits to Saturation Vapor Pressure'' Flatau, Walko,
 !   and Cotton.  (1992)  Journal of Applied Meteorology, Vol. 31,
 !   pp. 1507--1513
 
