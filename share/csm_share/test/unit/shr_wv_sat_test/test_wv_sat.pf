@@ -47,6 +47,21 @@ subroutine invalid_name_produces_invalid_index()
 end subroutine invalid_name_produces_invalid_index
 
 @Test
+subroutine reject_out_of_bounds_transition
+
+  character(len=128) :: errstring
+
+  ! Negative transition ranges are meaningless.
+  call wv_sat_init(tmelt, h2otrip, -1._r8, epsilo, errstring)
+  @assertTrue(errstring /= "")
+
+  ! A transition range of 0 is OK.
+  call wv_sat_init(tmelt, h2otrip, 0._r8, epsilo, errstring)
+  @assertTrue(errstring == "")
+
+end subroutine reject_out_of_bounds_transition
+
+@Test
 subroutine qsat_not_greater_than_one()
 
   ! Even if the SVP is greater the current pressure, the saturation specific
