@@ -2020,8 +2020,15 @@ subroutine seq_infodata_Check( infodata )
             &is not a recognized saturation vapor pressure scheme name')
     end if
 
-    ! Transition range averaging method is only valid for:
+    ! A transition range averaging method in CAM is only valid for:
+    !
     ! -40 deg C <= T <= 0 deg C
+    !
+    ! shr_wv_sat_mod itself checks for values with the wrong sign, but we
+    ! have to check that the range is no more than 40 deg C here. Even
+    ! though this is a CAM-specific restriction, it's not really likely
+    ! that any other parameterization will be dealing with mixed-phase
+    ! water below 40 deg C anyway.
     call shr_assert_in_domain(infodata%wv_sat_transition_start, &
          ge=0._SHR_KIND_R8, le=40._SHR_KIND_R8, &
          varname="wv_sat_transition_start",&
