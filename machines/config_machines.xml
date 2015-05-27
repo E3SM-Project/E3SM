@@ -846,7 +846,7 @@
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
          <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</RUNDIR>
+         <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
