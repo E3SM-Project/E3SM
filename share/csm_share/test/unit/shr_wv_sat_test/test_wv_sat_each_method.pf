@@ -111,9 +111,6 @@ end subroutine tearDown
 function getParameters() result(params)
   type(WVSchemeParameters), allocatable :: params(:)
 
-  ! The tolerance for Bolton is really high below because the ice scheme is
-  ! already really far off at -50 deg C. This should probably be addressed
-  ! somehow.
   params = [ &
        WVSchemeParameters("GoffGratch", 0.002_r8, .false., .false.), &
        WVSchemeParameters("MurphyKoop", 0.001_r8, .false., .false.), &
