@@ -202,8 +202,11 @@ contains
    real(r8), intent(in) :: b
    
    real(r8) :: ans
- 
-   ans = a * b / (b**2._r8+1.e-40_r8)
+   if(abs(b)<1.e-40_r8)then 
+     ans = a * b / (b**2._r8+1.e-40_r8)
+   else
+     ans = a/b
+   endif
    return
    end function safe_div
 

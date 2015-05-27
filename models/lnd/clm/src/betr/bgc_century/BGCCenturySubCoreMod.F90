@@ -10,6 +10,7 @@ module BGCCenturySubCoreMod
   use clm_varpar         , only : ndecomp_pools
   use ColumnType         , only : col
   use clm_varctl         , only : spinup_state,iulog
+  use clm_varctl         , only : CNAllocate_Carbon_only 
   implicit none
   save
   private
@@ -38,6 +39,7 @@ module BGCCenturySubCoreMod
   type, public :: centurybgc_type
   
   integer :: nom_pools   !not include coarse wood debris
+  integer :: nom_totelms
   integer :: lit1, lit1_dek_reac  
   integer :: lit2, lit2_dek_reac  
   integer :: lit3, lit3_dek_reac  
@@ -72,7 +74,6 @@ module BGCCenturySubCoreMod
   integer  :: lid_co2, lid_co2_aere_reac         !local position of co2 in the state variable vector
   integer  :: lid_n2,  lid_n2_aere_reac
   integer  :: lid_n2o, lid_n2o_aere_reac
-  
   !diagnostic variables
   integer :: lid_n2o_nit     !n2o production from nitrification, used to for mass balance book keeping
   integer :: lid_co2_hr      !co2 production from heterotrophic respiration
@@ -102,6 +103,7 @@ module BGCCenturySubCoreMod
   real(r8), pointer :: o_scalar_col(:,:)
   real(r8), pointer :: depth_scalar_col(:,:)
   integer , pointer :: primvarid(:) 
+  logical , pointer :: is_aerobic_reac(:) 
   contains
     procedure, public  :: Init
     procedure, private :: Init_pars
@@ -163,7 +165,6 @@ module BGCCenturySubCoreMod
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen 
   ! 
   use MathfuncMod            , only : addone
-  use clm_varctl             , only : CNAllocate_Carbon_only 
   class(centurybgc_type) :: this
   logical   , intent(in) :: do_mpc
   
@@ -185,6 +186,7 @@ module BGCCenturySubCoreMod
   this%n_loc = 2
   
   itemp = this%nom_pools*this%nelms
+  this%nom_totelms = itemp
   this%lid_nh4        = addone(itemp); this%lid_nh4_nit_reac = addone(ireac)   !this is also used to indicate the nitrification reaction
   this%lid_no3        = addone(itemp); this%lid_no3_den_reac = addone(ireac)   !this is also used to indicate the denitrification reaction
   this%lid_plant_minn = addone(itemp); this%lid_plant_minn_up_reac = addone(ireac)   !this is used to indicate plant mineral nitrogen uptake
@@ -236,6 +238,7 @@ module BGCCenturySubCoreMod
   
   this%nreactions = ireac            !seven decomposition pathways plus root auto respiration, nitrification, denitrification and plant immobilization  
   allocate(this%primvarid(ireac)); this%primvarid(:) = -1
+  allocate(this%is_aerobic_reac(ireac)); this%is_aerobic_reac(:)=.false.
   end subroutine Init_pars
 !-------------------------------------------------------------------------------
 
@@ -374,37 +377,49 @@ module BGCCenturySubCoreMod
 
 
 !-------------------------------------------------------------------------------
-  subroutine calc_sompool_decay(bounds, lbj, ubj, numf, filter, jtops, nom_pools, k_decay, om_pools, decay_rates)
+  subroutine calc_sompool_decay(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars,  k_decay, om_pools, decay_rates)
   !
   ! DESCRIPTION
   ! calculate degradation for all different pools
 
-  integer,  intent(in) :: nom_pools
-  type(bounds_type),           intent(in) :: bounds
-  integer,                     intent(in) :: lbj, ubj
-  integer,                     intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
-  integer,                     intent(in) :: numf
-  integer,                     intent(in) :: filter(:)  
-  real(r8), intent(in) :: k_decay(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
-  real(r8), intent(in) :: om_pools(nom_pools,bounds%begc:bounds%endc, lbj:ubj)
-  real(r8), intent(out):: decay_rates(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  type(centurybgc_type)        , intent(in) :: centurybgc_vars
+  type(bounds_type)            , intent(in) :: bounds
+  integer                      , intent(in) :: lbj, ubj
+  integer                      , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
+  integer                      , intent(in) :: numf
+  integer                      , intent(in) :: filter(:)  
+  real(r8)                     , intent(inout) :: k_decay(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
+  real(r8)                     , intent(in) :: om_pools(centurybgc_vars%nom_totelms,bounds%begc:bounds%endc, lbj:ubj)
+  real(r8)                     , intent(out):: decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   
   integer :: jj, fc, c, j
-  
+  integer :: kc, kn
+  associate(                                    &
+    nelms => centurybgc_vars%nelms            , &
+    nom_pools => centurybgc_vars%nom_pools    , &
+    nom_totelms => centurybgc_vars%nom_totelms, &
+    c_loc => centurybgc_vars%c_loc            , &
+    n_loc => centurybgc_vars%n_loc              &
+  )
   do j = lbj, ubj
     do fc = 1, numf
       c = filter(fc)
       if(j>=jtops(c))then
         !for om pools
         do jj = 1, nom_pools
-          decay_rates(jj, c, j) = om_pools(jj, c, j) * k_decay(jj, c, j)
+          kc = (jj-1) * nelms + c_loc
+          kn = (jj-1) * nelms + n_loc
+          if(min(om_pools(kc, c, j),om_pools(kn, c, j))<1.e-10_r8)then
+            k_decay(jj,c,j) = 0._r8
+          endif
+          decay_rates(jj, c, j) = om_pools(kc, c, j) * k_decay(jj, c, j)
         enddo
       endif
     enddo
   enddo
   
   !for nitrification and denitrification
-  
+  end associate
   end subroutine calc_sompool_decay
 
   
@@ -465,7 +480,16 @@ module BGCCenturySubCoreMod
    tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col, & !
    tracer_flx_parchm_vr  => tracerflux_vars%tracer_flx_parchm_vr_col  & !
   )
+ 
 
+  if(CNAllocate_Carbon_only())then
+    do j = lbj, ubj
+      do fc = 1, numf
+        c = filter(fc)
+        supplement_to_sminn_vr(c,j) = (y0(centurybgc_vars%lid_nh4_supp, c, j) - yf(centurybgc_vars%lid_nh4_supp, c, j))*natomw/dtime
+      enddo
+    enddo
+  endif
 
   do j = lbj, ubj
     do fc = 1, numf
@@ -486,8 +510,6 @@ module BGCCenturySubCoreMod
         plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
         smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
         smin_nh4_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_nh4_plant, c, j) - y0(centurybgc_vars%lid_minn_nh4_plant, c, j))*natomw/dtime
-        supplement_to_sminn_vr(c,j) = (y0(centurybgc_vars%lid_nh4_supp, c, j) - yf(centurybgc_vars%lid_nh4_supp, c, j))*natomw/dtime
-
         hr_vr       (c,j)  = (yf(centurybgc_vars%lid_co2_hr, c, j) - y0(centurybgc_vars%lid_co2_hr, c, j))*catomw/dtime
         f_nit_vr    (c,j)  = (yf(centurybgc_vars%lid_nh4_nit,c, j) - y0(centurybgc_vars%lid_nh4_nit,c, j))*natomw/dtime
         f_n2o_nit_vr(c,j)  = (yf(centurybgc_vars%lid_n2o_nit,c, j) - y0(centurybgc_vars%lid_n2o_nit,c, j))*natomw/dtime
@@ -1299,6 +1321,8 @@ module BGCCenturySubCoreMod
   use tracerstatetype          , only : tracerstate_type 
   use clm_varcon               , only : catomw, natomw
   use tracerfluxType           , only : tracerflux_type
+  use CNDecompCascadeConType , only : decomp_cascade_con
+
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -1326,10 +1350,13 @@ module BGCCenturySubCoreMod
     id_trc_no3x    => betrtracer_vars%id_trc_no3x                                  , & !   
     ngwmobile_tracers => betrtracer_vars%ngwmobile_tracers                         , & !
     tracer_flx_netpro_vr  => tracerflux_vars%tracer_flx_netpro_vr_col              , & !
-    bgc_cpool_ext_loss_vr => carbonflux_vars%bgc_cpool_ext_loss_vr_col                 , & !
-    bgc_npool_ext_loss_vr => nitrogenflux_vars%bgc_npool_ext_loss_vr_col               , & !
+    bgc_cpool_ext_loss_vr => carbonflux_vars%bgc_cpool_ext_loss_vr_col             , & !
+    bgc_npool_ext_loss_vr => nitrogenflux_vars%bgc_npool_ext_loss_vr_col           , & !
     sminn_nh4_input_vr  => nitrogenflux_vars%sminn_nh4_input_vr_col                , & !
-    sminn_no3_input_vr  => nitrogenflux_vars%sminn_no3_input_vr_col                  & 
+    sminn_no3_input_vr  => nitrogenflux_vars%sminn_no3_input_vr_col                , &
+    initial_cn_ratio    => decomp_cascade_con%initial_cn_ratio                     , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
+    floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools   & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
+ 
   )
   
 
@@ -1342,8 +1369,14 @@ module BGCCenturySubCoreMod
         c = filter_soilc(fc)
         y0((k-1)*nelm+c_loc,c,j) = y0((k-1)*nelm+c_loc,c,j) - bgc_cpool_ext_loss_vr(c,j,k)/catomw
         y0((k-1)*nelm+n_loc,c,j) = y0((k-1)*nelm+n_loc,c,j) - bgc_npool_ext_loss_vr(c,j,k)/natomw
-        cn_ratios(k, c,j) = safe_div(y0((k-1)*nelm+c_loc,c,j), y0((k-1)*nelm+n_loc,c,j))
-        
+        if(floating_cn_ratio_decomp_pools(k))then
+          cn_ratios(k, c,j) = safe_div(y0((k-1)*nelm+c_loc,c,j), y0((k-1)*nelm+n_loc,c,j))
+        else
+          cn_ratios(k,c,j) = initial_cn_ratio(k)*natomw/catomw
+!          if(c==582)then
+!            write(*,'(A,2(X,I3),3(X,E20.10))'),'bfdecomp',k,j,y0((k-1)*nelm+c_loc,c,j),y0((k-1)*nelm+n_loc,c,j),cn_ratios(k,c,j)
+!          endif
+        endif
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) - bgc_cpool_ext_loss_vr(c,j,k)/catomw
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) - bgc_npool_ext_loss_vr(c,j,k)/natomw
         !delta_somn = delta_somn + bgc_npool_ext_inputs_vr(c,j,k)*col%dz(c,j)

@@ -607,8 +607,8 @@ contains
     betrtracer_vars, centurybgc_vars, carbonflux_vars, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
   
   !calculate potential decay rates, without nutrient constraint
-  call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, &
-     k_decay(1:centurybgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj),&
+  call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars, &
+     k_decay(1:centurybgc_vars%nom_pools,  bounds%begc:bounds%endc, lbj:ubj), y0(1:centurybgc_vars%nom_totelms, bounds%begc:bounds%endc, lbj:ubj),&
      pot_decay_rates)
       
   !calculate potential respiration rates by summarizing all om decomposition pathways

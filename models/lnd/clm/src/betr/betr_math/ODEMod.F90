@@ -20,7 +20,7 @@ implicit none
    real(r8) :: iJ
    integer :: nJ
    end type mbkks_type
-   
+   logical,public :: ldebug_ode=.false.   
    type(mbkks_type), private :: mbkks_data
    interface get_rerr
      module procedure get_rerr_v, get_rerr_s
@@ -28,7 +28,7 @@ implicit none
    
 contains
 
-   subroutine ode_ebbks1(odefun, y0, nprimeq, neq, t, dt, y)
+   subroutine ode_ebbks1(odefun, y0, nprimeq, neq, t, dt, y, pscal)
    !DESCRIPTION:
    !first order accurate explicit BBKS fixed time step positive preserving ode integrator
    !reference: Broekhuizen et al., 2008
@@ -41,16 +41,16 @@ contains
    real(r8), intent(in)  :: t
    real(r8), intent(in)  :: dt
    real(r8), intent(out) :: y(neq)
-
+   real(r8), optional, intent(out) :: pscal
    external :: odefun
    
    !local variables
    real(r8) :: f(neq)
-
+   real(r8) :: pscal_loc
    call odefun(y0, dt, t, nprimeq, neq, f)
    
-   call ebbks(y0, f, nprimeq, neq, dt, y)
-   
+   call ebbks(y0, f, nprimeq, neq, dt, y,pscal_loc)
+   if(present(pscal))pscal=pscal_loc
    end subroutine ode_ebbks1
 !-------------------------------------------------------------------------------
    subroutine ode_ebbks2(odefun, y0, nprimeq, neq, t, dt, y)
@@ -423,7 +423,7 @@ contains
    end subroutine gfunc_mbkks
 
 !-------------------------------------------------------------------------------
-   subroutine ebbks(y0, f, nprimeq, neq, dt, y)
+   subroutine ebbks(y0, f, nprimeq, neq, dt, y,ps)
    !DESCRIPTION:
    !ebbks update
    
@@ -434,6 +434,7 @@ contains
    integer,  intent(in) :: nprimeq
    integer,  intent(in) :: neq
    real(r8), intent(out):: y(neq)
+   real(r8), optional, intent(out):: ps
 
    real(r8), parameter :: beta=0.999_r8  !scaling parameter
    real(r8) :: js, jsmin
@@ -451,14 +452,18 @@ contains
          else
             jsmin=min(jsmin,js)
          endif
+         if(ldebug_ode)then
+           write(*,'(A,X,I3,3(X,E20.10))')'debbkb',n,f(n),js,y0(n)
+         endif
       endif
    enddo
    p=1._r8
    if(nJ>0)then
       p = min(jsmin*beta,1._r8)
    endif
-   
+    
    y(:) = y0(:)
+   if(present(ps))ps=p
    p = p * dt
    call daxpy(neq, p, f, 1, y, 1)
    
