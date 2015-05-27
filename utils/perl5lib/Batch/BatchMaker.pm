@@ -347,6 +347,7 @@ sub setTaskInfo()
 	$self->{'taskmaker'} = $taskmaker;
 	$self->{'sumpes'} = $taskmaker->sumPES();
 	$self->{'tasks_per_node'} = $taskmaker->taskPerNode();
+    $self->{'MAX_TASKS_PER_NODE'} = $taskmaker->maxTasksPerNode();
 	$self->{'tasks_per_numa'} = $taskmaker->taskPerNuma();
 	$self->{'fullsum'} = $taskmaker->sumOnly();
 	$self->{'task_count'} = $taskmaker->sumOnly();
@@ -906,4 +907,6 @@ sub setQueue()
 		$self->{'partition'} = "c1";
 	}
 }
+
+use base qw (Batch::BatchMaker );
 1;
