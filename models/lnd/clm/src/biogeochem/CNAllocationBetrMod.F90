@@ -176,7 +176,7 @@ contains
             errMsg(__FILE__, __LINE__))
     end select
 
-    call cnallocate_carbon_only_set(carbon_only)
+!    call cnallocate_carbon_only_set(carbon_only)
 
   end subroutine CNAllocationBetrInit
 

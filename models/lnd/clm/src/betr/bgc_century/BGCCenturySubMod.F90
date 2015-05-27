@@ -90,7 +90,7 @@ module BGCCenturySubMod
     lid_ar_paere=> centurybgc_vars%lid_ar_paere         , & !
     lid_co2_paere=> centurybgc_vars%lid_co2_paere       , & !
 
-
+    is_aerobic_reac=> centurybgc_vars%is_aerobic_reac   , &
     primvarid    => centurybgc_vars%primvarid           , & !
     lit1_dek_reac=> centurybgc_vars%lit1_dek_reac       , & !
     lit2_dek_reac=> centurybgc_vars%lit2_dek_reac       , & !
@@ -145,6 +145,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
   
   primvarid(reac) = (lit1-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
 
     !Note: Jinyun Tang, Dec 26, 2014
@@ -173,6 +174,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
   
   primvarid(reac) = (lit2-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     !it requires nitrogen uptake  
     nitrogen_limit_flag(reac) = .true.    
@@ -195,6 +197,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
   
   primvarid(reac) = (lit3-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     !it requires nitrogen uptake 
     nitrogen_limit_flag(reac) = .true.   
@@ -227,6 +230,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
   
   primvarid(reac) = (som1-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then  
     !it requires nitrogen uptake  
     nitrogen_limit_flag(reac) = .true.
@@ -253,6 +257,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc
   
   primvarid(reac) = (som2-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
     !it requires nitrogen uptake
     nitrogen_limit_flag(reac) = .true.    
@@ -275,6 +280,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
   
   primvarid(reac) = (som3-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then    
     !it requires nitrogen uptake
     nitrogen_limit_flag(reac) = .true.    
@@ -297,6 +303,7 @@ module BGCCenturySubMod
                                                  safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
   cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   primvarid(reac) = (cwd-1)*nelms+c_loc
+  is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then     
     !it requires nitrogen uptake
     nitrogen_limit_flag(reac) = .true.    
@@ -315,6 +322,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_nh4_nit,reac) = 1._r8
   cascade_matrix(lid_n2o_nit,reac) = nitrif_n2o_loss_frac
   primvarid(reac) = lid_nh4
+  is_aerobic_reac(reac) = .true.
   !----------------------------------------------------------------------  
   !reaction 9, denitrification
   reac = lid_no3_den_reac
@@ -340,6 +348,7 @@ module BGCCenturySubMod
   !ar + o2 -> co2
   cascade_matrix(lid_co2, reac) =  1._r8
   cascade_matrix(lid_o2,  reac) = -1._r8
+  is_aerobic_reac(reac) = .true.
   !--------------------------------------------------------------------
   !arenchyma transport
   !second primary variables
@@ -347,6 +356,7 @@ module BGCCenturySubMod
   cascade_matrix(lid_o2, reac) = -1._r8
   cascade_matrix(lid_o2_paere, reac) = 1._r8
   
+  is_aerobic_reac(reac) = .true.
   if ( spinup_state /= 1 ) then  
     reac = lid_ch4_aere_reac
     cascade_matrix(lid_ch4, reac) = -1._r8
