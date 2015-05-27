@@ -36,6 +36,6 @@ sub main
     # Change to the case root
     chdir($config{'CASEROOT'});
 
-	qx($config{'BATCHSUBMIT'} ./lt_archive.sh >> ltArchiveStatus 2>&1);
+	qx($config{'BATCHSUBMIT'} $config{'CASEROOT'}/Tools/lt_archive.sh >> ltArchiveStatus 2>&1);
 }
 main(@ARGV) unless caller;
