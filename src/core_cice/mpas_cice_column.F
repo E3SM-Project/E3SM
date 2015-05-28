@@ -20,6 +20,7 @@ module cice_column
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
+  use mpas_timer
 
   use cice_debug
 
@@ -662,35 +663,49 @@ contains
     ! Scale radiation fields
     !-----------------------------------------------------------------
     
+    call mpas_timer_start("Column shortwave prep")
     if (config_use_column_shortwave .and. config_calc_surface_temperature) &
          call column_prep_radiation(domain)
+    call mpas_timer_stop("Column shortwave prep")
     
     !-----------------------------------------------------------------
     ! Vertical thermodynamics
     !-----------------------------------------------------------------
             
+    call mpas_timer_start("Column vertical thermodynamics")
     if (config_use_column_vertical_thermodynamics) &
          call column_vertical_thermodynamics(domain, clock)
+    call mpas_timer_stop("Column vertical thermodynamics")
 
     !-----------------------------------------------------------------
     ! Biogeochemistry
     !-----------------------------------------------------------------
 
+    !call mpas_timer_start("Column biogeochemistry")
     !if (config_use_column_biogeochemistry) &
     ! call column biogeochemistry ! not implemented yet
+    !call mpas_timer_stop("Column biogeochemistry")
 
     !-----------------------------------------------------------------
     ! ITD thermodynamics
     !-----------------------------------------------------------------
 
+    call mpas_timer_start("Column ITD thermodynamics")
     if (config_use_column_itd_thermodynamics) &
          call column_itd_thermodynamics(domain, clock)
+    call mpas_timer_stop("Column ITD thermodynamics")
 
     !-----------------------------------------------------------------
     ! Update the aggregated state variables
     !-----------------------------------------------------------------
 
+    call cice_debug_write_out_fields(domain, "cice_column_predynamics_time_integration", 1)
+
+    call mpas_timer_start("Column update state")
     call cice_column_update_state(domain, config_dt, config_dt)
+    call mpas_timer_stop("Column update state")
+
+    call cice_debug_write_out_fields(domain, "cice_column_predynamics_time_integration", 2)
 
   end subroutine cice_column_predynamics_time_integration
 
@@ -730,14 +745,22 @@ contains
     ! Ridging
     !-----------------------------------------------------------------
 
+    call mpas_timer_start("Column ridging")
     if (config_use_column_ridging) &
          call column_ridging(domain)
+    call mpas_timer_stop("Column ridging")
 
     !-----------------------------------------------------------------
     ! Update the aggregated state variables
     !-----------------------------------------------------------------
 
+    call cice_debug_write_out_fields(domain, "cice_column_dynamics_time_integration", 1)
+
+    call mpas_timer_start("Column update state")
     call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
+    call mpas_timer_stop("Column update state")
+
+    call cice_debug_write_out_fields(domain, "cice_column_dynamics_time_integration", 2)
 
   end subroutine cice_column_dynamics_time_integration
 
@@ -768,14 +791,18 @@ contains
     ! Shortwave radiation
     !-----------------------------------------------------------------
 
+    call mpas_timer_start("Column shortwave")
     if (config_use_column_shortwave) &
          call column_radiation(domain, clock, .false.)
+    call mpas_timer_stop("Column shortwave")
 
     !-----------------------------------------------------------------
     ! Coupling prep
     !-----------------------------------------------------------------
 
+    call mpas_timer_start("Column coupling prep")
     call cice_column_coupling_prep(domain)
+    call mpas_timer_stop("Column coupling prep")
 
   end subroutine cice_column_postdynamics_time_integration
 
@@ -2433,10 +2460,14 @@ contains
     !call cice_debug_write_out_fields(domain, "cice_column_update_state", 1)
 
     ! halo update of state variables
+    call mpas_timer_start("Column halo update")
     call cice_column_state_halo_update(domain)
+    call mpas_timer_stop("Column halo update")
 
     ! aggregate state variables
+    call mpas_timer_start("Column aggregate")
     call cice_column_aggregate(domain)
+    call mpas_timer_stop("Column aggregate")
 
     ! get configs
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_ice_age", config_use_ice_age)

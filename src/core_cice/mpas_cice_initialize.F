@@ -73,12 +73,12 @@ contains
          config_use_advection, &
          config_use_forcing, &
          config_do_restart, &
-         config_use_column_physics_package
+         config_use_column_package
 
     call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_physics_package", config_use_column_physics_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
     block => domain % blocklist
     do while (associated(block))
@@ -111,7 +111,7 @@ contains
     endif
 
     ! column physics initialization
-    if (config_use_column_physics_package) then
+    if (config_use_column_package) then
        call cice_init_column_physics_package_variables(domain)
     endif
 

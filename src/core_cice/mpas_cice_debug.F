@@ -2862,7 +2862,7 @@ contains
     ! parameters where we want to writeout output
     character(len=strKIND), parameter :: callingSubroutineDesired = "cice_timestep"
     integer, parameter :: locationDesired = 3
-    integer, parameter :: iStepDesired = 1
+    integer, parameter :: iStepDesired = 8760
 
 ! cice_init_column_shortwave           1           0
 ! column_radiation           1           0
@@ -2885,7 +2885,7 @@ contains
         location == locationDesired .and. &
         iStep == iStepDesired) then
 
-       write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
+       !write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
        
        ! tracer
        call cice_debug_write_out_field(domain, "tracers", "iceAreaCategory", "aicen")

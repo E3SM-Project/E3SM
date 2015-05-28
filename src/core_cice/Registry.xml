@@ -66,6 +66,7 @@
 		<nml_option name="config_use_advection"               type="logical"       default_value="false"/>
 		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
 		<nml_option name="config_use_vertical_thermodynamics" type="logical"       default_value="false"/>
+		<nml_option name="config_use_column_package"          type="logical"       default_value="false"/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_atmospheric_forcing_type"    type="character"     default_value="CORE"/>
@@ -122,7 +123,6 @@
 
 	<!-- column physics -->
 	<nml_record name="column_package" in_defaults="true">
-		<nml_option name="config_use_column_physics_package"             type="logical"       default_value="true"/>
 		<nml_option name="config_use_column_shortwave"                   type="logical"       default_value="true"/>
 		<nml_option name="config_use_column_vertical_thermodynamics"     type="logical"       default_value="true"/>
 		<!--<nml_option name="config_use_column_biogeochemistry"             type="logical"       default_value="true"/>-->

@@ -98,8 +98,6 @@ contains
          config_use_advection, &
          config_use_vertical_thermodynamics
 
-    write(stderrUnit,*) "cice_timestep"
-
     call cice_debug_write_out_fields(domain, "cice_timestep", 1)
 
     call store_timestep_counter(domain, itimestep)
@@ -121,39 +119,45 @@ contains
     endif
 
     ! pre dynamics column physics
+    call mpas_timer_start("Column")
     call cice_column_predynamics_time_integration(domain, clock)
+    call mpas_timer_stop("Column")
 
     ! zero layer thermodynamics
-    call mpas_timer_start("thermodynamics")
-    if (config_use_vertical_thermodynamics) then
+    !call mpas_timer_start("thermodynamics")
+    !if (config_use_vertical_thermodynamics) then
 
-       block => domain % blocklist
-       do while (associated(block))
-          call cice_zerolayer_thermodynamics(block, clock)
-          block => block % next
-       end do
+    !   block => domain % blocklist
+    !   do while (associated(block))
+    !      call cice_zerolayer_thermodynamics(block, clock)
+    !      block => block % next
+    !   end do
        
-    endif
-    call mpas_timer_stop("thermodynamics")
+    !endif
+    !call mpas_timer_stop("thermodynamics")
 
     ! velocity solve
-    call mpas_timer_start("velocity solve")
+    call mpas_timer_start("Velocity solve")
     if (config_use_velocity_solver) then
        call cice_run_velocity_solver(domain, clock, dt)
     endif
-    call mpas_timer_stop("velocity solve")
+    call mpas_timer_stop("Velocity solve")
 
     ! advection
-    call mpas_timer_start("advection")
+    call mpas_timer_start("Advection")
     if (config_use_advection) &
        call cice_run_advection(domain, clock, dt)
-    call mpas_timer_stop("advection")
+    call mpas_timer_stop("Advection")
 
     ! ridging
+    call mpas_timer_start("Column")
     call cice_column_dynamics_time_integration(domain, clock)
+    call mpas_timer_stop("Column")
 
     ! shortwave
+    call mpas_timer_start("Column")
     call cice_column_postdynamics_time_integration(domain, clock)
+    call mpas_timer_stop("Column")
 
     call cice_debug_write_out_fields(domain, "cice_timestep", 2)
 
@@ -183,6 +187,8 @@ contains
     end do
 
     call cice_debug_write_out_fields(domain, "cice_timestep", 3)
+
+    call flush (stderrUnit)
 
   end subroutine cice_timestep!}}}
 
