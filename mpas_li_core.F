@@ -584,7 +584,7 @@ module li_core
       ! ===
       ! === Call init routines ===
       ! ===
-      call li_setup_vertical_grid(meshPool, err_tmp)
+      call li_setup_vertical_grid(meshPool, geometryPool, err_tmp)
       err = ior(err, err_tmp)
 
       call li_setup_sign_and_index_fields(meshPool)
