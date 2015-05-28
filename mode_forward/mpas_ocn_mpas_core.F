@@ -67,7 +67,6 @@ module mpas_core
 
    type (MPAS_Clock_type), pointer :: clock
 
-   character (len=*), parameter :: statsAlarmID = 'stats'
    character (len=*), parameter :: coupleAlarmID = 'coupling'
 
    type (timer_node), pointer :: globalDiagTimer, timeIntTimer, testSuiteTimer
@@ -116,7 +115,6 @@ module mpas_core
       type (MPAS_TimeInterval_type) :: timeStep
 
       logical, pointer :: config_do_restart, config_filter_btr_mode, config_conduct_tests
-      logical, pointer :: config_write_stats_on_startup
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
@@ -145,7 +143,6 @@ module mpas_core
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
       call mpas_pool_get_config(domain % configs, 'config_maxMeshDensity', config_maxMeshDensity)
       call mpas_pool_get_config(domain % configs, 'config_conduct_tests', config_conduct_tests)
-      call mpas_pool_get_config(domain % configs, 'config_write_stats_on_startup', config_write_stats_on_startup)
 
       !
       ! Read input data for model
@@ -302,12 +299,6 @@ module mpas_core
          call mpas_timer_stop("test suite", testSuiteTimer)
       endif
 
-      if (config_write_stats_on_startup) then
-         call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
-         call ocn_compute_global_diagnostics(domain, 1 , 0, dt)
-         call mpas_timer_stop("global diagnostics", globalDiagTimer)
-      endif
-
    end subroutine mpas_core_init!}}}
 
 !***********************************************************************
@@ -334,7 +325,7 @@ module mpas_core
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       character(len=StrKIND) :: restartTimeStamp
       character(len=StrKIND), pointer :: config_start_time, config_stop_time, config_run_duration
-      character(len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
+      character(len=StrKIND), pointer :: config_dt, config_restart_timestamp_name
       integer :: err_tmp
 
 
@@ -344,7 +335,6 @@ module mpas_core
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
-      call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       if ( trim(config_start_time) == "file" ) then
@@ -373,12 +363,6 @@ module mpas_core
       else
           write(stderrUnit,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
           ierr = 1
-      end if
-
-      if (trim(config_stats_interval) /= "none") then      
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_stats_interval, ierr=err_tmp)
-         alarmStartTime = startTime + alarmTimeStep
-         call mpas_add_clock_alarm(core_clock, statsAlarmID, alarmStartTime, alarmTimeStep, ierr=err_tmp)
       end if
 
    end subroutine ocn_simulation_clock_init!}}}
@@ -729,32 +713,6 @@ module mpas_core
       integer :: ierr
    
       call ocn_timestep(domain, dt, timeStamp)
-
-      !if (config_stats_interval > 0) then
-      !    if (mod(itimestep, config_stats_interval) == 0) then
-      !       call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
-      !       call ocn_compute_global_diagnostics(domain, 2, itimestep, dt);
-      !       call mpas_timer_stop("global diagnostics", globalDiagTimer)
-      !    end if
-      !end if
-
-      !TODO: replace the above code block with this if we desire to convert config_stats_interval to use alarms
-      if (mpas_is_alarm_ringing(clock, statsAlarmID, ierr=ierr)) then
-         call mpas_reset_clock_alarm(clock, statsAlarmID, ierr=ierr)
-
-!        block_ptr => domain % blocklist
-!        if (associated(block_ptr % next)) then
-!           write(stderrUnit,*) 'Error: computeGlobalDiagnostics assumes ',&
-!                      'that there is only one block per processor.'
-!        end if
-   
-         call mpas_timer_start("global diagnostics")
-         call ocn_compute_global_diagnostics(domain, 2, itimestep, dt);
-      !  call ocn_compute_global_diagnostics(domain % dminfo, &
-      !           block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
-      !           timeStamp, dt)
-         call mpas_timer_stop("global diagnostics")
-      end if
 
    end subroutine mpas_timestep!}}}
 
