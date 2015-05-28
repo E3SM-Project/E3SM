@@ -218,8 +218,8 @@ contains
 !      logical, pointer :: config_use_TEMPLATE
 
       type (MPAS_Clock_type), pointer :: clock
-      character  (len=StrKIND) :: referenceTime
-      type (MPAS_Time_Type) :: startTime  ! mrp: temporary use of start time
+      character  (len=StrKIND) :: referenceTimeString
+      type (MPAS_Time_Type) :: referenceTime 
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
       character (len=StrKIND), pointer :: config_test_compute_interval_compute_interval
@@ -230,7 +230,6 @@ contains
       err = 0
 
       clock => domain % clock
-      startTime = mpas_get_clock_time(clock, MPAS_START_TIME, err_tmp)  ! mrp: temporary use of start time
 
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
@@ -263,18 +262,12 @@ contains
 
          call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_interval',config_test_compute_interval_compute_interval)
          if (config_test_compute_interval_compute_interval=='dt') config_test_compute_interval_compute_interval='00-00-00_00:00:01'
-
          call mpas_set_timeInterval(alarmTimeStep, timeString=config_test_compute_interval_compute_interval, ierr=err_tmp)
-         ! Use startTime+alarmTimeStep for start time so that compute is not called at beginning.  This means
-         ! compute_startup must be true to compute at the beginning.
-         
-         ! WARNING: right now compute time is tied to the restart time for this particular simulation.
-         call mpas_add_clock_alarm(clock, test_compute_intervalAlarmID, startTime+alarmTimeStep, alarmTimeStep, ierr=err_tmp)
 
-          ! mrp: I am trying to change the compute time to be referenced to the stream reference time:
-!         call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTime, err_tmp)
-!         call mpas_add_clock_alarm(clock, test_compute_intervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-!         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='testCompIntOutput', ierr=err_tmp)
+         call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+         call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+         call mpas_add_clock_alarm(clock, test_compute_intervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='testCompIntOutput', ierr=err_tmp)
 
       endif
 
@@ -288,10 +281,11 @@ contains
       !    call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_interval',config_TEMPLATE_compute_interval)
       !    if (config_TEMPLATE_compute_interval=='dt') config_TEMPLATE_compute_interval='00-00-00_00:00:01'
       !    call mpas_set_timeInterval(alarmTimeStep, timeString=config_TEMPLATE_compute_interval, ierr=err_tmp)
-      !    ! Use startTime+alarmTimeStep for start time so that compute is not called at beginning.  This means
-      !    ! compute_startup must be true to compute at the beginning.
-      !    ! WARNING: right now compute time is tied to the restart time for this particular simulation.
-      !    call mpas_add_clock_alarm(clock, TEMPLATEAlarmID, startTime+alarmTimeStep, alarmTimeStep, ierr=err_tmp)
+
+      !    call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+      !    call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+      !    call mpas_add_clock_alarm(clock, TEMPLATEAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+      !    call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
 
       ! endif
 
