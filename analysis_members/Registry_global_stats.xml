@@ -11,6 +11,10 @@
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_global_stats_text_file" type="logical" default_value=".false." units="unitless"
+			description="If true, print global stats to a text file as well as streams."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="amGlobalStats" description="This package includes variables required for the global statistics analysis member."/>
