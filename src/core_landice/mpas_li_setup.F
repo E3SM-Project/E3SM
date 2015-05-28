@@ -124,7 +124,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_setup_vertical_grid(meshPool, err)
+   subroutine li_setup_vertical_grid(meshPool, geometryPool, err)
 
       !-----------------------------------------------------------------
       !
@@ -138,6 +138,7 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: mesh object
+      type (mpas_pool_type), intent(inout) :: geometryPool  !< Input/Output: geometry object
 
       !-----------------------------------------------------------------
       !
@@ -155,6 +156,8 @@ contains
       ! Pool pointers
       integer, pointer :: nVertLevels ! Dimensions
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerCenterSigma, layerInterfaceSigma
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness1, layerThickness2
       ! Truly locals
       integer :: k
       real (kind=RKIND) :: fractionTotal
@@ -165,6 +168,9 @@ contains
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness1, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness2, timeLevel=2)
 
       ! Check that layerThicknessFractions are valid
       ! TODO - switch to having the user input the sigma levels instead???
@@ -189,6 +195,12 @@ contains
          layerInterfaceSigma(k) = layerInterfaceSigma(k-1) + layerThicknessFractions(k-1)
       end do
       layerInterfaceSigma(nVertLevels+1) = 1.0_RKIND
+
+      ! Also, initialize the layerThickness field
+      do k = 1, nVertLevels
+         layerThickness1(k,:) = thickness(:) * layerThicknessFractions(k)
+      enddo
+      layerThickness2 = layerThickness1
 
    !--------------------------------------------------------------------
    end subroutine li_setup_vertical_grid
