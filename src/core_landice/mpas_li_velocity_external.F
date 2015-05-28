@@ -137,6 +137,9 @@ contains
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       !call external first order solver to set the grid of the velocity solver
       write(stdoutUnit,*) "Initializing external velocity solver."
+      flush(stdoutUnit)  ! Flush log files before handing control to C++
+      flush(stderrUnit)
+
       call velocity_solver_init_mpi(domain % dminfo % comm)
 #else
       err = 1
@@ -278,6 +281,9 @@ contains
       !nVertLevels should be equal to nVertLevelsSolve (no splitting of the domain in the vertical direction)
       call mpas_timer_start("velocity_solver_set_grid_data")
       write(stdoutUnit,*) "Initializing external velocity solver grid data."
+      flush(stdoutUnit)  ! Flush log files before handing control to C++
+      flush(stderrUnit)
+
       call velocity_solver_set_grid_data(nCells, nEdges, nVertices, nVertInterfaces, &
               nCellsSolve, nEdgesSolve, nVerticesSolve, maxNEdgesOnCell, radius, &
               cellsOnEdge, cellsOnVertex, verticesOnCell, verticesOnEdge, edgesOnCell, &
@@ -374,7 +380,6 @@ contains
       integer, dimension(:), pointer :: vertexMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
-      real (kind=RKIND), pointer :: config_dynamic_thickness
       logical, pointer :: config_always_compute_fem_grid
       logical, pointer :: config_output_external_velocity_solver_data
       integer, pointer :: anyDynamicVertexMaskChanged
@@ -386,7 +391,6 @@ contains
       ! configs
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
-      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_output_external_velocity_solver_data', config_output_external_velocity_solver_data)
 
       ! Mesh variables
@@ -415,16 +419,6 @@ contains
       call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
 
 
-      if (maxval(thickness) < config_dynamic_thickness) then
-         ! External dycores may not be able to handle case when there is no ice
-         normalVelocity = 0.0_RKIND
-         uReconstructX = 0.0_RKIND
-         uReconstructY = 0.0_RKIND
-         uReconstructZ = 0.0_RKIND
-         return
-      endif
-
-
       ! ==================================================================
       ! External dycore calls to be made only when vertex mask changes
       ! ==================================================================
@@ -434,6 +428,8 @@ contains
       if ((anyDynamicVertexMaskChanged == 1) .or. (config_always_compute_fem_grid) .or. &
           (dirichletMaskChanged == 1) ) then
          write(stdoutUnit,*) "Generating new external velocity solver FEM grid."
+         flush(stdoutUnit)  ! Flush log files before handing control to C++
+         flush(stderrUnit)
          call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
               floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
       endif
@@ -449,6 +445,9 @@ contains
       uReconstructY =  uReconstructY  * secondsInYear
 
       write(stdoutUnit,*) "Beginning velocity solve using external velocity solver."
+      flush(stdoutUnit)  ! Flush log files before handing control to C++
+      flush(stderrUnit)
+
       select case (config_velocity_solver)
       case ('L1L2') ! ===============================================
 #ifdef USE_EXTERNAL_L1L2

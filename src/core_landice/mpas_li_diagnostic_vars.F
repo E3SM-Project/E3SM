@@ -166,7 +166,7 @@ contains
       ! === error check and exit
       if (err == 1) then
           print *, "An error has occurred in li_calculate_diagnostic_vars. Aborting..."
-          !call mpas_dmpar_abort(dminfo)
+          !call mpas_dmpar_global_abort(dminfo)
       endif
 
    !--------------------------------------------------------------------

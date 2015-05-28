@@ -248,10 +248,12 @@ contains
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_print_velocity_cleanup_details
+      real (kind=RKIND), pointer :: config_dynamic_thickness
       integer, pointer :: nEdgesSolve
       integer, pointer :: nVertInterfaces
       integer, dimension(:), pointer :: edgeMask, cellMask
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: cellsOnVertex
@@ -267,6 +269,7 @@ contains
       integer :: iCell
       integer :: inletEdgesFixed, uphillMarginEdgesFixed
       integer :: err_tmp
+      real (kind=RKIND) :: maxThicknessOnProc, maxThicknessAllProcs
 
       call mpas_timer_start("velocity solve")
 
@@ -276,9 +279,30 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
       inletEdgesFixed = 0
       uphillMarginEdgesFixed = 0
+
+
+      ! External solvers may not be able to cope with no ice in the domain, so determine if that is the case
+      ! Don't bother checking this with SIA because it requires an extra global reduce
+      if ( (trim(config_velocity_solver) == 'L1L2') .or. (trim(config_velocity_solver) == 'FO') .or. &
+           (trim(config_velocity_solver) == 'Stokes') ) then
+         maxThicknessOnProc = 0.0  ! initialize to 0
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+            maxThicknessOnProc = max(maxThicknessOnProc, maxval(thickness))
+
+            block => block % next
+         end do
+
+         call mpas_dmpar_max_real(domain % dminfo, maxThicknessOnProc, maxThicknessAllProcs)
+      endif
+
+
 
       ! External solvers do not support multiple blocks but the MPAS SIA solver does.
       block => domain % blocklist
@@ -288,27 +312,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
-
-         ! Solve velocity
-         select case (config_velocity_solver)
-         case ('none')
-            ! Do nothing
-         case ('sia')
-             call li_sia_solve(meshPool, geometryPool, velocityPool, err_tmp)
-         case ('L1L2', 'FO', 'Stokes')
-             call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
-         case default
-             write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
-             err = 1
-             call mpas_timer_stop("velocity solve")
-             return
-         end select
-         err = ior(err, err_tmp)
-
-
-         ! Some "quality control" of normalVelocity
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
          call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
@@ -319,6 +323,37 @@ contains
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
 
+
+         ! Solve velocity
+         select case (config_velocity_solver)
+         case ('none')
+            ! Do nothing
+         case ('sia')
+             call li_sia_solve(meshPool, geometryPool, velocityPool, err_tmp)
+         case ('L1L2', 'FO', 'Stokes')
+             if (maxThicknessAllProcs < config_dynamic_thickness) then
+                ! External dycores may not be able to handle case when there is no ice
+                call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
+                call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
+                call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
+                normalVelocity = 0.0_RKIND
+                uReconstructX = 0.0_RKIND
+                uReconstructY = 0.0_RKIND
+                uReconstructZ = 0.0_RKIND
+                write (stderrUnit,*) "Notice: Skipping velocity solve because there is no dynamic ice in domain."
+             else
+                call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
+             endif
+         case default
+             write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
+             err = 1
+             call mpas_timer_stop("velocity solve")
+             return
+         end select
+         err = ior(err, err_tmp)
+
+
+         ! Some "quality control" of normalVelocity
          do iEdge = 1, nEdgesSolve
 
             ! Check if the velocity solver has returned a velocity on any non-dynamic edges
