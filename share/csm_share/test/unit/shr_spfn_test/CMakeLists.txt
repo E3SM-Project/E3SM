@@ -10,6 +10,8 @@ extract_sources("${sources_needed}" "${share_sources}" test_sources)
 add_pFUnit_executable(spfn_test_exe "${pf_sources}"
   ${CMAKE_CURRENT_BINARY_DIR} "${test_sources}")
 
+declare_generated_dependencies(spfn_test_exe "${share_genf90_sources}")
+
 add_test(spfn spfn_test_exe)
 
 define_pFUnit_failure(spfn)
