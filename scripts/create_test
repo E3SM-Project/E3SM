@@ -1113,7 +1113,7 @@ sub runCreateNewcase
 {
   my %test = %{ shift() };
   my $caseroot = "$opts{'testroot'}/$test{'case'}";
-  my $cn_args = " -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'}";
+  my $cn_args = " -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'} -nosavetiming";
   if(defined $test{'confopts'})
   {
     $cn_args .= " -confopts $test{'confopts'}";
