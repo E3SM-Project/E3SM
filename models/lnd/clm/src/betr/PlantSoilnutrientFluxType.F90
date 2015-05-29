@@ -32,6 +32,7 @@ module PlantSoilnutrientFluxType
     real(r8), pointer :: plant_minn_uptake_potential_vr_patch        (:,:)  !plant mineral nitrogen uptake potential for each layer
     real(r8), pointer :: plant_minn_uptake_potential_vr_col          (:,:)  !plant mineral nitrogen uptake potential for each layer
     real(r8), pointer :: plant_totn_demand_flx_col                   (:)    !column level total nitrogen demand, g N/m2/s
+    real(r8), pointer :: fppnd_col                                   (:)
    contains
 
      procedure , public  :: Init   
@@ -82,7 +83,7 @@ module PlantSoilnutrientFluxType
     allocate(this%plant_minn_passive_yield_flx_patch                  (begp:endp)) ; this%plant_minn_passive_yield_flx_patch              (:)   = nan
     allocate(this%plant_minn_uptake_potential_patch                   (begp:endp)) ; this%plant_minn_uptake_potential_patch               (:)   = nan
     allocate(this%plant_minn_uptake_potential_col                     (begc:endc)) ; this%plant_minn_uptake_potential_col                 (:)   = nan
-    
+    allocate(this%fppnd_col                                           (begc:endc)) ; this%fppnd_col                                       (:)   = nan 
 
     
     allocate(this%plant_minn_active_yield_flx_col                     (begc:endc)) ; this%plant_minn_active_yield_flx_col                 (:)   = nan
@@ -135,6 +136,10 @@ module PlantSoilnutrientFluxType
          avgflag='A', long_name='plant nitrogen passive uptake flux from soil', &
          ptr_patch=this%plant_minn_passive_yield_flx_patch, default='inactive')    
 
+    this%fppnd_col(begc:endc) = spval
+    call hist_addfld1d (fname='FPPND', units='none', &
+         avgflag='A', long_name='fulfilled plant nitrogen demand from mineral nitrogen uptake', &
+         ptr_col=this%fppnd_col)
          
     this%plant_minn_active_yield_flx_col(begc:endc) = spval
     call hist_addfld1d (fname='PLANT_MINN_ACTIVE_YIELD_FLX_COL', units='gN/m^2/s', &
@@ -157,7 +162,7 @@ module PlantSoilnutrientFluxType
     call hist_addfld1d (fname='PLANT_TOTN_DEMAND_FLX', units='gN/m^2/s',  &
             avgflag='A', long_name='plant nitrogen demand flux', &
             ptr_col=this%plant_totn_demand_flx_col, default='inactive')         
-    
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -194,6 +199,7 @@ module PlantSoilnutrientFluxType
        this%plant_minn_active_yield_flx_col(i)   = value_column
        this%plant_minn_passive_yield_flx_col(i)  = value_column
        this%plant_totn_demand_flx_col(i)         = value_column
+       this%fppnd_col(i)                     = value_column    
     enddo
 
   end subroutine SetValues
@@ -276,6 +282,12 @@ module PlantSoilnutrientFluxType
     c = filter_soilc(fc)
     this%plant_minn_active_yield_flx_col(c)  =dot_sum(this%plant_minn_active_yield_flx_vr_col(c,1:ubj),dz(c,1:ubj))/dtime
     this%plant_minn_passive_yield_flx_col(c) =(nh4_transp(c) + no3_transp(c))*natomw/dtime 
+    if(this%plant_minn_uptake_potential_col(c)>0._r8)then
+      this%fppnd_col(c)   = (this%plant_minn_active_yield_flx_col(c) + this%plant_minn_passive_yield_flx_col(c))/this%plant_minn_uptake_potential_col(c)
+    else
+      this%fppnd_col(c) = 1._r8
+    endif
+!    if(c==917)print*,'fpnnd',this%fppnd_col(c)
   enddo
   
   end subroutine summary

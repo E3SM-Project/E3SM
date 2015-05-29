@@ -316,12 +316,13 @@ contains
     ntrcs = 0
     difs_trc_group(:) = 0
     do k = 1, nmem_max
-       trcid = tracer_group_memid(j, 1)-ngwmobile_tracers
-       if(is_mobile(trcid))then
+       trcid = tracer_group_memid(j, k)-ngwmobile_tracers
+       if(is_mobile(tracer_group_memid(j, k)))then
          ntrcs = ntrcs + 1
          difs_trc_group(ntrcs) = trcid
        endif
     enddo
+
     if(ntrcs==0)cycle
     !the adaptive time stepping for solid phase transport
     kk = j - betrtracer_vars%ngwmobile_tracer_groups
@@ -352,7 +353,6 @@ contains
                   
           !do negative tracer screening
           lnegative_tracer = .false.
-          
           !loop over the layers
           do k = 1, ntrcs
             trcid = difs_trc_group(k)
@@ -394,15 +394,14 @@ contains
               call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname))
             else
               !add back to the last few nodes
-              do l = ubj, jtops(c), -1
-                tracer_conc_solid_passive_col(c,l,trcid)=tracer_conc_solid_passive_col(c,l,trcid) - err_tracer(c,k)/dz(c,l)
-                if(tracer_conc_solid_passive_col(c,l,trcid)<0._r8)then
-                  err_tracer(c,k) = -tracer_conc_solid_passive_col(c,l,trcid)*dz(c,l)
-                  tracer_conc_solid_passive_col(c,l,trcid) = 0._r8
-                else
-                  exit
-                endif  
-              enddo
+!                tracer_conc_solid_passive_col(c,l,trcid)=tracer_conc_solid_passive_col(c,l,trcid) - err_tracer(c,k)/dz(c,l)
+!                if(tracer_conc_solid_passive_col(c,l,trcid)<0._r8)then
+!                  err_tracer(c,k) = -tracer_conc_solid_passive_col(c,l,trcid)*dz(c,l)
+!                  tracer_conc_solid_passive_col(c,l,trcid) = 0._r8
+!                else
+!                  exit
+!                endif  
+!              enddo
             endif
           enddo                    
           !if negative tracer concentration is found, go to the next column

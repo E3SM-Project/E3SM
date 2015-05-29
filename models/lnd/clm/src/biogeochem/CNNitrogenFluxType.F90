@@ -1261,7 +1261,6 @@ contains
         
     enddo
     
-    
     this%denit_col(begc:endc) = spval
     call hist_addfld1d (fname='DENIT', units='gN/m^2/s', &
          avgflag='A', long_name='total rate of denitrification', &
