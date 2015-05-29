@@ -1125,6 +1125,1247 @@ contains
 
    end subroutine ocn_finalize_eliassen_palm_flux_tensor!}}}
 
+
+!***********************************************************************
+!
+!  subroutine get_masks_in_buoyancy_coordinates
+!
+!> \brief   Get masks in buoyancy coordinates
+!> \author  Juan A. Saenz
+!> \date    Jan 2014
+!> \details 
+!>  firstLayerBuoyCoor(iCell): the index of the smallest reference density that 
+!>    is >= the smallest actual density in a column.
+!>  lastLayerBuoyCoor(iCell): the index of the largest reference density that is <= the 
+!>    largest actual density in a column.
+!>  Set masks in buoyancy coordinates:
+!>    mask = 1: cell is a valid ocean cell
+!>    mask = 0: cell is not a valid ocean cell
+!>  Required: potentialDensityMidRef monotonically increases with index value
+!
+!-----------------------------------------------------------------------
+   subroutine get_masks_in_buoyancy_coordinates(nVertLevels, nCells, nBuoyLayers, &
+      maxLevelCell, potentialDensity, potentialDensityMidRef, &
+      firstLayerBuoyCoor, lastLayerBuoyCoor, buoyMask)!{{{
+      
+      integer, intent(in) :: nVertLevels, nCells, nBuoyLayers
+      integer, dimension(nCells), intent(in)  :: maxLevelCell
+      integer, dimension(nCells), intent(out) :: firstLayerBuoyCoor
+      integer, dimension(nCells), intent(out) :: lastLayerBuoyCoor
+      real (kind=RKIND), dimension(nBuoyLayers, nCells), intent(out) :: buoyMask
+      real (kind=RKIND), dimension(nVertLevels, nCells), intent(in) :: potentialDensity
+      real (kind=RKIND), dimension(nBuoyLayers), intent(in) :: potentialDensityMidRef
+
+      ! Local variables
+      integer :: iCell, maxLevel, kB, kBBottom, kBTop
+      
+      firstLayerBuoyCoor = 1
+      lastLayerBuoyCoor = nBuoyLayers
+      buoyMask     = 0.0
+
+
+      do iCell = 1, nCells
+      
+         maxLevel = maxLevelCell(iCell)
+
+         do kB = 1, nBuoyLayers
+            if (potentialDensityMidRef(kB) >= potentialDensity(1,iCell) ) then
+               firstLayerBuoyCoor(iCell) = kB
+               exit
+            endif
+         enddo
+         
+         do kB = nBuoyLayers, 1, -1
+            if (potentialDensityMidRef(kB) <= potentialDensity(maxLevel,iCell) ) then
+               lastLayerBuoyCoor(iCell) = kB
+               exit
+            endif
+         enddo
+         
+         ! set mask to 1 inside the range
+         do kB = firstLayerBuoyCoor(iCell), lastLayerBuoyCoor(iCell)
+           buoyMask(kB,iCell) = 1.0
+         enddo
+      
+      enddo
+   
+   end subroutine get_masks_in_buoyancy_coordinates!}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine check_potentialDensityRef_range
+!
+!> \brief   Check if the range of values in potentialDensityTopRef contains current state
+!> \author  Juan A. Saenz
+!> \date    Jan 2014
+!> \details 
+!>  Check if the range of values in potentialDesnityTopRef contains all values in 
+!>  potentialDensity of the current state. 
+!>  If not, print a warning.
+!
+!-----------------------------------------------------------------------
+   subroutine check_potentialDensityRef_range(nVertLevels, nCells, maxLevelCell, &
+         potentialDensity)!{{{
+      integer, intent(in) :: nVertLevels, nCells
+      integer, dimension(nCells), intent(in)  :: maxLevelCell
+      real (kind=RKIND), dimension(nVertLevels, nCells), intent(in) :: potentialDensity
+
+      ! Local variables
+      integer :: k, i
+      logical :: printWarning
+      
+      printWarning = .false.
+      
+      do i = 1, nCells
+         if (potentialDensity(1,i) < config_rhomin_buoycoor) then
+            printWarning = .true.
+            exit
+         end if
+         if (potentialDensity(maxLevelCell(i),i) > config_rhomax_buoycoor) then
+            printWarning = .true.
+            exit
+         end if
+      enddo
+      
+      !jas issue: do we want to print a warning once, or at every i,k out of range?
+      if (printWarning) then
+         write(stderrUnit,*) 'Warning: in EPFT package, reference potential density does &
+            not span the values of potentialDensity in the current state'
+      end if
+      
+   end subroutine check_potentialDensityRef_range!}}}
+
+
+
+
+!***********************************************************************
+!
+!  subroutine linear_interp_1d_field_along_column
+!
+!> \brief   One-dimensional interpolation in buoyancy coordinates
+!> \author  Juan A. Saenz, Todd Ringler
+!> \date    17 December 2013
+!> \details 
+!>  Interpolate a field yFieldIn residing on xFieldIn onto xColumnOut and store 
+!>  and return in yFieldOut.
+!>  Interpolation is done using one-dimensional interpolation along xColumnOut.
+!>  Required: xFieldIn monotonically decreases with index value
+!
+!-----------------------------------------------------------------------
+
+   subroutine linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyLayers, &
+      maxLevelCell, xFieldIn, yFieldIn, xColumnOut, yFieldOut)!{{{
+      
+      integer, intent(in) :: nVertLevels, nCells, nBuoyLayers
+      integer, dimension(nCells), intent(in)  :: maxLevelCell
+      real (kind=RKIND), dimension(nVertLevels, nCells), intent(in) :: xFieldIn
+      real (kind=RKIND), dimension(nVertLevels, nCells), intent(in) :: yFieldIn
+      real (kind=RKIND), dimension(nBuoyLayers), intent(in) :: xColumnOut
+      real (kind=RKIND), dimension(nBuoyLayers, nCells), intent(out) :: yFieldOut
+
+      ! Local variables
+      integer :: iCell, maxLevel, kB, kBBottom, kBTop, kDataAbove, kDataBelow, kData
+      real (kind=RKIND) :: dx, dy
+
+      yFieldOut = 0.0
+
+      do iCell = 1, nCells
+      
+         ! find the index of the bottom level of a column
+         maxLevel = maxLevelCell(iCell)
+
+         ! Monotonically decreasing xFieldIn required
+         ! Find index of first element in xColumnOut that is inside xFieldIn(:,iCell)
+         kBTop = 1
+         do kB = 1, nBuoyLayers
+            ! the following line ensures that
+            ! if all xColumnOut > xFieldIn(1,iCell) then kBTop = nBuoyLayers
+            kBTop = kB
+            if (xColumnOut(kB) <= xFieldIn(1,iCell) ) then
+               exit
+            endif
+         enddo
+         
+         !find last target buoyancy level inside column
+         kBBottom = nBuoyLayers
+         do kB = nBuoyLayers, 1, -1
+            ! the following line ensures that
+            ! if all xColumnOut < xFieldIn(1,iCell) then kBBottom = 1
+            kBBottom = kB
+            if (xColumnOut(kB) >= xFieldIn(maxLevel,iCell) ) then
+               exit
+            endif
+         enddo
+         
+         
+         ! For the target x levels outside the x range in a column:
+         ! set data from 1:kBTop-1 to surface values
+         do kB = 1, kBTop-1
+           yFieldOut(kB,iCell) = yFieldIn(1,iCell)
+         enddo
+         !set data from kBBottom+1:nBuoyLayers to bottom values
+         do kB = kBBottom+1, nBuoyLayers
+           yFieldOut(kB,iCell) = yFieldIn(maxLevel,iCell)
+         enddo
+
+         ! The interpolation: 
+         ! for the target buoyancy levels within the buoyancy range in a column:
+         ! jas issue: this can be replaced by a call to 
+         !     src/operators/mpas_spline_interpolatoin.F:mpas_interpolate_linear()
+         kDataAbove = 1
+         kDataBelow = kDataAbove + 1
+         do kB = kBTop, kBBottom
+            ! for each xColumnOut(kB) value, find the corresponding upper and lower 
+            ! xFieldIn value in the field data, then interpolate y between those values.
+            if (xColumnOut(kB) < xFieldIn(kDataBelow,iCell)) then
+               do kData = kDataBelow, maxLevel
+                  if (xColumnOut(kB) > xFieldIn(kData,iCell) ) then
+                     kDataBelow=kData
+                     kDataAbove=kDataBelow-1
+                     exit
+                  endif
+               enddo
+            endif
+            
+            dx = xFieldIn(kDataBelow,iCell) - xFieldIn(kDataAbove,iCell)
+            dy = yFieldIn(kDataBelow,iCell) - yFieldIn(kDataAbove,iCell)
+            yFieldOut(kB,iCell) = yFieldIn(kDataAbove,iCell) + &
+               (xColumnOut(kB)-xFieldIn(kDataAbove,iCell)) * dy/dx
+         enddo
+      
+      enddo
+   
+   end subroutine linear_interp_1d_field_along_column!}}}
+
+
+!***********************************************************************
+!
+!  subroutine computeBuoyancyColumn
+!
+!> \brief   Compute buoyancy
+!> \author  Juan A. Saenz
+!> \date    17 December 2013
+!> \details 
+!>  This subroutine computes buoyancy
+!
+!-----------------------------------------------------------------------
+
+   subroutine computeBuoyancyColumn(nLayers, potentialDensity, buoyancy)!{{{
+      integer, intent(in) :: nLayers
+      real (kind=RKIND), dimension(nLayers), intent(in) :: potentialDensity
+      real (kind=RKIND), dimension(nLayers), intent(out) :: buoyancy
+   
+      !local variables
+      integer :: i, k
+      real (kind=RKIND) :: rho0
+      
+      rho0 = config_density0
+      
+      buoyancy = 0.0
+      
+      do k = 1, nLayers
+         buoyancy(k) = -gravity * (potentialDensity(k)-rho0) / rho0
+      enddo
+   
+   end subroutine computeBuoyancyColumn!}}}
+
+
+!***********************************************************************
+!
+!  subroutine computeBuoyancyColumnP1
+!
+!> \brief   Compute buoyancy
+!> \author  Juan A. Saenz
+!> \date    Jan 2014
+!> \details 
+!>  This subroutine computes buoyancy
+!
+!-----------------------------------------------------------------------
+
+   subroutine computeBuoyancyColumnP1(nLayers, potentialDensity, buoyancy)!{{{
+      integer, intent(in) :: nLayers
+      real (kind=RKIND), dimension(nLayers-1), intent(in) :: potentialDensity
+      real (kind=RKIND), dimension(nLayers), intent(out) :: buoyancy
+   
+      !local variables
+      integer :: i, k
+      real (kind=RKIND) :: rho0
+      
+      rho0 = config_density0
+      
+      buoyancy = 0.0
+      
+      do k = 1, nLayers-1
+         buoyancy(k) = -gravity * (potentialDensity(k)-rho0) / rho0
+      enddo
+   
+      buoyancy(nLayers) = -gravity * (config_rhomax_buoycoor-rho0) / rho0
+      
+   
+   end subroutine computeBuoyancyColumnP1!}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine computeSigma
+!
+!> \brief   Calculate the inverse of the derivative of buoy wrt z
+!> \author  Juan A. Saenz
+!> \date    December 2013
+!> \details 
+!>  This subroutine calculates the inverse of the derivative of buoy wrt z.
+!
+!-----------------------------------------------------------------------
+
+   subroutine computeSigma(nCells, nLayers, firstLayerBuoyCoor, &
+         lastLayerBuoyCoor, heightInterface, buoyInterface, sigma)!{{{
+      integer, intent(in) :: nCells, nLayers
+      integer, dimension(:), intent(in) :: firstLayerBuoyCoor
+      integer, dimension(:), intent(in) :: lastLayerBuoyCoor
+      real (kind=RKIND), dimension(:,:), intent(in) :: heightInterface
+      real (kind=RKIND), dimension(:), intent(in) :: buoyInterface
+      real (kind=RKIND), dimension(:,:), intent(out) :: sigma
+      
+      
+      ! local variables
+      integer :: i, k
+      
+      sigma = 0.0
+      
+      do i = 1, nCells
+         do k = 1,nLayers
+            sigma(k,i) = (heightInterface(k,i) - heightInterface(k+1,i)) / &
+               (buoyInterface(k) - buoyInterface(k+1))
+         enddo
+      enddo
+   
+   end subroutine computeSigma!}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine computeMontgomeryPotential
+!
+!> \brief   Compute the Montgomery potential
+!> \author  Juan A. Saenz
+!> \date    17 December 2013
+!> \details 
+!>  This subroutine computes the Montgomery potential using eqn 2.10 in
+!>  R.L. Higdon and R.A. Szoeke (1997), J. Comp. Phys. 135, 30–53, Article No. CP975733
+!
+!>  Montgomery Potential (MP) in layer k is MP(k-1) + pInterface(k)*deltaAlpha
+!>  where deltaAlpha is (1/potDens(k) - 1/potDens(k-1))
+!>  and pInterface(k) is the pressure at interface k, i.e. at top of layer k.
+!> 
+!>  Montgomery potential of a layer is constant across layer
+!-----------------------------------------------------------------------
+
+   subroutine computeMontgomeryPotential(nLayers, nCells, pSurface, firstLayer, &
+         lastLayer, SSH, density, potDens, heightInterface, MontgomeryPotential)!{{{
+      integer, intent(in) :: nLayers, nCells
+      integer, dimension(nCells), intent(in) :: firstLayer
+      integer, dimension(nCells), intent(in) :: lastLayer
+      real (kind=RKIND), dimension(nCells), intent(in) :: pSurface
+      real (kind=RKIND), dimension(nCells), intent(in) :: SSH
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: density
+      real (kind=RKIND), dimension(nLayers), intent(in) :: potDens
+      real (kind=RKIND), dimension(nLayers+1, nCells), intent(in) :: heightInterface
+      real (kind=RKIND), dimension(nLayers, nCells), intent(out) :: MontgomeryPotential
+      
+      ! local variables
+      integer :: i, k
+      real (kind=RKIND) :: pInterfacek ! pressure at interface k, i.e. at top of layer k
+      
+      MontgomeryPotential = 0.0
+      
+
+      do i = 1, nCells
+         
+         !pInterfacek = pSurface(i)
+         pInterfacek = 0.0
+         k = 1
+         MontgomeryPotential(k,i) = pInterfacek/potDens(k) + gravity*heightInterface(k,i)
+         
+         do k = 2, nLayers 
+            pInterfacek = pInterfacek + &
+               gravity * ( heightInterface(k-1,i)-heightInterface(k,i) ) * density(k-1,i)
+            MontgomeryPotential(k,i) = MontgomeryPotential(k-1,i) + &
+               pInterfacek * ( 1/potDens(k) - 1/potDens(k-1) )
+         enddo
+      
+      enddo
+   
+   end subroutine computeMontgomeryPotential!}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine computeNormalGradientOnEdge
+!
+!> \brief   Compute the gradient of a quantity that exists on cell centers
+!> \author  Juan A. Saenz
+!> \date    December 2013
+!> \details 
+!>  This subroutine computes the gradient of a quantity that exists on cell centers
+!
+!-----------------------------------------------------------------------
+
+   subroutine computeNormalGradientOnEdge(nBLayers, nCells, nEdges, &
+         mesh, field, normalGradOnEdge)!{{{
+      integer, intent(in) :: nBLayers, nCells, nEdges
+      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      real (kind=RKIND), dimension(:,:), intent(in) :: field
+      real (kind=RKIND), dimension(:,:), intent(out) :: normalGradOnEdge
+
+      !local variables
+      integer :: nEdgesSolve, iEdge, k, cell1, cell2, kMin, kMax
+      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: boundaryEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND) :: invLength
+
+      cellsOnEdge       => mesh % cellsOnEdge % array
+      dcEdge            => mesh % dcEdge % array
+      maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
+      boundaryEdge      => mesh % boundaryEdge % array
+
+      normalGradOnEdge = 0.0
+
+      do iEdge = 1, nEdges
+         ! enforce enforce zero gradient on boundary edges
+         if (boundaryEdge(1,iEdge) == 1) then
+            normalGradOnEdge(:,iEdge) = 0.0
+         else
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            invLength = 1.0 / dcEdge(iEdge)
+            do k = 1, mesh % nBuoyancyLayers
+              normalGradOnEdge(k,iEdge) = ( field(k,cell2) - field(k,cell1) )*invLength
+            enddo
+         end if
+      enddo
+
+   end subroutine computeNormalGradientOnEdge!}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine updateEnsembleAverage
+!
+!> \brief   Update ensemble average
+!> \author  Juan A. Saenz
+!> \date    17 December 2013
+!> \details 
+!>  This subroutine updates the ensemble average
+!
+!-----------------------------------------------------------------------
+
+   subroutine updateEnsembleAverage(nLayers, nCells, nSamples, A, Abar)!{{{
+      integer, intent(in) :: nLayers, nCells, nSamples
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in)  :: A
+      real (kind=RKIND), dimension(nLayers, nCells), intent(inout)  :: Abar
+   
+      !test
+      integer :: i, k
+   
+      do i = 1, nCells
+         do k = 1, nLayers
+            Abar(k,i) = (nSamples * Abar(k,i) + A(k,i)) / (nSamples + 1.0)
+         enddo
+      enddo
+
+   end subroutine updateEnsembleAverage!}}}
+
+
+!***********************************************************************
+!
+!  subroutine calculateTWA
+!
+!> \brief   Calculate the thickness weighted average
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates the thickness weighted average
+!
+!-----------------------------------------------------------------------
+   subroutine calculateTWA(nLayers, nCells, nBuoyancyLayers, sigmaEA, &
+         varSigmaEA, varTWA)!{{{
+      integer, intent(in) :: nLayers, nCells, nBuoyancyLayers
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in)  :: sigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in)  :: varSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(out) :: varTWA
+   
+      ! local variables
+      integer :: i, k
+   
+      varTWA = 0.0
+      
+      do i = 1, nCells
+         do k = 1,nBuoyancyLayers
+            varTWA(k,i) = varSigmaEA(k,i) / max(1.0e-15,sigmaEA(k,i))
+         enddo
+      enddo
+   
+   end subroutine calculateTWA!}}}
+   
+
+!***********************************************************************
+!
+!  subroutine calculateEPFTfromTWA
+!
+!> \brief   Calculate the Eliassen-Palm flux tensor from TWAs
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates the Eliassen and Palm flux tensor from thickness 
+!>  weighted averages.
+!>  EPTF_pq(x,y,z) is represented as EPFT(p,q,k,i)
+!-----------------------------------------------------------------------
+
+   subroutine calculateEPFTfromTWA(nLayers, nCells, &
+         sigmaEA, heightEA, heightSqEA, MxEA, MyEA, HMxEA, HMyEA, uTWA, vTWA, wTWA, &
+         uuSigmaEA, vvSigmaEA, uvSigmaEA, uwSigmaEA, vwSigmaEA, Etensor)!{{{
+      integer, intent(in) :: nLayers, nCells
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: sigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightSqEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: MxEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: MyEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: HMxEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: HMyEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uTWA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vTWA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: wTWA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uuSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vvSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uvSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uwSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vwSigmaEA
+      real (kind=RKIND), dimension(3, 3, nLayers, nCells), intent(out) :: Etensor
+   
+      ! local variables
+      integer :: iCell, kLayer
+      real (kind=RKIND) :: sigma
+      real (kind=RKIND) :: uppupp, vppvpp, uppvpp, uppwpp, vppwpp
+      real (kind=RKIND) :: HpHp, HpMxp, HpMyp
+      
+      Etensor = 0.0
+
+      do iCell = 1, nCells
+         do kLayer = 1,nLayers
+            
+            sigma = max(sigmaEA(kLayer,iCell), 1.0e-15)
+
+            uppupp = uuSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*uTWA(kLayer,iCell)
+            vppvpp = vvSigmaEA(kLayer,iCell) / sigma - vTWA(kLayer,iCell)*vTWA(kLayer,iCell)
+            uppvpp = uvSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*vTWA(kLayer,iCell)
+            uppwpp = uwSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*wTWA(kLayer,iCell)
+            vppwpp = vwSigmaEA(kLayer,iCell) / sigma - vTWA(kLayer,iCell)*wTWA(kLayer,iCell)
+            HpHp   = heightSqEA(kLayer,iCell) - heightEA(kLayer,iCell)*heightEA(kLayer,iCell)
+            HpMxp  = HMxEA(kLayer,iCell) - heightEA(kLayer,iCell)*MxEA(kLayer,iCell)
+            HpMyp  = HMyEA(kLayer,iCell) - heightEA(kLayer,iCell)*MyEA(kLayer,iCell)
+
+            !EPTF_pq(x,y,z) is represented as EPFT(p,q,kLayer,iCell)
+            !column 1: Eu
+            Etensor(1,1,kLayer,iCell) = uppupp + 0.5 * HpHp / sigma
+            Etensor(2,1,kLayer,iCell) = uppvpp
+            Etensor(3,1,kLayer,iCell) = uppwpp + HpMxp / sigma
+
+            !column 2: Ev
+            Etensor(1,2,kLayer,iCell) = uppvpp 
+            Etensor(2,2,kLayer,iCell) = vppvpp + 0.5 * HpHp / sigma
+            Etensor(3,2,kLayer,iCell) = vppwpp + HpMyp / sigma
+
+            !column 3: Ew
+            Etensor(1,3,kLayer,iCell) = 0.0
+            Etensor(2,3,kLayer,iCell) = 0.0
+            Etensor(3,3,kLayer,iCell) = 0.0
+            
+         enddo
+      enddo
+   
+   end subroutine calculateEPFTfromTWA!}}}
+
+
+!***********************************************************************
+!
+!  subroutine calculateDivEPFT
+!
+!> \brief   Calculate the divergence of EPFT 
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates the divergence of the Elliassen-Palm flux tensor
+!
+!-----------------------------------------------------------------------
+
+   subroutine calculateDivEPFT(nLayers, nCells, nEdges, &
+        mesh, buoyancyInterfaceRef, sigmaEA, buoyMaskEA, tensorCellIn, vectorCellOut)!{{{
+
+      use mpas_vector_operations
+
+      integer, intent(in) :: nLayers, nCells, nEdges
+      type (mesh_type), intent(in) :: mesh
+      real (kind=RKIND), dimension(:), intent(in) :: buoyancyInterfaceRef
+      real (kind=RKIND), dimension(:,:), intent(in) :: sigmaEA
+      real (kind=RKIND), dimension(:,:), intent(in) :: buoyMaskEA
+      real (kind=RKIND), dimension(:,:,:,:), intent(in) :: tensorCellIn
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: vectorCellOut
+
+      ! local variables
+      logical :: includeHalo, on_a_sphere
+      integer :: q, iCell, kLayer, iComponent
+      real (kind=RKIND) :: wrk, wrkAbove, wrkBelow, sigma, db
+      real (kind=RKIND), dimension(:), pointer :: latCell
+      real (kind=RKIND), dimension(:), pointer :: lonCell
+      integer, dimension(:,:), pointer :: edgeSignOnCell
+      real (kind=RKIND), dimension(:,:), allocatable :: scalarWrk1      
+      real (kind=RKIND), dimension(:,:,:), allocatable :: vectorCellWrk1
+      real (kind=RKIND), dimension(:,:,:), allocatable :: vectorCellWrk2
+      real (kind=RKIND), dimension(:,:,:), allocatable :: vectorEdgeWrk1
+      real (kind=RKIND), dimension(:), allocatable :: vertVector
+      real (kind=RKIND) :: rho0
+      
+      ! variables used for testing and debugging
+      real (kind=RKIND), dimension(:), allocatable :: divExact
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      xCell => mesh % xCell % array
+      yCell => mesh % yCell % array
+      zCell => mesh % zCell % array
+
+      if (config_oac_epft_debug) then
+        allocate(divExact(nCells+1))
+      end if
+
+
+      rho0 = config_density0
+
+      allocate(scalarWrk1(nLayers,nCells+1))
+      allocate(vectorCellWrk1(3,nLayers,nCells+1))
+      allocate(vectorCellWrk2(3,nLayers,nCells+1))
+      allocate(vectorEdgeWrk1(3,nLayers,nEdges))
+      allocate(vertVector(nLayers))
+
+      on_a_sphere = mesh % on_a_sphere
+      edgeSignOnCell => mesh % edgeSignOnCell % array
+      latCell => mesh % latCell % array
+      lonCell => mesh % lonCell % array
+      
+      includeHalo = .true.
+      
+
+      ! initialize work and intent(out)
+      vectorCellOut = 0.0
+
+      ! loop over all three column vectors
+      do q = 1, 3
+         
+         scalarWrk1 = 0.0
+
+         ! horizontal derivatives
+         vectorCellWrk1 = tensorCellIn(:,q,:,:)
+
+         ! weight the vector with sigmaEA(:,:)
+         do iComponent = 1,3
+            vectorCellWrk1(iComponent,:,:) = sigmaEA(:,:)*vectorCellWrk1(iComponent,:,:)
+         enddo
+
+
+         ! use q=3 as a test vector
+         if (q.eq.3 .and. config_oac_epft_debug) then
+           do iCell = 1,nCells
+             vectorCellWrk1(1,:,iCell) = xCell(iCell)
+             vectorCellWrk1(2,:,iCell) = yCell(iCell)
+             vectorCellWrk1(3,:,iCell) = zCell(iCell)
+             ! the analytical divergence:
+             divExact(iCell) = -1.0*sin(lonCell(iCell)) * &
+                (1.0 + 2.0*sin(latCell(iCell))) !+ 3.0*sin(latCell(iCell))
+           enddo
+         endif
+
+         ! zero the vertical component of vectorCellWrk1
+         ! the vertical will be treated seperately below
+         vectorCellWrk1(3,:,:) = 0.0
+
+         if (on_a_sphere) then
+            
+            do iCell = 1,nCells
+               do kLayer = 1,nLayers
+                  call mpas_vector_LonLatR_to_R3(vectorCellWrk1(:,kLayer,iCell), &
+                     lonCell(iCell), latCell(iCell), vectorCellWrk2(:,kLayer,iCell))
+               end do
+            end do
+
+            vectorCellWrk1 = vectorCellWrk2
+
+         end if
+
+         call mpas_vector_R3Cell_to_Edge(vectorCellWrk1, mesh, &
+            vectorEdgeWrk1)
+
+         call mpas_divergence_in_r3_buoyancy(vectorEdgeWrk1, mesh, &
+            edgeSignOnCell, includeHalo, scalarWrk1)
+
+         ! use q=3 as a test vector
+         if (q.eq.3 .and. config_oac_epft_debug) then
+           print *, ' '
+           do kLayer = 1,nLayers
+              wrk = sqrt( &
+                sum( &
+                ( & 
+                (divExact(:)-scalarWrk1(kLayer,:))/ max(abs(divExact(:)),1.0e-15)  &
+                )**2 * &
+                (1.0 - mesh % boundaryCell % array(1,:)) &
+                ) / nCells )
+              print *, 'div RMS relative error on layer:', wrk
+           enddo
+         endif
+
+
+         if (q < 3 .or. .not. config_oac_epft_debug) then
+            do iCell = 1,nCells
+               do kLayer = 1,nLayers
+                  sigma = max(sigmaEA(kLayer,iCell), 1.0e-15)
+                  scalarWrk1(kLayer,iCell) = scalarWrk1(kLayer,iCell) / sigma
+               end do
+            end do
+         end if
+
+
+         ! vertical derivative
+         do iCell = 1,nCells
+
+            ! copy the vertical component of EPFT into a work array
+            vertVector(:) = tensorCellIn(3,q,:,iCell)
+
+            ! use q=3 as a test vector
+            if (q.eq.3 .and. config_oac_epft_debug) then
+               vertVector(:) = 0.0
+            endif
+
+
+            do kLayer = 1,nLayers
+
+               wrk = 0.0
+
+               ! jas issue: change buoyancyInterfaceRef to buoyancyMidRef and generalize 
+               if(kLayer.eq.1) then
+                 wrkAbove=sigmaEA(kLayer,iCell)*vertVector(kLayer)
+                 wrkBelow=sigmaEA(kLayer+1,iCell)*vertVector(kLayer+1)
+                 db = buoyancyInterfaceRef(kLayer)-buoyancyInterfaceRef(kLayer+1) 
+               else if (kLayer.eq.nLayers) then
+                 wrkAbove=sigmaEA(kLayer-1,iCell)*vertVector(kLayer-1)
+                 wrkBelow=sigmaEA(kLayer,iCell)*vertVector(kLayer)
+                 db = buoyancyInterfaceRef(kLayer)-buoyancyInterfaceRef(kLayer+1) 
+               else
+                 wrkAbove=sigmaEA(kLayer-1,iCell)*vertVector(kLayer-1)
+                 wrkBelow=sigmaEA(kLayer+1,iCell)*vertVector(kLayer+1)
+                 db = 2.0*(buoyancyInterfaceRef(kLayer)-buoyancyInterfaceRef(kLayer+1))
+               endif
+
+               ! jas issue: should sigma also be clipped like this for k-1 and k+1?
+               sigma = max(sigmaEA(kLayer,iCell), 1.0e-15)
+               wrk = (wrkAbove - wrkBelow) / db / sigma
+
+               scalarWrk1(kLayer,iCell) = scalarWrk1(kLayer,iCell) + wrk
+
+               ! temporarily mask divEPFT to add in visualization
+               !if(buoyMaskEA(kLayer,iCell).lt.0.5) scalarWrk1(kLayer,iCell) = 0.0
+
+            end do
+
+         end do
+
+         vectorCellOut(q,:,:) = scalarWrk1
+
+      end do
+
+
+      deallocate(scalarWrk1)
+      deallocate(vectorCellWrk1)
+      deallocate(vectorCellWrk2)
+      deallocate(vectorEdgeWrk1)
+      deallocate(vertVector)
+
+
+   end subroutine calculateDivEPFT!}}}
+
+
+
+!***********************************************************************
+!
+!  subroutine calculateErtelPVFlux 
+!
+!> \brief   Calculate the Ertel potential vorticity fluxes 
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates the Ertel potential vorticity fluxes
+!>  using the divergence of EPFT, as outlined in eqn 129 of Young 2012.
+!
+!-----------------------------------------------------------------------
+
+   subroutine calculateErtelPVFlux(nCells, nBuoyancyLayers, &
+        sigma, divEPFT, ErtelPVFlux)!{{{
+      
+      integer, intent(in) :: nCells, nBuoyancyLayers
+      real (kind=RKIND), dimension(:,:), intent(in) :: sigma 
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: divEPFT 
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: ErtelPVFlux
+
+      ! local variables
+      integer :: i, k
+
+      ErtelPVFlux(1,:,:) = divEPFT(2,:,:)
+      ErtelPVFlux(2,:,:) = -1.0 * divEPFT(1,:,:)
+      ErtelPVFlux(3,:,:) = 0.0
+
+      do i = 1, nCells
+         do k = 1,nBuoyancyLayers
+            ErtelPVFlux(:,k,i) = ErtelPVFlux(:,k,i) / max(sigma(k,i),1.0e-15)
+         end do
+      end do
+
+    end subroutine calculateErtelPVFlux
+
+
+
+!***********************************************************************
+!
+!  routine mpas_tensor_cell_to_edge_BuoyCoor
+!
+!> \brief   Interpolate a matrix from cell to edge
+!> \author  Mark Petersen, Juan A. Saenz
+!> \date    Jan 2014
+!> \details 
+!>  This routine interpolates a matrix from cell to edge locations,
+!>  looping through nBuoyancyLayers.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_tensor_cell_to_edge_BuoyCoor(matrixCell, grid, &
+        includeHalo, matrixEdge)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:,:), intent(in) :: &
+         matrixCell   !< Input: matrix located at Cell
+
+      type (mesh_type), intent(in) :: &
+         grid          !< Input: grid information
+
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:,:), intent(out) :: &
+         matrixEdge   !< Output: matrix located at Edge
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, cell1, cell2, p, q, k
+      integer :: nEdgesCompute, nBuoyLayers, nCells
+      integer, dimension(:,:), pointer :: cellsOnEdge
+
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
+      nBuoyLayers = grid % nBuoyancyLayers
+      nCells = grid % nCells
+
+      cellsOnEdge => grid % cellsOnEdge % array
+
+      ! error check that index 1 of matrixEdge and matrixCell are same length?
+
+      do iEdge=1,nEdgesCompute
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k=1,nBuoyLayers
+            do q = 1, 3
+               do p = 1, 3
+                  matrixEdge(p,q,k,iEdge) = &
+                     0.5*(matrixCell(p,q,k,cell1) + matrixCell(p,q,k,cell2))
+               end do
+            end do
+         enddo
+      enddo
+
+   end subroutine mpas_tensor_cell_to_edge_BuoyCoor!}}}
+
+
+!***********************************************************************
+!
+!  subroutine calculateErtelPVTendencyFromPVFlux
+!
+!> \brief   Calculate the Ertel PV tendency from Ertel PV flux 
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates the Ertel PV tendency as the divergence of
+!>  the Ertel PV flux
+!
+!-----------------------------------------------------------------------
+
+   subroutine calculateErtelPVTendencyFromPVFlux(nLayers, nCells, nEdges, &
+         mesh, sigmaEA, vectorCell, divVectorCell)!{{{
+
+      use mpas_vector_operations
+
+      integer, intent(in) :: nLayers, nCells, nEdges
+      type (mesh_type), intent(in) :: mesh
+      real (kind=RKIND), dimension(:,:), intent(in) :: sigmaEA
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: vectorCell
+      real (kind=RKIND), dimension(:,:), intent(out) :: divVectorCell
+
+      ! local variables
+      logical :: includeHalo, on_a_sphere
+      integer :: i, k, iComponent
+      real (kind=RKIND) :: sigma
+      real (kind=RKIND), dimension(:), pointer :: latCell
+      real (kind=RKIND), dimension(:), pointer :: lonCell
+      integer, dimension(:,:), pointer :: edgeSignOnCell
+      real (kind=RKIND), dimension(:,:,:), allocatable :: vectorCellWrk1
+      real (kind=RKIND), dimension(:,:,:), allocatable :: vectorCellWrk2
+      real (kind=RKIND), dimension(:,:,:), allocatable :: vectorEdgeWrk1
+
+      ! test variables
+      real (kind=RKIND) :: wrk
+      real (kind=RKIND), dimension(:), allocatable :: divExact
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      xCell => mesh % xCell % array
+      yCell => mesh % yCell % array
+      zCell => mesh % zCell % array
+
+      if (config_oac_epft_debug) then
+        allocate(divExact(nCells+1))
+      end if
+
+
+      allocate(vectorCellWrk1(3,nLayers,nCells+1))
+      allocate(vectorCellWrk2(3,nLayers,nCells+1))
+      allocate(vectorEdgeWrk1(3,nLayers,nEdges))
+
+      on_a_sphere = mesh % on_a_sphere
+      edgeSignOnCell => mesh % edgeSignOnCell % array
+      latCell => mesh % latCell % array
+      lonCell => mesh % lonCell % array
+      
+      includeHalo = .true.
+ 
+      vectorCellWrk1 = vectorCell
+
+      ! weight the vector with sigmaEA(:,:)
+      do iComponent = 1,3
+         vectorCellWrk1(iComponent,:,:) = sigmaEA(:,:)*vectorCellWrk1(iComponent,:,:)
+      enddo
+
+         
+      if (config_oac_epft_debug) then
+        do i= 1,nCells
+          vectorCellWrk1(1,:,i) = xCell(i)
+          vectorCellWrk1(2,:,i) = yCell(i)
+          vectorCellWrk1(3,:,i) = zCell(i)
+          ! the analytical divergence:
+          divExact(i) = -1.0*sin(lonCell(i)) * &
+             (1.0 + 2.0*sin(latCell(i))) !+ 3.0*sin(latCell(i))
+        enddo
+      endif
+
+
+      if (on_a_sphere) then
+
+         do i = 1,nCells
+            do k = 1,nLayers
+               call mpas_vector_LonLatR_to_R3(vectorCellWrk1(:,k,i), &
+                  lonCell(i), latCell(i), vectorCellWrk2(:,k,i))
+            end do
+         end do
+
+         vectorCellWrk1 = vectorCellWrk2
+
+      end if
+
+      call mpas_vector_R3Cell_to_Edge(vectorCellWrk1, mesh, &
+         vectorEdgeWrk1)
+
+      call mpas_divergence_in_r3_buoyancy(vectorEdgeWrk1, mesh, edgeSignOnCell, &
+         includeHalo, divVectorCell)
+
+         
+      if (config_oac_epft_debug) then
+        print *, ' '
+        do k= 1,nLayers
+           wrk = sqrt( &
+             sum( &
+             ( & 
+             (divExact(:)-divVectorCell(k,:))/ max(abs(divExact(:)),1.0e-15)  &
+             )**2 * &
+             (1.0 - mesh % boundaryCell % array(1,:)) &
+             ) / nCells )
+           print *, 'div RMS relative error on layer:', wrk
+        enddo
+      endif
+
+
+      if (.not. config_oac_epft_debug) then
+         do i = 1,nCells
+            do k = 1,nLayers
+              sigma = max(sigmaEA(k,i), 1.0e-15)
+              !sigma = 1.0
+              divVectorCell(k,i) = divVectorCell(k,i) / sigma
+            end do
+         end do
+      end if
+
+
+      deallocate(vectorCellWrk1)
+      deallocate(vectorEdgeWrk1)
+
+
+   end subroutine calculateErtelPVTendencyFromPVFlux!}}}
+   
+   
+   
+!***********************************************************************
+!
+!  subroutine computeErtelPV
+!
+!> \brief   Calculate Ertel potential vorticity on buoyancy surfaces
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates Ertel potential voriticity in buoyancy surfaces
+!
+!-----------------------------------------------------------------------
+   
+   subroutine computeErtelPV(nCells, nLayers, nEdges, mesh, &
+      fCell, uCell, vCell, sigma, ErtelPV)
+      
+      use mpas_vector_reconstruction
+      
+      integer, intent(in) :: nCells, nLayers, nEdges
+      type (mesh_type), intent(in) :: mesh
+      real (kind=RKIND), dimension(:), intent(in) :: fCell
+      real (kind=RKIND), dimension(:,:), intent(in) :: uCell, vCell
+      real (kind=RKIND), dimension(:,:), intent(in) :: sigma
+      real (kind=RKIND), dimension(:,:), intent(out) :: ErtelPV
+
+      ! local variables
+      integer :: i, k
+      real (kind=RKIND), dimension(:,:), allocatable :: velNormalGradOnEdge
+      real (kind=RKIND), dimension(:,:), allocatable :: velGradX, velGradY, velGradZ
+      real (kind=RKIND), dimension(:,:), allocatable :: velGradZonal, velGradMerid
+      real (kind=RKIND), dimension(:,:), allocatable :: vGradZonal, uGradMerid
+
+      allocate(velNormalGradOnEdge(nLayers, nEdges))
+      allocate(velGradX(nLayers, nCells))
+      allocate(velGradY(nLayers, nCells))
+      allocate(velGradZ(nLayers, nCells))
+      allocate(velGradZonal(nLayers, nCells))
+      allocate(velGradMerid(nLayers, nCells))
+      allocate(vGradZonal(nLayers, nCells))
+      allocate(uGradMerid(nLayers, nCells))
+
+      ! calculate derivative of uTWA with respect to y
+      call computeNormalGradientOnEdge(nLayers, nCells, nEdges, &
+        mesh, &
+        uCell, velNormalGradOnEdge)
+      call mpas_reconstruct(mesh, velNormalGradOnEdge, &
+        velGradX, velGradY, velGradZ, &
+        velGradZonal, velGradMerid)
+      uGradMerid = velGradMerid
+
+      ! calculate derivative of vTWA with respect to x
+      call computeNormalGradientOnEdge(nLayers, nCells, nEdges, &
+        mesh, &
+        vCell, velNormalGradOnEdge)
+      call mpas_reconstruct(mesh, velNormalGradOnEdge, &
+        velGradX, velGradY, velGradZ, &
+        velGradZonal, velGradMerid)
+      vGradZonal = velGradZonal
+
+      do i = 1, nCells
+        do k = 1,nLayers 
+          ErtelPV(k,i) = (fCell(i) + vGradZonal(k,i) - uGradMerid(k,i))/max(sigma(k,i),1.0e-15)
+        end do
+      end do
+
+   end subroutine computeErtelPV
+
+
+!***********************************************************************
+!
+!  subroutine eddyGeomDecompEPFT
+!
+!> \brief   Calculate the eddy geometric decomposition from EPFT
+!> \author  Juan A. Saenz
+!> \date    January 2014
+!> \details 
+!>  This subroutine calculates the eddy geometric decomposition from EPFT
+!
+!-----------------------------------------------------------------------
+
+   subroutine eddyGeomDecompEPFT()!sigmaRef, ErtelPVFlux, ErtelPVTendency)!{{{
+         ! Compute the geometric decomposition in terms of angles and eccentricities using
+         ! the entries of EPFT.
+   
+   end subroutine eddyGeomDecompEPFT!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_divergence_in_r3_buoyancy
+!
+!> \brief   MPAS 3D divergence routine
+!> \author  Todd Ringler
+!> \date    02/07/14
+!> \details
+!> This routine computes the of an input vector.
+!-----------------------------------------------------------------------
+   subroutine mpas_divergence_in_r3_buoyancy(vectorR3Edge, grid, &
+      edgeSignOnCell, includeHalo, divCell)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         vectorR3Edge  !< Input: vector at edge, R3, indices (direction,verticalIndex,edgeIndex)
+
+      type (mesh_type), intent(in) :: &
+         grid          !< Input: grid information
+
+      integer, dimension(:,:), intent(in) :: &
+         edgeSignOnCell        !< Input: Direction of vector connecting cells
+
+      logical, intent(in) :: &
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         divCell          !< Output: scalar divergence, indices (verticalIndex,edgeIndex)
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, iCell, nCellsCompute, i, k, p, nVertLevels
+
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+
+      real (kind=RKIND) :: invAreaCell
+      real (kind=RKIND) :: edgeNormalDotVector
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
+
+      if (includeHalo) then
+         nCellsCompute = grid % nCells
+      else
+         nCellsCompute = grid % nCellsSolve
+      endif
+      nVertLevels = grid % nBuoyancyLayers
+
+      edgesOnCell        => grid % edgesOnCell % array
+      nEdgesOnCell       => grid % nEdgesOnCell % array
+      dvEdge             => grid % dvEdge % array
+      areaCell           => grid % areaCell % array
+      edgeNormalVectors  => grid % edgeNormalVectors % array
+
+      divCell(:,:) = 0.0
+      do iCell = 1, nCellsCompute
+         invAreaCell = 1.0 / areaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            do k = 1, nVertLevels
+               edgeNormalDotVector = 0.0
+               do p=1,3
+                 edgeNormalDotVector = edgeNormalDotVector + &
+                    edgeNormalVectors(p,iEdge)*vectorR3Edge(p,k,iEdge)
+                enddo
+               divCell(k,iCell) = divCell(k,iCell) - & 
+                  edgeSignOnCell(i,iCell) * dvEdge(iEdge) * invAreaCell * &
+                  edgeNormalDotVector
+            end do
+         end do
+      end do
+
+  end subroutine mpas_divergence_in_r3_buoyancy!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_vector_R3Cell_to_Edge
+!
+!> \brief   MPAS 3D divergence routine
+!> \author  Todd Ringler
+!> \date    02/07/14
+!> \details
+!> This routine averages a vector field from cells to edges
+!-----------------------------------------------------------------------
+  subroutine mpas_vector_R3Cell_to_Edge(vectorCell, mesh, &
+        vectorEdge)
+
+      real, dimension(:,:,:), intent(in) :: vectorCell
+      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: vectorEdge
+
+      !local variables
+      integer :: nEdges, iEdge, k, cell1, cell2
+      integer, dimension(:,:), pointer :: cellsOnEdge, boundaryEdge
+
+      cellsOnEdge       => mesh % cellsOnEdge % array
+      boundaryEdge      => mesh % boundaryEdge % array
+
+      vectorEdge = 0.0
+
+      do iEdge = 1, mesh % nEdges
+         ! Enforce vector value of zero on boundary edges, e.g. no slip for velocities
+         if (boundaryEdge(1,iEdge) == 1) then
+            vectorEdge(:,:,iEdge) = 0.0
+         else
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            do k = 1, mesh % nBuoyancyLayers
+                vectorEdge(:,k,iEdge) = 0.5*( vectorCell(:,k,cell2) + vectorCell(:,k,cell1) )
+            enddo
+         end if
+      enddo
+
+   end subroutine mpas_vector_R3Cell_to_Edge!}}}
+
+
 end module ocn_eliassen_palm_flux_tensor
 
 ! vim: foldmethod=marker
