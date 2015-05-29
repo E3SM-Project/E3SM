@@ -604,7 +604,7 @@ contains
   
   !calculate decay coefficients
   call calc_som_deacyK(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, tracercoeff_vars, tracerstate_vars, &
-    betrtracer_vars, centurybgc_vars, carbonflux_vars, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
+    betrtracer_vars, centurybgc_vars, carbonflux_vars,dtime, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
   
   !calculate potential decay rates, without nutrient constraint
   call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars, &
@@ -1038,7 +1038,6 @@ contains
   o2_consump = DOT_PRODUCT(cascade_matrix(centurybgc_vars%lid_o2,1:Extra_inst%nr),reaction_rates(1:Extra_inst%nr))
   if(-o2_consump*dtime > ystate(centurybgc_vars%lid_o2))then
     o2_limit=ystate(centurybgc_vars%lid_o2)/(o2_consump*dtime)
-    if(ldebug)print*,'o2lim',o2_limit
     do lk = 1, Extra_inst%nr 
       if(centurybgc_vars%is_aerobic_reac(lk))then
         reaction_rates(lk) = reaction_rates(lk)*o2_limit

@@ -7,6 +7,7 @@ module BGCCenturySubCoreMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use clm_varcon         , only : spval  
+  use clm_varcon         , only : catomw, natomw
   use clm_varpar         , only : ndecomp_pools
   use ColumnType         , only : col
   use clm_varctl         , only : spinup_state,iulog
@@ -310,7 +311,7 @@ module BGCCenturySubCoreMod
  
 !-------------------------------------------------------------------------------
   subroutine calc_som_deacyK(bounds, lbj, ubj, numf, filter, jtops, nom_pools, tracercoeff_vars, tracerstate_vars, &
-    betrtracer_vars, centurybgc_vars, carbonflux_vars, k_decay)
+    betrtracer_vars, centurybgc_vars, carbonflux_vars, dtime, k_decay)
   !
   ! DESCRIPTION
   ! calculate decay coefficients for different pools
@@ -326,6 +327,7 @@ module BGCCenturySubCoreMod
   integer                   ,  intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
   integer                   ,  intent(in) :: numf
   integer                   ,  intent(in) :: filter(:)
+  real(r8)                  ,  intent(in) :: dtime
   type(betrtracer_type)     ,  intent(in) :: betrtracer_vars                    ! betr configuration information
   type(centurybgc_type)     ,  intent(in) :: centurybgc_vars
   type(carbonflux_type)     ,  intent(in) :: carbonflux_vars  
@@ -335,7 +337,7 @@ module BGCCenturySubCoreMod
   
   !local variables
   integer :: fc, c, j
-
+  real(r8):: dtimei
   associate(                                              & 
     t_scalar       => carbonflux_vars%t_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
     w_scalar       => carbonflux_vars%w_scalar_col      , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
@@ -356,19 +358,19 @@ module BGCCenturySubCoreMod
     k_decay_som3   => CNDecompBgcParamsInst%k_decay_som3      , & !  
     k_decay_cwd    => CNDecompBgcParamsInst%k_decay_cwd         & !  
   ) 
-  
+  dtimei=1._r8/dtime
   k_decay(:, :, :) = spval
   do j = lbj, ubj
     do fc = 1, numf
       c = filter(fc)
       if(j>=jtops(c))then
-        k_decay(lit1, c, j) = k_decay_lit1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-        k_decay(lit2, c, j) = k_decay_lit2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-        k_decay(lit3, c, j) = k_decay_lit3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-        k_decay(som1, c, j) = k_decay_som1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-        k_decay(som2, c, j) = k_decay_som2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-        k_decay(som3, c, j) = k_decay_som3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
-        k_decay(cwd,  c, j) = k_decay_cwd  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j)
+        k_decay(lit1, c, j) = max(k_decay_lit1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
+        k_decay(lit2, c, j) = max(k_decay_lit2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
+        k_decay(lit3, c, j) = max(k_decay_lit3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
+        k_decay(som1, c, j) = max(k_decay_som1 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
+        k_decay(som2, c, j) = max(k_decay_som2 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
+        k_decay(som3, c, j) = max(k_decay_som3 * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
+        k_decay(cwd,  c, j) = max(k_decay_cwd  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j) * depth_scalar(c,j),dtimei)
       endif
     enddo  
   enddo
@@ -435,7 +437,6 @@ module BGCCenturySubCoreMod
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use BeTRTracerType           , only : betrtracer_type 
-  use clm_varcon               , only : catomw, natomw
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -610,6 +611,7 @@ module BGCCenturySubCoreMod
   
   
   integer :: fc, c, j, k1, k2, k, ll, l
+  real(r8):: totsomc
   ! all organic matter pools are distributed into solid passive tracers
   associate(   &
     ngwtracers             => betrtracer_vars%ngwmobile_tracers       , & !
@@ -647,7 +649,15 @@ module BGCCenturySubCoreMod
   call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
   k1 =  betrtracer_vars%id_trc_n2o ; k2 = centurybgc_vars%lid_n2o ; 
   call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
-  
+!  totsomc=0._r8
+!  c = 1394
+!  do k = 1, ndecomp_pools  
+!  do j = jtops(c),ubj
+!    ll = (k-1)*centurybgc_vars%nelms + 1
+!    totsomc = totsomc+tracerstate_vars%tracer_conc_solid_passive_col(c, j, ll)*col%dz(c,j)
+!  enddo
+!  enddo
+!  print*,'rtsv',totsomc*catomw
   end associate
   end subroutine retrieve_state_vars
 !-------------------------------------------------------------------------------  
@@ -687,7 +697,7 @@ module BGCCenturySubCoreMod
   ! calculate nitrification denitrification rate
   ! the actual nitrification rate will be f_nitr * [nh4]
   ! and the actual denitri rate will be of f_denit * [no3]
-  use clm_varcon          , only : rpi, secspday, catomw, natomw
+  use clm_varcon          , only : rpi, secspday
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use MathfuncMod         , only : safe_div
@@ -1319,7 +1329,6 @@ module BGCCenturySubCoreMod
   use CNNitrogenFluxType       , only : nitrogenflux_type    
   use BetrTracerType           , only : betrtracer_type 
   use tracerstatetype          , only : tracerstate_type 
-  use clm_varcon               , only : catomw, natomw
   use tracerfluxType           , only : tracerflux_type
   use CNDecompCascadeConType , only : decomp_cascade_con
 
@@ -1362,7 +1371,7 @@ module BGCCenturySubCoreMod
 
 
 
-
+!  delta_somn = 0._r8
   do k = 1, ndecomp_pools
     do j = 1, ubj
       do fc = 1, num_soilc
@@ -1380,10 +1389,13 @@ module BGCCenturySubCoreMod
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) - bgc_cpool_ext_loss_vr(c,j,k)/catomw
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) - bgc_npool_ext_loss_vr(c,j,k)/natomw
         !delta_somn = delta_somn + bgc_npool_ext_inputs_vr(c,j,k)*col%dz(c,j)
+!        if(c==1394)then
+!          delta_somn = delta_somn+y0((k-1)*nelm+c_loc,c,j)*catomw*col%dz(c,j)
+!        endif
       enddo
     enddo
   enddo
-  
+!  print*,'bfdecom',delta_somn 
   do j = 1, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)    
@@ -1409,7 +1421,6 @@ module BGCCenturySubCoreMod
   use CNNitrogenFluxType       , only : nitrogenflux_type    
   use BetrTracerType           , only : betrtracer_type 
   use tracerstatetype          , only : tracerstate_type 
-  use clm_varcon               , only : catomw, natomw
   use tracerfluxType           , only : tracerflux_type
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
@@ -1439,12 +1450,15 @@ module BGCCenturySubCoreMod
 
     !delta_nh4 =0._r8
     !delta_no3 =0._r8
-    !delta_somn =0._r8
+!    delta_somn =0._r8
 
   do k = 1, ndecomp_pools
     do j = 1, ubj
       do fc = 1, num_soilc
         c = filter_soilc(fc)
+!        if(c==1394)then
+!          delta_somn=delta_somn + yf((k-1)*nelm+c_loc,c,j) * catomw*col%dz(c,j)
+!        endif
         yf((k-1)*nelm+c_loc,c,j) = yf((k-1)*nelm+c_loc,c,j) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
         yf((k-1)*nelm+n_loc,c,j) = yf((k-1)*nelm+n_loc,c,j) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
         
@@ -1452,7 +1466,7 @@ module BGCCenturySubCoreMod
     enddo
   enddo
 
-  
+!  print*,'afdecom',delta_somn 
   end associate
   end subroutine bgcstate_ext_update_afdecomp  
  !-----------------------------------------------------------------------  
@@ -1550,7 +1564,6 @@ module BGCCenturySubCoreMod
   
   subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars, centurybgc_vars)
   
-  use clm_varcon               , only : natomw, catomw  
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType        , only : carbonstate_type
   use CNNitrogenStateType      , only : nitrogenstate_type  

@@ -247,7 +247,7 @@ contains
   integer :: nelm, itemp_mem
   integer :: itemp, itemp_vgrp, itemp_v, itemp_grp
   integer :: c_loc, n_loc, trcid
-  logical :: carbon_only = .true.
+  logical :: carbon_only = .false.
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
@@ -606,7 +606,7 @@ contains
   
   !calculate decay coefficients
   call calc_som_deacyK(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars%nom_pools, tracercoeff_vars, tracerstate_vars, &
-    betrtracer_vars, centurybgc_vars, carbonflux_vars, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
+    betrtracer_vars, centurybgc_vars, carbonflux_vars, dtime, k_decay(1:centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj))
   
   !calculate potential decay rates, without nutrient constraint
   call calc_sompool_decay(bounds, lbj, ubj, num_soilc, filter_soilc, jtops, centurybgc_vars, &
@@ -669,11 +669,14 @@ contains
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j) 
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose   
       !print*,c,grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-      if(c==647)then
+      if(c==1394)then
+!         ldebug=.true.
+!         ldebug_bgc=.true.
 !        print*,'grd',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c)) 
 !        print*,'lido2',centurybgc_vars%lid_o2
       else
         ldebug=.false.
+        ldebug_bgc=.false.
       endif
       ldebug_ode=ldebug
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
@@ -1050,6 +1053,7 @@ contains
     else
     
       reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
+      reaction_rates(lk)=min(reaction_rates(lk),ystate(centurybgc_vars%primvarid(lk))/dtime)
       if(ldebug)then
         write(*,'(A,2(X,I4),3(X,E20.10))')'lk',lk,centurybgc_vars%primvarid(lk),ystate(centurybgc_vars%primvarid(lk)),Extra_inst%k_decay(lk),reaction_rates(lk)
       endif
