@@ -289,13 +289,19 @@ contains
       do iCell = 1, nCells
          slopeCellMagnitude = sqrt(slopeCellAxis1(iCell)**2 + slopeCellAxis2(iCell)**2) + smallNumber
 
-         fluxDownslope = 0.0_RKIND
-         do iLevel = 1, nVertLevels
-            fluxVeloAxis1 = (uReconstructAxis1(iLevel, iCell) + uReconstructAxis1(iLevel+1, iCell)) * 0.5_RKIND
-            fluxVeloAxis2 = (uReconstructAxis2(iLevel, iCell) + uReconstructAxis2(iLevel+1, iCell)) * 0.5_RKIND
-            fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellAxis1(iCell) * fluxVeloAxis1 - slopeCellAxis2(iCell) * fluxVeloAxis2) * layerThickness(iLevel, iCell) / slopeCellMagnitude
-         enddo
-         apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
+         if ( (slopeCellMagnitude < 1.0e-5_RKIND) .and. &
+              (max(maxval(uReconstructAxis1(:,iCell)), maxval(uReconstructAxis2(:,iCell))) < 3.18e-10_RKIND) ) then  ! 3.18e-10=0.01 m/yr in m/s
+            ! Ignore diffusivity near 'divide-singularities'
+            apparentDiffusivity(iCell) = 0.0_RKIND
+         else
+            fluxDownslope = 0.0_RKIND
+            do iLevel = 1, nVertLevels
+               fluxVeloAxis1 = (uReconstructAxis1(iLevel, iCell) + uReconstructAxis1(iLevel+1, iCell)) * 0.5_RKIND
+               fluxVeloAxis2 = (uReconstructAxis2(iLevel, iCell) + uReconstructAxis2(iLevel+1, iCell)) * 0.5_RKIND
+               fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellAxis1(iCell) * fluxVeloAxis1 - slopeCellAxis2(iCell) * fluxVeloAxis2) * layerThickness(iLevel, iCell) / slopeCellMagnitude
+            enddo
+            apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
+         endif
 
          ! Calculate allowable timestep based on DCFL
          if ( li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
