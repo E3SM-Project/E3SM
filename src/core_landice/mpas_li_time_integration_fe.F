@@ -208,6 +208,7 @@ module li_time_integration_fe
       real (kind=RKIND) :: allowableDiffDt, allowableDiffDtOnProc, allowableDiffDtAllProcs
       type (MPAS_TimeInterval_type) :: allowableDiffDtOnProcInterval, allowableDiffDtAllProcsInterval
       character (len=StrKIND) :: allowableDiffDtOnProcString, allowableDiffDtAllProcsString
+      real (kind=RKIND), pointer :: allowableDtACFL, allowableDtDCFL
       integer :: err_tmp
 
       err = 0
@@ -215,6 +216,9 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+
+      allowableAdvecDtAllProcs = 0.0_RKIND
+      allowableDiffDtAllProcs = 0.0_RKIND
 
       dminfo => domain % dminfo
 
@@ -353,6 +357,23 @@ module li_time_integration_fe
       if (err > 0) then
            write(stderrUnit,*) 'Error in calculating thickness tendency  (possibly CFL violation)'
       endif
+
+
+      ! set CFL variables if they have been calculated - every block should be set to the same value!
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         if (config_print_thickness_advection_info .or. config_adaptive_timestep) then
+            call mpas_pool_get_array(meshPool, 'allowableDtACFL', allowableDtACFL)
+            allowableDtACFL = allowableAdvecDtAllProcs
+            if (config_adaptive_timestep_include_DCFL) then
+               call mpas_pool_get_array(meshPool, 'allowableDtDCFL', allowableDtDCFL)
+               allowableDtDCFL = allowableDiffDtAllProcs
+            endif
+         endif
+
+         block => block % next
+      end do
 
 
       ! ===
