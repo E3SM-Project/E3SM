@@ -50,6 +50,16 @@ int PIO_function()
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
+      if(vdesc->request != NC_REQ_NULL){
+	int thisreq;
+	if(ios->io_rank==0){
+	  thisreq=vdesc->request;
+	}else{
+	  thisreq=NC_REQ_NULL;
+	}
+	ncmpi_wait_all(file->fh, 1, &thisreq, &ierr);
+	vdesc->request = NC_REQ_NULL;
+      }
       if(ios->io_rank==0){
 	request = &(vdesc->request);
 	ierr = ncmpi_function();
