@@ -75,67 +75,68 @@ my $machdir="$cfgdir/ccsm_utils/Machines";
 
 sub usage {
     die <<EOF;
-    SYNOPSIS
-	create_newcase [options]
-	OPTIONS
-	User supplied values are denoted in angle brackets (<>).  Any value that contains
-	white-space must be quoted.  Long option names may be supplied with either single
-	or double leading dashes.  A consequence of this is that single letter options may
-	NOT be bundled.
 
-	-case <name>         Specifies the case name (required).
-	-compset <name>      Specify a CESM compset (required).
-	-res <name>          Specify a CESM grid resolution (required).
-	-mach <name>         Specify a CESM machine (required).
-	-project <name>      Specify a project id for the case (optional)
-      default: user-specified environment variable PROJECT or ACCOUNT
-               or read from ~/.cesm_proj or ~/.ccsm_proj
-	-compiler <name>     Specify a compiler for the target machine (optional)
-      default: default compiler for the target machine
-      -mpilib <name>       Specify a mpi library for the target machine (optional)
-    default: default mpi library for the target machine
-  allowed: openmpi, mpich, ibm, mpi-serial, etc
-  redundant with _M confopts setting
-  -mach_dir <path>     Specify the locations of the Machines directory (optional).
- default: $machdir
- -user_mods_dir <path>Path to directory with user_nl_* files and xmlchange_cmnds to use (optional).
- -confopts <value>    Specify some addition configuration options (optional)
- _AOA = aoflux on atm grid
- _AOE = aoflux on exch grid
- _CG  = gregorian calendar
- _D   = debug
- _E   = esmf interfaces
- _IOP*= PnetCDF IO test where * is 
- A(atm), C(cpl), G(glc) , I(ice), L(clm), O(ocn), 
- W(wav) or blank (all components)
- _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
-                          _M*  = set the mpilib where * is default, mpi-serial, mpich, etc
-                          _N*  = set NINST_ env value to * where * is an integer
-                          _P*  = set pecount to specific values include T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
-			  -pecount <name>      Value of S,M,L,X1,X2 (optional). 
-			default: M, partially redundant with confopts _P
-			-pes_file <name>     Full pathname of pes file to use (will overwrite default settings) (optional).
-			See sample_pes_file.xml for an example.
-			-user_compset        Long name for new user compset to use (optional)
-			This assumes that all of the compset settings in the long name have been defined
-			in ccsm_utils/Case.template/config_compsets.xml
-			-user_grid_file <name>  Full pathname of grid file to use (optional)
-			This should be a "copy" of ccsm_utils/Case.template/config_grid.xml with the
-			new user grid changes added to it
-			-help [or -h]        Print usage to STDOUT (optional).
-			-list <type>         Only list valid values, type can be [compsets, grids, machines] (optional).
-			-testlist            List valid values for tests [normally only invoked by create_test] (optional).
-			-silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
-			-verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
-			-xmlmode <name>      Sets format of xml files; normal or expert (optional). (default is normal) 
-			-nowarning           Turns off checking of the known_problems repository. (default is on)
-			-sharedlibroot       Used for re-using build components when building multiple CESM cases, default is \$EXEROOT
+SYNOPSIS
+  create_newcase [options]
 
-			The following two arguments turn on single point mode. If one is given -- both MUST be given.
+OPTIONS
+  User supplied values are denoted in angle brackets (<>).  Any value that contains
+  white-space must be quoted.  Long option names may be supplied with either single
+  or double leading dashes.  A consequence of this is that single letter options may
+  NOT be bundled.
 
-			EXAMPLES
+  -case <name>             Specifies the case name (required).
+  -compset <name>          Specify a CESM compset (required).
+  -res <name>              Specify a CESM grid resolution (required).
+  -mach <name>             Specify a CESM machine (required).
+  -project <name>          Specify a project id for the case (optional)
+                           default: user-specified environment variable PROJECT or ACCOUNT
+                                    or read from ~/.cesm_proj or ~/.ccsm_proj
+  -compiler <name>         Specify a compiler for the target machine (optional)
+                           default: default compiler for the target machine
+  -mpilib <name>           Specify a mpi library for the target machine (optional)
+                           default: default mpi library for the target machine
+                           allowed: openmpi, mpich, ibm, mpi-serial, etc
+                                    redundant with _M confopts setting
+  -mach_dir <path>         Specify the locations of the Machines directory (optional).
+                           default: $machdir
+  -user_mods_dir <path>    Path to directory with user_nl_* files and xmlchange_cmnds to use (optional).
+  -confopts <value>        Specify some addition configuration options (optional)
+                           _AOA = aoflux on atm grid
+                           _AOE = aoflux on exch grid
+                           _CG  = gregorian calendar
+                           _D   = debug
+                           _E   = esmf interfaces
+                           _IOP*= PnetCDF IO test where * is 
+                                  A(atm), C(cpl), G(glc) , I(ice), L(clm), O(ocn), 
+                                  W(wav) or blank (all components)
+                           _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
+                           _M*  = set the mpilib where * is default, mpi-serial, mpich, etc
+                           _N*  = set NINST_ env value to * where * is an integer
+                           _P*  = set pecount to specific values include T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
+  -pecount <name>          Value of S,M,L,X1,X2 (optional). 
+                           default: M, partially redundant with confopts _P
+  -pes_file <name>         Full pathname of pes file to use (will overwrite default settings) (optional).
+                           See sample_pes_file.xml for an example.
+  -user_compset            Long name for new user compset to use (optional)
+                           This assumes that all of the compset settings in the long name have been defined
+                           in ccsm_utils/Case.template/config_compsets.xml
+  -user_grid_file <name>   Full pathname of grid file to use (optional)
+                           This should be a "copy" of ccsm_utils/Case.template/config_grid.xml with the
+                           new user grid changes added to it
+  -nosavetiming            Change the default for SAVE_TIMING in env_run.xml to .FALSE. (optional).
+  -help [or -h]            Print usage to STDOUT (optional).
+  -list <type>             Only list valid values, type can be [compsets, grids, machines] (optional).
+  -testlist                List valid values for tests [normally only invoked by create_test] (optional).
+  -silent [or -s]          Turns on silent mode - only fatal messages issued (optional).
+  -verbose [or -v]         Turn on verbose echoing of settings made by create_newcase (optional).
+  -xmlmode <name>          Sets format of xml files; normal or expert (optional). (default is normal) 
+  -nowarning               Turns off checking of the known_problems repository. (default is on)
+  -sharedlibroot           Used for re-using build components when building multiple CESM cases, default is \$EXEROOT
 
-			./create_newcase -case mycase1 -res f19_g16 -compset B1850CN -mach yellowstone
+EXAMPLES
+
+  ./create_newcase -case mycase1 -res f19_g16 -compset B1850CN -mach yellowstone
   ./create_newcase -case mycase2 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _D_P16
   ./create_newcase -case mycase4 -res f19_g16 -compset MYCOMP -compset_file mycompset_file -mach yellowstone
   ./create_newcase -case mycase5 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _CG_E -pes_file mypes_file
@@ -170,6 +171,7 @@ GetOptions(
     "pes_file=s"                => \$opts{'pes_file'}, 
     "compset_file=s"            => \$opts{'compset_file'},
     "user_grid_file=s"          => \$opts{'user_grid_file'},
+    "nosavetiming"              => \$opts{'nosavetiming'},
     "s|silent"                  => \$opts{'silent'},
     "testname=s"                => \$opts{'testname'},
     "testlist"                  => \$opts{'testlist'},
@@ -1094,6 +1096,15 @@ $cfg_ref->write_file("$caseroot/env_run.xml"    , "xml");
 print "Created $caseroot/env_run.xml \n";
 $cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/ccsm_utils/Case.template");
 print "Created $caseroot/env_archive.xml \n";
+
+# set the default to not archive performance data and associated provenance
+if ($opts{'nosavetiming'}) {
+  my $cwd = getcwd(); # current working directory
+  chdir "$caseroot";
+  $sysmod = './xmlchange -file env_run.xml -id SAVE_TIMING -val "FALSE"';
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+  chdir "$cwd";
+}
 
 # Copy env_case.xml in to locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
