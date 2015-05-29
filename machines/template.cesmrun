@@ -382,6 +382,26 @@ sub postRun()
             copy($logfile, $config{'LOGDIR'});
         }
     }
+
+    # Run the getTiming script if desired
+	my $owd = getcwd();
+	chdir $config{'CASEROOT'};
+    if($config{'CHECK_TIMING'} eq 'TRUE')
+    {
+        my $timingDir = $config{'CASEROOT'} . "/timing";
+        mkpath $timingDir if(! -e $timingDir);
+        print "running timing script..\n";
+        qx( $config{'CASETOOLS'}/getTiming -lid $LID );
+        print "gzipping timing stats..\n";
+        qx( gzip timing/cesm_timing_stats.$LID );
+    }
+	chdir $owd;
+
+    # Save the timing files if desired
+    if($config{'SAVE_TIMING'} eq 'TRUE')
+    {
+        move( "$config{'RUNDIR'}/timing",  "$config{'RUNDIR'}/timing.$LID");
+    }
 }
 sub appendCaseStatus
 {
