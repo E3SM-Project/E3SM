@@ -193,7 +193,7 @@ ADDITIONAL XML / ENVIRONMENT VARIABLES USED BY THE SHORT TERM ARCHIVER THAT ARE 
     DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET  [integer] - If value is greater than 0 (default), then only save the nth restart set 
                                                         in the \$DOUT_S_ROOT/rest location. Always preserve the most recent restart set regardless.
 
-    DOUT_S_GENERATE_TSERIES	            [boolean] - If TRUE (default FALSE), then variable time-series files are created as part of the 
+    GENERATE_TIMESERIES	                    [boolean] - If TRUE (default FALSE), then variable time-series files are created as part of the 
                                                         run script. The history time-slice files are deleted from the short term archive locations
                                                         upon successful creation of the vvariable time-series files. This option requires 
                                                         the pyreshaper tool which is included with the CESM release distribution and installed
@@ -207,7 +207,7 @@ ADDITIONAL XML / ENVIRONMENT VARIABLES USED BY THE SHORT TERM ARCHIVER THAT ARE 
 							time series files from the time slice history files.
 
     DOUT_S_SAVE_HISTORY_FILES               [boolean] - If FALSE (default TRUE), then all component history time slice files are deleted from the
-                                                        DOUT_S_ROOT location. This option is used in conjunction with the DOUT_S_GENERATE_TSERIES
+                                                        DOUT_S_ROOT location. This option is used in conjunction with the GENERATE_TIMESERIES
                                                         option to eliminate the possibility of duplicating run history data in both component 
 							history time slice files and variable time series files.
 

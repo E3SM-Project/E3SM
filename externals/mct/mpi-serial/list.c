@@ -5,11 +5,6 @@
 
 
 
-#ifdef SYSDARWIN
- #include <sys/malloc.h>
-#else
- #include <malloc.h>
-#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include "listops.h"
@@ -377,7 +372,7 @@ void AP_list_print(char *str, pList list)
   cur=list->head;
   while(cur)
     {
-      printf("%d ",(int)cur->data);
+      printf("%d ",(long int)cur->data);
       cur=cur->next;
     }
 
@@ -404,7 +399,7 @@ void AP_list_revprint(char *str, pList list)
   cur=list->tail;
   while(cur)
     {
-      printf("%d ",(int)cur->data);
+      printf("%d ",(long int)cur->data);
       cur=cur->prev;
     }
 
