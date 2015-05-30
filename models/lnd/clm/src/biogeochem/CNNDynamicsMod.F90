@@ -141,7 +141,7 @@ contains
   end subroutine CNNDeposition
 
   !-----------------------------------------------------------------------
-  subroutine CNNFixation(num_soilc, filter_soilc, &
+  subroutine CNNFixation(num_soilc, filter_soilc, waterflux_vars, &
        carbonflux_vars, nitrogenflux_vars)
     !
     ! !DESCRIPTION:
@@ -157,6 +157,7 @@ contains
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(waterflux_type)     , intent(in)    :: waterflux_vars    
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars 
     !
@@ -164,18 +165,32 @@ contains
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
     real(r8) :: dayspyr               ! days per year
+    real(r8) :: secspyr              ! seconds per yr
+    logical  :: do_et_bnf = .false.
     !-----------------------------------------------------------------------
 
     associate(& 
          cannsum_npp    => carbonflux_vars%annsum_npp_col      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)                
          col_lag_npp    => carbonflux_vars%lag_npp_col         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production           
 
+         qflx_tran_veg  => waterflux_vars%qflx_tran_veg_col    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+         
+         qflx_evap_veg  => waterflux_vars%qflx_evap_veg_col    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
          nfix_to_sminn  => nitrogenflux_vars%nfix_to_sminn_col   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
       dayspyr = get_days_per_year()
 
-      if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+      if(do_et_bnf)then
+        secspyr = dayspyr * 86400._r8
+        do fc = 1, num_soilc
+          c =filter_soilc(fc)
+          !use the cleveland equation
+          t = 0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr
+          nfix_to_sminn(c) = max(0._r8, t)
+        enddo
+      else
+        if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
          ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
          ! Loop through columns
          do fc = 1,num_soilc
@@ -189,7 +204,7 @@ contains
                nfix_to_sminn(c) = 0._r8
             endif
          end do
-      else
+        else
          ! use annual-mean values for NPP-NFIX relation
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -197,6 +212,7 @@ contains
             t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
             nfix_to_sminn(c) = max(0._r8,t)
          end do
+        endif
       endif
 
     end associate

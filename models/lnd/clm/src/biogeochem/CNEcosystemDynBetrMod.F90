@@ -188,7 +188,7 @@ implicit none
        call t_stopf('CNDeposition')
 
        call t_startf('CNFixation')
-       call CNNFixation( num_soilc, filter_soilc, &
+       call CNNFixation( num_soilc, filter_soilc, waterflux_vars, &
             carbonflux_vars, nitrogenflux_vars)
        call t_stopf('CNFixation')
 
