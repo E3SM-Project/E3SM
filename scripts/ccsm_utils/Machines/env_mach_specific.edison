@@ -50,7 +50,7 @@ module load craype-ivybridge
 if( $COMPILER != "intel" ) then
   module load cray-libsci/12.2.0
 endif
-module load cray-mpich/6.3.1
+module load cray-mpich/7.2.1
 module load pmi/5.0.3-1.0000.9981.128.2.ari
 
 if ( $MPILIB == "mpi-serial") then
