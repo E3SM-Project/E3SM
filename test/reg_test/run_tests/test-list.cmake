@@ -11,6 +11,7 @@ SET(HOMME_TESTS
   baro2c.cmake
   baro2d.cmake
   baroCamMoist.cmake
+  baro2d-imp.cmake
   swtc2-dg.cmake
   swtc5-dg.cmake
 )

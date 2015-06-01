@@ -173,6 +173,11 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroCam)
 ENDIF()
 
+# Add the test exec subdirs for the prim executable
+IF(${BUILD_HOMME_PRIM})
+  ADD_SUBDIRECTORY(primA)
+ENDIF()
+
 # Add the test exec subdirs for the swim executable
 IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(swim5)
