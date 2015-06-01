@@ -36,7 +36,7 @@
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
 #define PIO_MAX_VARS NC_MAX_VARS
-#define PIO_MAX_REQUESTS 100*PIO_MAX_VARS
+#define PIO_MAX_REQUESTS 100
 
 
 /**
@@ -50,11 +50,9 @@ typedef struct var_desc_t
 {
   int record; 
   int ndims;
-  int type;
-  bool distributed;
-  int request; // used for pnetcdf iput calls
-  int fillrequest; //used for fill in pnetcdf iput for subset rearranger
 
+  int request[PIO_MAX_REQUESTS]; // used for pnetcdf iput calls
+  int nreqs;
   void *fillbuf;
   void *iobuf;
 

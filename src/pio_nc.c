@@ -347,11 +347,8 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-if(ierr != PIO_NOERR)
-  printf("%s %d %s\n",__FILE__,__LINE__,name);
   ierr = check_netcdf(file, ierr, errstr,__LINE__);
   mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-  file->varlist[*varidp].type = xtype;  
   return ierr;
 }
 
