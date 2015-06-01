@@ -25,13 +25,16 @@ module ocn_forcing
    use mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
-   use ocn_forcing_bulk
    use ocn_forcing_restoring
    use ocn_constants
 
    implicit none
    private
    save
+
+   ! TRACER-CLEAN-UP
+   ! Need to figure out what to do with absorption coefficient computation.
+   ! Also need to remove restoring stuff
 
    !--------------------------------------------------------------------
    !
@@ -58,7 +61,7 @@ module ocn_forcing
 
    real (kind=RKIND) :: attenuationCoefficient
 
-   logical :: restoringOn, bulkOn
+   logical :: restoringOn
 
 !***********************************************************************
 
@@ -112,13 +115,24 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: timeLevel
-      integer, pointer :: indexTemperature, indexSalinity
-      integer, pointer :: indexSurfaceTemperatureFlux, indexSurfaceSalinityFlux
+      ! pool pointers
+      type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
 
+      ! scalar pointers
+      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: indexTemperatureSurfaceFlux, indexSalinitySurfaceFlux
+
+      ! array pointers
       real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore
-      real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
+      ! local integer/real/logical
+      integer :: timeLevel
+
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -126,28 +140,24 @@ contains
          timeLevel = 1
       end if
 
-      if ( bulkOn ) then
-         call ocn_forcing_bulk_build_arrays(meshPool, forcingPool, err)
-      end if
-
       if ( restoringOn ) then
-         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
-         call mpas_pool_get_dimension(forcingPool, 'index_surfaceTemperatureFlux', indexSurfaceTemperatureFlux)
-         call mpas_pool_get_dimension(forcingPool, 'index_surfaceSalinityFlux', indexSurfaceSalinityFlux)
+         call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', indexTemperatureSurfaceFlux)
+         call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', indexSalinitySurfaceFlux)
 
-         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
          call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
          call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
 
-         call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
+         call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
 
          call ocn_forcing_restoring_build_arrays(meshPool, indexTemperature, indexSalinity, &
-              indexSurfaceTemperatureFlux, indexSurfaceSalinityFlux, &
-              tracers, temperatureRestore, salinityRestore, &
-              surfaceTracerFlux, err)
+              indexTemperatureSurfaceFlux, indexSalinitySurfaceFlux, &
+              activeTracers, temperatureRestore, salinityRestore, &
+              activeTracersSurfaceFlux, err)
       end if
 
    !--------------------------------------------------------------------
@@ -183,21 +193,15 @@ contains
 
       attenuationCoefficient = config_flux_attenuation_coefficient
 
-      if ( config_forcing_type == trim('bulk') ) then
-         call ocn_forcing_bulk_init(err1)
-         bulkOn = .true.
-         restoringOn = .false.
-      else if ( config_forcing_type == trim('restoring') ) then
+      if ( config_forcing_type == trim('restoring') ) then
          call ocn_forcing_restoring_init(err1)
          restoringOn = .true.
-         bulkOn = .false.
       else if ( config_forcing_type == trim('off') ) then
          restoringOn = .false.
-         bulkOn = .false.
       else
-         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'bulk' 'restoring', or 'off'."
+         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'restoring', or 'off'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'bulk', 'restoring', or 'off'.")
+         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'restoring', or 'off'.")
       end if
 
       err = ior(err,err1)

@@ -107,14 +107,33 @@ module ocn_core_interface
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: surfaceRestoringActive
-      logical, pointer :: bulkForcingActive
+      logical, pointer :: windStressBulkPKGActive
+      logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
+
+      logical, pointer :: tracerGroupPKGActive
+      logical, pointer :: tracerGroupBulkRestoringPKGActive
+      logical, pointer :: tracerGroupSurfaceRestoringPKGActive
+      logical, pointer :: tracerGroupInteriorRestoringPKGActive
+      logical, pointer :: tracerGroupExponentialDecayPKGActive
+      logical, pointer :: tracerGroupIdealAgePKGActive
+      logical, pointer :: tracerGroupTTDPKGActive
+
+      logical, pointer :: config_use_tracerGroup, config_use_tracerGroup_surface_bulk_forcing, config_use_tracerGroup_surface_restoring, &
+                          config_use_tracerGroup_interior_restoring, config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
+                          config_use_tracerGroup_ttd_forcing
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_frazil_ice_formation
       character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type
       character (len=StrKIND), pointer :: config_ocean_run_mode, config_pressure_gradient_type
+      logical, pointer :: config_use_bulk_wind_stress
+      logical, pointer :: config_use_bulk_thickness_flux
+
+       type (mpas_pool_iterator_type) :: groupItr
+       character (len=StrKIND) :: tracerGroupName, configName, packageName
+       integer :: startIndex, strLen
 
       ! Get Packages
       call mpas_pool_get_package(packagePool, 'forwardModeActive', forwardModeActive)
@@ -123,9 +142,10 @@ module ocn_core_interface
       call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
       call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
-      call mpas_pool_get_package(packagePool, 'bulkForcingActive', bulkForcingActive)
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
       call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
+      call mpas_pool_get_package(packagePool, 'windStressBulkPKGActive', windStressBulkPKGActive)
+      call mpas_pool_get_package(packagePool, 'thicknessBulkPKGActive', thicknessBulkPKGActive)
 
       call mpas_pool_get_config(configPool, 'config_ocean_run_mode', config_ocean_run_mode)
 
@@ -140,6 +160,9 @@ module ocn_core_interface
          call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)
          call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
 
+         call mpas_pool_get_config(configPool, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
+         call mpas_pool_get_config(configPool, 'config_use_bulk_thickness_flux', config_use_bulk_thickness_flux)
+
          if (config_use_freq_filtered_thickness) then
             thicknessFilterActive = .true.
          end if
@@ -152,8 +175,14 @@ module ocn_core_interface
 
          if (config_forcing_type == trim('restoring')) then
             surfaceRestoringActive = .true.
-         else if (config_forcing_type == trim('bulk')) then
-            bulkForcingActive = .true.
+         end if
+
+         if ( config_use_bulk_wind_stress ) then
+            windStressBulkPKGActive = .true.
+         end if
+
+         if ( config_use_bulk_thickness_flux ) then
+            thicknessBulkPKGActive = .true.
          end if
 
          if (config_frazil_ice_formation) then
@@ -174,6 +203,73 @@ module ocn_core_interface
 
       call ocn_analysis_setup_packages(configPool, packagePool, ierr)
       call ocn_init_mode_validate_configuration(configPool, packagePool, ierr)
+
+      call mpas_pool_begin_iteration(packagePool)
+      do while ( mpas_pool_get_next_member(packagePool, groupItr) )
+         startIndex = index(groupItr % memberName, 'TracersPKG')
+         if ( startIndex .ne. 0 ) then
+            strLen = len_trim(groupItr % memberName)
+            tracerGroupName = groupItr % memberName(1:strLen-9)
+
+            configName = 'config_use_' // trim(tracerGroupName)
+            call mpas_pool_get_config(configPool, configName, config_use_tracerGroup)
+            if ( config_use_tracerGroup ) then
+               packageName = trim(tracerGroupName) // 'PKGActive'
+               call mpas_pool_get_package(packagePool, packageName, tracerGroupPKGActive)
+               tracerGroupPKGActive = .true.
+
+               configName = 'config_use_' // trim(tracerGroupName) // '_surface_bulk_forcing'
+               call mpas_pool_get_config(configPool, configName, config_use_tracerGroup_surface_bulk_forcing)
+
+               if ( config_use_tracerGroup_surface_bulk_forcing ) then
+                  packageName = trim(tracerGroupName) // 'BulkRestoringPKGActive'
+                  call mpas_pool_get_package(packagePool, packageName, tracerGroupBulkRestoringPKGActive)
+                  tracerGroupBulkRestoringPKGActive = .true.
+               end if
+
+               configName = 'config_use_' // trim(tracerGroupName) // '_surface_restoring'
+               call mpas_pool_get_config(configPool, configName, config_use_tracerGroup_surface_restoring)
+
+               if ( config_use_tracerGroup_surface_restoring ) then
+                  packageName = trim(tracerGroupName) // 'SurfaceRestoringPKGActive'
+                  call mpas_pool_get_package(packagePool, packageName, tracerGroupSurfaceRestoringPKGActive)
+                  tracerGroupSurfaceRestoringPKGActive = .true.
+               end if
+
+               configName = 'config_use_' // trim(tracerGroupName) // '_interior_restoring'
+               call mpas_pool_get_config(configPool, configName, config_use_tracerGroup_interior_restoring)
+               if ( config_use_tracerGroup_interior_restoring ) then
+                  packageName = trim(tracerGroupName) // 'InteriorRestoringPKGActive'
+                  call mpas_pool_get_package(packagePool, packageName, tracerGroupInteriorRestoringPKGActive)
+                  tracerGroupInteriorRestoringPKGActive = .true.
+               end if
+
+               configName = 'config_use_' // trim(tracerGroupName) // '_exponential_decay'
+               call mpas_pool_get_config(configPool, configName, config_use_tracerGroup_exponential_decay)
+               if ( config_use_tracerGroup_exponential_decay ) then
+                  packageName = trim(tracerGroupName) // 'ExponentialDecayPKGActive'
+                  call mpas_pool_get_package(packagePool, packageName, tracerGroupExponentialDecayPKGActive)
+                  tracerGroupExponentialDecayPKGActive = .true.
+               end if
+
+               configName = 'config_use_' // trim(tracerGroupName) // '_idealAge_forcing'
+               call mpas_pool_get_config(configPool, configName, config_use_tracerGroup_idealAge_forcing)
+               if ( config_use_tracerGroup_idealAge_forcing ) then
+                  packageName = trim(tracerGroupName) // 'IdealAgePKGActive'
+                  call mpas_pool_get_package(packagePool, packageName, tracerGroupIdealAgePKGActive)
+                  tracerGroupIdealAgePKGActive = .true.
+               end if
+
+               configName = 'config_use_' // trim(tracerGroupName) // '_ttd_forcing'
+               call mpas_pool_get_config(configPool, configName, config_use_tracerGroup_ttd_forcing)
+               if ( config_use_tracerGroup_ttd_forcing ) then
+                  packageName = trim(tracerGroupName) // 'TTDPKGActive'
+                  call mpas_pool_get_package(packagePool, packageName, tracerGroupTTDPKGActive)
+                  tracerGroupTTDPKGActive = .true.
+               end if
+            end if
+         end if
+      end do
 
    end function ocn_setup_packages!}}}
 

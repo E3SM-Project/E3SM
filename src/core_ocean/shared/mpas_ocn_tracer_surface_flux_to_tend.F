@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_surface_flux
+!  ocn_tracer_surface_flux_to_tend
 !
 !> \brief MPAS ocean tracer surface flux
 !> \author Doug Jacobsen
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_tracer_surface_flux
+module ocn_tracer_surface_flux_to_tend
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -190,7 +190,7 @@ contains
 
 !***********************************************************************
 
-end module ocn_tracer_surface_flux
+end module ocn_tracer_surface_flux_to_tend
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

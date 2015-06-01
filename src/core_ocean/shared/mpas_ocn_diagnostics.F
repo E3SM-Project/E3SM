@@ -84,7 +84,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
+   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, timeLevelIn)!{{{
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: statePool !< Input: State information
@@ -92,6 +92,7 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(inout) :: diagnosticsPool  !< Input: diagnostic fields derived from State
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
+      type (mpas_pool_type), intent(in) :: tracersPool !< Input: tracer fields
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
@@ -124,7 +125,7 @@ contains
         vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH, RiTopOfCell, &
         inSituThermalExpansionCoeff, inSituSalineContractionCoeff
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, derivTwo
       character :: c1*6
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
@@ -155,12 +156,12 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
 
-      call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
@@ -253,8 +254,8 @@ contains
       !
       normalVelocity(:,nEdges+1) = -1e34
       layerThickness(:,nCells+1) = -1e34
-      tracers(indexTemperature,:,nCells+1) = -1e34
-      tracers(indexSalinity,:,nCells+1) = -1e34
+      activeTracers(indexTemperature,:,nCells+1) = -1e34
+      activeTracers(indexSalinity,:,nCells+1) = -1e34
 
       divergence(:,:) = 0.0
       vertVelocityTop(:,:)=0.0
@@ -595,7 +596,10 @@ contains
       ! this eventually be a modelled process
       ! at present, just copy k=1 tracer values onto surface values
       ! field will be updated below is better approximations are available
-      tracersSurfaceValue(:,:) = tracers(:,1,:)
+
+!TDR need to consider how to handel tracersSurfaceValues
+
+      tracersSurfaceValue(:,:) = activeTracers(:,1,:)
       normalVelocitySurfaceLayer(:) = normalVelocity(1,:)
 
       !
@@ -617,10 +621,10 @@ contains
            endif
           end do
           do k=1,int(rSurfaceLayer)
-            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
+            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + activeTracers(:,k,iCell)*layerThickness(k,iCell)
           enddo
           k=int(rSurfaceLayer)+1
-          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*activeTracers(:,k,iCell)*layerThickness(k,iCell)
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / surfaceLayerDepth
         enddo
 
@@ -1091,6 +1095,9 @@ contains
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       integer, intent(in), optional :: timeLevelIn
 
+      ! pool pointers
+      type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
+
       ! scalars
       integer, pointer :: nCells, nVertLevels
 
@@ -1105,8 +1112,8 @@ contains
            normalVelocitySurfaceLayer
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
-           layerThickness, zMid, zTop, tracersSurfaceValues, densitySurfaceDisplaced, density, &
-           normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
+           layerThickness, zMid, zTop, densitySurfaceDisplaced, density, &
+           normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff
 
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth
@@ -1130,6 +1137,7 @@ contains
          timeLevel = 1
       end if
 
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       ! set the parameter turbulentVelocitySquared
@@ -1138,8 +1146,8 @@ contains
       ! set scalar values
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(forcingPool, 'index_surfaceTemperatureFlux', indexTempFlux)
-      call mpas_pool_get_dimension(forcingPool, 'index_surfaceSalinityFlux', indexSaltFlux)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', indexTempFlux)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', indexSaltFlux)
 
       ! set pointers into state, mesh, diagnostics and scratch
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
@@ -1155,7 +1163,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
-      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue ', tracersSurfaceValues)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy', bulkRichardsonNumberBuoy)
@@ -1165,10 +1172,11 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
 
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
-      call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
       call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
+
+      call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
 
       ! allocate scratch space displaced density computation
       call mpas_pool_get_field(scratchPool, 'densitySurfaceDisplaced', densitySurfaceDisplacedField)
@@ -1198,18 +1206,18 @@ contains
        ! everything below should be consistent with the CVMix/KPP documentation: https://www.dropbox.com/s/6hqgc0rsoa828nf/cvmix_20aug2013.pdf
        !
        !    surfaceThicknessFlux: surface mass flux, m/s, positive into ocean
-       !    surfaceTracerFlux(indexTempFlux): non-penetrative temperature flux, C m/s, positive into ocean
+       !    activeTracersSurfaceFlux(indexTempFlux): non-penetrative temperature flux, C m/s, positive into ocean
        !    penetrativeTemperatureFlux: penetrative surface temperature flux at ocean surface, positive into ocean
-       !    surfaceTracerFlux(indexSaltFlux): salinity flux, PSU m/s, positive into ocean
+       !    activeTracersSurfaceFlux(indexSaltFlux): salinity flux, PSU m/s, positive into ocean
        !    penetrativeTemperatureFluxOBL: penetrative temperature flux computed at z=OBL, positive down
        !
        ! note: the following fields used the CVMix/KPP computation of buoyancy forcing are not included here
        !    1. Tm: temperature associated with surfaceThicknessFlux, C  (here we assume Tm == temperatureSurfaceValue)
-       !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for salinity flux in surfaceTracerFlux array)
+       !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for salinity flux in activeTracersSurfaceFlux array)
        !
          surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) *  &
-               (surfaceTracerFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)) &
-              - salineContractionCoeff(1,iCell) *  surfaceTracerFlux(indexSaltFlux,iCell)
+               (activeTracersSurfaceFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)) &
+              - salineContractionCoeff(1,iCell) *  activeTracersSurfaceFlux(indexSaltFlux,iCell)
         
        ! at this point, surfaceBuoyancyForcing has units of m/s 
        ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
