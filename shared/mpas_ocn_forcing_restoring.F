@@ -23,6 +23,9 @@ module ocn_forcing_restoring
    use mpas_pool_routines
    use ocn_constants
 
+   ! TRACER-CLEAN-UP
+   ! Need to remove this module at some point
+
    implicit none
    private
    save

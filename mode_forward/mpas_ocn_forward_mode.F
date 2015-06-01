@@ -51,7 +51,7 @@ module ocn_forward_mode
    use ocn_vel_coriolis
 
    use ocn_tracer_hmix
-   use ocn_tracer_surface_flux
+   use ocn_tracer_surface_flux_to_tend
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_nonlocalflux
    use ocn_tracer_advection

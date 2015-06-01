@@ -156,10 +156,12 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: surfaceAreaWeightedAveragesAMPool
       type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
 
       real (kind=RKIND), dimension(:,:), pointer :: minValueWithinOceanRegion
       real (kind=RKIND), dimension(:,:), pointer :: maxValueWithinOceanRegion
@@ -184,7 +186,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
-      real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux 
       real (kind=RKIND), dimension(:), pointer ::  penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: seaIceSalinityFlux
@@ -194,7 +196,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure
       real (kind=RKIND), dimension(:), pointer :: ssh
       real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       ! pointers to data in mesh pool
       integer, pointer :: nCells, nCellsSolve, nSfcAreaWeightedAvgFields, nOceanRegions
@@ -213,7 +215,7 @@ contains
 
       ! package flag
       logical, pointer :: surfaceAreaWeightedAveragesAMPKGActive
-      logical, pointer :: bulkForcingPkgActive
+      logical, pointer :: activeTracersBulkRestoringPKG
       logical, pointer :: frazilIcePkgActive
 
       ! buffers data for message passaging
@@ -226,7 +228,7 @@ contains
       err = 0
 
       ! get status of other packages
-      call mpas_pool_get_package(ocnPackages, 'bulkForcingActive', bulkForcingPkgActive)
+      call mpas_pool_get_package(ocnPackages, 'activeTracersBulkRestoringPKGActive', activeTracersBulkRestoringPKG)
       call mpas_pool_get_package(ocnPackages, 'frazilIceActive', frazilIcePkgActive)
 
       ! set highest level pointer
@@ -287,17 +289,19 @@ contains
       do while (associated(block))
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
 
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nSfcAreaWeightedAvgFields', nSfcAreaWeightedAvgFields)
          call mpas_pool_get_dimension(block % dimensions, 'nOceanRegions', nOceanRegions)
-         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -312,28 +316,28 @@ contains
 
          ! get pointers to data that will be analyzed
          ! listed in the order in which the fields appear in {avg,min,max}SurfaceStatistics
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
          if (frazilIcePkgActive)   call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
          call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
-         call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
+         call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
          call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
-         if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
          call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth',boundaryLayerDepth)
 
          ! compute mask
@@ -343,37 +347,37 @@ contains
          workArray( :,:) = 0.0
          workArray( 1,:) = workMask(:)
          workArray( 2,:) = areaCell(:)
-         if (bulkForcingPkgActive) workArray( 3,:) = latentHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 4,:) = sensibleHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 5,:) = longWaveHeatFluxUp(:)
-         if (bulkForcingPkgActive) workArray( 6,:) = longWaveHeatFluxDown(:)
-         if (bulkForcingPkgActive) workArray( 7,:) = seaIceHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 8,:) = shortWaveHeatFlux(:)
-         if (bulkForcingPkgActive) workArray( 9,:) = evaporationFlux(:)
-         if (bulkForcingPkgActive) workArray(10,:) = seaIceFreshWaterFlux(:)
-         if (bulkForcingPkgActive) workArray(11,:) = riverRunoffFlux(:)
-         if (bulkForcingPkgActive) workArray(12,:) = iceRunoffFlux(:)
-         if (bulkForcingPkgActive) workArray(13,:) = rainFlux(:)
-         if (bulkForcingPkgActive) workArray(14,:) = snowFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray( 3,:) = latentHeatFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray( 4,:) = sensibleHeatFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray( 5,:) = longWaveHeatFluxUp(:)
+         if (activeTracersBulkRestoringPKG) workArray( 6,:) = longWaveHeatFluxDown(:)
+         if (activeTracersBulkRestoringPKG) workArray( 7,:) = seaIceHeatFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray( 8,:) = shortWaveHeatFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray( 9,:) = evaporationFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray(10,:) = seaIceFreshWaterFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray(11,:) = riverRunoffFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray(12,:) = iceRunoffFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray(13,:) = rainFlux(:)
+         if (activeTracersBulkRestoringPKG) workArray(14,:) = snowFlux(:)
          if (frazilIcePkgActive) workArray(15,:) = seaIceEnergy(:)
          workArray(16,:) = surfaceThicknessFlux(:)
-         workArray(17,:) = surfaceTracerFlux(indexTemperature,:)
-         workArray(18,:) = surfaceTracerFlux(indexSalinity,:)
-         if (bulkForcingPkgActive) workArray(19,:) = seaIceSalinityFlux(:)
+         workArray(17,:) = activeTracersSurfaceFlux(indexTemperature,:)
+         workArray(18,:) = activeTracersSurfaceFlux(indexSalinity,:)
+         if (activeTracersBulkRestoringPKG) workArray(19,:) = seaIceSalinityFlux(:)
          workArray(20,:) = surfaceWindStressMagnitude(:)
-         if (bulkForcingPkgActive) workArray(21,:) = windStressZonal(:)
-         if (bulkForcingPkgActive) workArray(22,:) = windStressMeridional(:)
+         if (activeTracersBulkRestoringPKG) workArray(21,:) = windStressZonal(:)
+         if (activeTracersBulkRestoringPKG) workArray(22,:) = windStressMeridional(:)
          workArray(23,:) = seaSurfacePressure(:)
          workArray(24,:) = ssh(:)
-         workArray(25,:) = tracers(indexTemperature,1,:)
-         workArray(26,:) = tracers(indexSalinity,1,:)
+         workArray(25,:) = activeTracers(indexTemperature,1,:)
+         workArray(26,:) = activeTracers(indexSalinity,1,:)
          workArray(27,:) = boundaryLayerDepth(:)
 
          ! build net heat, salinity and fresh water budget
          ! net heat into ocean = latentHeatFlux+sensibleHeatFlux+longWaveHeatFluxUp+longWaveHeatFluxDown+shortWaveHeatFlux+seaIceHeatFlux+(?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
          ! net freshwater into ocean = evaporationFlux+seaIceFreshWaterFlux+riverRunoffFlux+iceRunoffFlux+rainFlux+snowFlux+(?seaIceEnergy?)
-         if (bulkForcingPkgActive) then
+         if (activeTracersBulkRestoringPKG) then
             workArray(28,:) =   latentHeatFlux(:) &
                               + sensibleHeatFlux(:) &
                               + longWaveHeatFluxUp(:) &
