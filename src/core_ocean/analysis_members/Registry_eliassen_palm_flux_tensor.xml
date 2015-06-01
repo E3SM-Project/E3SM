@@ -6,6 +6,13 @@
     description="If true, ocean analysis member eliassen_palm_flux_tensor is called."
     possible_values=".true. or .false."
   />
+  <nml_option name="config_epft_reset" 
+    type="logical" 
+    default_value=".false." 
+    units="unitless"
+		description="If true, all EPfT fields in the restart file are re-initialized to zero"
+		possible_values=".true. or .false."
+		/>
   <nml_option name="config_eliassen_palm_flux_tensor_compute_interval" 
       type="character" 
       default_value="same_as_output" 
@@ -27,14 +34,7 @@
       description="subdirectory to write Elliassen-Palm flux tensor files"
       possible_values="any valid directory name"
   />
-  <nml_option name="config_oac_epft_reset" 
-      type="logical" 
-      default_value=".false." 
-      units="unitless"
-      description="If true, all epft fields in the restart file are re-initialized to zero"
-      possible_values=".true. or .false."
-  />
-  <nml_option name="config_oac_epft_debug" 
+  <nml_option name="config_eliassen_palm_flux_tensor_debug" 
       type="logical" 
       default_value=".false." 
       units="unitless"
@@ -92,36 +92,6 @@
     <var name="potentialDensityMidRef"/> 
   </stream>
   
-  <stream name="eliassenPalmFluxTensorRestart" 
-    type="input;output"
-    mode="forward;analysis"
-    filename_template="restarts/eliassen_palm_flux_tensor_restart.$Y-$M-$D.nc"
-    filename_interval="01-00-00_00:00:00"
-    output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmFluxTensor"
-    clobber_mode="truncate"
-    runtime_format="single_file">
-    <var name="xtime"/> 
-    <var name="potentialDensityMidRef"/> 
-    <var name="buoyMaskEA"/> 
-    <var name="sigmaEA"/> 
-    <var name="nSamplesEA"/> 
-    <var name="heightMidBuoyCoorEA"/> 
-    <var name="montgPotGradZonalEA"/> 
-    <var name="montgPotGradMeridEA"/> 
-    <var name="heightMidBuoyCoorSqEA"/> 
-    <var name="montgPotBuoyCoorEA"/> 
-    <var name="HeightMGradZonalEA"/> 
-    <var name="HeightMGradMeridEA"/> 
-    <var name="usigmaEA"/> 
-    <var name="vsigmaEA"/> 
-    <var name="uusigmaEA"/> 
-    <var name="vvsigmaEA"/> 
-    <var name="uvsigmaEA"/> 
-    <var name="uwsigmaEA"/> 
-    <var name="vwsigmaEA"/> 
-  </stream>
-  
   <stream name="eliassenPalmFluxTensorOutput" 
       type="output"
       mode="forward;analysis"
@@ -132,43 +102,19 @@
       clobber_mode="truncate"
       runtime_format="single_file">
     <var name="xtime"/> 
-    <var name="heightMidBuoyCoor"/> 
-    <var name="heightTopBuoyCoor"/> 
-    <var name="heightInterfaceBuoyCoor"/> 
-    <var name="sigma"/> 
-    <var name="montgPotBuoyCoor"/> 
-    <var name="montgPotNormalGradOnEdge"/> 
-    <var name="uMidBuoyCoor"/> 
-    <var name="vMidBuoyCoor"/> 
-    <var name="densityMidBuoyCoor"/> 
-    <var name="densityTopBuoyCoor"/> 
-    <var name="firstLayerBuoyCoor"/> 
-    <var name="lastLayerBuoyCoor"/> 
-    <var name="buoyMask"/> 
-    <var name="montgPotGradX"/> 
-    <var name="montgPotGradY"/> 
-    <var name="montgPotGradZ"/> 
-    <var name="montgPotGradZonal"/> 
-    <var name="montgPotGradMerid"/> 
-    <var name="wrk3DnVertLevelsP1"/> 
-    <var name="wrk3DnVertLevels"/> 
-    <var name="PVFluxTest"/> 
     <var name="potentialDensityMidRef"/> 
     <var name="potentialDensityTopRef"/> 
-    <var name="buoyancyMidRef"/> 
-    <var name="buoyancyInterfaceRef"/> 
-    <var name="buoyMaskEA"/> 
-    <var name="sigmaEA"/> 
     <var name="nSamplesEA"/> 
+    <var name="buoyancyMaskEA"/> 
+    <var name="sigmaEA"/> 
     <var name="heightMidBuoyCoorEA"/> 
-    <var name="montgPotGradZonalEA"/> 
-    <var name="montgPotGradMeridEA"/> 
+    <var name="heightTopBuoyCoorEA"/> 
     <var name="heightMidBuoyCoorSqEA"/> 
     <var name="montgPotBuoyCoorEA"/> 
-    <var name="HeightMGradZonalEA"/> 
-    <var name="HeightMGradMeridEA"/> 
-    <var name="usigmaEA"/> 
-    <var name="vsigmaEA"/> 
+    <var name="montgPotGradZonalEA"/> 
+    <var name="montgPotGradMeridEA"/> 
+    <var name="heightMGradZonalEA"/> 
+    <var name="heightMGradMeridEA"/> 
     <var name="uusigmaEA"/> 
     <var name="vvsigmaEA"/> 
     <var name="uvsigmaEA"/> 
@@ -185,6 +131,37 @@
   </stream>
 </streams>
 
+<stream name="eliassenPalmFluxTensorRestart" 
+    type="input;output"
+    mode="forward;analysis"
+    filename_template="restarts/eliassen_palm_flux_tensor_restart.$Y-$M-$D.nc"
+    filename_interval="01-00-00_00:00:00"
+    output_interval="00-00-01_00:00:00"
+    packages="amEliassenPalmFluxTensor"
+    clobber_mode="truncate"
+    runtime_format="single_file">
+    <var name="xtime"/> 
+    <var name="nSamplesEA"/> 
+    <var name="buoyancyMaskEA"/> 
+    <var name="sigmaEA"/> 
+    <var name="potentialDensityMidRef"/> 
+    <var name="heightMidBuoyCoorEA"/> 
+    <var name="heightTopBuoyCoorEA"/> 
+    <var name="heightMidBuoyCoorSqEA"/> 
+    <var name="montgPotBuoyCoorEA"/> 
+    <var name="montgPotGradZonalEA"/> 
+    <var name="montgPotGradMeridEA"/> 
+    <var name="heightMGradZonalEA"/> 
+    <var name="heightMGradMeridEA"/> 
+    <var name="usigmaEA"/> 
+    <var name="vsigmaEA"/> 
+    <var name="uusigmaEA"/> 
+    <var name="vvsigmaEA"/> 
+    <var name="uvsigmaEA"/> 
+    <var name="uwsigmaEA"/> 
+    <var name="vwsigmaEA"/> 
+</stream>
+  
 <var_struct name="eliassenPalmFluxTensorScratch" time_levs="1">
   <var name="heightMidBuoyCoor" 
     type="real" 
@@ -268,7 +245,7 @@
     units="-"
 		description="index, in buoyancy coordinates, of the last layer in column for a given cell"
 	/>
-  <var name="buoyMask" 
+  <var name="buoyancyMask" 
     type="real" 
     streams="o" 
     dimensions="nBuoyancyLayers nCells Time" 
@@ -450,7 +427,7 @@
     units="m s^{-2}"
     description="Buoyancy at interfaces of buoyancy coordinate layers"
   />
-  <var name="buoyMaskEA" 
+  <var name="buoyancyMaskEA" 
     type="real" 
     streams="ro"
     dimensions="nBuoyancyLayers nCells Time" 
@@ -477,6 +454,13 @@
     streams="ro" 
     units="m"
     description="z-coordinate of each buoyancy layer, ensemble average"
+  />
+  <var name="heightTopBuoyCoorEA" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time"
+    streams="ro" 
+    units="m"
+    description="z-coordinate at top of each buoyancy layer, ensembele average"
   />
   <var name="montgPotGradZonalEA" 
     type="real" 
