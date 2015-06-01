@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, doctest, time, threading, Queue, socket, signal, distutils.spawn
 
 import xml.etree.ElementTree as xmlet
