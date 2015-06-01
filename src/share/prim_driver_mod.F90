@@ -95,6 +95,10 @@ contains
     ! --------------------------------
     use prim_advance_mod, only: prim_advance_init
     ! --------------------------------
+#ifdef TRILINOS
+    use prim_implicit_mod, only : prim_implicit_init
+#endif
+    ! --------------------------------
     use diffusion_mod, only      : diffusion_init
     ! --------------------------------
     use parallel_mod, only : iam, parallel_t, syncmp, abortmp, global_shared_buf, nrepro_vars
@@ -546,6 +550,9 @@ contains
 #endif
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,elem,integration)
+#ifdef TRILINOS
+    call prim_implicit_init(par, elem)
+#endif
     call Prim_Advec_Init1(par, elem,n_domains)
     call diffusion_init(par,elem)
     if (ntrac>0) then
@@ -1466,7 +1473,9 @@ contains
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
     ! note: time level update for fvm tracers takes place in fvm_mod
+#ifndef TRILINOS
     call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
+#endif
 
 #if USE_CUDA_FORTRAN
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
