@@ -867,7 +867,7 @@
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
-	<nml_record name="debug" mode="forward">
+	<nml_record name="debug" mode="forward;init">
 		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
 					description="If true, disables k33 portion of Redi neutral surface mixing." 
 					possible_values=".true. or .false."
