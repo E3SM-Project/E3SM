@@ -9,7 +9,7 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys, os, getpass, socket, shutil, glob, doctest
+import argparse, sys, os, socket, shutil, glob, doctest
 
 from acme_util import expect, warning, verbose_print
 
@@ -187,7 +187,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash,
     compiler, default_test_suite, use_batch, project, testroot, baseline_root, proxy = \
         acme_util.get_machine_info(acme_machine)
     test_suite = default_test_suite if arg_test_suite is None else arg_test_suite
-    testroot = testroot.replace("<USER>", getpass.getuser()).replace("<PROJECT>", project)
     casearea = os.path.join(testroot, "jenkins")
     git_branch = acme_util.get_current_branch(repo=acme_repo) if baseline_branch is None else baseline_branch
 
@@ -257,25 +256,20 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash,
         # Set up create_test command and run it
         #
 
-        os.chdir(os.path.join(acme_repo, "scripts"))
         git_branch = acme_util.get_current_branch() if baseline_branch is None else baseline_branch
-        baseline_action = "-generate" if generate_baselines else "-compare"
+        baseline_action = "-g" if generate_baselines else "-c"
         test_id = "%s_%s" % (test_id_root, acme_util.get_utc_timestamp())
-        create_test_cmd = "./create_test -xml_mach %s -xml_compiler %s -xml_category %s -testroot %s -project %s -testid %s %s %s" % \
-                          (acme_machine, compiler, test_suite, casearea, project, test_id, baseline_action, git_branch)
+        create_test_cmd = "scripts/acme/create_test %s --test-root %s -p %s -t %s %s -b %s" % \
+                          (test_suite, casearea, project, test_id, baseline_action, git_branch)
 
         if (namelists_only):
-            create_test_cmd += " -nlcompareonly"
-
-        if (not use_batch):
-            create_test_cmd += " -autosubmit off -nobatch on"
+            create_test_cmd += " -n"
 
         if (not wait_for_tests.SIGNAL_RECEIVED):
-            create_test_stat = acme_util.run_cmd(create_test_cmd, verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
+            create_test_stat = acme_util.run_cmd(create_test_cmd,
+                                                 verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True, from_dir=acme_repo)[0]
             if (create_test_stat != 0):
                 warning("create_test FAILED!")
-
-        os.chdir("../..")
 
         # TODO: the testing scripts should produce all PASS when only generating namelists
         if (namelists_only and generate_baselines):

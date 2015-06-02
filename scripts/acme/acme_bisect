@@ -54,19 +54,19 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
                         help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
 
-    parser.add_argument("--no-submit", action="store_true", dest="no_submit", default=False,
-                        help="Do not submit job to queue, run locally.")
+    parser.add_argument("--no-batch", action="store_true", dest="no_batch", default=False,
+                        help="Do not submit job to queue, run locally. Will default to whatever is standard on your machine")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.testname, args.testroot, args.project, args.compare, args.check_namelists, args.check_throughput, args.no_submit
+    return args.testname, args.testroot, args.project, args.compare, args.check_namelists, args.check_throughput, args.no_batch
 
 ###############################################################################
-def acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_submit):
+def acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_batch):
 ###############################################################################
-    expect(os.path.exists("scripts/create_test"), "Please run from root of repository")
+    expect(os.path.exists("scripts/acme/create_test"), "Please run from root of repository")
 
     current_sha = acme_util.get_current_commit(short=True)
 
@@ -76,11 +76,11 @@ def acme_bisect(testname, testroot, project, compare, check_namelists, check_thr
 
     # Formulate and run create_test command
 
-    extra_args = "-autosubmit off -nobatch on" if no_submit else ""
-    compare_args = "-compare %s" % compare if compare is not None else ""
-    create_test_cmd = "./create_test -testname %s -testroot %s -testid %s -project %s %s %s" % \
+    extra_args = "--no-batch" if no_batch else ""
+    compare_args = "-c -b %s" % compare if compare is not None else ""
+    create_test_cmd = "scripts/acme/create_test %s --test-root %s -t %s -p %s %s %s" % \
                       (testname, testroot, current_sha, project, compare_args, extra_args)
-    run_cmd(create_test_cmd, from_dir="./scripts")
+    run_cmd(create_test_cmd)
 
     # Find testcase area
     glob_matches = glob.glob("%s/%s*%s" % (testroot, testname, current_sha))
@@ -100,10 +100,10 @@ def acme_bisect(testname, testroot, project, compare, check_namelists, check_thr
 
     # Wait for test
     return wait_for_tests.wait_for_tests([os.path.join(testarea, "TestStatus")],
-                                         no_submit, # wait if using batch
-                                         check_throughput,
-                                         not check_namelists, # inverse due to opposite defaults
-                                         None # don't do cdash stuff
+                                         no_wait=no_batch, # wait if using batch
+                                         check_throughput=check_throughput,
+                                         ignore_namelists=not check_namelists, # inverse due to opposite defaults
+                                         cdash_build_name=None # don't do cdash stuff
                                          )
 
 ###############################################################################
@@ -115,11 +115,11 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    testname, testroot, project, compare, check_namelists, check_throughput, no_submit = \
+    testname, testroot, project, compare, check_namelists, check_throughput, no_batch = \
         parse_command_line(sys.argv, description)
 
     try:
-        rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_submit)
+        rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_batch)
     except:
         print >> sys.stderr, "Exception in script, aborting bisect entirely:"
         e = sys.exc_info()[1]
