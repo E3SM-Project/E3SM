@@ -153,7 +153,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def get_tests_from_args(testargs):
 ###############################################################################
-    acme_test_suites = dict(update_acme_tests.TEST_SUITES)
+    acme_test_suites = update_acme_tests.get_test_suites()
 
     tests_to_run = set()
     negations = set()
@@ -162,7 +162,7 @@ def get_tests_from_args(testargs):
         if (testarg.startswith("^")):
             negations.add(testarg)
         elif (testarg in acme_test_suites):
-            tests_to_run.update(acme_test_suites[testarg])
+            tests_to_run.update(update_acme_tests.get_test_suite(testarg))
         elif (testarg.count(".") == 2):
             tests_to_run.add(testarg)
         else:
@@ -170,7 +170,7 @@ def get_tests_from_args(testargs):
 
     for negation in negations:
         if (negation in acme_test_suites):
-            tests_to_run.difference_update(acme_test_suites[negation])
+            tests_to_run.difference_update(update_acme_tests.get_test_suite(negation))
         elif (negation.count(".") == 2):
             tests_to_run.remove(negation)
         else:
