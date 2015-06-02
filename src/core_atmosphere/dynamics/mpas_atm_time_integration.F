@@ -2945,6 +2945,7 @@ module atm_time_integration
       real (kind=RKIND), pointer :: coef_3rd_order
       logical, pointer :: newpx
       logical, pointer :: config_mix_full
+      integer, pointer :: config_u_vadv_order
       integer, pointer :: config_theta_vadv_order
       character (len=StrKIND), pointer :: config_horiz_mixing
       integer, pointer :: config_theta_adv_order
@@ -2972,6 +2973,7 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_newpx', newpx)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_mix_full', config_mix_full)
+      call mpas_pool_get_config(configs, 'config_u_vadv_order', config_u_vadv_order)
       call mpas_pool_get_config(configs, 'config_theta_vadv_order', config_theta_vadv_order)
       call mpas_pool_get_config(configs, 'config_horiz_mixing', config_horiz_mixing)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
@@ -3229,14 +3231,33 @@ module atm_time_integration
          ! vertical transport of u
 
          wduz(1) = 0.
-         k = 2
-         wduz(k) =  0.5*( rw(k,cell1)+rw(k,cell2) )*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))  
-         do k=3,nVertLevels-1
-            wduz(k) = flux3( u(k-2,iEdge),u(k-1,iEdge),u(k,iEdge),u(k+1,iEdge),0.5*(rw(k,cell1)+rw(k,cell2)), 1.0_RKIND )
-         end do
-         k = nVertLevels
-         wduz(k) =  0.5*( rw(k,cell1)+rw(k,cell2) )*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))  
+         if (config_u_vadv_order == 2) then
 
+            do k=2,nVertLevels
+               wduz(k) = 0.5*(rw(k,cell1)+rw(k,cell2))*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))
+            end do
+
+         else if (config_u_vadv_order == 3) then
+
+            k = 2
+            wduz(k) =  0.5*( rw(k,cell1)+rw(k,cell2))*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))
+            do k=3,nVertLevels-1
+               wduz(k) = flux3( u(k-2,iEdge),u(k-1,iEdge),u(k,iEdge),u(k+1,iEdge),0.5*(rw(k,cell1)+rw(k,cell2)), 1.0_RKIND )
+            end do
+            k = nVertLevels
+            wduz(k) =  0.5*( rw(k,cell1)+rw(k,cell2))*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))
+
+         else if (config_u_vadv_order == 4) then
+
+            k = 2
+            wduz(k) =  0.5*( rw(k,cell1)+rw(k,cell2))*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))
+            do k=3,nVertLevels-1
+               wduz(k) = flux4( u(k-2,iEdge),u(k-1,iEdge),u(k,iEdge),u(k+1,iEdge),0.5*(rw(k,cell1)+rw(k,cell2)))
+            end do
+            k = nVertLevels
+            wduz(k) =  0.5*( rw(k,cell1)+rw(k,cell2))*(fzm(k)*u(k,iEdge)+fzp(k)*u(k-1,iEdge))
+
+         end if
          wduz(nVertLevels+1) = 0.
 
          do k=1,nVertLevels

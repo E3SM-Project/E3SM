@@ -816,7 +816,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				}
 				fortprintf(fd, "         call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
 
-				fortprintf(fd, "	  else if ( %s == MPAS_MISSING_DIM ) then\n", dimname, dimname);
+				fortprintf(fd, "          else if ( %s == MPAS_MISSING_DIM ) then\n", dimname, dimname);
 				// Namelist defined dimension
 				if(strncmp(dimdef, "namelist:", 9) == 0){
 					snprintf(option_name, 1024, "%s", (dimdef)+9);
@@ -825,7 +825,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 					fortprintf(fd, "         %s = %s\n", dimname, dimdef);
 				}
 
-				fortprintf(fd, "	  end if\n\n");
+				fortprintf(fd, "          end if\n\n");
 			} else {
 				fortprintf(fd, "      if ( .not. associated(%s) ) then\n", dimname);
 				fortprintf(fd, "         allocate(%s)\n", dimname);
@@ -1985,7 +1985,7 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 									}
 
 								} else {
-									printf("ERROR: Immutable streams cannot contain mutable streams within them.\n");	
+									printf("ERROR: Immutable streams cannot contain mutable streams within them.\n");
 									printf("ERROR:     Immutable stream \'%s\' contains a mutable stream \'%s\'.\n", optname, optsubstreamname);
 									return 1;
 								}

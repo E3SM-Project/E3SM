@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="3.3">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="4.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -82,7 +82,6 @@
                 <nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"  in_defaults="false"/>
                 <nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
-                <nml_option name="config_pio_format"                 type="character"     default_value="pnetcdf"            in_defaults="false"/>
         </nml_record>
 
         <nml_record name="decomposition" in_defaults="true">
@@ -981,7 +980,7 @@
                 <nml_option name="config_greeness_update"            type="character"     default_value="24:00:00"   in_defaults="false"/>
                 <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
 
-                <nml_option name="config_physics_suite"              type="character"     default_value="wrf"        in_defaults="true"/>
+                <nml_option name="config_physics_suite"              type="character"     default_value="mesoscale_reference"  in_defaults="true"/>
 
                 <nml_option name="config_microp_scheme"              type="character"     default_value="suite"      in_defaults="false"/>
                 <nml_option name="config_convection_scheme"          type="character"     default_value="suite"      in_defaults="false"/>

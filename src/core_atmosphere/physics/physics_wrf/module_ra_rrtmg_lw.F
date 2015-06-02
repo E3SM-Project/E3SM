@@ -6145,7 +6145,7 @@ contains
             fac100 = fs * fac00(lay)
             fac110 = fs * fac10(lay)
          endif
-         if (specparm .lt. 0.125_rb) then
+         if (specparm1 .lt. 0.125_rb) then
             p = fs1 - 1
             p4 = p**4
             fk0 = p4
@@ -11314,6 +11314,11 @@ use mpas_atmphys_o3climatology,only: vinterp_ozn
 !>      following Cavalo et al. (2010). added option to use the ozone climatology
 !>      from the CAM radiation codes.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-17.
+!>    * in subroutine taugb7, corrected line number 6145 "if (specparm .lt. 0.125_rb) then"
+!>      with if (specparm1 .lt. 0.125_rb) then, in accordance with the bug fix made in WRF
+!>      revision 3.7.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2015-05-04.
+
 !MPAS specific end.
 
 #else
