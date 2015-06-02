@@ -3,6 +3,8 @@
 # Batch system directives
 #------------------------------------------------------------------------------
 {{ batchdirectives }}
+use strict;
+use warnings;
 use POSIX qw(strftime);
 use File::Path;
 use File::Copy;
@@ -15,6 +17,7 @@ use Getopt::Long;
 my $scriptname = $0;
 my $caseroot = "{{ caseroot }}";
 my $cimeroot = "{{ cimeroot }}";
+my %opts;
 chdir $caseroot;
 my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
@@ -40,8 +43,6 @@ $ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
 my $banner = "*" x 65;
 my %config;
 my $case;
-my $caseroot;
-my $cimeroot; 
 my $compiler;
 my $machine; 
 my $machroot;
@@ -125,7 +126,7 @@ sub doPreRunChecks()
 		$ENV{'BATCHQUERY'} = "undefined";
 	}
 	
-	elsif ( $config{'BATCHSUBMIT'} == 'UNSET')
+	elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
 	{
 		$ENV{'LBSUBMIT'} = "FALSE";
 		$ENV{'BATCHSUBMIT'} = "undefined";
@@ -198,7 +199,7 @@ sub checkInputData()
         print "expected location, and are not from the input data repository.\n";
         print "This is informational only.\n";
 	
-		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'});
+		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
 	}
 	
 	if(@missing)
@@ -207,7 +208,8 @@ sub checkInputData()
 		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export);
 	}
 	
-	@missing = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+    my @potmissing  = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+	@missing = grep { /missing/ } @potmissing;
 	if(@missing)
 	{
 		my @notfound = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
@@ -223,9 +225,9 @@ sub checkInputData()
 	# Prestage our reference case if required..
 	if( ($config{'GET_REFCASE'} eq 'TRUE') && ($config{'RUN_TYPE'} ne 'startup') && ($config{'CONTINUE_RUN'} eq 'FALSE'))
 	{
-		#my $refdir = "$config{'DIN_LOC_ROOT'}/$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
 		my $refdir = "$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
-		if(! -d $config{'DIN_LOC_ROOT'}/$refdir)
+		my $fullrefdirpath = "$config{'DIN_LOC_ROOT'}/ccsm4_init/$refdir";
+		if(! -d $fullrefdirpath)
 		{
             print "$banner\n";
             print "ccsm_prestage ERROR: $refdir is not on local disk!\n";
@@ -244,7 +246,7 @@ sub checkInputData()
 		
 		# prestage the reference case's files.  
 		mkpath $config{'RUNDIR'} if (! -d $config{'RUNDIR'});
-		my @refcasefiles = glob("$config{'DIN_LOC_ROOT'}/$refdir/*$config{'RUN_REFCASE'}*");
+		my @refcasefiles = glob("$fullrefdirpath/*$config{'RUN_REFCASE'}*");
 		foreach my $rcfile(@refcasefiles)
 		{
 			my $rcbasename = basename($rcfile);
@@ -255,7 +257,7 @@ sub checkInputData()
 		}
 
 		# find the *rpointer* files, copy them to the rundir. 
-		my @rpointerfiles = glob("$config{'DIN_LOC_ROOT'}/$refdir/*rpointer*");
+		my @rpointerfiles = glob("$fullrefdirpath/*rpointer*");
 		foreach my $rpointerfile(@rpointerfiles)
 		{
 			copy($rpointerfile, $config{'RUNDIR'});
