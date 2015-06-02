@@ -4,61 +4,70 @@ import acme_util
 from acme_util import expect, warning
 
 # Here are the tests belonging to acme suites. Format is
-# <test>.<grid>.<compset>
-TEST_SUITES = {
-    "acme_tiny" :
-        ["ERS.f19_g16_rx1.A",
-         "NCK.f19_g16_rx1.A"],
-    "acme_developer" :
-        ['ERS.f19_g16_rx1.A',
-         'ERS.f45_g37.B1850C5',
-         'ERS.f45_g37_rx1.DTEST',
-         'ERS.ne30_g16_rx1.A',
-         'ERS_IOP.f19_g16_rx1.A',
-         'ERS_IOP.f45_g37_rx1.DTEST',
-         'ERS_IOP.ne30_g16_rx1.A',
-         'ERS_IOP4c.f19_g16_rx1.A',
-         'ERS_IOP4c.ne30_g16_rx1.A',
-         'ERS_IOP4p.f19_g16_rx1.A',
-         'ERS_IOP4p.ne30_g16_rx1.A',
-         'ERS_Ly21.f09_g16.TG',
-         'NCK.f19_g16_rx1.A',
-         'PEA_P1_M.f45_g37_rx1.A',
-         'SMS.ne30_f19_g16_rx1.A',
-         'SMS.f19_f19.I1850CLM45CN'],
-    "acme_integration" :
-        ["ERB.f19_g16.B1850C5",
-         "ERB.f45_g37.B1850C5",
-         "ERH.f45_g37.B1850C5",
-         "ERS.f09_g16.B1850C5",
-         "ERS.f19_f19.FAMIPC5",
-         "ERS.f19_g16.B1850C5",
-         "ERS.f45_g37.B1850C5",
-         "ERS_D.f45_g37.B1850C5",
-         "ERS_IOP.f19_g16_rx1.A",
-         "ERS_IOP.f45_g37_rx1.DTEST",
-         "ERS_IOP.ne30_g16_rx1.A",
-         "ERS_IOP4c.f19_g16_rx1.A",
-         "ERS_IOP4c.ne30_g16_rx1.A",
-         "ERS_IOP4p.f19_g16_rx1.A",
-         "ERS_IOP4p.ne30_g16_rx1.A",
-         "ERS_IOP_Ld3.f19_f19.FAMIPC5",
-         "ERS_Ld3.f19_g16.FC5",
-         "ERS_Ld3.ne30_ne30.FC5",
-         "ERS_Ly21.f09_g16.TG",
-         "ERT.f19_g16.B1850C5",
-         "NCK.f19_g16_rx1.A",
-         "PEA_P1_M.f45_g37_rx1.A",
-         "PET_PT.f19_g16.X",
-         "PET_PT.f45_g37_rx1.A",
-         "PFS.ne30_ne30.FC5",
-         "SEQ_IOP_PFC.f19_g16.X",
-         "SEQ_PFC.f45_g37.B1850C5",
-         "SMS.ne16_ne16.FC5AQUAP",
-         "SMS.ne30_f19_g16_rx1.A",
-         "SMS_D.f19_g16.B20TRC5",
-         "SMS_D_Ld3.f19_f19.FC5"]
+# <test>.<grid>.<compset>.
+# suite_name -> (inherits_from, [testlist])
+__TEST_SUITES = {
+    "acme_tiny" : (None,
+                   ["ERS.f19_g16_rx1.A",
+                    "NCK.f19_g16_rx1.A"]
+                   ),
+    "acme_developer" : (None,
+                        ['ERS.f19_g16_rx1.A',
+                         'ERS.f45_g37.B1850C5',
+                         'ERS.f45_g37_rx1.DTEST',
+                         'ERS.ne30_g16_rx1.A',
+                         'ERS_IOP.f19_g16_rx1.A',
+                         'ERS_IOP.f45_g37_rx1.DTEST',
+                         'ERS_IOP.ne30_g16_rx1.A',
+                         'ERS_IOP4c.f19_g16_rx1.A',
+                         'ERS_IOP4c.ne30_g16_rx1.A',
+                         'ERS_IOP4p.f19_g16_rx1.A',
+                         'ERS_IOP4p.ne30_g16_rx1.A',
+                         'ERS_Ly21.f09_g16.TG',
+                         'NCK.f19_g16_rx1.A',
+                         'PEA_P1_M.f45_g37_rx1.A',
+                         'SMS.ne30_f19_g16_rx1.A',
+                         'SMS.f19_f19.I1850CLM45CN']
+                        ),
+    "acme_integration" : ("acme_developer",
+                          ["ERB.f19_g16.B1850C5",
+                           "ERB.f45_g37.B1850C5",
+                           "ERH.f45_g37.B1850C5",
+                           "ERS.f09_g16.B1850C5",
+                           "ERS.f19_f19.FAMIPC5",
+                           "ERS.f19_g16.B1850C5",
+                           "ERS_D.f45_g37.B1850C5",
+                           "ERS_IOP_Ld3.f19_f19.FAMIPC5",
+                           "ERS_Ld3.f19_g16.FC5",
+                           "ERS_Ld3.ne30_ne30.FC5",
+                           "ERT.f19_g16.B1850C5",
+                           "PET_PT.f19_g16.X",
+                           "PET_PT.f45_g37_rx1.A",
+                           "PFS.ne30_ne30.FC5",
+                           "SEQ_IOP_PFC.f19_g16.X",
+                           "SEQ_PFC.f45_g37.B1850C5",
+                           "SMS.ne16_ne16.FC5AQUAP",
+                           "SMS_D.f19_g16.B20TRC5",
+                           "SMS_D_Ld3.f19_f19.FC5"]
+                          ),
 }
+
+###############################################################################
+def get_test_suite(suite):
+###############################################################################
+    expect(suite in __TEST_SUITES, "Unknown test suite: '%s'" % suite)
+    inherits_from, tests = __TEST_SUITES[suite]
+    if (inherits_from is not None):
+        inherited_tests = get_test_suite(inherits_from)
+        expect(len(set(tests) & set(inherited_tests)) == 0,
+               "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
+        tests.extend(inherited_tests)
+    return tests
+
+###############################################################################
+def get_test_suites():
+###############################################################################
+    return __TEST_SUITES.keys()
 
 ###############################################################################
 def find_all_platforms(xml_file):
@@ -94,7 +103,7 @@ def replace_testlist_xml(output, xml_file):
 ###############################################################################
 def generate_acme_test_entries(category, platforms):
 ###############################################################################
-    tests = TEST_SUITES[category]
+    tests = get_test_suite(category)
     test_file = tempfile.NamedTemporaryFile(mode='w', delete = False)
     for test in tests:
         for machine, compiler in platforms:
