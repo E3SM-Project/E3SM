@@ -73,7 +73,7 @@
 </nml_record>
 
 <packages>
-  <package name="amEliassenPalmFluxTensor" 
+  <package name="amEliassenPalmFluxTensorPkg" 
     description="This package includes variables required for the amEliassenPalmFluxTensor analysis member."/>
 </packages>
   
@@ -85,7 +85,7 @@
     filename_template="eliassen_palm_flux_tensor_input.$Y-$M-$D.nc"
     filename_interval="01-00-00_00:00:00"
     output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmFluxTensor"
+    packages="amEliassenPalmFluxTensorPkg"
     clobber_mode="truncate"
     runtime_format="single_file">
     <var name="xtime"/> 
@@ -93,14 +93,14 @@
   </stream>
   
   <stream name="eliassenPalmFluxTensorOutput" 
-      type="output"
-      mode="forward;analysis"
-      filename_template="analysis_members/eliassen_palm_flux_tensor_output.$Y-$M-$D.nc"
-      filename_interval="01-00-00_00:00:00"
-      output_interval="00-00-01_00:00:00"
-      packages="amEliassenPalmFluxTensor"
-      clobber_mode="truncate"
-      runtime_format="single_file">
+    type="output"
+    mode="forward;analysis"
+    filename_template="analysis_members/eliassen_palm_flux_tensor_output.$Y-$M-$D.nc"
+    filename_interval="01-00-00_00:00:00"
+    output_interval="00-00-01_00:00:00"
+    packages="amEliassenPalmFluxTensorPkg"
+    clobber_mode="truncate"
+    runtime_format="single_file">
     <var name="xtime"/> 
     <var name="potentialDensityMidRef"/> 
     <var name="potentialDensityTopRef"/> 
@@ -129,15 +129,14 @@
     <var name="ErtelPVTendency"/> 
     <var name="ErtelPV"/> 
   </stream>
-</streams>
 
-<stream name="eliassenPalmFluxTensorRestart" 
+  <stream name="eliassenPalmFluxTensorRestart" 
     type="input;output"
     mode="forward;analysis"
     filename_template="restarts/eliassen_palm_flux_tensor_restart.$Y-$M-$D.nc"
     filename_interval="01-00-00_00:00:00"
     output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmFluxTensor"
+    packages="amEliassenPalmFluxTensorPkg"
     clobber_mode="truncate"
     runtime_format="single_file">
     <var name="xtime"/> 
@@ -160,7 +159,8 @@
     <var name="uvsigmaEA"/> 
     <var name="uwsigmaEA"/> 
     <var name="vwsigmaEA"/> 
-</stream>
+  </stream>
+</streams>
   
 <var_struct name="eliassenPalmFluxTensorScratch" time_levs="1">
   <var name="heightMidBuoyCoor" 
@@ -396,9 +396,9 @@
 	/>
 </var_struct>
 
-<var_struct name="amEPFT" 
+<var_struct name="amEliassenPalmFluxTensor" 
   time_levs="1"
-  packages="amEliassenPalmFluxTensor">
+  packages="amEliassenPalmFluxTensorPkg">
   <var name="potentialDensityMidRef" 
     type="real" 
     dimensions="nBuoyancyLayers" 
@@ -610,16 +610,4 @@
     description="Ertel PV on buoyancy surfaces"
   />
 </var_struct>
-
-
-
-
-
-
-
-
-
-
-
-
 
