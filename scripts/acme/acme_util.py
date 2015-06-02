@@ -72,7 +72,7 @@ MACHINE_INFO = {
         "acme_developer",
         True,
         "ACME",
-        "/lcrc/project/<PROJECT>/<USER>/acme_scratch",
+        "/lcrc/project/ACME/<USER>/acme_scratch",
         "/lcrc/group/earthscience/acme_baselines",
         None
     ),
@@ -335,12 +335,13 @@ def get_machine_info(machine=None):
     Info returned as tuple:
     (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
     """
+    import getpass
     if (machine is None):
         machine = probe_machine_name()
     expect(machine is not None, "Failed to probe machine")
     expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
 
-    return MACHINE_INFO[machine]
+    return [item.replace("<USER>", getpass.getuser()) if type(item) is str else item for item in MACHINE_INFO[machine]]
 
 ###############################################################################
 def get_utc_timestamp(format="%Y%m%d_%H%M%S"):
