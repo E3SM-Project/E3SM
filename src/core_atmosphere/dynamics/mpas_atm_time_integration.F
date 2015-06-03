@@ -1488,7 +1488,7 @@ module atm_time_integration
                                                     zgrid, cofwr, cofwz, w
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw, dcEdge, areaCell, cofrz, dvEdge
 
-      real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, pzp, pzm
+      real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
@@ -1504,8 +1504,6 @@ module atm_time_integration
       integer :: kr, kl
 
       integer, pointer :: nEdges, nCellsSolve
-
-      logical, pointer :: newpx
 
 !--
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
@@ -1561,10 +1559,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'cf2', cf2)
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-      call mpas_pool_get_array(mesh, 'cpr', cpr)
-      call mpas_pool_get_array(mesh, 'cpl', cpl)
-
-      call mpas_pool_get_config(configs, 'config_newpx', newpx) 
 
       ! epssm is the offcentering coefficient for the vertically implicit integration.
       ! smdiv is the 3D divergence-damping coefficient.
@@ -1599,77 +1593,43 @@ module atm_time_integration
          ! update edges for block-owned cells
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
-            if (newpx) then
+            k = 1
+            dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                               &
+                      *(pzm(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)        &
+                                     -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
+                       +pzm(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)        &
+                                     -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1))       &
+                       +pzp(k,cell2)*(zz(k+2,cell2)*rtheta_pp_old(k+2,cell2)        &
+                                     -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
+                       +pzp(k,cell1)*(zz(k+2,cell1)*rtheta_pp_old(k+2,cell1)        &
+                                     -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)))
 
-               k = 1
-               pr  =   cpr(k  ,iEdge)*zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)   &
-                     + cpr(k+1,iEdge)*zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)   &
-                     + cpr(k+2,iEdge)*zz(k+2,cell2)*rtheta_pp_old(k+2,cell2)
-
-               pl  =   cpl(k  ,iEdge)*zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)   &
-                     + cpl(k+1,iEdge)*zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)   &
-                     + cpl(k+2,iEdge)*zz(k+2,cell1)*rtheta_pp_old(k+2,cell1)
-               pgrad = 2./(zz(k,cell1)+zz(k,cell2))*(pr-pl)/dcEdge(iEdge)
-               pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
-               du(k) = dts*(tend_ru(k,iEdge) - cqu(k,iEdge) * pgrad) 
-
-               do k=2,nVertLevels
-
-                  kr = min(nVertLevels,k+ nint(.5-sign(0.5_RKIND,zx(k,iEdge)+zx(k+1,iEdge))))
-                  kl = min(nVertLevels,2*k+1-kr)
-                  pr = zz(k,cell2)*rtheta_pp_old(k ,cell2)+.5*(zgrid(k   ,cell1) +zgrid(k +1,cell1)   &
-                                                              -zgrid(k   ,cell2) -zgrid(k +1,cell2))  &
-                                                             /(zgrid(kr+1,cell2) -zgrid(kr-1,cell2))  &
-                    *(zz(kr,cell2)*rtheta_pp_old(kr,cell2)-zz(kr-1,cell2)*rtheta_pp_old(kr-1,cell2))
-                  pl = zz(k,cell1)*rtheta_pp_old(k ,cell1)+.5*(zgrid(k   ,cell2) +zgrid(k +1,cell2)   &
-                                                              -zgrid(k   ,cell1) -zgrid(k +1,cell1))  &
-                                                             /(zgrid(kl+1,cell1) -zgrid(kl-1,cell1))  &
-                    *(zz(kl,cell1)*rtheta_pp_old(kl,cell1)-zz(kl-1,cell1)*rtheta_pp_old(kl-1,cell1))
-                  pgrad = 2./(zz(k,cell1)+zz(k,cell2))*(pr-pl)/dcEdge(iEdge)
-                  pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
-                  du(k) = dts*(tend_ru(k,iEdge) - cqu(k,iEdge) * pgrad) 
-               end do
-
-            else
-
-               k = 1
-               dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                               &
-                         *(pzm(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)        &
-                                        -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
-                          +pzm(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)        &
-                                        -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1))       &
-                          +pzp(k,cell2)*(zz(k+2,cell2)*rtheta_pp_old(k+2,cell2)        &
-                                        -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
-                          +pzp(k,cell1)*(zz(k+2,cell1)*rtheta_pp_old(k+2,cell1)        &
-                                        -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)))
-
-               do k=2,nVertLevels-1
-                  dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                                   &
-                                   *(pzp(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)     &
-                                                  -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))    &
-                                    +pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
-                                                  -zz(k-1,cell2)*rtheta_pp_old(k-1,cell2))    &
-                                    +pzp(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)     &
-                                                  -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1))    &
-                                    +pzm(k,cell1)*(zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)     &
-                                                  -zz(k-1,cell1)*rtheta_pp_old(k-1,cell1)))
-               end do
-
-               k = nVertLevels
+            do k=2,nVertLevels-1
                dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                                   &
-                                *(pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
+                                *(pzp(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)     &
+                                               -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))    &
+                                 +pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
                                                -zz(k-1,cell2)*rtheta_pp_old(k-1,cell2))    &
+                                 +pzp(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)     &
+                                               -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1))    &
                                  +pzm(k,cell1)*(zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)     &
                                                -zz(k-1,cell1)*rtheta_pp_old(k-1,cell1)))
+            end do
 
-               do k=1,nVertLevels
-                  pgrad =     ((rtheta_pp_old(k,cell2)*zz(k,cell2)                    &
-                               -rtheta_pp_old(k,cell1)*zz(k,cell1))/dcEdge(iEdge)     &
-                            -dpzx(k))/(.5*(zz(k,cell2)+zz(k,cell1)))
-                  pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
-                  du(k) = dts*(tend_ru(k,iEdge) - cqu(k,iEdge) * pgrad) 
-               end do
-            end if
+            k = nVertLevels
+            dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                                   &
+                             *(pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
+                                            -zz(k-1,cell2)*rtheta_pp_old(k-1,cell2))    &
+                              +pzm(k,cell1)*(zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)     &
+                                            -zz(k-1,cell1)*rtheta_pp_old(k-1,cell1)))
+
+            do k=1,nVertLevels
+               pgrad =     ((rtheta_pp_old(k,cell2)*zz(k,cell2)                    &
+                            -rtheta_pp_old(k,cell1)*zz(k,cell1))/dcEdge(iEdge)     &
+                         -dpzx(k))/(.5*(zz(k,cell2)+zz(k,cell1)))
+               pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
+               du(k) = dts*(tend_ru(k,iEdge) - cqu(k,iEdge) * pgrad) 
+            end do
 
             do k=1,nVertLevels
 
@@ -2921,7 +2881,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: rdzu, rdzw, fzm, fzp, qv_init
       real (kind=RKIND), dimension(:,:), pointer :: t_init 
 
-      real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, pzp, pzm
+      real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
       integer :: kr, kl
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
@@ -2943,7 +2903,6 @@ module atm_time_integration
       real(kind=RKIND), dimension(:,:), pointer :: tend_w_pgf, tend_w_buoy
 
       real (kind=RKIND), pointer :: coef_3rd_order
-      logical, pointer :: newpx
       logical, pointer :: config_mix_full
       integer, pointer :: config_u_vadv_order
       integer, pointer :: config_theta_vadv_order
@@ -2970,7 +2929,6 @@ module atm_time_integration
 !-----------
 
       call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
-      call mpas_pool_get_config(configs, 'config_newpx', newpx)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_mix_full', config_mix_full)
       call mpas_pool_get_config(configs, 'config_u_vadv_order', config_u_vadv_order)
@@ -3044,8 +3002,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
       call mpas_pool_get_array(mesh, 'zgrid', zgrid)
-      call mpas_pool_get_array(mesh, 'cpr', cpr)
-      call mpas_pool_get_array(mesh, 'cpl', cpl)
 
       call mpas_pool_get_array(tend, 'u', tend_u)
       call mpas_pool_get_array(tend, 'theta_m', tend_theta)
@@ -3176,57 +3132,35 @@ module atm_time_integration
 
          ! horizontal pressure gradient 
 
-         if (newpx)  then
+         k = 1
 
-            k = 1
-            pr  = cpr(k,iEdge)*pp(k,cell2)+cpr(k+1,iEdge)*pp(k+1,cell2)+cpr(k+2,iEdge)*pp(k+2,cell2)
-            pl  = cpl(k,iEdge)*pp(k,cell1)+cpl(k+1,iEdge)*pp(k+1,cell1)+cpl(k+2,iEdge)*pp(k+2,cell1)
-            tend_u(k,iEdge) =  - cqu(k,iEdge)*2./(zz(k,cell1)+zz(k,cell2))*(pr-pl)/dcEdge(iEdge)
+         dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
+                      *(pzm(k,cell2)*(pp(k+1,cell2)-pp(k,cell2))    &
+                       +pzm(k,cell1)*(pp(k+1,cell1)-pp(k,cell1))    &
+                       +pzp(k,cell2)*(pp(k+2,cell2)-pp(k,cell2))    &
+                       +pzp(k,cell1)*(pp(k+2,cell1)-pp(k,cell1))) 
 
-            do k=2,nVertLevels
-
-               kr = min(nVertLevels,k+ nint(.5-sign(0.5_RKIND,zx(k,iEdge)+zx(k+1,iEdge))))
-               kl = min(nVertLevels,2*k+1-kr)
-
-               pr = pp(k,cell2)+.5*(zgrid(k   ,cell1)+zgrid(k +1,cell1)-zgrid(k ,cell2)-zgrid(k +1,cell2))   &
-                                  /(zgrid(kr+1,cell2)-zgrid(kr-1,cell2))*( pp(kr,cell2)-pp   (kr-1,cell2))
-               pl = pp(k,cell1)+.5*(zgrid(k   ,cell2)+zgrid(k +1,cell2)-zgrid(k ,cell1)-zgrid(k +1,cell1))   &
-                                  /(zgrid(kl+1,cell1)-zgrid(kl-1,cell1))*( pp(kl,cell1)-pp   (kl-1,cell1))
-               tend_u(k,iEdge) =  - cqu(k,iEdge)*2./(zz(k,cell1)+zz(k,cell2))*(pr-pl)/dcEdge(iEdge)
-
-            end do
-
-         else
-            k = 1
+         do k = 2, nVertLevels-1
 
             dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
-                         *(pzm(k,cell2)*(pp(k+1,cell2)-pp(k,cell2))    &
-                          +pzm(k,cell1)*(pp(k+1,cell1)-pp(k,cell1))    &
-                          +pzp(k,cell2)*(pp(k+2,cell2)-pp(k,cell2))    &
-                          +pzp(k,cell1)*(pp(k+2,cell1)-pp(k,cell1))) 
-  
-            do k = 2, nVertLevels-1
-
-               dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
-                          *(pzp(k,cell2)*(pp(k+1,cell2)-pp(k  ,cell2))    &
-                           +pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
-                           +pzp(k,cell1)*(pp(k+1,cell1)-pp(k  ,cell1))    &
-                           +pzm(k,cell1)*(pp(k  ,cell1)-pp(k-1,cell1)))   
-
-            end do
-
-            k = nVertLevels
-            dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
-                       *(pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
+                       *(pzp(k,cell2)*(pp(k+1,cell2)-pp(k  ,cell2))    &
+                        +pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
+                        +pzp(k,cell1)*(pp(k+1,cell1)-pp(k  ,cell1))    &
                         +pzm(k,cell1)*(pp(k  ,cell1)-pp(k-1,cell1)))   
 
-            do k=1,nVertLevels
+         end do
 
-               tend_u(k,iEdge) =  - cqu(k,iEdge)*((pp(k,cell2)-pp(k,cell1))/dcEdge(iEdge)   &
-                                       - dpzx(k) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
-            end do
+         k = nVertLevels
+         dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
+                    *(pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
+                     +pzm(k,cell1)*(pp(k  ,cell1)-pp(k-1,cell1)))   
 
-         end if
+         do k=1,nVertLevels
+
+            tend_u(k,iEdge) =  - cqu(k,iEdge)*((pp(k,cell2)-pp(k,cell1))/dcEdge(iEdge)   &
+                                    - dpzx(k) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
+         end do
+
 
          ! vertical transport of u
 

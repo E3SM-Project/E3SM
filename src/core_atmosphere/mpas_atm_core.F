@@ -885,96 +885,49 @@ module atm_core
 
       integer :: iEdge, iCell1, iCell2, k, iCell, nz, nz1
       real (kind=RKIND) :: d1, d2, d3
-      real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, zgrid, pzp, pzm
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, pzp, pzm
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nCells, nEdges, nVertLevels
-      logical, pointer :: config_newpx
 
-      call mpas_pool_get_array(mesh, 'cpr', cpr)
-      call mpas_pool_get_array(mesh, 'cpl', cpl)
       call mpas_pool_get_array(mesh, 'pzp', pzp)
       call mpas_pool_get_array(mesh, 'pzm', pzm)
       call mpas_pool_get_array(mesh, 'zgrid', zgrid)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
-      call mpas_pool_get_config(configs, 'config_newpx', config_newpx)
-
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-!**** coefficient arrays for new pressure gradient calculation
 
-      cpr(:,:) = 0.0
-      cpl(:,:) = 0.0
+!     Coefficients for computing vertical pressure gradient dp/dz
+!     dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
 
-      if (config_newpx) then
-         do iEdge=1,nEdges
+      nz1 = nVertLevels
+      nz = nz1 + 1
 
-            iCell1 = cellsOnEdge(1,iEdge)
-            iCell2 = cellsOnEdge(2,iEdge)
+      do iCell=1, nCells
 
-            d1       = .25*(zgrid(1,iCell2)+zgrid(2,iCell2)-zgrid(1,iCell1)-zgrid(2,iCell1))
-            d2       = d1+.5*(zgrid(3,iCell2)-zgrid(1,iCell2))
-            d3       = d2+.5*(zgrid(4,iCell2)-zgrid(2,iCell2))
-!            cpr(1,iEdge) = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpr(2,iEdge) = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpr(3,iEdge) = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
+         d1 = zgrid(3,iCell)-zgrid(1,iCell)
+         d2 = zgrid(4,iCell)-zgrid(2,iCell)
+         d3 = d1+d2
+         pzm(1,iCell) =  2.*d3/(d1*d2)
+         pzp(1,iCell) = -2.*d1/(d2*d3)
 
-            cpr(1,iEdge) =  d2/(d2-d1)
-            cpr(2,iEdge) = -d1/(d2-d1)
-            cpr(3,iEdge) =  0.
-
-            d1       = .25*(zgrid(1,iCell1)+zgrid(2,iCell1)-zgrid(1,iCell2)-zgrid(2,iCell2))
-            d2       = d1+.5*(zgrid(3,iCell1)-zgrid(1,iCell1))
-            d3       = d2+.5*(zgrid(4,iCell1)-zgrid(2,iCell1))
-!            cpl(1,iEdge) = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpl(2,iEdge) = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpl(3,iEdge) = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-
-            cpl(1,iEdge) =  d2/(d2-d1)
-            cpl(2,iEdge) = -d1/(d2-d1)
-            cpl(3,iEdge) =  0.
-
+         do k=2,nz1-1
+            pzp(k,iCell) = 2.*(zgrid(k+1,iCell)-zgrid(k-1,iCell))/     &
+                         ((zgrid(k+2,iCell)-zgrid(k  ,iCell))*         &
+                          (zgrid(k+2,iCell)-zgrid(k  ,iCell)           &
+                          +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
+            pzm(k,iCell) = 2.*(zgrid(k+2,iCell)-zgrid(k  ,iCell))/     &
+                         ((zgrid(k+1,iCell)-zgrid(k-1,iCell))*         &
+                          (zgrid(k+2,iCell)-zgrid(k  ,iCell)           &
+                          +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
          end do
 
-!         write(6,*) 'cpr1 = ',cpr(1,1),'  cpl1 = ',cpl(1,1)
-!         write(6,*) 'cpr2 = ',cpr(2,1),'  cpl2 = ',cpl(2,1)
-!         write(6,*) 'cpr3 = ',cpr(3,1),'  cpl3 = ',cpl(3,1)
+         pzp(nz1,iCell) = 0.
+         pzm(nz1,iCell) = 2./(zgrid(nz,iCell)-zgrid(nz1-1,iCell))
 
-      else
-
-!        Coefficients for computing vertical pressure gradient dp/dz
-!        dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
-
-         nz1 = nVertLevels
-         nz = nz1 + 1
-
-         do iCell=1, nCells
-
-            d1 = zgrid(3,iCell)-zgrid(1,iCell)
-            d2 = zgrid(4,iCell)-zgrid(2,iCell)
-            d3 = d1+d2
-            pzm(1,iCell) =  2.*d3/(d1*d2)
-            pzp(1,iCell) = -2.*d1/(d2*d3)
-
-            do k=2,nz1-1
-               pzp(k,iCell) = 2.*(zgrid(k+1,iCell)-zgrid(k-1,iCell))/     &
-     &                      ((zgrid(k+2,iCell)-zgrid(k  ,iCell))*     &
-     &                       (zgrid(k+2,iCell)-zgrid(k  ,iCell)       &
-     &                       +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-               pzm(k,iCell) = 2.*(zgrid(k+2,iCell)-zgrid(k  ,iCell))/     &
-     &                      ((zgrid(k+1,iCell)-zgrid(k-1,iCell))*     &
-     &                       (zgrid(k+2,iCell)-zgrid(k  ,iCell)       &
-     &                       +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-            end do
-
-            pzp(nz1,iCell) = 0.
-            pzm(nz1,iCell) = 2./(zgrid(nz,iCell)-zgrid(nz1-1,iCell))
-
-         end do
-
-      end if
+      end do
 
    end subroutine atm_compute_pgf_coefs
 

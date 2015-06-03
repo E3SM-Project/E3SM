@@ -67,7 +67,6 @@
                 <nml_option name="config_mix_full"                   type="logical"       default_value="true"        in_defaults="false"/>
                 <nml_option name="config_epssm"                      type="real"          default_value="0.1"/>
                 <nml_option name="config_smdiv"                      type="real"          default_value="0.1"/>
-                <nml_option name="config_newpx"                      type="logical"       default_value="false"/>
                 <nml_option name="config_apvm_upwinding"             type="real"          default_value="0.5"         in_defaults="false"/>
                 <nml_option name="config_h_ScaleWithMesh"            type="logical"       default_value="true"/>
                 <nml_option name="config_num_halos"                  type="integer"       default_value="2"           in_defaults="false"/>
@@ -276,8 +275,6 @@
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
-			<var name="cpr"/>
-			<var name="cpl"/>
 			<var name="zgrid"/>
 			<var name="rdzw"/>
 			<var name="dzu"/>
@@ -715,10 +712,6 @@
                 <var name="cf1"                       type="real"     dimensions=""/>
                 <var name="cf2"                       type="real"     dimensions=""/>
                 <var name="cf3"                       type="real"     dimensions=""/>
-
-                <!-- coefficients used by "newpx" horizontal pressure gradient option -->
-                <var name="cpr"                       type="real"     dimensions="THREE nEdges"/>
-                <var name="cpl"                       type="real"     dimensions="THREE nEdges"/>
 
                 <!-- description of the vertical grid structure -->
                 <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"/>
