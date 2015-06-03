@@ -510,6 +510,44 @@
            </arguments>
          </mpirun>
 </machine>
+
+<machine MACH="hobart">
+         <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
+         <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
+         <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
+         <RUNDIR>/scratch/cluster/$CCSMUSER/$CASE/run</RUNDIR>
+         <EXEROOT>/scratch/cluster/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
+         <OBJROOT>$EXEROOT</OBJROOT>
+         <INCROOT>$EXEROOT/lib/include</INCROOT>
+         <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/scratch/cluster/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_64/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>qstat</BATCHQUERY>
+         <BATCHSUBMIT>qsub </BATCHSUBMIT>
+         <GMAKE_J>4</GMAKE_J>
+         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
+             <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">02:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpiexec</executable>
+           <arguments>
+             <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+             <arg name="num_tasks"> -n {{ num_tasks }} </arg>
+           </arguments>
+         </mpirun>
+</machine>
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
          <COMPILERS>pgi,intel</COMPILERS>
