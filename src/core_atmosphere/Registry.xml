@@ -721,7 +721,7 @@
                 <var name="fzm"                       type="real"     dimensions="nVertLevels"/>
                 <var name="fzp"                       type="real"     dimensions="nVertLevels"/>
                 <var name="zx"                        type="real"     dimensions="nVertLevelsP1 nEdges"/>
-                <var name="zz"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zz"                        type="real"     dimensions="nVertLevels nCells"/>
                 <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb_cell"                   type="real"     dimensions="nVertLevelsP1 maxEdges nCells"/>
