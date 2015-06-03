@@ -22,6 +22,7 @@ module mpas_pool_routines
    use mpas_derived_types
    use mpas_io_units
    use mpas_field_routines
+   use mpas_dmpar
    
    interface mpas_pool_add_field
       module procedure mpas_pool_add_field_0d_real

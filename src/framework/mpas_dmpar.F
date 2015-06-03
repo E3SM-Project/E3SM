@@ -5924,8 +5924,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        end if
    end subroutine mpas_dmpar_copy_field5d_real!}}}
 
-end module mpas_dmpar
-
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_global_abort
 !
@@ -5958,4 +5956,5 @@ end module mpas_dmpar
 
    end subroutine mpas_dmpar_global_abort!}}}
 
+end module mpas_dmpar
 

@@ -23,6 +23,7 @@
         use mpas_kind_types
         use mpas_derived_types
         use mpas_io_units
+        use mpas_dmpar
 
         implicit none
         save
