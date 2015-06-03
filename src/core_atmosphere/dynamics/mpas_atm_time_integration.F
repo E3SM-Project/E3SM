@@ -1482,7 +1482,7 @@ module atm_time_integration
 
       real (kind=RKIND), dimension(:,:), pointer :: rho_zz, theta_m, ru_p, rw_p, rtheta_pp,  &
                                                     rtheta_pp_old, zz, exner, cqu, ruAvg,    &
-                                                    wwAvg, rho_pp, cofwt, coftz, zx,         &
+                                                    wwAvg, rho_pp, cofwt, coftz, zxu,        &
                                                     a_tri, alpha_tri, gamma_tri, dss,        &
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
                                                     zgrid, cofwr, cofwz, w
@@ -1543,7 +1543,7 @@ module atm_time_integration
       call mpas_pool_get_array(tend, 'w', tend_rw)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zgrid', zgrid)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
@@ -1594,7 +1594,7 @@ module atm_time_integration
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
             k = 1
-            dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                               &
+            dpzx(k) = 0.5 * zxu(k,iEdge)                                            &
                       *(pzm(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)        &
                                      -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
                        +pzm(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)        &
@@ -1605,7 +1605,7 @@ module atm_time_integration
                                      -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)))
 
             do k=2,nVertLevels-1
-               dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                                   &
+               dpzx(k) = 0.5 * zxu(k,iEdge)                                                &
                                 *(pzp(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)     &
                                                -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))    &
                                  +pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
@@ -1617,7 +1617,7 @@ module atm_time_integration
             end do
 
             k = nVertLevels
-            dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                                   &
+            dpzx(k) = 0.5 * zxu(k,iEdge)                                                &
                              *(pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
                                             -zz(k-1,cell2)*rtheta_pp_old(k-1,cell2))    &
                               +pzm(k,cell1)*(zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)     &
@@ -2857,7 +2857,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, areaCell, areaTriangle, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
                                                     divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
-                                                    rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zx, cqu, & 
+                                                    rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
                                                     h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
@@ -2985,7 +2985,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'fEdge', fEdge)
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 'zz', zz)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'latCell', latCell)
       call mpas_pool_get_array(mesh, 'latEdge', latEdge)
       call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
@@ -3134,7 +3134,7 @@ module atm_time_integration
 
          k = 1
 
-         dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
+         dpzx(k) = 0.5 * zxu(k,iEdge)                               &
                       *(pzm(k,cell2)*(pp(k+1,cell2)-pp(k,cell2))    &
                        +pzm(k,cell1)*(pp(k+1,cell1)-pp(k,cell1))    &
                        +pzp(k,cell2)*(pp(k+2,cell2)-pp(k,cell2))    &
@@ -3142,7 +3142,7 @@ module atm_time_integration
 
          do k = 2, nVertLevels-1
 
-            dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
+            dpzx(k) = 0.5 * zxu(k,iEdge)                               &
                        *(pzp(k,cell2)*(pp(k+1,cell2)-pp(k  ,cell2))    &
                         +pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
                         +pzp(k,cell1)*(pp(k+1,cell1)-pp(k  ,cell1))    &
@@ -3151,7 +3151,7 @@ module atm_time_integration
          end do
 
          k = nVertLevels
-         dpzx(k) = .25*(zx(k,iEdge)+zx(k+1,iEdge))                  &
+         dpzx(k) = 0.5 * zxu(k,iEdge)                               &
                     *(pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
                      +pzm(k,cell1)*(pp(k  ,cell1)-pp(k-1,cell1)))   
 

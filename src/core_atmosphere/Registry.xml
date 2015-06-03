@@ -161,7 +161,7 @@
 			<var name="rdzu"/>
 			<var name="fzm"/>
 			<var name="fzp"/>
-			<var name="zx"/>
+			<var name="zxu"/>
 			<var name="zz"/>
 			<var name="zb"/>
 			<var name="zb3"/>
@@ -281,7 +281,7 @@
 			<var name="rdzu"/>
 			<var name="fzm"/>
 			<var name="fzp"/>
-			<var name="zx"/>
+			<var name="zxu"/>
 			<var name="zz"/>
 			<var name="zb"/>
 			<var name="zb3"/>
@@ -720,7 +720,7 @@
                 <var name="rdzu"                      type="real"     dimensions="nVertLevels"/>
                 <var name="fzm"                       type="real"     dimensions="nVertLevels"/>
                 <var name="fzp"                       type="real"     dimensions="nVertLevels"/>
-                <var name="zx"                        type="real"     dimensions="nVertLevelsP1 nEdges"/>
+                <var name="zxu"                       type="real"     dimensions="nVertLevels nEdges"/>
                 <var name="zz"                        type="real"     dimensions="nVertLevels nCells"/>
                 <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
