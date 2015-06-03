@@ -726,7 +726,6 @@ module ocn_core
 
       use mpas_derived_types
       use mpas_pool_routines
-      use mpas_configure
 
       implicit none
 
