@@ -6,7 +6,6 @@ OBJS = mpas_kind_types.o \
        mpas_framework.o \
        mpas_timer.o \
        mpas_timekeeping.o \
-       mpas_configure.o \
        mpas_constants.o \
        mpas_attlist.o \
        mpas_hash.o \
@@ -37,15 +36,12 @@ all: framework $(DEPS)
 framework: $(OBJS)
 	ar -ru libframework.a $(OBJS) ../external/ezxml/ezxml.o
 
-mpas_configure.o: mpas_dmpar.o mpas_io_units.o mpas_pool_routines.o $(DEPS)
-
 mpas_framework.o: mpas_dmpar.o \
                   mpas_io.o \
                   mpas_derived_types.o \
                   mpas_domain_routines.o \
                   mpas_field_routines.o \
                   mpas_pool_routines.o \
-                  mpas_configure.o \
                   mpas_timer.o \
                   mpas_sort.o \
                   mpas_io_units.o \
@@ -76,15 +72,15 @@ mpas_timekeeping.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o
 
 mpas_timer.o: mpas_kind_types.o mpas_io_units.o mpas_dmpar.o
 
-mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_configure.o mpas_io_units.o
+mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o
 
-mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_configure.o mpas_io_units.o mpas_block_decomp.o mpas_stream_manager.o mpas_decomp.o $(DEPS)
+mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_io_units.o mpas_block_decomp.o mpas_stream_manager.o mpas_decomp.o $(DEPS)
 
 mpas_io.o: mpas_dmpar.o mpas_io_units.o mpas_attlist.o
 
 mpas_io_streams.o: mpas_attlist.o mpas_derived_types.o mpas_timekeeping.o mpas_io.o mpas_io_units.o mpas_pool_routines.o $(DEPS)
 
-mpas_bootstrapping.o: mpas_derived_types.o mpas_dmpar.o mpas_block_decomp.o mpas_block_creator.o mpas_sort.o mpas_configure.o mpas_timekeeping.o mpas_io_streams.o mpas_io_units.o mpas_stream_manager.o random_id.o $(DEPS)
+mpas_bootstrapping.o: mpas_derived_types.o mpas_dmpar.o mpas_block_decomp.o mpas_block_creator.o mpas_sort.o mpas_timekeeping.o mpas_io_streams.o mpas_io_units.o mpas_stream_manager.o random_id.o $(DEPS)
 
 mpas_io_units.o: mpas_kind_types.o
 

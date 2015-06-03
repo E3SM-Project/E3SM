@@ -29,7 +29,6 @@ module test_core
    !-----------------------------------------------------------------------
    function test_core_init(domain, startTimeStamp) result(iErr)!{{{
    
-      use mpas_configure
       use mpas_derived_types
    
       implicit none
