@@ -357,6 +357,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
         self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
 
+        import stat
         os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
         nl_file = open(nl_path, "a")
         nl_file.write(fake_nl)
@@ -366,7 +367,8 @@ class TestJenkinsGenericJob(unittest.TestCase):
         self.simple_test(False, "-n --branch %s" % self._baseline_name)
 
         # Bless
-        self.simple_test(True, "-b -n --branch %s" % self._baseline_name)
+        stat, output, errput = run_cmd("%s/bless_test_results -n -b %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        self.assertEqual(stat, 0, msg="bless_test_results output:\n%s\n\nerrput:\n%s" % (output, errput))
 
         # Basic namelist compare should now pass again
         self.simple_test(True, "-n --branch %s" % self._baseline_name)

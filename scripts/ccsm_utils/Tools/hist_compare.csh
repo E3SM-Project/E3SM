@@ -5,7 +5,7 @@
 if !( $#argv == 2 ) then
   echo "hist_compare.csh requires two arguments"
   echo "FAIL"
-  exit 0
+  exit 1
 endif
 
 set file1 = $argv[1]
@@ -42,7 +42,7 @@ mkdir $ndir
 if !(-e $ndir) then
   echo "$ndir not created"
   echo "FAIL"
-  exit 0
+  exit 1
 endif
 cd $ndir
 
@@ -64,7 +64,7 @@ foreach sfile (x[a-z][a-z])
     echo "FAIL"
     cd ../
     rm -r -f $ndir
-    exit 0
+    exit 1
   endif
 end
 
