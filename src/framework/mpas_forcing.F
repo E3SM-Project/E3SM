@@ -1002,6 +1002,8 @@ contains
          iTime, & ! index of the forcing time stops
          ierr
 
+    FORCING_DEBUG_WRITE('-------------------------------------------')
+
     ! loop over the forcing time slots
     do iTime = 1, forcingStream % nTimeStencil
     
@@ -1081,6 +1083,8 @@ contains
        FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA ierr)
 
     enddo ! iTime
+
+    FORCING_DEBUG_WRITE('-------------------------------------------')
 
   end subroutine get_initial_forcing_data!}}}
 
@@ -1542,7 +1546,7 @@ contains
     call mpas_get_timeInterval(diff2, currentTime, dt=diffr2)
 
     interpolants(1) = diffr2 / diffr
-    interpolants(2) = diffr1 / diffr
+    interpolants(2) = 1.0_RKIND - interpolants(1) !diffr1 / diffr
 
   end subroutine get_interpolants_linear!}}}
 
