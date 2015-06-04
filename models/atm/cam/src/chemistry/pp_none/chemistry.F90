@@ -59,7 +59,7 @@ contains
 
 !================================================================================================
 
-  subroutine chem_register
+  subroutine chem_register (species_class) !BSINGH:  Added species_class argument
     use aero_model, only : aero_model_register
     !----------------------------------------------------------------------- 
     ! 
@@ -67,6 +67,7 @@ contains
     ! 
     !-----------------------------------------------------------------------
 
+    integer, intent(in) :: species_class(:) !BSINGH:  Added species_class argument
    ! for prescribed aerosols
     call aero_model_register()
 
@@ -114,7 +115,7 @@ contains
 
 !===============================================================================
 
-  subroutine chem_init(phys_state, pbuf2d)
+  subroutine chem_init(phys_state, pbuf2d, species_class)!BSINGH:  Added species_class argument
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: initialize parameterized greenhouse gas chemistry
@@ -124,9 +125,11 @@ contains
     use physics_buffer, only : physics_buffer_desc
     use cam_history,    only : addfld, add_default, phys_decomp
     use aero_model,     only : aero_model_init
+    use constituents,   only: pcnst
 
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    integer, intent(in) :: species_class(pcnst)  !BSINGH: added this as an arg
 
    ! for prescribed aerosols
     call aero_model_init(pbuf2d)

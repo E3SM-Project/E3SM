@@ -72,6 +72,7 @@ module zm_conv_intr
    !BSINGH(09/18/2014): For unified convective  transport
    logical  ::    convproc_do_aer 
    logical  ::    convproc_do_gas 
+   logical  ::    clim_modal_aero
    !BSINGH-Ends
 
 !=========================================================================================
@@ -120,6 +121,7 @@ subroutine zm_conv_init(pref_edge)
   use error_messages, only: alloc_err	
   use phys_control,   only: phys_deepconv_pbl, phys_getopts, cam_physpkg_is
   use physics_buffer, only: pbuf_get_index
+  use rad_constituents, only: rad_cnst_get_info !BSINGH - For unified convective treatment
 
   implicit none
 
@@ -133,6 +135,7 @@ subroutine zm_conv_init(pref_edge)
                             ! temperature, water vapor, cloud ice and cloud
                             ! liquid budgets.
   integer :: history_budget_histfile_num ! output history file number for budget fields
+  integer :: nmodes !BSINGH -  Added to know if it is a modal aero simulation
 
 !
 ! Allocate space for arrays private to this module
@@ -226,6 +229,11 @@ subroutine zm_conv_init(pref_edge)
                        history_budget_histfile_num_out = history_budget_histfile_num, &
                        convproc_do_aer_out = convproc_do_aer, & !BSINGH(09/18/2014)
                        convproc_do_gas_out = convproc_do_gas)   !BSINGH(09/18/2014)
+    !BSINGH - For unified convective treatment
+    ! Determine whether its a 'modal' aerosol simulation  or not
+    call rad_cnst_get_info(0, nmodes=nmodes)
+    clim_modal_aero = (nmodes > 0)
+    !BSINGH - Ends
 
 
     if ( history_budget ) then
@@ -648,19 +656,14 @@ end subroutine zm_conv_tend
 
 
 subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) !BSINGH - Added 11 new args ('mu' to 'lengath') for unified convective transport mods
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) !BSINGH - Added 12 new args ('mu' to 'species_class') for unified convective transport mods
 
    use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,  only: get_nstep
    use physics_buffer, only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
    use error_messages, only: alloc_err
-   !BSINGH -  Added for unified convective transport mods
-#ifdef MODAL_AERO
-   use modal_aero_data, only : species_class, spec_class_aerosol, spec_class_gas
-#endif
-   !BSINGH -  Added for unified convective transport mods-ENDS	
- 
+   use physconst,      only: spec_class_aerosol, spec_class_gas   !BSINGH: For unified convective transport
  
 ! Arguments
    type(physics_state), intent(in )   :: state          ! Physics state variables
@@ -693,6 +696,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
    
    ! w holds position of gathered points vs longitude index 
    integer, intent(in)  :: lengath
+
+   integer, intent(in) :: species_class(:)
    !BSINGH - ENDS
 
 
@@ -728,8 +733,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
 
    nstep = get_nstep()
    !BSINGH - Added for unified convective transport mods
-#ifdef MODAL_AERO
-   if(convproc_do_aer .or. convproc_do_gas) then
+   
+   if((convproc_do_aer .or. convproc_do_gas) .and. clim_modal_aero) then
       do m = 1, pcnst
          if ( (species_class(m) == spec_class_aerosol .and. convproc_do_aer) .or. &
               (species_class(m) == spec_class_gas     .and. convproc_do_gas) ) then
@@ -737,7 +742,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
          end if
       enddo
    endif
-#endif 
+
 
    if (any(ptend%lq(:))) then
       ! initialize dpdry for call to convtran
@@ -756,8 +761,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
       call t_stopf ('convtran2')
    end if
    !BSINGH - For unified convective transport mods
-#ifdef MODAL_AERO
-   if(convproc_do_aer .or. convproc_do_gas) then
+
+   if((convproc_do_aer .or. convproc_do_gas) .and. clim_modal_aero) then
       do m = 1, pcnst
          if ( (species_class(m) == spec_class_aerosol .and. convproc_do_aer) .or. &
               (species_class(m) == spec_class_gas     .and. convproc_do_gas) ) then
@@ -766,7 +771,6 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
          end if
       enddo
    endif
-#endif
 
 end subroutine zm_conv_tend_2
 

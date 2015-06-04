@@ -20,6 +20,7 @@ module modal_aero_convproc
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
    use cam_history,  only: outfld, addfld, add_default, phys_decomp
    use cam_logfile,  only: iulog
+   use physconst,    only: spec_class_aerosol, spec_class_gas
 
    implicit none
 
@@ -37,6 +38,9 @@ module modal_aero_convproc
 !
 ! module data
 !
+   !deepconv_wetdep_history variable controls history output of additonal deep-convection wet deposition fields 
+   !(in addition to the normal fields for total-convection wet deposition)
+   logical, parameter, public :: deepconv_wetdep_history = .true.
    logical, parameter :: use_cwaer_for_activate_maxsat = .false.
    logical, parameter :: apply_convproc_tend_to_ptend = .true.
 
@@ -184,7 +188,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
                            aerdepwetis,                             &
                            mu, md, du, eu,                          &
                            ed, dp, dsubcld,                         &
-                           jt, maxg, ideep, lengath                 )
+                           jt, maxg, ideep, lengath, species_class  )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -210,9 +214,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    use error_messages, only: alloc_err	
 
    use cam_abortutils, only: endrun
-   use modal_aero_data, only: deepconv_wetdep_history, &
-                              lmassptr_amode, nspec_amode, ntot_amode, numptr_amode, &
-                              species_class, spec_class_aerosol, spec_class_gas
+   use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode
  
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
@@ -252,6 +254,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    integer,  intent(in)    :: maxg(pcols)       ! Index of cloud top for each column
    integer,  intent(in)    :: ideep(pcols)      ! Gathering array
    integer,  intent(in)    :: lengath           ! Gathered min lon indices over which to operate
+   integer,  intent(in)    :: species_class(:)
 
 
 ! Local variables
@@ -350,7 +353,8 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
      mu, md, du, eu,                           &
      ed, dp, dsubcld,                          &
      jt, maxg, ideep, lengath,                 &
-     qb, dqdt, dotend, nsrflx, qsrflx          )
+     qb, dqdt, dotend, nsrflx, qsrflx,         &
+     species_class                             )
 
 
 ! apply deep conv processing tendency and prepare for shallow conv processing
@@ -406,7 +410,8 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
      state, pbuf, dt,                          &
      sh_frac, icwmrsh, rprdsh, evapcsh, dlfsh, &
      cmfmcsh, sh_e_ed_ratio,                   &
-     qb, dqdt, dotend, nsrflx, qsrflx          )
+     qb, dqdt, dotend, nsrflx, qsrflx,         &
+     species_class                             )
 
 
 ! apply shallow conv processing tendency
@@ -483,7 +488,8 @@ subroutine ma_convproc_dp_intr(                &
      mu, md, du, eu,                           &
      ed, dp, dsubcld,                          &
      jt, maxg, ideep, lengath,                 &
-     q, dqdt, dotend, nsrflx, qsrflx           )
+     q, dqdt, dotend, nsrflx, qsrflx,          &
+     species_class                             )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -512,8 +518,7 @@ subroutine ma_convproc_dp_intr(                &
    use phys_grid,      only: get_lat_all_p, get_lon_all_p, get_rlat_all_p, get_rlon_all_p
    use cam_abortutils,     only: endrun
 
-   use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode, &
-                              species_class, spec_class_aerosol, spec_class_gas
+   use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode
  
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
@@ -548,6 +553,7 @@ subroutine ma_convproc_dp_intr(                &
    integer,  intent(in)    :: maxg(pcols)       ! Index of cloud top for each column
    integer,  intent(in)    :: ideep(pcols)      ! Gathering array
    integer,  intent(in)    :: lengath           ! Gathered min lon indices over which to operate
+   integer,  intent(in)    :: species_class(:)
 
 !  real(r8), intent(in)    :: concld(pcols,pver) ! Convective cloud cover
 
@@ -911,7 +917,8 @@ subroutine ma_convproc_sh_intr(                 &
      state, pbuf, dt,                           &
      sh_frac, icwmrsh, rprdsh, evapcsh, dlfsh,  &
      cmfmcsh, sh_e_ed_ratio,                    &
-     q, dqdt, dotend, nsrflx, qsrflx            )
+     q, dqdt, dotend, nsrflx, qsrflx,           &
+     species_class                              )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -940,8 +947,7 @@ subroutine ma_convproc_sh_intr(                 &
    use phys_grid,      only: get_lat_all_p, get_lon_all_p, get_rlat_all_p, get_rlon_all_p
    use cam_abortutils,     only: endrun
 
-   use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode, &
-                              species_class, spec_class_aerosol, spec_class_gas
+   use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode
  
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
@@ -963,6 +969,7 @@ subroutine ma_convproc_sh_intr(                 &
    real(r8), intent(in)    :: dlfsh(pcols,pver)   ! Shallow conv cldwtr detrainment (kg/kg/s - grid avg)
    real(r8), intent(in)    :: cmfmcsh(pcols,pverp) ! Shallow conv mass flux (kg/m2/s)
    real(r8), intent(in)    :: sh_e_ed_ratio(pcols,pver)  ! shallow conv [ent/(ent+det)] ratio
+   integer,  intent(in)    :: species_class(:)
 
 !  real(r8), intent(in)    :: concld(pcols,pver) ! Convective cloud cover
 
@@ -1505,9 +1512,7 @@ subroutine ma_convproc_tend(                                           &
    use modal_aero_data, only:  cnst_name_cw, &
       lmassptr_amode, lmassptrcw_amode, &
       ntot_amode, ntot_amode, &
-      nspec_amode, numptr_amode, numptrcw_amode, &
-
-      species_class, spec_class_aerosol, spec_class_gas
+      nspec_amode, numptr_amode, numptrcw_amode
 !  use units, only: getunit
 
    implicit none

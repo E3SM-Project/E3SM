@@ -302,7 +302,7 @@ end subroutine convect_deep_tend
 
 
 subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)!BSINGH(09/17/2014):Added 11 new args (mu to lengath) for unified convective transport
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class)!BSINGH(09/17/2014):Added 12 new args (mu to species_class) for unified convective transport
 
 
    use physics_types, only: physics_state, physics_ptend
@@ -342,11 +342,13 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(in) :: lengath
+
+   integer, intent(in) :: species_class(:)
    !BSINGH - ENDS
 
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
       call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) !BSINGH - Added 11 new args ('mu' to 'lengath') for unified convective transport mods 
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) !BSINGH - Added 12 new args ('mu' to 'species_class') for unified convective transport mods 
    end if
 
 
