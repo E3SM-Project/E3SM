@@ -2,7 +2,9 @@
 
 """
 Jenkins runs this script to perform a test of an acme
-test suite.
+test suite. Essentially, a wrapper around create_test and
+wait_for_tests that handles cleanup of old test results and
+ensures that the batch system is left in a clean state.
 """
 
 import acme_util
@@ -32,69 +34,49 @@ OR
     > %s -d
     \033[1;32m# Run the tests, generating a full set of baselines (useful for first run on a machine) \033[0m
     > %s -g
-    \033[1;32m# From most recent run, bless any namelist changes \033[0m
-    > %s -b -n
-    \033[1;32m# From most recent run, bless all changes \033[0m
-    > %s -b
-    \033[1;32m# From most recent run, bless changes to test foo and bar only \033[0m
-    > %s -b foo bar
-    \033[1;32m# From most recent run, bless only namelist changes to test foo and bar only \033[0m
-    > %s -n -b foo bar
-""" % ((os.path.basename(args[0]), ) * 10),
+""" % ((os.path.basename(args[0]), ) * 6),
 
 description=description,
 
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+    parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
 
-    parser.add_argument("-g", "--generate-baselines", action="store_true", dest="generate_baselines", default=False,
+    parser.add_argument("-g", "--generate-baselines", action="store_true",
                         help="Generate baselines")
 
-    parser.add_argument("-d", "--submit-to-cdash", action="store_true", dest="submit_to_cdash", default=False,
+    parser.add_argument("-d", "--submit-to-cdash", action="store_true",
                         help="Send results to CDash")
 
-    parser.add_argument("-c", "--cdash-build-name", action="store", dest="cdash_build_name", default=None,
+    parser.add_argument("-c", "--cdash-build-name",
                         help="Build name to use for CDash submission. Default will be <TEST_SUITE>_<BRANCH>_<COMPILER>")
 
-    parser.add_argument("-p", "--cdash-project", action="store", dest="cdash_project", default=wait_for_tests.ACME_MAIN_CDASH,
+    parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
-    parser.add_argument("-n", "--namelists-only", action="store_true", dest="namelists_only", default=False,
-                        help="Only compare/generate namelists. Useful for quickly blessing namelist changes")
+    parser.add_argument("-n", "--namelists-only", action="store_true",
+                        help="Only compare/generate namelists. Useful for quick namelist-only operations")
 
-    parser.add_argument("--branch", action="store", dest="branch", default=None,
+    parser.add_argument("--branch",
                         help="Force baseline actions (compare/generate) to use baselines for a specific branch instead of the current branch. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
-    parser.add_argument("-b", "--bless", action="store_true", dest="bless", default=False,
-                        help="Update baselines by copying diffing files from most recent nightly run directly into baselines")
-
-    parser.add_argument("-t", "--test-suite", action="store", dest="test_suite", default=None,
+    parser.add_argument("-t", "--test-suite",
                         help="Override default acme test suite that will be run")
-
-    parser.add_argument("bless_tests", nargs="*",
-                        help="When blessing, limit the bless to tests matching these regex")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    expect(not (args.generate_baselines and args.bless),
-           "Does not make sense to use -g and -r together")
     expect(not (args.submit_to_cdash and args.generate_baselines),
            "Does not make sense to use -g and -d together")
-    expect(not (args.submit_to_cdash and args.bless),
-           "Does not make sense to use -r and -d together")
     expect(not (args.cdash_build_name is not None and not args.submit_to_cdash),
            "Does not make sense to use --cdash-build-name without -d")
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use -p without -d")
-    expect(not (len(args.bless_tests) > 0 and not args.bless),
-           "Providing specific test names only makes sense with -r")
 
-    return args.generate_baselines, args.submit_to_cdash, args.cdash_build_name, args.cdash_project, args.branch, args.namelists_only, args.bless, args.test_suite, args.bless_tests
+    return args.generate_baselines, args.submit_to_cdash, args.cdash_build_name, args.cdash_project, args.branch, args.namelists_only, args.test_suite
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created, batch_system):
@@ -115,66 +97,10 @@ def cleanup_queue(set_of_jobs_we_created, batch_system):
             warning("Deleted leftover job: %s" % job_to_delete)
 
 ###############################################################################
-def bless_test_results(casearea, baseline_root, git_branch, namelists_only, bless_tests):
-###############################################################################
-    test_results = wait_for_tests.get_test_results(glob.glob("%s/*/TestStatus" % casearea),
-                                                   True, # no wait
-                                                   False, # don't check throughput
-                                                   False) # don't ignore namelist diffs
-
-    baseline_area = os.path.join(baseline_root, git_branch)
-
-    for test_name, test_data in test_results.iteritems():
-        if (bless_tests in [[], None] or acme_util.match_any(test_name, bless_tests)):
-            test_result = test_data[1]
-
-            if (test_result == wait_for_tests.TEST_PASSED_STATUS):
-                if (bless_tests not in [[], None]):
-                    warning("Asked to bless test %s, but it passed" % test_name)
-            else:
-
-                print "Blessing results for test:", test_name, "most recent result:", test_result
-
-                # Get baseline dir for this test
-                baseline_dir_for_test = os.path.join(baseline_area, test_name)
-                expect(os.path.isdir(baseline_dir_for_test),
-                       "Problem, baseline dir '%s' does not exist" % baseline_dir_for_test)
-
-                # Get testcase dir for this test
-                globs = glob.glob("%s*" % os.path.join(casearea, test_name))
-                expect(len(globs) == 1, "Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
-                testcase_dir_for_test = globs[0]
-
-                # Find files of various types
-                namelist_files = []
-                other_files = []
-                for root, _, files in os.walk(baseline_dir_for_test):
-                    if (root == baseline_dir_for_test):
-                        rel_root = ""
-                    else:
-                        rel_root = root.replace("%s/" % baseline_dir_for_test, "")
-
-                    for file_ in files:
-                        rel_file = os.path.join(rel_root, file_)
-
-                        if (rel_root == "CaseDocs" or file_.startswith("user_nl")):
-                            # TODO: Do a namelist diff and only copy if different?
-                            namelist_files.append(rel_file)
-                        else:
-                            other_files.append(rel_file)
-
-                # Update namelist files
-                acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
-
-                # Update other files
-                if (test_result != wait_for_tests.NAMELIST_FAIL_STATUS and not namelists_only):
-                    acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, other_files)
-
-###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash,
                         arg_cdash_build_name=None, cdash_project=None,
-                        baseline_branch=None, namelists_only=False, bless=False,
-                        arg_test_suite=None, bless_tests=None):
+                        baseline_branch=None, namelists_only=False,
+                        arg_test_suite=None):
 ###############################################################################
     acme_machine = acme_util.probe_machine_name()
     expect(acme_machine is not None,
@@ -189,10 +115,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash,
     test_suite = default_test_suite if arg_test_suite is None else arg_test_suite
     casearea = os.path.join(testroot, "jenkins")
     git_branch = acme_util.get_current_branch(repo=acme_repo) if baseline_branch is None else baseline_branch
-
-    if (bless):
-        bless_test_results(casearea, baseline_root, git_branch, namelists_only, bless_tests)
-        return True
 
     if (use_batch):
         batch_system = acme_util.probe_batch_system()
@@ -317,10 +239,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, bless, test_suite, bless_tests = \
+    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, test_suite = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, bless, test_suite, bless_tests) else 1)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, test_suite) else 1)
 
 ###############################################################################
 

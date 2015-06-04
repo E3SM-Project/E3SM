@@ -237,7 +237,7 @@ def match_any(item, re_list):
     return False
 
 ###############################################################################
-def safe_copy(src_dir, tgt_dir, files):
+def safe_copy(src_dir, tgt_dir, file_map):
 ###############################################################################
     """
     Copies a set of files from one dir to another. Works even if overwriting a
@@ -245,10 +245,10 @@ def safe_copy(src_dir, tgt_dir, files):
     matched on the tgt side.
     """
     import shutil
-    for file_ in files:
-        full_tgt = os.path.join(tgt_dir, file_)
-        full_src = os.path.join(src_dir, file_)
-        expect(os.path.isfile(full_src), "Source dir '%s' missing file '%s'" % (src_dir, file_))
+    for src_file, tgt_file in file_map:
+        full_tgt = os.path.join(tgt_dir, tgt_file)
+        full_src = src_file if os.path.isabs(src_file) else os.path.join(src_dir, src_file)
+        expect(os.path.isfile(full_src), "Source dir '%s' missing file '%s'" % (src_dir, src_file))
         if (os.path.isfile(full_tgt)):
             os.remove(full_tgt)
         shutil.copy2(full_src, full_tgt)
@@ -327,7 +327,7 @@ def get_batch_system_info(batch_system=None):
     return BATCH_INFO[batch_system]
 
 ###############################################################################
-def get_machine_info(machine=None):
+def get_machine_info(machine=None, user=None):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -340,8 +340,9 @@ def get_machine_info(machine=None):
         machine = probe_machine_name()
     expect(machine is not None, "Failed to probe machine")
     expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
+    user = getpass.getuser() if user is None else user
 
-    return [item.replace("<USER>", getpass.getuser()) if type(item) is str else item for item in MACHINE_INFO[machine]]
+    return [item.replace("<USER>", user) if type(item) is str else item for item in MACHINE_INFO[machine]]
 
 ###############################################################################
 def get_utc_timestamp(format="%Y%m%d_%H%M%S"):
