@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use Cwd;
-use POSIX qw(ceil);
+use POSIX qw(ceil floor);
 use Exporter qw(import);
 
 #==============================================================================
@@ -289,7 +289,7 @@ sub _computeValues
 	my $ptile = $self->{'MAX_TASKS_PER_NODE'} / 2;
 	if($self->{'maxthreads'} > 1)
 	{
-		$ptile = $self->{'MAX_TASKS_PER_NODE'} / $self->{'maxthreads'};
+		$ptile = floor($self->{'MAX_TASKS_PER_NODE'} / $self->{'maxthreads'});
 	}
 	$self->{'ptile'} = $ptile;
 
