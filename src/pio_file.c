@@ -43,10 +43,10 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
 #ifdef _PNETCDF
-    file->varlist[i].request = NC_REQ_NULL;
-    file->varlist[i].fillrequest = NC_REQ_NULL;
-    file->varlist[i].distributed = false;
-    file->varlist[i].type = 0;
+    for(int req=0;req<PIO_MAX_REQUESTS;req++){
+      file->varlist[i].request[req] = NC_REQ_NULL;
+    }
+    file->varlist[i].nreqs=0;
 #endif
     file->varlist[i].fillbuf = NULL;
     file->varlist[i].iobuf = NULL;
@@ -164,10 +164,10 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
 #ifdef _PNETCDF
-    file->varlist[i].request = NC_REQ_NULL;
-    file->varlist[i].fillrequest = NC_REQ_NULL;
-    file->varlist[i].distributed = false;
-    file->varlist[i].type = 0;
+    for(int req=0;req<PIO_MAX_REQUESTS;req++){
+      file->varlist[i].request[req] = NC_REQ_NULL;
+    }
+    file->varlist[i].nreqs=0;
 #endif
     file->varlist[i].fillbuf = NULL;
     file->varlist[i].iobuf = NULL;

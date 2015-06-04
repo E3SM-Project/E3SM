@@ -109,9 +109,10 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     character(len=*), intent(in) :: ival
+    character, allocatable :: cval(:)
+    integer :: i
 #ifdef DOTHIS
     integer :: clen, i
-    character, allocatable :: cval(:)
     integer(C_SIZE_T), allocatable :: cindex(:)
     interface
        integer(C_INT) function PIOc_put_var1_text(ncid, varid, index, op) &
@@ -153,7 +154,14 @@ contains
     allocate(count(ndims))
     count = 1
     count(1) = len(ival)
-     ierr = put_vara_1d_text(File,varid, index, count, (/ival/)) 
+    allocate(cval(count(1)+1))
+    cval = C_NULL_CHAR
+    do i=1,len_trim(ival)
+       cval(i) = ival(i:i)
+    end do
+
+!print *,__FILE__,__LINE__,index,count,ival
+     ierr = put_vara_1d_text(File,varid, index, count, cval)
     deallocate(count)
 #endif
   end function put_var1_text
@@ -473,6 +481,7 @@ contains
     sd = size(ival)
     allocate(cval(clen*sd))
     call Fstring2Cstring_{DIMS}d (ival, cval)
+
     ierr = PIOc_put_vara_text(file%fh, varid-1,  cstart, ccount, cval)
     deallocate(cval, cstart, ccount)
 
