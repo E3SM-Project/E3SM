@@ -36,7 +36,7 @@ MACHINE_INFO = {
         "acme_integration",
         True,
         "fy150001",
-        "/gscratch1/<USER>/acme_scratch",
+        "/gscratch/<USER>/acme_scratch",
         "/projects/ccsm/ccsm_baselines",
         "wwwproxy.sandia.gov:80"
     ),
@@ -45,7 +45,7 @@ MACHINE_INFO = {
         "acme_integration",
         True,
         "fy150001",
-        "/gscratch1/<USER>/acme_scratch/skybridge",
+        "/gscratch/<USER>/acme_scratch/skybridge",
         "/projects/ccsm/ccsm_baselines",
         "wwwproxy.sandia.gov:80"
     ),

@@ -67,7 +67,7 @@
         <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
         <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
         <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
-        <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch</CESMSCRATCHROOT>
+        <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch</CESMSCRATCHROOT>
         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
@@ -88,7 +88,7 @@
         <OS>LINUX</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
         <COMPILERS>intel</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,lahey -->
         <MPILIBS>openmpi,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
-        <CESMSCRATCHROOT>/gscratch1/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
+        <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
