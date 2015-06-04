@@ -1291,12 +1291,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "      %s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
 	}
-	fortprintf(fd, "      %scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
 
 	if (!no_packages) {
 		fortprintf(fd, "      end if\n");
 	}
-
+	fortprintf(fd, "      call mpas_pool_add_field(newSubPool, '%s', %s)\n", vararrname_in_code, pointer_name);
 	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", vararrname, pointer_name);
 	fortprintf(fd, "\n");
 
@@ -1459,12 +1458,12 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "      %s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
 	}
-	fortprintf(fd, "      %scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing, varname_in_code, pointer_name);
 
 	if(varpackages != NULL){
 		fortprintf(fd, "      end if\n");
 	}
 
+	fortprintf(fd, "      call mpas_pool_add_field(newSubPool, '%s', %s)\n" , varname_in_code, pointer_name);
 	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", varname, pointer_name);
 	fortprintf(fd, "\n");
 
@@ -1565,35 +1564,11 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 
 	fortprintf(fd, "\n");
 
-	// Parse packages if they are defined
-	package_list[0] = '\0';
-	no_packages = build_struct_package_lists(superStruct, package_list);
-
-	spacing[0] = '\0';
-	if(!no_packages){
-		fortprintf(fd, "      if (");
-		string = strdup(package_list);
-		tofree = string;
-		token = strsep(&string, ";");
-		fortprintf(fd, "%sActive", token);
-
-		while( (token = strsep(&string, ";")) != NULL){
-			fortprintf(fd, " .or. %sActive", token);
-		}
-
-		fortprintf(fd, ") then\n");
-		sprintf(spacing, "   ");
-	}
-
 	// Setup new pool to be added into structPool
-	fortprintf(fd, "      %sallocate(newSubPool)\n", spacing);
-	fortprintf(fd, "      %scall mpas_pool_create_pool(newSubPool)\n", spacing);
-	fortprintf(fd, "      %scall mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", spacing, structnameincode);
-	fortprintf(fd, "      %scall mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", spacing, structname);
-
-	if(!no_packages){
-		fortprintf(fd, "      end if\n");
-	}
+	fortprintf(fd, "      allocate(newSubPool)\n");
+	fortprintf(fd, "      call mpas_pool_create_pool(newSubPool)\n");
+	fortprintf(fd, "      call mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", structnameincode);
+	fortprintf(fd, "      call mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", structname);
 
 	fortprintf(fd, "\n");
 
