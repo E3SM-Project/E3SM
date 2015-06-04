@@ -1005,6 +1005,16 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
       endif
    enddo
 
+   if (iamin_CPLID) then 
+      if (flow == 'c2x') then
+         av => component_get_c2x_cx(comp)
+      else if (flow == 'x2c') then
+         av => component_get_x2c_cx(comp)
+      end if
+      dom   => component_get_dom_cx(comp)
+      gsmap => component_get_gsmap_cx(comp)
+   end if
+
    if (first_call) then
       ntout = ntout + 1
       if (ntout > maxout) then
@@ -1024,9 +1034,6 @@ subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, &
    endif
 
    if (iamin_CPLID) then !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-      dom   => component_get_dom_cx(comp)
-      gsmap => component_get_gsmap_cx(comp)
 
       samples_per_file = nt      
 
