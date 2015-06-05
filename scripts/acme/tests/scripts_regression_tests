@@ -7,6 +7,9 @@ sys.path.append(SCRIPT_DIR)
 from acme_util import run_cmd
 import acme_util
 
+DART_CONFIG = "DartConfiguration.tcl"
+DART_BACKUP = "temp_dart_backup"
+
 ###############################################################################
 class RunUnitTests(unittest.TestCase):
 ###############################################################################
@@ -107,6 +110,10 @@ class TestWaitForTests(unittest.TestCase):
 
         self._thread_error = None
 
+        # wait_for_tests could blow away our dart config, need to back it up
+        if (os.path.exists(DART_CONFIG)):
+            shutil.move(DART_CONFIG, DART_BACKUP)
+
     ###########################################################################
     def tearDown(self):
     ###########################################################################
@@ -118,6 +125,9 @@ class TestWaitForTests(unittest.TestCase):
 
         if (self._unset_proxy):
             del os.environ["http_proxy"]
+
+        if (os.path.exists(DART_BACKUP)):
+            shutil.move(DART_BACKUP, DART_CONFIG)
 
     ###########################################################################
     def simple_test(self, testdir, expected_results, extra_args=""):
@@ -257,6 +267,10 @@ class TestJenkinsGenericJob(unittest.TestCase):
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % acme_util.get_utc_timestamp()
 
+        # wait_for_tests could blow away our dart config, need to back it up
+        if (os.path.exists(DART_CONFIG)):
+            shutil.move(DART_CONFIG, DART_BACKUP)
+
     ###########################################################################
     def tearDown(self):
     ###########################################################################
@@ -272,6 +286,9 @@ class TestJenkinsGenericJob(unittest.TestCase):
         baselines = os.path.join(baseline_area, self._baseline_name)
         if (os.path.isdir(baselines)):
             shutil.rmtree(baselines)
+
+        if (os.path.exists(DART_BACKUP)):
+            shutil.move(DART_BACKUP, DART_CONFIG)
 
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
@@ -367,7 +384,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         self.simple_test(False, "-n --branch %s" % self._baseline_name)
 
         # Bless
-        stat, output, errput = run_cmd("%s/bless_test_results -n -b %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/bless_test_results -n -f -b %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
         self.assertEqual(stat, 0, msg="bless_test_results output:\n%s\n\nerrput:\n%s" % (output, errput))
 
         # Basic namelist compare should now pass again
