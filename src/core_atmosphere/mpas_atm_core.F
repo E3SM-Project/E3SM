@@ -377,7 +377,7 @@ module atm_core
             call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
             call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
-            call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+            call atm_compute_output_diagnostics(state, 1, diag, mesh)
             call atm_compute_pv_diagnostics(state, 1, diag, mesh)
 
             block_ptr => block_ptr % next
@@ -449,7 +449,7 @@ module atm_core
          ! Write any output streams that have alarms ringing, after computing diagnostics fields
          !
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         if (MPAS_stream_mgr_ringing_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
            block_ptr => domain % blocklist
            do while (associated(block_ptr))
               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
@@ -458,7 +458,7 @@ module atm_core
               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
               call mpas_pool_get_subpool(block_ptr % structs, 'tend', tend)
               call mpas_pool_get_subpool(block_ptr % structs, 'tend_physics', tend_physics)
-              call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+              call atm_compute_output_diagnostics(state, 1, diag, mesh)
               call atm_compute_pv_diagnostics(state, 1, diag, mesh)
               call atm_compute_pvBudget_diagnostics(state, 1, diag, mesh, tend, tend_physics)
 
@@ -505,7 +505,7 @@ module atm_core
    
    end function atm_core_run
    
-   subroutine atm_compute_output_diagnostics(state, time_lev, diag, diag_physics, mesh)
+   subroutine atm_compute_output_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain to be written to history files
    !
@@ -1014,103 +1014,6 @@ module atm_core
       end do ! end loop over edges
 
    end subroutine atm_adv_coef_compression
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_setup_packages
-   !
-   !> \brief   Pacakge setup routine
-   !> \author  Doug Jacobsen
-   !> \date    September 2011
-   !> \details 
-   !>  This routine is intended to correctly configure the packages for this MPAS
-   !>   core. It can use any Fortran logic to properly configure packages, and it
-   !>   can also make use of any namelist options. All variables in the model are
-   !>   *not* allocated until after this routine is called.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(configs, packages, ierr)!{{{
-
-      use mpas_packages
-
-      implicit none
-
-      type (mpas_pool_type), intent(inout) :: configs
-      type (mpas_pool_type), intent(inout) :: packages
-      integer, intent(out) :: ierr
-
-      ierr = 0
-
-   end subroutine mpas_core_setup_packages!}}}
-
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_setup_clock
-   !
-   !> \brief   Pacakge setup routine
-   !> \author  Michael Duda
-   !> \date    6 August 2014
-   !> \details 
-   !>  The purpose of this routine is to allow the core to set up a simulation
-   !>  clock that will be used by the I/O subsystem for timing reads and writes
-   !>  of I/O streams.
-   !>  This routine is called from the superstructure after the framework 
-   !>  has been initialized but before any fields have been allocated and 
-   !>  initial fields have been read from input files. However, all namelist
-   !>  options are available.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
-
-      implicit none
-
-      type (MPAS_Clock_type), intent(inout) :: core_clock
-      type (mpas_pool_type), intent(inout) :: configs
-      integer, intent(out) :: ierr
-
-      call atm_simulation_clock_init(core_clock, configs, ierr)
-
-   end subroutine mpas_core_setup_clock
-
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_get_mesh_stream
-   !
-   !> \brief   Returns the name of the stream containing mesh information
-   !> \author  Michael Duda
-   !> \date    8 August 2014
-   !> \details 
-   !>  This routine returns the name of the I/O stream containing dimensions,
-   !>  attributes, and mesh fields needed by the framework bootstrapping 
-   !>  routine. At the time this routine is called, only namelist options 
-   !>  are available.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
-
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: configs
-      character(len=*), intent(out) :: stream
-      integer, intent(out) :: ierr
-
-      logical, pointer :: config_do_restart
-
-      ierr = 0
-
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         ierr = 1
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
-
-   end subroutine mpas_core_get_mesh_stream
    
    real(kind=RKIND) function dotProduct(a, b, sz)
 
@@ -1886,7 +1789,6 @@ module atm_core
    subroutine atm_compute_pv_diagnostics(state, time_lev, diag, mesh)
    ! diagnose epv and some fields on horizontal surfaces
    
-      use mpas_grid_types
       use mpas_constants
    
       implicit none
@@ -2181,7 +2083,6 @@ module atm_core
       ! F/rho is tend_{u,v,w} and we'll calculate a cell's vertical and horizontal curl separately.
       
       use mpas_constants
-      use mpas_grid_types
       
       implicit none
       
