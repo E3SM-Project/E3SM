@@ -34,7 +34,6 @@ module mpas_constants
    real (kind=RKIND), parameter :: cvpm    = -cv/cp              !
    real (kind=RKIND), parameter :: prandtl = 1.0                 !< Constant: Prandtl number
 
-
    contains
 
 

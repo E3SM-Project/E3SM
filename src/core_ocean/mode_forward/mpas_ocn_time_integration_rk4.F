@@ -19,7 +19,8 @@
 
 module ocn_time_integration_rk4
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
    use mpas_vector_reconstruction
@@ -467,6 +468,7 @@ module ocn_time_integration_rk4
               call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
               call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
               call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
+              call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
               call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
               call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
@@ -643,6 +645,9 @@ module ocn_time_integration_rk4
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
 
         ! Call ocean diagnostic solve in preparation for vertical mixing.  Note 
         ! it is called again after vertical mixing, because u and tracers change.

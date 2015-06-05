@@ -1,10 +1,8 @@
 .SUFFIXES: .F .c .o
 
-ifeq "$(CESM)" "true"
+ifneq "$(ESM)" ""
 
-ifeq "$(CORE)" "ocean"
-include Makefile.in.CESM_OCN
-endif
+include Makefile.in.$(ESM)
 
 else
 
@@ -16,32 +14,30 @@ endif
 
 all: mpas
 
-mpas: $(AUTOCLEAN_DEPS) reg_includes externals frame ops dycore drver
+mpas: $(AUTOCLEAN_DEPS) externals frame ops dycore drver
 	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) driver/*.o -L. -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L./external/esmf_time_f90 -lesmf_time
 
-externals: $(AUTOCLEAN_DEPS) reg_includes
-	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" )
+externals: $(AUTOCLEAN_DEPS)
+	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" all )
 
-drver:  $(AUTOCLEAN_DEPS) reg_includes externals frame ops dycore
+drver:  $(AUTOCLEAN_DEPS) externals frame ops dycore
 	( cd driver; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 endif
 
-reg_includes: core_reg $(AUTOCLEAN_DEPS)  
-	( cd registry; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(SCC)" )
-	( cd inc; ../registry/parse < ../core_$(CORE)/Registry_processed.xml)
+build_tools: externals
+	(cd tools; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(SCC)" )
 
-core_reg:
-	(cd core_$(CORE); $(MAKE) core_reg )
-
-frame: $(AUTOCLEAN_DEPS) reg_includes externals
+frame: $(AUTOCLEAN_DEPS) externals
 	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf framework/libframework.a libframework.a
 
-ops: $(AUTOCLEAN_DEPS) reg_includes externals frame
+ops: $(AUTOCLEAN_DEPS) externals frame
 	( cd operators; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf operators/libops.a libops.a
 
-dycore: $(AUTOCLEAN_DEPS) reg_includes externals frame ops
+dycore: $(AUTOCLEAN_DEPS) build_tools externals frame ops
+	( cd core_$(CORE); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(PWD)/tools/registry/parse" gen_includes )
+	( cd core_$(CORE); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(PWD)/tools/input_gen/namelist_gen" ST_GEN="$(PWD)/tools/input_gen/streams_gen" core_input_gen )
 	( cd core_$(CORE); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf core_$(CORE)/libdycore.a libdycore.a
 
@@ -63,9 +59,8 @@ ifeq "$(AUTOCLEAN)" "true"
 	@echo ""
 endif
 	$(RM) libframework.a libops.a libdycore.a lib$(CORE).a *.o
-	( cd registry; $(MAKE) clean )
+	( cd tools; $(MAKE) clean )
 	( cd external; $(MAKE) clean )
 	( cd framework; $(MAKE) clean )
 	( cd operators; $(MAKE) clean )
-	( cd inc; rm -f *.inc Registry.processed )
 	( cd driver; $(MAKE) clean )

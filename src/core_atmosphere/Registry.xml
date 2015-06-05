@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" version="3.3">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="4.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -35,12 +35,14 @@
 
         <nml_record name="nhyd_model" in_defaults="true">
                 <nml_option name="config_time_integration"           type="character"     default_value="SRK3"        in_defaults="false"/>
-                <nml_option name="config_dt"                         type="real"          default_value="450.0"/>
+                <nml_option name="config_dt"                         type="real"          default_value="720.0"/>
                 <nml_option name="config_calendar_type"              type="character"     default_value="gregorian"   in_defaults="false"/>
                 <nml_option name="config_start_time"                 type="character"     default_value="2010-10-23_00:00:00"/>
                 <nml_option name="config_stop_time"                  type="character"     default_value="none"        in_defaults="false"/>
                 <nml_option name="config_run_duration"               type="character"     default_value="5_00:00:00"/>
-                <nml_option name="config_number_of_sub_steps"        type="integer"       default_value="6"/>
+                <nml_option name="config_split_dynamics_transport"   type="logical"       default_value="true"/>
+                <nml_option name="config_number_of_sub_steps"        type="integer"       default_value="2"/>
+                <nml_option name="config_dynamics_split_steps"       type="integer"       default_value="3"/>
                 <nml_option name="config_h_mom_eddy_visc2"           type="real"          default_value="0.0"/>
                 <nml_option name="config_h_mom_eddy_visc4"           type="real"          default_value="0.0"/>
                 <nml_option name="config_v_mom_eddy_visc2"           type="real"          default_value="0.0"/>
@@ -80,7 +82,6 @@
                 <nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"  in_defaults="false"/>
                 <nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
-                <nml_option name="config_pio_format"                 type="character"     default_value="pnetcdf"            in_defaults="false"/>
         </nml_record>
 
         <nml_record name="decomposition" in_defaults="true">
@@ -179,7 +180,7 @@
 			<var name="w"/>
 			<var name="rho"/>
 			<var name="theta"/>
-			<var name="rh"/>
+			<var name="relhum"/>
 			<var name="exner_base"/>
 			<var name="pressure_base"/>
 			<var name="rho_base"/>
@@ -308,7 +309,7 @@
 			<var name="pressure_p"/>
 			<var name="rho"/>
 			<var name="theta"/>
-			<var name="rh"/>
+			<var name="relhum"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
 			<var name="rv"/>
@@ -437,7 +438,6 @@
 			<var name="lai"/>
 			<var name="noahres"/>
 			<var name="potevp"/>
-			<var name="qz0"/>
 			<var name="sfc_albedo"/>
 			<var name="sfc_emiss"/>
 			<var name="sfc_emibck"/>
@@ -564,7 +564,7 @@
 			<var name="rho"/>
 			<var name="theta"/>
 			<var_array name="scalars"/>
-			<var name="rh"/>
+			<var name="relhum"/>
 			<var name="divergence"/>
 			<var name="vorticity"/>
 			<var name="ke"/>
@@ -589,7 +589,6 @@
 			<var name="i_rainnc"/>
 			<var name="rainnc"/>
 			<var name="precipw"/>
-			<var name="relhum"/>
 			<var name="cuprec"/>
 			<var name="i_rainc"/>
 			<var name="rainc"/>
@@ -638,6 +637,7 @@
 			<var name="rainnc"/>
 			<var name="refl10cm_max"/>
 			<var name="precipw"/>
+			<var name="mslp"/>
 			<var name="temperature_200hPa"/>
 			<var name="temperature_500hPa"/>
 			<var name="temperature_850hPa"/>
@@ -706,6 +706,7 @@
                 <var name="dcEdge"                    type="real"     dimensions="nEdges"/>
                 <var name="angleEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="areaCell"                  type="real"     dimensions="nCells"/>
+                <var name="invAreaCell"               type="real"     dimensions="nCells"/>
                 <var name="areaTriangle"              type="real"     dimensions="nVertices"/>
                 <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"/>
                 <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"/>
@@ -829,7 +830,7 @@
                 <!-- needed for those 4 variables to get bit for bit restart capabilities, otherwise.                    -->
                 <var name="rho"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rh"                      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="relhum"                  type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                       type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="divergence"              type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="vorticity"               type="real"     dimensions="nVertLevels nVertices Time"/>
@@ -880,8 +881,11 @@
                 <var name="rho_base"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta_base"              type="real"     dimensions="nVertLevels nCells Time"/>
 
+                <var name="rho_zz_old_split"        type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="ruAvg"                   type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="wwAvg"                   type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="ruAvg_split"             type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="wwAvg_split"             type="real"     dimensions="nVertLevelsP1 nCells Time"/>
                 <var name="cqu"                     type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="cqw"                     type="real"     dimensions="nVertLevels nCells Time"/>
 
@@ -906,6 +910,7 @@
                 <var name="kdiff"                   type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <var name="surface_pressure"        type="real"     dimensions="nCells Time"/>
+                <var name="mslp"                    type="real"     dimensions="nCells Time"/>
 
                 <var name="temperature_200hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="temperature_500hPa"     type="real"     dimensions="nCells Time"/>
@@ -1004,15 +1009,17 @@
                 <nml_option name="config_greeness_update"            type="character"     default_value="24:00:00"   in_defaults="false"/>
                 <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
 
-                <nml_option name="config_microp_scheme"              type="character"     default_value="wsm6"/>
-                <nml_option name="config_convection_scheme"          type="character"     default_value="kain_fritsch"/>
-                <nml_option name="config_lsm_scheme"                 type="character"     default_value="noah"/>
-                <nml_option name="config_pbl_scheme"                 type="character"     default_value="ysu"/>
-                <nml_option name="config_gwdo_scheme"                type="character"     default_value="off"/>
-                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="cld_fraction"/>
-                <nml_option name="config_radt_lw_scheme"             type="character"     default_value="rrtmg_lw"/>
-                <nml_option name="config_radt_sw_scheme"             type="character"     default_value="rrtmg_sw"/>
-                <nml_option name="config_sfclayer_scheme"            type="character"     default_value="monin_obukhov"/>
+                <nml_option name="config_physics_suite"              type="character"     default_value="mesoscale_reference"  in_defaults="true"/>
+
+                <nml_option name="config_microp_scheme"              type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_convection_scheme"          type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_lsm_scheme"                 type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_pbl_scheme"                 type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_gwdo_scheme"                type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_radt_lw_scheme"             type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_radt_sw_scheme"             type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_sfclayer_scheme"            type="character"     default_value="suite"      in_defaults="false"/>
 
                 <nml_option name="config_bucket_radt"                type="real"          default_value="1.0e9"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainc"               type="real"          default_value="100.0"      in_defaults="false"/>
@@ -1069,7 +1076,6 @@
                 <var name="graupelnc"     type="real"     dimensions="nCells Time"/>
 
                 <var name="precipw"       type="real"     dimensions="nCells Time"/>
-                <var name="relhum"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->
@@ -1403,7 +1409,6 @@
                 <!-- lai            :leaf area index                                                                [-] -->
                 <!-- noahres        :residual of the noah land-surface scheme energy budget                     [W m-2] -->
                 <!-- potevp         :potential evaporation                                                      [W m-2] -->
-                <!-- qz0            :specific humidity at znt                                                 [kg kg-1] -->
                 <!-- sfc_albedo     :surface albedo                                                                 [-] -->
                 <!-- sfc_embck      :background emissivity                                                          [-] -->
                 <!-- sfc_emiss      :surface emissivity                                                             [-] -->
@@ -1429,7 +1434,6 @@
                 <var name="lai"           type="real"     dimensions="nCells Time"/>
                 <var name="noahres"       type="real"     dimensions="nCells Time"/>
                 <var name="potevp"        type="real"     dimensions="nCells Time"/>
-                <var name="qz0"           type="real"     dimensions="nCells Time"/>
                 <var name="sfc_albedo"    type="real"     dimensions="nCells Time"/>
                 <var name="sfc_emiss"     type="real"     dimensions="nCells Time"/>
                 <var name="sfc_emibck"    type="real"     dimensions="nCells Time"/>
@@ -1558,6 +1562,8 @@
                 <var name="albedo12m"   type="real"     dimensions="nMonths nCells"/>
                 <var name="greenfrac"   type="real"     dimensions="nMonths nCells"/>
 
+                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells"/>
+
                 <var name="sfc_albbck"  type="real"     dimensions="nCells Time"/>
                 <var name="skintemp"    type="real"     dimensions="nCells Time"/>
                 <var name="snow"        type="real"     dimensions="nCells Time"/>
@@ -1570,7 +1576,6 @@
                 <var name="xice"        type="real"     dimensions="nCells Time"/>
                 <var name="xland"       type="real"     dimensions="nCells Time"/>
 
-                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells Time"/>
                 <var name="smcrel"      type="real"     dimensions="nSoilLevels nCells Time"/>
                 <var name="sh2o"        type="real"     dimensions="nSoilLevels nCells Time"/>
                 <var name="smois"       type="real"     dimensions="nSoilLevels nCells Time"/>
@@ -1591,15 +1596,15 @@
                 <!--  ol3        : orographic direction asymmetry function                                          (-) -->
                 <!--  ol4        : orographic direction asymmetry function                                          (-) -->
 
-		<var name="var2d"                             type="real"     dimensions="nCells"/>
-		<var name="con"                               type="real"     dimensions="nCells"/>
-		<var name="oa1"                               type="real"     dimensions="nCells"/>
-		<var name="oa2"                               type="real"     dimensions="nCells"/>
-		<var name="oa3"                               type="real"     dimensions="nCells"/>
-		<var name="oa4"                               type="real"     dimensions="nCells"/>
-		<var name="ol1"                               type="real"     dimensions="nCells"/>
-		<var name="ol2"                               type="real"     dimensions="nCells"/>
-		<var name="ol3"                               type="real"     dimensions="nCells"/>
-		<var name="ol4"                               type="real"     dimensions="nCells"/>
+		<var name="var2d"       type="real"     dimensions="nCells"/>
+		<var name="con"         type="real"     dimensions="nCells"/>
+		<var name="oa1"         type="real"     dimensions="nCells"/>
+		<var name="oa2"         type="real"     dimensions="nCells"/>
+		<var name="oa3"         type="real"     dimensions="nCells"/>
+		<var name="oa4"         type="real"     dimensions="nCells"/>
+		<var name="ol1"         type="real"     dimensions="nCells"/>
+		<var name="ol2"         type="real"     dimensions="nCells"/>
+		<var name="ol3"         type="real"     dimensions="nCells"/>
+		<var name="ol4"         type="real"     dimensions="nCells"/>
         </var_struct>
 </registry>

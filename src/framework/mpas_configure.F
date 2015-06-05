@@ -19,6 +19,8 @@ module mpas_configure
 
    use mpas_dmpar
    use mpas_io_units
+   use mpas_derived_types
+   use mpas_pool_routines
 
    contains
 
@@ -32,8 +34,5 @@ module mpas_configure
 !>  This routine reads and broadcasts the namelist file. 
 !
 !-----------------------------------------------------------------------
-
-#include "namelist_call.inc"
-#include "namelist_defines.inc"
 
 end module mpas_configure

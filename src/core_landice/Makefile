@@ -1,6 +1,7 @@
 .SUFFIXES: .F .o
 
-OBJS = 	mpas_li_mpas_core.o \
+OBJS = 	mpas_li_core.o \
+	mpas_li_core_interface.o \
 	mpas_li_time_integration.o \
 	mpas_li_time_integration_fe.o \
 	mpas_li_diagnostic_vars.o \
@@ -18,7 +19,24 @@ core_landice: $(OBJS)
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
-mpas_li_mpas_core.o: mpas_li_time_integration.o \
+core_input_gen:
+	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.landice )
+	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.landice stream_list.landice. listed )
+
+gen_includes:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
+	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+
+post_build:
+	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
+	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
+	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
+
+mpas_li_core_interface.o: mpas_li_core.o
+
+mpas_li_core.o: mpas_li_time_integration.o \
                      mpas_li_setup.o \
                      mpas_li_velocity.o \
                      mpas_li_diagnostic_vars.o \
@@ -52,6 +70,7 @@ clean:
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
 	$(RM) *.i
+	$(RM) -r default_inputs
 
 .F.o:
 	$(RM) $@ $*.mod

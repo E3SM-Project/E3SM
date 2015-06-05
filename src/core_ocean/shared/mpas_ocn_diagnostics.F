@@ -20,7 +20,8 @@
 
 module ocn_diagnostics
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_constants
    use mpas_timer
    use mpas_vector_reconstruction
@@ -673,14 +674,12 @@ contains
         call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
       endif
 
-#ifdef MPAS_CESM
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
          gradSSH(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
       end do
-#endif
 
    end subroutine ocn_diagnostic_solve!}}}
 

@@ -8,7 +8,9 @@
 module mpas_timekeeping
 
    use mpas_kind_types
+   use mpas_derived_types
    use mpas_io_units
+
    use ESMF
    use ESMF_BaseMod
    use ESMF_Stubs
@@ -20,46 +22,11 @@ module mpas_timekeeping
    private :: mpas_calibrate_alarms
    private :: mpas_in_ringing_envelope
 
-   integer, parameter :: MPAS_MAX_ALARMS = 20
-   integer, parameter :: MPAS_NOW = 0, &
-                         MPAS_START_TIME = 1, &
-                         MPAS_STOP_TIME = 2
-   integer, parameter :: MPAS_FORWARD = 1, &
-                         MPAS_BACKWARD = -1
-   integer, parameter :: MPAS_GREGORIAN = 0, &
-                         MPAS_GREGORIAN_NOLEAP = 1, &
-                         MPAS_360DAY = 2
-
    integer :: TheCalendar 
    integer :: yearWidth
 
    integer, dimension(12), parameter :: daysInMonth     = (/31,28,31,30,31,30,31,31,30,31,30,31/)
    integer, dimension(12), parameter :: daysInMonthLeap = (/31,29,31,30,31,30,31,31,30,31,30,31/)
-
-   type MPAS_Time_type
-      type (ESMF_Time) :: t
-   end type
-
-   type MPAS_TimeInterval_type
-      type (ESMF_TimeInterval) :: ti
-   end type
-
-   type MPAS_Alarm_type
-      character (len=ShortStrKIND) :: alarmID
-      logical :: isRecurring
-      logical :: isSet
-      type (MPAS_Time_type) :: ringTime
-      type (MPAS_Time_type) :: prevRingTime
-      type (MPAS_TimeInterval_type) :: ringTimeInterval
-      type (MPAS_Alarm_type), pointer :: next
-   end type
-   
-   type MPAS_Clock_type
-      integer :: direction
-      integer :: nAlarms
-      type (ESMF_Clock) :: c
-      type (MPAS_Alarm_type), pointer :: alarmListHead
-   end type
 
    interface operator (+)
       module procedure add_t_ti
@@ -125,28 +92,24 @@ module mpas_timekeeping
 
       character (len=*), intent(in) :: calendar 
 
-#ifndef MPAS_CESM
       if (trim(calendar) == 'gregorian') then
          TheCalendar = MPAS_GREGORIAN
+#ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_GREGORIAN)
+#endif
       else if (trim(calendar) == 'gregorian_noleap') then
          TheCalendar = MPAS_GREGORIAN_NOLEAP
+#ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_NOLEAP)
+#endif
 !     else if (trim(calendar) == '360day') then
 !        TheCalendar = MPAS_360DAY
+!#ifndef MPAS_NO_ESMF_INIT
 !        call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_360DAY)
+!#endif
       else
          write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
       end if
-#else
-      if (trim(calendar) == 'gregorian') then
-         TheCalendar = MPAS_GREGORIAN
-      else if (trim(calendar) == 'gregorian_noleap') then
-         TheCalendar = MPAS_GREGORIAN_NOLEAP
-      else
-         write(stderrUnit,*) 'ERROR: mpas_timekeeping_init: Invalid calendar type'
-      end if
-#endif
 
       yearWidth = 4
 
@@ -157,7 +120,7 @@ module mpas_timekeeping
 
       implicit none
 
-#ifndef MPAS_CESM      
+#ifndef MPAS_NO_ESMF_INIT
       call ESMF_Finalize()
 #endif
 
@@ -633,6 +596,44 @@ module mpas_timekeeping
       end do
 
    end function mpas_alarm_interval
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_alarm_get_next_ring_time
+   !
+   !> \brief This function returns the next ring time of an alarm.
+   !> \author Matthew Hoffman
+   !> \date   04/21/2015
+   !> \details This function returns the next ring time of an alarm.
+   !>   For the situation where mpas_alarm_get_next_ring_time() is called exactly
+   !>   at a ring time:
+   !>   * If the alarm has not yet been reset, then mpas_alarm_get_next_ring_time()
+   !>     will return the current time.
+   !>   * If the alarm has been reset, then it will return the following ring time
+   !>     (current time + alarmPtr % ringTimeInterval).
+   !-----------------------------------------------------------------------
+   type (MPAS_Time_type) function mpas_alarm_get_next_ring_time(clock, alarmId)
+
+      implicit none
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      ! Local variables
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            if ( clock % direction == MPAS_FORWARD ) then
+               mpas_alarm_get_next_ring_time = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
+            else
+               mpas_alarm_get_next_ring_time = alarmPtr % prevRingTime - alarmPtr % ringTimeInterval
+            end if
+            exit
+         end if
+         alarmPtr => alarmPtr % next
+      end do
+
+   end function mpas_alarm_get_next_ring_time
 
 
    subroutine mpas_print_alarm(clock, alarmID, ierr)
@@ -1361,7 +1362,8 @@ module mpas_timekeeping
       end if
 
       if (present(dt)) then
-         dt = (days * 24 * 60 * 60) + seconds + (sn / sd)
+         dt = (real(days, RKIND) * 24.0_RKIND * 60.0_RKIND * 60.0_RKIND) + &
+              real(seconds, RKIND) + (real(sn, RKIND) / real(sd, RKIND))
       end if
 
       if (present(DD)) then
@@ -1370,14 +1372,14 @@ module mpas_timekeeping
       end if
 
       if (present(H)) then
-         H = (seconds - mod(seconds,3600)) / 3600
+         H = (seconds - mod(seconds,3600_I8KIND)) / 3600
          seconds = seconds - H*3600
          H = H + days * 24
          days = 0
       end if
 
       if (present(M)) then
-         M = (seconds - mod(seconds,60)) / 60
+         M = (seconds - mod(seconds,60_I8KIND)) / 60
          seconds = seconds - M*60
          M = M + days * 1440
          days = 0

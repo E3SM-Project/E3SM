@@ -17,45 +17,12 @@ module mpas_io_streams
 #endif
 
    use mpas_attlist
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_kind_types, only : StrKIND
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
-
-   type field_list_type
-      integer :: field_type = -999
-      logical :: isDecomposed
-      integer :: totalDimSize     ! Total size of outer dimension across all blocks for decomposed fields
-      logical, dimension(:), pointer :: isAvailable => null() ! Used for reading var-arrays where one or more 
-                                                              !   constitutent arrays may not be present in the input file
-      type (field0dInteger), pointer :: int0dField => null()
-      type (field1dInteger), pointer :: int1dField => null()
-      type (field2dInteger), pointer :: int2dField => null()
-      type (field3dInteger), pointer :: int3dField => null()
-      type (field0dReal), pointer :: real0dField => null()
-      type (field1dReal), pointer :: real1dField => null()
-      type (field2dReal), pointer :: real2dField => null()
-      type (field3dReal), pointer :: real3dField => null()
-      type (field4dReal), pointer :: real4dField => null()
-      type (field5dReal), pointer :: real5dField => null()
-      type (field0dChar), pointer :: char0dField => null()
-      type (field1dChar), pointer :: char1dField => null()
-      type (field_list_type), pointer :: next => null()
-   end type field_list_type
-
-   type MPAS_Stream_type
-      logical :: isInitialized = .false.
-      integer :: ioFormat
-      integer :: ioDirection
-      integer :: defaultPrecision = MPAS_IO_NATIVE_PRECISION
-      logical :: clobberRecords = .false.
-      character(len=StrKIND) :: filename
-      type (MPAS_IO_Handle_type) :: fileHandle
-      type (att_list_type), pointer :: attList => null()
-      type (field_list_type), pointer :: fieldList => null()
-   end type MPAS_Stream_type
-
 
    interface MPAS_streamAddField
       module procedure MPAS_streamAddField_0dInteger
@@ -101,34 +68,6 @@ module mpas_io_streams
       module procedure MPAS_writeStreamAtt_text
    end interface MPAS_writeStreamAtt
 
-   integer, parameter :: MPAS_STREAM_EXACT_TIME              = 100, &
-                         MPAS_STREAM_NEAREST                 = 101, &
-                         MPAS_STREAM_LATEST_BEFORE           = 102, &
-                         MPAS_STREAM_EARLIEST_AFTER          = 103, &
-                         MPAS_STREAM_LATEST_STRICTLY_BEFORE  = 104, &
-                         MPAS_STREAM_EARLIEST_STRICTLY_AFTER = 105
-
-
-   ! Error codes
-   integer, parameter :: MPAS_STREAM_NOERR              =  0, &
-                         MPAS_STREAM_NOT_INITIALIZED    = -1, &
-                         MPAS_STREAM_FIELD_NOT_FOUND    = -2, &
-                         MPAS_STREAM_CLOBBER_FILE       = -3, &
-                         MPAS_STREAM_CLOBBER_RECORD     = -4, &
-                         MPAS_IO_ERR                    = -5
-
-   integer, parameter :: FIELD_0D_INT   =  1, &
-                         FIELD_1D_INT   =  2, &
-                         FIELD_2D_INT   =  3, &
-                         FIELD_3D_INT   =  4, &
-                         FIELD_0D_REAL  =  5, &
-                         FIELD_1D_REAL  =  6, &
-                         FIELD_2D_REAL  =  7, &
-                         FIELD_3D_REAL  =  8, &
-                         FIELD_4D_REAL  =  9, &
-                         FIELD_5D_REAL  =  10, &
-                         FIELD_0D_CHAR  =  11, &
-                         FIELD_1D_CHAR  =  12
 
    private mergeArrays
 
@@ -390,7 +329,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field0dInteger), pointer :: field_ptr
       character (len=StrKIND), dimension(:), pointer :: dimNames
@@ -423,12 +361,11 @@ module mpas_io_streams
       allocate(indices(0))
       allocate(dimSizes(0))
       allocate(dimNames(0))
-      isDecomposed = .false.
       globalDimSize = 0
       totalDimSize = 0
 
       call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, dimNames, dimSizes, &
-                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
+                                       field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
 
       deallocate(indices)
       deallocate(dimSizes)
@@ -468,7 +405,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field1dInteger), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -518,7 +454,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, dimNames0, &
-                                             dimSizes0, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             dimSizes0, field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -528,7 +464,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -577,7 +513,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field2dInteger), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -626,7 +561,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
-                                             field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -636,7 +571,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -685,7 +620,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field3dInteger), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -733,7 +667,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
-                                             field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -743,7 +677,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -793,7 +727,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field0dReal), pointer :: field_ptr
       character (len=StrKIND), dimension(:), pointer :: dimNames
@@ -834,12 +767,11 @@ module mpas_io_streams
       allocate(indices(0))
       allocate(dimSizes(0))
       allocate(dimNames(0))
-      isDecomposed = .false.
       globalDimSize = 0
       totalDimSize = 0
 
       call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , dimNames, dimSizes, &
-                                       field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
+                                       field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
 
       deallocate(indices)
       deallocate(dimSizes)
@@ -880,7 +812,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field1dReal), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -939,7 +870,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , dimNames0, &
-                                             dimSizes0, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             dimSizes0, field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -949,7 +880,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -999,7 +930,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field2dReal), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -1056,7 +986,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
-                                             field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -1066,7 +996,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1116,7 +1046,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field3dReal), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -1174,7 +1103,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
-                                             field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -1184,7 +1113,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1235,7 +1164,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field4dReal), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -1293,7 +1221,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
-                                             field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -1303,7 +1231,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1354,7 +1282,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field5dReal), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -1412,7 +1339,7 @@ module mpas_io_streams
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), REAL_IO_TYPE , field % dimNames(2:ndims), &
-                                             field % dimSizes(2:ndims), field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, precision=local_precision, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
                isAvailable(i) = .true.
@@ -1422,7 +1349,7 @@ module mpas_io_streams
       else
          nullify(isAvailable)
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), REAL_IO_TYPE , field % dimNames, field % dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, precision=local_precision, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
          end if
@@ -1472,7 +1399,6 @@ module mpas_io_streams
       integer :: i
       integer :: idim
       integer :: totalDimSize, globalDimSize
-      logical :: isDecomposed
       integer :: ndims
       type (field0dChar), pointer :: field_ptr
       character (len=StrKIND), dimension(5) :: dimNames
@@ -1507,7 +1433,6 @@ module mpas_io_streams
       allocate(dimSizes(1))
       dimSizes(1) = 64
       dimNames(1) = 'StrLen'
-      isDecomposed = .false.
       globalDimSize = 64
       totalDimSize = 64
 
@@ -1515,12 +1440,12 @@ module mpas_io_streams
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames(1:1), &
-                                             dimSizes, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
+                                             dimSizes, field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
          end do
       else
          call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_CHAR, dimNames(1:1), dimSizes, &
-                                          field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
       end if
 
       deallocate(indices)
@@ -1691,10 +1616,7 @@ module mpas_io_streams
             if (i < ndims) then
                dimTemp = dimSizes(i)
             else
-               if (trim(dimNamesInq(i)) == 'nCells' .or. &
-                   trim(dimNamesInq(i)) == 'nEdges' .or. &
-                   trim(dimNamesInq(i)) == 'nVertices'   &
-                  ) then
+               if ( isDecomposed ) then
                   dimTemp = globalDimSize
                else
                   dimTemp = dimSizes(i)
@@ -2409,7 +2331,7 @@ module mpas_io_streams
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_1dint_ptr % dimSizes(1)
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, field_1dint_ptr % dimNames(1), ownedSize)
                      end if
 
                      if (field_cursor % int1dField % isVarArray) then
@@ -2487,7 +2409,7 @@ module mpas_io_streams
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_2dint_ptr % dimSizes(2)
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, field_2dint_ptr % dimNames(2), ownedSize)
                      end if
 
                      if (field_cursor % int2dField % isVarArray) then
@@ -2569,7 +2491,7 @@ module mpas_io_streams
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_3dint_ptr % dimSizes(3)
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, field_3dint_ptr % dimNames(3), ownedSize)
                      end if
 
                      if (field_cursor % int3dField % isVarArray) then
@@ -2670,7 +2592,7 @@ module mpas_io_streams
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_1dreal_ptr % dimSizes(1)
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, field_1dreal_ptr % dimNames(1), ownedSize)
                      end if
 
                      if (field_cursor % real1dField % isVarArray) then
@@ -2748,7 +2670,7 @@ module mpas_io_streams
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_2dreal_ptr % dimSizes(2)
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, field_2dreal_ptr % dimNames(2), ownedSize)
                      end if
 
                      if (field_cursor % real2dField % isVarArray) then
@@ -2833,7 +2755,7 @@ module mpas_io_streams
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_3dreal_ptr % dimSizes(3)
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, field_3dreal_ptr % dimNames(3), ownedSize)
                      end if
 
                      if (field_cursor % real3dField % isVarArray) then
@@ -2920,7 +2842,7 @@ module mpas_io_streams
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_4dreal_ptr % dimSizes(4)
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, field_4dreal_ptr % dimNames(4), ownedSize)
                      end if
 
                      if (field_cursor % real4dField % isVarArray) then
@@ -3010,7 +2932,7 @@ module mpas_io_streams
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_5dreal_ptr % dimSizes(5)
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, field_5dreal_ptr % dimNames(5), ownedSize)
                      end if
 
                      if (field_cursor % real5dField % isVarArray) then
@@ -3193,7 +3115,7 @@ module mpas_io_streams
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_1dint_ptr % dimSizes(1)
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, field_1dint_ptr % dimNames(1), ownedSize)
                      end if
 
                      if (field_cursor % int1dField % isVarArray) then
@@ -3250,7 +3172,7 @@ module mpas_io_streams
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_2dint_ptr % dimSizes(2)
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, field_2dint_ptr % dimNames(2), ownedSize)
                      end if
 
                      if (field_cursor % int2dField % isVarArray) then
@@ -3310,7 +3232,7 @@ module mpas_io_streams
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_3dint_ptr % dimSizes(3)
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, field_3dint_ptr % dimNames(3), ownedSize)
                      end if
 
                      if (field_cursor % int3dField % isVarArray) then
@@ -3380,7 +3302,7 @@ module mpas_io_streams
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_1dreal_ptr % dimSizes(1)
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, field_1dreal_ptr % dimNames(1), ownedSize)
                      end if
 
                      if (field_cursor % real1dField % isVarArray) then
@@ -3437,7 +3359,7 @@ module mpas_io_streams
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_2dreal_ptr % dimSizes(2)
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, field_2dreal_ptr % dimNames(2), ownedSize)
                      end if
 
                      if (field_cursor % real2dField % isVarArray) then
@@ -3497,7 +3419,7 @@ module mpas_io_streams
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_3dreal_ptr % dimSizes(3)
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, field_3dreal_ptr % dimNames(3), ownedSize)
                      end if
 
                      if (field_cursor % real3dField % isVarArray) then
@@ -3559,7 +3481,7 @@ module mpas_io_streams
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_4dreal_ptr % dimSizes(4)
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, field_4dreal_ptr % dimNames(4), ownedSize)
                      end if
 
                      if (field_cursor % real4dField % isVarArray) then
@@ -3623,7 +3545,7 @@ module mpas_io_streams
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nVertices') then
                         call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
-                        ownedSize = field_5dreal_ptr % dimSizes(5)
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, field_5dreal_ptr % dimNames(5), ownedSize)
                      end if
 
                      if (field_cursor % real5dField % isVarArray) then
@@ -4048,15 +3970,15 @@ module mpas_io_streams
       if (ioDirection == MPAS_IO_WRITE) then
          do while (associated(att_cursor))
             select case (att_cursor % attType)
-               case (ATT_INT)
+               case (MPAS_ATT_INT)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueInt, fieldname)
-               case (ATT_INTA)
+               case (MPAS_ATT_INTA)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueIntA, fieldname)
-               case (ATT_REAL)
+               case (MPAS_ATT_REAL)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueReal, fieldname)
-               case (ATT_REALA)
+               case (MPAS_ATT_REALA)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname)
-               case (ATT_TEXT)
+               case (MPAS_ATT_TEXT)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueText, fieldname)
             end select 
             att_cursor => att_cursor % next
@@ -4064,15 +3986,15 @@ module mpas_io_streams
       else
          do while (associated(att_cursor))
             select case (att_cursor % attType)
-               case (ATT_INT)
+               case (MPAS_ATT_INT)
                   call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueInt, fieldname)
-               case (ATT_INTA)
+               case (MPAS_ATT_INTA)
                   call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueIntA, fieldname)
-               case (ATT_REAL)
+               case (MPAS_ATT_REAL)
                   call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueReal, fieldname)
-               case (ATT_REALA)
+               case (MPAS_ATT_REALA)
                   call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname)
-               case (ATT_TEXT)
+               case (MPAS_ATT_TEXT)
                   call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueText, fieldname)
             end select 
             att_cursor => att_cursor % next
