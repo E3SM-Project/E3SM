@@ -1361,7 +1361,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: w_tend, u_tend
       real (kind=RKIND), dimension(:,:), pointer :: rho_pp, rho_p_save, rho_p
       real (kind=RKIND), dimension(:,:), pointer :: ru_p, ru, ru_save
-      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old
       real (kind=RKIND), dimension(:,:), pointer :: rw_p, rw_save, rw
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
@@ -1405,7 +1405,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
       call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
       call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
-      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
 
       call mpas_pool_get_array(diag, 'rw_p', rw_p)
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
@@ -1419,7 +1419,7 @@ module atm_time_integration
       rho_pp(:,cellStart:cellEnd) = rho_p_save(:,cellStart:cellEnd) - rho_p(:,cellStart:cellEnd)
       ru_p(:,edgeStart:edgeEnd) = ru_save(:,edgeStart:edgeEnd) - ru(:,edgeStart:edgeEnd)
       rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
-      rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd)
+      zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
       rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
 
 
@@ -1481,7 +1481,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(nVertLevels+1) :: dpzx
 
       real (kind=RKIND), dimension(:,:), pointer :: rho_zz, theta_m, ru_p, rw_p, rtheta_pp,  &
-                                                    rtheta_pp_old, zz, exner, cqu, ruAvg,    &
+                                                    zz_rtheta_pp_old, zz, exner, cqu, ruAvg, &
                                                     wwAvg, rho_pp, cofwt, coftz, zxu,        &
                                                     a_tri, alpha_tri, gamma_tri, dss,        &
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
@@ -1516,7 +1516,7 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'w', w, 2)
 
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
-      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
       call mpas_pool_get_array(diag, 'ru_p', ru_p)
       call mpas_pool_get_array(diag, 'rw_p', rw_p)
       call mpas_pool_get_array(diag, 'exner', exner)
@@ -1571,8 +1571,8 @@ module atm_time_integration
       resm = (1.0 - epssm) / (1.0 + epssm)
 
       ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
-      rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) &
-                                         + smdiv * (rtheta_pp(:,cellStart:cellEnd) - rtheta_pp_old(:,cellStart:cellEnd))
+      zz_rtheta_pp_old(:,cellStart:cellEnd) = (1.0_RKIND + smdiv) * rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd) &
+                                         - smdiv * zz_rtheta_pp_old(:,cellStart:cellEnd)
 
 !$OMP BARRIER
 
@@ -1595,37 +1595,37 @@ module atm_time_integration
 
             k = 1
             dpzx(k) = 0.5 * zxu(k,iEdge)                                            &
-                      *(pzm(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)        &
-                                     -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
-                       +pzm(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)        &
-                                     -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1))       &
-                       +pzp(k,cell2)*(zz(k+2,cell2)*rtheta_pp_old(k+2,cell2)        &
-                                     -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))       &
-                       +pzp(k,cell1)*(zz(k+2,cell1)*rtheta_pp_old(k+2,cell1)        &
-                                     -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)))
+                      *(pzm(k,cell2)*(zz_rtheta_pp_old(k+1,cell2)        &
+                                     -zz_rtheta_pp_old(k  ,cell2))       &
+                       +pzm(k,cell1)*(zz_rtheta_pp_old(k+1,cell1)        &
+                                     -zz_rtheta_pp_old(k  ,cell1))       &
+                       +pzp(k,cell2)*(zz_rtheta_pp_old(k+2,cell2)        &
+                                     -zz_rtheta_pp_old(k  ,cell2))       &
+                       +pzp(k,cell1)*(zz_rtheta_pp_old(k+2,cell1)        &
+                                     -zz_rtheta_pp_old(k  ,cell1)))
 
             do k=2,nVertLevels-1
                dpzx(k) = 0.5 * zxu(k,iEdge)                                                &
-                                *(pzp(k,cell2)*(zz(k+1,cell2)*rtheta_pp_old(k+1,cell2)     &
-                                               -zz(k  ,cell2)*rtheta_pp_old(k  ,cell2))    &
-                                 +pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
-                                               -zz(k-1,cell2)*rtheta_pp_old(k-1,cell2))    &
-                                 +pzp(k,cell1)*(zz(k+1,cell1)*rtheta_pp_old(k+1,cell1)     &
-                                               -zz(k  ,cell1)*rtheta_pp_old(k  ,cell1))    &
-                                 +pzm(k,cell1)*(zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)     &
-                                               -zz(k-1,cell1)*rtheta_pp_old(k-1,cell1)))
+                                *(pzp(k,cell2)*(zz_rtheta_pp_old(k+1,cell2)     &
+                                               -zz_rtheta_pp_old(k  ,cell2))    &
+                                 +pzm(k,cell2)*(zz_rtheta_pp_old(k  ,cell2)     &
+                                               -zz_rtheta_pp_old(k-1,cell2))    &
+                                 +pzp(k,cell1)*(zz_rtheta_pp_old(k+1,cell1)     &
+                                               -zz_rtheta_pp_old(k  ,cell1))    &
+                                 +pzm(k,cell1)*(zz_rtheta_pp_old(k  ,cell1)     &
+                                               -zz_rtheta_pp_old(k-1,cell1)))
             end do
 
             k = nVertLevels
             dpzx(k) = 0.5 * zxu(k,iEdge)                                                &
-                             *(pzm(k,cell2)*(zz(k  ,cell2)*rtheta_pp_old(k  ,cell2)     &
-                                            -zz(k-1,cell2)*rtheta_pp_old(k-1,cell2))    &
-                              +pzm(k,cell1)*(zz(k  ,cell1)*rtheta_pp_old(k  ,cell1)     &
-                                            -zz(k-1,cell1)*rtheta_pp_old(k-1,cell1)))
+                             *(pzm(k,cell2)*(zz_rtheta_pp_old(k  ,cell2)     &
+                                            -zz_rtheta_pp_old(k-1,cell2))    &
+                              +pzm(k,cell1)*(zz_rtheta_pp_old(k  ,cell1)     &
+                                            -zz_rtheta_pp_old(k-1,cell1)))
 
             do k=1,nVertLevels
-               pgrad =     ((rtheta_pp_old(k,cell2)*zz(k,cell2)                    &
-                            -rtheta_pp_old(k,cell1)*zz(k,cell1))/dcEdge(iEdge)     &
+               pgrad =     ((zz_rtheta_pp_old(k,cell2)                    &
+                            -zz_rtheta_pp_old(k,cell1))/dcEdge(iEdge)     &
                          -dpzx(k))/(.5*(zz(k,cell2)+zz(k,cell1)))
                pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
                du(k) = dts*(tend_ru(k,iEdge) - cqu(k,iEdge) * pgrad) 
@@ -1671,7 +1671,7 @@ module atm_time_integration
 
       ! saving rtheta_pp before update for use in divergence damping in next acoustic step
 
-      rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd)
+      zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
 
 !$OMP BARRIER
 

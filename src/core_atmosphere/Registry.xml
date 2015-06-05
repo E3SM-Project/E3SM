@@ -865,7 +865,7 @@
                 <var name="rtheta_p"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_pp"               type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_p_save"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rtheta_pp_old"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="zz_rtheta_pp_old"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <var name="rho_p"                   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rho_pp"                  type="real"     dimensions="nVertLevels nCells Time"/>
