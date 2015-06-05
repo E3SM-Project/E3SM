@@ -4306,7 +4306,7 @@ module atm_time_integration
          end do
       end do
 
-! Not sure why we need this barrier here...
+! Not sure why we need this barrier here... possibly due to pv_vertex
 !$OMP BARRIER
 
       !
