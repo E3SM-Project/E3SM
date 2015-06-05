@@ -31,9 +31,11 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_theta, delsq_w, delsq_divergence
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_u
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_circulation, delsq_vorticity
+   real (kind=RKIND), allocatable, dimension(:,:) :: dpdz
 
    ! Used in advance_acoustic_step
    real (kind=RKIND), allocatable, dimension(:,:) :: ts, rs
+   real (kind=RKIND), allocatable, dimension(:,:) :: drthetadz
 
    ! Used in atm_advance_scalars_mono
    real (kind=RKIND), dimension(:,:), pointer :: scalar_old, scalar_new
@@ -368,6 +370,7 @@ module atm_time_integration
                allocate(delsq_u(nVertLevels,nEdges+1))
                allocate(delsq_circulation(nVertLevels,nVertices+1))
                allocate(delsq_vorticity(nVertLevels,nVertices+1))
+               allocate(dpdz(nVertLevels,nCells+1))
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
                nthreads = OMP_get_num_threads()
@@ -399,6 +402,7 @@ module atm_time_integration
                deallocate(delsq_u)
                deallocate(delsq_circulation)
                deallocate(delsq_vorticity)
+               deallocate(dpdz)
    
                block => block % next
             end do
@@ -504,6 +508,7 @@ module atm_time_integration
 ! Would be more efficient to allocate these outside the acoustic loop...
                   allocate(ts(nVertLevels,nCells))
                   allocate(rs(nVertLevels,nCells))
+                  allocate(drthetadz(nVertLevels,nCells))
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
                   nthreads = OMP_get_num_threads()
@@ -531,6 +536,7 @@ module atm_time_integration
 
                   deallocate(ts)
                   deallocate(rs)
+                  deallocate(drthetadz)
 
                   block => block % next
                end do
@@ -1570,9 +1576,19 @@ module atm_time_integration
       c2 = cp * rcv
       resm = (1.0 - epssm) / (1.0 + epssm)
 
-      ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
-      zz_rtheta_pp_old(:,cellStart:cellEnd) = (1.0_RKIND + smdiv) * rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd) &
-                                         - smdiv * zz_rtheta_pp_old(:,cellStart:cellEnd)
+      !
+      ! d(zz_rtheta_pp_old) / dz
+      !
+      do iCell = cellStart,cellEnd
+         ! acoustic step divergence damping - forward weight rtheta_pp - see Klemp et al MWR 2007
+         k = 1
+         zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv * zz_rtheta_pp_old(k,iCell)
+
+         do k = 2,nVertLevels
+            zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv * zz_rtheta_pp_old(k,iCell)
+            drthetadz(k-1,iCell) = zz_rtheta_pp_old(k,iCell) - zz_rtheta_pp_old(k-1,iCell)
+         end do
+      end do
 
 !$OMP BARRIER
 
@@ -1594,34 +1610,24 @@ module atm_time_integration
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
             k = 1
-            dpzx(k) = 0.5 * zxu(k,iEdge)                                            &
-                      *(pzm(k,cell2)*(zz_rtheta_pp_old(k+1,cell2)        &
-                                     -zz_rtheta_pp_old(k  ,cell2))       &
-                       +pzm(k,cell1)*(zz_rtheta_pp_old(k+1,cell1)        &
-                                     -zz_rtheta_pp_old(k  ,cell1))       &
-                       +pzp(k,cell2)*(zz_rtheta_pp_old(k+2,cell2)        &
-                                     -zz_rtheta_pp_old(k  ,cell2))       &
-                       +pzp(k,cell1)*(zz_rtheta_pp_old(k+2,cell1)        &
-                                     -zz_rtheta_pp_old(k  ,cell1)))
+            dpzx(k) = 0.5 * zxu(k,iEdge)                               &
+                      *(pzm(k,cell2)*drthetadz(k  ,cell2)              &
+                       +pzm(k,cell1)*drthetadz(k  ,cell1)              &
+                       +pzp(k,cell2)*(zz_rtheta_pp_old(k+2,cell2) - zz_rtheta_pp_old(k  ,cell2))     &
+                       +pzp(k,cell1)*(zz_rtheta_pp_old(k+2,cell1) - zz_rtheta_pp_old(k  ,cell1)))
 
             do k=2,nVertLevels-1
-               dpzx(k) = 0.5 * zxu(k,iEdge)                                                &
-                                *(pzp(k,cell2)*(zz_rtheta_pp_old(k+1,cell2)     &
-                                               -zz_rtheta_pp_old(k  ,cell2))    &
-                                 +pzm(k,cell2)*(zz_rtheta_pp_old(k  ,cell2)     &
-                                               -zz_rtheta_pp_old(k-1,cell2))    &
-                                 +pzp(k,cell1)*(zz_rtheta_pp_old(k+1,cell1)     &
-                                               -zz_rtheta_pp_old(k  ,cell1))    &
-                                 +pzm(k,cell1)*(zz_rtheta_pp_old(k  ,cell1)     &
-                                               -zz_rtheta_pp_old(k-1,cell1)))
+               dpzx(k) = 0.5 * zxu(k,iEdge)                            &
+                                *(pzp(k,cell2)*drthetadz(k  ,cell2)    &
+                                 +pzm(k,cell2)*drthetadz(k-1,cell2)    &
+                                 +pzp(k,cell1)*drthetadz(k  ,cell1)    &
+                                 +pzm(k,cell1)*drthetadz(k-1,cell1))
             end do
 
             k = nVertLevels
-            dpzx(k) = 0.5 * zxu(k,iEdge)                                                &
-                             *(pzm(k,cell2)*(zz_rtheta_pp_old(k  ,cell2)     &
-                                            -zz_rtheta_pp_old(k-1,cell2))    &
-                              +pzm(k,cell1)*(zz_rtheta_pp_old(k  ,cell1)     &
-                                            -zz_rtheta_pp_old(k-1,cell1)))
+            dpzx(k) = 0.5 * zxu(k,iEdge)                               &
+                             *(pzm(k,cell2)*drthetadz(k-1,cell2)       &
+                              +pzm(k,cell1)*drthetadz(k-1,cell1))
 
             do k=1,nVertLevels
                pgrad =     ((zz_rtheta_pp_old(k,cell2)                    &
@@ -3119,6 +3125,15 @@ module atm_time_integration
          end do
       end do    
 
+      !
+      ! dp / dz
+      !
+      do iCell = cellStart,cellEnd
+         do k = 1,nVertLevels-1
+            dpdz(k,iCell) = pp(k+1,iCell) - pp(k,iCell)
+         end do
+      end do
+
 !$OMP BARRIER
 
       !
@@ -3135,25 +3150,25 @@ module atm_time_integration
          k = 1
 
          dpzx(k) = 0.5 * zxu(k,iEdge)                               &
-                      *(pzm(k,cell2)*(pp(k+1,cell2)-pp(k,cell2))    &
-                       +pzm(k,cell1)*(pp(k+1,cell1)-pp(k,cell1))    &
-                       +pzp(k,cell2)*(pp(k+2,cell2)-pp(k,cell2))    &
-                       +pzp(k,cell1)*(pp(k+2,cell1)-pp(k,cell1))) 
+                      *(pzm(k,cell2)*dpdz(k,cell2)                  &
+                       +pzm(k,cell1)*dpdz(k,cell1)                  &
+                       +pzp(k,cell2)*(pp(k+2,cell2) - pp(k,cell2))  &
+                       +pzp(k,cell1)*(pp(k+2,cell1) - pp(k,cell1))) 
 
          do k = 2, nVertLevels-1
 
-            dpzx(k) = 0.5 * zxu(k,iEdge)                               &
-                       *(pzp(k,cell2)*(pp(k+1,cell2)-pp(k  ,cell2))    &
-                        +pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
-                        +pzp(k,cell1)*(pp(k+1,cell1)-pp(k  ,cell1))    &
-                        +pzm(k,cell1)*(pp(k  ,cell1)-pp(k-1,cell1)))   
+            dpzx(k) = 0.5 * zxu(k,iEdge)                   &
+                       *(pzp(k,cell2)*dpdz(k,cell2)        &
+                        +pzm(k,cell2)*dpdz(k-1,cell2)      &
+                        +pzp(k,cell1)*dpdz(k  ,cell1)      &
+                        +pzm(k,cell1)*dpdz(k-1,cell1))   
 
          end do
 
          k = nVertLevels
-         dpzx(k) = 0.5 * zxu(k,iEdge)                               &
-                    *(pzm(k,cell2)*(pp(k  ,cell2)-pp(k-1,cell2))    &
-                     +pzm(k,cell1)*(pp(k  ,cell1)-pp(k-1,cell1)))   
+         dpzx(k) = 0.5 * zxu(k,iEdge)                      &
+                    *(pzm(k,cell2)*dpdz(k-1,cell2)         &
+                     +pzm(k,cell1)*dpdz(k-1,cell1))   
 
          do k=1,nVertLevels
 
