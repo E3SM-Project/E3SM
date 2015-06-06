@@ -14,6 +14,7 @@ module rof_import_export
   use rtm_cpl_indices  , only : index_x2r_Flrl_rofl,index_x2r_Flrl_rofi 
   use rtm_cpl_indices  , only : index_r2x_Forr_rofl, index_r2x_Forr_rofi
   use rtm_cpl_indices  , only : index_r2x_Flrr_flood, index_r2x_Flrr_volr
+  use rtm_cpl_indices  , only : index_x2r_Flrl_rofgwl,index_x2r_Flrl_rofsub 
 
   implicit none
   public
@@ -58,7 +59,9 @@ contains
     endr = runoff%endr
     do n = begr,endr
        n2 = n - begr + 1
-       totrunin(n,nliq) = x2r(index_x2r_Flrl_rofl,n2)
+       totrunin(n,nliq) = x2r(index_x2r_Flrl_rofl,n2) + &
+                          x2r(index_x2r_Flrl_rofgwl,n2) + &
+                          x2r(index_x2r_Flrl_rofsub,n2)
        totrunin(n,nfrz) = x2r(index_x2r_Flrl_rofi,n2)
     enddo
 

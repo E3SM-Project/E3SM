@@ -1,0 +1,49 @@
+===============================================================
+Tag name:  mosart1_0_00
+Originator(s): tcraig
+Date: May 1, 2015
+One-line Summary: add mosart to CESM repository
+
+This is based on the following version from PNL but has been updated
+to fit into cesm1_4.
+
+URL: https://svn.pnl.gov/svn/iRESM/cesm1/trunk/models/rof/mosart
+Repository Root: https://svn.pnl.gov/svn/iRESM
+Repository UUID: 97a048bb-0f8f-0410-8848-820bd1cc90bf
+Revision: 1311
+Node Kind: directory
+Schedule: normal
+Last Changed Author: tcraig
+Last Changed Rev: 1310
+Last Changed Date: 2014-10-03 10:38:55 -0600 (Fri, 03 Oct 2014)
+
+A       bld
+A       bld/build-namelist
+A       bld/mosart.buildlib
+A       bld/mosart.buildnml
+A       bld/user_nl_mosart
+A       bld/namelist_files
+A       bld/namelist_files/namelist_defaults_mosart.xml
+A       bld/namelist_files/namelist_definition_mosart.xml
+A       doc
+A       doc/ChangeLog
+A       src
+A       src/riverroute
+A       src/riverroute/RtmMod.F90
+A       src/riverroute/RtmFileUtils.F90
+A       src/riverroute/RtmHistFlds.F90
+A       src/riverroute/MOSART_physics_mod.F90
+A       src/riverroute/RtmSpmd.F90
+A       src/riverroute/RtmHistFile.F90
+A       src/riverroute/RtmIO.F90
+A       src/riverroute/RtmVar.F90
+A       src/riverroute/RtmTimeManager.F90
+A       src/riverroute/RtmDateTime.F90
+A       src/riverroute/RunoffMod.F90
+A       src/riverroute/RtmRestFile.F90
+A       src/cpl
+A       src/cpl/rof_cpl_indices.F90
+A       src/cpl/rof_comp_mct.F90
+A       src/cpl/rof_comp_esmf.F90
+
+===============================================================

@@ -215,6 +215,7 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} user_nl_cpl"
     archive_list="${archive_list} user_nl_pop2"
     archive_list="${archive_list} user_nl_rtm"
+    archive_list="${archive_list} user_nl_mosart"
 
     for item in ${archive_list}; do
 	cp -rp $item $tempdir/trunk/.

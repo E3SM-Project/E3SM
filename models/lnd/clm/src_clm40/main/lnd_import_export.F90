@@ -312,6 +312,8 @@ contains
 
        l2x(index_l2x_Flrl_rofl,i) = clm_l2a%rofliq(g)
        l2x(index_l2x_Flrl_rofi,i) = clm_l2a%rofice(g)
+       l2x(index_l2x_Flrl_rofgwl,i) = 0.0_r8
+       l2x(index_l2x_Flrl_rofsub,i) = 0.0_r8
 
        ! glc coupling
 

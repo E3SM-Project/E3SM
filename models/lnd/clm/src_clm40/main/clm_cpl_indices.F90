@@ -24,8 +24,10 @@ module clm_cpl_indices
 
   ! lnd -> drv (required)
 
-  integer, public ::index_l2x_Flrl_rofl       ! lnd->rtm input fluxes
-  integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input fluxes
+  integer, public ::index_l2x_Flrl_rofl       ! lnd->rtm input surface liquid fluxes
+  integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input gwl liquid fluxes
+  integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input subsurface liquid fluxes
+  integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
 
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
@@ -161,6 +163,8 @@ contains
 
     index_l2x_Flrl_rofl     = mct_avect_indexra(l2x,'Flrl_rofl')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
+    index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
+    index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
 
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')

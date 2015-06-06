@@ -310,6 +310,8 @@ contains
 
        l2x(index_l2x_Flrl_rofl,i) = lnd2atm_vars%qflx_rofliq_grc(g)
        l2x(index_l2x_Flrl_rofi,i) = lnd2atm_vars%qflx_rofice_grc(g)
+       l2x(index_l2x_Flrl_rofgwl,i) = 0.0_r8
+       l2x(index_l2x_Flrl_rofsub,i) = 0.0_r8
 
        ! glc coupling
 

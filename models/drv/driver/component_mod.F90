@@ -327,7 +327,7 @@ contains
     integer , pointer   :: petlist(:)
     real(R8), pointer   :: fptr(:,:)            ! pointer into    array data
     character(len=1)    :: cid
-    character(len=8196) :: mct_names_x2c, mct_names_c2x
+    character(len=8196) :: mct_names_x2c, mct_names_c2x, mct_names_dom
     !---------------------------------------------------------------
 
     if (present(seq_flds_x2c_fluxes) .and. present(seq_flds_c2x_fluxes)) then
@@ -522,6 +522,9 @@ contains
                 call ESMF_ArrayDestroy(c2x_cc_array, rc=rc) ! destroy the Array
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
+                call ESMF_AttributeGet(dom_cc_array, name='mct_names', value=mct_names_dom, rc=rc)
+                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
                 call ESMF_ArrayDestroy(dom_cc_array, rc=rc) ! destroy the Array
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
@@ -546,6 +549,9 @@ contains
                 if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
                 call ESMF_AttributeSet(c2x_cc_array, name="mct_names", value=trim(mct_names_c2x), rc=rc)
+                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+                call ESMF_AttributeSet(dom_cc_array, name="mct_names", value=trim(mct_names_dom), rc=rc)
                 if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
                 call ESMF_StateReplace(comp(eci)%x2c_cc_state, (/x2c_cc_array/), rc=rc)
