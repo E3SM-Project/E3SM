@@ -197,6 +197,9 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="E_1850_CN"           alias="E1850CN"   support_level="Requires additional user-supplied datasets" >1850_CAM4_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="E_1850_CAM5_CN"      alias="E1850C5CN" support_level="Requires additional user-supplied datasets" >1850_CAM5_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="E_TEST_1850_CAM5_CN" alias="E1850C5CNTEST">1850_CAM5_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST </COMPSET>
+<COMPSET sname="E_1850_CAM5_CLM45"     alias="E1850C5CLM45"    support_level="Requires additional user-supplied datasets" >1850_CAM5_CLM45%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="E_1850_CAM5_CLM45_CN"  alias="E1850C5CLM45CN"  support_level="Requires additional user-supplied datasets" >1850_CAM5_CLM45%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="E_1850_CAM5_CLM45_BGC" alias="E1850C5CLM45BGC" support_level="Requires additional user-supplied datasets" >1850_CAM5_CLM45%BGC_CICE_DOCN%SOM_RTM_SGLC_SWAV</COMPSET>
 
 <!-- F compsets -->
 
