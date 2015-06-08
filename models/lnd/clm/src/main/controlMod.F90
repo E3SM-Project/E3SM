@@ -214,6 +214,8 @@ contains
          use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
 
+    namelist /clm_inparm / &
+         use_vsfm
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -456,6 +458,7 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)

@@ -1402,4 +1402,13 @@ If TRUE (which is the default), check consistency between pct_nat_pft on the fla
 and pct_nat_pft read from the surface dataset.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options related to Variably Saturated Flow Model (VSFM)                          -->
+<!-- ========================================================================================  -->
+
+<entry id="use_vsfm" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off VSFM.
+</entry>
+
 </namelist_definition>

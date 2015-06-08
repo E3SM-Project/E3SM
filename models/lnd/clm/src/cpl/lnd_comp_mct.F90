@@ -41,7 +41,7 @@ contains
     ! !USES:
     use abortutils       , only : endrun
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_vars, lnd2glc_vars
+    use clm_initializeMod, only : initialize1, initialize2, initialize3, lnd2atm_vars, lnd2glc_vars
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
@@ -229,6 +229,7 @@ contains
     ! Finish initializing clm
 
     call initialize2()
+    call initialize3()
 
     ! Check that clm internal dtime aligns with clm coupling interval
 

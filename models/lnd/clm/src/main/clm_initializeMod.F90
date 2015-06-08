@@ -1049,4 +1049,79 @@ contains
 
   end subroutine initialize2
 
+  !-----------------------------------------------------------------------
+  subroutine initialize3( )
+    !
+    ! !DESCRIPTION:
+    ! CLM initialization - third phase
+    !
+    ! !USES:
+    use spmdMod                , only : mpicom
+    use clm_varctl             , only : use_vsfm
+    use filterMod              , only : filter
+    use decompMod              , only : get_proc_clumps
+#ifdef USE_PETSC_LIB
+    use MultiPhysicsProbVSFM   , only : vsfm_mpp
+#endif
+    !
+    ! !ARGUMENTS
+    implicit none
+    !
+#ifdef USE_PETSC_LIB
+#include "finclude/petscsys.h"
+#endif
+    !
+    ! !LOCAL VARIABLES:
+    integer               :: nclumps      ! number of clumps on this processor
+    integer               :: nc           ! clump index
+    type(bounds_type)     :: bounds_proc
+#ifdef USE_PETSC_LIB
+    PetscErrorCode        :: ierr
+#endif
+    character(len=32)     :: subname = 'initialize3'
+    !----------------------------------------------------------------------
+
+    call t_startf('clm_init3')
+
+    if (.not.use_vsfm) return
+
+#ifdef USE_PETSC_LIB
+
+    ! Initialize PETSc
+    PETSC_COMM_WORLD = mpicom
+    call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
+
+    PETSC_COMM_SELF  = MPI_COMM_SELF
+    PETSC_COMM_WORLD = MPI_COMM_WORLD
+
+    call get_proc_bounds(bounds_proc)
+    nclumps = get_proc_clumps()
+
+    if (nclumps /= 1) then
+       call endrun(msg='ERROR clm_initializeMod: '//&
+           'VSFM model only supported for clumps = 1')
+    endif
+
+    nc = 1
+
+    ! Allocate memory and setup data structure for VSFM-MPP
+    call vsfm_mpp%Setup(bounds_proc%begc, &
+                        bounds_proc%endc, &
+                        filter(nc)%num_hydrologyc, &
+                        filter(nc)%hydrologyc, &
+                        soilstate_vars, &
+                        waterstate_vars, &
+                        soilhydrology_vars)
+
+#else
+
+    call endrun(msg='ERROR clm_initializeMod: '//&
+                'use_vsfm = true but code was not compiled ' // &
+                'using -DUSE_PETSC_LIB')
+#endif
+
+    call t_stopf('clm_init3')
+
+  end subroutine initialize3
+
 end module clm_initializeMod
