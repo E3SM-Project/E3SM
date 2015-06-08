@@ -1,4 +1,4 @@
-	<nml_record name="TEMPLATE" in_defaults="true">
+	<nml_record name="AM_TEMPLATE" in_defaults="true">
 		<nml_option name="config_use_TEMPLATE" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member TEMPLATE is called."
 			possible_values=".true. or .false."
@@ -13,7 +13,7 @@
 		/>
 	</nml_record>
 	<packages>
-		<package name="am_TEMPLATE" description="This package includes variables required for the am_TEMPLATE analysis member."/>
+		<package name="TEMPLATEPkg" description="This package includes variables required for the am_TEMPLATE analysis member."/>
 	</packages>
 	<streams>
 		<stream name="TEMPLATEOutput" type="output"
@@ -21,7 +21,7 @@
 				filename_interval="01-00-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
 				reference_time="0000-01-01_00:00:00"
-				packages="am_TEMPLATE"
+				packages="TEMPLATEPkg"
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/> 
@@ -29,7 +29,7 @@
 			<var name="example_variable2"/> 
 		</stream>
 	</streams>
-	<var_struct name="am_TEMPLATE" time_levs="1" packages="am_TEMPLATE">
+	<var_struct name="am_TEMPLATE" time_levs="1" packages="TEMPLATEPkg">
 		<var name="example_variable1" type="real" dimensions="nVertLevels nCells Time" units="UNITS HERE"
 			description="DESCRIPTION HERE"
 		/>
