@@ -730,9 +730,24 @@ end subroutine cesm_pre_init1
 
 subroutine cesm_pre_init2()
    use pio, only : file_desc_t, pio_closefile, pio_file_is_open
+   use shr_const_mod, only: shr_const_tkfrz, shr_const_tktrip, &
+        shr_const_mwwv, shr_const_mwdair
+   use shr_wv_sat_mod, only: shr_wv_sat_set_default, shr_wv_sat_init, &
+        ShrWVSatTableSpec, shr_wv_sat_make_tables
    implicit none
    type(file_desc_t) :: pioid
    integer :: maxthreads
+
+   character(CS) :: wv_sat_scheme
+   real(r8) :: wv_sat_transition_start
+   logical :: wv_sat_use_tables
+   real(r8) :: wv_sat_table_spacing
+   character(CL) :: errstring
+
+   type(ShrWVSatTableSpec) :: liquid_spec, ice_spec, mixed_spec
+
+   real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
+
    !----------------------------------------------------------
    ! Print Model heading and copyright message
    !----------------------------------------------------------
@@ -930,6 +945,39 @@ subroutine cesm_pre_init2()
            orb_lambm0=orb_lambm0,         &
            orb_mvelpp=orb_mvelpp)
    endif
+
+   call seq_infodata_getData(infodata,                   &
+        wv_sat_scheme=wv_sat_scheme,                     &
+        wv_sat_transition_start=wv_sat_transition_start, &
+        wv_sat_use_tables=wv_sat_use_tables,             &
+        wv_sat_table_spacing=wv_sat_table_spacing)
+
+   if (.not. shr_wv_sat_set_default(wv_sat_scheme)) then
+      call shr_sys_abort('Invalid wv_sat_scheme.')
+   end if
+
+   call shr_wv_sat_init(shr_const_tkfrz, shr_const_tktrip, &
+        wv_sat_transition_start, epsilo, errstring)
+
+   if (errstring /= "") then
+      call shr_sys_abort('shr_wv_sat_init: '//trim(errstring))
+   end if
+
+   ! The below produces internal lookup tables in the range 175-374K for
+   ! liquid water, and 125-274K for ice, with a resolution set by the
+   ! option wv_sat_table_spacing.
+   ! In theory these ranges could be specified in the namelist, but in
+   ! practice users will want to change them *very* rarely if ever, which
+   ! is why only the spacing is in the namelist.
+   if (wv_sat_use_tables) then
+      liquid_spec = ShrWVSatTableSpec(ceiling(200._r8/wv_sat_table_spacing), &
+           175._r8, wv_sat_table_spacing)
+      ice_spec = ShrWVSatTableSpec(ceiling(150._r8/wv_sat_table_spacing), &
+           125._r8, wv_sat_table_spacing)
+      mixed_spec = ShrWVSatTableSpec(ceiling(250._r8/wv_sat_table_spacing), &
+           125._r8, wv_sat_table_spacing)
+      call shr_wv_sat_make_tables(liquid_spec, ice_spec, mixed_spec)
+   end if
 
    call seq_infodata_putData(infodata, &
         atm_phase=1,                   &
@@ -3527,6 +3575,7 @@ end subroutine cesm_init
  subroutine cesm_final()
 
    use shr_pio_mod, only : shr_pio_finalize
+   use shr_wv_sat_mod, only: shr_wv_sat_final
    implicit none
 
    !------------------------------------------------------------------------
@@ -3560,6 +3609,8 @@ end subroutine cesm_init
    !------------------------------------------------------------------------
    ! End the run cleanly
    !------------------------------------------------------------------------
+
+   call shr_wv_sat_final()
 
    call shr_pio_finalize( )
    
