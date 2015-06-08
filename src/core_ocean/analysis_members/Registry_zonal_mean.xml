@@ -51,6 +51,8 @@
 			<var name="binBoundaryZonalMean"/>
 			<var name="velocityZonalZonalMean"/>
 			<var name="velocityMeridionalZonalMean"/>
+			<var name="refZMid"/>
+			<var name="refBottomDepth"/>
 		</stream>
 	</streams>
 	<var_struct name="amZonalMean" time_levs="1" packages="amZonalMean">

@@ -175,7 +175,7 @@ contains
       real (kind=RKIND) :: binWidth
       ! These are array size 1 because mpas_dmpar_min_real_array calls require arrays.
       real (kind=RKIND), dimension(1) :: minBin, maxBin, minBinDomain, maxBinDomain
-      real (kind=RKIND), dimension(:), pointer ::  binCenterMerHeatTrans, binBoundaryMerHeatTrans, binVariable
+      real (kind=RKIND), dimension(:), pointer ::  binBoundaryMerHeatTrans, binVariable
 
       integer, pointer :: config_number_meridional_heat_transport_bins
       real (kind=RKIND), pointer :: config_min_meridional_heat_transport_bin, config_max_meridional_heat_transport_bin
@@ -198,7 +198,6 @@ contains
 
       nMerHeatTransBinsUsed = min( config_number_meridional_heat_transport_bins, nMerHeatTransBins )
 
-      call mpas_pool_get_array(MerHeatTransPool, 'binCenterMerHeatTrans', binCenterMerHeatTrans)
       call mpas_pool_get_array(MerHeatTransPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
 
       ! Find min and max values of binning variable.
@@ -225,7 +224,6 @@ contains
 
       ! Set up bins. 
       binBoundaryMerHeatTrans = -1.0e34
-      binCenterMerHeatTrans = -1.0e34
 
       ! Change min and max bin bounds to configuration settings, if applicable.
       if (config_min_meridional_heat_transport_bin > -1.0e33) then
@@ -245,10 +243,8 @@ contains
       binBoundaryMerHeatTrans(1) = minBinDomain(1)
       binWidth = (maxBinDomain(1) - minBinDomain(1)) / nMerHeatTransBinsUsed
 
-      binCenterMerHeatTrans(1) = minBinDomain(1) + binWidth/2.0
       do iBin = 2, nMerHeatTransBinsUsed
          binBoundaryMerHeatTrans(iBin) = binBoundaryMerHeatTrans(iBin-1) + binWidth
-         binCenterMerHeatTrans(iBin) = binCenterMerHeatTrans(iBin-1) + binWidth
       end do
       binBoundaryMerHeatTrans(nMerHeatTransBinsUsed+1) = binBoundaryMerHeatTrans(nMerHeatTransBinsUsed) + binWidth
 
