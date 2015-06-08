@@ -703,8 +703,12 @@ int GPTLstart (const char *name)               /* timer name */
   if (disabled)
     return 0;
 
-  if ( ! initialized)
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
+  if ( ! initialized){
+    //pw++
+    return 0;
+    //pw--
+    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
+  }
 
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
@@ -819,8 +823,12 @@ int GPTLstart_handle (const char *name,  /* timer name */
   if (disabled)
     return 0;
 
-  if ( ! initialized)
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
+  if ( ! initialized){
+    //pw++
+    return 0;
+    //pw--
+    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
+  }
 
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
@@ -948,10 +956,13 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
     return 0;
 
   if ( ! initialized){
-    numchars = MIN (namelen, MAX_CHARS);
-    strncpy (strname, name, numchars);
-    strname[numchars] = '\0';
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
+    //pw++
+    return 0;
+    //pw--
+    //pw    numchars = MIN (namelen, MAX_CHARS);
+    //pw    strncpy (strname, name, numchars);
+    //pw    strname[numchars] = '\0';
+    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
   }
 
   if ((t = get_thread_num ()) < 0)
@@ -1073,10 +1084,13 @@ int GPTLstartf_handle (const char *name,  /* timer name */
     return 0;
 
   if ( ! initialized){
-    numchars = MIN (namelen, MAX_CHARS);
-    strncpy (strname, name, numchars);
-    strname[numchars] = '\0';
-    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
+    //pw++
+    return 0;
+    //pw--
+    //pw    numchars = MIN (namelen, MAX_CHARS);
+    //pw    strncpy (strname, name, numchars);
+    //pw    strname[numchars] = '\0';
+    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
   }
 
   if ((t = get_thread_num ()) < 0)
@@ -1421,8 +1435,12 @@ int GPTLstop (const char *name)               /* timer name */
   if (disabled)
     return 0;
 
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  if ( ! initialized){
+    //pw++
+    return 0;
+    //pw--
+    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  }
 
   /* Get the timestamp */
     
@@ -1528,8 +1546,12 @@ int GPTLstop_handle (const char *name,     /* timer name */
   if (disabled)
     return 0;
 
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  if ( ! initialized){
+    //pw++
+    return 0;
+    //pw--
+    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  }
 
   /* Get the timestamp */
     
@@ -1652,8 +1674,12 @@ int GPTLstopf (const char *name, const int namelen) /* timer name and length */
   if (disabled)
     return 0;
 
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  if ( ! initialized){
+    //pw++
+    return 0;
+    //pw--
+    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  }
 
   /* Get the timestamp */
     
@@ -1768,8 +1794,12 @@ int GPTLstopf_handle (const char *name,     /* timer name */
   if (disabled)
     return 0;
 
-  if ( ! initialized)
-    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  if ( ! initialized){
+    //pw++
+    return 0;
+    //pw--
+    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
+  }
 
   /* Get the timestamp */
     
