@@ -732,8 +732,8 @@ subroutine cesm_pre_init2()
    use pio, only : file_desc_t, pio_closefile, pio_file_is_open
    use shr_const_mod, only: shr_const_tkfrz, shr_const_tktrip, &
         shr_const_mwwv, shr_const_mwdair
-   use shr_wv_sat_mod, only: wv_sat_set_default, wv_sat_init, &
-        WVSatTableSpec, wv_sat_make_tables
+   use shr_wv_sat_mod, only: shr_wv_sat_set_default, shr_wv_sat_init, &
+        ShrWVSatTableSpec, shr_wv_sat_make_tables
    implicit none
    type(file_desc_t) :: pioid
    integer :: maxthreads
@@ -744,7 +744,7 @@ subroutine cesm_pre_init2()
    real(r8) :: wv_sat_table_spacing
    character(CL) :: errstring
 
-   type(WVSatTableSpec) :: liquid_spec, ice_spec, mixed_spec
+   type(ShrWVSatTableSpec) :: liquid_spec, ice_spec, mixed_spec
 
    real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
@@ -952,15 +952,15 @@ subroutine cesm_pre_init2()
         wv_sat_use_tables=wv_sat_use_tables,             &
         wv_sat_table_spacing=wv_sat_table_spacing)
 
-   if (.not. wv_sat_set_default(wv_sat_scheme)) then
+   if (.not. shr_wv_sat_set_default(wv_sat_scheme)) then
       call shr_sys_abort('Invalid wv_sat_scheme.')
    end if
 
-   call wv_sat_init(shr_const_tkfrz, shr_const_tktrip, &
+   call shr_wv_sat_init(shr_const_tkfrz, shr_const_tktrip, &
         wv_sat_transition_start, epsilo, errstring)
 
    if (errstring /= "") then
-      call shr_sys_abort('wv_sat_init: '//trim(errstring))
+      call shr_sys_abort('shr_wv_sat_init: '//trim(errstring))
    end if
 
    ! The below produces internal lookup tables in the range 175-374K for
@@ -970,13 +970,13 @@ subroutine cesm_pre_init2()
    ! practice users will want to change them *very* rarely if ever, which
    ! is why only the spacing is in the namelist.
    if (wv_sat_use_tables) then
-      liquid_spec = WVSatTableSpec(ceiling(200._r8/wv_sat_table_spacing), &
+      liquid_spec = ShrWVSatTableSpec(ceiling(200._r8/wv_sat_table_spacing), &
            175._r8, wv_sat_table_spacing)
-      ice_spec = WVSatTableSpec(ceiling(150._r8/wv_sat_table_spacing), &
+      ice_spec = ShrWVSatTableSpec(ceiling(150._r8/wv_sat_table_spacing), &
            125._r8, wv_sat_table_spacing)
-      mixed_spec = WVSatTableSpec(ceiling(250._r8/wv_sat_table_spacing), &
+      mixed_spec = ShrWVSatTableSpec(ceiling(250._r8/wv_sat_table_spacing), &
            125._r8, wv_sat_table_spacing)
-      call wv_sat_make_tables(liquid_spec, ice_spec, mixed_spec)
+      call shr_wv_sat_make_tables(liquid_spec, ice_spec, mixed_spec)
    end if
 
    call seq_infodata_putData(infodata, &
@@ -3575,7 +3575,7 @@ end subroutine cesm_init
  subroutine cesm_final()
 
    use shr_pio_mod, only : shr_pio_finalize
-   use shr_wv_sat_mod, only: wv_sat_final
+   use shr_wv_sat_mod, only: shr_wv_sat_final
    implicit none
 
    !------------------------------------------------------------------------
@@ -3610,7 +3610,7 @@ end subroutine cesm_init
    ! End the run cleanly
    !------------------------------------------------------------------------
 
-   call wv_sat_final()
+   call shr_wv_sat_final()
 
    call shr_pio_finalize( )
    
