@@ -23,17 +23,17 @@ subroutine setUp()
 
   character(len=128) :: errstring
 
-  call wv_sat_init(tmelt, h2otrip, t_transition, epsilo, errstring)
+  call shr_wv_sat_init(tmelt, h2otrip, t_transition, epsilo, errstring)
 
   if (errstring /= "") then
-     call throw("Error from wv_sat_init: "//trim(errstring))
+     call throw("Error from shr_wv_sat_init: "//trim(errstring))
   end if
 
 end subroutine setUp
 
 @After
 subroutine tearDown()
-  call wv_sat_final()
+  call shr_wv_sat_final()
 end subroutine tearDown
 
 @Test
@@ -41,8 +41,8 @@ subroutine invalid_name_produces_invalid_index()
 
   integer :: idx
 
-  idx = wv_sat_get_scheme_idx("NotARealSaturationSchemeName")
-  @assertTrue(.not. wv_sat_valid_idx(idx))
+  idx = shr_wv_sat_get_scheme_idx("NotARealSaturationSchemeName")
+  @assertTrue(.not. shr_wv_sat_valid_idx(idx))
 
 end subroutine invalid_name_produces_invalid_index
 
@@ -52,11 +52,11 @@ subroutine reject_out_of_bounds_transition
   character(len=128) :: errstring
 
   ! Negative transition ranges are meaningless.
-  call wv_sat_init(tmelt, h2otrip, -1._r8, epsilo, errstring)
+  call shr_wv_sat_init(tmelt, h2otrip, -1._r8, epsilo, errstring)
   @assertTrue(errstring /= "")
 
   ! A transition range of 0 is OK.
-  call wv_sat_init(tmelt, h2otrip, 0._r8, epsilo, errstring)
+  call shr_wv_sat_init(tmelt, h2otrip, 0._r8, epsilo, errstring)
   @assertTrue(errstring == "")
 
 end subroutine reject_out_of_bounds_transition
@@ -66,8 +66,8 @@ subroutine qsat_not_greater_than_one()
 
   ! Even if the SVP is greater the current pressure, the saturation specific
   ! humidity returned should be capped at 1.
-  @assertEqual(1.0_r8, wv_sat_svp_to_qsat(1.0_r8, 0.5_r8))
-  @assertEqual(1.0_r8, wv_sat_svp_to_qsat(2, [1.0_r8, 2.0_r8], [0.5_r8, 0.5_r8]))
+  @assertEqual(1.0_r8, shr_wv_sat_svp_to_qsat(1.0_r8, 0.5_r8))
+  @assertEqual(1.0_r8, shr_wv_sat_svp_to_qsat(2, [1.0_r8, 2.0_r8], [0.5_r8, 0.5_r8]))
 
 end subroutine qsat_not_greater_than_one
 
@@ -84,9 +84,9 @@ subroutine qmmr_not_greater_than_epsilon()
   ! infinity, so check that we actually cap it at epsilon once the SVP is more
   ! than half the total pressure.
   do i = 1, 3
-     @assertEqual(epsilo, wv_sat_svp_to_qmmr(es(i), p(i)))
+     @assertEqual(epsilo, shr_wv_sat_svp_to_qmmr(es(i), p(i)))
   end do
-  @assertEqual(epsilo, wv_sat_svp_to_qmmr(n, es, p))
+  @assertEqual(epsilo, shr_wv_sat_svp_to_qmmr(n, es, p))
 
 end subroutine qmmr_not_greater_than_epsilon
 
@@ -104,39 +104,39 @@ subroutine esat_not_greater_than_p()
   ! pressures this is impossible, so we return a limited value to prevent
   ! numerical issues.
 
-  call wv_sat_qsat_liquid(280._r8, 1.e-30_r8, es, qs)
+  call shr_wv_sat_qsat_liquid(280._r8, 1.e-30_r8, es, qs)
   @assertEqual(1.e-30_r8, es)
 
-  call wv_sat_qsat_liquid(1, [280._r8], [1.e-30_r8], es_vec, qs_vec)
+  call shr_wv_sat_qsat_liquid(1, [280._r8], [1.e-30_r8], es_vec, qs_vec)
   @assertEqual([1.e-30_r8], es_vec)
 
-  call wv_sat_qsat_ice(260._r8, 1.e-30_r8, es, qs)
+  call shr_wv_sat_qsat_ice(260._r8, 1.e-30_r8, es, qs)
   @assertEqual(1.e-30_r8, es)
 
-  call wv_sat_qsat_ice(1, [260._r8], [1.e-30_r8], es_vec, qs_vec)
+  call shr_wv_sat_qsat_ice(1, [260._r8], [1.e-30_r8], es_vec, qs_vec)
   @assertEqual([1.e-30_r8], es_vec)
 
-  call wv_sat_qsat_mixed(270._r8, 1.e-30_r8, es, qs)
+  call shr_wv_sat_qsat_mixed(270._r8, 1.e-30_r8, es, qs)
   @assertEqual(1.e-30_r8, es)
 
-  call wv_sat_qsat_mixed(1, [270._r8], [1.e-30_r8], es_vec, qs_vec)
+  call shr_wv_sat_qsat_mixed(1, [270._r8], [1.e-30_r8], es_vec, qs_vec)
   @assertEqual([1.e-30_r8], es_vec)
 
 end subroutine esat_not_greater_than_p
 
 @Test
 subroutine liquid_vapor_table_is_used()
-  type(WVSatTableSpec) :: liquid_table_spec
+  type(ShrWVSatTableSpec) :: liquid_table_spec
 
   real(r8) :: non_table_value
   real(r8) :: table_value
 
-  non_table_value = wv_sat_svp_liquid(tmelt+7.5_r8)
+  non_table_value = shr_wv_sat_svp_liquid(tmelt+7.5_r8)
 
-  liquid_table_spec = WVSatTableSpec(151, tmelt-50._r8, 1._r8)
-  call wv_sat_make_tables(liquid_spec_in=liquid_table_spec)
+  liquid_table_spec = ShrWVSatTableSpec(151, tmelt-50._r8, 1._r8)
+  call shr_wv_sat_make_tables(liquid_spec_in=liquid_table_spec)
 
-  table_value = wv_sat_svp_liquid(tmelt+7.5_r8)
+  table_value = shr_wv_sat_svp_liquid(tmelt+7.5_r8)
 
   ! We can't really see directly whether the table is used, but we can pick a
   ! value that requires interpolation and look for the difference.
@@ -146,19 +146,19 @@ end subroutine liquid_vapor_table_is_used
 
 @Test
 subroutine liquid_vapor_table_not_extrapolated()
-  type(WVSatTableSpec) :: liquid_table_spec
+  type(ShrWVSatTableSpec) :: liquid_table_spec
 
   real(r8) :: non_table_low_value, non_table_high_value
   real(r8) :: table_low_value, table_high_value
 
-  non_table_low_value = wv_sat_svp_liquid(tmelt-50.5_r8)
-  non_table_high_value = wv_sat_svp_liquid(tmelt+150.5_r8)
+  non_table_low_value = shr_wv_sat_svp_liquid(tmelt-50.5_r8)
+  non_table_high_value = shr_wv_sat_svp_liquid(tmelt+150.5_r8)
 
-  liquid_table_spec = WVSatTableSpec(151, tmelt-50._r8, 1._r8)
-  call wv_sat_make_tables(liquid_spec_in=liquid_table_spec)
+  liquid_table_spec = ShrWVSatTableSpec(151, tmelt-50._r8, 1._r8)
+  call shr_wv_sat_make_tables(liquid_spec_in=liquid_table_spec)
 
-  table_low_value = wv_sat_svp_liquid(tmelt-50.5_r8)
-  table_high_value = wv_sat_svp_liquid(tmelt+150.5_r8)
+  table_low_value = shr_wv_sat_svp_liquid(tmelt-50.5_r8)
+  table_high_value = shr_wv_sat_svp_liquid(tmelt+150.5_r8)
 
   ! Beyond the table boundaries, the lookup table should not be used, and so we
   ! should get the same answer as before specifying any tables.
@@ -169,17 +169,17 @@ end subroutine liquid_vapor_table_not_extrapolated
 
 @Test
 subroutine ice_vapor_table_is_used()
-  type(WVSatTableSpec) :: ice_table_spec
+  type(ShrWVSatTableSpec) :: ice_table_spec
 
   real(r8) :: non_table_value
   real(r8) :: table_value
 
-  non_table_value = wv_sat_svp_ice(tmelt-7.5_r8)
+  non_table_value = shr_wv_sat_svp_ice(tmelt-7.5_r8)
 
-  ice_table_spec = WVSatTableSpec(106, tmelt-100._r8, 1._r8)
-  call wv_sat_make_tables(ice_spec_in=ice_table_spec)
+  ice_table_spec = ShrWVSatTableSpec(106, tmelt-100._r8, 1._r8)
+  call shr_wv_sat_make_tables(ice_spec_in=ice_table_spec)
 
-  table_value = wv_sat_svp_ice(tmelt-7.5_r8)
+  table_value = shr_wv_sat_svp_ice(tmelt-7.5_r8)
 
   ! We can't really see directly whether the table is used, but we can pick a
   ! value that requires interpolation and look for the difference.
@@ -189,19 +189,19 @@ end subroutine ice_vapor_table_is_used
 
 @Test
 subroutine ice_vapor_table_not_extrapolated()
-  type(WVSatTableSpec) :: ice_table_spec
+  type(ShrWVSatTableSpec) :: ice_table_spec
 
   real(r8) :: non_table_low_value, non_table_high_value
   real(r8) :: table_low_value, table_high_value
 
-  non_table_low_value = wv_sat_svp_ice(tmelt-100.5_r8)
-  non_table_high_value = wv_sat_svp_ice(tmelt+5.5_r8)
+  non_table_low_value = shr_wv_sat_svp_ice(tmelt-100.5_r8)
+  non_table_high_value = shr_wv_sat_svp_ice(tmelt+5.5_r8)
 
-  ice_table_spec = WVSatTableSpec(106, tmelt-100._r8, 1._r8)
-  call wv_sat_make_tables(ice_spec_in=ice_table_spec)
+  ice_table_spec = ShrWVSatTableSpec(106, tmelt-100._r8, 1._r8)
+  call shr_wv_sat_make_tables(ice_spec_in=ice_table_spec)
 
-  table_low_value = wv_sat_svp_ice(tmelt-100.5_r8)
-  table_high_value = wv_sat_svp_ice(tmelt+5.5_r8)
+  table_low_value = shr_wv_sat_svp_ice(tmelt-100.5_r8)
+  table_high_value = shr_wv_sat_svp_ice(tmelt+5.5_r8)
 
   ! Beyond the table boundaries, the lookup table should not be used, and so we
   ! should get the same answer as before specifying any tables.
@@ -212,17 +212,17 @@ end subroutine ice_vapor_table_not_extrapolated
 
 @Test
 subroutine mixed_vapor_table_is_used()
-  type(WVSatTableSpec) :: mixed_table_spec
+  type(ShrWVSatTableSpec) :: mixed_table_spec
 
   real(r8) :: non_table_value
   real(r8) :: table_value
 
-  non_table_value = wv_sat_svp_mixed(tmelt-7.5_r8)
+  non_table_value = shr_wv_sat_svp_mixed(tmelt-7.5_r8)
 
-  mixed_table_spec = WVSatTableSpec(201, tmelt-100._r8, 1._r8)
-  call wv_sat_make_tables(mixed_spec_in=mixed_table_spec)
+  mixed_table_spec = ShrWVSatTableSpec(201, tmelt-100._r8, 1._r8)
+  call shr_wv_sat_make_tables(mixed_spec_in=mixed_table_spec)
 
-  table_value = wv_sat_svp_mixed(tmelt-7.5_r8)
+  table_value = shr_wv_sat_svp_mixed(tmelt-7.5_r8)
 
   ! We can't really see directly whether the table is used, but we can pick a
   ! value that requires interpolation and look for the difference.
@@ -232,19 +232,19 @@ end subroutine mixed_vapor_table_is_used
 
 @Test
 subroutine mixed_vapor_table_not_extrapolated()
-  type(WVSatTableSpec) :: mixed_table_spec
+  type(ShrWVSatTableSpec) :: mixed_table_spec
 
   real(r8) :: non_table_low_value, non_table_high_value
   real(r8) :: table_low_value, table_high_value
 
-  non_table_low_value = wv_sat_svp_mixed(tmelt-100.5_r8)
-  non_table_high_value = wv_sat_svp_mixed(tmelt+100.5_r8)
+  non_table_low_value = shr_wv_sat_svp_mixed(tmelt-100.5_r8)
+  non_table_high_value = shr_wv_sat_svp_mixed(tmelt+100.5_r8)
 
-  mixed_table_spec = WVSatTableSpec(201, tmelt-100._r8, 1._r8)
-  call wv_sat_make_tables(mixed_spec_in=mixed_table_spec)
+  mixed_table_spec = ShrWVSatTableSpec(201, tmelt-100._r8, 1._r8)
+  call shr_wv_sat_make_tables(mixed_spec_in=mixed_table_spec)
 
-  table_low_value = wv_sat_svp_mixed(tmelt-100.5_r8)
-  table_high_value = wv_sat_svp_mixed(tmelt+100.5_r8)
+  table_low_value = shr_wv_sat_svp_mixed(tmelt-100.5_r8)
+  table_high_value = shr_wv_sat_svp_mixed(tmelt+100.5_r8)
 
   ! Beyond the table boundaries, the lookup table should not be used, and so we
   ! should get the same answer as before specifying any tables.

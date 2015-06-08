@@ -9,43 +9,43 @@ module shr_wv_sat_mod
 ! Typical usage of this module:
 !
 ! Init:
-! call wv_sat_init(<constants>, errstring)
+! call shr_wv_sat_init(<constants>, errstring)
 !
 ! Get scheme index from a name string:
-! scheme_idx = wv_sat_get_scheme_idx("GoffGratch")
-! if (.not. wv_sat_valid_idx(scheme_idx)) <throw some error>
+! scheme_idx = shr_wv_sat_get_scheme_idx("GoffGratch")
+! if (.not. shr_wv_sat_valid_idx(scheme_idx)) <throw some error>
 !
 ! Get pressures:
-! es = wv_sat_svp_liquid(t, scheme_idx)
-! es = wv_sat_svp_ice(t, scheme_idx)
+! es = shr_wv_sat_svp_liquid(t, scheme_idx)
+! es = shr_wv_sat_svp_ice(t, scheme_idx)
 !
 ! Use ice/water transition range:
-! es = wv_sat_svp_mixed(t, scheme_idx)
+! es = shr_wv_sat_svp_mixed(t, scheme_idx)
 !
 ! Note that elemental functions cannot be pointed to, nor passed as
 ! arguments. If you need to do either, it is recommended to wrap the function so
-! that it can be given an explicit (non- elemental) interface.
+! that it can be given an explicit (non-elemental) interface.
 !
 ! Since usually only one scheme is used at a time, the scheme index is an
 ! optional argument. If omitted a default scheme will be used, which is
 ! initially the Goff & Gratch scheme. To change the default, you can make a call
 ! like this:
 !
-! call wv_sat_set_default("MurphyKoop")
+! call shr_wv_sat_set_default("MurphyKoop")
 !
 ! This module has the ability to store lookup tables to cache values. To do so,
-! create a WVSatTableSpec instance for water and ice with the desired size and
-! range, then call wv_sat_make_tables like so:
+! create a ShrWVSatTableSpec instance for water and ice with the desired size
+! and range, then call shr_wv_sat_make_tables like so:
 !
-! type(WVSatTableSpec) :: liquid_spec, ice_spec, mixed_spec
+! type(ShrWVSatTableSpec) :: liquid_spec, ice_spec, mixed_spec
 !
-! liquid_spec = WVSatTableSpec(151, tmelt-50._rk, 1._rk)
-! ice_spec = WVSatTableSpec(106, tmelt-100._rk, 1._rk)
-! mixed_spec = WVSatTableSpec(21, tmelt-20._rk, 1._rk)
-! call wv_sat_make_tables(liquid_spec, ice_spec, mixed_spec)
+! liquid_spec = ShrWVSatTableSpec(151, tmelt-50._rk, 1._rk)
+! ice_spec = ShrWVSatTableSpec(106, tmelt-100._rk, 1._rk)
+! mixed_spec = ShrWVSatTableSpec(21, tmelt-20._rk, 1._rk)
+! call shr_wv_sat_make_tables(liquid_spec, ice_spec, mixed_spec)
 !
 ! Currently, this module only supports making tables for the default scheme, and
-! wv_sat_make_tables must be invoked again to produce new tables if the default
+! shr_wv_sat_make_tables must be invoked again to produce new tables if the default
 ! is changed.
 !
 ! Once tables are produced, all uses of the default scheme will attempt to
@@ -57,10 +57,10 @@ module shr_wv_sat_mod
 ! tables are stored in global, thread-shared variables. Therefore the following
 ! procedures are not thread-safe:
 !
-!  - wv_sat_init
-!  - wv_sat_final
-!  - wv_sat_set_default
-!  - wv_sat_make_tables
+!  - shr_wv_sat_init
+!  - shr_wv_sat_final
+!  - shr_wv_sat_set_default
+!  - shr_wv_sat_make_tables
 !
 ! If a multi-threaded application calls any of these procedures, the user is
 ! responsible for ensuring that each call is perfomed by only one thread, and
@@ -68,7 +68,7 @@ module shr_wv_sat_mod
 !
 ! All other public routines are thread-safe.
 
-#ifdef WV_SAT_USE_CLUBB_KIND
+#ifdef SHR_WV_SAT_USE_CLUBB_KIND
 ! If running within CLUBB, use the same precision as CLUBB.
 use clubb_precision, only: core_rkind
 #endif
@@ -78,33 +78,33 @@ private
 save
 
 ! Initialize/finalize module and pick schemes
-public wv_sat_init
-public wv_sat_final
-public wv_sat_get_scheme_idx
-public wv_sat_valid_idx
-public wv_sat_set_default
+public shr_wv_sat_init
+public shr_wv_sat_final
+public shr_wv_sat_get_scheme_idx
+public shr_wv_sat_valid_idx
+public shr_wv_sat_set_default
 
 ! Manage lookup tables
-public WVSatTableSpec
-public wv_sat_make_tables
+public ShrWVSatTableSpec
+public shr_wv_sat_make_tables
 
 ! Basic SVP calculations
-public wv_sat_svp_liquid
-public wv_sat_svp_ice
-public wv_sat_svp_mixed
+public shr_wv_sat_svp_liquid
+public shr_wv_sat_svp_ice
+public shr_wv_sat_svp_mixed
 
 ! pressure -> humidity conversion
-public wv_sat_svp_to_qsat
+public shr_wv_sat_svp_to_qsat
 
 ! pressure -> mass mixing ratio conversion
-public wv_sat_svp_to_qmmr
+public shr_wv_sat_svp_to_qmmr
 
 ! Combined qsat operations
-public wv_sat_qsat_liquid
-public wv_sat_qsat_ice
-public wv_sat_qsat_mixed
+public shr_wv_sat_qsat_liquid
+public shr_wv_sat_qsat_ice
+public shr_wv_sat_qsat_mixed
 
-#ifdef WV_SAT_USE_CLUBB_KIND
+#ifdef SHR_WV_SAT_USE_CLUBB_KIND
 integer, parameter :: rk = core_rkind
 #else
 ! Double precision
@@ -132,60 +132,60 @@ integer, parameter :: initial_default_idx = GoffGratch_idx
 integer :: default_idx = initial_default_idx
 
 ! Type to represent a table specification.
-type WVSatTableSpec
+type ShrWVSatTableSpec
    integer :: table_size
    real(rk) :: minimum
    real(rk) :: spacing
-end type WVSatTableSpec
+end type ShrWVSatTableSpec
 
-type(WVSatTableSpec) :: liquid_table_spec
+type(ShrWVSatTableSpec) :: liquid_table_spec
 real(rk), allocatable :: liquid_table(:)
 
-type(WVSatTableSpec) :: ice_table_spec
+type(ShrWVSatTableSpec) :: ice_table_spec
 real(rk), allocatable :: ice_table(:)
 
-type(WVSatTableSpec) :: mixed_table_spec
+type(ShrWVSatTableSpec) :: mixed_table_spec
 real(rk), allocatable :: mixed_table(:)
 
-interface wv_sat_svp_liquid
-   module procedure wv_sat_svp_liquid
-   module procedure wv_sat_svp_liquid_vec
-end interface wv_sat_svp_liquid
+interface shr_wv_sat_svp_liquid
+   module procedure shr_wv_sat_svp_liquid
+   module procedure shr_wv_sat_svp_liquid_vec
+end interface shr_wv_sat_svp_liquid
 
-interface wv_sat_svp_ice
-   module procedure wv_sat_svp_ice
-   module procedure wv_sat_svp_ice_vec
-end interface wv_sat_svp_ice
+interface shr_wv_sat_svp_ice
+   module procedure shr_wv_sat_svp_ice
+   module procedure shr_wv_sat_svp_ice_vec
+end interface shr_wv_sat_svp_ice
 
-interface wv_sat_svp_mixed
-   module procedure wv_sat_svp_mixed
-   module procedure wv_sat_svp_mixed_vec
-end interface wv_sat_svp_mixed
+interface shr_wv_sat_svp_mixed
+   module procedure shr_wv_sat_svp_mixed
+   module procedure shr_wv_sat_svp_mixed_vec
+end interface shr_wv_sat_svp_mixed
 
-interface wv_sat_svp_to_qsat
-   module procedure wv_sat_svp_to_qsat
-   module procedure wv_sat_svp_to_qsat_vec
-end interface wv_sat_svp_to_qsat
+interface shr_wv_sat_svp_to_qsat
+   module procedure shr_wv_sat_svp_to_qsat
+   module procedure shr_wv_sat_svp_to_qsat_vec
+end interface shr_wv_sat_svp_to_qsat
 
-interface wv_sat_svp_to_qmmr
-   module procedure wv_sat_svp_to_qmmr
-   module procedure wv_sat_svp_to_qmmr_vec
-end interface wv_sat_svp_to_qmmr
+interface shr_wv_sat_svp_to_qmmr
+   module procedure shr_wv_sat_svp_to_qmmr
+   module procedure shr_wv_sat_svp_to_qmmr_vec
+end interface shr_wv_sat_svp_to_qmmr
 
-interface wv_sat_qsat_liquid
-   module procedure wv_sat_qsat_liquid
-   module procedure wv_sat_qsat_liquid_vec
-end interface wv_sat_qsat_liquid
+interface shr_wv_sat_qsat_liquid
+   module procedure shr_wv_sat_qsat_liquid
+   module procedure shr_wv_sat_qsat_liquid_vec
+end interface shr_wv_sat_qsat_liquid
 
-interface wv_sat_qsat_ice
-   module procedure wv_sat_qsat_ice
-   module procedure wv_sat_qsat_ice_vec
-end interface wv_sat_qsat_ice
+interface shr_wv_sat_qsat_ice
+   module procedure shr_wv_sat_qsat_ice
+   module procedure shr_wv_sat_qsat_ice_vec
+end interface shr_wv_sat_qsat_ice
 
-interface wv_sat_qsat_mixed
-   module procedure wv_sat_qsat_mixed
-   module procedure wv_sat_qsat_mixed_vec
-end interface wv_sat_qsat_mixed
+interface shr_wv_sat_qsat_mixed
+   module procedure shr_wv_sat_qsat_mixed
+   module procedure shr_wv_sat_qsat_mixed_vec
+end interface shr_wv_sat_qsat_mixed
 
 contains
 
@@ -194,7 +194,7 @@ contains
 !---------------------------------------------------------------------
 
 ! Get physical constants
-subroutine wv_sat_init(tmelt_in, h2otrip_in, ttrice_in, epsilo_in, &
+subroutine shr_wv_sat_init(tmelt_in, h2otrip_in, ttrice_in, epsilo_in, &
      errstring)
   real(rk), intent(in) :: tmelt_in
   real(rk), intent(in) :: h2otrip_in
@@ -205,7 +205,7 @@ subroutine wv_sat_init(tmelt_in, h2otrip_in, ttrice_in, epsilo_in, &
   errstring = ' '
 
   if (ttrice_in < 0._rk) then
-     write(errstring,*) 'wv_sat_init: ERROR: ', &
+     write(errstring,*) 'shr_wv_sat_init: ERROR: ', &
           ttrice_in,' was input for ttrice, but negative range is invalid.'
      return
   end if
@@ -217,12 +217,12 @@ subroutine wv_sat_init(tmelt_in, h2otrip_in, ttrice_in, epsilo_in, &
 
   omeps = 1._rk - epsilo
 
-end subroutine wv_sat_init
+end subroutine shr_wv_sat_init
 
 ! Reset module data to the original state (primarily for testing purposes).
 ! It doesn't seem worthwhile to reset the constants, so just deal with options
 ! and dynamic memory here.
-subroutine wv_sat_final()
+subroutine shr_wv_sat_final()
 
   default_idx = initial_default_idx
 
@@ -230,10 +230,10 @@ subroutine wv_sat_final()
   if (allocated(ice_table)) deallocate(ice_table)
   if (allocated(mixed_table)) deallocate(mixed_table)
 
-end subroutine wv_sat_final
+end subroutine shr_wv_sat_final
 
 ! Look up index by name.
-pure function wv_sat_get_scheme_idx(name) result(idx)
+pure function shr_wv_sat_get_scheme_idx(name) result(idx)
   character(len=*), intent(in) :: name
   integer :: idx
 
@@ -252,21 +252,21 @@ pure function wv_sat_get_scheme_idx(name) result(idx)
      idx = Invalid_idx
   end select
 
-end function wv_sat_get_scheme_idx
+end function shr_wv_sat_get_scheme_idx
 
 ! Check validity of an index from the above routine.
-pure function wv_sat_valid_idx(idx) result(status)
+pure function shr_wv_sat_valid_idx(idx) result(status)
   integer, intent(in) :: idx
   logical :: status
 
   status = (idx /= Invalid_idx)
 
-end function wv_sat_valid_idx
+end function shr_wv_sat_valid_idx
 
 ! Set default scheme (otherwise, Goff & Gratch is default)
 ! Returns a logical representing success (.true.) or
 ! failure (.false.).
-function wv_sat_set_default(name) result(status)
+function shr_wv_sat_set_default(name) result(status)
   character(len=*), intent(in) :: name
   logical :: status
 
@@ -274,9 +274,9 @@ function wv_sat_set_default(name) result(status)
   ! so assign to temporary and check it first.
   integer :: tmp_idx
 
-  tmp_idx = wv_sat_get_scheme_idx(name)
+  tmp_idx = shr_wv_sat_get_scheme_idx(name)
 
-  status = wv_sat_valid_idx(tmp_idx)
+  status = shr_wv_sat_valid_idx(tmp_idx)
 
   ! If we have changed the default, deallocated the tables as well as setting
   ! the new default.
@@ -287,39 +287,39 @@ function wv_sat_set_default(name) result(status)
      default_idx = tmp_idx
   end if
 
-end function wv_sat_set_default
+end function shr_wv_sat_set_default
 
-subroutine wv_sat_make_tables(liquid_spec_in, ice_spec_in, mixed_spec_in)
-  type(WVSatTableSpec), intent(in), optional :: liquid_spec_in
-  type(WVSatTableSpec), intent(in), optional :: ice_spec_in
-  type(WVSatTableSpec), intent(in), optional :: mixed_spec_in
+subroutine shr_wv_sat_make_tables(liquid_spec_in, ice_spec_in, mixed_spec_in)
+  type(ShrWVSatTableSpec), intent(in), optional :: liquid_spec_in
+  type(ShrWVSatTableSpec), intent(in), optional :: ice_spec_in
+  type(ShrWVSatTableSpec), intent(in), optional :: mixed_spec_in
 
   if (present(liquid_spec_in)) then
      liquid_table_spec = liquid_spec_in
-     call wv_sat_make_one_table(liquid_table_spec, wv_sat_svp_liquid_no_table, &
+     call shr_wv_sat_make_one_table(liquid_table_spec, shr_wv_sat_svp_liquid_no_table, &
           liquid_table)
   end if
 
   if (present(ice_spec_in)) then
      ice_table_spec = ice_spec_in
-     call wv_sat_make_one_table(ice_table_spec, wv_sat_svp_ice_no_table, &
+     call shr_wv_sat_make_one_table(ice_table_spec, shr_wv_sat_svp_ice_no_table, &
           ice_table)
   end if
 
   if (present(mixed_spec_in)) then
      mixed_table_spec = mixed_spec_in
-     call wv_sat_make_one_table(mixed_table_spec, wv_sat_svp_mixed_no_table, &
+     call shr_wv_sat_make_one_table(mixed_table_spec, shr_wv_sat_svp_mixed_no_table, &
           mixed_table)
   end if
 
-end subroutine wv_sat_make_tables
+end subroutine shr_wv_sat_make_tables
 
 ! Table-generating generic function (would be simpler with an object-oriented
 ! design, but we want this code to be runnable on compilers with poor Fortran
 ! 2003 support). This means we can't attach function pointers or methods to
 ! derived types.
-subroutine wv_sat_make_one_table(table_spec, svp_function, table)
-  type(WVSatTableSpec), intent(in) :: table_spec
+subroutine shr_wv_sat_make_one_table(table_spec, svp_function, table)
+  type(ShrWVSatTableSpec), intent(in) :: table_spec
   interface
      function svp_function(t, idx) result(es)
        import :: rk
@@ -340,7 +340,7 @@ subroutine wv_sat_make_one_table(table_spec, svp_function, table)
           default_idx)
   end do
 
-end subroutine wv_sat_make_one_table
+end subroutine shr_wv_sat_make_one_table
 
 !---------------------------------------------------------------------
 ! UTILITIES
@@ -348,7 +348,7 @@ end subroutine wv_sat_make_one_table
 
 ! Get saturation specific humidity given pressure and SVP.
 ! Specific humidity is limited to the range 0-1.
-elemental function wv_sat_svp_to_qsat(es, p) result(qs)
+elemental function shr_wv_sat_svp_to_qsat(es, p) result(qs)
 
   real(rk), intent(in) :: es  ! SVP
   real(rk), intent(in) :: p   ! Current pressure.
@@ -361,9 +361,9 @@ elemental function wv_sat_svp_to_qsat(es, p) result(qs)
      qs = epsilo*es / (p - omeps*es)
   end if
 
-end function wv_sat_svp_to_qsat
+end function shr_wv_sat_svp_to_qsat
 
-pure function wv_sat_svp_to_qsat_vec(n, es, p) result(qs)
+pure function shr_wv_sat_svp_to_qsat_vec(n, es, p) result(qs)
 
   integer,  intent(in) :: n      ! Size of input arrays
   real(rk), intent(in) :: es(n)  ! SVP
@@ -381,11 +381,11 @@ pure function wv_sat_svp_to_qsat_vec(n, es, p) result(qs)
      end if
   end do
 
-end function wv_sat_svp_to_qsat_vec
+end function shr_wv_sat_svp_to_qsat_vec
 
 ! Get saturation mass mixing ratio (over dry air) given pressure and SVP.
 ! Output is limited to the range 0-epsilo.
-elemental function wv_sat_svp_to_qmmr(es, p) result(qs)
+elemental function shr_wv_sat_svp_to_qmmr(es, p) result(qs)
 
   real(rk), intent(in) :: es  ! SVP
   real(rk), intent(in) :: p   ! Current pressure
@@ -398,9 +398,9 @@ elemental function wv_sat_svp_to_qmmr(es, p) result(qs)
      qs = epsilo*es / (p - es)
   end if
 
-end function wv_sat_svp_to_qmmr
+end function shr_wv_sat_svp_to_qmmr
 
-pure function wv_sat_svp_to_qmmr_vec(n, es, p) result(qs)
+pure function shr_wv_sat_svp_to_qmmr_vec(n, es, p) result(qs)
 
   integer,  intent(in) :: n      ! Size of input arrays
   real(rk), intent(in) :: es(n)  ! SVP
@@ -418,9 +418,9 @@ pure function wv_sat_svp_to_qmmr_vec(n, es, p) result(qs)
      end if
   end do
 
-end function wv_sat_svp_to_qmmr_vec
+end function shr_wv_sat_svp_to_qmmr_vec
 
-elemental subroutine wv_sat_qsat_liquid(t, p, es, qs, idx)
+elemental subroutine shr_wv_sat_qsat_liquid(t, p, es, qs, idx)
   !------------------------------------------------------------------!
   ! Purpose:                                                         !
   !   Calculate SVP over water at a given temperature, and then      !
@@ -436,16 +436,16 @@ elemental subroutine wv_sat_qsat_liquid(t, p, es, qs, idx)
 
   integer,  intent(in), optional :: idx ! Scheme index
 
-  es = wv_sat_svp_liquid(t, idx)
+  es = shr_wv_sat_svp_liquid(t, idx)
 
-  qs = wv_sat_svp_to_qsat(es, p)
+  qs = shr_wv_sat_svp_to_qsat(es, p)
 
   ! Ensures returned es is consistent with limiters on qs.
   es = min(es, p)
 
-end subroutine wv_sat_qsat_liquid
+end subroutine shr_wv_sat_qsat_liquid
 
-pure subroutine wv_sat_qsat_liquid_vec(n, t, p, es, qs, idx)
+pure subroutine shr_wv_sat_qsat_liquid_vec(n, t, p, es, qs, idx)
   !------------------------------------------------------------------!
   ! Purpose:                                                         !
   !   Calculate SVP over water at a given temperature, and then      !
@@ -462,16 +462,16 @@ pure subroutine wv_sat_qsat_liquid_vec(n, t, p, es, qs, idx)
 
   integer,  intent(in), optional :: idx ! Scheme index
 
-  es = wv_sat_svp_liquid(n, t, idx)
+  es = shr_wv_sat_svp_liquid(n, t, idx)
 
-  qs = wv_sat_svp_to_qsat(n, es, p)
+  qs = shr_wv_sat_svp_to_qsat(n, es, p)
 
   ! Ensures returned es is consistent with limiters on qs.
   es = min(es, p)
 
-end subroutine wv_sat_qsat_liquid_vec
+end subroutine shr_wv_sat_qsat_liquid_vec
 
-elemental subroutine wv_sat_qsat_ice(t, p, es, qs, idx)
+elemental subroutine shr_wv_sat_qsat_ice(t, p, es, qs, idx)
   !------------------------------------------------------------------!
   ! Purpose:                                                         !
   !   Calculate SVP over ice at a given temperature, and then        !
@@ -487,16 +487,16 @@ elemental subroutine wv_sat_qsat_ice(t, p, es, qs, idx)
 
   integer,  intent(in), optional :: idx ! Scheme index
 
-  es = wv_sat_svp_ice(t, idx)
+  es = shr_wv_sat_svp_ice(t, idx)
 
-  qs = wv_sat_svp_to_qsat(es, p)
+  qs = shr_wv_sat_svp_to_qsat(es, p)
 
   ! Ensures returned es is consistent with limiters on qs.
   es = min(es, p)
 
-end subroutine wv_sat_qsat_ice
+end subroutine shr_wv_sat_qsat_ice
 
-pure subroutine wv_sat_qsat_ice_vec(n, t, p, es, qs, idx)
+pure subroutine shr_wv_sat_qsat_ice_vec(n, t, p, es, qs, idx)
   !------------------------------------------------------------------!
   ! Purpose:                                                         !
   !   Calculate SVP over ice at a given temperature, and then        !
@@ -513,16 +513,16 @@ pure subroutine wv_sat_qsat_ice_vec(n, t, p, es, qs, idx)
 
   integer,  intent(in), optional :: idx ! Scheme index
 
-  es = wv_sat_svp_ice(n, t, idx)
+  es = shr_wv_sat_svp_ice(n, t, idx)
 
-  qs = wv_sat_svp_to_qsat(n, es, p)
+  qs = shr_wv_sat_svp_to_qsat(n, es, p)
 
   ! Ensures returned es is consistent with limiters on qs.
   es = min(es, p)
 
-end subroutine wv_sat_qsat_ice_vec
+end subroutine shr_wv_sat_qsat_ice_vec
 
-elemental subroutine wv_sat_qsat_mixed(t, p, es, qs, idx)
+elemental subroutine shr_wv_sat_qsat_mixed(t, p, es, qs, idx)
   !------------------------------------------------------------------!
   ! Purpose:                                                         !
   !   Calculate SVP over ice at a given temperature, and then        !
@@ -538,16 +538,16 @@ elemental subroutine wv_sat_qsat_mixed(t, p, es, qs, idx)
 
   integer,  intent(in), optional :: idx ! Scheme index
 
-  es = wv_sat_svp_mixed(t, idx)
+  es = shr_wv_sat_svp_mixed(t, idx)
 
-  qs = wv_sat_svp_to_qsat(es, p)
+  qs = shr_wv_sat_svp_to_qsat(es, p)
 
   ! Ensures returned es is consistent with limiters on qs.
   es = min(es, p)
 
-end subroutine wv_sat_qsat_mixed
+end subroutine shr_wv_sat_qsat_mixed
 
-pure subroutine wv_sat_qsat_mixed_vec(n, t, p, es, qs, idx)
+pure subroutine shr_wv_sat_qsat_mixed_vec(n, t, p, es, qs, idx)
   !------------------------------------------------------------------!
   ! Purpose:                                                         !
   !   Calculate SVP over ice at a given temperature, and then        !
@@ -564,20 +564,20 @@ pure subroutine wv_sat_qsat_mixed_vec(n, t, p, es, qs, idx)
 
   integer,  intent(in), optional :: idx ! Scheme index
 
-  es = wv_sat_svp_mixed(n, t, idx)
+  es = shr_wv_sat_svp_mixed(n, t, idx)
 
-  qs = wv_sat_svp_to_qsat(n, es, p)
+  qs = shr_wv_sat_svp_to_qsat(n, es, p)
 
   ! Ensures returned es is consistent with limiters on qs.
   es = min(es, p)
 
-end subroutine wv_sat_qsat_mixed_vec
+end subroutine shr_wv_sat_qsat_mixed_vec
 
 !---------------------------------------------------------------------
 ! SVP INTERFACE FUNCTIONS
 !---------------------------------------------------------------------
 
-elemental function wv_sat_svp_liquid(t, idx) result(es)
+elemental function shr_wv_sat_svp_liquid(t, idx) result(es)
   real(rk), intent(in) :: t
   integer,  intent(in), optional :: idx
   real(rk) :: es
@@ -592,14 +592,14 @@ elemental function wv_sat_svp_liquid(t, idx) result(es)
 
   if (use_idx == default_idx .and. allocated(liquid_table)) then
      es = lookup_svp_in_table(t, liquid_table_spec, liquid_table, &
-          wv_sat_svp_liquid_no_table)
+          shr_wv_sat_svp_liquid_no_table)
   else
-     es = wv_sat_svp_liquid_no_table(t, use_idx)
+     es = shr_wv_sat_svp_liquid_no_table(t, use_idx)
   end if
 
-end function wv_sat_svp_liquid
+end function shr_wv_sat_svp_liquid
 
-pure function wv_sat_svp_liquid_vec(n, t, idx) result(es)
+pure function shr_wv_sat_svp_liquid_vec(n, t, idx) result(es)
   integer,  intent(in) :: n
   real(rk), intent(in) :: t(n)
   integer,  intent(in), optional :: idx
@@ -617,17 +617,17 @@ pure function wv_sat_svp_liquid_vec(n, t, idx) result(es)
   if (use_idx == default_idx .and. allocated(liquid_table)) then
      do i = 1, n
         es(i) = lookup_svp_in_table(t(i), liquid_table_spec, liquid_table, &
-             wv_sat_svp_liquid_no_table)
+             shr_wv_sat_svp_liquid_no_table)
      end do
   else
      do i = 1, n
-        es(i) = wv_sat_svp_liquid_no_table(t(i), use_idx)
+        es(i) = shr_wv_sat_svp_liquid_no_table(t(i), use_idx)
      end do
   end if
 
-end function wv_sat_svp_liquid_vec
+end function shr_wv_sat_svp_liquid_vec
 
-pure function wv_sat_svp_liquid_no_table(t, idx) result(es)
+pure function shr_wv_sat_svp_liquid_no_table(t, idx) result(es)
   real(rk), intent(in) :: t
   integer,  intent(in) :: idx
   real(rk) :: es
@@ -648,9 +648,9 @@ pure function wv_sat_svp_liquid_no_table(t, idx) result(es)
      es = -huge(1._rk)
   end select
 
-end function wv_sat_svp_liquid_no_table
+end function shr_wv_sat_svp_liquid_no_table
 
-elemental function wv_sat_svp_ice(t, idx) result(es)
+elemental function shr_wv_sat_svp_ice(t, idx) result(es)
   real(rk), intent(in) :: t
   integer,  intent(in), optional :: idx
   real(rk) :: es
@@ -665,14 +665,14 @@ elemental function wv_sat_svp_ice(t, idx) result(es)
 
   if (use_idx == default_idx .and. allocated(ice_table)) then
      es = lookup_svp_in_table(t, ice_table_spec, ice_table, &
-          wv_sat_svp_ice_no_table)
+          shr_wv_sat_svp_ice_no_table)
   else
-     es = wv_sat_svp_ice_no_table(t, use_idx)
+     es = shr_wv_sat_svp_ice_no_table(t, use_idx)
   end if
 
-end function wv_sat_svp_ice
+end function shr_wv_sat_svp_ice
 
-pure function wv_sat_svp_ice_vec(n, t, idx) result(es)
+pure function shr_wv_sat_svp_ice_vec(n, t, idx) result(es)
   integer,  intent(in) :: n
   real(rk), intent(in) :: t(n)
   integer,  intent(in), optional :: idx
@@ -690,17 +690,17 @@ pure function wv_sat_svp_ice_vec(n, t, idx) result(es)
   if (use_idx == default_idx .and. allocated(ice_table)) then
      do i = 1, n
         es(i) = lookup_svp_in_table(t(i), ice_table_spec, ice_table, &
-             wv_sat_svp_ice_no_table)
+             shr_wv_sat_svp_ice_no_table)
      end do
   else
      do i = 1, n
-        es(i) = wv_sat_svp_ice_no_table(t(i), use_idx)
+        es(i) = shr_wv_sat_svp_ice_no_table(t(i), use_idx)
      end do
   end if
 
-end function wv_sat_svp_ice_vec
+end function shr_wv_sat_svp_ice_vec
 
-pure function wv_sat_svp_ice_no_table(t, idx) result(es)
+pure function shr_wv_sat_svp_ice_no_table(t, idx) result(es)
   real(rk), intent(in) :: t
   integer,  intent(in) :: idx
   real(rk) :: es
@@ -721,9 +721,9 @@ pure function wv_sat_svp_ice_no_table(t, idx) result(es)
      es = -huge(1._rk)
   end select
 
-end function wv_sat_svp_ice_no_table
+end function shr_wv_sat_svp_ice_no_table
 
-elemental function wv_sat_svp_mixed(t, idx) result (es)
+elemental function shr_wv_sat_svp_mixed(t, idx) result (es)
 
   real(rk), intent(in) :: t
   integer,  intent(in), optional :: idx
@@ -740,14 +740,14 @@ elemental function wv_sat_svp_mixed(t, idx) result (es)
 
   if (use_idx == default_idx .and. allocated(mixed_table)) then
      es = lookup_svp_in_table(t, mixed_table_spec, mixed_table, &
-          wv_sat_svp_mixed_no_table)
+          shr_wv_sat_svp_mixed_no_table)
   else
-     es = wv_sat_svp_mixed_no_table(t, use_idx)
+     es = shr_wv_sat_svp_mixed_no_table(t, use_idx)
   end if
 
-end function wv_sat_svp_mixed
+end function shr_wv_sat_svp_mixed
 
-pure function wv_sat_svp_mixed_vec(n, t, idx) result (es)
+pure function shr_wv_sat_svp_mixed_vec(n, t, idx) result (es)
   integer,  intent(in) :: n
   real(rk), intent(in) :: t(n)
   integer,  intent(in), optional :: idx
@@ -766,15 +766,15 @@ pure function wv_sat_svp_mixed_vec(n, t, idx) result (es)
   if (use_idx == default_idx .and. allocated(mixed_table)) then
      do i = 1, n
         es(i) = lookup_svp_in_table(t(i), mixed_table_spec, mixed_table, &
-             wv_sat_svp_mixed_no_table)
+             shr_wv_sat_svp_mixed_no_table)
      end do
   else
-     es = wv_sat_svp_mixed_no_table_vec(n, t, use_idx)
+     es = shr_wv_sat_svp_mixed_no_table_vec(n, t, use_idx)
   end if
 
-end function wv_sat_svp_mixed_vec
+end function shr_wv_sat_svp_mixed_vec
 
-pure function wv_sat_svp_mixed_no_table(t, idx) result (es)
+pure function shr_wv_sat_svp_mixed_no_table(t, idx) result (es)
 
   real(rk), intent(in) :: t
   integer,  intent(in) :: idx
@@ -788,7 +788,7 @@ pure function wv_sat_svp_mixed_no_table(t, idx) result (es)
 ! Water
 !
   if (t >= (tmelt - ttrice)) then
-     es = wv_sat_svp_liquid(t,idx)
+     es = shr_wv_sat_svp_liquid(t,idx)
   else
      es = 0.0_rk
   end if
@@ -798,7 +798,7 @@ pure function wv_sat_svp_mixed_no_table(t, idx) result (es)
 !
   if (t < tmelt) then
 
-     esice = wv_sat_svp_ice(t,idx)
+     esice = shr_wv_sat_svp_ice(t,idx)
 
      if ( (tmelt - t) > ttrice ) then
         weight = 1.0_rk
@@ -809,7 +809,7 @@ pure function wv_sat_svp_mixed_no_table(t, idx) result (es)
      es = weight*esice + (1.0_rk - weight)*es
   end if
 
-end function wv_sat_svp_mixed_no_table
+end function shr_wv_sat_svp_mixed_no_table
 
 ! The reason why we need a separate vector version for this function (but
 ! not the other "no_table" functions) is that even if the functions called
@@ -818,7 +818,7 @@ end function wv_sat_svp_mixed_no_table
 ! vectorizable, meaning that the above function can't vectorize.
 !
 ! Cripes this is ugly, though.
-pure function wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
+pure function shr_wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
 
   integer,  intent(in) :: n
   real(rk), intent(in) :: t(n)
@@ -838,7 +838,7 @@ pure function wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
      do i = 1, n
         if (t(i) >= (tmelt - ttrice)) then
            es(i) = lookup_svp_in_table(t(i), liquid_table_spec, liquid_table, &
-                wv_sat_svp_liquid_no_table)
+                shr_wv_sat_svp_liquid_no_table)
         else
            es(i) = 0.0_rk
         end if
@@ -846,7 +846,7 @@ pure function wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
   else
      do i = 1, n
         if (t(i) >= (tmelt - ttrice)) then
-           es(i) = wv_sat_svp_liquid_no_table(t(i), idx)
+           es(i) = shr_wv_sat_svp_liquid_no_table(t(i), idx)
         else
            es(i) = 0.0_rk
         end if
@@ -860,7 +860,7 @@ pure function wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
      do i = 1, n
         if (t(i) < tmelt) then
            esice = lookup_svp_in_table(t(i), ice_table_spec, ice_table, &
-                wv_sat_svp_ice_no_table)
+                shr_wv_sat_svp_ice_no_table)
 
            if ( (tmelt - t(i)) > ttrice ) then
               weight = 1.0_rk
@@ -874,7 +874,7 @@ pure function wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
   else
      do i = 1, n
         if (t(i) < tmelt) then
-           esice = wv_sat_svp_ice_no_table(t(i), idx)
+           esice = shr_wv_sat_svp_ice_no_table(t(i), idx)
 
            if ( (tmelt - t(i)) > ttrice ) then
               weight = 1.0_rk
@@ -887,7 +887,7 @@ pure function wv_sat_svp_mixed_no_table_vec(n, t, idx) result (es)
      end do
   end if
 
-end function wv_sat_svp_mixed_no_table_vec
+end function shr_wv_sat_svp_mixed_no_table_vec
 
 !---------------------------------------------------------------------
 ! SVP METHODS
@@ -901,7 +901,7 @@ recursive pure function lookup_svp_in_table(t, table_spec, table, fallback) &
   ! Temperature in Kelvin
   real(rk), intent(in) :: t
   ! Table range specification
-  type(WVSatTableSpec), intent(in) :: table_spec
+  type(ShrWVSatTableSpec), intent(in) :: table_spec
   ! The table itself
   real(rk), intent(in) :: table(table_spec%table_size)
   ! Fallback used when we're outside the table bounds
