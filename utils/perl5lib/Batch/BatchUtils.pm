@@ -152,6 +152,7 @@ sub getJobID()
 sub submitJobs()
 {
 	my $self = shift;
+	my $sta_ok = shift;
 	my $depjobid = undef;
 	
 	my %depqueue = %{$self->{dependencyqueue}};
@@ -162,7 +163,7 @@ sub submitJobs()
 		{
 			my $islastjob = 0;
 			$islastjob = 1 if ($jobnum == $lastjobseqnum);
-			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob);
+			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
 		}
 	}
 }
@@ -178,6 +179,7 @@ sub submitSingleJob()
 	my $scriptname = shift;
 	my $dependentJobId = shift;
 	my $islastjob = shift;
+	my $sta_ok = shift;
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
@@ -195,8 +197,21 @@ sub submitSingleJob()
 	{
 		$ENV{'islastjob'} = 'FALSE';
 	}
+	#my $sta_argument = '';
+	if(defined $sta_ok)
+	{
+		#$sta_argument = " -F \"--sta_ok\"";
+		$ENV{'sta_ok'} = 'TRUE';
+	}
+	else
+	{
+		#$ENV{'sta_ok'} = 'FALSE';
+		delete $ENV{'sta_ok'};
+	}
 	print "Submitting CESM job script $scriptname\n";
-	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
+	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
+	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
+	print "runcmd is $runcmd\n";
     
 	my $output;
 
@@ -228,14 +243,16 @@ sub doResubmit()
 	my $self = shift;
     my $islastjob = shift;
     my $resubmit = shift;
+	my $sta_ok = shift;
 	
     # If the islastjob flag is true, and resubmit is > 0,  do the dependency
     # check and job resubmission again 
-    if($islastjob eq 'TRUE' && $resubmit > 0)
+    if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
     {
+		print "everything checks out, doing resubmit!!\n";
 	    my %config = %{$self->{caseconfig}};
-	    $self->dependencyCheck();
-	    $self->submitJobs();		
+	    $self->dependencyCheck("sta_ok");
+	    $self->submitJobs("sta_ok");		
 	    my $newresubmit = $config{'RESUBMIT'} - 1;
 	    my $owd = getcwd;
 	    chdir $config{'CASEROOT'};
@@ -261,6 +278,7 @@ sub doResubmit()
 sub dependencyCheck()
 {
 	my $self = shift;
+	my $sta_ok;
 	my %config = %{$self->{'caseconfig'}};
 	# we always want to run the CESM test or run again..
 	if(-e "$config{'CASE'}.test")

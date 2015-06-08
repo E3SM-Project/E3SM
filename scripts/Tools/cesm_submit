@@ -43,8 +43,8 @@ sub main
                                             ccsmroot => $cimeroot, compiler => $compiler, machine => $machine, 
                                             machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
 	
-	$batchutils->dependencyCheck();
-	$batchutils->submitJobs();
+	$batchutils->dependencyCheck("sta_ok");
+	$batchutils->submitJobs("sta_ok");
 }
 
 main(@ARGV) unless caller();
