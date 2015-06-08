@@ -41,6 +41,13 @@
       description="If true, debugging code is turned on."
       possible_values=".true. or .false."
   />
+  <nml_option name="config_nBuoyancyLayers" 
+      type="integer" 
+      default_value="45"
+      units="-"
+      description="Number of reference buoyancy layers."
+      possible_values="any positive real value."
+  />
   <nml_option name="config_rhomin_buoycoor" 
       type="real" 
       default_value="900" 
@@ -68,9 +75,6 @@
   />
 </dims>
 
-<nml_record name="dimensions">
-  <nml_option name="config_nBuoyancyLayers" type="integer" default_value="45"/>
-</nml_record>
 
 <packages>
   <package name="amEliassenPalmFluxTensorPkg" 
