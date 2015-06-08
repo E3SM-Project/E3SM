@@ -1938,7 +1938,7 @@ subroutine seq_infodata_Check( infodata )
 
   use shr_assert_mod,   only: shr_assert_in_domain
   use shr_string_mod,   only: shr_string_listIntersect
-  use shr_wv_sat_mod,   only: wv_sat_get_scheme_idx, wv_sat_valid_idx
+  use shr_wv_sat_mod,   only: shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
 
   implicit none
 
@@ -2015,7 +2015,7 @@ subroutine seq_infodata_Check( infodata )
        call shr_sys_abort(subname//': orb params incorrect')
     endif
 
-    if (.not. wv_sat_valid_idx(wv_sat_get_scheme_idx(trim(infodata%wv_sat_scheme)))) then
+    if (.not. shr_wv_sat_valid_idx(shr_wv_sat_get_scheme_idx(trim(infodata%wv_sat_scheme)))) then
        call shr_sys_abort(subname//': "'//trim(infodata%wv_sat_scheme)//'" &
             &is not a recognized saturation vapor pressure scheme name')
     end if

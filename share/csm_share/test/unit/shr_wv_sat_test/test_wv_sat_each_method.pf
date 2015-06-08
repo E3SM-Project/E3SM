@@ -76,21 +76,21 @@ subroutine setUp(this)
 
   character(len=128) :: errstring
 
-  type(WVSatTableSpec) :: liquid_table_spec, ice_table_spec, mixed_table_spec
+  type(ShrWVSatTableSpec) :: liquid_table_spec, ice_table_spec, mixed_table_spec
 
-  call wv_sat_init(tmelt, h2otrip, t_transition, epsilo, errstring)
+  call shr_wv_sat_init(tmelt, h2otrip, t_transition, epsilo, errstring)
 
   if (errstring /= "") then
-     call throw("Error from wv_sat_init: "//trim(errstring))
+     call throw("Error from shr_wv_sat_init: "//trim(errstring))
   end if
 
-  @assertTrue(wv_sat_set_default(this%scheme_name))
+  @assertTrue(shr_wv_sat_set_default(this%scheme_name))
 
   if (this%make_table) then
-     liquid_table_spec = WVSatTableSpec(151, tmelt-50._r8, 1._r8)
-     ice_table_spec = WVSatTableSpec(106, tmelt-100._r8, 1._r8)
-     mixed_table_spec = WVSatTableSpec(201, tmelt-100._r8, 1._r8)
-     call wv_sat_make_tables(&
+     liquid_table_spec = ShrWVSatTableSpec(151, tmelt-50._r8, 1._r8)
+     ice_table_spec = ShrWVSatTableSpec(106, tmelt-100._r8, 1._r8)
+     mixed_table_spec = ShrWVSatTableSpec(201, tmelt-100._r8, 1._r8)
+     call shr_wv_sat_make_tables(&
           liquid_spec_in=liquid_table_spec, &
           ice_spec_in=ice_table_spec, &
           mixed_spec_in=mixed_table_spec)
@@ -102,7 +102,7 @@ subroutine tearDown(this)
 
   class(WVSchemeCase), intent(inout) :: this
 
-  call wv_sat_final()
+  call shr_wv_sat_final()
 
 end subroutine tearDown
 
@@ -129,10 +129,10 @@ subroutine scheme_has_correct_ice_trip_point(this)
   class(WVSchemeCase), intent(inout) :: this
 
   if (this%use_vector) then
-     call assertRelativelyEqual([611.7_r8], wv_sat_svp_ice(1, [h2otrip]), &
+     call assertRelativelyEqual([611.7_r8], shr_wv_sat_svp_ice(1, [h2otrip]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(611.7_r8, wv_sat_svp_ice(h2otrip), &
+     call assertRelativelyEqual(611.7_r8, shr_wv_sat_svp_ice(h2otrip), &
           tolerance=this%relative_tol)
   end if
 
@@ -143,10 +143,10 @@ subroutine scheme_has_correct_liquid_trip_point(this)
   class(WVSchemeCase), intent(inout) :: this
 
   if (this%use_vector) then
-     call assertRelativelyEqual([611.7_r8], wv_sat_svp_liquid(1, [h2otrip]), &
+     call assertRelativelyEqual([611.7_r8], shr_wv_sat_svp_liquid(1, [h2otrip]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(611.7_r8, wv_sat_svp_liquid(h2otrip), &
+     call assertRelativelyEqual(611.7_r8, shr_wv_sat_svp_liquid(h2otrip), &
           tolerance=this%relative_tol)
   end if
 
@@ -158,10 +158,10 @@ subroutine scheme_has_correct_liquid_value(this)
 
   ! Check a warm value (25 deg C).
   if (this%use_vector) then
-     call assertRelativelyEqual([3169._r8], wv_sat_svp_liquid(1, [tmelt+25._r8]), &
+     call assertRelativelyEqual([3169._r8], shr_wv_sat_svp_liquid(1, [tmelt+25._r8]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(3169._r8, wv_sat_svp_liquid(tmelt+25._r8), &
+     call assertRelativelyEqual(3169._r8, shr_wv_sat_svp_liquid(tmelt+25._r8), &
           tolerance=this%relative_tol)
   end if
 
@@ -173,10 +173,10 @@ subroutine scheme_has_correct_ice_value(this)
 
   ! Check a cold value (-50 deg C).
   if (this%use_vector) then
-     call assertRelativelyEqual([3.935], wv_sat_svp_ice(1, [tmelt-50._r8]), &
+     call assertRelativelyEqual([3.935], shr_wv_sat_svp_ice(1, [tmelt-50._r8]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(3.935, wv_sat_svp_ice(tmelt-50._r8), &
+     call assertRelativelyEqual(3.935, shr_wv_sat_svp_ice(tmelt-50._r8), &
           tolerance=this%relative_tol)
   end if
 
@@ -191,10 +191,10 @@ subroutine scheme_has_correct_mixed_trip_point(this)
   class(WVSchemeCase), intent(inout) :: this
 
   if (this%use_vector) then
-     call assertRelativelyEqual([611.7_r8], wv_sat_svp_mixed(1, [h2otrip]), &
+     call assertRelativelyEqual([611.7_r8], shr_wv_sat_svp_mixed(1, [h2otrip]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(611.7_r8, wv_sat_svp_mixed(h2otrip), &
+     call assertRelativelyEqual(611.7_r8, shr_wv_sat_svp_mixed(h2otrip), &
           tolerance=this%relative_tol)
   end if
 
@@ -208,14 +208,14 @@ subroutine scheme_has_correct_mixed_as_ice(this)
 
   real(r8) :: ice_svp
 
-  ice_svp = wv_sat_svp_ice(t_all_ice)
+  ice_svp = shr_wv_sat_svp_ice(t_all_ice)
 
   ! Below the transition range, trans and ice should be equal.
   if (this%use_vector) then
-     call assertRelativelyEqual([ice_svp], wv_sat_svp_mixed(1, [t_all_ice]), &
+     call assertRelativelyEqual([ice_svp], shr_wv_sat_svp_mixed(1, [t_all_ice]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(ice_svp, wv_sat_svp_mixed(t_all_ice), &
+     call assertRelativelyEqual(ice_svp, shr_wv_sat_svp_mixed(t_all_ice), &
           tolerance=this%relative_tol)
   end if
 
@@ -229,14 +229,14 @@ subroutine scheme_has_correct_mixed_as_liquid(this)
 
   real(r8) :: liquid_svp
 
-  liquid_svp = wv_sat_svp_liquid(t_all_liquid)
+  liquid_svp = shr_wv_sat_svp_liquid(t_all_liquid)
 
   ! Above the transition range, trans and water should be equal.
   if (this%use_vector) then
-     call assertRelativelyEqual([liquid_svp], wv_sat_svp_mixed(1, [t_all_liquid]), &
+     call assertRelativelyEqual([liquid_svp], shr_wv_sat_svp_mixed(1, [t_all_liquid]), &
           tolerance=this%relative_tol)
   else
-     call assertRelativelyEqual(liquid_svp, wv_sat_svp_mixed(t_all_liquid), &
+     call assertRelativelyEqual(liquid_svp, shr_wv_sat_svp_mixed(t_all_liquid), &
           tolerance=this%relative_tol)
   end if
 
@@ -251,17 +251,17 @@ subroutine scheme_has_correct_mixed_in_range(this)
 
   real(r8) :: ice_svp, liquid_svp
 
-  ice_svp = wv_sat_svp_ice(t_half)
-  liquid_svp = wv_sat_svp_liquid(t_half)
+  ice_svp = shr_wv_sat_svp_ice(t_half)
+  liquid_svp = shr_wv_sat_svp_liquid(t_half)
 
   ! Check that transition SVP is the average of the ice and water SVPs.
   if (this%use_vector) then
      call assertRelativelyEqual([0.5_r8 * (ice_svp+liquid_svp)], &
-          wv_sat_svp_mixed(1, [t_half]), &
+          shr_wv_sat_svp_mixed(1, [t_half]), &
           tolerance=this%relative_tol)
   else
      call assertRelativelyEqual(0.5_r8 * (ice_svp+liquid_svp), &
-          wv_sat_svp_mixed(t_half), &
+          shr_wv_sat_svp_mixed(t_half), &
           tolerance=this%relative_tol)
   end if
 
