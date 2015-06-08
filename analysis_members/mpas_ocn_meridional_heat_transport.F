@@ -108,14 +108,14 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: MerHeatTransActive
+      logical, pointer :: MerHeatTransPkgActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'MerHeatTransActive', MerHeatTransActive)
+      call mpas_pool_get_package(packagePool, 'MerHeatTransPkgActive', MerHeatTransPkgActive)
 
       ! turn on package for this analysis member
-      MerHeatTransActive = .true.
+      MerHeatTransPkgActive = .true.
 
    end subroutine ocn_setup_packages_meridional_heat_transport!}}}
 
@@ -387,7 +387,9 @@ contains
                   do k = 1, kMax
 
                      ! Compute divergence of huT, i.e. layerThicknessEdge * normalVelocity * temperature, at an edge
-                     ! for meridional heat transport.  
+                     ! for meridional heat transport.  Here we use a centered difference to compute the temperature at
+                     ! the edge, which is an approximation to the actual edge temperature used in the horizontal 
+                     ! advection scheme (for example, FCT).  We expect that the error in this approximation is small.
                      ! Here we do not divide by the area, as one normally does in a divergence calculation, so that
                      ! div_huT is weighted by area here.
                      iField = 1

@@ -33,7 +33,7 @@
 		/>
 	</dims>
 	<packages>
-		<package name="MerHeatTrans" description="This package includes variables required for the MerHeatTrans analysis member."/>
+		<package name="MerHeatTransPkg" description="This package includes variables required for the MerHeatTrans analysis member."/>
 	</packages>
 	<streams>
 		<stream name="MerHeatTransOutput" type="output"
@@ -42,7 +42,7 @@
 				filename_interval="01-00-00_00:00:00"
 				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
-				packages="MerHeatTrans"
+				packages="MerHeatTransPkg"
 				runtime_format="single_file">
 
 			<var name="xtime"/>
@@ -52,7 +52,7 @@
 			<var name="meridionalHeatTransportLat"/>
 		</stream>
 	</streams>
-	<var_struct name="MerHeatTrans" time_levs="1" packages="MerHeatTrans">
+	<var_struct name="MerHeatTrans" time_levs="1" packages="MerHeatTransPkg">
 		<var name="binCenterMerHeatTrans" type="real" dimensions="nMerHeatTransBins" units="varies"
 			 description="Central coordinate of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
