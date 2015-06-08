@@ -46,16 +46,14 @@
 				runtime_format="single_file">
 
 			<var name="xtime"/>
-			<var name="binCenterMerHeatTrans"/>
 			<var name="binBoundaryMerHeatTrans"/>
 			<var name="meridionalHeatTransportLatZ"/>
 			<var name="meridionalHeatTransportLat"/>
+			<var name="refZMid"/>
+			<var name="refBottomDepth"/>
 		</stream>
 	</streams>
 	<var_struct name="MerHeatTrans" time_levs="1" packages="MerHeatTransPkg">
-		<var name="binCenterMerHeatTrans" type="real" dimensions="nMerHeatTransBins" units="varies"
-			 description="Central coordinate of meridional heat transport bin, either in latitude or y, for plotting."
-		/>
 		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
 			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
