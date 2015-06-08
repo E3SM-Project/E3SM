@@ -309,14 +309,14 @@ contains
 
       integer :: iTracer, k, iCell, kMax, i, iEdge
       integer :: iBin, iField, nMerHeatTransVariables
-      integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nMerHeatTransBins, indexTemperature
+      integer, pointer :: nCellsSolve, nVertLevels, nMerHeatTransBins, indexTemperature
       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgeSignOnCell, cellsOnEdge, edgesOnCell
 
       real (kind=RKIND) :: div_huT
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryMerHeatTrans, dvEdge
       real (kind=RKIND), dimension(:), pointer ::  meridionalHeatTransportLat
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, normalTransportVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: meridionalHeatTransportLatZ
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:), allocatable :: mht_meridional_integral
@@ -333,7 +333,6 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
-      call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
       nMerHeatTransVariables = 1
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
@@ -341,9 +340,9 @@ contains
 
       call mpas_pool_get_array(MerHeatTransPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
 
-      allocate(sumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed), &
-         totalSumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed), &
-         mht_meridional_integral(nVertLevels,nMerHeatTransBinsUsed))
+      allocate(sumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
+      allocate(totalSumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
+      allocate(mht_meridional_integral(nVertLevels,nMerHeatTransBinsUsed))
 
       sumMerHeatTrans = 0.0
 
@@ -353,14 +352,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-
-
-         !state => block % state % time_levs(timeLevel) % state
-         !mesh => block % mesh
-         !scratch => block % scratch
-         !diagnostics => block % diagnostics
-
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
@@ -375,7 +366,6 @@ contains
          call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(statePool, 'tracers', tracers,timeLevel)         
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness,timeLevel)         
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
          call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
 
@@ -396,12 +386,11 @@ contains
 
                   do k = 1, kMax
 
-                     iField = 1
-                     ! Compute divergence of huT, i.e. layerThickness * normalVelocity * temperature, at an edge
+                     ! Compute divergence of huT, i.e. layerThicknessEdge * normalVelocity * temperature, at an edge
                      ! for meridional heat transport.  
                      ! Here we do not divide by the area, as one normally does in a divergence calculation, so that
                      ! div_huT is weighted by area here.
-                     iField = iField+1
+                     iField = 1
                      div_huT = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
@@ -423,6 +412,8 @@ contains
       end do
 
       ! mpi summation over all processors
+      ! Note the input and output arrays are of the same dimension, so summation is 
+      ! over the domain decompositon (by processor), not over an array index.
       call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nMerHeatTransBinsUsed*nMerHeatTransVariables, sumMerHeatTrans, totalSumMerHeatTrans)
 
       ! Even though these variables do not include an index that is decomposed amongst 
@@ -436,18 +427,16 @@ contains
          call mpas_pool_get_subpool(block % structs, 'MerHeatTrans', MerHeatTransPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-
          call mpas_pool_get_array(MerHeatTransPool, 'meridionalHeatTransportLat', meridionalHeatTransportLat)
          call mpas_pool_get_array(MerHeatTransPool, 'meridionalHeatTransportLatZ', meridionalHeatTransportLatZ)
 
          do iBin = 1, nMerHeatTransBinsUsed
             do k = 1, nVertLevels
 
-               iField = 1
                ! MHT = sum ( div(huT) A ) * rho c_p, in PW
                ! where the sum is over each latitude bin
                ! Here we simply multiply by (rho c_p) and convert to PW:
+               iField = 1
                mht_meridional_integral(k,iBin) = totalSumMerHeatTrans(iField,k,iBin)*rho_sw*cp_sw*1.0e-15_RKIND
 
             end do
@@ -470,7 +459,9 @@ contains
          block => block % next
       end do
 
-      deallocate(sumMerHeatTrans,totalSumMerHeatTrans)
+      deallocate(sumMerHeatTrans)
+      deallocate(totalSumMerHeatTrans)
+      deallocate(mht_meridional_integral)
 
       call mpas_timer_stop("meridional_heat_transport", MerHeatTransTimer)
 
