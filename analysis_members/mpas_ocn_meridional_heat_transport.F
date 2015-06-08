@@ -445,15 +445,17 @@ contains
          end do
 
          ! Compute integral of ( sum ( div(huT) A ) * rho c_p ) from southernmost latitude to bin boundary.
-         ! to get MHT at that bin boundary.
+         ! Note that mht_meridional_integral is indexed by bin, spanning 1:nMerHeatTransBinsUsed, while
+         ! meridionalHeatTransportLatZ (second dimension) is indexed by bin boundary, spanning 1:nMerHeatTransBinsUsed+1
          meridionalHeatTransportLatZ(:,1) = 0.0_RKIND
-         do iBin = 2, nMerHeatTransBinsUsed
-            meridionalHeatTransportLatZ(:,iBin) = meridionalHeatTransportLatZ(:,iBin-1) + mht_meridional_integral(:,iBin)
+         do iBin = 2, nMerHeatTransBinsUsed+1
+            meridionalHeatTransportLatZ(:,iBin) = meridionalHeatTransportLatZ(:,iBin-1) + mht_meridional_integral(:,iBin-1)
          end do
 
          ! meridionalHeatTransportLatZ is a function of depth.  Sum in vertical to get
          ! meridionalHeatTransportLat, a single value for each latitude bin boundary.
-         do iBin = 1, nMerHeatTransBinsUsed
+         ! meridionalHeatTransportLat is indexed by bin boundary, spanning 1:nMerHeatTransBinsUsed+1
+         do iBin = 1, nMerHeatTransBinsUsed+1
             meridionalHeatTransportLat(iBin) = sum(meridionalHeatTransportLatZ(:,iBin))
          end do
 
