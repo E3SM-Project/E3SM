@@ -721,10 +721,6 @@ module atm_time_integration
                vertexStart = (threadid * nVertices / nthreads) + 1
                vertexEnd = ((threadid+1) * nVertices / nthreads)
 
-!write(0,*) 'cell start/end = ', cellStart, cellEnd
-!write(0,*) 'edge start/end = ', edgeStart, edgeEnd
-!write(0,*) 'vertex start/end = ', vertexStart, vertexEnd
-
                call atm_compute_solve_diagnostics(dt, state, 2, diag, mesh, block % configs, &
                                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
 !$OMP END PARALLEL
@@ -922,7 +918,9 @@ module atm_time_integration
 
       end if
 
-!...  compute full velocity vectors at cell centers:
+      !
+      ! reconstruct full velocity vectors at cell centers:
+      !
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -947,8 +945,10 @@ module atm_time_integration
          block => block % next
       end do
 
-!... call to parameterizations of cloud microphysics. calculation of the tendency of water vapor to horizontal and
-!... vertical advection needed for the Tiedtke parameterization of convection.
+      !
+      ! call to parameterizations of cloud microphysics. calculation of the tendency of water vapor to horizontal and
+      ! vertical advection needed for the Tiedtke parameterization of convection.
+      !
 
 #ifdef DO_PHYSICS
       block => domain % blocklist
@@ -1059,7 +1059,6 @@ module atm_time_integration
 
    end subroutine atm_srk3
 
-!---
 
    subroutine atm_rk_integration_setup( state, diag, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -1123,7 +1122,6 @@ module atm_time_integration
 
    end subroutine atm_rk_integration_setup
 
-!-----
 
    subroutine atm_compute_moist_coefficients( dims, state, diag, mesh, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -1189,7 +1187,6 @@ module atm_time_integration
 
    end subroutine atm_compute_moist_coefficients
 
-!---
 
    subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
@@ -1228,7 +1225,6 @@ module atm_time_integration
 
       integer, pointer :: moist_start, moist_end
 
-!  set coefficients
 
       call mpas_pool_get_config(configs, 'config_epssm', epssm)
 
@@ -1260,6 +1256,7 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'moist_end', moist_end)
 
 
+      !  set coefficients
       dtseps = .5*dts*(1.+epssm)
       rcv = rgas/(cp-rgas)
       c2 = cp*rcv
@@ -1321,7 +1318,6 @@ module atm_time_integration
 
    end subroutine atm_compute_vert_imp_coefs
 
-!------------------------
 
    subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs, &
                                    cellStart, cellEnd, edgeStart, edgeEnd, &
@@ -1446,7 +1442,6 @@ module atm_time_integration
 
    end subroutine atm_set_smlstep_pert_variables
 
-!-------------------------------
 
    subroutine atm_advance_acoustic_step( state, diag, tend, mesh, configs, nCells, nVertLevels, dts, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -1500,7 +1495,7 @@ module atm_time_integration
 
       integer, pointer :: nEdges, nCellsSolve
 
-!--
+
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
@@ -1735,7 +1730,6 @@ module atm_time_integration
 
    end subroutine atm_advance_acoustic_step
 
-!------------------------
 
    subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step, &
                                        cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -1940,7 +1934,6 @@ module atm_time_integration
 
    end subroutine atm_recover_large_step_variables
 
-!---------------------------------------------------------------------------------------
 
    subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nCells, nVertLevels, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -2250,7 +2243,6 @@ module atm_time_integration
 
    end subroutine atm_advance_scalars
 
-!------------------------------------------------
 
    subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -2419,7 +2411,6 @@ module atm_time_integration
       end do
       end do
 
-      !  halo exchange
 
 !$OMP BARRIER
 !$OMP MASTER
@@ -2432,6 +2423,7 @@ module atm_time_integration
       !
 
       if (local_advance_density) then
+
          !  begin with update of density
          do iCell=cellStart,cellEnd
             rho_zz_int(:,iCell) = 0.0
@@ -2493,11 +2485,9 @@ module atm_time_integration
 #endif
 
 
-      !
-      !  vertical flux divergence, and min and max bounds for flux limiter
-      !
-
- 
+         !
+         !  vertical flux divergence, and min and max bounds for flux limiter
+         !
          do iCell=cellSolveStart,cellSolveEnd
 
             ! zero flux at top and bottom
@@ -2526,7 +2516,9 @@ module atm_time_integration
             s_max(k,iCell) = max(scalar_old(k,iCell),scalar_old(k-1,iCell))
             s_min(k,iCell) = min(scalar_old(k,iCell),scalar_old(k-1,iCell))
 
-      ! pull s_min and s_max from the (horizontal) surrounding cells
+            !
+            ! pull s_min and s_max from the (horizontal) surrounding cells
+            !
 
             ! speclal treatment of calculations involving hexagonal cells
             ! original code retained in select "default" case
@@ -2562,8 +2554,9 @@ module atm_time_integration
 
 !$OMP BARRIER
 
-      !
-      !  horizontal flux divergence
+         !
+         !  horizontal flux divergence
+         !
 
          !flux_arr(:,:) = 0. ! Now only initialized as needed (see default case)
          do iEdge=edgeStart,edgeEnd
@@ -2613,7 +2606,9 @@ module atm_time_integration
 
 !$OMP BARRIER
 
-!  vertical flux divergence for upwind update, we will put upwind update into scalar_new, and put factor of dt in fluxes
+         !
+         !  vertical flux divergence for upwind update, we will put upwind update into scalar_new, and put factor of dt in fluxes
+         !
 
          do iCell=cellSolveStart,cellSolveEnd
 
@@ -2628,8 +2623,11 @@ module atm_time_integration
                wdtn(k,iCell) = dt*wdtn(k,iCell) - flux_upwind
             end do
 
-! scale_arr(SCALE_IN,:,:) and scale_arr(SCALE_OUT:,:) are used here to store the incoming and outgoing perturbation flux 
-! contributions to the update:  first the vertical flux component, then the horizontal
+
+            !
+            ! scale_arr(SCALE_IN,:,:) and scale_arr(SCALE_OUT:,:) are used here to store the incoming and outgoing perturbation flux 
+            ! contributions to the update:  first the vertical flux component, then the horizontal
+            !
 
             do k=1,nVertLevels
                scale_arr(SCALE_IN, k,iCell) = - rdnw(k)*(min(0.0_RKIND,wdtn(k+1,iCell))-max(0.0_RKIND,wdtn(k,iCell)))
@@ -2638,11 +2636,11 @@ module atm_time_integration
 
          end do
 
-!  horizontal flux divergence for upwind update
-
+         !
+         !  horizontal flux divergence for upwind update
+         !
 
          !  upwind flux computation
-
          do iCell=cellSolveStart,cellSolveEnd
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
@@ -2664,7 +2662,9 @@ module atm_time_integration
             end do
          end do
 
-!  next, the limiter
+         !
+         !  next, the limiter
+         !
 
          ! simplification of limiter calculations
          ! worked through algebra and found equivalent form
@@ -2682,10 +2682,10 @@ module atm_time_integration
             end do
          end do
 
-!
-!  communicate scale factors here.
-!  communicate only first halo row in these next two exchanges
-!
+         !
+         !  communicate scale factors here.
+         !  communicate only first halo row in these next two exchanges
+         !
 !$OMP BARRIER
 !$OMP MASTER
          tempField => tempFieldTarget
@@ -2705,7 +2705,6 @@ module atm_time_integration
 !$OMP END MASTER
 !$OMP BARRIER
 
-! Moved from above...
          do iEdge=edgeStart,edgeEnd
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -2718,9 +2717,10 @@ module atm_time_integration
             end if
          end do
 
-!
-!  rescale the fluxes
-!
+         !
+         !  rescale the fluxes
+         !
+
          ! moved assignment to scalar_new from separate loop (see commented code below)
          ! into the following loops. Avoids having to save elements of flux array
          do iEdge=edgeStart,edgeEnd
@@ -2738,7 +2738,9 @@ module atm_time_integration
             end if
          end do
  
-       ! rescale the vertical flux
+        !
+        ! rescale the vertical flux
+        !
 !$OMP BARRIER
  
          do iCell=cellSolveStart,cellSolveEnd
@@ -2751,9 +2753,9 @@ module atm_time_integration
          end do
 
 
-!
-!  do the scalar update now that we have the fluxes
-!
+         !
+         !  do the scalar update now that we have the fluxes
+         !
          do iCell=cellSolveStart,cellSolveEnd
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
@@ -2803,7 +2805,6 @@ module atm_time_integration
 
    end subroutine atm_advance_scalars_mono
 
-!----
 
    subroutine atm_compute_dyn_tend(tend, state, diag, mesh, configs, nVertLevels, rk_step, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -2888,7 +2889,6 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: ur_cell, vr_cell
 
       real (kind=RKIND), parameter :: c_s = 0.125
-!      real (kind=RKIND), parameter :: c_s = 0.25
       real (kind=RKIND), dimension( nVertLevels ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
       logical :: delsq_horiz_mixing
@@ -2919,7 +2919,6 @@ module atm_time_integration
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
-!-----------
 
       call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
@@ -3965,7 +3964,6 @@ module atm_time_integration
       !  vertical advection plus diabatic term
       !  Note: we are also dividing through by the cell area after the horizontal flux divergence
       !
-!MGD      do iCell = cellStart,cellEnd
       do iCell = cellSolveStart,cellSolveEnd
 
          wdtz(1) = 0.0
@@ -4069,7 +4067,6 @@ module atm_time_integration
 
    end subroutine atm_compute_dyn_tend
 
-!-------
 
    subroutine atm_compute_solve_diagnostics(dt, state, time_lev, diag, mesh, configs, &
                                             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
@@ -4374,7 +4371,6 @@ module atm_time_integration
 
    end subroutine atm_compute_solve_diagnostics
 
-!----------
 
    subroutine atm_init_coupled_diagnostics(state, time_lev, diag, mesh, configs, &
                                        cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -4545,7 +4541,6 @@ module atm_time_integration
 
    end subroutine atm_init_coupled_diagnostics
 
-!---------------------------------------------------------------------------------------
 
    subroutine atm_rk_dynamics_substep_finish( state, diag, dynamics_substep, dynamics_split, &
                                        cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
