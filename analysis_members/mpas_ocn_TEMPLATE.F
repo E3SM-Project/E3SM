@@ -125,14 +125,14 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: am_TEMPLATEActive
+      logical, pointer :: TEMPLATEPkgActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'am_TEMPLATEActive', am_TEMPLATEActive)
+      call mpas_pool_get_package(packagePool, 'TEMPLATEPkgActive', TEMPLATEPkgActive)
 
       ! turn on package for this analysis member
-      am_TEMPLATEActive = .true.
+      TEMPLATEPkgActive = .true.
 
    end subroutine ocn_setup_packages_TEMPLATE!}}}
 

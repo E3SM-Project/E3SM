@@ -31,6 +31,7 @@ module ocn_analysis_driver
    use ocn_zonal_mean
    use ocn_okubo_weiss
    use ocn_water_mass_census
+   use ocn_meridional_heat_transport
 !   use ocn_TEMPLATE
 
    implicit none
@@ -119,6 +120,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_AM_water_mass_census
       logical, pointer :: config_use_AM_layer_volume_weighted_avg
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -158,6 +160,12 @@ contains
           call ocn_setup_packages_water_mass_census(configPool, packagePool, err_tmp)
           err = ior(err, err_tmp)
        endif
+
+      call mpas_pool_get_config(configPool, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      if (config_use_meridional_heat_transport) then
+         call ocn_setup_packages_meridional_heat_transport(configPool, packagePool, err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 !      call mpas_pool_get_config(configPool, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
@@ -217,6 +225,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -256,6 +265,12 @@ contains
           call ocn_init_water_mass_census(domain, err_tmp)
           err = ior(err, err_tmp)
        endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      if (config_use_meridional_heat_transport) then
+         call ocn_init_meridional_heat_transport(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
@@ -317,6 +332,7 @@ contains
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
       logical, pointer :: config_use_AM_water_mass_census, config_AM_water_mass_census_compute_startup
+      logical, pointer :: config_use_meridional_heat_transport, config_meridional_heat_transport_compute_startup
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
 
       err = 0
@@ -380,6 +396,16 @@ contains
           err = ior(err, err_tmp)
        endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      call mpas_pool_get_config(domain % configs, 'config_meridional_heat_transport_compute_startup', config_meridional_heat_transport_compute_startup)
+      if (config_use_meridional_heat_transport.and.config_meridional_heat_transport_compute_startup) then
+         call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='MerHeatTransOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_stop('io_write')
+         err = ior(err, err_tmp)
+      endif
+
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_startup', config_TEMPLATE_compute_startup)
 !      if (config_use_TEMPLATE.and.config_TEMPLATE_compute_startup) then
@@ -442,6 +468,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -476,6 +503,11 @@ contains
        if (config_use_AM_water_mass_census) then
           call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
        endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      if (config_use_meridional_heat_transport) then
+         call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
+      endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
@@ -535,6 +567,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -582,9 +615,16 @@ contains
           endif
        endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      if (config_use_meridional_heat_transport) then
+        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='MerHeatTransOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+            call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
+         endif
+      endif
+
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) then
+!        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
 !            call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         endif
 !      endif
@@ -641,6 +681,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -680,6 +721,12 @@ contains
           call ocn_restart_water_mass_census(domain, err_tmp)
           err = ior(err, err_tmp)
        endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      if (config_use_meridional_heat_transport) then
+         call ocn_restart_meridional_heat_transport(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
@@ -742,6 +789,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -812,6 +860,17 @@ contains
           err = ior(err, err_tmp)
        endif
 
+     call mpas_pool_get_config(ocnConfigs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+     if (config_use_meridional_heat_transport) then
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='MerHeatTransOutput', ierr=err_tmp)
+         call mpas_timer_stop('io_write')
+         call mpas_timer_start('io_reset_alarms', .false.)
+         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='MerHeatTransOutput', ierr=err_tmp)
+         call mpas_timer_stop('io_reset_alarms')
+        err = ior(err, err_tmp)
+     endif
+
 !      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !          call mpas_timer_start('io_write', .false.)
@@ -875,6 +934,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_meridional_heat_transport
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -914,6 +974,12 @@ contains
           call ocn_finalize_water_mass_census(domain, err_tmp)
           err = ior(err, err_tmp)
        endif
+
+      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
+      if (config_use_meridional_heat_transport) then
+         call ocn_finalize_meridional_heat_transport(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
