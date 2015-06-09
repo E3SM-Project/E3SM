@@ -2007,7 +2007,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), pointer :: coef_3rd_order
 
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
+      real (kind=RKIND), pointer :: h_theta_eddy_visc2
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -2070,7 +2070,6 @@ module atm_time_integration
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
 
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
 
 
 !$OMP BARRIER
@@ -2273,7 +2272,7 @@ module atm_time_integration
       integer, dimension(:), pointer :: nEdgesOnCell
       real (kind=RKIND), pointer :: coef_3rd_order
 
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
+      real (kind=RKIND), pointer :: h_theta_eddy_visc2
 
       real (kind=RKIND) :: flux3, flux4, flux_upwind
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
@@ -2299,7 +2298,6 @@ module atm_time_integration
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
 
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
@@ -2791,7 +2789,7 @@ module atm_time_integration
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
       integer, pointer :: moist_start, moist_end
       real (kind=RKIND), pointer :: h_mom_eddy_visc2, v_mom_eddy_visc2
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
+      real (kind=RKIND), pointer :: h_theta_eddy_visc2
       real (kind=RKIND) :: h_mom_eddy_visc4
       real (kind=RKIND) :: h_theta_eddy_visc4
       real (kind=RKIND) :: u_diffusion
@@ -2968,7 +2966,6 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc2', h_mom_eddy_visc2)
       call mpas_pool_get_config(configs, 'config_v_mom_eddy_visc2', v_mom_eddy_visc2)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
 
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
@@ -3950,59 +3947,6 @@ module atm_time_integration
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do
-
-
-      !
-      !  vertical mixing for theta - 2nd order 
-      !
-
-      if (rk_step == 1 .or. rk_diffusion) then
-
-      if ( v_theta_eddy_visc2 > 0.0 ) then
-
-         if (config_mix_full) then
-
-            do iCell = cellSolveStart, cellSolveEnd
-               do k=2,nVertLevels-1
-                  z1 = zgrid(k-1,iCell)
-                  z2 = zgrid(k  ,iCell)
-                  z3 = zgrid(k+1,iCell)
-                  z4 = zgrid(k+2,iCell)
-
-                  zm = 0.5*(z1+z2)
-                  z0 = 0.5*(z2+z3)
-                  zp = 0.5*(z3+z4)
-
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + v_theta_eddy_visc2*prandtl_inv*rho_zz(k,iCell)*(&
-                                           (theta_m(k+1,iCell)-theta_m(k  ,iCell))/(zp-z0)                 &
-                                          -(theta_m(k  ,iCell)-theta_m(k-1,iCell))/(z0-zm) )/(0.5*(zp-zm))
-               end do
-            end do
-
-         else  ! idealized cases where we mix on the perturbation from the initial 1-D state
-
-            do iCell = cellSolveStart, cellSolveEnd
-               do k=2,nVertLevels-1
-                  z1 = zgrid(k-1,iCell)
-                  z2 = zgrid(k  ,iCell)
-                  z3 = zgrid(k+1,iCell)
-                  z4 = zgrid(k+2,iCell)
-
-                  zm = 0.5*(z1+z2)
-                  z0 = 0.5*(z2+z3)
-                  zp = 0.5*(z3+z4)
-
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + v_theta_eddy_visc2*prandtl_inv*rho_zz(k,iCell)*(&
-                                           ((theta_m(k+1,iCell)-t_init(k+1,iCell))-(theta_m(k  ,iCell)-t_init(k,iCell)))/(zp-z0)      &
-                                          -((theta_m(k  ,iCell)-t_init(k,iCell))-(theta_m(k-1,iCell)-t_init(k-1,iCell)))/(z0-zm) )/(0.5*(zp-zm))
-               end do
-            end do
-
-         end if
-
-      end if
-
-      end if ! compute theta mixing on first rk_step
 
 
       do iCell = cellSolveStart,cellSolveEnd
