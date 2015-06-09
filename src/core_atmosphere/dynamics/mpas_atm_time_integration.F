@@ -2014,8 +2014,6 @@ module atm_time_integration
 
       logical :: local_advance_density
 
-      integer, pointer :: config_scalar_vadv_order
-
       integer, parameter :: hadv_opt = 2
 
       flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
@@ -2032,7 +2030,6 @@ module atm_time_integration
       end if
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_scalar_vadv_order', config_scalar_vadv_order)
 
       call mpas_pool_get_array(state, 'scalars', scalar_old, 1)
       call mpas_pool_get_array(state, 'scalars', scalar_new, 2)
@@ -2153,86 +2150,35 @@ module atm_time_integration
          end do
       end if
 
-      if (config_scalar_vadv_order == 2) then
 
-         do iCell=cellSolveStart,cellSolveEnd
-            do k = 2, nVertLevels
-               do iScalar=1,num_scalars
-                  wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-               end do
+      do iCell=cellSolveStart,cellSolveEnd
+
+         k = 2
+         do iScalar=1,num_scalars
+            wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
+         end do
+          
+         do k=3,nVertLevels-1
+            do iScalar=1,num_scalars
+               wdtn(iScalar,k) = flux3( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
+                                        scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell),  &
+                                        wwAvg(k,iCell), coef_3rd_order )
             end do
-            do k=1,nVertLevels
-               do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
-               end do
+         end do
+         k = nVertLevels
+         do iScalar=1,num_scalars
+            wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
+         end do
+
+         do k=1,nVertLevels
+            rho_zz_new_inv = 1.0_RKIND / rho_zz_int(k,iCell)
+            do iScalar=1,num_scalars
+               scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
+                     + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) ) * rho_zz_new_inv
             end do
          end do
 
-      else if ( config_scalar_vadv_order == 3 ) then
-
-         do iCell=cellSolveStart,cellSolveEnd
-
-            k = 2
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-             
-            do k=3,nVertLevels-1
-               do iScalar=1,num_scalars
-                  wdtn(iScalar,k) = flux3( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
-                                           scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell),  &
-                                           wwAvg(k,iCell), coef_3rd_order )
-               end do
-            end do
-            k = nVertLevels
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-
-            do k=1,nVertLevels
-               rho_zz_new_inv = 1.0_RKIND / rho_zz_int(k,iCell)
-               do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) ) * rho_zz_new_inv
-               end do
-            end do
-
-         end do
-
-      else if ( config_scalar_vadv_order == 4 ) then
-
-         do iCell=cellSolveStart,cellSolveEnd
-
-            k = 2
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-            do k=3,nVertLevels-1
-               do iScalar=1,num_scalars
-                  wdtn(iScalar,k) = flux4( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
-                                           scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell), wwAvg(k,iCell) )
-               end do
-            end do
-            k = nVertLevels
-            do iScalar=1,num_scalars
-               wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
-            end do
-
-            do k=1,nVertLevels
-               do iScalar=1,num_scalars
-                  scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*rho_zz_old(k,iCell) &
-                        + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/rho_zz_int(k,iCell)
-               end do
-            end do
-
-         end do
-                                                                                        
-      else 
-
-         write(0,*) ' bad value for config_scalar_vadv_order - ', config_scalar_vadv_order
-
-      end if
+      end do
 
       if (local_advance_density) then
 !$OMP BARRIER
