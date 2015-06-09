@@ -73,6 +73,8 @@
 !	obs( (/ (indx(i),i=1,No) /) ) = obs(1:No)
 !     
 ! !REVISION HISTORY:
+! 23Mar15 - Steve Goldhaber (goldy@ucar.edu)
+!   . Added interface to perform index sort on 8-byte integers
 !	15Mar00	- Jing Guo
 !		. Added interfaces without the explicit size
 !		. Added interfaces for two dimensional arrays
@@ -188,6 +190,8 @@ end subroutine iSortn_
       integer, optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
+! 23Mar15 - Steve Goldhaber (goldy@ucar.edu)
+!   . Added interface to perform index sort on 8-byte integers
 !	15Mar00	- Jing Guo
 !		. initial prototype/prolog/code
 !		. redefined for the original interface
