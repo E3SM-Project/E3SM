@@ -135,8 +135,6 @@ module atm_time_integration
       real (kind=RKIND), dimension(3) :: rk_timestep, rk_sub_timestep
       integer, dimension(3) :: number_sub_steps
       integer :: small_step
-      logical, parameter :: debug = .false.
-!      logical, parameter :: debug = .true.
 
       !  additions for splitting scalar transport from dynamics, WCS 18 November 2014
       logical, pointer :: config_split_dynamics_transport
@@ -247,7 +245,6 @@ module atm_time_integration
       number_sub_steps(2) = max(1,number_of_sub_steps/2)
       number_sub_steps(3) = number_of_sub_steps
 
-      if(debug) write(0,*) ' copy step in rk solver '
 
 ! theta_m
       call mpas_dmpar_exch_halo_field(theta_m_field)
@@ -346,7 +343,6 @@ module atm_time_integration
             call mpas_timer_stop('atm_compute_moist_coefficients')
 
 
-            if (debug) write(0,*) ' compute_dyn_tend '
             call mpas_timer_start('atm_compute_dyn_tend')
             block => domain % blocklist
             do while (associated(block))
@@ -407,10 +403,8 @@ module atm_time_integration
                block => block % next
             end do
             call mpas_timer_stop('atm_compute_dyn_tend')
-            if (debug) write(0,*) ' finished compute_dyn_tend '
 
 #ifdef DO_PHYSICS
-            if (debug) write(0,*) ' add physics tendencies '
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -428,7 +422,6 @@ module atm_time_integration
                                    rk_step )
                block => block % next
             end do
-            if (debug) write(0,*) ' finished add physics tendencies '
 #endif
 
             !***********************************
@@ -487,7 +480,6 @@ module atm_time_integration
 
             do small_step = 1, number_sub_steps(rk_step)
 
-               if(debug) write(0,*) ' acoustic step ',small_step
       
                call mpas_timer_start('atm_advance_acoustic_step')
                block => domain % blocklist
@@ -542,7 +534,6 @@ module atm_time_integration
                end do
                call mpas_timer_stop('atm_advance_acoustic_step')
 
-               if(debug) write(0,*) ' acoustic step complete '
   
 ! rtheta_pp
 ! This is the only communications needed during the acoustic steps because we solve for u on all edges of owned cells
@@ -742,7 +733,6 @@ module atm_time_integration
             end do
             call mpas_timer_stop('atm_compute_solve_diagnostics')
 
-            if(debug) write(0,*) ' diagnostics complete '
 
             ! w
             call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
@@ -835,7 +825,6 @@ module atm_time_integration
 
          RK3_SPLIT_TRANSPORT : do rk_step = 1, 3  ! Runge-Kutta loop
 
-            if(debug) write(0,*) ' rk split transport substep ', rk_step
 
             if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                call mpas_timer_start('atm_advance_scalars')
@@ -2356,7 +2345,6 @@ module atm_time_integration
 
       integer, parameter :: hadv_opt = 2
       real (kind=RKIND), parameter :: eps=1.e-20
-      logical, parameter :: debug_print = .false.
 
       flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
           ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
@@ -2482,27 +2470,27 @@ module atm_time_integration
 
 !$OMP BARRIER
 
-         if (debug_print) then
-            scmin = scalar_old(1,1)
-            scmax = scalar_old(1,1)
-            do iCell = 1, nCells
-            do k=1, nVertLevels
-               scmin = min(scmin,scalar_old(k,iCell))
-               scmax = max(scmax,scalar_old(k,iCell))
-            end do
-            end do
-            write(0,*) ' scmin, scmin old in ',scmin,scmax
+#ifdef DEBUG_TRANSPORT
+         scmin = scalar_old(1,1)
+         scmax = scalar_old(1,1)
+         do iCell = 1, nCells
+         do k=1, nVertLevels
+            scmin = min(scmin,scalar_old(k,iCell))
+            scmax = max(scmax,scalar_old(k,iCell))
+         end do
+         end do
+         write(0,*) ' scmin, scmin old in ',scmin,scmax
 
-            scmin = scalar_new(1,1)
-            scmax = scalar_new(1,1)
-            do iCell = 1, nCells
-            do k=1, nVertLevels
-               scmin = min(scmin,scalar_new(k,iCell))
-               scmax = max(scmax,scalar_new(k,iCell))
-            end do
-            end do
-            write(0,*) ' scmin, scmin new in ',scmin,scmax
-         end if
+         scmin = scalar_new(1,1)
+         scmax = scalar_new(1,1)
+         do iCell = 1, nCells
+         do k=1, nVertLevels
+            scmin = min(scmin,scalar_new(k,iCell))
+            scmax = max(scmax,scalar_new(k,iCell))
+         end do
+         end do
+         write(0,*) ' scmin, scmin new in ',scmin,scmax
+#endif
 
 
       !
@@ -2782,24 +2770,24 @@ module atm_time_integration
             end do
          end do
 
-         if (debug_print) then
-            scmin = scalar_new(1,1)
-            scmax = scalar_new(1,1)
-            do iCell = 1, nCellsSolve
-            do k=1, nVertLevels
-               scmax = max(scmax,scalar_new(k,iCell))
-               scmin = min(scmin,scalar_new(k,iCell))
-               if (s_max(k,iCell) < scalar_new(k,iCell)) then
-                  write(32,*) ' over - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
-               end if
-               if (s_min(k,iCell) > scalar_new(k,iCell)) then
-                  write(32,*) ' under - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
-               end if
-            end do
-            end do
-            write(0,*) ' scmin, scmax new out ',scmin,scmax
-            write(0,*) ' icell_min, k_min ',icellmax, kmax
-         end if
+#ifdef DEBUG_TRANSPORT
+         scmin = scalar_new(1,1)
+         scmax = scalar_new(1,1)
+         do iCell = 1, nCellsSolve
+         do k=1, nVertLevels
+            scmax = max(scmax,scalar_new(k,iCell))
+            scmin = min(scmin,scalar_new(k,iCell))
+            if (s_max(k,iCell) < scalar_new(k,iCell)) then
+               write(32,*) ' over - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
+            end if
+            if (s_min(k,iCell) > scalar_new(k,iCell)) then
+               write(32,*) ' under - k,iCell,s_min,s_max,scalar_new ',k,iCell,s_min(k,iCell),s_max(k,iCell),scalar_new(k,iCell)
+            end if
+         end do
+         end do
+         write(0,*) ' scmin, scmax new out ',scmin,scmax
+         write(0,*) ' icell_min, k_min ',icellmax, kmax
+#endif
 
          ! the update should be positive definite. but roundoff can sometimes leave small negative values
          ! hence the enforcement of PD in the copy back to the model state.
@@ -2894,7 +2882,6 @@ module atm_time_integration
       real (kind=RKIND) :: pr, pl
       real (kind=RKIND) :: prandtl_inv
 
-      logical, parameter :: debug = .false.
 
       logical, parameter :: curvature = .true.
       real (kind=RKIND), pointer :: r_earth
