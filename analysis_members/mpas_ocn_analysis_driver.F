@@ -31,6 +31,7 @@ module ocn_analysis_driver
    use ocn_zonal_mean
    use ocn_okubo_weiss
    use ocn_water_mass_census
+   use ocn_eliassen_palm_flux_tensor
 !   use ocn_TEMPLATE
 
    implicit none
@@ -160,6 +161,12 @@ contains
           err = ior(err, err_tmp)
        endif
 
+       call mpas_pool_get_config(configPool, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+          call ocn_setup_packages_eliassen_palm_flux_tensor(configPool, packagePool, err_tmp)
+          err = ior(err, err_tmp)
+       endif
+
 !      call mpas_pool_get_config(configPool, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         call ocn_setup_packages_TEMPLATE(configPool, packagePool, err_tmp)
@@ -218,6 +225,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -255,6 +263,13 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        if (config_use_AM_water_mass_census) then
           call ocn_init_water_mass_census(domain, err_tmp)
+          err = ior(err, err_tmp)
+       endif
+
+       call mpas_pool_get_config(domain % configs, 'config_use_AM_eliassen_palm_flux_tensor', &
+          config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+          call ocn_init_eliassen_palm_flux_tensor(domain, err_tmp)
           err = ior(err, err_tmp)
        endif
 
@@ -318,6 +333,7 @@ contains
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
       logical, pointer :: config_use_AM_water_mass_census, config_AM_water_mass_census_compute_startup
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor, config_eliassen_palm_flux_tensor_compute_startup
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
 
       err = 0
@@ -377,6 +393,16 @@ contains
           call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
           call mpas_timer_start('io_write', .false.)
           call mpas_stream_mgr_write(stream_manager, streamID='waterMassOutput', forceWriteNow=.true., ierr=err_tmp)
+          call mpas_timer_stop('io_write')
+          err = ior(err, err_tmp)
+       endif
+
+       call mpas_pool_get_config(domain % configs, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_compute_startup', config_eliassen_palm_flux_tensor_compute_startup)
+       if (config_use_AM_eliassen_palm_flux_tensor.and.config_eliassen_palm_flux_tensor_compute_startup) then
+          call ocn_compute_eliassen_palm_flux_tensor(domain, timeLevel, err_tmp)
+          call mpas_timer_start('io_write', .false.)
+          call mpas_stream_mgr_write(stream_manager, streamID='eliassenPalmFluxTensorOutput', forceWriteNow=.true., ierr=err_tmp)
           call mpas_timer_stop('io_write')
           err = ior(err, err_tmp)
        endif
@@ -443,6 +469,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -476,6 +503,11 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        if (config_use_AM_water_mass_census) then
           call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
+       endif
+
+       call mpas_pool_get_config(domain % configs, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+          call ocn_compute_eliassen_palm_flux_tensor(domain, timeLevel, err_tmp)
        endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
@@ -536,6 +568,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -580,6 +613,13 @@ contains
        if (config_use_AM_water_mass_census) then
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='waterMassOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
              call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
+          endif
+       endif
+
+       call mpas_pool_get_config(domain % configs, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='eliassenPalmFluxTensorOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+             call ocn_compute_eliassen_palm_flux_tensor(domain, timeLevel, err_tmp)
           endif
        endif
 
@@ -642,6 +682,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -679,6 +720,12 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        if (config_use_AM_water_mass_census) then
           call ocn_restart_water_mass_census(domain, err_tmp)
+          err = ior(err, err_tmp)
+       endif
+
+       call mpas_pool_get_config(domain % configs, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+          call ocn_restart_eliassen_palm_flux_tensor(domain, err_tmp)
           err = ior(err, err_tmp)
        endif
 
@@ -743,6 +790,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -813,6 +861,17 @@ contains
           err = ior(err, err_tmp)
        endif
 
+       call mpas_pool_get_config(ocnConfigs, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+           call mpas_timer_start('io_write', .false.)
+           call mpas_stream_mgr_write(stream_manager, streamID='eliassenPalmFluxTensorOutput', ierr=err_tmp)
+           call mpas_timer_stop('io_write')
+           call mpas_timer_start('io_reset_alarms', .false.)
+           call mpas_stream_mgr_reset_alarms(stream_manager, streamID='eliassenPalmFluxTensorOutput', ierr=err_tmp)
+           call mpas_timer_stop('io_reset_alarms')
+          err = ior(err, err_tmp)
+       endif
+
 !      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !          call mpas_timer_start('io_write', .false.)
@@ -876,6 +935,7 @@ contains
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_water_mass_census
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0
@@ -913,6 +973,12 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        if (config_use_AM_water_mass_census) then
           call ocn_finalize_water_mass_census(domain, err_tmp)
+          err = ior(err, err_tmp)
+       endif
+
+       call mpas_pool_get_config(domain % configs, 'config_use_AM_eliassen_palm_flux_tensor', config_use_AM_eliassen_palm_flux_tensor)
+       if (config_use_AM_eliassen_palm_flux_tensor) then
+          call ocn_finalize_eliassen_palm_flux_tensor(domain, err_tmp)
           err = ior(err, err_tmp)
        endif
 
