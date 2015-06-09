@@ -119,6 +119,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_AM_water_mass_census
       logical, pointer :: config_use_AM_layer_volume_weighted_avg
+      logical, pointer :: config_use_AM_eliassen_palm_flux_tensor
 !      logical, pointer :: config_use_TEMPLATE
 
       err = 0

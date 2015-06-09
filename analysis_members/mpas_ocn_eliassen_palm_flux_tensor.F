@@ -27,6 +27,7 @@ module ocn_eliassen_palm_flux_tensor
    use mpas_stream_manager
 
    use mpas_configure
+   use mpas_constants
    use ocn_constants
    use ocn_diagnostics_routines
 
@@ -59,7 +60,6 @@ module ocn_eliassen_palm_flux_tensor
    !--------------------------------------------------------------------
 
    type (timer_node), pointer :: am_eliassen_palm_flux_tensorTimer
-   logical :: amEPFTOn
    real (kind=RKIND), parameter :: epsilonEPFT=1.0e-15
 
 !***********************************************************************
@@ -115,14 +115,10 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(configPool, "config_use_epft", config_use_epft)
       call mpas_pool_get_package(packagePool, &
           'am_eliassen_palm_flux_tensor_Active', am_eliassen_palm_flux_tensor_Active)
 
-      ! turn on package for this analysis member based on configure option
-      ! (at present, this routine is only called when true)
-      amEPFTACtive = .false.
-      if (config_use_epft) amEPFTACtive = .true.
+      am_eliassen_palm_flux_tensor_Active = .true.
 
    end subroutine ocn_setup_packages_eliassen_palm_flux_tensor!}}}
 
@@ -182,10 +178,10 @@ contains
       real (kind=RKIND), dimension(:), pointer :: buoyancyMidRef
       real (kind=RKIND), dimension(:), pointer :: buoyancyInterfaceRef
 
-      logical, pointer :: amEPFTActive, config_do_restart, config_epft_reset
-      integer, pointer :: config_epft_nBuoyancyLayers
-      real (kind=RKIND), pointer :: config_epft_rhomax_buoycoor
-      real (kind=RKIND), pointer :: config_epft_rhomin_buoycoor
+      logical, pointer :: amEPFTActive, config_eliassen_palm_flux_tensor_do_restart, config_eliassen_palm_flux_tensor_reset
+      integer, pointer :: config_eliassen_palm_flux_tensor_nBuoyancyLayers
+      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor
       real (kind=RKIND), pointer :: config_density0
 
       integer, pointer :: nSamplesEA
@@ -213,11 +209,16 @@ contains
 
       if(.not.amEPFTActive) return
 
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_epft_reset', config_epft_reset)
-      call mpas_pool_get_config(domain % configs, 'config_epft_nBuoyancyLayers', config_epft_nBuoyancyLayers)
-      call mpas_pool_get_config(domain % configs, 'config_epft_rhomax_buoycoor', config_epft_rhomax_buoycoor)
-      call mpas_pool_get_config(domain % configs, 'config_epft_rhomin_buoycoor', config_epft_rhomin_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_do_restart', &
+        config_eliassen_palm_flux_tensor_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_reset', &
+        config_eliassen_palm_flux_tensor_reset)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_nBuoyancyLayers', &
+        config_eliassen_palm_flux_tensor_nBuoyancyLayers)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', &
+        config_eliassen_palm_flux_tensor_rhomax_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
+        config_eliassen_palm_flux_tensor_rhomin_buoycoor)
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
 
       block => domain % blocklist
@@ -236,16 +237,16 @@ contains
          ! compute buoyancy and density increment of each layer
          ! at present we use layer interfaces that are evenly-spaced in buoyancy space
          !-----------------------------------------------------------------
-         nBuoyancyLayers = config_epft_nBuoyancyLayers
-         deltaDensity = (config_epft_rhomax_buoycoor - config_epft_rhomin_buoycoor) / config_epft_nBuoyancyLayers
+         nBuoyancyLayers = config_eliassen_palm_flux_tensor_nBuoyancyLayers
+         deltaDensity = (config_eliassen_palm_flux_tensor_rhomax_buoycoor - config_eliassen_palm_flux_tensor_rhomin_buoycoor) / config_eliassen_palm_flux_tensor_nBuoyancyLayers
          deltaBuoyancy = -gravity * deltaDensity / config_density0
 
          !-----------------------------------------------------------------
          ! compute density/bouyancy at top of each layer
          !-----------------------------------------------------------------
          do k = 1, nBuoyancyLayers
-            potentialDensityTopRef(k) = config_epft_rhomin_buoycoor + deltaDensity * (k-1)
-            buoyancyInterfaceRef(k) = -gravity * (config_epft_rhomin_buoycoor - config_density0) / config_density0 + deltaBuoyancy * (k-1)
+            potentialDensityTopRef(k) = config_eliassen_palm_flux_tensor_rhomin_buoycoor + deltaDensity * (k-1)
+            buoyancyInterfaceRef(k) = -gravity * (config_eliassen_palm_flux_tensor_rhomin_buoycoor - config_density0) / config_density0 + deltaBuoyancy * (k-1)
          end do
          k=nBuoyancyLayers
          buoyancyInterfaceRef(k+1) = buoyancyInterfaceRef(k) + deltaBuoyancy
@@ -258,13 +259,13 @@ contains
             buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          end do
          k=nBuoyancyLayers
-         potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k-1) + config_epft_rhomax_buoycoor)
+         potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k-1) + config_eliassen_palm_flux_tensor_rhomax_buoycoor)
          buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          
          !-----------------------------------------------------------------
          ! initialize ensemble averages when it is not a restart or when a reset is specified
          !-----------------------------------------------------------------
-         if (.not. config_do_restart .or. config_epft_reset) then
+         if (.not. config_eliassen_palm_flux_tensor_do_restart .or. config_eliassen_palm_flux_tensor_reset) then
             call mpas_pool_get_array(amEPFTPool, 'buoyancyMaskEA', buoyancyMaskEA)
             call mpas_pool_get_array(amEPFTPool, 'sigmaEA', sigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'nSamplesEA', nSamplesEA)
@@ -372,7 +373,15 @@ contains
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: diagnosticsPool 
 
-      logical, pointer :: config_epft_debug
+      real (kind=RKIND), pointer :: config_density0
+      
+      
+      !-----------------------------------------------------------------
+      ! define namelist config variables local to the EPFT module
+      !-----------------------------------------------------------------
+      logical, pointer :: config_eliassen_palm_flux_tensor_debug
+      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomax_buoycoor
 
       !-----------------------------------------------------------------
       ! define local scalars holding length of dimensions
@@ -384,8 +393,6 @@ contains
       ! define buoyancy coordinate and field related to the vertical direction
       !-----------------------------------------------------------------
       integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:), pointer :: firstLayerBuoyCoor
-      integer, dimension(:), pointer :: lastLayerBuoyCoor
       real(KIND=RKIND), dimension(:), pointer :: potentialDensityMidRef
       real(KIND=RKIND), dimension(:), pointer :: potentialDensityTopRef
       real(KIND=RKIND), dimension(:), pointer :: buoyancyMidRef
@@ -396,11 +403,12 @@ contains
       ! define mesh variables
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:), pointer :: fCell
+      real(KIND=RKIND), dimension(:,:), pointer :: cellMask
 
       !-----------------------------------------------------------------
       ! define fields related to the Ensemble Average (EA)
       !-----------------------------------------------------------------
-      integer :: nSamplesEA
+      integer, pointer :: nSamplesEA
       real(KIND=RKIND), dimension(:,:), pointer :: buoyancyMaskEA
       real(KIND=RKIND), dimension(:,:), pointer :: sigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: heightMidBuoyCoorEA
@@ -412,7 +420,7 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: heightMGradMeridEA
       real(KIND=RKIND), dimension(:,:), pointer :: usigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: vsigmaEA
-      !real(KIND=RKIND), dimension(:,:), pointer :: wsigmaEA
+      real(KIND=RKIND), dimension(:,:), pointer :: wsigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: uusigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: vvsigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: uvsigmaEA
@@ -440,24 +448,80 @@ contains
       real(KIND=RKIND), dimension(:,:,:), pointer :: divEPFT 
 
       !-----------------------------------------------------------------
-      ! define arrays holding instantaneous state in buoyancy coordinates
+      ! define scratch fields
       !-----------------------------------------------------------------
-      real(KIND=RKIND), dimension(:,:), pointer :: buoyancyMask
-      real(KIND=RKIND), dimension(:,:), pointer :: heightMidBuoyCoor    
+      type(field1DInteger), pointer :: firstLayerBuoyCoorField
+      type(field1DInteger), pointer :: lastLayerBuoyCoorField
+      type(field2DReal), pointer :: heightMidBuoyCoorField
+      type(field2DReal), pointer :: heightTopBuoyCoorField
+      type(field2DReal), pointer :: heightInterfaceBuoyCoorField
+      type(field2DReal), pointer :: sigmaField
+      type(field2DReal), pointer :: montgPotBuoyCoorField
+      type(field2DReal), pointer :: montgPotNormalGradOnEdgeField
+      type(field2DReal), pointer :: uMidBuoyCoorField
+      type(field2DReal), pointer :: vMidBuoyCoorField
+      type(field2DReal), pointer :: densityMidBuoyCoorField
+      type(field2DReal), pointer :: densityTopBuoyCoorField
+      type(field2DReal), pointer :: buoyancyMaskField
+      type(field2DReal), pointer :: montgPotGradXField     
+      type(field2DReal), pointer :: montgPotGradYField
+      type(field2DReal), pointer :: montgPotGradZField
+      type(field2DReal), pointer :: montgPotGradZonalField
+      type(field2DReal), pointer :: montgPotGradMeridField
+      type(field2DReal), pointer :: wrk3DnVertLevelsP1Field
+      type(field2DReal), pointer :: wrk3DnVertLevelsField
+      type(field2DReal), pointer :: wrk3DBuoyCoorField
+
+      type(field2DReal), pointer :: array1_3DField
+      type(field2DReal), pointer :: array2_3DField
+      type(field2DReal), pointer :: array3_3DField
+      type(field2DReal), pointer :: array1_3DbuoyField
+      type(field2DReal), pointer :: array2_3DbuoyField
+      type(field2DReal), pointer :: PVMidBuoyCoorField
+      type(field2DReal), pointer :: PVMidBuoyCoorEAField
+      type(field2DReal), pointer :: uMidBuoyCoorEAField
+      type(field2DReal), pointer :: vMidBuoyCoorEAField
+      type(field2DReal), pointer :: uPVMidBuoyCoorEAField
+      type(field2DReal), pointer :: vPVMidBuoyCoorEAField
+      type(field3DReal), pointer :: PVFluxTestField
+
+      !-----------------------------------------------------------------
+      ! define pointers to scratch fields
+      !-----------------------------------------------------------------
+      integer, dimension(:), pointer :: firstLayerBuoyCoor
+      integer, dimension(:), pointer :: lastLayerBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: heightMidBuoyCoor
       real(KIND=RKIND), dimension(:,:), pointer :: heightTopBuoyCoor
       real(KIND=RKIND), dimension(:,:), pointer :: heightInterfaceBuoyCoor
-      real(KIND=RKIND), dimension(:,:), pointer :: uMidBuoyCoor    
-      real(KIND=RKIND), dimension(:,:), pointer :: vMidBuoyCoor    
-      real(KIND=RKIND), dimension(:,:), pointer :: densityMidBuoyCoor    
-      real(KIND=RKIND), dimension(:,:), pointer :: densityTopBuoyCoor    
       real(KIND=RKIND), dimension(:,:), pointer :: sigma
       real(KIND=RKIND), dimension(:,:), pointer :: montgPotBuoyCoor
       real(KIND=RKIND), dimension(:,:), pointer :: montgPotNormalGradOnEdge
-      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradX         
-      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradY         
-      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradZ         
-      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradZonal     
+      real(KIND=RKIND), dimension(:,:), pointer :: uMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: vMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: densityMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: densityTopBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: buoyancyMask
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradX
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradY
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradZ
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradZonal
       real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradMerid
+      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevelsP1
+      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevels
+      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DBuoyCoor
+
+      real(KIND=RKIND), dimension(:,:), pointer :: array1_3D
+      real(KIND=RKIND), dimension(:,:), pointer :: array2_3D
+      real(KIND=RKIND), dimension(:,:), pointer :: array3_3D
+      real(KIND=RKIND), dimension(:,:), pointer :: array1_3Dbuoy
+      real(KIND=RKIND), dimension(:,:), pointer :: array2_3Dbuoy
+      real(KIND=RKIND), dimension(:,:), pointer :: PVMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: PVMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: uMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: vMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: uPVMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: vPVMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:,:), pointer :: PVFluxTest
 
       !-----------------------------------------------------------------
       ! define arrays holding instantaneous state in z-coordinates
@@ -470,41 +534,50 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: pressure
       real(KIND=RKIND), dimension(:,:), pointer :: normalVelocityZonal
       real(KIND=RKIND), dimension(:,:), pointer :: normalVelocityMeridional
-      real(KIND=RKIND), dimension(:,:), pointer :: wCellCenter
-
-      !-----------------------------------------------------------------
-      ! define local workspace fields
-      !-----------------------------------------------------------------
-      integer :: k
-      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevels
-      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DBuoyCoor
+      !real(KIND=RKIND), dimension(:,:), pointer :: wCellCenter
+      real(KIND=RKIND), dimension(:,:), pointer :: relativeVorticityCell ! jas used for testing
 
       !-----------------------------------------------------------------
       ! define local test variables
       !-----------------------------------------------------------------
-      integer :: nCellsGlobal, i
-      real(KIND=RKIND), dimension(:,:), pointer :: array1_3D
-      real(KIND=RKIND), dimension(:,:), pointer :: array2_3D
-      real(KIND=RKIND), dimension(:,:), pointer :: array3_3D
-      real(KIND=RKIND), dimension(:,:), pointer :: array1_3Dbuoy
-      real(KIND=RKIND), dimension(:,:), pointer :: array2_3Dbuoy
-      real(KIND=RKIND), dimension(:,:), pointer :: PVMidBuoyCoor
-      real(KIND=RKIND), dimension(:,:), pointer :: PVMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:), pointer :: uMidBuoyCoorEA 
-      real(KIND=RKIND), dimension(:,:), pointer :: vMidBuoyCoorEA 
-      real(KIND=RKIND), dimension(:,:), pointer :: uPVMidBuoyCoorEA 
-      real(KIND=RKIND), dimension(:,:), pointer :: vPVMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:,:), pointer :: PVFluxTest
-      real(KIND=RKIND), dimension(:,:), pointer :: relativeVorticityCell
+      ! jas to do : move these to Registry
+      integer :: nCellsCum
+      real(KIND=RKIND) :: RMSlocal1, RMSglobal1
+      real(KIND=RKIND) :: RMSlocal2, RMSglobal2
+      real(KIND=RKIND) :: RMSPVFlux1local, RMSPVFlux1global
+      real(KIND=RKIND) :: RMSPVFlux2local, RMSPVFlux2global
+
+      !-----------------------------------------------------------------
+      ! define local work variables
+      !-----------------------------------------------------------------
+      integer :: nCellsGlobal, k, i
+      real(KIND=RKIND) :: rho0
 
       err = 0
 
       dminfo = domain % dminfo
-
-      call mpas_timer_start("compute_eliassen_palm_flux_tensor", .false., am_eliassen_palm_flux_tensorTimer)
       
-      call mpas_pool_get_config(domain % configs, 'config_epft_debug', config_epft_debug)
+      RMSlocal1  = 0.0
+      RMSlocal2  = 0.0
+      RMSglobal1 = 0.0
+      RMSglobal2 = 0.0
+      RMSPVFlux1local  = 0.0
+      RMSPVFlux2local  = 0.0
+      RMSPVFlux1global = 0.0
+      RMSPVFlux2global = 0.0
 
+      call mpas_timer_start("compute_eliassen_palm_flux_tensor", .false., &
+        am_eliassen_palm_flux_tensorTimer)
+      
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_debug', &
+        config_eliassen_palm_flux_tensor_debug)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
+        config_eliassen_palm_flux_tensor_rhomin_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', &
+        config_eliassen_palm_flux_tensor_rhomax_buoycoor)
+
+      call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
+      rho0 = config_density0
       
       block => domain % blocklist
       do while (associated(block))
@@ -531,83 +604,126 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
          call mpas_pool_get_array(meshPool, 'fCell', fCell)
+         call mpas_pool_get_array(meshPool, 'cellMask', cellMask) ! used for tests
+
 
          !--------------------------------------------------
-         ! allocate scratch variables that will hold current state
+         ! get scratch field pointers
          !--------------------------------------------------
-         call mpas_pool_get_field(scratchPool, 'heightMidBuoyCoor', heightMidBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'heightTopBuoyCoor', heightTopBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'heightInterfaceBuoyCoor', heightInterfaceBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'uMidBuoyCoor', uMidBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'vMidBuoyCoor', vMidBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'densityMidBuoyCoor', densityMidBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'densityTopBuoyCoor', densityTopBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'sigma', sigma)
-         call mpas_pool_get_field(scratchPool, 'montgPotBuoyCoor', montgPotBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'montgPotNormalGradOnEdge', montgPotNormalGradOnEdge)
-         call mpas_pool_get_field(scratchPool, 'firstLayerBuoyCoor', firstLayerBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'lastLayerBuoyCoor', lastLayerBuoyCoor)
-         call mpas_pool_get_field(scratchPool, 'buoyancyMask', buoyancyMask)
-         call mpas_pool_get_field(scratchPool, 'montgPotGradX', montgPotGradX)
-         call mpas_pool_get_field(scratchPool, 'montgPotGradY', montgPotGradY)
-         call mpas_pool_get_field(scratchPool, 'montgPotGradZ', montgPotGradZ)
-         call mpas_pool_get_field(scratchPool, 'montgPotGradZonal', montgPotGradZonal)
-         call mpas_pool_get_field(scratchPool, 'montgPotGradMerid', montgPotGradMerid)
-         call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevelsP1', wrk3DnVertLevelsP1)
-         call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevels', wrk3DnVertLevels)
-         call mpas_pool_get_field(scratchPool, 'wrk3DBuoyCoor', wrk3DBuoyCoor)
+         call mpas_pool_get_field(scratchPool, 'firstLayerBuoyCoor', firstLayerBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'lastLayerBuoyCoor', lastLayerBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'heightMidBuoyCoor', heightMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'heightTopBuoyCoor', heightTopBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'heightInterfaceBuoyCoor', heightInterfaceBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'sigma', sigmaField)
+         call mpas_pool_get_field(scratchPool, 'montgPotBuoyCoor', montgPotBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'montgPotNormalGradOnEdge', montgPotNormalGradOnEdgeField)
+         call mpas_pool_get_field(scratchPool, 'uMidBuoyCoor', uMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'vMidBuoyCoor', vMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'densityMidBuoyCoor', densityMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'densityTopBuoyCoor', densityTopBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'buoyancyMask', buoyancyMaskField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradX', montgPotGradXField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradY', montgPotGradYField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradZ', montgPotGradZField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradZonal', montgPotGradZonalField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradMerid', montgPotGradMeridField)
+         call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevelsP1', wrk3DnVertLevelsP1Field)
+         call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevels', wrk3DnVertLevelsField)
+         call mpas_pool_get_field(scratchPool, 'wrk3DBuoyCoor', wrk3DBuoyCoorField)
          
-         call mpas_allocate_scratch_field(heightMidBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(heightTopBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(heightInterfaceBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(uMidBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(vMidBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(densityMidBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(densityTopBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(sigma, .true.)
-         call mpas_allocate_scratch_field(montgPotBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(montgPotNormalGradOnEdge, .true.)
-         call mpas_allocate_scratch_field(firstLayerBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(lastLayerBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(buoyancyMask, .true.)
-         call mpas_allocate_scratch_field(montgPotGradX, .true.)
-         call mpas_allocate_scratch_field(montgPotGradY, .true.)
-         call mpas_allocate_scratch_field(montgPotGradZ, .true.)
-         call mpas_allocate_scratch_field(montgPotGradZonal, .true.)
-         call mpas_allocate_scratch_field(montgPotGradMerid, .true.)
-         call mpas_allocate_scratch_field(wrk3DnVertLevelsP1, .true.)
-         call mpas_allocate_scratch_field(wrk3DnVertLevels, .true.)
-         call mpas_allocate_scratch_field(wrk3DBuoyCoor, .true.)
+         call mpas_pool_get_field(scratchPool, 'array1_3D', array1_3DField)
+         call mpas_pool_get_field(scratchPool, 'array2_3D', array2_3DField)
+         call mpas_pool_get_field(scratchPool, 'array3_3D', array3_3DField)
+         call mpas_pool_get_field(scratchPool, 'array1_3Dbuoy', array1_3DbuoyField)
+         call mpas_pool_get_field(scratchPool, 'array2_3Dbuoy', array2_3DbuoyField)
+         call mpas_pool_get_field(scratchPool, 'PVMidBuoyCoor', PVMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'PVMidBuoyCoorEA', PVMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'uMidBuoyCoorEA', uMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'vMidBuoyCoorEA', vMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'uPVMidBuoyCoorEA', uPVMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'vPVMidBuoyCoorEA', vPVMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'PVFluxTest', PVFluxTestField)
+         
+         !--------------------------------------------------
+         ! allocate scratch field variables
+         !--------------------------------------------------
+         call mpas_allocate_scratch_field(firstLayerBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(lastLayerBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(heightMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(heightTopBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(heightInterfaceBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(sigmaField, .true.)
+         call mpas_allocate_scratch_field(montgPotBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(montgPotNormalGradOnEdgeField, .true.)
+         call mpas_allocate_scratch_field(uMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(vMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(densityMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(densityTopBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(buoyancyMaskField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradXField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradYField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradZField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradZonalField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradMeridField, .true.)
+         call mpas_allocate_scratch_field(wrk3DnVertLevelsP1Field, .true.)
+         call mpas_allocate_scratch_field(wrk3DnVertLevelsField, .true.)
+         call mpas_allocate_scratch_field(wrk3DBuoyCoorField, .true.)
 
-         ! test variables
-         call mpas_pool_get_field(scratchPool, 'array1_3D', array1_3D)
-         call mpas_pool_get_field(scratchPool, 'array2_3D', array2_3D)
-         call mpas_pool_get_field(scratchPool, 'array3_3D', array3_3D)
-         call mpas_pool_get_field(scratchPool, 'array1_3Dbuoy', array1_3Dbuoy)
-         call mpas_pool_get_field(scratchPool, 'array2_3Dbuoy', array2_3Dbuoy)
+         call mpas_allocate_scratch_field(array1_3DField, .true.)
+         call mpas_allocate_scratch_field(array2_3DField, .true.)
+         call mpas_allocate_scratch_field(array3_3DField, .true.)
+         call mpas_allocate_scratch_field(array1_3DbuoyField, .true.)
+         call mpas_allocate_scratch_field(array2_3DbuoyField, .true.)
+         call mpas_allocate_scratch_field(PVMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(PVMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(uMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(vMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(uPVMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(vPVMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(PVFluxTestField, .true.)
 
-         call mpas_allocate_scratch_field(array1_3D, .true.)
-         call mpas_allocate_scratch_field(array2_3D, .true.)
-         call mpas_allocate_scratch_field(array3_3D, .true.)
-         call mpas_allocate_scratch_field(array1_3Dbuoy, .true.)
-         call mpas_allocate_scratch_field(array2_3Dbuoy, .true.)
-        
-         call mpas_pool_get_field('PVMidBuoyCoor', PVMidBuoyCoor)
-         call mpas_pool_get_field('PVMidBuoyCoorEA', PVMidBuoyCoorEA)
-         call mpas_pool_get_field('uMidBuoyCoorEA', uMidBuoyCoorEA)
-         call mpas_pool_get_field('vMidBuoyCoorEA', vMidBuoyCoorEA)
-         call mpas_pool_get_field('uPVMidBuoyCoorEA', uPVMidBuoyCoorEA)
-         call mpas_pool_get_field('vPVMidBuoyCoorEA', vPVMidBuoyCoorEA)
-         call mpas_pool_get_field('PVFluxTest', PVFluxTest)
+         !--------------------------------------------------
+         ! assign pointers for scratch and test variables
+         !--------------------------------------------------
+         firstLayerBuoyCoor      => firstLayerBuoyCoorField % array
+         lastLayerBuoyCoor       => lastLayerBuoyCoorField % array
+         heightMidBuoyCoor       => heightMidBuoyCoorField % array
+         heightTopBuoyCoor       => heightTopBuoyCoorField % array
+         heightInterfaceBuoyCoor => heightInterfaceBuoyCoorField % array
+         sigma                   => sigmaField % array
+         montgPotBuoyCoor        => montgPotBuoyCoorField % array
+         montgPotNormalGradOnEdge=> montgPotNormalGradOnEdgeField % array
+         uMidBuoyCoor            => uMidBuoyCoorField % array
+         vMidBuoyCoor            => vMidBuoyCoorField % array
+         densityMidBuoyCoor      => densityMidBuoyCoorField % array
+         densityTopBuoyCoor      => densityTopBuoyCoorField % array
+         buoyancyMask            => buoyancyMaskField % array
+         montgPotGradX           => montgPotGradXField % array
+         montgPotGradY           => montgPotGradYField % array
+         montgPotGradZ           => montgPotGradZField % array
+         montgPotGradZonal       => montgPotGradZonalField % array
+         montgPotGradMerid       => montgPotGradMeridField % array
+         wrk3DnVertLevelsP1      => wrk3DnVertLevelsP1Field % array
+         wrk3DnVertLevels        => wrk3DnVertLevelsField % array
+         wrk3DBuoyCoor           => wrk3DBuoyCoorField % array
+         
+         array1_3D =>  array1_3DField % array
+         array2_3D =>  array2_3DField % array
+         array3_3D =>  array3_3DField % array
+         array1_3Dbuoy =>  array1_3DbuoyField % array
+         array2_3Dbuoy =>  array2_3DbuoyField % array
+         PVMidBuoyCoor    =>  PVMidBuoyCoorField % array
+         PVMidBuoyCoorEA  =>  PVMidBuoyCoorEAField % array
+         uMidBuoyCoorEA   =>  uMidBuoyCoorEAField % array
+         vMidBuoyCoorEA   =>  vMidBuoyCoorEAField % array
+         uPVMidBuoyCoorEA =>  uPVMidBuoyCoorEAField % array
+         vPVMidBuoyCoorEA =>  vPVMidBuoyCoorEAField % array
+         PVFluxTest       =>  PVFluxTestField % array
 
-         call mpas_allocate_scratch_field(PVMidBuoyCoor, .true.)
-         call mpas_allocate_scratch_field(PVMidBuoyCoorEA, .true.)
-         call mpas_allocate_scratch_field(uMidBuoyCoorEA , .true.)
-         call mpas_allocate_scratch_field(vMidBuoyCoorEA , .true.)
-         call mpas_allocate_scratch_field(uPVMidBuoyCoorEA , .true.)
-         call mpas_allocate_scratch_field(vPVMidBuoyCoorEA, .true.)
-         call mpas_allocate_scratch_field(PVFluxTest, .true.)
-
+         !--------------------------------------------------
+         ! get diagnostic variables
+         !--------------------------------------------------
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
          call mpas_pool_get_array(diagnosticsPool, 'density', density)
@@ -661,48 +777,6 @@ contains
 
          
 
-         !--------------------------------------------------
-         ! assign pointers for instantaneous state
-         !--------------------------------------------------
-         heightMidBuoyCoor       => heightMidBuoyCoor % array
-         heightTopBuoyCoor       => heightTopBuoyCoor % array
-         heightInterfaceBuoyCoor => heightInterfaceBuoyCoor % array
-         uMidBuoyCoor            => uMidBuoyCoor % array
-         vMidBuoyCoor            => vMidBuoyCoor % array
-         densityMidBuoyCoor      => densityMidBuoyCoor % array
-         densityTopBuoyCoor      => densityTopBuoyCoor % array
-         sigma                   => sigma % array
-         montgPotBuoyCoor        => montgPotBuoyCoor % array
-         montgPotNormalGradOnEdge=> montgPotNormalGradOnEdge % array
-         firstLayerBuoyCoor      => firstLayerBuoyCoor % array
-         lastLayerBuoyCoor       => lastLayerBuoyCoor % array
-         buoyancyMask            => buoyancyMask % array
-         montgPotGradX           => montgPotGradX % array
-         montgPotGradY           => montgPotGradY % array
-         montgPotGradZ           => montgPotGradZ % array
-         montgPotGradZonal       => montgPotGradZonal % array
-         montgPotGradMerid       => montgPotGradMerid % array
-         wrk3DnVertLevelsP1      => wrk3DnVertLevelsP1 % array
-         wrk3DnVertLevels        => wrk3DnVertLevels % array
-         wrk3DBuoyCoor           => wrk3DBuoyCoor % array
-         
-         !--------------------------------------------------
-         ! assign pointers for scratch and test variables
-         !--------------------------------------------------
-         array1_3D =>  array1_3D % array
-         array2_3D =>  array2_3D % array
-         array3_3D =>  array3_3D % array
-         array1_3Dbuoy =>  array1_3Dbuoy % array
-         array2_3Dbuoy =>  array2_3Dbuoy % array
-
-         PVMidBuoyCoor    =>  PVMidBuoyCoor % array
-         PVMidBuoyCoorEA  =>  PVMidBuoyCoorEA % array
-         uMidBuoyCoorEA   =>  uMidBuoyCoorEA % array
-         vMidBuoyCoorEA   =>  vMidBuoyCoorEA % array
-         uPVMidBuoyCoorEA =>  uPVMidBuoyCoorEA % array
-         vPVMidBuoyCoorEA =>  vPVMidBuoyCoorEA % array
-         PVFluxTest       =>  PVFluxTest % array
-
          
          ! jas issue diabatic terms
          !diabaticHeating(nVertLevels,nCells)! "vertical velocity" in buoyancy space
@@ -726,7 +800,7 @@ contains
            maxLevelCell, potentialDensity, potentialDensityMidRef, &
            firstLayerBuoyCoor, lastLayerBuoyCoor, buoyancyMask)
 
-         if(config_oac_epft_debug) then
+         if(config_eliassen_palm_flux_tensor_debug) then
             print *, ' '
             print *, 'timeLevel:', timeLevel
             print *, ' '
@@ -737,7 +811,7 @@ contains
             print *, 'nCells*nBuoyancyLayers', nCells*nBuoyancyLayers
             print *, 'sum(buoyancyMask)', sum(buoyancyMask)
             print *, 'nCells*nVertLevels', nCells*nVertLevels
-            print *, 'sum(mesh%cellMask%array)', sum(mesh%cellMask%array)
+            print *, 'sum(cellMask)', sum(cellMask)
             print *, 'minval(potentialDensity), maxval(potentialDensity)'
             print *, minval(potentialDensity), maxval(potentialDensity)
             print *, 'minval(density), maxval(density)'
@@ -750,7 +824,7 @@ contains
          ! stratified, horizontally uniform
          ! Interpolating from z, rho to z, rho
          !-------------------------------------------------------------
-         if(config_oac_epft_debug) then
+         if(config_eliassen_palm_flux_tensor_debug) then
            do i = 1, nCells
               array1_3D(:,i) = -zMid(:,nCells/2)
               array2_3D(:,i) = potentialDensity(:,nCells/2)
@@ -796,16 +870,16 @@ contains
          ! Interpolate z from that potential density to reference potential density
          ! compare to expected values
          !-------------------------------------------------------------
-         if(config_oac_epft_debug) then
+         if(config_eliassen_palm_flux_tensor_debug) then
             do i = 1,nCells
                do k = 1, nVertLevels
-                  array1_3D(k,i) = config_rhomin_buoycoor*1.02 + &
+                  array1_3D(k,i) = config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02 + &
                      (zMid(k,i)-zMid(1,i)) * &
-                     (config_rhomax_buoycoor*0.98 - config_rhomin_buoycoor*1.02) / &
+                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
-                  array2_3D(k,i) = config_rhomin_buoycoor*1.02 + &
+                  array2_3D(k,i) = config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02 + &
                      (zTop(k,i)-zMid(1,i)) * &
-                     (config_rhomax_buoycoor*0.98 - config_rhomin_buoycoor*1.02) / &
+                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
                end do
             end do
@@ -815,9 +889,9 @@ contains
             do i = 1,nCells
                do k = 1, nBuoyancyLayers
                   array2_3Dbuoy(k,i) = zMid(1,i) + &
-                     (potentialDensityMidRef(k) - config_rhomin_buoycoor*1.02) * &
+                     (potentialDensityMidRef(k) - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) * &
                      (zMid(nVertLevels,i) - zMid(1,i)) / &
-                     (config_rhomax_buoycoor*0.98 - config_rhomin_buoycoor*1.02)
+                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02)
                end do
             end do
             do i = 1,nCells
@@ -964,7 +1038,8 @@ contains
          !wrk3DBuoyCoor = wMidBuoyCoor * sigma
          !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
          !   wrk3DBuoyCoor, wsigmaEA)
-   
+         wsigmaEA = 0.0
+
    
          !-------------------------------------------------------------
          ! Increment third-order running mean fields
@@ -1024,7 +1099,8 @@ contains
          !-------------------------------------------------------------
          ! compute the force applied to the momentum equation as div(EPFT)
          !-------------------------------------------------------------
-         call calculateDivEPFT(domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
+         call calculateDivEPFT(config_eliassen_palm_flux_tensor_debug, &
+            domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, EPFT, divEPFT)
          
          !-------------------------------------------------------------
@@ -1036,7 +1112,8 @@ contains
          !-------------------------------------------------------------
          ! compute div(ErtelPVFlux) to obtain tendency of Ertel's PV
          !-------------------------------------------------------------
-        call calculateErtelPVTendencyFromPVFlux(domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
+        call calculateErtelPVTendencyFromPVFlux(config_eliassen_palm_flux_tensor_debug, &
+            domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
             meshPool, sigmaEA, ErtelPVFlux, ErtelPVTendency)
 
 
@@ -1059,9 +1136,9 @@ contains
          ! Test:
          ! calculate potential vorticity fluxes using curl of u
          !-------------------------------------------------------------
-         if(config_oac_epft_debug) then
+         if(config_eliassen_palm_flux_tensor_debug) then
 
-            relativeVorticityCell => diagnostics % relativeVorticityCell % array
+            call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
             
             ! store relVortMidBuoyCoor in array1_3Dbuoy
             call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
@@ -1130,17 +1207,17 @@ contains
          call mpas_deallocate_scratch_field(wrk3DnVertLevelsField, .true.)
          call mpas_deallocate_scratch_field(wrk3DBuoyCoorField, .true.)
          
-         call mpas_deallocate_scratch_field(array1_3D, .true.)
-         call mpas_deallocate_scratch_field(array2_3D, .true.)
-         call mpas_deallocate_scratch_field(array3_3D, .true.)
-         call mpas_deallocate_scratch_field(array1_3Dbuoy, .true.)
-         call mpas_deallocate_scratch_field(array2_3Dbuoy, .true.)
+         call mpas_deallocate_scratch_field(array1_3DField, .true.)
+         call mpas_deallocate_scratch_field(array2_3DField, .true.)
+         call mpas_deallocate_scratch_field(array3_3DField, .true.)
+         call mpas_deallocate_scratch_field(array1_3DbuoyField, .true.)
+         call mpas_deallocate_scratch_field(array2_3DbuoyField, .true.)
 
-         call mpas_deallocate_scratch_field(PVMidBuoyCoor, .true.)
-         call mpas_deallocate_scratch_field(PVMidBuoyCoorEA, .true.)
-         call mpas_deallocate_scratch_field(uPVMidBuoyCoorEA , .true.)
-         call mpas_deallocate_scratch_field(vPVMidBuoyCoorEA, .true.)
-         call mpas_deallocate_scratch_field(PVFluxTest, .true.)
+         call mpas_deallocate_scratch_field(PVMidBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(PVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(uPVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(vPVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(PVFluxTestField, .true.)
 
          !-------------------------------------------------------------
          ! update test variables
@@ -1158,7 +1235,7 @@ contains
       ! TESTS:
       ! mpi gather/scatter calls may be placed here.
       !-------------------------------------------------------------
-      if(config_oac_epft_debug) then
+      if(config_eliassen_palm_flux_tensor_debug) then
         RMSglobal1 = 1.0D36
         call mpas_dmpar_sum_int(dminfo, nCellsCum, nCellsGlobal) 
         call mpas_dmpar_sum_real(dminfo, RMSlocal1, RMSglobal1)
@@ -1210,7 +1287,7 @@ contains
 
       call mpas_timer_stop("eliassen_palm_flux_tensor", am_eliassen_palm_flux_tensorTimer)
 
-      if(config_epft_debug) then
+      if(config_eliassen_palm_flux_tensor_debug) then
          write(stderrUnit, *) ' '
          write(stderrUnit, *) 'exiting ocn_compute_epft'
          write(stderrUnit, *) ' '
@@ -1430,22 +1507,22 @@ contains
       integer :: k, iCell, iCellMinBound, iCellMaxBound
       logical :: printWarning
 
-      real (kind=RKIND), pointer :: config_epft_rhomin_buoycoor, config_epft_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor, config_eliassen_palm_flux_tensor_rhomax_buoycoor
 
-      call mpas_pool_get_config(ocnConfigs, 'config_epft_rhomin_buoycoor', config_epft_rhomin_buoycoor)
-      call mpas_pool_get_config(ocnConfigs, 'config_epft_rhomax_buoycoor', config_epft_rhomax_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', config_eliassen_palm_flux_tensor_rhomin_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', config_eliassen_palm_flux_tensor_rhomax_buoycoor)
 
       printWarning = .false.
       iCellMinBound = -1
       iCellMaxBound = -1
 
       do iCell = 1, nCells
-         if (potentialDensity(1,iCell) < config_epft_rhomin_buoycoor) then
+         if (potentialDensity(1,iCell) < config_eliassen_palm_flux_tensor_rhomin_buoycoor) then
             printWarning = .true.
             iCellMinBound = iCell
             exit
          end if
-         if (potentialDensity(maxLevelCell(iCell),iCell) > config_epft_rhomax_buoycoor) then
+         if (potentialDensity(maxLevelCell(iCell),iCell) > config_eliassen_palm_flux_tensor_rhomax_buoycoor) then
             printWarning = .true.
             iCellMaxBound = iCell
             exit
@@ -1589,16 +1666,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine computeBuoyancyColumn(nLayers, potentialDensity, buoyancy)!{{{
+   subroutine computeBuoyancyColumn(nLayers, rho0, potentialDensity, buoyancy)!{{{
       integer, intent(in) :: nLayers
+      real (kind=RKIND), intent(in) :: rho0 ! config_density0
       real (kind=RKIND), dimension(nLayers), intent(in) :: potentialDensity
       real (kind=RKIND), dimension(nLayers), intent(out) :: buoyancy
    
       !local variables
       integer :: i, k
-      real (kind=RKIND) :: rho0
-      
-      rho0 = config_density0
       
       buoyancy = 0.0
       
@@ -1621,16 +1696,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine computeBuoyancyColumnP1(nLayers, potentialDensity, buoyancy)!{{{
+   subroutine computeBuoyancyColumnP1(nLayers, rho0, rhoMax, potentialDensity, buoyancy)!{{{
       integer, intent(in) :: nLayers
+      real (kind=RKIND), intent(in) :: rho0 ! config_density0
+      real (kind=RKIND), intent(in) :: rhoMax ! config_eliassen_palm_flux_tensor_rhomax_buoycoor
       real (kind=RKIND), dimension(nLayers-1), intent(in) :: potentialDensity
       real (kind=RKIND), dimension(nLayers), intent(out) :: buoyancy
    
       !local variables
       integer :: i, k
-      real (kind=RKIND) :: rho0
-      
-      rho0 = config_density0
       
       buoyancy = 0.0
       
@@ -1638,7 +1712,7 @@ contains
          buoyancy(k) = -gravity * (potentialDensity(k)-rho0) / rho0
       enddo
    
-      buoyancy(nLayers) = -gravity * (config_rhomax_buoycoor-rho0) / rho0
+      buoyancy(nLayers) = -gravity * (rhoMax-rho0) / rho0
       
    
    end subroutine computeBuoyancyColumnP1!}}}
@@ -2028,14 +2102,16 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculateDivEPFT(onASphere, nLayers, nCells, nEdges, &
+   subroutine calculateDivEPFT(debugFlag, onASphere, rho0, nLayers, nCells, nEdges, &
         meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, tensorCellIn, vectorCellOut)!{{{
 
       use mpas_vector_operations
 
+      logical, intent(in) :: debugFlag
       logical, intent(in) :: onASphere
       integer, intent(in) :: nLayers, nCells, nEdges
       type (mpas_pool_type), intent(in) :: meshPool
+      real (kind=RKIND), intent(in) :: rho0 ! config_density0
       real (kind=RKIND), dimension(:), intent(in) :: buoyancyMidRef
       real (kind=RKIND), dimension(:,:), intent(in) :: sigmaEA
       real (kind=RKIND), dimension(:,:), intent(in) :: buoyancyMaskEA
@@ -2054,21 +2130,15 @@ contains
       real (kind=RKIND), dimension(:,:,:), allocatable :: vectorCellWrk2
       real (kind=RKIND), dimension(:,:,:), allocatable :: vectorEdgeWrk1
       real (kind=RKIND), dimension(:), allocatable :: vertVector
-      real (kind=RKIND) :: rho0
       
       ! variables used for testing and debugging
       real (kind=RKIND), dimension(:), allocatable :: divExact
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
-      xCell => mesh % xCell % array
-      yCell => mesh % yCell % array
-      zCell => mesh % zCell % array
+      real (kind=RKIND), dimension(:,:), pointer :: boundaryCell
 
-      if (config_oac_epft_debug) then
+      if (debugFlag) then
         allocate(divExact(nCells+1))
       end if
-
-
-      rho0 = config_density0
 
       allocate(scalarWrk1(nLayers,nCells+1))
       allocate(vectorCellWrk1(3,nLayers,nCells+1))
@@ -2076,9 +2146,13 @@ contains
       allocate(vectorEdgeWrk1(3,nLayers,nEdges+1)) 
       allocate(vertVector(nLayers))
 
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
+      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
       
       includeHalo = .true.
       
@@ -2100,7 +2174,7 @@ contains
 
 
          ! use q=3 as a test vector
-         if (q.eq.3 .and. config_oac_epft_debug) then
+         if (q.eq.3 .and. debugFlag) then
            do iCell = 1,nCells
              vectorCellWrk1(1,:,iCell) = xCell(iCell)
              vectorCellWrk1(2,:,iCell) = yCell(iCell)
@@ -2139,7 +2213,7 @@ contains
             edgeSignOnCell, includeHalo, scalarWrk1)
 
          ! use q=3 as a test vector
-         if (q.eq.3 .and. config_oac_epft_debug) then
+         if (q.eq.3 .and. debugFlag) then
            print *, ' '
            do kLayer = 1,nLayers
               wrk = sqrt( &
@@ -2147,14 +2221,14 @@ contains
                 ( & 
                 (divExact(:)-scalarWrk1(kLayer,:))/ max(abs(divExact(:)),1.0e-15)  &
                 )**2 * &
-                (1.0 - mesh % boundaryCell % array(1,:)) &
+                (1.0 - boundaryCell(1,:)) &
                 ) / nCells )
               print *, 'div RMS relative error on layer:', wrk
            enddo
          endif
 
 
-         if (q < 3 .or. .not. config_oac_epft_debug) then
+         if (q < 3 .or. .not. debugFlag) then
             do iCell = 1,nCells
                do kLayer = 1,nLayers
                   sigma = max(sigmaEA(kLayer,iCell), epsilonEPFT)
@@ -2171,7 +2245,7 @@ contains
             vertVector(:) = tensorCellIn(3,q,:,iCell)
 
             ! use q=3 as a test vector
-            if (q.eq.3 .and. config_oac_epft_debug) then
+            if (q.eq.3 .and. debugFlag) then
                vertVector(:) = 0.0
             endif
 
@@ -2268,69 +2342,70 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_cell_to_edge_BuoyCoor(matrixCell, grid, &
-        includeHalo, matrixEdge)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:,:,:), intent(in) :: &
-         matrixCell   !< Input: matrix located at Cell
-
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
-
-      logical, intent(in) :: & 
-         includeHalo !< Input: If true, halo cells and edges are included in computation
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:,:,:), intent(out) :: &
-         matrixEdge   !< Output: matrix located at Edge
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: iEdge, cell1, cell2, p, q, k
-      integer :: nEdgesCompute, nBuoyancyLayers, nCells
-      integer, dimension(:,:), pointer :: cellsOnEdge
-
-      if (includeHalo) then
-         nEdgesCompute = grid % nEdges
-      else 
-         nEdgesCompute = grid % nEdgesSolve
-      endif
-      nBuoyancyLayers = grid % nBuoyancyLayers
-      nCells = grid % nCells
-
-      cellsOnEdge => grid % cellsOnEdge % array
-
-      ! error check that index 1 of matrixEdge and matrixCell are same length?
-
-      do iEdge=1,nEdgesCompute
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         do k=1,nBuoyancyLayers
-            do q = 1, 3
-               do p = 1, 3
-                  matrixEdge(p,q,k,iEdge) = &
-                     0.5*(matrixCell(p,q,k,cell1) + matrixCell(p,q,k,cell2))
-               end do
-            end do
-         enddo
-      enddo
-
-   end subroutine mpas_tensor_cell_to_edge_BuoyCoor!}}}
+!   subroutine mpas_tensor_cell_to_edge_BuoyCoor(matrixCell, grid, &
+!        includeHalo, matrixEdge)!{{{
+!
+!      !-----------------------------------------------------------------
+!      !
+!      ! input variables
+!      !
+!      !-----------------------------------------------------------------
+!
+!      real (kind=RKIND), dimension(:,:,:,:), intent(in) :: &
+!         matrixCell   !< Input: matrix located at Cell
+!
+!      type (mpas_pool_type), intent(in) :: meshPool
+!      type (mesh_type), intent(in) :: &
+!         grid          !< Input: grid information
+!
+!      logical, intent(in) :: & 
+!         includeHalo !< Input: If true, halo cells and edges are included in computation
+!
+!      !-----------------------------------------------------------------
+!      !
+!      ! output variables
+!      !
+!      !-----------------------------------------------------------------
+!
+!      real (kind=RKIND), dimension(:,:,:,:), intent(out) :: &
+!         matrixEdge   !< Output: matrix located at Edge
+!
+!      !-----------------------------------------------------------------
+!      !
+!      ! local variables
+!      !
+!      !-----------------------------------------------------------------
+!
+!      integer :: iEdge, cell1, cell2, p, q, k
+!      integer :: nEdgesCompute, nBuoyancyLayers, nCells
+!      integer, dimension(:,:), pointer :: cellsOnEdge
+!
+!      if (includeHalo) then
+!         nEdgesCompute = grid % nEdges
+!      else 
+!         nEdgesCompute = grid % nEdgesSolve
+!      endif
+!      nBuoyancyLayers = grid % nBuoyancyLayers
+!      nCells = grid % nCells
+!
+!      cellsOnEdge => grid % cellsOnEdge % array
+!
+!      ! error check that index 1 of matrixEdge and matrixCell are same length?
+!
+!      do iEdge=1,nEdgesCompute
+!         cell1 = cellsOnEdge(1,iEdge)
+!         cell2 = cellsOnEdge(2,iEdge)
+!         do k=1,nBuoyancyLayers
+!            do q = 1, 3
+!               do p = 1, 3
+!                  matrixEdge(p,q,k,iEdge) = &
+!                     0.5*(matrixCell(p,q,k,cell1) + matrixCell(p,q,k,cell2))
+!               end do
+!            end do
+!         enddo
+!      enddo
+!
+!   end subroutine mpas_tensor_cell_to_edge_BuoyCoor!}}}
 
 
 !***********************************************************************
@@ -2346,11 +2421,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculateErtelPVTendencyFromPVFlux(onASphere, nLayers, nCells, nEdges, &
+   subroutine calculateErtelPVTendencyFromPVFlux(debugFlag, onASphere, nLayers, nCells, nEdges, &
          meshPool, sigma, vectorCell, divVectorCell)!{{{
 
       use mpas_vector_operations
 
+      logical, intent(in) :: debugFlag
       logical, intent(in) :: onASphere
       integer, intent(in) :: nLayers, nCells, nEdges
       type (mpas_pool_type), intent(in) :: meshPool
@@ -2372,11 +2448,8 @@ contains
       real (kind=RKIND) :: wrk
       real (kind=RKIND), dimension(:), allocatable :: divExact
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
-      xCell => mesh % xCell % array
-      yCell => mesh % yCell % array
-      zCell => mesh % zCell % array
 
-      if (config_oac_epft_debug) then
+      if (debugFlag) then
         allocate(divExact(nCells+1))
       end if
 
@@ -2389,6 +2462,9 @@ contains
       call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'zCell', zCell)
       
       includeHalo = .true.
  
@@ -2401,7 +2477,7 @@ contains
       enddo
 
          
-      if (config_oac_epft_debug) then
+      if (debugFlag) then
         do i= 1,nCells
           vectorCellWrk1(1,:,i) = xCell(i)
           vectorCellWrk1(2,:,i) = yCell(i)
@@ -2435,7 +2511,7 @@ contains
          includeHalo, divVectorCell)
 
          
-      if (config_oac_epft_debug) then
+      if (debugFlag) then
         print *, ' '
         do k= 1,nLayers
            wrk = sqrt( &
@@ -2443,14 +2519,14 @@ contains
              ( & 
              (divExact(:)-divVectorCell(k,:))/ max(abs(divExact(:)),1.0e-15)  &
              )**2 * &
-             (1.0 - mesh % boundaryCell % array(1,:)) &
+             (1.0 - boundaryCell(1,:)) &
              ) / nCells )
            print *, 'div RMS relative error on layer:', wrk
         enddo
       endif
 
 
-      if (.not. config_oac_epft_debug) then
+      if (.not. debugFlag) then
          do i = 1,nCells
             do k = 1,nLayers
               divVectorCell(k,i) = divVectorCell(k,i) / max(sigma(k,i), epsilonEPFT)
