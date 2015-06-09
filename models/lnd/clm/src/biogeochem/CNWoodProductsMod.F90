@@ -14,6 +14,10 @@ module CNWoodProductsMod
   use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
+
+  use PhosphorusFluxType  , only : phosphorusflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+
   !
   implicit none
   save
@@ -28,7 +32,8 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNWoodProducts(num_soilc, filter_soilc, &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars, &
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars)
+       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Update all loss fluxes from wood product pools, and update product pool state variables
@@ -46,6 +51,10 @@ contains
     type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+
+    type(phosphorusstate_type) , intent(in) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
     !
     ! !LOCAL VARIABLES:
     integer :: fc        ! lake filter indices
@@ -81,6 +90,9 @@ contains
 
        nitrogenflux_vars%prod10n_loss_col(c)    = nitrogenstate_vars%prod10n_col(c)    * kprod10
        nitrogenflux_vars%prod100n_loss_col(c)   = nitrogenstate_vars%prod100n_col(c)   * kprod100
+
+       phosphorusflux_vars%prod10p_loss_col(c)    = phosphorusstate_vars%prod10p_col(c)    * kprod10
+       phosphorusflux_vars%prod100p_loss_col(c)   = phosphorusstate_vars%prod100p_col(c)   * kprod100
     end do
 
     ! set time steps
@@ -115,6 +127,13 @@ contains
        nitrogenstate_vars%prod100n_col(c)   = nitrogenstate_vars%prod100n_col(c)   + &
             nitrogenflux_vars%dwt_prod100n_gain_col(c)*dt
 
+
+       phosphorusstate_vars%prod10p_col(c)    = phosphorusstate_vars%prod10p_col(c)    + &
+            phosphorusflux_vars%dwt_prod10p_gain_col(c)*dt
+       phosphorusstate_vars%prod100p_col(c)   = phosphorusstate_vars%prod100p_col(c)   + &
+            phosphorusflux_vars%dwt_prod100p_gain_col(c)*dt
+
+
        ! fluxes into wood product pools, from harvest
        carbonstate_vars%prod10c_col(c)    = carbonstate_vars%prod10c_col(c)    + &
             carbonflux_vars%hrv_deadstemc_to_prod10c_col(c)*dt
@@ -140,6 +159,14 @@ contains
        nitrogenstate_vars%prod100n_col(c)   = nitrogenstate_vars%prod100n_col(c)   + &
             nitrogenflux_vars%hrv_deadstemn_to_prod100n_col(c)*dt
 
+
+
+       phosphorusstate_vars%prod10p_col(c)    = phosphorusstate_vars%prod10p_col(c)    + &
+            phosphorusflux_vars%hrv_deadstemp_to_prod10p_col(c)*dt
+       phosphorusstate_vars%prod100p_col(c)   = phosphorusstate_vars%prod100p_col(c)   + &
+            phosphorusflux_vars%hrv_deadstemp_to_prod100p_col(c)*dt
+
+
        ! fluxes out of wood product pools, from decomposition
        carbonstate_vars%prod10c_col(c)    = carbonstate_vars%prod10c_col(c)    - &
             carbonflux_vars%prod10c_loss_col(c)*dt
@@ -164,6 +191,13 @@ contains
             nitrogenflux_vars%prod10n_loss_col(c)*dt
        nitrogenstate_vars%prod100n_col(c)   = nitrogenstate_vars%prod100n_col(c)   - &
             nitrogenflux_vars%prod100n_loss_col(c)*dt
+
+
+       phosphorusstate_vars%prod10p_col(c)    = phosphorusstate_vars%prod10p_col(c)    - &
+            phosphorusflux_vars%prod10p_loss_col(c)*dt
+       phosphorusstate_vars%prod100p_col(c)   = phosphorusstate_vars%prod100p_col(c)   - &
+            phosphorusflux_vars%prod100p_loss_col(c)*dt
+
 
     end do ! end of column loop
 

@@ -78,8 +78,16 @@ module pftvarcon
   real(r8), allocatable :: grpnow(:)      !growth respiration parameter
   real(r8), allocatable :: rootprof_beta(:) !CLM rooting distribution parameter for C and N inputs [unitless]
 
+  ! add pft dependent parameters for phosphorus -X.YANG
+  real(r8), allocatable :: leafcp(:)      !leaf C:P [gC/gP]
+  real(r8), allocatable :: lflitcp(:)     !leaf litter C:P (gC/gP)
+  real(r8), allocatable :: frootcp(:)     !fine root C:P (gC/gP)
+  real(r8), allocatable :: livewdcp(:)    !live wood (phloem and ray parenchyma) C:P (gC/gP)
+  real(r8), allocatable :: deadwdcp(:)    !dead wood (xylem and heartwood) C:P (gC/gP)
+
   ! for crop
   real(r8), allocatable :: graincn(:)      !grain C:N (gC/gN)
+  real(r8), allocatable :: graincp(:)      !grain C:N (gC/gN)
   real(r8), allocatable :: mxtmp(:)        !parameter used in accFlds
   real(r8), allocatable :: baset(:)        !parameter used in accFlds
   real(r8), allocatable :: declfact(:)     !parameter used in CNAllocation
@@ -268,10 +276,19 @@ contains
     allocate( frootcn       (0:mxpft) )      
     allocate( livewdcn      (0:mxpft) )     
     allocate( deadwdcn      (0:mxpft) )     
+
+    ! add phosphorus 
+    allocate( leafcp        (0:mxpft) )      
+    allocate( lflitcp       (0:mxpft) )      
+    allocate( frootcp       (0:mxpft) )      
+    allocate( livewdcp      (0:mxpft) )     
+    allocate( deadwdcp      (0:mxpft) )     
+
     allocate( grperc        (0:mxpft) )       
     allocate( grpnow        (0:mxpft) )       
     allocate( rootprof_beta (0:mxpft) )
     allocate( graincn       (0:mxpft) )      
+    allocate( graincp       (0:mxpft) )      
     allocate( mxtmp         (0:mxpft) )        
     allocate( baset         (0:mxpft) )        
     allocate( declfact      (0:mxpft) )     
@@ -405,6 +422,20 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('deadwdcn',deadwdcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
+
+    call ncd_io('leafcp',leafcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('lflitcp',lflitcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('frootcp',frootcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('livewdcp',livewdcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('deadwdcp',deadwdcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
+
     call ncd_io('grperc',grperc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('grpnow',grpnow, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -472,6 +503,8 @@ contains
     call ncd_io('pprod100',pprod100, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('graincn',graincn, 'read', ncid, readvar=readv)  
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('graincp',graincp, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('mxtmp',mxtmp, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))

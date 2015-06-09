@@ -19,6 +19,13 @@ module CNBalanceCheckMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnType          , only : col                
   use GridcellType        , only : grc
+
+  use CNDecompCascadeConType , only : decomp_cascade_con
+  use clm_varpar          , only: ndecomp_cascade_transitions
+  use subgridAveMod       , only : p2c
+  use PhosphorusFluxType  , only : phosphorusflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+
   !
   implicit none
   save
@@ -27,8 +34,10 @@ module CNBalanceCheckMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: BeginCBalance
   public :: BeginNBalance
+  public :: BeginPBalance
   public :: CBalanceCheck
   public :: NBalanceCheck
+  public :: PBalanceCheck
   !-----------------------------------------------------------------------
 
 contains
@@ -100,6 +109,50 @@ contains
     end associate
 
   end subroutine BeginNBalance
+
+  !-----------------------------------------------------------------------
+  subroutine BeginPBalance(bounds, num_soilc, filter_soilc, &
+       phosphorusstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, calculate the beginning phosphorus balance for mass
+    ! conservation checks.
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds          
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns filter
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c     ! indices
+    integer :: fc   ! lake filter indices
+    !-----------------------------------------------------------------------
+
+    associate(                                         & 
+         totcolp   => phosphorusstate_vars%totcolp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         !X.YANG - checking P balance problem, starting from VEGP 
+         totpftp   => phosphorusstate_vars%totpftp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totsomp   => phosphorusstate_vars%totsomp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp   => phosphorusstate_vars%cwdp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totlitp   => phosphorusstate_vars%totlitp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         sminp   => phosphorusstate_vars%sminp_col , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+ 
+         col_begpb => phosphorusstate_vars%begpb_col     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         )
+
+      ! calculate beginning column-level phosphorus balance, for mass conservation check
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         col_begpb(c) = totcolp(c)
+!         col_begpb(c) = totpftp(c)
+!         col_begpb(c) = sminp(c)
+!         col_begpb(c) = totsomp(c)+totlitp(c)+cwdp(c)
+      end do
+
+    end associate
+
+  end subroutine BeginPBalance
 
   !-----------------------------------------------------------------------
   subroutine CBalanceCheck(bounds, &
@@ -292,5 +345,156 @@ contains
     end associate
 
   end subroutine NBalanceCheck
+
+
+  !-----------------------------------------------------------------------
+  subroutine PBalanceCheck(bounds, &
+       num_soilc, filter_soilc, &
+       phosphorusstate_vars, phosphorusflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, perform phosphorus mass conservation check
+    ! for column and pft
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)         , intent(in)    :: bounds          
+    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                   , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,err_index,j,k  ! indices
+    integer :: fc             ! lake filter indices
+    logical :: err_found      ! error flag
+    real(r8):: dt             ! radiation time step (seconds)
+
+    real(r8) :: leafp_to_litter_col(bounds%begc:bounds%endc) 
+    real(r8) :: frootp_to_litter_col(bounds%begc:bounds%endc) 
+   real(r8):: flux_mineralization_col(bounds%begc:bounds%endc)   !!  local temperary variable
+    !-----------------------------------------------------------------------
+
+    associate(                                                             & 
+         totcolp             =>    phosphorusstate_vars%totcolp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         supplement_to_sminp =>    phosphorusflux_vars%supplement_to_sminp_col , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)         
+         sminp_leached       =>    phosphorusflux_vars%sminp_leached_col       , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         col_fire_ploss      =>    phosphorusflux_vars%fire_ploss_col      , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
+         dwt_ploss           =>    phosphorusflux_vars%dwt_ploss_col           , & ! Input:  [real(r8) (:)]  (gP/m2/s) total phosphorus loss from product pools and conversion
+         product_ploss       =>    phosphorusflux_vars%product_ploss_col       , & ! Input:  [real(r8) (:)]  (gP/m2/s) total wood product phosphorus loss
+         primp_to_labilep=>    phosphorusflux_vars%primp_to_labilep_col    , &
+         secondp_to_occlp=>    phosphorusflux_vars%secondp_to_occlp_col    , &
+         fert_p_to_sminp =>    phosphorusflux_vars%fert_p_to_sminp_col     , &
+ 
+         col_pinputs         =>    phosphorusflux_vars%pinputs_col         , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)         
+         col_poutputs        =>    phosphorusflux_vars%poutputs_col        , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)        
+         col_begpb           =>    phosphorusstate_vars%begpb_col              , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         col_endpb           =>    phosphorusstate_vars%endpb_col              , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
+         col_errpb           =>    phosphorusstate_vars%errpb_col              ,  & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
+
+         !X.YANG testing P Balance, from VEGP
+         totpftp             =>    phosphorusstate_vars%totpftp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totsomp             =>    phosphorusstate_vars%totsomp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp             =>    phosphorusstate_vars%cwdp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totlitp             =>    phosphorusstate_vars%totlitp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         sminp             =>    phosphorusstate_vars%sminp_col            , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         leafp_to_litter       =>    phosphorusflux_vars%leafp_to_litter_patch       , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         frootp_to_litter       =>   phosphorusflux_vars%frootp_to_litter_patch      , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         sminp_to_plant         =>   phosphorusflux_vars%sminp_to_plant_col          ,&
+         cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,     &
+         pf => phosphorusflux_vars                                               &
+         )
+
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+      err_found = .false.
+
+      call p2c(bounds,num_soilc,filter_soilc, &
+           leafp_to_litter(bounds%begp:bounds%endp), &
+           leafp_to_litter_col(bounds%begc:bounds%endc))
+      call p2c(bounds,num_soilc,filter_soilc, &
+           frootp_to_litter(bounds%begp:bounds%endp), &
+           frootp_to_litter_col(bounds%begc:bounds%endc))
+
+      !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
+      !! - X.YANG
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            flux_mineralization_col(c) = 0._r8
+         enddo
+
+      do k = 1, ndecomp_cascade_transitions
+         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                    flux_mineralization_col(c) = flux_mineralization_col(c) - &
+                                               pf%decomp_cascade_sminp_flux_col(c,k)*dt
+               end do
+         else
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                    flux_mineralization_col(c) = flux_mineralization_col(c) + &
+                                               pf%decomp_cascade_sminp_flux_col(c,k)*dt
+
+               end do
+         endif
+      end do
+
+
+
+      ! column loop
+      do fc = 1,num_soilc
+         c=filter_soilc(fc)
+
+         ! calculate the total column-level phosphorus storage, for mass conservation check
+!         col_endpb(c) = totpftp(c)
+!         col_endpb(c) = sminp(c)
+         col_endpb(c) = totcolp(c)
+!         col_endpb(c) = totsomp(c)+cwdp(c)+totlitp(c)
+
+
+         ! calculate total column-level inputs
+         col_pinputs(c) = primp_to_labilep(c) + supplement_to_sminp(c)
+!         col_pinputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
+!         col_pinputs(c) = sminp_to_plant(c)
+!         col_pinputs(c) =  flux_mineralization_col(c)/dt
+!         if (crop_prog) col_pinputs(c) = col_pinputs(c) + fert_p_to_sminp(c) 
+
+         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + dwt_ploss(c) + product_ploss(c)
+!         col_poutputs(c) = leafp_to_litter_col(c)+frootp_to_litter_col(c)
+!         col_poutputs(c) =  flux_mineralization_col(c)/dt
+!          col_poutputs(c) = sminp_to_plant(c)
+
+         ! calculate the total column-level phosphorus balance error for this time step
+         col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
+              (col_endpb(c) - col_begpb(c))
+
+         if (abs(col_errpb(c)) > 1e-8_r8) then
+            err_found = .true.
+            err_index = c
+         end if
+
+      end do ! end of columns loop
+
+
+      if (err_found) then
+         c = err_index
+         write(iulog,*)'column pbalance error = ', col_errpb(c), c
+         write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'begpb       = ',col_begpb(c)
+         write(iulog,*)'endpb       = ',col_endpb(c)
+         write(iulog,*)'delta store = ',col_endpb(c)-col_begpb(c)
+         write(iulog,*)'input mass  = ',col_pinputs(c)*dt
+         write(iulog,*)'output mass = ',col_poutputs(c)*dt
+         write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+
+    end associate
+
+  end subroutine PBalanceCheck
 
 end module CNBalanceCheckMod

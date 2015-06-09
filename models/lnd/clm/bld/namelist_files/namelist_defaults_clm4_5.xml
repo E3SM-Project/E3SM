@@ -70,8 +70,11 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
-<paramfile                 >lnd/clm2/paramdata/clm_params.c140423.nc</paramfile>
+<paramfile                 >lnd/clm2/paramdata/clm_params.c150521.nc</paramfile>
 <paramfile use_ed=".true." >lnd/clm2/paramdata/clm_params.ED.c140115.nc</paramfile>
+
+<!-- soil order related parameters (relative to {csmdata}) -->
+<fsoilordercon             >/lustre/atlas1/cli900/world-shared/cesm/inputdata/lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon> 
 
 <!--
 
@@ -222,14 +225,15 @@ lnd/clm2/surfdata_map/surfdata_1x1_urbanc_alpha_simyr2000_c130927.nc</fsurdat>
 
 <!-- for pre-industrial simulations - year 1850 -->
 <fsurdat hgrid="360x720cru"   sim_year="1850" use_crop=".false."                           >
-lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_360x720_simyr1850_c150414.nc</fsurdat>
 <fsurdat hgrid="48x96"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_48x96_simyr1850_c130927.nc</fsurdat>
 
 <fsurdat hgrid="0.9x1.25"     sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c150327.nc</fsurdat>
+
 <fsurdat hgrid="1.9x2.5"      sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c130927.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c130412.nc</fsurdat>
 <fsurdat hgrid="10x15"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_10x15_simyr1850_c130927.nc</fsurdat>
 
