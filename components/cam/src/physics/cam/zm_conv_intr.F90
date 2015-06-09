@@ -252,7 +252,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    use physics_types, only: physics_state_copy, physics_state_dealloc
    use physics_types, only: physics_ptend_sum, physics_ptend_dealloc
 
-   use phys_grid,     only: get_lat_p, get_lon_p
    use time_manager,  only: get_nstep, is_first_step
    use time_manager,  only: is_first_restart_step             !songxl 2011-09-20
    use physics_buffer, only : pbuf_get_field, physics_buffer_desc, pbuf_old_tim_idx

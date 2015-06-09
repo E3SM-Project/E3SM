@@ -140,6 +140,7 @@ OPTIONS
                         dlatxdlon for fv grids (dlat and dlon are the grid cell size
 			in degrees for latitude and longitude respectively); nexnp for
                         se grids.
+     -elev_classes      Use elevation classes as physics columns.
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
@@ -329,6 +330,7 @@ GetOptions(
     "dyn=s"                     => \$opts{'dyn'},
     "dyn_target=s"              => \$opts{'dyn_target'},
     "edit_chem_mech"            => \$opts{'edit_chem_mech'},
+    "elev_classes"              => \$opts{'elev_classes'},
     "waccm_phys"                => \$opts{'waccm_phys'},
     "offline_dyn"               => \$opts{'offline_dyn'},
     "waccmx"                    => \$opts{'waccmx'},
@@ -1997,6 +1999,15 @@ if($dyn_pkg eq 'se'){
     $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
 }
 
+# elevation classes option
+if (defined $opts{'elev_classes'}) {
+    $cfg_ref->set('elev_classes', $opts{'elev_classes'});
+    # Currently elevation classes is only supported in the SE dycore
+    if($dyn_pkg ne 'se'){
+      die "Elevation classes only supported by SE dycore.$eol";
+    }
+}
+
 # CICE ice model
 $cfg_cppdefs .= $cice_cppdefs;
 
@@ -2691,6 +2702,7 @@ sub write_filepath
     my $waccm_phys    = $cfg_ref->get('waccm_phys');
     my $waccmx        = $cfg_ref->get('waccmx');
     my $carma         = $cfg_ref->get('carma');
+    my $elev_classes  = $cfg_ref->get('elev_classes');
     my $rad           = $cfg_ref->get('rad');
     my $dyn           = $cfg_ref->get('dyn');
     my $cppdefs       = $cfg_ref->get('cppdefs');
@@ -2725,9 +2737,6 @@ sub write_filepath
 	my $CASEROOT = "$ENV{'CASEROOT'}";
 	print $fh "$CASEROOT/SourceMods/src.cam\n";
     }
-
-    # offline unit driver (defaults to stub)
-    print $fh "$camsrcdir/cam/src/unit_drivers\n";
 
     if ($carma ne 'none') {
 	# This directory needs to precede physics/cam/ to replace
@@ -2769,6 +2778,12 @@ sub write_filepath
 	print $fh "$camsrcdir/cam/src/physics/rrtmg/ext/rrtmg_mcica\n";
 	print $fh "$camsrcdir/cam/src/physics/rrtmg/ext/rrtmg_lw\n";
 	print $fh "$camsrcdir/cam/src/physics/rrtmg/ext/rrtmg_sw\n";
+    }
+
+    if ($elev_classes) {
+	# This directory needs to precede physics/cam to replace
+        # phys_grid
+        print $fh "$camsrcdir/cam/src/physics/elev_classes\n";
     }
 
     print $fh "$camsrcdir/cam/src/physics/cam\n";

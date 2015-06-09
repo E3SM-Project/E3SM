@@ -5880,6 +5880,24 @@ Default: Set by build-namelist.
 Default: Set by build-namelist.
 </entry>
 
+<!-- Elevation class entry(ies) -->
+<entry id="ec_active" type="logical" category="elevation_classes"
+       group="ec_nl" valid_values="" >
+.TRUE. means that elevation classes will be used and elevation_classes
+is required.
+Default: .FALSE.
+</entry>
+
+<entry id="elevation_classes" type="char*256" input_pathname="abs"
+       category="elevation_classes" group="ec_nl" valid_values="" >
+The pathname to an elevation class definition file which specifies the
+number and area of elevation classes for each physics (default GLL)
+column.
+Note that if ec_active is .true., this parameter is required.
+Default: None, elevation classes not used
+</entry>
+
+<!-- SE-specific threading -->
 <entry id="vthreads" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Number of vertical threads.

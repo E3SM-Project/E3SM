@@ -59,6 +59,8 @@ module constituents
   logical,     public :: cnst_fixed_ubc(pcnst) = .false.  ! upper bndy condition = fixed ?
   logical,     public :: cnst_fixed_ubflx(pcnst) = .false.! upper boundary non-zero fixed constituent flux
   logical,     public :: cnst_is_convtran1(pcnst) = .false.  ! convective transport : phase 1 or phase 2?
+  character(len=8),public :: orotendname(pcnst)     ! orographic tendency
+  character(len=128),public :: orotendlongname(pcnst)! long name of subgrid constituents
 
 !++bee - temporary... These names should be declared in the module that makes the addfld and outfld calls.
 ! Lists of tracer names and diagnostics
@@ -133,10 +135,13 @@ CONTAINS
 
 ! set tracer name and constants
     cnst_name(ind) = name
+    orotendname(ind) = 'ST'// trim(name)
     if ( present(longname) )then
        cnst_longname(ind) = longname
+       orotendlongname(ind) = 'ST'// trim(cnst_longname(ind))
     else
        cnst_longname(ind) = name
+       orotendlongname(ind) = 'ST'// trim(name)
     end if
 
 ! set whether to read initial values from initial file

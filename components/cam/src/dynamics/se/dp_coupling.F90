@@ -14,17 +14,22 @@ module dp_coupling
   use shr_kind_mod,   only: r8=>shr_kind_r8
   use physics_types,  only: physics_state, physics_tend
   
-  use phys_grid,      only: get_ncols_p, get_gcol_all_p, block_to_chunk_send_pters, transpose_block_to_chunk, &
-       block_to_chunk_recv_pters, chunk_to_block_send_pters, transpose_chunk_to_block, chunk_to_block_recv_pters
-  use ppgrid,         only: begchunk, endchunk, pcols, pver, pverp
+  use phys_grid,      only: get_ncols_p, get_gcol_all_p
+  use phys_grid,      only: block_to_chunk_send_pters, transpose_block_to_chunk, block_to_chunk_recv_pters
+  use phys_grid,      only: chunk_to_block_send_pters, transpose_chunk_to_block, chunk_to_block_recv_pters
+  use phys_grid,      only: grid_chunk_s, grid_chunk_e
+  use ppgrid,         only: pcols, pver, pverp
   use element_mod,    only: element_t
   use control_mod,    only: smooth_phis_numcycle
   use cam_logfile,    only : iulog
   use spmd_dyn,       only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
-  use spmd_utils,   only: mpicom, iam
-  use perf_mod,    only : t_startf, t_stopf, t_barrierf
-  use parallel_mod, only : par
+  use spmd_utils,     only: mpicom, iam
+  use perf_mod,       only : t_startf, t_stopf, t_barrierf
+  use parallel_mod,   only : par
+
+  implicit none
   private
+
   public :: d_p_coupling, p_d_coupling
 !===============================================================================
 CONTAINS
@@ -49,8 +54,8 @@ CONTAINS
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 ! !OUTPUT PARAMETERS:
 
-    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
-    type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
+    type(physics_state), intent(inout), dimension(grid_chunk_s:grid_chunk_e) :: phys_state
+    type(physics_tend ), intent(inout), dimension(grid_chunk_s:grid_chunk_e) :: phys_tend
     
 
 ! LOCAL VARIABLES
@@ -137,7 +142,7 @@ CONTAINS
     if (local_dp_map) then
 
 !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff, ilyr, m, pbuf_chnk, pbuf_frontgf, pbuf_frontga)
-       do lchnk=begchunk,endchunk
+       do lchnk = grid_chunk_s,grid_chunk_e
           ncols=get_ncols_p(lchnk)
           call get_gcol_all_p(lchnk,pcols,pgcols)
 
@@ -224,7 +229,7 @@ CONTAINS
        call t_stopf  ('block_to_chunk')
 
 !$omp parallel do private (lchnk, ncols, cpter, icol, ilyr, m, pbuf_chnk, pbuf_frontgf, pbuf_frontga)
-       do lchnk = begchunk,endchunk
+       do lchnk = grid_chunk_s, grid_chunk_e
           ncols = phys_state(lchnk)%ncol
 
           pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
@@ -274,7 +279,7 @@ CONTAINS
     call t_stopf('derived_phys')
 
 !$omp parallel do private (lchnk, ncols, ilyr, icol)
-    do lchnk=begchunk,endchunk
+    do lchnk = grid_chunk_s, grid_chunk_e
        ncols=get_ncols_p(lchnk)
        do ilyr=1,pver
           do icol=1,ncols
@@ -285,7 +290,7 @@ CONTAINS
 
 
    if (write_inithist() ) then
-      do lchnk=begchunk,endchunk
+      do lchnk = grid_chunk_s, grid_chunk_e
          call outfld('T&IC',phys_state(lchnk)%t,pcols,lchnk)
          call outfld('U&IC',phys_state(lchnk)%u,pcols,lchnk)
          call outfld('V&IC',phys_state(lchnk)%v,pcols,lchnk)
@@ -305,8 +310,8 @@ CONTAINS
     implicit none
 
 ! !INPUT PARAMETERS:
-    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
-    type(physics_tend),  intent(inout), dimension(begchunk:endchunk) :: phys_tend
+    type(physics_state), intent(inout), dimension(grid_chunk_s:grid_chunk_e) :: phys_state
+    type(physics_tend),  intent(inout), dimension(grid_chunk_s:grid_chunk_e) :: phys_tend
     
 
 ! !OUTPUT PARAMETERS:
@@ -347,7 +352,7 @@ CONTAINS
     if(local_dp_map) then
 
 !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff, ilyr, m)
-       do lchnk=begchunk,endchunk
+       do lchnk = grid_chunk_s, grid_chunk_e
           ncols=get_ncols_p(lchnk)
           call get_gcol_all_p(lchnk,pcols,pgcols)
 
@@ -378,7 +383,7 @@ CONTAINS
        allocate( cbuffer(tsize*chunk_buf_nrecs) )
 
 !$omp parallel do private (lchnk, ncols, cpter, i, icol, ilyr, m)
-       do lchnk = begchunk,endchunk
+       do lchnk = grid_chunk_s, grid_chunk_e
           ncols = get_ncols_p(lchnk)
 
           call chunk_to_block_send_pters(lchnk,pcols,pver+1,tsize,cpter)
@@ -465,8 +470,8 @@ CONTAINS
 
 
     implicit none
-    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
-    type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
+    type(physics_state), intent(inout), dimension(grid_chunk_s:grid_chunk_e) :: phys_state
+    type(physics_tend ), intent(inout), dimension(grid_chunk_s:grid_chunk_e) :: phys_tend
     type(physics_buffer_desc),      pointer     :: pbuf2d(:,:)
 
     integer :: lchnk
@@ -475,8 +480,8 @@ CONTAINS
     real(r8) :: dqreq                ! q change at pver-1 required to remove q<qmin at pver
     real(r8) :: qmavl                ! available q at level pver-1
 
-    real(r8) :: ke(pcols,begchunk:endchunk)   
-    real(r8) :: se(pcols,begchunk:endchunk)   
+    real(r8) :: ke(pcols,grid_chunk_s:grid_chunk_e)   
+    real(r8) :: se(pcols,grid_chunk_s:grid_chunk_e)   
     real(r8) :: ke_glob(1),se_glob(1)
     real(r8) :: zvirv(pcols,pver)    ! Local zvir array pointer
 
@@ -488,7 +493,7 @@ CONTAINS
 ! Evaluate derived quantities
 !
 !$omp parallel do private (lchnk, ncol, k, i, zvirv, pbuf_chnk)
-    do lchnk = begchunk,endchunk
+    do lchnk = grid_chunk_s, grid_chunk_e
        ncol = get_ncols_p(lchnk)
        do k=1,nlev
           do i=1,ncol
