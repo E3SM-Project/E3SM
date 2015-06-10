@@ -1845,7 +1845,7 @@ module atm_time_integration
          w(1,iCell) = 0.0
 
          do k = 2, nVertLevels
-            wwAvg(k,iCell) = rw(k,iCell) + (wwAvg(k,iCell) / float(ns))
+            wwAvg(k,iCell) = rw(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
 
             rw(k,iCell) = rw(k,iCell) + rw_p(k,iCell)
 
@@ -1894,7 +1894,7 @@ module atm_time_integration
          cell2 = cellsOnEdge(2,iEdge)
 
          do k = 1, nVertLevels
-            ruAvg(k,iEdge) = ru(k,iEdge) + (ruAvg(k,iEdge) / float(ns))
+            ruAvg(k,iEdge) = ru(k,iEdge) + (ruAvg(k,iEdge) / real(ns,RKIND))
             ru(k,iEdge) = ru(k,iEdge) + ru_p(k,iEdge)
             u(k,iEdge) = 2.*ru(k,iEdge)/(rho_zz(k,cell1)+rho_zz(k,cell2))
          end do
