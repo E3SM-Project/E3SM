@@ -2780,8 +2780,6 @@ module atm_time_integration
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
 
-      logical, parameter :: rk_diffusion = .false.
-
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq, iAdvCell
       real (kind=RKIND) :: flux, workpv
       real (kind=RKIND) :: edge_sign
@@ -2982,7 +2980,7 @@ module atm_time_integration
 
       delsq_horiz_mixing = .false.
 
-      if (config_horiz_mixing == '2d_smagorinsky' .and. (rk_step == 1 .or. rk_diffusion)) then
+      if (config_horiz_mixing == '2d_smagorinsky' .and. rk_step == 1) then
 
          ! Smagorinsky eddy viscosity, based on horizontal deformation (in this case on model coordinate surfaces).
          ! The integration coefficients were precomputed and stored in defc_a and defc_b
@@ -3179,7 +3177,7 @@ module atm_time_integration
       !  first Runge-Kutta substep and saved for use in later RK substeps 2 and 3.
       !
 
-      if (rk_step == 1 .or. rk_diffusion) then
+      if (rk_step == 1) then
 
       tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
 
@@ -3451,7 +3449,7 @@ module atm_time_integration
       !  but here we can also code in hyperdiffusion if we wish (2nd order at present)
       !
 
-      if (rk_step == 1 .or. rk_diffusion) then
+      if (rk_step == 1) then
 
          if (delsq_horiz_mixing) then
 
@@ -3723,7 +3721,7 @@ module atm_time_integration
       !  but here we can also code in hyperdiffusion if we wish (2nd order at present)
       !
 
-      if (rk_step == 1 .or. rk_diffusion) then
+      if (rk_step == 1) then
 
 
       if (delsq_horiz_mixing) then
