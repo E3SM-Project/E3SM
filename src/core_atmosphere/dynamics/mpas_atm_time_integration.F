@@ -2841,7 +2841,6 @@ module atm_time_integration
       logical, pointer :: config_mix_full
       character (len=StrKIND), pointer :: config_horiz_mixing
       integer, pointer :: config_theta_adv_order
-      integer, pointer :: config_w_adv_order
       real (kind=RKIND), pointer :: config_del4u_div_factor
       real (kind=RKIND), pointer :: config_h_theta_eddy_visc4
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
@@ -2864,7 +2863,6 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_mix_full', config_mix_full)
       call mpas_pool_get_config(configs, 'config_horiz_mixing', config_horiz_mixing)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
-      call mpas_pool_get_config(configs, 'config_w_adv_order', config_w_adv_order)
       call mpas_pool_get_config(configs, 'config_del4u_div_factor', config_del4u_div_factor)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc4', config_h_theta_eddy_visc4)
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc4', config_h_mom_eddy_visc4)
@@ -3325,83 +3323,34 @@ module atm_time_integration
       !  horizontal advection for w
       !
 
-      if (config_w_adv_order == 2) then
+      do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+         tend_w(1:nVertLevels+1,iCell) = 0.0
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
+            edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_w(1:nVertLevels+1,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
+            do k=2,nVertLevels
+               ru_edge_w(k) = fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge)
+            end do
+
+            flux_arr(1:nVertLevels) = 0.0
+
+            ! flux_arr stores the value of w at the cell edge used in the horizontal transport
+
+            do j=1,nAdvCellsForEdge(iEdge)
+               iAdvCell = advCellsForEdge(j,iEdge)
                do k=2,nVertLevels
-                  tend_w(k,iCell) = tend_w(k,iCell) - edge_sign * (fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge)) &
-                                                                * (w(k,cell1) + w(k,cell2))
+                  scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order * sign(1.0_RKIND,ru_edge_w(k)) * adv_coefs_3rd(j,iEdge)
+                  flux_arr(k) = flux_arr(k) + scalar_weight * w(k,iAdvCell)
                end do
             end do
-         end do
 
-      else if (config_w_adv_order == 3) then
-
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_w(1:nVertLevels+1,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
-
-               do k=2,nVertLevels
-                  ru_edge_w(k) = fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge)
-               end do
-
-               flux_arr(1:nVertLevels) = 0.0
-
-               ! flux_arr stores the value of w at the cell edge used in the horizontal transport
-
-               do j=1,nAdvCellsForEdge(iEdge)
-                  iAdvCell = advCellsForEdge(j,iEdge)
-                  do k=2,nVertLevels
-                     scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order * sign(1.0_RKIND,ru_edge_w(k)) * adv_coefs_3rd(j,iEdge)
-                     flux_arr(k) = flux_arr(k) + scalar_weight * w(k,iAdvCell)
-                  end do
-               end do
-
-               do k=2,nVertLevels
-                  tend_w(k,iCell) = tend_w(k,iCell) - edgesOnCell_sign(i,iCell) * ru_edge_w(k)*flux_arr(k)
-               end do
-
+            do k=2,nVertLevels
+               tend_w(k,iCell) = tend_w(k,iCell) - edgesOnCell_sign(i,iCell) * ru_edge_w(k)*flux_arr(k)
             end do
+
          end do
-
-      else  if (config_w_adv_order == 4) then
-
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_w(1:nVertLevels+1,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               do k=2,nVertLevels
-
-                  d2fdx2_cell1 = deriv_two(1,1,iEdge) * w(k,cell1)
-                  d2fdx2_cell2 = deriv_two(1,2,iEdge) * w(k,cell2)
-                  do j=1, nEdgesOnCell(cell1)
-                     if ( cellsOnCell(j,cell1) <= nCells) &
-                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(j+1,1,iEdge) * w(k,cellsOnCell(j,cell1))
-                  end do
-                  do j=1, nEdgesOnCell(cell2)
-                     if ( cellsOnCell(j,cell2) <= nCells) &
-                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(j+1,2,iEdge) * w(k,cellsOnCell(j,cell2))
-                  end do
-
-                  flux = dvEdge(iEdge) * (fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge)) * (  &
-                                          0.5*(w(k,cell1) + w(k,cell2))                   &
-                                          -(dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12. )
-
-                  tend_w(k,iCell) = tend_w(k,iCell) - edgesOnCell_sign(i,iCell) * flux
-               end do
-            end do
-         end do
-      end if
-
+      end do
 
       if (curvature) then
 
