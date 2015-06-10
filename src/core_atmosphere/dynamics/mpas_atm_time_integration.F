@@ -2820,7 +2820,6 @@ module atm_time_integration
       real (kind=RKIND) :: prandtl_inv
 
 
-      logical, parameter :: curvature = .true.
       real (kind=RKIND), pointer :: r_earth
       real (kind=RKIND), dimension(:,:), pointer :: ur_cell, vr_cell
 
@@ -3123,16 +3122,14 @@ module atm_time_integration
             tend_u(k,iEdge) = tend_u(k,iEdge) + rho_edge(k,iEdge)* (q(k) - (ke(k,cell2) - ke(k,cell1))       &
                                                                  / dcEdge(iEdge))                            &
                                              - u(k,iEdge)*0.5*(h_divergence(k,cell1)+h_divergence(k,cell2)) 
-            if (curvature) then
-
-               ! curvature terms for the sphere
-
-               tend_u(k,iEdge) = tend_u(k,iEdge) &
-                                - 2.*omega*cos(angleEdge(iEdge))*cos(latEdge(iEdge))  &
-                                  *rho_edge(k,iEdge)*.25*(w(k,cell1)+w(k+1,cell1)+w(k,cell2)+w(k+1,cell2))          & 
-                                - u(k,iEdge)*.25*(w(k+1,cell1)+w(k,cell1)+w(k,cell2)+w(k+1,cell2))                  &
-                                  *rho_edge(k,iEdge)/r_earth
-            end if
+#ifdef CURVATURE
+            ! curvature terms for the sphere
+            tend_u(k,iEdge) = tend_u(k,iEdge) &
+                             - 2.*omega*cos(angleEdge(iEdge))*cos(latEdge(iEdge))  &
+                               *rho_edge(k,iEdge)*.25*(w(k,cell1)+w(k+1,cell1)+w(k,cell2)+w(k+1,cell2))          & 
+                             - u(k,iEdge)*.25*(w(k+1,cell1)+w(k,cell1)+w(k,cell2)+w(k+1,cell2))                  &
+                               *rho_edge(k,iEdge)/r_earth
+#endif
          end do
       end do
 
@@ -3344,21 +3341,19 @@ module atm_time_integration
          end do
       end do
 
-      if (curvature) then
+#ifdef CURVATURE
+      do iCell = cellSolveStart, cellSolveEnd
+         do k=2,nVertLevels
+            tend_w(k,iCell) = tend_w(k,iCell) + (rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))*          &
+                                      ( (fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))**2.             &
+                                       +(fzm(k)*vr_cell(k,iCell)+fzp(k)*vr_cell(k-1,iCell))**2. )/r_earth   &
+                                + 2.*omega*cos(latCell(iCell))                                              &
+                                       *(fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))                 &
+                                       *(rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))
 
-         do iCell = cellSolveStart, cellSolveEnd
-            do k=2,nVertLevels
-               tend_w(k,iCell) = tend_w(k,iCell) + (rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))*          &
-                                         ( (fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))**2.             &
-                                          +(fzm(k)*vr_cell(k,iCell)+fzp(k)*vr_cell(k-1,iCell))**2. )/r_earth   &
-                                   + 2.*omega*cos(latCell(iCell))                                              &
-                                          *(fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))                 &
-                                          *(rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))
-
-            end do
          end do
-
-      end if
+      end do
+#endif
 
 
       !
