@@ -2842,7 +2842,6 @@ module atm_time_integration
       integer, pointer :: config_theta_vadv_order
       character (len=StrKIND), pointer :: config_horiz_mixing
       integer, pointer :: config_theta_adv_order
-      integer, pointer :: config_w_vadv_order
       integer, pointer :: config_w_adv_order
       real (kind=RKIND), pointer :: config_del4u_div_factor
       real (kind=RKIND), pointer :: config_h_theta_eddy_visc4
@@ -2867,7 +2866,6 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_theta_vadv_order', config_theta_vadv_order)
       call mpas_pool_get_config(configs, 'config_horiz_mixing', config_horiz_mixing)
       call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
-      call mpas_pool_get_config(configs, 'config_w_vadv_order', config_w_vadv_order)
       call mpas_pool_get_config(configs, 'config_w_adv_order', config_w_adv_order)
       call mpas_pool_get_config(configs, 'config_del4u_div_factor', config_del4u_div_factor)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc4', config_h_theta_eddy_visc4)
@@ -3550,33 +3548,13 @@ module atm_time_integration
 
          wdwz(1) = 0.0
 
-         if (config_w_vadv_order == 2) then
-
-            do k=2,nVertLevels
-               wdwz(k) =  0.25 * (rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
-            end do
-
-         else if (config_w_vadv_order == 3) then
-
-            k = 2
-            wdwz(k) =  0.25*(rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
-            do k=3,nVertLevels-1
-               wdwz(k) = flux3( w(k-2,iCell),w(k-1,iCell),w(k,iCell),w(k+1,iCell),0.5*(rw(k,iCell)+rw(k-1,iCell)), 1.0_RKIND )
-            end do
-            k = nVertLevels
-            wdwz(k) =  0.25*(rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
-
-         else if (config_w_vadv_order == 4) then
-
-            k = 2
-            wdwz(k) =  0.25*(rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
-            do k=3,nVertLevels-1
-               wdwz(k) = flux4( w(k-2,iCell),w(k-1,iCell),w(k,iCell),w(k+1,iCell),0.5*(rw(k,iCell)+rw(k-1,iCell)) )
-            end do
-            k = nVertLevels
-            wdwz(k) =  0.25*(rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
-
-         end if
+         k = 2
+         wdwz(k) =  0.25*(rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
+         do k=3,nVertLevels-1
+            wdwz(k) = flux3( w(k-2,iCell),w(k-1,iCell),w(k,iCell),w(k+1,iCell),0.5*(rw(k,iCell)+rw(k-1,iCell)), 1.0_RKIND )
+         end do
+         k = nVertLevels
+         wdwz(k) =  0.25*(rw(k,icell)+rw(k-1,iCell))*(w(k,iCell)+w(k-1,iCell))
 
          wdwz(nVertLevels+1) = 0.0
 
