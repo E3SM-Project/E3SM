@@ -1340,7 +1340,6 @@ module atm_time_integration
 
       integer :: iCell, iEdge, i, k, cell1, cell2
       real (kind=RKIND), pointer :: coef_3rd_order
-      integer, pointer :: config_theta_adv_order
       integer, pointer :: nCellsSolve, nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -1358,7 +1357,6 @@ module atm_time_integration
 
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
 
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
@@ -1402,7 +1400,6 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
       call mpas_pool_get_array(diag, 'rw', rw)
 
-      if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       ! set the acoustic step perturbation variables by subtracting the RK timestep variables
       ! from their at the previous RK substep.
@@ -1769,7 +1766,6 @@ module atm_time_integration
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nEdges, nEdgesSolve
       real (kind=RKIND) :: rcv, p0, flux
       real (kind=RKIND), pointer :: cf1, cf2, cf3, coef_3rd_order
-      integer, pointer :: config_theta_adv_order
 
 
       call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
@@ -1829,12 +1825,10 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
 
       rcv = rgas/(cp-rgas)
       p0 = 1.0e+05  ! this should come from somewhere else...
 
-      if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       ! compute new density everywhere so we can compute u from ru.
       ! we will also need it to compute theta_m below
@@ -2840,7 +2834,6 @@ module atm_time_integration
       real (kind=RKIND), pointer :: coef_3rd_order
       logical, pointer :: config_mix_full
       character (len=StrKIND), pointer :: config_horiz_mixing
-      integer, pointer :: config_theta_adv_order
       real (kind=RKIND), pointer :: config_del4u_div_factor
       real (kind=RKIND), pointer :: config_h_theta_eddy_visc4
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
@@ -2862,7 +2855,6 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
       call mpas_pool_get_config(configs, 'config_mix_full', config_mix_full)
       call mpas_pool_get_config(configs, 'config_horiz_mixing', config_horiz_mixing)
-      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
       call mpas_pool_get_config(configs, 'config_del4u_div_factor', config_del4u_div_factor)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc4', config_h_theta_eddy_visc4)
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc4', config_h_mom_eddy_visc4)
@@ -3547,78 +3539,27 @@ module atm_time_integration
       !  horizontal advection for theta
       !
 
-      if (config_theta_adv_order == 2) then
+      do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+         tend_theta(1:nVertLevels,iCell) = 0.0
+         do i=1,nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_theta(1:nVertLevels,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * 0.5
+            flux_arr(1:nVertLevels) = 0.0
+
+            do j=1,nAdvCellsForEdge(iEdge)
+               iAdvCell = advCellsForEdge(j,iEdge)
                do k=1,nVertLevels
-                  tend_theta(k,iCell) = tend_theta(k,iCell) - edge_sign * ru(k,iEdge) * (theta_m(k,cell1) + theta_m(k,cell2))
+                  scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order*sign(1.0_RKIND,ru(k,iEdge))*adv_coefs_3rd(j,iEdge)
+                  flux_arr(k) = flux_arr(k) + scalar_weight* theta_m(k,iAdvCell)
                end do
             end do
-         end do
 
-      else if (config_theta_adv_order == 3) then
-
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_theta(1:nVertLevels,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-
-               flux_arr(1:nVertLevels) = 0.0
-
-               do j=1,nAdvCellsForEdge(iEdge)
-                  iAdvCell = advCellsForEdge(j,iEdge)
-                  do k=1,nVertLevels
-                     scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order*sign(1.0_RKIND,ru(k,iEdge))*adv_coefs_3rd(j,iEdge)
-                     flux_arr(k) = flux_arr(k) + scalar_weight* theta_m(k,iAdvCell)
-                  end do
-               end do
-
-               do k=1,nVertLevels
-                  tend_theta(k,iCell) = tend_theta(k,iCell) - edgesOnCell_sign(i,iCell) * ru(k,iEdge) * flux_arr(k)
-               end do
-
+            do k=1,nVertLevels
+               tend_theta(k,iCell) = tend_theta(k,iCell) - edgesOnCell_sign(i,iCell) * ru(k,iEdge) * flux_arr(k)
             end do
+
          end do
-
-      else  if (config_theta_adv_order == 4) then
-
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_theta(1:nVertLevels,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               do k=1,nVertLevels
-
-                  d2fdx2_cell1 = deriv_two(1,1,iEdge) * theta_m(k,cell1)
-                  d2fdx2_cell2 = deriv_two(1,2,iEdge) * theta_m(k,cell2)
-                  do j=1, nEdgesOnCell(cell1)
-                     if ( cellsOnCell(j,cell1) <= nCells) &
-                        d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(j+1,1,iEdge) * theta_m(k,cellsOnCell(j,cell1))
-                  end do
-                  do j=1, nEdgesOnCell(cell2)
-                     if ( cellsOnCell(j,cell2) <= nCells) &
-                        d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(j+1,2,iEdge) * theta_m(k,cellsOnCell(j,cell2))
-                  end do
-
-                  flux = dvEdge(iEdge) *  ru(k,iEdge) * (                                               &
-                                         0.5*(theta_m(k,cell1) + theta_m(k,cell2))                      &
-                                          -(dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12. )
-
-                  tend_theta(k,iCell) = tend_theta(k,iCell) - edgesOnCell_sign(i,iCell) * flux
-               end do
-
-            end do
-         end do
-
-      end if
+      end do
 
 
       !
@@ -4072,7 +4013,6 @@ module atm_time_integration
 
       integer :: i, k, iCell, iEdge, cell1, cell2
       real (kind=RKIND), pointer :: coef_3rd_order
-      integer, pointer :: config_theta_adv_order
       integer, pointer :: nCells, nEdges, nVertLevels
       integer, pointer :: index_qv
       real (kind=RKIND) :: p0, rcv, flux
@@ -4112,7 +4052,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
 
       call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
       call mpas_pool_get_array(diag, 'theta', theta)
@@ -4139,7 +4078,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
       call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
 
-      if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       rcv = rgas / (cp-rgas)
       p0 = 1.e5  ! this should come from somewhere else...
