@@ -2788,7 +2788,7 @@ module atm_time_integration
 
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
       integer, pointer :: moist_start, moist_end
-      real (kind=RKIND), pointer :: h_mom_eddy_visc2, v_mom_eddy_visc2
+      real (kind=RKIND), pointer :: h_mom_eddy_visc2
       real (kind=RKIND), pointer :: h_theta_eddy_visc2
       real (kind=RKIND) :: h_mom_eddy_visc4
       real (kind=RKIND) :: h_theta_eddy_visc4
@@ -2964,7 +2964,6 @@ module atm_time_integration
       call mpas_pool_get_dimension(state, 'moist_end', moist_end)
 
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc2', h_mom_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_v_mom_eddy_visc2', v_mom_eddy_visc2)
       call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
 
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
@@ -3332,72 +3331,6 @@ module atm_time_integration
 
       end if
 
-
-      !
-      !  vertical mixing for u - 2nd order filter in physical (z) space
-      !
-      if ( v_mom_eddy_visc2 > 0.0 ) then
-
-         if (config_mix_full) then
-
-            do iEdge=edgeSolveStart,edgeSolveEnd
-
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               do k=2,nVertLevels-1
-
-                  z1 = 0.5*(zgrid(k-1,cell1)+zgrid(k-1,cell2))
-                  z2 = 0.5*(zgrid(k  ,cell1)+zgrid(k  ,cell2))
-                  z3 = 0.5*(zgrid(k+1,cell1)+zgrid(k+1,cell2))
-                  z4 = 0.5*(zgrid(k+2,cell1)+zgrid(k+2,cell2))
-
-                  zm = 0.5*(z1+z2)
-                  z0 = 0.5*(z2+z3)
-                  zp = 0.5*(z3+z4)
-
-                  tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + rho_edge(k,iEdge) * v_mom_eddy_visc2*(  &
-                                     (u(k+1,iEdge)-u(k  ,iEdge))/(zp-z0)                      &
-                                    -(u(k  ,iEdge)-u(k-1,iEdge))/(z0-zm) )/(0.5*(zp-zm))
-               end do
-            end do
-
-         else  ! idealized cases where we mix on the perturbation from the initial 1-D state
-
-            do iEdge=edgeSolveStart,edgeSolveEnd
-
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               do k=1,nVertLevels
-#ifdef ROTATED_GRID
-                  u_mix(k) = u(k,iEdge) - u_init(k) * sin( angleEdge(iEdge) )
-#else
-                  u_mix(k) = u(k,iEdge) - u_init(k) * cos( angleEdge(iEdge) )
-#endif
-               end do
-
-               do k=2,nVertLevels-1
-
-                  z1 = 0.5*(zgrid(k-1,cell1)+zgrid(k-1,cell2))
-                  z2 = 0.5*(zgrid(k  ,cell1)+zgrid(k  ,cell2))
-                  z3 = 0.5*(zgrid(k+1,cell1)+zgrid(k+1,cell2))
-                  z4 = 0.5*(zgrid(k+2,cell1)+zgrid(k+2,cell2))
-
-                  zm = 0.5*(z1+z2)
-                  z0 = 0.5*(z2+z3)
-                  zp = 0.5*(z3+z4)
-
-                  tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + rho_edge(k,iEdge) * v_mom_eddy_visc2*(  &
-                                     (u_mix(k+1)-u_mix(k  ))/(zp-z0)                      &
-                                    -(u_mix(k  )-u_mix(k-1))/(z0-zm) )/(0.5*(zp-zm))
-               end do
-            end do
-
-         end if
-
-      end if
-
       end if ! (rk_step 1 test for computing mixing terms)
 
 !$OMP BARRIER
@@ -3692,27 +3625,6 @@ module atm_time_integration
 
          end do
       end do
-
-
-      !
-      !  vertical mixing for w - 2nd order 
-      !
-
-      if (rk_step == 1 .or. rk_diffusion) then
-
-         if ( v_mom_eddy_visc2 > 0.0 ) then
-
-            do iCell = cellSolveStart,cellSolveEnd
-               do k=2,nVertLevels
-                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + v_mom_eddy_visc2*0.5*(rho_zz(k,iCell)+rho_zz(k-1,iCell))*(  &
-                                           (w(k+1,iCell)-w(k  ,iCell))*rdzw(k)                              &
-                                          -(w(k  ,iCell)-w(k-1,iCell))*rdzw(k-1) )*rdzu(k)
-               end do
-            end do
-
-         end if
-
-      end if ! mixing term computed first rk_step
 
 
 ! add in mixing terms for w
