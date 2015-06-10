@@ -2001,7 +2001,6 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), pointer :: coef_3rd_order
 
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -2063,7 +2062,6 @@ module atm_time_integration
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
 
-      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
 
 
 !$OMP BARRIER
@@ -2266,7 +2264,6 @@ module atm_time_integration
       integer, dimension(:), pointer :: nEdgesOnCell
       real (kind=RKIND), pointer :: coef_3rd_order
 
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2
 
       real (kind=RKIND) :: flux3, flux4, flux_upwind
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
@@ -2291,7 +2288,6 @@ module atm_time_integration
       end if
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
 
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
@@ -2780,8 +2776,6 @@ module atm_time_integration
 
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
       integer, pointer :: moist_start, moist_end
-      real (kind=RKIND), pointer :: h_mom_eddy_visc2
-      real (kind=RKIND), pointer :: h_theta_eddy_visc2
       real (kind=RKIND) :: h_mom_eddy_visc4
       real (kind=RKIND) :: h_theta_eddy_visc4
       real (kind=RKIND) :: u_diffusion
@@ -2942,9 +2936,6 @@ module atm_time_integration
 
       call mpas_pool_get_dimension(state, 'moist_start', moist_start)
       call mpas_pool_get_dimension(state, 'moist_end', moist_end)
-
-      call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc2', h_mom_eddy_visc2)
-      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
 
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
@@ -3137,45 +3128,16 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
-      tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
+         tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
 
 !$OMP BARRIER
 
-      if ((h_mom_eddy_visc2 > 0.0) .and. (config_horiz_mixing == '2d_fixed')) then
-
          do iEdge=edgeSolveStart,edgeSolveEnd
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             vertex1 = verticesOnEdge(1,iEdge)
             vertex2 = verticesOnEdge(2,iEdge)
-
-            do k=1,nVertLevels
-
-               !
-               ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
-               !                    only valid for h_mom_eddy_visc2 == constant
-               !
-               ! Note that we impose a lower bound on the edge length used in the derivative of the vorticity;
-               ! this is done to avoid an overly stringent stability constraint for small edge lengths that can
-               ! occur on some variable-resolution meshes.
-               !
-               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
-                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge),0.25*dcEdge(iEdge))
-               u_diffusion = rho_edge(k,iEdge)*h_mom_eddy_visc2 * u_diffusion
-               u_diffusion = u_diffusion * meshScalingDel2(iEdge)
-
-               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + u_diffusion
-            end do
-         end do
-
-      else if ( config_horiz_mixing == '2d_smagorinsky') then
-
-         do iEdge=edgeSolveStart,edgeSolveEnd
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            vertex1 = verticesOnEdge(1,iEdge)
-            vertex2 = verticesOnEdge(2,iEdge)
-
+   
             do k=1,nVertLevels
                !
                ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
@@ -3185,19 +3147,14 @@ module atm_time_integration
                               -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge),0.25*dcEdge(iEdge))
                u_diffusion = rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion
                u_diffusion = u_diffusion * meshScalingDel2(iEdge)
-
+   
                tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + u_diffusion
             end do
          end do
-      end if
 
-
-      if ((h_mom_eddy_visc4 > 0.0 .and. config_horiz_mixing == '2d_fixed') .or. &
-          (h_mom_eddy_visc4 > 0.0 .and. config_horiz_mixing == '2d_smagorinsky')) then
 
          ! del^4 horizontal filter.  We compute this as del^2 ( del^2 (u) ).
          ! First, storage to hold the result from the first del^2 computation.
-
 
          delsq_u(1:nVertLevels,edgeStart:edgeEnd) = 0.0
 
@@ -3280,7 +3237,6 @@ module atm_time_integration
             end do
          end do
 
-      end if
 
       end if ! (rk_step 1 test for computing mixing terms)
 
@@ -3353,102 +3309,74 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
-         if ((h_mom_eddy_visc2 > 0.0) .and. (config_horiz_mixing == '2d_fixed')) then
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+            tend_w_euler(1:nVertLevels+1,iCell) = 0.0
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
 
-            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               tend_w_euler(1:nVertLevels+1,iCell) = 0.0
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-
-                  do k=2,nVertLevels
-                     theta_turb_flux = h_mom_eddy_visc2 * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
-                     theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
-                     flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge) + rho_edge(k-1,iEdge)) * theta_turb_flux
-                     tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-                  end do
-              
-               end do
-            end do
-
-         else if (config_horiz_mixing == '2d_smagorinsky') then
-
-            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               tend_w_euler(1:nVertLevels+1,iCell) = 0.0
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-
-                  do k=2,nVertLevels
-                     theta_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
-                                            * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
-                     theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
-                     flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * theta_turb_flux
-                     tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-                  end do
-              
-               end do
-            end do
-
-         end if
-
-
-         if ((h_mom_eddy_visc4 > 0.0 .and. config_horiz_mixing == '2d_fixed') .or. &
-             (h_mom_eddy_visc4 > 0.0 .and. config_horiz_mixing == '2d_smagorinsky')) then
-
-!$OMP BARRIER
-
-            ! del^4 horizontal filter.  We compute this as del^2 ( del^2 (u) ).
-            !
-            ! First, storage to hold the result from the first del^2 computation.
-            !  we copied code from the theta mixing, hence the theta* names.
-
-
-            delsq_w(1:nVertLevels,cellStart:cellEnd) = 0.0
-
-            do iCell=cellStart,cellEnd
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-
-                  do k=2,nVertLevels
-                     delsq_w(k,iCell) = delsq_w(k,iCell) + edgesOnCell_sign(i,iCell) * dvEdge(iEdge) &
-                                            * 0.5*(rho_edge(k,iEdge)+rho_edge(k-1,iEdge))*(w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
-                  end do
-              
-               end do
-            end do
-
-            do iCell = cellStart,cellEnd
-               r = 1.0 / areaCell(iCell)
                do k=2,nVertLevels
-                  delsq_w(k,iCell) = delsq_w(k,iCell) * r
+                  theta_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
+                                         * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
+                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
+                  flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * theta_turb_flux
+                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
                end do
+           
             end do
+         end do
+
 
 !$OMP BARRIER
 
-            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               tend_theta_euler(1:nVertLevels,iCell) = 0.0
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
+         ! del^4 horizontal filter.  We compute this as del^2 ( del^2 (u) ).
+         !
+         ! First, storage to hold the result from the first del^2 computation.
+         !  we copied code from the theta mixing, hence the theta* names.
 
-                  do k=2,nVertLevels
-                     theta_turb_flux = h_mom_eddy_visc4 * (delsq_w(k,cell2) - delsq_w(k,cell1)) / dcEdge(iEdge)
-                     theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
-                     flux = dvEdge(iEdge) * theta_turb_flux
-                     tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-                  end do
-              
+
+         delsq_w(1:nVertLevels,cellStart:cellEnd) = 0.0
+
+         do iCell=cellStart,cellEnd
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+
+               do k=2,nVertLevels
+                  delsq_w(k,iCell) = delsq_w(k,iCell) + edgesOnCell_sign(i,iCell) * dvEdge(iEdge) &
+                                         * 0.5*(rho_edge(k,iEdge)+rho_edge(k-1,iEdge))*(w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
                end do
+           
             end do
+         end do
 
-         end if
+         do iCell = cellStart,cellEnd
+            r = 1.0 / areaCell(iCell)
+            do k=2,nVertLevels
+               delsq_w(k,iCell) = delsq_w(k,iCell) * r
+            end do
+         end do
+
+!$OMP BARRIER
+
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+            tend_theta_euler(1:nVertLevels,iCell) = 0.0
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+
+               do k=2,nVertLevels
+                  theta_turb_flux = h_mom_eddy_visc4 * (delsq_w(k,cell2) - delsq_w(k,cell1)) / dcEdge(iEdge)
+                  theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
+                  flux = dvEdge(iEdge) * theta_turb_flux
+                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+               end do
+           
+            end do
+         end do
 
       end if ! horizontal mixing for w computed in first rk_step
 
@@ -3551,88 +3479,60 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
-         if ( (h_theta_eddy_visc2 > 0.0) .and. (config_horiz_mixing == '2d_fixed') ) then
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
 
-            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               tend_theta_euler(1:nVertLevels,iCell) = 0.0
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-
-                  do k=1,nVertLevels
-                     theta_turb_flux = h_theta_eddy_visc2*prandtl_inv*(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
-                     theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
-                     flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
-                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-                  end do
- 
-               end do
-            end do
-
-         else if (  ( config_horiz_mixing == '2d_smagorinsky') ) then
-
-            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-
-                  do k=1,nVertLevels
-                     theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv  &
-                                           *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
-                     theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
-                     flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
-                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-                  end do
- 
-               end do
-            end do
-         end if
-
-
-         if ((h_theta_eddy_visc4 > 0.0 .and. config_horiz_mixing == '2d_fixed') .or. &
-             (h_theta_eddy_visc4 > 0.0 .and. config_horiz_mixing == '2d_smagorinsky')) then
-
-
-            delsq_theta(1:nVertLevels,cellStart:cellEnd) = 0.0
-
-            do iCell=cellStart,cellEnd
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-                  do k=1,nVertLevels
-                     delsq_theta(k,iCell) = delsq_theta(k,iCell) + edge_sign * rho_edge(k,iEdge) * (theta_m(k,cell2) - theta_m(k,cell1))
-                  end do
-               end do
-               r = 1.0 / areaCell(iCell)
                do k=1,nVertLevels
-                  delsq_theta(k,iCell) = delsq_theta(k,iCell) * r
+                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv  &
+                                        *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
+                  flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
+                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+               end do
+
+            end do
+         end do
+
+
+         delsq_theta(1:nVertLevels,cellStart:cellEnd) = 0.0
+
+         do iCell=cellStart,cellEnd
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+               edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               do k=1,nVertLevels
+                  delsq_theta(k,iCell) = delsq_theta(k,iCell) + edge_sign * rho_edge(k,iEdge) * (theta_m(k,cell2) - theta_m(k,cell1))
                end do
             end do
+            r = 1.0 / areaCell(iCell)
+            do k=1,nVertLevels
+               delsq_theta(k,iCell) = delsq_theta(k,iCell) * r
+            end do
+         end do
 
 !$OMP BARRIER
 
-            do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-               do i=1,nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i,iCell)
-                  edge_sign = edgesOnCell_sign(i,iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-   
-                  do k=1,nVertLevels
-                     theta_turb_flux = h_theta_eddy_visc4*prandtl_inv*(delsq_theta(k,cell2) - delsq_theta(k,cell1))/dcEdge(iEdge)
-                     theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
-                     flux = dvEdge (iEdge) * theta_turb_flux
-                     tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-                  end do
-   
-               end do
-            end do
+         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+               edge_sign = edgesOnCell_sign(i,iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
 
-         end if
+               do k=1,nVertLevels
+                  theta_turb_flux = h_theta_eddy_visc4*prandtl_inv*(delsq_theta(k,cell2) - delsq_theta(k,cell1))/dcEdge(iEdge)
+                  theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
+                  flux = dvEdge (iEdge) * theta_turb_flux
+                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+               end do
+
+            end do
+         end do
 
       end if ! theta mixing calculated first rk_step
 
