@@ -2949,7 +2949,7 @@ module atm_time_integration
       prandtl_inv = 1.0_RKIND / prandtl
 
 
-      if (config_horiz_mixing == '2d_smagorinsky' .and. rk_step == 1) then
+      if (rk_step == 1) then
 
          ! Smagorinsky eddy viscosity, based on horizontal deformation (in this case on model coordinate surfaces).
          ! The integration coefficients were precomputed and stored in defc_a and defc_b
@@ -2975,11 +2975,6 @@ module atm_time_integration
 
          h_mom_eddy_visc4   = config_visc4_2dsmag * config_len_disp**3
          h_theta_eddy_visc4 = h_mom_eddy_visc4
-
-      else if ( config_horiz_mixing == '2d_fixed') then
-
-         h_mom_eddy_visc4   = config_h_mom_eddy_visc4
-         h_theta_eddy_visc4 = config_h_theta_eddy_visc4
 
       end if
 
