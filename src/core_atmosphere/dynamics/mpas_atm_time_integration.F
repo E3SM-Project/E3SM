@@ -1346,7 +1346,7 @@ module atm_time_integration
       integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
-      integer :: iCell, iEdge, i, k, cell1, cell2
+      integer :: iCell, iEdge, i, k
       real (kind=RKIND), pointer :: coef_3rd_order
       integer, pointer :: nCellsSolve, nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -1495,8 +1495,6 @@ module atm_time_integration
       real (kind=RKIND), pointer :: epssm, smdiv
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
-      real (kind=RKIND) :: pr, pl
-      integer :: kr, kl
 
       integer, pointer :: nEdges, nCellsSolve
 
@@ -1983,10 +1981,6 @@ module atm_time_integration
       logical, intent(in), optional :: advance_density
 
       integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
-      real (kind=RKIND), dimension(nVertLevels) :: scalar_weight1
-      real (kind=RKIND), dimension(nVertLevels, 10) :: scalar_weight2
-      integer:: jj
-      integer, dimension(10) :: ica
       real (kind=RKIND), dimension(:), pointer :: invAreaCell
       real (kind=RKIND) :: rho_zz_new_inv
 
@@ -2244,7 +2238,6 @@ module atm_time_integration
 
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: flux, scalar_weight
-      real (kind=RKIND) :: f1, f2
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
@@ -2275,7 +2268,7 @@ module atm_time_integration
 
       real (kind=RKIND) :: flux3, flux4, flux_upwind
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
-      real (kind=RKIND) :: s_min_update, s_max_update, s_upwind, scale_factor
+      real (kind=RKIND) :: scale_factor
 
       logical :: local_advance_density
 
@@ -2802,9 +2795,8 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, angleEdge, u_init
 
       real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
-      real (kind=RKIND), dimension( nVertLevels ) :: u_mix, ru_edge_w, q
-      real (kind=RKIND) :: theta_turb_flux, z1, z2, z3, z4, zm, z0, zp, r
-      real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2
+      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q
+      real (kind=RKIND) :: theta_turb_flux, r
 
       integer, dimension(:,:), pointer :: advCellsForEdge
       integer, dimension(:), pointer :: nAdvCellsForEdge
@@ -2815,10 +2807,8 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: t_init 
 
       real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
-      integer :: kr, kl
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
-      real (kind=RKIND) :: pr, pl
       real (kind=RKIND) :: prandtl_inv
 
 
