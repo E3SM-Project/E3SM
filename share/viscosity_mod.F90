@@ -22,7 +22,7 @@ use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
 use edge_mod, only : edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer, edgeSunpackmax, edgeSunpackmin,edgeSpack
 
-use bndry_mod, only : bndry_exchangev, bndry_exchangeS
+use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
 use control_mod, only : hypervis_scaling, nu, nu_div
 
 implicit none
@@ -32,6 +32,7 @@ public :: biharmonic_wk
 #ifdef _PRIM
 public :: biharmonic_wk_scalar
 public :: biharmonic_wk_scalar_minmax
+public :: neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish
 #endif
 
 !
@@ -353,20 +354,22 @@ logical var_coef1
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
          enddo
+         kptr = nlev*(q-1)
+         call edgeVpack(edgeq, qtens(:,:,:,q,ie),nlev,kptr,ie)
       enddo
-      call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
    enddo
 
    call bndry_exchangeV(hybrid,edgeq)
    
    do ie=nets,nete
-      call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,ie)
 
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
+        kptr = nlev*(q-1)
+        call edgeVunpack(edgeq, qtens(:,:,:,q,ie),nlev,kptr,ie)
         do k=1,nlev    !  Potential loop inversion (AAM)
            lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
@@ -381,7 +384,7 @@ logical var_coef1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end subroutine
 
-subroutine biharmonic_wk_scalar_minmax(elem,qtens,deriv,edgeq,hybrid,nets,nete,emin,emax)
+subroutine biharmonic_wk_scalar_minmax(elem,qtens,deriv,edgeq,edgeminmax,hybrid,nets,nete,emin,emax)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute weak biharmonic operator
 !    input:  qtens = Q
@@ -395,6 +398,7 @@ type (element_t)     , intent(inout), target :: elem(:)
 integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
 type (EdgeBuffer_t)  , intent(inout) :: edgeq
+type (EdgeBuffer_t)  , intent(inout) :: edgeminmax
 type (derivative_t)  , intent(in) :: deriv
 real (kind=real_kind), intent(inout), dimension(nlev,qsize,nets:nete) :: emin,emax
 
@@ -461,6 +465,7 @@ logical var_coef1
         enddo
       enddo
    enddo
+
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
@@ -823,76 +828,54 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
   
 end subroutine neighbor_minmax
 
-subroutine oldneighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
-!
-! compute Q min&max over the element and all its neighbors
-!
-!
-integer :: nets,nete
-type (element_t)     , intent(in) :: elem(:)
-type (hybrid_t)      , intent(in) :: hybrid
-type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
-real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
-real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
+subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 
-! local
-integer :: ie,k,q
-real (kind=real_kind) :: Qmin(np,np,nlev,qsize)
-real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
+   type (hybrid_t)      , intent(in) :: hybrid
+   type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
+   integer :: nets,nete
+   real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
+   real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
+
+   ! local 
+   integer :: ie,q, k,kptr
 
 
-    ! compute Qmin, Qmax
-    do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q)
-#endif
-       do q=1,qsize
-          do k=1,nlev
-             Qmin(:,:,k,q)=min_neigh(k,q,ie)
-             Qmax(:,:,k,q)=max_neigh(k,q,ie)
-          enddo
-       end do
-       call edgeVpack(edgeMinMax,Qmin,nlev*qsize,0,ie)
-       call edgeVpack(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,ie)
-    enddo
+   do ie=nets,nete
+      kptr = 0
+      call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      kptr = qsize*nlev
+      call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+   enddo
 
-    call bndry_exchangeV(hybrid,edgeMinMax)
-       
-    do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q)
-#endif
-       do q=1,qsize
-          do k=1,nlev         
-             Qmin(:,:,k,q)=min_neigh(k,q,ie) ! restore element data.  we could avoid
-             Qmax(:,:,k,q)=max_neigh(k,q,ie) ! this by adding a "ie" index to Qmin/max
-          enddo
-       end do
-! WARNING - edgeVunpackMin/Max take second argument as input/ouput
-       call edgeVunpackMin(edgeMinMax,Qmin,nlev*qsize,0,ie)
-       call edgeVunpackMax(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,ie)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q)
-#endif
-       do q=1,qsize
-          do k=1,nlev
-             ! note: only need to consider the corners, since the data we packed was
-             ! constant within each element
-             min_neigh(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
-! dont add threshold in this routine - it should be done by calling routine, if needed
-!             min_neigh(k,q,ie)=max(min_neigh(k,q,ie),0d0)
-             max_neigh(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
-          enddo
-       end do
-    end do
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
+   call bndry_exchangeS_start(hybrid,edgeMinMax)
 
-end subroutine oldneighbor_minmax
+end subroutine neighbor_minmax_start
+subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
 
+   type (hybrid_t)      , intent(in) :: hybrid
+   type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
+   integer :: nets,nete
+   real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
+   real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
+
+   ! local 
+   integer :: ie,q, k,kptr
+
+   call bndry_exchangeS_finish(hybrid,edgeMinMax)
+
+   do ie=nets,nete
+      kptr = 0
+      call  edgeSunpackMIN(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      kptr = qsize*nlev
+      call  edgeSunpackMAX(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
+      do q=1,qsize
+      do k=1,nlev
+          min_neigh(k,q,ie) = max(min_neigh(k,q,ie),0d0)
+      enddo
+      enddo
+   enddo
+
+end subroutine neighbor_minmax_finish
 
 #else
 

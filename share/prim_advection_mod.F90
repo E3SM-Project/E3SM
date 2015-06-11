@@ -1,6 +1,8 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#define NEWEULER_B4B 1
+#define OVERLAP 1
 
       module EXTRAE_MODULE
 
@@ -857,18 +859,14 @@ module prim_advection_mod
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
         nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
-!<<<<<<< .working
   use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
         edgevunpackmin, initghostbuffer3D
  
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
-!=======
-!  use edge_mod, only           : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer, &
-!       edgevunpackmin, ghostbuffer3D_t, initghostbuffer3D
-!>>>>>>> .merge-right.r4294
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
-  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
+  use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax, &
+                                 neighbor_minmax_start, neighbor_minmax_finish
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only   : abortmp
 
@@ -2228,16 +2226,30 @@ end subroutine ALE_parametric_coords
     type(element_t)     , intent(inout) :: elem(:)
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
-    integer :: ie
+    integer :: ie,q,k
+    real(kind=real_kind) :: rrkstage
 #if USE_CUDA_FORTRAN
     call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
     return
 #endif
+#ifdef NEWEULER_B4B
     do ie=nets,nete
       elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =               &
                    ( elem(ie)%state%Qdp(:,:,:,1:qsize,n0_qdp) + &
                      (rkstage-1)*elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) ) / rkstage
     enddo
+#else
+    rrkstage=1.0d0/real(rkstage,kind=real_kind)
+    do ie=nets,nete
+      do q=1,qsize
+        do k=1,nlev
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) =               &
+               rrkstage *( elem(ie)%state%Qdp(:,:,k,q,n0_qdp) + &
+               (rkstage-1)*elem(ie)%state%Qdp(:,:,k,q,np1_qdp) )
+        enddo
+      enddo
+    enddo
+#endif
   end subroutine qdp_time_avg
 
 !-----------------------------------------------------------------------------
@@ -2281,14 +2293,15 @@ end subroutine ALE_parametric_coords
 
   ! local
   real(kind=real_kind), dimension(np,np                       ) :: divdp, dpdiss
+  real(kind=real_kind), dimension(np,np,nlev) :: dpdissk
   real(kind=real_kind), dimension(np,np,2                     ) :: gradQ
   real(kind=real_kind), dimension(np,np,2,nlev                ) :: Vstar
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: Qtens
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: dp,dp_star
   real(kind=real_kind), dimension(np,np  ,nlev,qsize,nets:nete) :: Qtens_biharmonic
   real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
-  real(kind=real_kind) :: dp0
-  integer :: ie,q,i,j,k
+  real(kind=real_kind) :: dp0(nlev)
+  integer :: ie,q,i,j,k, kptr
   integer :: rhs_viss = 0
 
   if ( npdg > 0 ) then
@@ -2300,6 +2313,10 @@ end subroutine ALE_parametric_coords
   return
 #endif
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
+  do k = 1 , nlev
+    dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+  enddo
   call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2342,51 +2359,32 @@ end subroutine ALE_parametric_coords
 #endif
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k)
-        do q = 1 , qsize
+      enddo
+      do q = 1 , qsize
+        do k=1,nlev
           Qtens_biharmonic(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k)
+          if ( rhs_multiplier == 1 ) then
+              qmin(k,q,ie)=min(qmin(k,q,ie),minval(Qtens_biharmonic(:,:,k,q,ie)))
+              qmax(k,q,ie)=max(qmax(k,q,ie),maxval(Qtens_biharmonic(:,:,k,q,ie)))
+          else
+              qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
+              qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
+          endif
         enddo
       enddo
     enddo
 
     ! compute element qmin/qmax
     if ( rhs_multiplier == 0 ) then
-      do ie = nets , nete
-        do k = 1 , nlev
-          do q = 1 , qsize
-            qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
-            qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
-          enddo
-        enddo
-      enddo
       ! update qmin/qmax based on neighbor data for lim8
+      call t_startf('euler_neighbor_minmax1')
       call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      
-    endif
-
-    ! lets just reuse the old neighbor min/max, but update based on local data
-    if ( rhs_multiplier == 1 ) then
-      do ie = nets , nete
-        do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
-          do q = 1 , qsize
-            qmin(k,q,ie)=min(qmin(k,q,ie),minval(Qtens_biharmonic(:,:,k,q,ie)))
-            qmax(k,q,ie)=max(qmax(k,q,ie),maxval(Qtens_biharmonic(:,:,k,q,ie)))
-          enddo
-        enddo
-      enddo
+      call t_stopf('euler_neighbor_minmax1')
     endif
 
     ! get niew min/max values, and also compute biharmonic mixing term
     if ( rhs_multiplier == 2 ) then
       rhs_viss = 3
-      ! compute element qmin/qmax
-      do ie = nets , nete
-        do k = 1  ,nlev
-          do q = 1 , qsize
-            qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
-            qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
-          enddo
-        enddo
-      enddo
       ! two scalings depending on nu_p:
       ! nu_p=0:    qtens_biharmonic *= dp0                   (apply viscsoity only to q)
       ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
@@ -2395,20 +2393,25 @@ end subroutine ALE_parametric_coords
 #if (defined COLUMN_OPENMP)
           !$omp parallel do private(k, q, dp0, dpdiss)
 #endif
+#ifdef NEWEULER_B4B
           do k = 1 , nlev
-            dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-#if 0
-            dpdiss(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%psdiss_ave(:,:)
-#else
             dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
-#endif
             do q = 1 , qsize
               ! NOTE: divide by dp0 since we multiply by dp0 below
-              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0
+              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0(k)
             enddo
           enddo
+#else
+          do k = 1 , nlev
+            dpdissk(:,:,k) = elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
+          enddo
+          do q = 1 , qsize
+            do k = 1 , nlev
+              ! NOTE: divide by dp0 since we multiply by dp0 below
+              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdissk(:,:,k)
+            enddo
+          enddo
+#endif
         enddo
       endif
 
@@ -2420,23 +2423,43 @@ end subroutine ALE_parametric_coords
 ! 
 !      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
 !           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
+#ifdef OVERLAP 
+      call neighbor_minmax_start(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+      call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
+      do ie = nets , nete
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(k, q, dp0)
+#endif
+        do q = 1 , qsize
+          do k = 1 , nlev    !  Loop inversion (AAM)
+            ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
+            qtens_biharmonic(:,:,k,q,ie) = &
+                     -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
+          enddo
+        enddo
+      enddo
+      call neighbor_minmax_finish(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+#else
+      call t_startf('euler_neighbor_minmax2')
       call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+      call t_stopf('euler_neighbor_minmax2')
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
         !$omp parallel do private(k, q, dp0)
 #endif
-        do k = 1 , nlev    !  Loop inversion (AAM)
-          dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-          do q = 1 , qsize
+        do q = 1 , qsize
+          do k = 1 , nlev    !  Loop inversion (AAM)
             ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
             qtens_biharmonic(:,:,k,q,ie) = &
-                     -rhs_viss*dt*nu_q*dp0*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
+                     -rhs_viss*dt*nu_q*dp0(k)*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
           enddo
         enddo
       enddo
+#endif
+
+
     endif
   endif  ! compute biharmonic mixing term and qmin/qmax
 
@@ -2462,6 +2485,26 @@ end subroutine ALE_parametric_coords
       Vstar(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k) / dp(:,:,k)
       Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k) / dp(:,:,k)
     enddo
+    if ( limiter_option == 8) then
+        ! Note that the term dpdissk is independent of Q
+        do k = 1 , nlev  ! Loop index added (AAM)
+          ! UN-DSS'ed dp at timelevel n0+1:
+          dpdissk(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
+          if ( nu_p > 0 .and. rhs_viss /= 0 ) then
+            ! add contribution from UN-DSS'ed PS dissipation
+!            dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) *
+!            elem(ie)%derived%psdiss_biharmonic(:,:)
+            dpdiss(:,:) = elem(ie)%derived%dpdiss_biharmonic(:,:,k)
+            dpdissk(:,:,k) = dpdissk(:,:,k) - rhs_viss * dt * nu_q * dpdiss(:,:) / elem(ie)%spheremp(:,:)
+          endif
+          ! IMPOSE ZERO THRESHOLD.  do this here so it can be turned off for
+          ! testing
+          do q=1,qsize
+             qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
+          enddo
+        enddo
+    endif  ! limiter == 8
+
 
     ! advance Qdp
 #if (defined COLUMN_OPENMP)
@@ -2478,22 +2521,11 @@ end subroutine ALE_parametric_coords
         if ( rhs_viss /= 0 ) Qtens(:,:,k) = Qtens(:,:,k) + Qtens_biharmonic(:,:,k,q,ie)
       enddo
 
+
       if ( limiter_option == 8) then
-        do k = 1 , nlev  ! Loop index added (AAM)
-          ! UN-DSS'ed dp at timelevel n0+1:
-          dp_star(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
-          if ( nu_p > 0 .and. rhs_viss /= 0 ) then
-            ! add contribution from UN-DSS'ed PS dissipation
-!            dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%derived%psdiss_biharmonic(:,:)
-            dpdiss(:,:) = elem(ie)%derived%dpdiss_biharmonic(:,:,k)
-            dp_star(:,:,k) = dp_star(:,:,k) - rhs_viss * dt * nu_q * dpdiss(:,:) / elem(ie)%spheremp(:,:)
-          endif
-          ! IMPOSE ZERO THRESHOLD.  do this here so it can be turned off for testing
-          qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
-        enddo
         ! apply limiter to Q = Qtens / dp_star
         call limiter_optim_iter_full( Qtens(:,:,:) , elem(ie)%spheremp(:,:) , qmin(:,q,ie) , &
-                                      qmax(:,q,ie) , dp_star(:,:,:) )
+                                      qmax(:,q,ie) , dpdissk )
       endif
 
 
@@ -2524,12 +2556,10 @@ end subroutine ALE_parametric_coords
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,np1_qdp))
       endif
-    enddo
 
-    if ( DSSopt == DSSno_var ) then
-      call edgeVpack(edgeAdv   , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie)
-    else
-      call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
+      kptr = nlev*(q-1)
+      call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , kptr , ie )
+    enddo
       ! also DSS extra field
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -2538,46 +2568,30 @@ end subroutine ALE_parametric_coords
         DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
       enddo
       call edgeVpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
-    endif
   enddo
 
-  if ( DSSopt == DSSno_var ) then
-    call bndry_exchangeV( hybrid , edgeAdv    )
-  else
-    call bndry_exchangeV( hybrid , edgeAdvp1 )
-  endif
+  call bndry_exchangeV( hybrid , edgeAdvp1 )
 
   do ie = nets , nete
     if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
     if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
-    if ( DSSopt == DSSno_var ) then
-      call edgeVunpack( edgeAdv, elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,q)
-#endif
-      do q = 1 , qsize
-        do k = 1 , nlev    !  Potential loop inversion (AAM)
-          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
-        enddo
-      enddo
-    else
-      call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , ie )
-#if (defined COLUMN_OPENMP)
-      !$omp parallel do private(q,k)
-#endif
-      do q = 1 , qsize
-        do k = 1 , nlev    !  Potential loop inversion (AAM)
-          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
-        enddo
-      enddo
-      call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
+    call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
+    do k = 1 , nlev
+      DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
+    enddo
 
-      do k = 1 , nlev
-        DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
-      enddo
-    endif
+#if (defined COLUMN_OPENMP)
+      !$omp parallel do private(q,k,kptr)
+#endif
+    do q = 1 , qsize
+      kptr = nlev*(q-1)
+      call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , kptr , ie )
+        do k = 1 , nlev    !  Potential loop inversion (AAM)
+          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+        enddo
+    enddo
   enddo
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
@@ -2586,12 +2600,6 @@ end subroutine ALE_parametric_coords
 #endif
    call t_stopf('euler_step')
   end subroutine euler_step
-
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
-
-!-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
   subroutine euler_step_dg(np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
@@ -2813,6 +2821,7 @@ end subroutine ALE_parametric_coords
     real (kind=real_kind) :: tol_limiter = 1e-15
     integer, parameter :: maxiter = 5
 
+!JMD    call t_startf('limiter_optim_iter_full')
     do k = 1 , nlev
       weights(:,k) = sphweights(:) * dpmass(:,k)
       ptens(:,k) = ptens(:,k) / dpmass(:,k)
@@ -2942,6 +2951,8 @@ end subroutine ALE_parametric_coords
     do k = 1 , nlev
       ptens(:,k) = ptens(:,k) * dpmass(:,k)
     enddo
+!JMD    call t_stopf('limiter_optim_iter_full')
+
   end subroutine limiter_optim_iter_full
 
 

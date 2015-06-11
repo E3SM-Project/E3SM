@@ -10,9 +10,10 @@ module edge_mod
   use thread_mod, only: nthreadshoriz, omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
   use schedtype_mod, only : cycle_t, schedule_t, schedule
-  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
+  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &
+      MAX_ACTIVE_MSG, HME_status_size, BNDRY_TAG_BASE
   use edgetype_mod, only : edgedescriptor_t, edgebuffer_t, &
-         Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t
+      Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t, initedgebuffer_callid
   use element_mod, only : element_t
 
 
@@ -266,6 +267,14 @@ contains
 
 
 !$OMP MASTER
+    !
+    ! Keep a counter of how many times initedgebuffer is called.  
+    ! This is used to assign a unique message ID for the boundary exchange
+    !
+    initedgebuffer_callid=initedgebuffer_callid+1
+    edge%id  = initedgebuffer_callid
+    edge%tag = BNDRY_TAG_BASE + MODULO(edge%id, MAX_ACTIVE_MSG) 
+
     iam = par%rank
     allocate(edge%putmap(max_neigh_edges,nelemd))
     allocate(edge%getmap(max_neigh_edges,nelemd))
@@ -368,45 +377,13 @@ endif
        edge%movePtr(1) = ptr
     endif
 
-#if 0
-    if (present(buf_ptr)) then
-       ! If buffer is passed in but not allocated, allocate it.
-       if (.not. associated(buf_ptr)) allocate(buf_ptr(nbuf))
-       ! Verify dimensions
-       if (size(buf_ptr) < nbuf) then
-          print *,'size(buf_ptr),nbuf=',size(buf_ptr),nbuf
-          call abortmp('Error: user provided edge buffer is too small')
-       end if
-#ifdef HAVE_F2003_PTR_BND_REMAP
-       tmp_ptr(1:nbuf) => buf_ptr
-       edge%buf => tmp_ptr
-#else
-       ! call F77 routine which will reshape array.
-       call remap_1D_ptr_buf(edge,nbuf,buf_ptr)
-#endif
-    else
-       allocate(edge%buf(nbuf))
-    end if
+    ! allocate the MPI Send/Recv request handles
+    nSendCycles = pSchedule%nSendCycles
+    nRecvCycles = pSchedule%nRecvCycles
+    allocate(edge%Srequest(nSendCycles))
+    allocate(edge%Rrequest(nRecvCycles))
+    allocate(edge%status(HME_status_size,nRecvCycles))
 
-    if (present(receive_ptr)) then
-       ! If buffer is passed in but not allocated, allocate it.
-       if (.not. associated(receive_ptr)) allocate(receive_ptr(nbuf))
-       ! Verify dimensions
-       if (size(receive_ptr) < nbuf) then
-          print *,'size(receive_ptr),nbuf=',size(receive_ptr),nbuf
-          call abortmp('Error: user provided edge buffer is too small')
-       end if
-#ifdef HAVE_F2003_PTR_BND_REMAP
-       tmp_ptr(1:nbuf) => receive_ptr
-       edge%receive => tmp_ptr
-#else
-       ! call F77 routine which will reshape array.
-       call remap_1D_ptr_receive(edge,nbuf,receive_ptr)
-#endif
-    else
-       allocate(edge%receive(nbuf))
-    endif
-#endif
     allocate(edge%receive(nbuf))   
     allocate(edge%buf(nbuf))
 
@@ -1412,7 +1389,6 @@ endif
 
   end subroutine edgeDGVunpack
 
-!<<<<<<< .working
   ! ========================================
   ! edgeVunpackMIN/MAX:
   !

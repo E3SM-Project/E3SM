@@ -2018,12 +2018,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use derivative_mod, only : subcell_Laplace_fluxes, subcell_dss_fluxes
-!<<<<<<< .working
   use edge_mod, only : edgevpack, edgevunpack, edgeDGVunpack
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
-!=======
-!  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, EdgeDescriptor_t, edgeDGVunpack
-!>>>>>>> .merge-right.r4537
   use bndry_mod, only : bndry_exchangev
   use viscosity_mod, only : biharmonic_wk_dp3d
   use physical_constants, only: Cp

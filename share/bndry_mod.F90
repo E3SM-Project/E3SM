@@ -11,6 +11,8 @@ module bndry_mod
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
   public :: ghost_exchangeV
   public :: bndry_exchangeS
+  public :: bndry_exchangeS_start
+  public :: bndry_exchangeS_finish
 !  public :: ghost_exchangev3d
   public :: sort_neighbor_buffer_mapping
 
@@ -25,6 +27,18 @@ module bndry_mod
      module procedure bndry_exchangeS_threaded 
      module procedure bndry_exchangeS_nonthreaded
      module procedure bndry_exchangeS_core
+  end interface
+
+  interface bndry_exchangeS_finish
+     module procedure bndry_exchangeS_threaded_finish
+     module procedure bndry_exchangeS_nonthreaded_finish
+     module procedure bndry_exchangeS_core_finish
+  end interface
+
+  interface bndry_exchangeS_start
+     module procedure bndry_exchangeS_threaded_start
+     module procedure bndry_exchangeS_nonthreaded_start
+     module procedure bndry_exchangeS_core_start
   end interface
 
 contains 
@@ -75,10 +89,11 @@ contains
        pCycle      => pSchedule%SendCycle(icycle)
        dest            = pCycle%dest - 1
        length      = nlyr * pCycle%lengthP
-       tag             = pCycle%tag
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
        iptr            = nlyr * (pCycle%ptrP - 1) + 1
-       !DBG if(Debug) print *,'bndry_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-       call MPI_Isend(buffer%buf(iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
+       if(Debug) print *,'bndry_exchangeV: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
+       call MPI_Isend(buffer%buf(iptr),length,MPIreal_t,dest,tag,par%comm,buffer%Srequest(icycle),ierr)
        if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
           call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -93,11 +108,12 @@ contains
        pCycle         => pSchedule%RecvCycle(icycle)
        source          = pCycle%source - 1
        length      = nlyr * pCycle%lengthP
-       tag             = pCycle%tag
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
        iptr            = nlyr * (pCycle%ptrP -1) + 1
-       !DBG if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       if(Debug) print *,'bndry_exchangeV: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
        call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
-            source,tag,par%comm,Rrequest(icycle),ierr)
+            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
        if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
           call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -105,8 +121,8 @@ contains
        endif
     end do    ! icycle
     
-    call MPI_Waitall(nSendCycles,Srequest,status,ierr)
-    call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
+    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
+    call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
     !$OMP END MASTER
     call t_startf('bndry_copy')
     !JMD ithr = omp_get_thread_num()+1
@@ -165,10 +181,11 @@ contains
        pCycle      => pSchedule%SendCycle(icycle)
        dest            = pCycle%dest - 1
        length      = nlyr * pCycle%lengthS
-       tag             = pCycle%tag
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
        iptr            = nlyr * (pCycle%ptrS - 1) + 1
-       !DBG if(Debug) print *,'bndry_exchangeS: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
-       call MPI_Isend(buffer%buf(iptr),length,MPIreal_t,dest,tag,par%comm,Srequest(icycle),ierr)
+       if(Debug) print *,'bndry_exchangeS: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
+       call MPI_Isend(buffer%buf(iptr),length,MPIreal_t,dest,tag,par%comm,buffer%Srequest(icycle),ierr)
        if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
           call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -183,11 +200,12 @@ contains
        pCycle         => pSchedule%RecvCycle(icycle)
        source          = pCycle%source - 1
        length      = nlyr * pCycle%lengthS
-       tag             = pCycle%tag
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
        iptr            = nlyr * (pCycle%ptrS -1) + 1
-       !DBG if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
        call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
-            source,tag,par%comm,Rrequest(icycle),ierr)
+            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
        if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
           call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -195,8 +213,9 @@ contains
        endif
     end do    ! icycle
     
-    call MPI_Waitall(nSendCycles,Srequest,status,ierr)
-    call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
+    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
+    call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+
     !$OMP END MASTER
 !JMD    ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
@@ -209,6 +228,136 @@ contains
 
 
   end subroutine bndry_exchangeS_core
+
+  subroutine bndry_exchangeS_core_start(par,ithr,buffer)
+    use kinds, only : log_kind
+    use edgetype_mod, only : Edgebuffer_t
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
+    use thread_mod, only : omp_in_parallel, omp_get_thread_num
+#ifdef _MPI
+    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+         mpireal_t, mpiinteger_t, mpi_success
+#else
+    use parallel_mod, only : parallel_t, abortmp
+#endif
+    type (parallel_t)              :: par
+    integer                        :: ithr
+    type (EdgeBuffer_t)            :: buffer
+
+    type (Schedule_t),pointer                     :: pSchedule
+    type (Cycle_t),pointer                        :: pCycle
+    integer                                       :: dest,length,tag
+    integer                                       :: icycle,ierr
+    integer                                       :: iptr,source,nlyr
+    integer                                       :: nSendCycles,nRecvCycles
+    integer                                       :: errorcode,errorlen
+    character*(80) errorstring
+
+    logical(kind=log_kind),parameter              :: Debug=.FALSE.
+
+    integer        :: i,j
+
+    pSchedule => Schedule(1)
+    nlyr = buffer%nlyr
+
+    !$OMP MASTER
+    nSendCycles = pSchedule%nSendCycles
+    nRecvCycles = pSchedule%nRecvCycles
+
+
+    !==================================================
+    !  Fire off the sends
+    !==================================================
+
+    do icycle=1,nSendCycles
+       pCycle      => pSchedule%SendCycle(icycle)
+       dest            = pCycle%dest - 1
+       length      = nlyr * pCycle%lengthS
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
+       iptr            = nlyr * (pCycle%ptrS - 1) + 1
+       if(Debug) print *,'bndry_exchangeS: MPI_Isend: DEST:',dest,'LENGTH:',length,'TAG: ',tag
+       call MPI_Isend(buffer%buf(iptr),length,MPIreal_t,dest,tag,par%comm,buffer%Srequest(icycle),ierr)
+       if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Isend: ',errorstring
+       endif
+    end do    ! icycle
+
+    !==================================================
+    !  Post the Receives 
+    !==================================================
+    do icycle=1,nRecvCycles
+       pCycle         => pSchedule%RecvCycle(icycle)
+       source          = pCycle%source - 1
+       length      = nlyr * pCycle%lengthS
+       ! tag             = pCycle%tag
+       tag             = buffer%tag
+       iptr            = nlyr * (pCycle%ptrS -1) + 1
+       if(Debug) print *,'bndry_exchangeS: MPI_Irecv: SRC:',source,'LENGTH:',length,'TAG: ',tag
+       call MPI_Irecv(buffer%receive(iptr),length,MPIreal_t, &
+            source,tag,par%comm,buffer%Rrequest(icycle),ierr)
+       if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+       endif
+    end do    ! icycle
+    !$OMP END MASTER
+    
+  end subroutine bndry_exchangeS_core_start
+
+  subroutine bndry_exchangeS_core_finish(par,ithr,buffer)
+    use kinds, only : log_kind
+    use edgetype_mod, only : Edgebuffer_t
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
+    use thread_mod, only : omp_in_parallel, omp_get_thread_num
+#ifdef _MPI
+    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+         mpireal_t, mpiinteger_t, mpi_success
+#else
+    use parallel_mod, only : parallel_t, abortmp
+#endif
+    type (parallel_t)              :: par
+    integer                        :: ithr
+    type (EdgeBuffer_t)            :: buffer
+
+    type (Schedule_t),pointer                     :: pSchedule
+    type (Cycle_t),pointer                        :: pCycle
+    integer                                       :: dest,length,tag
+    integer                                       :: icycle,ierr
+    integer                                       :: iptr,source,nlyr
+    integer                                       :: nSendCycles,nRecvCycles
+    integer                                       :: errorcode,errorlen
+    character*(80) errorstring
+
+    logical(kind=log_kind),parameter              :: Debug=.FALSE.
+
+    integer        :: i,j
+
+    pSchedule => Schedule(1)
+    nlyr = buffer%nlyr
+
+    !$OMP MASTER
+    nSendCycles = pSchedule%nSendCycles
+    nRecvCycles = pSchedule%nRecvCycles
+
+    call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
+    call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+
+    !$OMP END MASTER
+!JMD    ithr = omp_get_thread_num()+1
+    ! Copy data that doesn't get messaged from the send buffer to the receive
+    ! buffer
+    iptr   = buffer%moveptr(ithr+1)
+    length = buffer%moveLength(ithr+1)
+    if(length>0) then 
+        buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
+    endif
+
+
+  end subroutine bndry_exchangeS_core_finish
 
   subroutine long_bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
@@ -382,7 +531,53 @@ contains
     call t_stopf('bndry_exchangeS')
     call t_adj_detailf(-2)
 
-  end subroutine bndry_exchangeS_threaded
+ end subroutine bndry_exchangeS_threaded
+
+ subroutine bndry_exchangeS_threaded_start(hybrid,buffer)
+    use hybrid_mod, only : hybrid_t
+    use edgetype_mod, only : Edgebuffer_t
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
+    implicit none
+
+    type (hybrid_t)                   :: hybrid
+    type (EdgeBuffer_t)               :: buffer
+
+    call t_adj_detailf(+2)
+    call t_startf('bndry_exchangeS_start')
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    call bndry_exchangeS_core_start(hybrid%par,hybrid%ithr,buffer)
+!#if (defined HORIZ_OPENMP)
+!    !$OMP BARRIER
+!#endif
+    call t_stopf('bndry_exchangeS_start')
+    call t_adj_detailf(-2)
+
+ end subroutine bndry_exchangeS_threaded_start
+
+ subroutine bndry_exchangeS_threaded_finish(hybrid,buffer)
+    use hybrid_mod, only : hybrid_t
+    use edgetype_mod, only : Edgebuffer_t
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
+    implicit none
+
+    type (hybrid_t)                   :: hybrid
+    type (EdgeBuffer_t)               :: buffer
+
+    call t_adj_detailf(+2)
+    call t_startf('bndry_exchangeS_finish')
+!#if (defined HORIZ_OPENMP)
+!    !$OMP BARRIER
+!#endif
+    call bndry_exchangeS_core_finish(hybrid%par,hybrid%ithr,buffer)
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    call t_stopf('bndry_exchangeS_finish')
+    call t_adj_detailf(-2)
+
+ end subroutine bndry_exchangeS_threaded_finish
 
  subroutine bndry_exchangeS_nonthreaded(par,buffer)
     use parallel_mod, only : parallel_t
@@ -409,6 +604,55 @@ contains
 
   end subroutine bndry_exchangeS_nonthreaded
 
+ subroutine bndry_exchangeS_nonthreaded_start(par,buffer)
+    use parallel_mod, only : parallel_t
+    use edgetype_mod, only : Edgebuffer_t
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
+    implicit none
+
+    type (parallel_t)                 :: par
+    integer                           :: ithr
+    type (EdgeBuffer_t)               :: buffer
+
+    call t_adj_detailf(+2)
+    call t_startf('bndry_exchangeS_start')
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    ithr=0
+    call bndry_exchangeS_core_start(par,ithr,buffer)
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    call t_stopf('bndry_exchangeS_start')
+    call t_adj_detailf(-2)
+
+ end subroutine bndry_exchangeS_nonthreaded_start
+
+ subroutine bndry_exchangeS_nonthreaded_finish(par,buffer)
+    use parallel_mod, only : parallel_t
+    use edgetype_mod, only : Edgebuffer_t
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf
+    implicit none
+
+    type (parallel_t)                 :: par
+    integer                           :: ithr
+    type (EdgeBuffer_t)               :: buffer
+
+    call t_adj_detailf(+2)
+    call t_startf('bndry_exchangeS_finish')
+!#if (defined HORIZ_OPENMP)
+!    !$OMP BARRIER
+!#endif
+    ithr=0
+    call bndry_exchangeS_core_finish(par,ithr,buffer)
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+    call t_stopf('bndry_exchangeS_finish')
+    call t_adj_detailf(-2)
+
+  end subroutine bndry_exchangeS_nonthreaded_finish
 
   subroutine ghost_exchangeVfull(par,ithr,buffer)
 !

@@ -7,6 +7,8 @@ module edgetype_mod
   implicit none 
   private 
   save 
+   
+  integer, save, public :: initedgebuffer_callid = 0
 
   type, public :: rotation_t
      integer  :: nbr                                        ! nbr direction: north south east west
@@ -41,8 +43,12 @@ module edgetype_mod
      logical(kind=log_kind), pointer :: reverse(:,:) => null()
      integer(kind=int_kind), pointer :: moveLength(:) => null()
      integer(kind=int_kind), pointer :: movePtr(:) => null()
+     integer(kind=int_kind), dimension(:), allocatable :: Rrequest,Srequest
+     integer(kind=int_kind), dimension(:,:), allocatable :: status
      integer :: nlyr ! Number of layers
      integer :: nbuf ! total size of message passing buffer, includes vertical levels
+     integer :: id
+     integer :: tag
   end type EdgeBuffer_t
 
   type, public :: LongEdgeBuffer_t

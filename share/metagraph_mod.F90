@@ -273,6 +273,28 @@ contains
     NULLIFY(mEdgeList%first)
     call LLSetEdgeCount(0)
 
+#if 0
+    ! look for internal (move) edges and add them first 
+    do i=1,nelem_edge
+       tail_processor_number = GridEdge(i)%tail%processor_number
+       head_processor_number = GridEdge(i)%head%processor_number
+       if(tail_processor_number  .eq. ThisProcessorNumber .and.  &
+          head_processor_number  .eq. ThisProcessorNumber ) then
+          call LLInsertEdge(mEdgeList,tail_processor_number,head_processor_number,eNum)
+       endif
+    enddo
+    ! next add the off processor (send/receive) edges 
+    do i=1,nelem_edge
+       tail_processor_number = GridEdge(i)%tail%processor_number
+       head_processor_number = GridEdge(i)%head%processor_number
+       if((tail_processor_number  .eq. ThisProcessorNumber .or.  &
+          head_processor_number  .eq. ThisProcessorNumber) .and. &
+          (tail_processor_number .ne. head_processor_number) ) then
+          call LLInsertEdge(mEdgeList,tail_processor_number,head_processor_number,eNum)
+       endif
+    enddo
+
+#else
     do i=1,nelem_edge
        tail_processor_number = GridEdge(i)%tail%processor_number
        head_processor_number = GridEdge(i)%head%processor_number
@@ -281,6 +303,7 @@ contains
           call LLInsertEdge(mEdgeList,tail_processor_number,head_processor_number,eNum)
        endif
     enddo
+#endif
     call LLGetEdgeCount(nedges)
 
     NULLIFY(MetaVertex%edges)
