@@ -630,6 +630,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
 
   nEdges = edgeToFEdge.size();
   indexToEdgeID.resize(nEdges);
+  floatingEdgesIds.clear();
   floatingEdgesIds.reserve(nEdges);
   for (int index = 0; index < nEdges; index++) {
     int fEdge = edgeToFEdge[index];
@@ -697,6 +698,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
       << std::endl;
 
   indexToVertexID.resize(nVertices);
+  dirichletNodesIDs.clear();
   dirichletNodesIDs.reserve(nVertices); //need to improve storage efficiency
   for (int index = 0; index < nVertices; index++) {
     int fCell = vertexToFCell[index];
