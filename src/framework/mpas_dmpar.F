@@ -5956,5 +5956,34 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
    end subroutine mpas_dmpar_global_abort!}}}
 
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_get_time
+!
+!> \brief MPAS dmpar get time routine
+!> \author Doug Jacobsen
+!> \date   06/11/2015
+!> \details
+!>  This routine returns the current time, either using the MPI interface, or
+!>  the system_clock interface.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_dmpar_get_time(curTime)!{{{
+
+      implicit none
+
+      real (kind=R8KIND), intent(out) :: curTime !< Output: Current time
+      integer :: clock, hz
+
+#ifdef _MPI
+      curTime = MPI_WTime()
+#else
+      call system_clock(count=clock)
+      call system_clock(count_rate=hz)
+      curTime = real(clock, kind=R8KIND) / real(hz, kind=R8KIND)
+#endif
+
+   end subroutine mpas_dmpar_get_time!}}}
+
 end module mpas_dmpar
 
