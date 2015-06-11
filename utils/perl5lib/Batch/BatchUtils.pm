@@ -8,6 +8,7 @@
 #==============================================================================
 use strict;
 use warnings;
+
 package Batch::BatchUtils;
 use Data::Dumper;
 use Cwd;
@@ -37,50 +38,66 @@ sub new
 	};
 	bless $self, $class;
 
-    my $perl5libdir = undef;
-	my $configbatch = $self->{'machroot'} . "/config_batch.xml";
-	$self->{'configbatch'} = $configbatch;
-	my $configmachines = $self->{'machroot'} . "/config_machines.xml";
-	$self->{'configmachines'} = $configmachines;
-    my $casetoolsdir = $self->{'caseroot'} . "/Tools";
-    push(@INC, $casetoolsdir);
-    my $xml = XML::LibXML->new(no_blanks => 1);
-    my $machineconfig = $xml->parse_file($configmachines);
-    my $root = $machineconfig->getDocumentElement();
-	
-    my @batchtypes = $root->findnodes("/config_machines/machine[\@MACH=\'$self->{machine}\']/batch_system");
-    if(! @batchtypes)
-    {
-        die "Could not determine batch system type for machine $self->{machine}";
-    }
-    $self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
+        my $perl5libdir = undef;
 
-	$self->{dependencyqueue} = undef;
-	return $self;
+        require Misc::MiscUtils;
+
+        my $casetoolsdir = $self->{'caseroot'} . "/Tools";
+        push(@INC, $casetoolsdir);
+
+	$self->getConfigMachinesParser();
+        $self->getBatchSystemTypeForMachine();
+	$self->getBatchConfigParser();
+
+        $self->{dependencyqueue} = undef;
+        return $self;
 }
 sub _check()
 {
     my $self = shift;
     return 1;
 }
+
 #==============================================================================
-# Get the batch system type for this machine. 
+# Gets the XML::LibXML parser for config_batch.xml, then stash it in the object 
+# as a parameter
 #==============================================================================
-sub getBatchSystemType()
+sub getBatchConfigParser()
+{
+  my $self = shift;
+  my $batch_system = $self->{'batch_system'};
+  $self->{'batchparser'} = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
+                                                             $self->{'caseroot'},
+                                                             'config_batch.xml',
+                                                             "/config_batch/batch_system[\@type=\'$batch_system\']");
+  return $self->{'batchparser'};
+}
+
+#==============================================================================
+# Gets the XML::LibXML parser for config_batch.xml, then stash it in the object 
+# as a parameter
+#==============================================================================
+sub getConfigMachinesParser()
+{
+  my $self = shift;
+  my $machine = $self->{'machine'};
+  my $root = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
+                                                 $self->{'caseroot'},
+                                                 'config_machines.xml',
+                                                 "/config_machines/machine[\@MACH=\'$machine\']");
+  $self->{'configmachinesparser'} = $root;
+  return $self->{'configmachinesparser'};
+}
+
+#==============================================================================
+# get the batch system type for this machine. 
+#==============================================================================
+sub getBatchSystemTypeForMachine()
 {
 	my $self = shift;
-	my $configmachines = $self->{'machroot'} . "/config_batch.xml";
-	my $casetoolsdir = $self->{'caseroot'} . "/Tools";
-	push(@INC, $casetoolsdir);
-	my $xml = XML::LibXML->new(no_blanks => 1);
-	my $machineconfig = $xml->parse_file($configmachines);
-	my $root = $machineconfig->getDocumentElement();
-	my @batchtypes = $root->findnodes("/config_machines/machine[\@MACH=\'$self->{machine}\']/batch_system");
-	if(! @batchtypes)
-	{
-		die "Could not determine batch system type for machine $self->{machine}";
-	}
-	$self->{'batchtype'} = $batchtypes[0]->getAttribute('name');
+	$self->{'batch_system'} = Misc::MiscUtils::getBatchSystemType($self->{'machine'},
+                                                                      $self->{'machroot'},
+                                                                      $self->{'caseroot'});
 }
 #==============================================================================
 # Get the depend_string so jobs can be submitted with dependencies.
@@ -89,16 +106,14 @@ sub getDependString()
 {
 	my $self = shift;
 	my $jobid = shift;
-	my $xml = XML::LibXML->new(no_blanks => 1);
-	my $batchconfig = $xml->parse_file($self->{'configbatch'});
-    my $root = $batchconfig->getDocumentElement();
+        my $root = $self->{'batch_system'};
 	my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/depend_string");
 	if(! @dependargs)
 	{
 		die "could not find depend string for this batch system type";
 	}
 	my $deparg = $dependargs[0]->textContent();
-    $deparg =~ s/jobid/$jobid/g;
+        $deparg =~ s/jobid/$jobid/g;
 	return $deparg;
 }
 
@@ -110,9 +125,7 @@ sub getJobID()
 	my $self = shift;
 	my $jobstring = shift;
 	chomp $jobstring;
-	my $xml = XML::LibXML->new(no_blanks => 1);
-    my $batchconfig = $xml->parse_file($self->{'configbatch'});
-    my $root = $batchconfig->getDocumentElement();
+        my $root = $self->{'batch_system'};
 	my @machjobidpatterns = $root->findnodes("/config_batch/batch_system[\@MACH=\'$self->{machine}\']/jobid_pattern");
 	my $jobidpat;
 	if(@machjobidpatterns)
@@ -239,14 +252,14 @@ sub submitSingleJob()
 #==============================================================================
 sub doResubmit()
 {
-	my $self = shift;
+    my $self = shift;
     my $islastjob = shift;
     my $resubmit = shift;
-	my $sta_ok = shift;
+    my $sta_ok = shift;
 	
     # If the islastjob flag is true, and resubmit is > 0,  do the dependency
     # check and job resubmission again 
-    if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
+    if(defined($islastjob) && $islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
     {
 	    my %config = %{$self->{caseconfig}};
 	    $self->dependencyCheck("sta_ok");
@@ -358,9 +371,7 @@ sub getSubmitArguments()
 
 
     # Find the submit arguments for this particular batch system.
-    my $xml = XML::LibXML->new(no_blanks => 1);
-    my $batchconfig = $xml->parse_file($self->{'configbatch'});
-    my $root = $batchconfig->getDocumentElement();
+    my $root = $self->{'batch_system'};
 
     my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
 
@@ -417,6 +428,7 @@ package Batch::BatchUtilsFactory;
 use Exporter qw(import);
 use XML::LibXML;
 use Data::Dumper;
+
 sub getBatchUtils
 {
     my (%params) = @_;
@@ -427,8 +439,11 @@ sub getBatchUtils
 	{
 		die "BatchUtilsFactory: machine must be defined!";
 	}
-    # Find the batch system type based on the machine. 
-	my $batchtype = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
+    # Find the batch system type based on the machine.
+    use Misc::MiscUtils;
+    my $batchtype = Misc::MiscUtils::getBatchSystemType($params{'machine'},
+                                                        $params{'machroot'},
+                                                        $params{'caseroot'});
 
     # Make a new base class 
     my $batchutils = Batch::BatchUtils->new(%params);
@@ -483,32 +498,6 @@ sub getBatchUtils
     }
 
 }
-
-#==============================================================================
-# BatchUtilsFactory getBatchSystemType method. 
-#==============================================================================
-sub getBatchSystemType()
-{
-    my $machine = shift;
-    my $machroot = shift;
-    my $caseroot = shift;
-    my $configbatch = "$machroot/config_batch.xml";
-    my $configmachines = "$machroot/config_machines.xml";
-    my $casetoolsdir = "$caseroot/Tools";
-    push(@INC, $casetoolsdir);
-    my $xml = XML::LibXML->new(no_blanks => 1);
-    my $batchconfig = $xml->parse_file($configbatch);
-    my $machineconfig = $xml->parse_file($configmachines);
-    my $root = $machineconfig->getDocumentElement();
-    my @batchsystems = $root->findnodes("/config_machines/machine[\@MACH=\'$machine\']/batch_system");
-    if(! @batchsystems)
-    {
-        die "Could not determine batch system type for machine $machine";
-    }
-    my $batchtype = $batchsystems[0]->getAttribute('type');
-    return $batchtype;
-}
-
 
 #==============================================================================
 # Mira/ALCF specific BatchUtils class, since the workflow for ALCF has to be 
@@ -796,9 +785,7 @@ sub getSubmitArguments()
     }
 
     # Find the submit arguments for this particular batch system. 
-    my $xml = XML::LibXML->new(no_blanks => 1);
-    my $batchconfig = $xml->parse_file($self->{'configbatch'});
-    my $root = $batchconfig->getDocumentElement();
+    my $root = $self->{'batch_system'};
 
     my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
 

@@ -648,9 +648,9 @@ if (defined $opts{'pes_file'}) {
 	$cfg_ref->set_pes("$machdir/config_pes.xml", \%decomp, $pecount, $print, $testwithopts);
 
         # now potentially override with unsupported user config_pes.xml file.
-        my $pes_file = "$ENV{'HOME'}/.cesm/config_pes.xml";
+        my $pes_file = "$ENV{'HOME'}/.cime/config_pes.xml";
         if ( -f "$pes_file") {
-          print "\nUsing UNSUPPORTED userdefined config_pes.xml : \"~/.cesm/config_pes.xml\"\n";
+          print "\nUsing UNSUPPORTED userdefined config_pes.xml : \"~/.cime/config_pes.xml\"\n";
           $cfg_ref->set_pes("$pes_file", \%decomp, $pecount, $print, $testwithopts);
         }
     }
@@ -894,13 +894,6 @@ foreach my $file (@files) {
 }
 $sysmod = "chmod u+w $caseroot/create_production_test";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-my $mkbatch = "$ENV{'HOME'}/.cesm/mkbatch.$mach";
-if (! -f "$mkbatch") {
-    $mkbatch = "$machdir/mkbatch.$mach";
-} else {
-    print "\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cesm/mkbatch.$mach\"\n";
-}
 
 # Copy relevant files into $caseroot/Tools/
 @files = (

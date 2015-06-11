@@ -28,6 +28,8 @@ use XML::LibXML;
 use Exporter qw(import);
 use lib '.';
 require Task::TaskMaker;
+require Misc::MiscUtils;
+
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
 my @requiredargs = qw/caseroot case machroot machine scriptsroot cimeroot/;
 
@@ -62,8 +64,6 @@ sub new
 	# set up paths to the template files, this could and should be extracted out somehow??
 	$self->{'job_id'} = $self->{'case'};
 	$self->{'output_error_path'} = $self->{'case'};
-	$self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
-	$self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
 
 	# we need ConfigCase, and ProjectTools. 
 	my $casetoolsdir = "$self->{'caseroot'}/Tools";
@@ -74,6 +74,11 @@ sub new
 	require ProjectTools;
 	$self->{'cwd'} = Cwd::getcwd();
 	bless $self, $class;
+
+	$self->getConfigMachinesParser();
+        $self->getBatchSystemTypeForMachine();
+	$self->getBatchConfigParser();
+
 	return $self;
 }
 #==============================================================================
@@ -127,16 +132,13 @@ sub transformVars()
 #==============================================================================
 sub getBatchConfigParser()
 {
-	my $self = shift;
-	my $toolsdir = $self->{'caseroot'} . "/Tools";
-	if(! defined $self->{'batchparser'})
-	{
-		chdir $self->{'caseroot'};
-		my $batchparser = XML::LibXML->new(no_blanks => 1);
-		my $batchconfig = $batchparser->parse_file($self->{'configbatch'});
-		$self->{'batchparser'} = $batchconfig->getDocumentElement();
-	}
-	return $self->{'batchparser'};
+  my $self = shift;
+  my $batch_system = $self->{'batch_system'};
+  $self->{'batchparser'} = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
+                                                             $self->{'caseroot'},
+                                                             'config_batch.xml',
+                                                             "/config_batch/batch_system[\@type=\'$batch_system\']");
+  return $self->{'batchparser'};
 }
 
 #==============================================================================
@@ -145,15 +147,14 @@ sub getBatchConfigParser()
 #==============================================================================
 sub getConfigMachinesParser()
 {
-	my $self = shift;
-	my $toolsdir = $self->{'caseroot'} . "/Tools";
-	if(! defined $self->{'configmachinesparser'})
-	{
-		chdir $self->{'caseroot'};
-		my $configmachinesparser = XML::LibXML->new(no_blanks => 1);
-		my $configmachines = $configmachinesparser->parse_file($self->{'configmachines'});
-		$self->{'configmachinesparser'} = $configmachines->getDocumentElement();
-	}
+  my $self = shift;
+  my $machine = $self->{'machine'};
+  my $root = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
+                                                 $self->{'caseroot'},
+                                                 'config_machines.xml',
+                                                 "/config_machines/machine[\@MACH=\'$machine\']");
+  $self->{'configmachinesparser'} = $root;
+  return $self->{'configmachinesparser'};
 }
 
 #==============================================================================
@@ -173,13 +174,9 @@ sub makeBatchScript()
 	{
 		die "$inputfilename does not exist!";
 	}
-	
-	$self->getBatchSystemTypeForMachine();
-	$self->setTaskInfo();
-	$self->setQueue();
-	$self->setWallTime();
-	$self->setProject();
-	$self->setBatchDirectives();
+
+        $self->setTaskInfo();
+        $self->getBatchDirectives();
 	$self->setCESMRun();
 	$self->writeBatchScript($inputfilename, $outputfilename);
 }
@@ -190,17 +187,9 @@ sub makeBatchScript()
 sub getBatchSystemTypeForMachine()
 {
 	my $self = shift;
-	my $mach = $self->{'machine'};
-	$self->getConfigMachinesParser();
-	my $configmachinesparser = $self->{'configmachinesparser'};
-    my @batchtypes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$mach\']/batch_system");
-
-	if(!@batchtypes)
-	{
-		die "Could not find batch system for machine $self->{'machine'}, aborting";
-	}
-	$self->{'batch_system'} = $batchtypes[0]->getAttribute('type');
-	
+	$self->{'batch_system'} = Misc::MiscUtils::getBatchSystemType($self->{'machine'},
+                                                                      $self->{'machroot'},
+                                                                      $self->{'caseroot'});
 }
 
 #==============================================================================
@@ -213,15 +202,15 @@ sub getBatchDirectives()
 	
 	if(! defined $self->{'batchdirectives'})
 	{
-
-	    $self->getBatchSystemTypeForMachine();
-	    $self->setTaskInfo();
-	    $self->setQueue();
-	    $self->setWallTime();
-	    $self->setProject();
-		$self->setBatchDirectives();
-	}
-	return $self->{'batchdirectives'};
+          if ($self->{'batch_system'} eq 'none') {
+            $self->{'batchdirectives'} = '';
+          } else {
+            $self->setQueue();
+            $self->setWallTime();
+            $self->setProject();
+            $self->setBatchDirectives();
+          }
+        }
 
 }
 #==============================================================================
@@ -233,7 +222,6 @@ sub getField()
 {
     my $self = shift;
     my $fieldname = shift;
-    $self->getBatchSystemTypeForMachine();
     $self->setTaskInfo();
     $self->setQueue();
     $self->setWallTime();
@@ -255,8 +243,10 @@ sub getField()
 sub setBatchDirectives()
 {
 	my $self = shift;
-	my $batchparser = $self->getBatchConfigParser();
-	my $configmachinesparser = $self->getConfigMachinesParser();
+	my $batchparser = $self->{'batchparser'};
+        # FIXME(2015-06) Why is this being called here?
+        # getConfigMachinesParser doesn't return anything...
+	my $configmachinesparser = $self->{'configmachinesparser'};
 	
 	# get the batch directive for this particular queueing system. 
 
@@ -380,8 +370,6 @@ sub setTaskInfo()
 sub setWallTime()
 {
 	my $self = shift;
-	$self->getBatchConfigParser();
-	$self->getConfigMachinesParser();
 	$self->getEstCost();
 	my $batchparser = $self->{'batchparser'};
 	my $configmachinesparser = $self->{'configmachinesparser'};
@@ -446,8 +434,6 @@ sub setQueue()
 {
 	my $self = shift;
 	#get the batch config parser, and the estimated cost of the run. 
-	$self->getBatchConfigParser();	
-	$self->getConfigMachinesParser();
 	$self->getEstCost();
 	my $batchparser = $self->{'batchparser'};
 	my $configmachinesparser = $self->{'configmachinesparser'};
@@ -640,9 +626,7 @@ sub writeBatchScript()
 	close $RUNTMPL;
 	
 	# transform the template variables to their actual values. 
-	
 	$templatetext = $self->transformVars($templatetext);
-	
 	# write the new run script. 
 	open (my $RUNSCRIPT, ">", $outputfilename) or die "could not open new script, $!";
 	print $RUNSCRIPT $templatetext;
