@@ -63,6 +63,7 @@ integer :: irad_always = 0 ! Specifies length of time in timesteps (positive)
                            ! run continuously from the start of an
                            ! initial or restart run
 logical :: spectralflux  = .false. ! calculate fluxes (up and down) per band.
+logical :: use_rad_dt_cosz  = .false. ! if true, uses the radiation dt for all cosz calculations
 
 !Physics buffer indices
 integer :: qrs_idx      = 0
@@ -77,6 +78,8 @@ integer :: cldemis_idx = -1
 integer :: cldtau_idx = -1
 integer :: nmxrgn_idx = -1
 integer :: pmxrgn_idx = -1
+
+real(r8) :: dt_avg=0  ! time step to use for the shr_orb_cosz calculation, if use_rad_dt_cosz set to true
 
 !===============================================================================
 contains
@@ -98,7 +101,7 @@ contains
 
 !================================================================================================
 
-subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out)
+subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out)
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
@@ -108,6 +111,7 @@ subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always
    integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
+   logical, intent(out), optional :: use_rad_dt_cosz_out
    !-----------------------------------------------------------------------
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
@@ -115,13 +119,14 @@ subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always
    if ( present(iradae_out) )      iradae_out = iradae
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux
+   if ( present(use_rad_dt_cosz_out) ) use_rad_dt_cosz_out = use_rad_dt_cosz
 
 end subroutine radiation_defaultopts
 
 !================================================================================================
 
 subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
-   irad_always_in, spectralflux_in)
+   irad_always_in, spectralflux_in, use_rad_dt_cosz_in)
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
 ! *** NOTE *** This routine needs information about dtime (init by dycore) 
@@ -137,7 +142,7 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    integer, intent(in), optional :: iradae_in
    integer, intent(in), optional :: irad_always_in
    logical, intent(in), optional :: spectralflux_in
-
+   logical, intent(in), optional :: use_rad_dt_cosz_in
    ! Local
    integer :: ntspdy   ! no. timesteps per day
    integer :: nhtfrq1  ! local copy of input arg nhtfrq
@@ -148,6 +153,7 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    if ( present(iradae_in) )      iradae = iradae_in
    if ( present(irad_always_in) ) irad_always = irad_always_in
    if ( present(spectralflux_in) ) spectralflux = spectralflux_in
+   if ( present(use_rad_dt_cosz_in) ) use_rad_dt_cosz = use_rad_dt_cosz_in
 
    ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
    if (iradsw      < 0) iradsw      = nint((-iradsw     *3600._r8)/dtime)
@@ -345,6 +351,12 @@ end function radiation_nextsw_cday
     call radsw_init(gravit)
     call radlw_init(gravit, stebol)
     call radae_init(gravit, epsilo, stebol, pstd, mwdry, mwco2, mwo3)
+
+    ! Set the radiation timestep for cosz calculations if requested using the adjusted iradsw value from radiation
+    if (use_rad_dt_cosz)  then
+       dtime  = get_step_size()
+       dt_avg = iradsw*dtime
+    end if
 
     ! Get physics buffer indices
     cld_idx    = pbuf_get_index('CLD')
@@ -548,6 +560,7 @@ end function radiation_nextsw_cday
     use interpolate_data, only: vertinterp
     use radiation_data,   only: output_rad_data
     use cloud_cover_diags,only: cloud_cover_diags_out
+    use orbit,            only: zenith
 
 
     ! Arguments
@@ -703,7 +716,7 @@ end function radiation_nextsw_cday
     ! Cosine solar zenith angle for current time step
     call get_rlat_all_p(lchnk, ncol, clat)
     call get_rlon_all_p(lchnk, ncol, clon)
-    call zenith (calday, clat, clon, coszrs, ncol)
+    call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
 
     call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
 

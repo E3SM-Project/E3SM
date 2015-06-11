@@ -215,6 +215,7 @@ contains
     use infnan,            only : nan, assignment(=)
     use rate_diags,        only : rate_diags_calc
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
+    use orbit,             only : zenith
 !
 ! LINOZ
 !

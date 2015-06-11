@@ -1094,6 +1094,11 @@
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
 
+<!-- BSINGH - Flag (when .TRUE.)calculates solar zenith angle averaged over a time step.
+     In default model solar zenith angle is held constant over time -->
+<use_rad_dt_cosz>             .false.  </use_rad_dt_cosz>
+
+
 
 <!-- ================================================================== -->
 <!-- Defaults for SE                                                    -->
