@@ -38,6 +38,7 @@ module prep_ocn_mod
   public :: prep_ocn_calc_i2x_ox
   public :: prep_ocn_calc_r2x_ox
   public :: prep_ocn_calc_g2x_ox
+  public :: prep_ocn_shelf_calc_g2x_ox  
   public :: prep_ocn_calc_w2x_ox
 
   public :: prep_ocn_get_a2x_ox
@@ -108,7 +109,7 @@ contains
   !================================================================================================
 
   subroutine prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
-       wav_c2_ocn, glc_c2_ocn)
+       wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
        
     !---------------------------------------------------------------
     ! Description
@@ -123,6 +124,7 @@ contains
     logical                 , intent(in)    :: rof_c2_ocn ! .true.=>rof to ocn coupling on
     logical                 , intent(in)    :: wav_c2_ocn ! .true.=>wav to ocn coupling on
     logical                 , intent(in)    :: glc_c2_ocn ! .true.=>glc to ocn coupling on
+    logical                 , intent(in)    :: glcshelf_c2_ocn ! .true.=>glc ice shelf to ocn coupling on
     !
     ! Local Variables
     logical                  :: esmf_map_flag  ! .true. => use esmf for mapping
@@ -314,7 +316,7 @@ contains
        endif
        call shr_sys_flush(logunit)
 
-       if (glc_c2_ocn) then
+       if (glc_c2_ocn) then !Iceberg flux
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rg2o'
@@ -322,7 +324,9 @@ contains
           call seq_map_init_rcfile(mapper_Rg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_rmapname:', 'glc2ocn_rmaptype:',samegrid_og, &
                'mapper_Rg2o initialization',esmf_map_flag)
-	       
+       endif
+	      
+       if (glcshelf_c2_ocn) then !ice shelf coupled properties	   
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sg2o'
@@ -337,9 +341,9 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Fg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_fmapname:', 'glc2ocn_fmaptype:',samegrid_og, &
-               'mapper_Fg2o initialization',esmf_map_flag)	
-	         
+               'mapper_Fg2o initialization',esmf_map_flag)	       
        endif
+       
        call shr_sys_flush(logunit)
 
        if (wav_c2_ocn) then
@@ -1078,13 +1082,37 @@ contains
        
        call seq_map_map(mapper_Rg2o, g2x_gx, g2x_ox(egi), &
             fldlist='Fogg_rofl:Fogg_rofi', norm=.true.)
+	    
+    enddo
+    call t_drvstopf  (trim(timer))
+  end subroutine prep_ocn_calc_g2x_ox
+
+  !================================================================================================
+
+  subroutine prep_ocn_shelf_calc_g2x_ox(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create g2x_ox (note that g2x_ox is a local module variable)
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: egi
+    type(mct_avect), pointer :: g2x_gx
+    character(*),  parameter :: subname = '(prep_ocn_calc_g2x_ox)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do egi = 1,num_inst_glc
+       g2x_gx => component_get_c2x_cx(glc(egi))
        
        call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), &
             fldlist='Sg_icemask_coupled_fluxes:Sg_topg', norm=.true.)
 	    
     enddo
     call t_drvstopf  (trim(timer))
-  end subroutine prep_ocn_calc_g2x_ox
+  end subroutine prep_ocn_shelf_calc_g2x_ox
 
   !================================================================================================
 
