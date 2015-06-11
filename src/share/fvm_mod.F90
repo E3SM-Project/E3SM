@@ -74,17 +74,10 @@ contains
     ! ---------------------------------------------------------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! -----------------------------------------------
-!<<<<<<< .working
     use edge_mod, only :  ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
     use edgetype_mod, only : ghostBuffertr_t
     use control_mod, only : qsplit
     use time_mod   , only : TimeLevel_Qdp
-!=======
-!    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,&
-!         initghostbufferTR,freeghostbuffertr
-!    use control_mod, only : qsplit
-!    use time_mod   , only : TimeLevel_Qdp
-!>>>>>>> .merge-right.r4402
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)

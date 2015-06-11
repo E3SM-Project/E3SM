@@ -16,6 +16,10 @@ module parallel_mod
 #endif
   integer, parameter, public :: ORDERED = 1
   integer, parameter, public :: FAST = 2
+  integer, parameter, public :: BNDRY_TAG_BASE = 0
+  integer, parameter, public :: THREAD_TAG_BITS = 9
+  integer, parameter, public :: MAX_ACTIVE_MSG = (MPI_TAG_UB/2**THREAD_TAG_BITS) - 1
+  integer, parameter, public :: HME_status_size = MPI_STATUS_SIZE
   integer,      public            :: MaxNumberFrames, numframes
   integer,      public            :: useframes 
   logical,      public            :: PartitionForNodes,PartitionForFrames

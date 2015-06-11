@@ -255,6 +255,7 @@ program prim_main
      nete=dom_mt(ithr)%end
      
      nstep = nextoutputstep(tl)
+!JMD     call vprof_start()
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
         if (tstep_type>0) then  ! forward in time subcycled methods
@@ -264,6 +265,7 @@ program prim_main
         endif
         call t_stopf('prim_run')
      end do
+!JMD     call vprof_stop()
 #if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
 #endif
