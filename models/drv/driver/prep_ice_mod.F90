@@ -41,6 +41,7 @@ module prep_ice_mod
 
   public :: prep_ice_get_mapper_SFo2i
   public :: prep_ice_get_mapper_Rg2i
+  public :: prep_ice_get_mapper_Sg2i  
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -55,6 +56,7 @@ module prep_ice_mod
   ! mappers
   type(seq_map), pointer :: mapper_SFo2i 
   type(seq_map), pointer :: mapper_Rg2i
+  type(seq_map), pointer :: mapper_Sg2i  
   type(seq_map), pointer :: mapper_Rr2i
 
   ! attribute vectors 
@@ -111,6 +113,7 @@ contains
 
     allocate(mapper_SFo2i) 
     allocate(mapper_Rg2i)
+    allocate(mapper_Sg2i)    
     allocate(mapper_Rr2i)
 
     if (ice_present) then
@@ -160,10 +163,20 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rg2i'
           end if
-          call seq_map_init_rcfile(mapper_Rg2i, glc(1), ocn(1), &
+          call seq_map_init_rcfile(mapper_Rg2i, glc(1), ice(1), &
                'seq_maps.rc','glc2ice_rmapname:','glc2ice_rmaptype:',samegrid_ig, &
                'mapper_Rg2i initialization', esmf_map_flag)
+	              
        endif
+       
+       if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sg2i'
+       end if
+       call seq_map_init_rcfile(mapper_Sg2i, glc(1), ice(1), &
+            'seq_maps.rc','glc2ice_smapname:','glc2ice_smaptype:',samegrid_ig, &
+            'mapper_Sg2i initialization', esmf_map_flag)	    
+
 
        if (rof_c2_ice) then
           if (iamroot_CPLID) then
@@ -443,7 +456,10 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_rof
        g2x_gx => component_get_c2x_cx(glc(egi))
-       call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), norm=.true.)
+       !call seq_map_map(mapper_Rg2i, g2x_gx, g2x_ix(egi), &
+       !                 fldlist='Fixx_rofi', norm=.true.)
+       call seq_map_map(mapper_Sg2i, g2x_gx, g2x_ix(egi), &
+                        fldlist='Sg_icemask_coupled_fluxes', norm=.true.)		
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -480,5 +496,10 @@ contains
     type(seq_map), pointer :: prep_ice_get_mapper_Rg2i
     prep_ice_get_mapper_Rg2i => mapper_Rg2i  
   end function prep_ice_get_mapper_Rg2i
+  
+  function prep_ice_get_mapper_Sg2i()
+    type(seq_map), pointer :: prep_ice_get_mapper_Sg2i
+    prep_ice_get_mapper_Sg2i => mapper_Sg2i  
+  end function prep_ice_get_mapper_Sg2i
 
 end module prep_ice_mod

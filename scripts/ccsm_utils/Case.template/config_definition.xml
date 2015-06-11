@@ -981,6 +981,22 @@ a restart file."
  sdesc="glc2ice runoff mapping file"
 ></entry>
 
+<entry id="GLC2ICE_SMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="glc2ice state mapping file"
+></entry>
+
+<entry id="GLC2ICE_FMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="glc2ice runoff mapping file"
+></entry>
+
 <!--- 
 <entry id="GLC2ICE_RMAPTYPE" 
  type="char"

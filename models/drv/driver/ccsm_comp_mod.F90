@@ -1897,9 +1897,9 @@ subroutine ccsm_init()
       if (rof_c2_ice) then
          call prep_ice_calc_r2x_ix(timer='driver_init_rof2ice') 
       endif
-      if (glc_c2_ice) then
+      !if (glc_c2_ice) then
          call prep_ice_calc_g2x_ix(timer='driver_init_glc2ice') 
-      endif
+      !endif
       if (rof_c2_lnd) then
          call prep_lnd_calc_r2x_lx(timer='driver_init_rof2lnd') 
       endif
@@ -2720,7 +2720,7 @@ end subroutine ccsm_init
             call t_drvstartf ('DRIVER_GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-	    !n Jer: get ocn inputs to glc, on glc grid
+	    !Jer: get ocn inputs to glc, on glc grid
 	    if (ocn_c2_glc) then
 	       call prep_glc_calc_o2x_gx(timer='driver_glcprep_ocn2glc')
 	    end if

@@ -556,14 +556,12 @@ contains
     integer, save :: index_r2x_Flrr_flood
     integer, save :: index_g2x_Fogg_rofl
     integer, save :: index_g2x_Fogg_rofi
-    integer, save :: index_x2o_Sg_topg
     integer, save :: index_x2o_Foxx_swnet
     integer, save :: index_x2o_Faxa_snow 
     integer, save :: index_x2o_Faxa_rain 
     integer, save :: index_x2o_Faxa_prec  
     integer, save :: index_x2o_Foxx_rofl
-    integer, save :: index_x2o_Foxx_rofi
-    integer, save :: index_g2x_Sg_topg    
+    integer, save :: index_x2o_Foxx_rofi 
     
     logical :: iamroot  
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
@@ -609,15 +607,13 @@ contains
        index_r2x_Forr_rofi      = mct_aVect_indexRA(r2x_o,'Forr_rofi') 
        index_r2x_Flrr_flood     = mct_aVect_indexRA(r2x_o,'Flrr_flood') 
        index_g2x_Fogg_rofl      = mct_aVect_indexRA(g2x_o,'Fogg_rofl') 
-       index_g2x_Fogg_rofi      = mct_aVect_indexRA(g2x_o,'Fogg_rofi')
-       index_g2x_Sg_topg        = mct_aVect_indexRA(g2x_o,'Sg_topg')       
+       index_g2x_Fogg_rofi      = mct_aVect_indexRA(g2x_o,'Fogg_rofi')     
        
        index_x2o_Faxa_snow      = mct_aVect_indexRA(x2o_o,'Faxa_snow')
        index_x2o_Faxa_rain      = mct_aVect_indexRA(x2o_o,'Faxa_rain')
        index_x2o_Faxa_prec      = mct_aVect_indexRA(x2o_o,'Faxa_prec') 
        index_x2o_Foxx_rofl      = mct_aVect_indexRA(x2o_o,'Foxx_rofl') 
-       index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
-       index_x2o_Sg_topg        = mct_aVect_indexRA(x2o_o,'Sg_topg')       
+       index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi')   
        
        ! Compute all other quantities based on standardized naming convention (see below)
        ! Only ocn field states that have the name-prefix Sx_ will be merged
@@ -847,16 +843,8 @@ contains
     kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
     kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
     lsize = mct_aVect_lsize(x2o_o)
+    
     do n = 1,lsize
-
-!       x2o_o%rAttr(index_x2o_Sg_topg ,n) = g2x_o%rAttr(index_g2x_Sg_topg ,n)
-!       
-!       write(logunit,*) 'Hello'
-!       if (g2x_o%rAttr(index_g2x_Sg_topg ,n) /= 0._r8) then
-!          write(logunit,*) 'g2x_o%rAttr(index_g2x_Sg_topg !,n)=',g2x_o%rAttr(index_g2x_Sg_topg ,n) 
-!       else
-!         write(logunit,*) 'it is zero.'
-!       endif
        
        ifrac = fractions_o%rAttr(kif,n)
        afrac = fractions_o%rAttr(kof,n)
@@ -1092,7 +1080,7 @@ contains
             fldlist='Fogg_rofl:Fogg_rofi', norm=.true.)
        
        call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), &
-            fldlist='Sg_topg', norm=.true.)
+            fldlist='Sg_icemask_coupled_fluxes:Sg_topg', norm=.true.)
 	    
     enddo
     call t_drvstopf  (trim(timer))
