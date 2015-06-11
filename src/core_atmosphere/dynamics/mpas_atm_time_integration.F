@@ -46,6 +46,9 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
    real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend_save
 
+   ! Used in compute_solve_diagnostics
+   real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
+
 
    contains
 
@@ -709,6 +712,9 @@ module atm_time_integration
                call mpas_pool_get_dimension(state, 'nCells', nCells)
                call mpas_pool_get_dimension(state, 'nEdges', nEdges)
                call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+               call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+               allocate(ke_vertex(nVertLevels,nVertices))
    
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
                nthreads = OMP_get_num_threads()
@@ -724,6 +730,8 @@ module atm_time_integration
                call atm_compute_solve_diagnostics(dt, state, 2, diag, mesh, block % configs, &
                                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
 !$OMP END PARALLEL
+
+               deallocate(ke_vertex)
 
                block => block % next
             end do
@@ -3607,7 +3615,6 @@ module atm_time_integration
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
 
       logical, parameter :: hollingsworth=.true.
-      real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
       real (kind=RKIND) :: ke_fact
       real (kind=RKIND), pointer :: config_apvm_upwinding
 
@@ -3734,14 +3741,13 @@ module atm_time_integration
          ! *** approximation here because we don't have inner triangle areas
          !
 
-!MGD use pv_vertex as scratch space for ke_vertex
          ! Replace 2.0 with 2 in exponentiation to avoid outside chance that
          ! compiler will actually allow "float raised to float" operation
          do iVertex=vertexStart,vertexEnd
             r = 0.25 / areaTriangle(iVertex) 
             do k=1,nVertLevels
 
-               pv_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2  &
+               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2  &
                                         +dcEdge(EdgesOnVertex(2,iVertex))*dvEdge(EdgesOnVertex(2,iVertex))*u(k,EdgesOnVertex(2,iVertex))**2  &
                                         +dcEdge(EdgesOnVertex(3,iVertex))*dvEdge(EdgesOnVertex(3,iVertex))*u(k,EdgesOnVertex(3,iVertex))**2  &
                                       ) * r
@@ -3773,7 +3779,7 @@ module atm_time_integration
                iVertex = verticesOnCell(i,iCell)
                j = kiteForCell(i,iCell)
                do k = 1,nVertLevels
-                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(j,iVertex) * pv_vertex(k,iVertex) * r
+                  ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(j,iVertex) * ke_vertex(k,iVertex) * r
                end do
             end do
          end do
@@ -3793,8 +3799,6 @@ module atm_time_integration
          end do
       end do
 
-! Not sure why we need this barrier here... possibly due to pv_vertex
-!$OMP BARRIER
 
       !
       ! Compute height at vertices, pv at vertices, and average pv to edge locations

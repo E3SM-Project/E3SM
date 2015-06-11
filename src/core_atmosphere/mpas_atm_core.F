@@ -233,7 +233,7 @@ module atm_core
       real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
       integer :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
-      integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, nVerticesSolve
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve
       integer :: nthreads, threadid
       character(len=StrKIND), pointer :: mminlu
 
@@ -260,9 +260,12 @@ module atm_core
 
       call mpas_pool_get_dimension(state, 'nEdges', nEdges)
       call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
+
+      allocate(ke_vertex(nVertLevels,nVertices))   ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
       nthreads = OMP_get_num_threads()
@@ -291,6 +294,8 @@ module atm_core
       call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
                                          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
 !$OMP END PARALLEL
+
+      deallocate(ke_vertex)
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
