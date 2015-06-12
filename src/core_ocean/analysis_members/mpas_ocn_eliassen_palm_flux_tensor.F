@@ -118,6 +118,7 @@ contains
       call mpas_pool_get_package(packagePool, &
           'am_eliassen_palm_flux_tensor_Active', am_eliassen_palm_flux_tensor_Active)
 
+      ! turn on package for this analysis member
       am_eliassen_palm_flux_tensor_Active = .true.
 
    end subroutine ocn_setup_packages_eliassen_palm_flux_tensor!}}}
@@ -205,10 +206,6 @@ contains
 
       err = 0
 
-      call mpas_pool_get_package(domain % packages, 'amEPFTActive', amEPFTActive)
-
-      if(.not.amEPFTActive) return
-
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_do_restart', &
         config_eliassen_palm_flux_tensor_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_reset', &
@@ -219,11 +216,12 @@ contains
         config_eliassen_palm_flux_tensor_rhomax_buoycoor)
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
         config_eliassen_palm_flux_tensor_rhomin_buoycoor)
+      
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'amEPFT', amEPFTPool)
+         call mpas_pool_get_subpool(block % structs, 'amEliassenPalmFluxTensor', amEPFTPool)
 
          !-----------------------------------------------------------------
          ! set up pointers
@@ -238,7 +236,8 @@ contains
          ! at present we use layer interfaces that are evenly-spaced in buoyancy space
          !-----------------------------------------------------------------
          nBuoyancyLayers = config_eliassen_palm_flux_tensor_nBuoyancyLayers
-         deltaDensity = (config_eliassen_palm_flux_tensor_rhomax_buoycoor - config_eliassen_palm_flux_tensor_rhomin_buoycoor) / config_eliassen_palm_flux_tensor_nBuoyancyLayers
+         deltaDensity = (config_eliassen_palm_flux_tensor_rhomax_buoycoor &
+            - config_eliassen_palm_flux_tensor_rhomin_buoycoor) / config_eliassen_palm_flux_tensor_nBuoyancyLayers
          deltaBuoyancy = -gravity * deltaDensity / config_density0
 
          !-----------------------------------------------------------------
@@ -246,7 +245,9 @@ contains
          !-----------------------------------------------------------------
          do k = 1, nBuoyancyLayers
             potentialDensityTopRef(k) = config_eliassen_palm_flux_tensor_rhomin_buoycoor + deltaDensity * (k-1)
-            buoyancyInterfaceRef(k) = -gravity * (config_eliassen_palm_flux_tensor_rhomin_buoycoor - config_density0) / config_density0 + deltaBuoyancy * (k-1)
+            buoyancyInterfaceRef(k) = -gravity &
+              * (config_eliassen_palm_flux_tensor_rhomin_buoycoor - config_density0) / config_density0 &
+              + deltaBuoyancy * (k-1)
          end do
          k=nBuoyancyLayers
          buoyancyInterfaceRef(k+1) = buoyancyInterfaceRef(k) + deltaBuoyancy
@@ -263,12 +264,12 @@ contains
          buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          
          !-----------------------------------------------------------------
-         ! initialize ensemble averages when it is not a restart or when a reset is specified
+         ! initialize ensemble averages when it is not a restart or when a reset requested
          !-----------------------------------------------------------------
          if (.not. config_eliassen_palm_flux_tensor_do_restart .or. config_eliassen_palm_flux_tensor_reset) then
+            call mpas_pool_get_array(amEPFTPool, 'nSamplesEA', nSamplesEA)
             call mpas_pool_get_array(amEPFTPool, 'buoyancyMaskEA', buoyancyMaskEA)
             call mpas_pool_get_array(amEPFTPool, 'sigmaEA', sigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'nSamplesEA', nSamplesEA)
             call mpas_pool_get_array(amEPFTPool, 'heightMidBuoyCoorEA', heightMidBuoyCoorEA)
             call mpas_pool_get_array(amEPFTPool, 'montgPotBuoyCoorEA', montgPotBuoyCoorEA)
             call mpas_pool_get_array(amEPFTPool, 'montgPotGradZonalEA', montgPotGradZonalEA)
@@ -284,14 +285,14 @@ contains
             call mpas_pool_get_array(amEPFTPool, 'uwsigmaEA', uwsigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'vwsigmaEA', vwsigmaEA)
 
+            nSamplesEA = 0.0
             buoyancyMaskEA = 0.0
             sigmaEA = 0.0
-            nSamplesEA = 0.0
             heightMidBuoyCoorEA = 0.0
-            montgPotBuoyCoorEA = 0.0
             montgPotGradZonalEA = 0.0
             montgPotGradMeridEA = 0.0
             heightMidBuoyCoorSqEA = 0.0
+            montgPotBuoyCoorEA = 0.0
             heightMGradZonalEA = 0.0
             heightMGradMeridEA = 0.0
             usigmaEA = 0.0
@@ -318,12 +319,12 @@ contains
 !> \author  Juan A. Saenz, Todd Ringler
 !> \date    May 2015
 !> \details 
-!>  This routine conducts all computation required for the EPFT analysis member.
+!>  This routine conducts all computations required for the EPFT analysis member.
 !>  Each time this AM is called, the instananeous ocean state is interpolated
-!>  onto the target buoyancy values. The state is then accumulated in the
-!>  accumulated into the ensemble average (*EA) arrays. Based on the current
-!>  estimate of the ensemble average, thickness-weight velocities are estimates
-!>  along with the computation of the Eliassen-Palm flux tensor
+!>  onto the target buoyancy values. The state is then accumulated into the 
+!>  ensemble average variable arrays (varEA). Based on the current
+!>  estimate of the ensemble average, thickness-weight velocities are estimated
+!>  along with the computation of the Eliassen-Palm flux tensor.
 !
 !-----------------------------------------------------------------------
 
@@ -375,9 +376,8 @@ contains
 
       real (kind=RKIND), pointer :: config_density0
       
-      
       !-----------------------------------------------------------------
-      ! define namelist config variables local to the EPFT module
+      ! define pointers to namelist config variables local to the EPFT module
       !-----------------------------------------------------------------
       logical, pointer :: config_eliassen_palm_flux_tensor_debug
       real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor
@@ -390,7 +390,7 @@ contains
       integer, pointer :: nEdges, nCells, nCellsSolve ! nCellsSolve does not include halo
       
       !-----------------------------------------------------------------
-      ! define buoyancy coordinate and field related to the vertical direction
+      ! define buoyancy coordinates and fields related to the vertical direction
       !-----------------------------------------------------------------
       integer, dimension(:), pointer :: maxLevelCell
       real(KIND=RKIND), dimension(:), pointer :: potentialDensityMidRef
@@ -437,18 +437,18 @@ contains
       !-----------------------------------------------------------------
       ! define Ertel's potential vorticity and related fields
       !-----------------------------------------------------------------
-      real(KIND=RKIND), dimension(:,:,:), pointer :: ErtelPVFlux
-      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVTendency
       real(KIND=RKIND), dimension(:,:), pointer :: ErtelPV
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVTendency
+      real(KIND=RKIND), dimension(:,:,:), pointer :: ErtelPVFlux
 
       !-----------------------------------------------------------------
-      ! define the reason for doing all of this, i.e. Eliassen-Palm flux tensor
+      ! define the Eliassen-Palm flux tensor and related fields
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:,:,:,:), pointer :: EPFT
-      real(KIND=RKIND), dimension(:,:,:), pointer :: divEPFT 
+      real(KIND=RKIND), dimension(:,:,:), pointer :: divEPFT
 
       !-----------------------------------------------------------------
-      ! define scratch fields
+      ! define scratch fields used as work variables and for testing
       !-----------------------------------------------------------------
       type(field1DInteger), pointer :: firstLayerBuoyCoorField
       type(field1DInteger), pointer :: lastLayerBuoyCoorField
@@ -524,7 +524,7 @@ contains
       real(KIND=RKIND), dimension(:,:,:), pointer :: PVFluxTest
 
       !-----------------------------------------------------------------
-      ! define arrays holding instantaneous state in z-coordinates
+      ! define some arrays in z-coordinates, obtained from diagnostics and forcing
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:), pointer :: seaSurfacePressure
       real(KIND=RKIND), dimension(:,:), pointer :: zMid
@@ -534,13 +534,13 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: pressure
       real(KIND=RKIND), dimension(:,:), pointer :: normalVelocityZonal
       real(KIND=RKIND), dimension(:,:), pointer :: normalVelocityMeridional
-      !real(KIND=RKIND), dimension(:,:), pointer :: wCellCenter
       real(KIND=RKIND), dimension(:,:), pointer :: relativeVorticityCell ! jas used for testing
+      !real(KIND=RKIND), dimension(:,:), pointer :: wCellCenter
 
       !-----------------------------------------------------------------
       ! define local test variables
       !-----------------------------------------------------------------
-      ! jas to do : move these to Registry
+      ! jas to do : move these to scratch in Registry_epft
       integer :: nCellsCum
       real(KIND=RKIND) :: RMSlocal1, RMSglobal1
       real(KIND=RKIND) :: RMSlocal2, RMSglobal2
@@ -553,10 +553,9 @@ contains
       integer :: nCellsGlobal, k, i
       real(KIND=RKIND) :: rho0
 
+      
       err = 0
 
-      dminfo = domain % dminfo
-      
       RMSlocal1  = 0.0
       RMSlocal2  = 0.0
       RMSglobal1 = 0.0
@@ -565,10 +564,17 @@ contains
       RMSPVFlux2local  = 0.0
       RMSPVFlux1global = 0.0
       RMSPVFlux2global = 0.0
-
+     
+      dminfo = domain % dminfo
+      
+      
       call mpas_timer_start("compute_eliassen_palm_flux_tensor", .false., &
         am_eliassen_palm_flux_tensorTimer)
       
+      
+      !--------------------------------------------------
+      ! get config variables
+      !--------------------------------------------------
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_debug', &
         config_eliassen_palm_flux_tensor_debug)
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
@@ -579,11 +585,12 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
       rho0 = config_density0
       
+      
       block => domain % blocklist
       do while (associated(block))
 
          !--------------------------------------------------
-         ! assign pointers for each block
+         ! assign pointers for each pool
          !--------------------------------------------------
          call mpas_pool_get_subpool(block % structs, 'amEliassenPalmFluxTensor', am_epftPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -596,8 +603,6 @@ contains
          ! assign pointers for mesh-related variables
          !-------------------------------------------------- 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nBuoyancyLayers', nBuoyancyLayers)
-         call mpas_pool_get_dimension(block % dimensions, 'nBuoyancyLayersP1', nBuoyancyLayersP1)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
@@ -722,6 +727,11 @@ contains
          PVFluxTest       =>  PVFluxTestField % array
 
          !--------------------------------------------------
+         ! assign pointers used from forcing pool
+         !--------------------------------------------------
+         call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+         
+         !--------------------------------------------------
          ! get diagnostic variables
          !--------------------------------------------------
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
@@ -733,15 +743,17 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
          
          !--------------------------------------------------
-         ! define the vertical coordinate system in density/buoyancy space
+         ! variables that define the vertical coordinate system in density/buoyancy space
          !--------------------------------------------------
+         call mpas_pool_get_dimension(block % dimensions, 'nBuoyancyLayers', nBuoyancyLayers)
+         call mpas_pool_get_dimension(block % dimensions, 'nBuoyancyLayersP1', nBuoyancyLayersP1)
          call mpas_pool_get_array(am_epftPool, 'potentialDensityMidRef', potentialDensityMidRef)
          call mpas_pool_get_array(am_epftPool, 'potentialDensityTopRef', potentialDensityTopRef)
          call mpas_pool_get_array(am_epftPool, 'buoyancyMidRef', buoyancyMidRef)
          call mpas_pool_get_array(am_epftPool, 'buoyancyInterfaceRef', buoyancyInterfaceRef)
          
          !--------------------------------------------------
-         ! assign pointers for EA / TWA state
+         ! assign pointers for ensemble average (EA) and thickness-weighted averaged state
          !--------------------------------------------------
          call mpas_pool_get_array(am_epftPool, 'nSamplesEA', nSamplesEA)
          call mpas_pool_get_array(am_epftPool, 'buoyancyMaskEA', buoyancyMaskEA)
@@ -764,25 +776,22 @@ contains
          call mpas_pool_get_array(am_epftPool, 'uTWA', uTWA)
          call mpas_pool_get_array(am_epftPool, 'vTWA', vTWA)
          call mpas_pool_get_array(am_epftPool, 'wTWA', wTWA)
+
+         !--------------------------------------------------
+         ! Eliassen-Palm Flux Tensor and related products
+         !--------------------------------------------------
          call mpas_pool_get_array(am_epftPool, 'EPFT', EPFT)
          call mpas_pool_get_array(am_epftPool, 'divEPFT', divEPFT)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux', ErtelPVFlux)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVTendency', ErtelPVTendency)
          call mpas_pool_get_array(am_epftPool, 'ErtelPV', ErtelPV)
-        
-         !--------------------------------------------------
-         ! assign pointers used from forcing pool
-         !--------------------------------------------------
-         call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
-
          
-
-         
-         ! jas issue diabatic terms
-         !diabaticHeating(nVertLevels,nCells)! "vertical velocity" in buoyancy space
-         !wCellCenter       = 0.0
-
+         !--------------------------------------------------
+         ! Get variables associated to diabatic processes
+         !--------------------------------------------------
          !jas issue diabatic terms
+         ! diabaticHeating(nVertLevels,nCells)! "vertical velocity" in buoyancy space
+         !wCellCenter       = 0.0
          ! Get diabaticTimeTendency of a buoyancy surface, omega with funny hat, if any.
          !call any existing MPAS-O subroutines for this
 
@@ -795,11 +804,15 @@ contains
          ! compute firstLayerBuoyCoor and lastLayerBuoyCoor
          !    firstLayerBuoyCoor == top buoyancy coordinate to exist in each column
          !    lastLayerBuoyCoor == bottom buoyancy coordinate to exist in each column
+         !    buoyancyMask == 1.0 between layers firstLayerBuoyCoor and lastLayerBuoyCoor
          !-------------------------------------------------------------
          call get_masks_in_buoyancy_coordinates(nVertLevels, nCells, nBuoyancyLayers, &
            maxLevelCell, potentialDensity, potentialDensityMidRef, &
            firstLayerBuoyCoor, lastLayerBuoyCoor, buoyancyMask)
 
+         !-------------------------------------------------------------
+         ! TEST for general consistency
+         !-------------------------------------------------------------
          if(config_eliassen_palm_flux_tensor_debug) then
             print *, ' '
             print *, 'timeLevel:', timeLevel
@@ -818,7 +831,6 @@ contains
             print *, minval(density), maxval(density)
          endif
 
-
          !-------------------------------------------------------------
          ! INTERPOLATION TEST 1
          ! stratified, horizontally uniform
@@ -831,7 +843,7 @@ contains
            end do
            print *, ' '
            print *, 'Testing interpolatoin function'
-           print *, 'Interpolating from z, rho to z, rho'
+           print *, 'Interpolating from (z, rho) to (z, rho)'
            print *, 'call linear_interp_1d_field_along_column(nVertLevels, nCells, &
               nVertLevels, maxLevelCell, array1_3D, array2_3D, array1_3D(:,1), array3_3D)'
            
@@ -862,7 +874,6 @@ contains
            end do
          endif
 
-
          !-------------------------------------------------------------
          ! INTERPOLATION TEST 2
          ! Define a stratification where potential density varies linearly with depth
@@ -875,11 +886,13 @@ contains
                do k = 1, nVertLevels
                   array1_3D(k,i) = config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02 + &
                      (zMid(k,i)-zMid(1,i)) * &
-                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
+                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 &
+                     - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
                   array2_3D(k,i) = config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02 + &
                      (zTop(k,i)-zMid(1,i)) * &
-                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
+                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 &
+                     - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
                end do
             end do
@@ -891,7 +904,8 @@ contains
                   array2_3Dbuoy(k,i) = zMid(1,i) + &
                      (potentialDensityMidRef(k) - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) * &
                      (zMid(nVertLevels,i) - zMid(1,i)) / &
-                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02)
+                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 &
+                     - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02)
                end do
             end do
             do i = 1,nCells
@@ -953,7 +967,7 @@ contains
               vMidBuoyCoor(k,i) = normalVelocityMeridional(1,i)
               densityMidBuoyCoor(k,i) = density(1,i)
               densityTopBuoyCoor(k,i) = density(1,i)
-              ! TDR: diabatic
+              ! diabatic
               !wMidBuoyCoor(k,i) = wCellCenter(1,i)
             end do
             do k = lastLayerBuoyCoor(i) + 1, nBuoyancyLayers
@@ -963,7 +977,7 @@ contains
               vMidBuoyCoor(k,i) = normalVelocityMeridional(maxLevelCell(i),i)
               densityMidBuoyCoor(k,i) = density(maxLevelCell(i),i)
               densityTopBuoyCoor(k,i) = density(maxLevelCell(i),i)
-              ! TDR: diabatic
+              ! diabatic
               !wMidBuoyCoor(k,i) = wCellCenter(maxLevelCell(i),i)
             end do
             heightInterfaceBuoyCoor(1:nBuoyancyLayers,i) = heightTopBuoyCoor(1:nBuoyancyLayers,i)
@@ -985,59 +999,47 @@ contains
          !-------------------------------------------------------------
          ! compute the normal derivative of Montgomery potential at cell edges
          !-------------------------------------------------------------
-        call computeNormalGradientOnEdge(nBuoyancyLayers, nCells, nEdges, &
+         call computeNormalGradientOnEdge(nBuoyancyLayers, nCells, nEdges, &
             meshPool, montgPotBuoyCoor, montgPotNormalGradOnEdge)
          
          !-------------------------------------------------------------
          ! reconstruct full gradient vector at cell centers
          !-------------------------------------------------------------
-        call mpas_reconstruct(meshPool, montgPotNormalGradOnEdge, &
+         call mpas_reconstruct(meshPool, montgPotNormalGradOnEdge, &
             montgPotGradX, montgPotGradY, montgPotGradZ, &
             montgPotGradZonal, montgPotGradMerid)
 
          !-------------------------------------------------------------
          ! Increment first-order running mean fields
          !-------------------------------------------------------------
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            buoyancyMask, buoyancyMaskEA)
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            sigma, sigmaEA)
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            heightMidBuoyCoor, heightMidBuoyCoorEA)
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            montgPotBuoyCoor, montgPotBuoyCoorEA)
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            montgPotGradZonal, montgPotGradZonalEA)
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            montgPotGradMerid, montgPotGradMeridEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, buoyancyMask, buoyancyMaskEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, sigma, sigmaEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, heightMidBuoyCoor, heightMidBuoyCoorEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, montgPotBuoyCoor, montgPotBuoyCoorEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, montgPotGradZonal, montgPotGradZonalEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, montgPotGradMerid, montgPotGradMeridEA)
    
          !-------------------------------------------------------------
          ! Increment second-order running mean fields
          !-------------------------------------------------------------
          wrk3DBuoyCoor = heightMidBuoyCoor * heightMidBuoyCoor
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, heightMidBuoyCoorSqEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, heightMidBuoyCoorSqEA)
 
          wrk3DBuoyCoor = heightMidBuoyCoor * montgPotGradZonal
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, heightMGradZonalEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, heightMGradZonalEA)
 
          wrk3DBuoyCoor = heightMidBuoyCoor * montgPotGradMerid
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, heightMGradMeridEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, heightMGradMeridEA)
 
          wrk3DBuoyCoor = uMidBuoyCoor * sigma
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, usigmaEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, usigmaEA)
 
          wrk3DBuoyCoor = vMidBuoyCoor * sigma
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, vsigmaEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, vsigmaEA)
 
          ! Diabatic terms
          !wrk3DBuoyCoor = wMidBuoyCoor * sigma
-         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-         !   wrk3DBuoyCoor, wsigmaEA)
+         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, wsigmaEA)
          wsigmaEA = 0.0
 
    
@@ -1045,27 +1047,22 @@ contains
          ! Increment third-order running mean fields
          !-------------------------------------------------------------
          wrk3DBuoyCoor = uMidBuoyCoor * uMidBuoyCoor * sigma
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, uusigmaEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uusigmaEA)
 
          wrk3DBuoyCoor = vMidBuoyCoor * vMidBuoyCoor * sigma
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, vvsigmaEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, vvsigmaEA)
 
          wrk3DBuoyCoor = uMidBuoyCoor * vMidBuoyCoor * sigma
-         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-            wrk3DBuoyCoor, uvsigmaEA)
+         call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uvsigmaEA)
 
          ! Diabatic terms
          !wrk3DBuoyCoor = uMidBuoyCoor * wMidBuoyCoor * sigma
-         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-         !   wrk3DBuoyCoor, uwsigmaEA)
+         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uwsigmaEA)
          uwsigmaEA = 0.0
 
          ! Diabatic terms
          !wrk3DBuoyCoor = vMidBuoyCoor * wMidBuoyCoor* sigma
-         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, &
-         !   wrk3DBuoyCoor, vwsigmaEA)
+         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, vwsigmaEA)
          vwsigmaEA = 0.0
    
          !-------------------------------------------------------------
@@ -1077,13 +1074,10 @@ contains
          ! based on current estimate of ensemble-average state,
          ! compute the thickness-weighted average velocity
          !-------------------------------------------------------------
-         call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, &
-            sigmaEA, usigmaEA,  uTWA)
-         call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, &
-            sigmaEA, vsigmaEA,  vTWA)
+         call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, usigmaEA,  uTWA)
+         call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, vsigmaEA,  vTWA)
          ! Diabatic terms
-         !call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, &
-         !   sigmaEA, wsigmaEA,  wTWA)
+         !call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, wsigmaEA,  wTWA)
          wTWA = 0.0
 
          !-------------------------------------------------------------
@@ -1116,7 +1110,6 @@ contains
             domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
             meshPool, sigmaEA, ErtelPVFlux, ErtelPVTendency)
 
-
          !-------------------------------------------------------------
          ! compute Ertel PV based on EA/TWA fields
          !-------------------------------------------------------------
@@ -1133,7 +1126,7 @@ contains
 
 
          !-------------------------------------------------------------
-         ! Test:
+         ! TEST:
          ! calculate potential vorticity fluxes using curl of u
          !-------------------------------------------------------------
          if(config_eliassen_palm_flux_tensor_debug) then
@@ -1232,8 +1225,7 @@ contains
       end do
 
       !-------------------------------------------------------------
-      ! TESTS:
-      ! mpi gather/scatter calls may be placed here.
+      ! TESTS: tallying up tests across processors.
       !-------------------------------------------------------------
       if(config_eliassen_palm_flux_tensor_debug) then
         RMSglobal1 = 1.0D36
@@ -1249,7 +1241,6 @@ contains
 
            print *, ' '
         endif
-
 
         call mpas_dmpar_sum_real(dminfo, sum(abs(ErtelPVFlux(1,:,:))), RMSglobal1)
         call mpas_dmpar_max_real(dminfo, maxval(abs(ErtelPVFlux(1,:,:))), RMSglobal2)
@@ -1392,6 +1383,12 @@ contains
    end subroutine ocn_finalize_eliassen_palm_flux_tensor!}}}
 
 
+
+!***********************************************************************
+! Local routines start here
+!***********************************************************************
+
+
 !***********************************************************************
 !
 !  subroutine get_masks_in_buoyancy_coordinates
@@ -1507,10 +1504,13 @@ contains
       integer :: k, iCell, iCellMinBound, iCellMaxBound
       logical :: printWarning
 
-      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor, config_eliassen_palm_flux_tensor_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor, &
+        config_eliassen_palm_flux_tensor_rhomax_buoycoor
 
-      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', config_eliassen_palm_flux_tensor_rhomin_buoycoor)
-      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', config_eliassen_palm_flux_tensor_rhomax_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
+        config_eliassen_palm_flux_tensor_rhomin_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', &
+        config_eliassen_palm_flux_tensor_rhomax_buoycoor)
 
       printWarning = .false.
       iCellMinBound = -1
@@ -1532,7 +1532,7 @@ contains
       if (printWarning) then
          write(stderrUnit,*)
          write(stderrUnit,*) 'Warning: in EPFT package, subroutine check_potentialDensityRef_range'
-         write(stderrUnit,*) 'One or more columns in the ocean doman have densities that are not'
+         write(stderrUnit,*) 'One or more columns in the ocean domain have densities that are not'
          write(stderrUnit,*) 'contained in the defined buoyancy space of the EPFT module'
          if (iCellMinBound.gt.0) write(stderrUnit,*) 'fluid is lighter than min buoyancy at cell: ',iCellMinBound
          if (iCellMaxBound.gt.0) write(stderrUnit,*) 'fluid is lighter than max buoyancy at cell: ',iCellMaxBound
@@ -1652,71 +1652,6 @@ contains
       enddo
    
    end subroutine linear_interp_1d_field_along_column!}}}
-
-
-!***********************************************************************
-!
-!  subroutine computeBuoyancyColumn
-!
-!> \brief   Compute buoyancy
-!> \author  Juan A. Saenz
-!> \date    17 December 2013
-!> \details 
-!>  This subroutine computes buoyancy
-!
-!-----------------------------------------------------------------------
-
-   subroutine computeBuoyancyColumn(nLayers, rho0, potentialDensity, buoyancy)!{{{
-      integer, intent(in) :: nLayers
-      real (kind=RKIND), intent(in) :: rho0 ! config_density0
-      real (kind=RKIND), dimension(nLayers), intent(in) :: potentialDensity
-      real (kind=RKIND), dimension(nLayers), intent(out) :: buoyancy
-   
-      !local variables
-      integer :: i, k
-      
-      buoyancy = 0.0
-      
-      do k = 1, nLayers
-         buoyancy(k) = -gravity * (potentialDensity(k)-rho0) / rho0
-      enddo
-   
-   end subroutine computeBuoyancyColumn!}}}
-
-
-!***********************************************************************
-!
-!  subroutine computeBuoyancyColumnP1
-!
-!> \brief   Compute buoyancy
-!> \author  Juan A. Saenz
-!> \date    Jan 2014
-!> \details 
-!>  This subroutine computes buoyancy
-!
-!-----------------------------------------------------------------------
-
-   subroutine computeBuoyancyColumnP1(nLayers, rho0, rhoMax, potentialDensity, buoyancy)!{{{
-      integer, intent(in) :: nLayers
-      real (kind=RKIND), intent(in) :: rho0 ! config_density0
-      real (kind=RKIND), intent(in) :: rhoMax ! config_eliassen_palm_flux_tensor_rhomax_buoycoor
-      real (kind=RKIND), dimension(nLayers-1), intent(in) :: potentialDensity
-      real (kind=RKIND), dimension(nLayers), intent(out) :: buoyancy
-   
-      !local variables
-      integer :: i, k
-      
-      buoyancy = 0.0
-      
-      do k = 1, nLayers-1
-         buoyancy(k) = -gravity * (potentialDensity(k)-rho0) / rho0
-      enddo
-   
-      buoyancy(nLayers) = -gravity * (rhoMax-rho0) / rho0
-      
-   
-   end subroutine computeBuoyancyColumnP1!}}}
-
 
 
 !***********************************************************************
@@ -2098,7 +2033,10 @@ contains
 !> \author  Juan A. Saenz, Todd Ringler
 !> \date    May 2015
 !> \details 
-!>  This subroutine calculates the divergence of the Eliassen-Palm flux tensor
+!>  This subroutine calculates the divergence of the Eliassen-Palm flux tensor.
+!>  This is done by calculating the divergence of the column vectors in the tensor.
+!>  The divergence of a vector v in buoyancy coordinates is given by (Young 2012): 
+!>      div of v = sigma^-1 (sigma * v_i)_xi
 !
 !-----------------------------------------------------------------------
 
@@ -2228,6 +2166,7 @@ contains
          endif
 
 
+         ! Normalize by sigma, after having taken the derivative of sigma * v_i
          if (q < 3 .or. .not. debugFlag) then
             do iCell = 1,nCells
                do kLayer = 1,nLayers
@@ -2328,86 +2267,6 @@ contains
     end subroutine calculateErtelPVFlux
 
 
-
-!***********************************************************************
-!
-!  routine mpas_tensor_cell_to_edge_BuoyCoor
-!
-!> \brief   Interpolate a matrix from cell to edge
-!> \author  Mark Petersen, Juan A. Saenz
-!> \date    Jan 2014
-!> \details 
-!>  This routine interpolates a matrix from cell to edge locations,
-!>  looping through nBuoyancyLayers.
-!
-!-----------------------------------------------------------------------
-
-!   subroutine mpas_tensor_cell_to_edge_BuoyCoor(matrixCell, grid, &
-!        includeHalo, matrixEdge)!{{{
-!
-!      !-----------------------------------------------------------------
-!      !
-!      ! input variables
-!      !
-!      !-----------------------------------------------------------------
-!
-!      real (kind=RKIND), dimension(:,:,:,:), intent(in) :: &
-!         matrixCell   !< Input: matrix located at Cell
-!
-!      type (mpas_pool_type), intent(in) :: meshPool
-!      type (mesh_type), intent(in) :: &
-!         grid          !< Input: grid information
-!
-!      logical, intent(in) :: & 
-!         includeHalo !< Input: If true, halo cells and edges are included in computation
-!
-!      !-----------------------------------------------------------------
-!      !
-!      ! output variables
-!      !
-!      !-----------------------------------------------------------------
-!
-!      real (kind=RKIND), dimension(:,:,:,:), intent(out) :: &
-!         matrixEdge   !< Output: matrix located at Edge
-!
-!      !-----------------------------------------------------------------
-!      !
-!      ! local variables
-!      !
-!      !-----------------------------------------------------------------
-!
-!      integer :: iEdge, cell1, cell2, p, q, k
-!      integer :: nEdgesCompute, nBuoyancyLayers, nCells
-!      integer, dimension(:,:), pointer :: cellsOnEdge
-!
-!      if (includeHalo) then
-!         nEdgesCompute = grid % nEdges
-!      else 
-!         nEdgesCompute = grid % nEdgesSolve
-!      endif
-!      nBuoyancyLayers = grid % nBuoyancyLayers
-!      nCells = grid % nCells
-!
-!      cellsOnEdge => grid % cellsOnEdge % array
-!
-!      ! error check that index 1 of matrixEdge and matrixCell are same length?
-!
-!      do iEdge=1,nEdgesCompute
-!         cell1 = cellsOnEdge(1,iEdge)
-!         cell2 = cellsOnEdge(2,iEdge)
-!         do k=1,nBuoyancyLayers
-!            do q = 1, 3
-!               do p = 1, 3
-!                  matrixEdge(p,q,k,iEdge) = &
-!                     0.5*(matrixCell(p,q,k,cell1) + matrixCell(p,q,k,cell2))
-!               end do
-!            end do
-!         enddo
-!      enddo
-!
-!   end subroutine mpas_tensor_cell_to_edge_BuoyCoor!}}}
-
-
 !***********************************************************************
 !
 !  subroutine calculateErtelPVTendencyFromPVFlux
@@ -2417,7 +2276,7 @@ contains
 !> \date    May 2015
 !> \details 
 !>  This subroutine calculates the Ertel PV tendency as the divergence of
-!>  the Ertel PV flux
+!>  the Ertel PV flux, where the latter only has horizontal components.
 !
 !-----------------------------------------------------------------------
 
@@ -2467,6 +2326,8 @@ contains
       call mpas_pool_get_array(meshPool, 'zCell', zCell)
       
       includeHalo = .true.
+
+      divVectorCell = 0.0
  
       ! copy vector into work array
       vectorCellWrk1 = vectorCell
@@ -2597,6 +2458,8 @@ contains
         velGradX, velGradY, velGradZ, &
         velGradZonal, velGradMerid)
       vGradZonal = velGradZonal
+
+      ErtelPV = 0.0
 
       do i = 1, nCells
         do k = 1,nLayers 

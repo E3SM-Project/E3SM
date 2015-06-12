@@ -421,12 +421,6 @@
     units="m"
     description="z-coordinate of each buoyancy layer, ensemble average"
   />
-  <var name="heightTopBuoyCoorEA" 
-    type="real" 
-    dimensions="nBuoyancyLayers nCells Time"
-    units="m"
-    description="z-coordinate at top of each buoyancy layer, ensembele average"
-  />
   <var name="montgPotGradZonalEA" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
