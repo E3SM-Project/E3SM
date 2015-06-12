@@ -46,7 +46,6 @@ module mpas_decomp
 !-----------------------------------------------------------------------
    subroutine mpas_decomp_create_decomp_list(decompList)!{{{
       type (mpas_decomp_list), pointer :: decompList
-      procedure (mpas_decomp_function), pointer :: decompFunc
 
       integer :: errLocal
 
