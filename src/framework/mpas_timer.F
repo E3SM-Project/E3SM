@@ -57,9 +57,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_start(timer_name, clear_timer, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
 
           character (len=*), intent (in) :: timer_name !< Input: name of timer, stored as name of timer
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
@@ -163,12 +160,8 @@
 #ifdef _PAPI
             call PAPIF_get_real_usec(usecs, check_flag)
             current%start_time = usecs/1.0e6
-#elif _MPI
-            current%start_time = MPI_Wtime()
 #else
-            call system_clock (count=clock)
-            call system_clock (count_rate=hz)
-            current%start_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+            call mpas_dmpar_get_time(current % start_time)
 #endif
           endif
 
@@ -204,9 +197,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_stop(timer_name, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
@@ -258,12 +248,8 @@
 #ifdef _PAPI
             call PAPIF_get_real_usec(usecs, check_flag)
             current%end_time = usecs/1.0e6
-#elif _MPI
-            current%end_time = MPI_Wtime()
 #else
-            call system_clock(count=clock)
-            call system_clock(count_rate=hz)
-            current%end_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+            call mpas_dmpar_get_time(current % end_time)
 #endif
             
             time_temp = current%end_time - current%start_time
@@ -416,7 +402,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_sync()!{{{
-          use mpas_dmpar
 
           type (timer_node), pointer :: current
           real (kind=RKIND) :: all_total_time, all_max_time, all_min_time, all_ave_time
