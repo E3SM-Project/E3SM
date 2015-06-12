@@ -1008,7 +1008,7 @@ endif
 !    endif
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i)
+!$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
        iptr=np*(kptr+k-1)+ie
@@ -1017,6 +1017,9 @@ endif
        enddo
     enddo
 
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,iptr)
+#endif
     do k=1,vlyr
        iptr=np*(kptr+k-1)+is
        do i=1,np
@@ -1024,6 +1027,9 @@ endif
        enddo
     enddo
 
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,iptr)
+#endif
     do k=1,vlyr
        iptr=np*(kptr+k-1)+in
        do i=1,np
@@ -1031,6 +1037,9 @@ endif
        enddo
     enddo
 
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,iptr)
+#endif
     do k=1,vlyr
        iptr=np*(kptr+k-1)+iw
        do i=1,np
