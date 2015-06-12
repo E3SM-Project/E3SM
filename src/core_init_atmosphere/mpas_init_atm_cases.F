@@ -12,6 +12,7 @@ module init_atm_cases
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_sort
    use atm_advection
    use mpas_atmphys_initialize_real
    use mpas_RBF_interpolation

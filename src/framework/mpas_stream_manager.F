@@ -13,6 +13,7 @@ module mpas_stream_manager
     use mpas_io_units
     use mpas_io_streams
     use mpas_stream_list
+    use mpas_sort
 
 
     public :: MPAS_stream_mgr_init, &
