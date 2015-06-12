@@ -65,11 +65,11 @@ sub _check()
 sub getBatchConfigParser()
 {
   my $self = shift;
-  my $batch_system = $self->{'batch_system'};
+  my $batchtype = $self->{'batchtype'};
   $self->{'batchparser'} = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
                                                              $self->{'caseroot'},
                                                              'config_batch.xml',
-                                                             "/config_batch/batch_system[\@type=\'$batch_system\']");
+                                                             "/config_batch/batch_system[\@type=\'$batchtype\']");
   return $self->{'batchparser'};
 }
 
@@ -95,7 +95,7 @@ sub getConfigMachinesParser()
 sub getBatchSystemTypeForMachine()
 {
 	my $self = shift;
-	$self->{'batch_system'} = Misc::MiscUtils::getBatchSystemType($self->{'machine'},
+	$self->{'batchtype'} = Misc::MiscUtils::getBatchSystemType($self->{'machine'},
                                                                       $self->{'machroot'},
                                                                       $self->{'caseroot'});
 }
@@ -106,7 +106,7 @@ sub getDependString()
 {
 	my $self = shift;
 	my $jobid = shift;
-        my $root = $self->{'batch_system'};
+        my $root = $self->{'batchparser'};
 	my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/depend_string");
 	if(! @dependargs)
 	{
@@ -125,7 +125,7 @@ sub getJobID()
 	my $self = shift;
 	my $jobstring = shift;
 	chomp $jobstring;
-        my $root = $self->{'batch_system'};
+        my $root = $self->{'batchparser'};
 	my @machjobidpatterns = $root->findnodes("/config_batch/batch_system[\@MACH=\'$self->{machine}\']/jobid_pattern");
 	my $jobidpat;
 	if(@machjobidpatterns)
@@ -221,27 +221,44 @@ sub submitSingleJob()
 		#$ENV{'sta_ok'} = 'FALSE';
 		delete $ENV{'sta_ok'};
 	}
-	print "Submitting CESM job script $scriptname\n";
-	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
-	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
-    
-	my $output;
+        my $batch_cmd = '';
+        if ($self->{'batchtype'} ne 'none') {
+          $batch_cmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ";
+        }
+	my $runcmd = $batch_cmd . " ./$scriptname ";
+	print("Submitting CESM job script '$scriptname':\n");
+        print("    $runcmd\n");
+	my @output;
 
 	eval {
-        open (my $RUN, "-|", $runcmd) // die "job submission failed, $!";
-        $output = <$RUN>;
-		close $RUN or die "job submission failed: |$?|, |$!|"
+          open (my $RUN, "-|", $runcmd) // die "job submission failed, $!";
+          # NOTE(bja, 2015-06) loop is needed to run to completion on
+          # machines without a batch system
+          my $i = 0;
+          while (my $line = <$RUN>) {
+            $output[$i] = $line;
+            $i++;
+            if ($self->{'batchtype'} eq 'none') {
+              print($line);
+            }
+          }
+          close $RUN or die "job submission failed: |$?|, |$!|";
 	};
 	my $exitstatus = ($?>>8);
 	if($exitstatus != 0)
 	{
 		print "Job submission failed\n";
 		exit(1);
-	}
-		
-	chomp $output;	
-	
-	my $jobid = $self->getJobID($output);
+        }
+
+        my $jobid;
+        if ($self->{'batchtype'} eq 'none') {
+          # FIXME(bja, 2015-06) should set in getJobID?
+          $jobid = undef;
+        } else {
+          my $jobline = chomp $output[0];
+          $jobid = $self->getJobID($jobline);
+        }
 	return $jobid;
 }
 
@@ -371,7 +388,7 @@ sub getSubmitArguments()
 
 
     # Find the submit arguments for this particular batch system.
-    my $root = $self->{'batch_system'};
+    my $root = $self->{'batchparser'};
 
     my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
 
@@ -785,7 +802,7 @@ sub getSubmitArguments()
     }
 
     # Find the submit arguments for this particular batch system. 
-    my $root = $self->{'batch_system'};
+    my $root = $self->{'batchparser'};
 
     my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
 

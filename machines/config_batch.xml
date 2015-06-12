@@ -24,15 +24,6 @@
   </batch_system>
 
   <batch_system type="none">
-<!--
-    <batch_query args=""></batch_query>
-    <batch_submit></batch_submit>
-    <batch_redirect></batch_redirect>
-    <batch_directive></batch_directive>
-    <directives>
-      <directive name=""></directive>
-    </directives>
---> 
   </batch_system>
 
    <batch_system type="cobalt" version="x.y">
