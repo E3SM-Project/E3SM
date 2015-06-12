@@ -95,7 +95,7 @@ sub doPreRunChecks()
     $machroot            = $config{'CCSM_MACHDIR'};
     $mpilib              = $config{'MPILIB'};
     $scriptsroot         = $config{'SCRIPTSROOT'};
-    if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} && $ENV{'sta_ok'} ne 'TRUE')
+    if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
 	{
 		print "You are not calling the CESM run script via the CESM submit script. \n";
 		print "As a result, short-term archiving will not be called automatically. \n";

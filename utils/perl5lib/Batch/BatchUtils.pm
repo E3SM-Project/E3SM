@@ -211,7 +211,6 @@ sub submitSingleJob()
 	print "Submitting CESM job script $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
-	print "runcmd is $runcmd\n";
     
 	my $output;
 
@@ -249,7 +248,6 @@ sub doResubmit()
     # check and job resubmission again 
     if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
     {
-		print "everything checks out, doing resubmit!!\n";
 	    my %config = %{$self->{caseconfig}};
 	    $self->dependencyCheck("sta_ok");
 	    $self->submitJobs("sta_ok");		
@@ -533,7 +531,9 @@ use Cwd;
 sub submitJobs()
 {
     my $self = shift;
+    my $sta_ok = shift;
     my $depjobid = shift;
+    
     my %depqueue = %{$self->{dependencyqueue}};
 
     # Get the first job sequence number. 
@@ -544,7 +544,7 @@ sub submitJobs()
     my $firstjobname = $$firstjobarray[0];
 
     # submit the CESM run, and nothing else. 
-    $depjobid = $self->submitSingleJob($firstjobname, $depjobid, 0);
+    $depjobid = $self->submitSingleJob($firstjobname, $depjobid, 0, $sta_ok);
 }
 
 #==============================================================================
@@ -553,6 +553,7 @@ sub submitJobs()
 # to resubmit the CESM run.
 # So, write a 'workflowhostfile' which contains the hostname we need to ssh back to 
 # to resubmit the run. 
+# mira submitSingleJob
 #==============================================================================
 sub submitSingleJob()
 {
@@ -560,6 +561,7 @@ sub submitSingleJob()
     my $scriptname = shift;
     my $dependentJobId = shift;
     my $islastjob = shift;
+    my $sta_ok = shift;
     my $workflowhostfile = "./workflowhostfile";
     if(! -e $workflowhostfile)
     {
@@ -574,8 +576,45 @@ sub submitSingleJob()
         }
         close $W;
     }
-    $self->SUPER::submitSingleJob($scriptname, $dependentJobId, $islastjob);
+    #$self->SUPER::submitSingleJob($scriptname, $dependentJobId, $islastjob, $sta_ok);
+    my %config = %{$self->{'caseconfig'}};
+      
+    my $dependarg = '';
+    my $submitargs = '';
+    $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+    if(! defined $submitargs && length($submitargs <= 0))
+    {
+        $submitargs = '';
+    }
 
+    if(defined $sta_ok)
+    {
+        $submitargs .= " --env sta_ok=TRUE ";   
+    }
+    if(defined $islastjob)
+    {
+        $submitargs .= " --env islastjob=TRUE ";
+    }
+    
+    print "Submitting CESM job script $scriptname\n";
+    my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
+    
+    my $output;
+    
+    eval {
+        open(my $RUN, "-|", $runcmd) // die " job submission failed, $!";
+        $output = <$RUN>;
+        close $RUN or die "job submission failed; |$?|, |$!|";
+    };
+
+    my $exitstatus = ($?>>8);
+    if($exitstatus != 0)
+    {
+        print "job submission failed\n";
+        exit(1);
+    }
+    chomp $output;
+    return undef;
 }
 #==============================================================================
 # Mira-specific doResubmit call.  If this is called from the cesm run, then we 
@@ -588,12 +627,72 @@ sub doResubmit()
     my $islastjob = shift;
     my $resubmit = shift;
     my $scriptname = shift;
+    my $sta_ok = shift;
 
     my %config = %{$self->{'caseconfig'}};
-	# On Mira/Cetus, if we're in doResubmit, and we are being called by the run
-    # script, we need to ssh to tukey and submit the short-term archiver. 
-    if($scriptname =~ /run/)
+    if(defined $sta_ok)
     {
+        $ENV{'sta_ok'} = 'TRUE';
+    }
+    else
+    {
+        delete $ENV{'sta_ok'};
+    }
+    
+    #If we're NOT doing short-term archiving, and we need to resubmit, then we need to resubmit JUST the run.  
+    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE' && $config{'DOUT_S'} eq 'FALSE')
+    {
+        chdir $config{'CASEROOT'};
+        my $submitargs = $self->getSubmitArguments($scriptname);
+        #if($config{'RESUBMIT'} > 0)
+        if($islastjob)
+        {
+            $submitargs .= " --env islastjob=TRUE";
+        } 
+         
+        if(defined $sta_ok)
+        {
+            $submitargs .= " --env sta_ok=TRUE";
+        }
+        
+        my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname";
+        
+        qx($runcmd) or die "coult not exec command $runcmd, $!";
+        my $newresubmit = $config{'RESUBMIT'} - 1;
+        #my $owd = getcwd;
+        #chdir $config{'CASEROOT'};
+        `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+        if($?)
+        {
+            print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
+        }
+        #chdir $owd;
+
+    }
+
+    # If we ARE doing short-term archiving and we aren't resubmitting, then 
+    # just run the short-term archiver 
+    if($scriptname =~ /run/ && $config{'DOUT_S'} eq 'TRUE' && $config{'RESUBMIT'} == 0)
+    {
+        chdir $config{'CASEROOT'};
+        my $starchivescript = $scriptname;
+        $starchivescript =~ s/run/st_archive/g;
+        my $submitargs = $self->getSubmitArguments($starchivescript);
+        
+        my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
+        
+        my $runcmd = "ssh tukeylogin1 $submitstuff";
+    
+        qx($runcmd) or die " could not exec cmd $runcmd, $! $?";
+        
+    }
+
+    
+    # If we're post run and we need to run the short-term archiver AND resubmit, then run the short-term archiver
+    # on tukey
+    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE' && $config{'DOUT_S'} eq 'TRUE')
+    {
+        chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
         $starchivescript =~ s/run/st_archive/g;
         
@@ -601,6 +700,10 @@ sub doResubmit()
         if($config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE')
         {
             $submitargs .= " --env islastjob=TRUE ";
+        }
+        if(defined $sta_ok)
+        {
+            $submitargs .= " --env sta_ok=TRUE";
         }
             
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
@@ -614,6 +717,7 @@ sub doResubmit()
     # either mira or cetuslac1, and resubmit the run. 
     if($scriptname =~ /archive/ && $islastjob eq 'TRUE' && $resubmit > 0)
     {
+        chdir $config{'CASEROOT'};
         my $newresubmit = $config{'RESUBMIT'} - 1;
         my $owd = getcwd;
         chdir $config{'CASEROOT'};
@@ -624,6 +728,15 @@ sub doResubmit()
         $runscript =~ s/st_archive/run/g;
         
         my $submitargs = $self->getSubmitArguments($runscript);
+    
+        if($config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE')
+        {
+            $submitargs .= " --env islastjob=TRUE";
+        }
+        if(defined $sta_ok)
+        {
+            $submitargs .= " --env sta_ok=TRUE";
+        }
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $runscript";
         open (my $W, "<", "./workflowhostfile" ) or die "could not open workflow host file, $!";
         my $text = <$W>;
@@ -639,6 +752,20 @@ sub doResubmit()
         }
         my $runcmd = "ssh tukeylogin1 ssh $runhost $submitstuff ";
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
+        if($?)
+        {
+            print "could not execute runcmd $runcmd, $! $?\n";
+            exit(1);
+        }
+        $newresubmit = $config{'RESUBMIT'} - 1;
+        #$owd = getcwd;
+        #chdir $config{'CASEROOT'};
+        `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+        if($?)
+        {
+            print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
+        }
+        #chdir $owd;
         
     }
     
@@ -655,6 +782,7 @@ sub getSubmitArguments()
     # We need the script name and the dependent job id. 
     my $scriptname = shift;
     my $dependentjobid = shift;
+    my $sta_ok = shift;
 
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
                                                   mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
@@ -720,7 +848,7 @@ sub getSubmitArguments()
 }
 
 #==============================================================================
-# Red herring class so the factory will work. 
+# Red herring method so the factory will work. 
 #==============================================================================
 sub _test()
 {
