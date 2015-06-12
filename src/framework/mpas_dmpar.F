@@ -5936,11 +5936,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_global_abort(mesg)!{{{
 
-      use mpas_io_units
-
       implicit none
-
-      include 'mpif.h'
 
       character (len=*), intent(in) :: mesg !< Input: Abort message
 
