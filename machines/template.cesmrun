@@ -69,10 +69,12 @@ sub getOptions()
 {
 	%opts = (
 			 debug => undef,
+             #sta_ok => undef,
 			);
 	
 	GetOptions(
 			  "debug" => \$opts{'debug'},
+			  #"sta_ok" => \$opts{'sta_ok'},
 			  );
 }
 
@@ -93,6 +95,14 @@ sub doPreRunChecks()
     $machroot            = $config{'CCSM_MACHDIR'};
     $mpilib              = $config{'MPILIB'};
     $scriptsroot         = $config{'SCRIPTSROOT'};
+    if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
+	{
+		print "You are not calling the CESM run script via the CESM submit script. \n";
+		print "As a result, short-term archiving will not be called automatically. \n";
+		print "Please submit your CESM run by running the submit script like so:   \n";
+		print "./$case.submit\n";
+		exit(1);
+	}
 	
 	# Change to the case root
 	chdir($config{'CASEROOT'});
@@ -108,7 +118,15 @@ sub doPreRunChecks()
 	                                    scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
 	$moduleloader->loadModules();
 	
-	$ENV{'MP_MPILIB'} = $buildenv->getresolved('MPILIB');
+    my $mpilib = $buildenv->getresolved('MPILIB');
+    if($mpilib =~ /mpi-serial/)
+    {
+        delete $ENV{'MP_MPILIB'};
+    }
+    else
+    {
+        $ENV{'MP_MPILIB'} = $buildenv->getresolved('MPILIB');
+    }
 	$config{'MPILIB'} = $buildenv->getresolved('MPILIB');
 	
 	print "build complete? $config{'BUILD_COMPLETE'}\n";
@@ -252,7 +270,7 @@ sub checkInputData()
 			my $rcbasename = basename($rcfile);
 			if(! -f "$config{'RUNDIR'}/$rcbasename")
 			{
-				symlink($rcfile, $config{'RUNDIR'}) or warn "could not symlink $rcfile to $config{'RUNDIR'}, $!";
+				symlink($rcfile, "$config{'RUNDIR'}/$rcbasename") or warn "could not symlink $rcfile to $config{'RUNDIR'}/$rcbasename, $!";
 			}
 		}
 
@@ -416,13 +434,6 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    #if($config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
-    #{
-    #    my $batchutils = new Batch::BatchUtils(machine => $config{'MACH'}, machroot => $config{'CCSM_MACHDIR'},
-    #                                    caseroot => $config{'CASEROOT'}, caseconfig => \%config);
-    #    $batchutils->doResubmit();
-    #}
-
     my $islastjob = 'FALSE';
     my $resubmit = $config{'RESUBMIT'};
 
@@ -430,19 +441,12 @@ sub resubmitCheck()
     {
         $islastjob = 'TRUE';
     }
-    #if($config{'CONTINUE_RUN'} eq 'TRUE' && $config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
-    #{
-    #    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
-    #                                                              ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
-    #                                                              machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
-    #                                                              scriptsroot => $config{'SCRIPTSROOT'} );
-    #    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname);
-    #}
+
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
                                                               ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
                                                               machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
                                                               scriptsroot => $config{'SCRIPTSROOT'} );
-    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname);
+    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
 sub Debug
 {
