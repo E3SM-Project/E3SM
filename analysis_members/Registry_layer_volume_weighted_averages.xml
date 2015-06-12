@@ -7,7 +7,7 @@
         />
 </dims>
 <nml_record name="AM_layer_volume_weighted_avg" mode="forward;analysis">
-	<nml_option name="config_use_AM_layer_volume_weighted_avg" type="logical" default_value=".true." units="unitless"
+	<nml_option name="config_use_AM_layer_volume_weighted_avg" type="logical" default_value=".false." units="unitless"
                   description="If true, ocean analysis member layer-volume weighted is called."
                   possible_values=".true. or .false."
 	/>
