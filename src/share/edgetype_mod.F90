@@ -8,7 +8,7 @@ module edgetype_mod
   private 
   save 
    
-  integer, save, public :: initedgebuffer_callid = 0
+  integer, public :: initedgebuffer_callid = 0
 
   type, public :: rotation_t
      integer  :: nbr                                        ! nbr direction: north south east west
