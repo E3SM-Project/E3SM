@@ -266,7 +266,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_2000_CAM5_AQUAPLANET" alias="FC5AQUAP" >2000_CAM5_SLND_SICE_AQUAP_SROF_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_IDEAL_PHYS"           alias="FIDEAL"   >2000_CAM%IDEAL_SLND_SICE_SOCN_SROF_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_ADIAB_PHYS"           alias="FADIAB"   >2000_CAM%ADIAB_SLND_SICE_SOCN_SROF_SGLC_SWAV</COMPSET>
-
+<COMPSET sname="FLC1"                   alias="FLC1"     >2000_CAM%LC1_SLND_SICE_SOCN_SROF_SGLC_SWAV</COMPSET>
 
 <!-- FG compsets -->
 
@@ -568,8 +568,9 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <!-- SECTION: component cam  -->     
 <!-- ================================================================================== -->
 
-<CAM_DYCORE compset="_CAM" grid=".+"       >fv   </CAM_DYCORE>
-<CAM_DYCORE compset="_CAM" grid="a%T[1-9]" >eul  </CAM_DYCORE>
+<CAM_DYCORE compset="_CAM" grid=".+"       >fv</CAM_DYCORE>
+<CAM_DYCORE compset="_CAM" grid="a%T[1-9]" >eul</CAM_DYCORE>
+<CAM_DYCORE compset="_CAM" grid="a%\d+x\d+">eul</CAM_DYCORE>
 <CAM_DYCORE compset="_CAM" grid="a%ne[1-9]">se</CAM_DYCORE>
 
 <CAM_CONFIG_OPTS compset="_CAM4"          >-phys cam4</CAM_CONFIG_OPTS>              
@@ -615,6 +616,7 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 
 <CAM_CONFIG_OPTS compset="_CAM%IDEAL"     >-phys ideal</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_CAM%ADIAB"     >-phys adiabatic</CAM_CONFIG_OPTS>              
+<CAM_CONFIG_OPTS compset="_CAM%LC1"       >-phys adiabatic -nadv_tt 5</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_AQUAP"         >-ocn aquaplanet</CAM_CONFIG_OPTS>              
 
 <CAM_CONFIG_OPTS compset="%PORT"          >-offline_drv rad</CAM_CONFIG_OPTS>              
@@ -625,6 +627,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <!--     CAM_CONFIG_OPTS here                -->
 <!-- Note that these are additive            --> 
 <!-- ======================================= -->
+
+<CAM_NML_USE_CASE compset="CAM%LC1">adiabatic_LC1</CAM_NML_USE_CASE> 
 
 <CAM_NML_USE_CASE compset="2000_CAM4%TMOZ"   >2000_cam4_trop_chem</CAM_NML_USE_CASE> 
 <CAM_NML_USE_CASE compset="1850_CAM4"        >1850_cam4</CAM_NML_USE_CASE> 
@@ -749,6 +753,7 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <desc compset="GEOS_CAM[45]%WC" >CAM WACCM winds and temperature nudged toward GEOS5 meteorology each time step:</desc>
 <desc compset="_CAM.%L60"    >CAM 60 layers and full gravity wave spectrum:</desc>
 <desc compset="ADIAB"        >CAM adiabatic physics:</desc>
+<desc compset="LC1"          >CAM LC1 with adiabatic physics:</desc>
 <desc compset="IDEAL"        >CAM ideal physics:</desc>
 
 <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
@@ -1549,11 +1554,13 @@ DOCN%COPY => docn copy mode
 
 <ATM_NCPL compset="_SATM"              > 48</ATM_NCPL>
 <ATM_NCPL compset="_XATM"              > 48</ATM_NCPL>
+<ATM_NCPL compset="_CAM"               > 48</ATM_NCPL>  
 <ATM_NCPL compset="_CAM[45]"           > 48</ATM_NCPL>  
 <ATM_NCPL compset="_DATM"              > 48</ATM_NCPL>  
 <ATM_NCPL compset="_CAM[45]%WCBC"      >144</ATM_NCPL>
 <ATM_NCPL compset="_CAM4%WCMX"         >288</ATM_NCPL>
 <ATM_NCPL compset="_CAM4%WCXI"         >288</ATM_NCPL>
+<ATM_NCPL compset="_CAM%LC1"           >288</ATM_NCPL>
 <ATM_NCPL compset="_DATM.*_CLM"        > 48</ATM_NCPL> 
 <ATM_NCPL compset="_DATM%COPYALL_NPS"  > 72</ATM_NCPL> 
 <ATM_NCPL compset="_DATM.*_DICE.*_POP2">  4</ATM_NCPL>

@@ -39,6 +39,20 @@ Each grid is associated with five names
 <GRID sname="5x5_amazon" alias="5amazon" compset="DATM.+CLM">a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</GRID>
 <GRID sname="hcru_hcru"                  compset="DATM.+CLM">a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</GRID>
 
+<!-- simple model grids -->
+
+<GRID sname="64x128L30"  alias="64x128L30" >a%64x128L30_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+<GRID sname="128x256L30" alias="128x256L30">a%128x256L30_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+<GRID sname="256x512L30" alias="256x512L30">a%256x512L30_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+
+<GRID sname="64x128L60"  alias="64x128L60" >a%64x128L60_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+<GRID sname="128x256L60" alias="128x256L60">a%128x256L60_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+<GRID sname="256x512L60" alias="256x512L60">a%256x512L60_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+
+<GRID sname="64x128L120"  alias="64x128L120" >a%64x128L120_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+<GRID sname="128x256L120" alias="128x256L120">a%128x256L120_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+<GRID sname="256x512L120" alias="256x512L120">a%256x512L120_l%null_oi%null_r%null_m%null_g%null_w%null</GRID>
+
 <!-- eulerian grids -->
 
 <GRID sname="T31_gx3v7"              alias="T31_g37"	 >a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</GRID>
@@ -127,6 +141,8 @@ Each grid is associated with five names
 <!-- SECTION GRIDS: maping defaults (overwritten below)       -->
 <!-- NOTE: desc MUST be the last field in each <gridhorz>     -->
 <!-- ======================================================== -->
+
+<!-- simple model cam adiabatic grid -->
 
 <!-- regional grid - for mask only -->
 
@@ -255,6 +271,12 @@ Each grid is associated with five names
   <desc>T341 is Gaussian grid:</desc> 
 </gridhorz>
 
+<gridhorz name="T170"  alias="256x512">
+  <support_level>Backward compatible for high resolution Spectral-dycore experiments</support_level>
+  <nx>256</nx>  <ny>128</ny> 
+  <desc>T85 is Gaussian grid:</desc> 
+</gridhorz>
+
 <gridhorz name="T85"  alias="128x256">
   <support_level>Backward compatible for high resolution Spectral-dycore experiments</support_level>
   <nx>256</nx>  <ny>128</ny> 
@@ -274,6 +296,45 @@ Each grid is associated with five names
 <gridhorz name="T31"  alias="48x96">
   <nx>96</nx> <ny>48</ny>
   <desc>T31 is Gaussian grid:</desc> 
+</gridhorz>
+
+<gridhorz name="64x128L30"  alias="64x128L30">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+<gridhorz name="128x256L30"  alias="128x256L30">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+<gridhorz name="256x512L30"  alias="256x512L30">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+
+<gridhorz name="64x128L60"  alias="64x128L60">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+<gridhorz name="128x256L60"  alias="128x256L60">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+<gridhorz name="256x512L60"  alias="256x512L60">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+
+<gridhorz name="64x128L120"  alias="64x128L120">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+<gridhorz name="128x256L120"  alias="128x256L120">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
+</gridhorz>
+<gridhorz name="256x512L120"  alias="256x512L120">
+  <nx>128</nx> <ny>64</ny>
+  <desc>Gaussian grid with 30 levels:</desc> 
 </gridhorz>
 
 <!-- spectral element grids-->
