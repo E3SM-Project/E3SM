@@ -76,7 +76,7 @@ contains
 !> \brief   Setup packages for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for all
 !>   ocean analysis members.
 !
@@ -115,7 +115,7 @@ contains
 
       integer :: err_tmp
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_zonal_mean 
+      logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_AM_water_mass_census
@@ -182,8 +182,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine calls all initializations required for the 
+!> \details
+!>  This routine calls all initializations required for the
 !>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
@@ -287,8 +287,8 @@ contains
 !> \brief   Driver for MPAS-Ocean analysis computations
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine calls all computation subroutines required for the 
+!> \details
+!>  This routine calls all computation subroutines required for the
 !>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
@@ -346,7 +346,7 @@ contains
          call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
-      endif 
+      endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       call mpas_pool_get_config(domain % configs, 'config_AM_sfc_area_weighted_avg_compute_startup', config_AM_sfc_area_weighted_avg_compute_startup)
@@ -424,8 +424,8 @@ contains
 !> \brief   Driver for MPAS-Ocean analysis computations
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine calls all computation subroutines required for the 
+!> \details
+!>  This routine calls all computation subroutines required for the
 !>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
@@ -523,8 +523,8 @@ contains
 !> \brief   Driver for MPAS-Ocean analysis computations
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine calls all computation subroutines required for the 
+!> \details
+!>  This routine calls all computation subroutines required for the
 !>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------
@@ -577,7 +577,7 @@ contains
       if (config_use_global_stats) then
          if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-         endif 
+         endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
@@ -638,7 +638,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine calls all subroutines required to prepare to save
 !>  the restart state for the MPAS-Ocean analysis driver.
 !
@@ -743,8 +743,8 @@ contains
 !> \brief   Driver for MPAS-Ocean analysis output
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine calls all output writing subroutines required for the 
+!> \details
+!>  This routine calls all output writing subroutines required for the
 !>  MPAS-Ocean analysis driver.
 !>  At this time this is just a stub, and all analysis output is written
 !>  to the output file specified by config_output_name.
@@ -784,7 +784,7 @@ contains
       integer :: err_tmp
 
       logical, pointer :: config_use_global_stats
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg 
+      logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_AM_layer_volume_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
@@ -891,8 +891,8 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine calls all finalize routines required for the 
+!> \details
+!>  This routine calls all finalize routines required for the
 !>  MPAS-Ocean analysis driver.
 !
 !-----------------------------------------------------------------------

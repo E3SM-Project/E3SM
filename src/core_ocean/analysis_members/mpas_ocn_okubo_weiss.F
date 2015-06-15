@@ -115,7 +115,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -171,8 +171,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -270,7 +270,7 @@ contains
 !> \brief   Compute values of Okubo-Weiss and Lamba_2 field
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !> Computes the values for Okubo-Weiss field OW, as well as the second
 !> eigenvalue of the strain rate tensor Lambda_2.
 !> The OW and Lam2 values use the x/y components of the velocity gradient
@@ -733,7 +733,7 @@ contains
 !> \brief   Count the number of local connected components
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !> Local connected components are defined by being mapped to the same ID.
 !> For each component, there is one entry in the Union-Find data structure
 !> that is representative of the union, by mapping to itself. Thus this
@@ -829,7 +829,7 @@ contains
 !> \brief   Aggregate statistics of partial eddies
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !> Each (partial) eddy has an ID used for sorting and several statistics
 !> associated with it. For this, statistics are stored in an "array of structs"
 !> fashion, where the first value represents the ID.
@@ -1051,7 +1051,7 @@ contains
 !> \brief   Aggregate statistics of partial eddies
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !> Send all partial eddy statistics to IO node and merge them into
 !> statistics of complete eddies.
 !
@@ -1099,7 +1099,7 @@ contains
 
       ! Multiplex all eddy statistics into one array so it can be send with
       ! one MPI communication call
-      ! TODO this could be possibly be made more memory and network 
+      ! TODO this could be possibly be made more memory and network
       !      efficient with lists, because a large array is allocated
       !      allocated and communicated across all processors to merge eddies
       call mpas_timer_start("all gather", .false., CCAggGatherT)
@@ -1211,7 +1211,7 @@ contains
 !> \brief   Sorts eddy statistics according to eddy ID.
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !> Each (partial) eddy has an ID used for sorting and several statistics
 !> associated with it. For this, statistics are stored in an "array of structs"
 !> fashion (blocks of size elemSize), where the first value represents the ID.
@@ -1299,11 +1299,11 @@ contains
 
       ! Create output file.
       open(fileID, file=trim(config_okubo_weiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
-      
+
       if (use_lat_lon_coords) then
-         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'  
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'
       else
-         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, m/s", "average z-velocity, m/s"' 
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, m/s", "average z-velocity, m/s"'
       end if
 
       ! Output number of eddies and statistics for each eddy
@@ -1351,8 +1351,8 @@ contains
 !> \brief   Computes the velocity gradient at cell centers, in R3
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
-!>  This routine computes the velocity gradient at cell centers using the weak 
+!> \details
+!>  This routine computes the velocity gradient at cell centers using the weak
 !>  derivative.  Output is an R3 velocity gradient tensor in 3x3 format.
 !
 !-----------------------------------------------------------------------
@@ -1382,7 +1382,7 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
 
-      logical, intent(in) :: & 
+      logical, intent(in) :: &
          includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
@@ -1416,7 +1416,7 @@ contains
 
       if (includeHalo) then
          call mpas_pool_get_dimension(meshPool, 'nCells', nCellsCompute)
-      else 
+      else
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsCompute)
       end if
 
@@ -1434,7 +1434,7 @@ contains
            do i=1,3
              do j=1,3
                ! outer produce at each edge:
-               ! u_e n_e n_e* + v_e n_e \tilde{n}_e* 
+               ! u_e n_e n_e* + v_e n_e \tilde{n}_e*
                outerProductEdge3x3(i,j) = edgeNormalVectors(i,iEdge) &
                        *(  normalVelocity(k,iEdge)    *edgeNormalVectors(j,iEdge) &
                          + tangentialVelocity(k,iEdge)*edgeTangentVectors(j,iEdge) &
@@ -1454,7 +1454,7 @@ contains
                ! edgeSignOnCell is to get outward unit normal on edgeNormalVectors
                ! minus sign in front is to match form on divergence operator
                velocityGradient(:,:,k,iCell) = velocityGradient(:,:,k,iCell) &
-                 - edgeSignOnCell(i,iCell)*outerProductEdgeFull(:,:,k,iEdge)*invAreaCell*dvEdge(iEdge) 
+                 - edgeSignOnCell(i,iCell)*outerProductEdgeFull(:,:,k,iEdge)*invAreaCell*dvEdge(iEdge)
             end do
          end do
       end do
@@ -1469,7 +1469,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -1517,14 +1517,14 @@ contains
       type (mpas_pool_type), pointer :: amOkuboWeiss
 
       integer, pointer :: nVertLevels, nCells, nEdges
-      integer, dimension(:), pointer :: maxLevelCell    
+      integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: edgeSignOnCell
 
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
       real (kind=RKIND), dimension(:,:), pointer :: edgeTangentVectors
-      
-      real (kind=RKIND), dimension(:,:), pointer :: om, OW 
+
+      real (kind=RKIND), dimension(:,:), pointer :: om, OW
       integer, dimension(:,:), pointer :: OW_cc_id
 
       type(field2DReal), pointer :: SField, Lam1Field, Lam2Field, Lam2_R3Field
@@ -1562,7 +1562,7 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
          call mpas_pool_get_array(meshPool, 'edgeTangentVectors', edgeTangentVectors)
-         
+
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
 
@@ -1570,7 +1570,7 @@ contains
          call mpas_pool_get_array(amOkuboWeissPool, 'eddyID', OW_cc_id)
          call mpas_pool_get_array(amOkuboWeissPool, 'vorticity', om)
 
-         call mpas_pool_get_field(scratchPool, 'velocityGradient', velocityGradientField)         
+         call mpas_pool_get_field(scratchPool, 'velocityGradient', velocityGradientField)
          call mpas_pool_get_field(scratchPool, 'thresholdedOkuboWeiss', OW_threshField)
          call mpas_pool_get_field(scratchPool, 'shearAndStrain', SField)
          call mpas_pool_get_field(scratchPool, 'lambda1', Lam1Field)
@@ -1591,7 +1591,7 @@ contains
          Lam2 => Lam2Field % array
          Lam2_R3 => Lam2_R3Field % array
 
-         ! Compute velocity gradient         
+         ! Compute velocity gradient
          call mpas_velocity_gradient_R3Cell(normalVelocity, tangentialVelocity, &
                meshPool, edgeSignOnCell, edgeTangentVectors, .true., &
                nVertLevels, nEdges, velocityGradient)
@@ -1632,7 +1632,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -1679,7 +1679,7 @@ contains
 !> \brief   MPAS-Ocean analysis output
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !>  This routine writes all output for this MPAS-Ocean analysis member.
 !>  At this time this is just a stub, and all analysis output is written
 !>  to the output file specified by config_output_name.
@@ -1727,7 +1727,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Andre Schmeisser
 !> \date    August 2014
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !

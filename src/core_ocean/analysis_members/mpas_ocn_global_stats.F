@@ -69,7 +69,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -125,8 +125,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -174,7 +174,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -238,7 +238,7 @@ contains
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertAleTransportTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      
+
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, verticalSumMaxes
       real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
       real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
@@ -290,23 +290,23 @@ contains
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'amGlobalStats', amGlobalStatsPool)
-         
+
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
-         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)          
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)          
-         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)    
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop) 
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)  
-         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity)  
-         call mpas_pool_get_array(statePool, 'tracers', tracers)         
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
          if(thicknessFilterActive) then
-            call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence)
-            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness)
+            call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 1)
+            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, 1)
          end if
 
          call mpas_pool_get_array(diagnosticsPool, 'density', density)
@@ -491,7 +491,7 @@ contains
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
          end if
-   
+
          ! highFreqThickness
          variableIndex = variableIndex + 1
          if (thicknessFilterActive) then
@@ -663,7 +663,7 @@ contains
          variableIndex = variableIndex + 1
          averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
-   
+
          ! highFreqThickness
          variableIndex = variableIndex + 1
          averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
@@ -673,7 +673,7 @@ contains
          variableIndex = variableIndex + 1
          averages(variableIndex) = 0.0_RKIND
          rms(variableIndex) = 0.0_RKIND
-   
+
          ! highFreqThickness
          variableIndex = variableIndex + 1
          averages(variableIndex) = 0.0_RKIND
@@ -702,7 +702,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -749,7 +749,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
