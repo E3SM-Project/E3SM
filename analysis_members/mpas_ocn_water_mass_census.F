@@ -71,7 +71,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    May 10, 2015
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -127,8 +127,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    May 10, 2015
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -176,7 +176,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    May 10, 2015
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -321,7 +321,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_maxTemperature', maxTemperature)
       call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_minSalinity', minSalinity)
       call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_maxSalinity', maxSalinity)
- 
+
       do iRegion=1,nOceanRegionsTmpCensus
         ! compute temperature and salinity domains
         ! (note: the ability to have different t/s domains for different regions is not yet built out)
@@ -334,7 +334,7 @@ contains
           waterMassCensusSalinityValues(iSalinityBin,iRegion) = minSalinity + deltaSalinity*(iSalinityBin-1)
         enddo
       enddo ! iRegion
-       
+
       ! initialize intent(out) of this analysis member
       waterMassFractionalDistribution(:,:,:)=0.0
       potentialDensityOfTSDiagram(:,:,:)=0.0
@@ -363,7 +363,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
 
-         ! loop over and bin all data 
+         ! loop over and bin all data
          do iCell=1,nCellsSolve
          do iLevel=1,maxLevelCell(iCell)
 
@@ -477,9 +477,9 @@ contains
    contains
 
    subroutine compute_mask(maxLevelCell, nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
-   ! this subroutines produces a 0/1 mask that is multiplied with workArray to 
+   ! this subroutines produces a 0/1 mask that is multiplied with workArray to
    ! allow for min/max/avg to represent specific regions of the ocean domain
-   ! 
+   !
    ! NOTE: computes_mask is temporary. workMask should be intent(in) to this entire module !
    !
    integer, intent(in) :: nCells, nCellsSolve, iRegion
@@ -489,7 +489,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0*atan(1.0) / 180.0_RKIND 
+   dtr = 4.0*atan(1.0) / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       workMask(iCell) = 1.0_RKIND
@@ -557,7 +557,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    May 10, 2015
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -604,7 +604,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    May 10, 2015
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !

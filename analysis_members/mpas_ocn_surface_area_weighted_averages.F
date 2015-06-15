@@ -69,7 +69,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -125,8 +125,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -174,7 +174,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -239,12 +239,12 @@ contains
       real (kind=RKIND), dimension(:), pointer :: iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux
-   
+
       ! frazilIce Pkg
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
-      real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux 
+      real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
       real (kind=RKIND), dimension(:), pointer ::  penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: seaIceSalinityFlux
@@ -281,7 +281,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: workBufferSum, workBufferSumReduced
       real (kind=RKIND), dimension(:), allocatable :: workBufferMin, workBufferMinReduced
       real (kind=RKIND), dimension(:), allocatable :: workBufferMax, workBufferMaxReduced
-     
+
       ! assume no error
       err = 0
 
@@ -399,8 +399,8 @@ contains
          if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
          if (bulkForcingPkgActive) call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
          call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
-         call mpas_pool_get_array(statePool, 'ssh', ssh)  
-         call mpas_pool_get_array(statePool, 'tracers', tracers)
+         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
          call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth',boundaryLayerDepth)
 
          ! compute mask
@@ -446,7 +446,7 @@ contains
                               + longWaveHeatFluxUp(:) &
                               + longWaveHeatFluxDown(:) &
                               + shortWaveHeatFlux(:)  &
-                              + seaIceHeatFlux(:) 
+                              + seaIceHeatFlux(:)
                      !        + seaIceEnergy
             workArray(29,:) =   seaIceSalinityFlux(:)
             workArray(30,:) =   evaporationFlux(:) &
@@ -454,7 +454,7 @@ contains
                               + riverRunoffFlux(:) &
                               + iceRunoffFlux(:) &
                               + rainFlux(:) &
-                              + snowFlux(:) 
+                              + snowFlux(:)
                      !        + seaIceEnergy(:)
          end if
 
@@ -517,9 +517,9 @@ contains
    contains
 
    subroutine compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)!{{{
-   ! this subroutines produces a 0/1 mask that is multiplied with workArray to 
+   ! this subroutines produces a 0/1 mask that is multiplied with workArray to
    ! allow for min/max/avg to represent specific regions of the ocean domain
-   ! 
+   !
    ! NOTE: computes_mask is temporary. workMask should be intent(in) to this entire module !
    !
    integer, intent(in) :: nCells, nCellsSolve, iRegion
@@ -528,7 +528,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0*atan(1.0) / 180.0_RKIND 
+   dtr = 4.0*atan(1.0) / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       workMask(iCell) = 1.0_RKIND
@@ -616,7 +616,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -663,7 +663,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !

@@ -71,7 +71,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -126,8 +126,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    March 2014
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -212,7 +212,7 @@ contains
             call mpas_pool_get_array(meshPool, 'latCell', binVariable)
          else
             call mpas_pool_get_array(meshPool, 'yCell', binVariable)
-         end if 
+         end if
 
          minBin = min(minBin, minval(binVariable) )
          maxBin = max(maxBin, maxval(binVariable) )
@@ -223,7 +223,7 @@ contains
       call mpas_dmpar_min_real_array(dminfo, 1, minBin, minBinDomain)
       call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
-      ! Set up bins. 
+      ! Set up bins.
       binBoundaryZonalMean = -1.0e34
       binCenterZonalMean = -1.0e34
 
@@ -261,7 +261,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    March 2014
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -361,11 +361,11 @@ contains
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)        
+         call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)        
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)    
-         call mpas_pool_get_array(statePool, 'tracers', tracers,timeLevel)         
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
@@ -374,7 +374,7 @@ contains
             call mpas_pool_get_array(meshPool, 'latCell', binVariable)
          else
             call mpas_pool_get_array(meshPool, 'yCell', binVariable)
-         end if 
+         end if
 
          ! note that sum is for each vertical index, which is a little wrong for z-star and very wrong for PBCs.
          do iCell = 1, nCellsSolve
@@ -428,7 +428,7 @@ contains
          normZonalMean(:,:,iBin) = -1.0e34
       end do
 
-      ! Even though these variables do not include an index that is decomposed amongst 
+      ! Even though these variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
       ! correct values for writing output.
       block => domain % blocklist
@@ -476,7 +476,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    March 2014
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -523,7 +523,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    March 2014
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
