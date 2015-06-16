@@ -21,7 +21,8 @@
 
 module ocn_water_mass_census
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
@@ -134,8 +135,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_init_water_mass_census(domain, err)!{{{
-
-      use mpas_packages
 
       !-----------------------------------------------------------------
       !

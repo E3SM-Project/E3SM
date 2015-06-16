@@ -13,7 +13,7 @@
 !> \author Mark Petersen
 !> \date   December 2013
 !> \details
-!>  This module contains routines to initialize variables at the 
+!>  This module contains routines to initialize variables at the
 !>    beginning of an MPAS-Ocean simulation, or when starting the
 !>    ocean analysis core.
 !
@@ -21,9 +21,24 @@
 
 module ocn_init_routines
 
-   use mpas_framework
+   use mpas_kind_types
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_timer
    use mpas_dmpar
+   use mpas_constants
+
+   use mpas_rbf_interpolation
+   use mpas_vector_operations
+   use mpas_vector_reconstruction
+   use mpas_tracer_advection_helpers
+
+   use ocn_time_average
+   use ocn_diagnostics
+   use ocn_gm
    use ocn_constants
+
+   private
 
    !--------------------------------------------------------------------
    !
@@ -37,7 +52,7 @@ module ocn_init_routines
    !
    !--------------------------------------------------------------------
 
-   public :: & 
+   public :: &
       ocn_init_routines_compute_max_level, &
       ocn_init_routines_compute_mesh_scaling, &
       ocn_init_routines_setup_sign_and_index_fields, &
@@ -62,17 +77,12 @@ contains
 !> \brief  initialize max level and boundary mask variables
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
-!> \details 
+!> \details
 !>  This routine initializes max level and boundary mask variables
 !
 !-----------------------------------------------------------------------
 subroutine ocn_init_routines_compute_max_level(domain)!{{{
 ! Initialize maxLevel and boundary mesh variables.
-
-   use mpas_grid_types
-   use mpas_constants
-
-   implicit none
 
    type (domain_type), intent(inout) :: domain
    type (mpas_pool_type), pointer :: meshPool
@@ -120,7 +130,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
          maxLevelEdgeTop(iEdge) = &
             min( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
-      end do 
+      end do
       maxLevelEdgeTop(nEdges+1) = 0
 
       ! maxLevelEdgeBot is the maximum (deepest) of the surrounding cells
@@ -128,7 +138,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
          maxLevelEdgeBot(iEdge) = &
             max( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
-      end do 
+      end do
       maxLevelEdgeBot(nEdges+1) = 0
 
       ! maxLevelVertexBot is the maximum (deepest) of the surrounding cells
@@ -139,7 +149,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
                max( maxLevelVertexBot(iVertex), &
                     maxLevelCell(cellsOnVertex(i,iVertex)))
          end do
-      end do 
+      end do
       maxLevelVertexBot(nVertices+1) = 0
 
       ! maxLevelVertexTop is the minimum (shallowest) of the surrounding cells
@@ -150,7 +160,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
                min( maxLevelVertexTop(iVertex), &
                     maxLevelCell(cellsOnVertex(i,iVertex)))
          end do
-      end do 
+      end do
       maxLevelVertexTop(nVertices+1) = 0
 
       ! set boundary edge
@@ -159,7 +169,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
       do iEdge = 1, nEdges
          boundaryEdge(1:maxLevelEdgeTop(iEdge),iEdge)=0
          edgeMask(1:maxLevelEdgeTop(iEdge),iEdge)=1
-      end do 
+      end do
 
       !
       ! Find cells and vertices that have an edge on the boundary
@@ -210,8 +220,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !> \brief   set up sign and index fields
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
-!> \details 
-!>  This routine initializes edgeSignOnCell, edgeSignOnVertex, and 
+!> \details
+!>  This routine initializes edgeSignOnCell, edgeSignOnVertex, and
 !>   kiteIndexOnCell.
 !
 !-----------------------------------------------------------------------
@@ -247,7 +257,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
        kiteIndexOnCell = 0.0_RKIND
 
        do iCell = 1, nCells
-         do i = 1, nEdgesOnCell(iCell) 
+         do i = 1, nEdgesOnCell(iCell)
            iEdge = edgesOnCell(i, iCell)
            iVertex = verticesOnCell(i, iCell)
 
@@ -288,16 +298,12 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !> \brief   set up mesh scaling variables
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
-!> \details 
+!> \details
 !>  This routine initializes meshScaling, meshScalingDel2, and
 !>   meshScalingDel4
 !
 !-----------------------------------------------------------------------
    subroutine ocn_init_routines_compute_mesh_scaling(meshPool, scaleHmixWithMesh, maxMeshDensity)!{{{
-
-      use mpas_grid_types
-
-      implicit none
 
       type (mpas_pool_type), intent(inout) :: meshPool
       logical, intent(in) :: scaleHmixWithMesh
@@ -341,18 +347,13 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !> \brief  initialize vertical coordinate variables
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
-!> \details 
+!> \details
 !>  This routine initializes vertical coordinate variables
 !
 !-----------------------------------------------------------------------
    subroutine ocn_init_routines_vert_coord(domain)!{{{
    ! Initialize zlevel-type variables and adjust initial conditions for
    ! partial bottom cells.
-
-      use mpas_grid_types
-      use mpas_configure
-
-      implicit none
 
       type (domain_type), intent(inout) :: domain
 
@@ -371,7 +372,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, &
          refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth, refZMid, refLayerThickness
       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
-         
+
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer, pointer :: nVertLevels, nCells, num_tracers
@@ -441,7 +442,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          ! bottomDepth variable and h,T,S variables for full thickness cells.
          ! If running with pbcs, set config_alter_ICs_for_pbc='zlevel_pbcs_on'. Then thin pbc cells
          !    will be changed, and h,T,S will be altered to match the pbcs.
-         ! If running without pbcs, set config_alter_ICs_for_pbc='zlevel_pbcs_off'. Then 
+         ! If running without pbcs, set config_alter_ICs_for_pbc='zlevel_pbcs_off'. Then
          !    bottomDepth will be altered so it is full cells everywhere.
          !    If your input file does not include bottomDepth, the false option will
          !    initialize bottomDepth correctly for a non-pbc run.
@@ -458,7 +459,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                ! min_pbc_fraction restricts pbcs from being too small.
                ! A typical value is 10%, so pbcs must occupy at least 10% of the cell thickness.
                ! If min_pbc_fraction = 0.0, bottomDepth gives the actual depth for that cell.
-               ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same 
+               ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same
                !    as partial_bottom_cells = .false.
 
                minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
@@ -486,7 +487,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                   k = maxLevelCell(iCell)
 
                   ! Alter thickness of bottom level to account for PBC
-                  layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k) 
+                  layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k)
 
                   ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
                   zMidPBC = -0.5*(bottomDepth(iCell) + refBottomDepthTopOfCell(k))
@@ -498,7 +499,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                          *(zMidPBC - zMidZLevel(k))
                   enddo
 
-               enddo  
+               enddo
 
                deallocate(minBottomDepth,zMidZLevel)
 
@@ -581,18 +582,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !-----------------------------------------------------------------------
 
    subroutine ocn_init_routines_block(block, dt, err)!{{{
-
-      use mpas_grid_types
-      use mpas_rbf_interpolation
-      use mpas_vector_operations
-      use mpas_vector_reconstruction
-      use mpas_tracer_advection_helpers
-
-      use ocn_time_average
-      use ocn_diagnostics
-      use ocn_gm
-
-      implicit none
 
       type (block_type), intent(inout) :: block
       real (kind=RKIND), intent(in) :: dt

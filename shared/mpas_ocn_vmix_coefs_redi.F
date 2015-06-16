@@ -15,8 +15,8 @@
 
 module ocn_vmix_coefs_redi
 
-   use mpas_grid_types
-   use mpas_configure
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
 
    use ocn_constants

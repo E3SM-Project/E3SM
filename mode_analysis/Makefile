@@ -6,7 +6,7 @@ all: analysis_mode
 
 analysis_mode: $(OBJS)
 
-mpas_ocn_am_mpas_mode.o:
+mpas_ocn_analysis_mode.o:
 
 clean:
 	$(RM) *.o *.i *.mod *.f90

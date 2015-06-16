@@ -38,7 +38,8 @@
 
 module ocn_TEMPLATE
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
@@ -96,8 +97,6 @@ contains
 
    subroutine ocn_setup_packages_TEMPLATE(configPool, packagePool, err)!{{{
 
-      use mpas_packages
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -151,8 +150,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_init_TEMPLATE(domain, err)!{{{
-
-      use mpas_packages
 
       !-----------------------------------------------------------------
       !

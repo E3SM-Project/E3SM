@@ -19,7 +19,8 @@
 
 module ocn_constants
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_kind_types
 
 #ifdef MPAS_ESM_SHR_CONST
@@ -28,13 +29,16 @@ module ocn_constants
 #endif
 
    implicit none
+   private
    save
 
-   type (mpas_pool_type), pointer :: ocnConfigs
-   type (mpas_pool_type), pointer :: ocnPackages
+   public :: ocn_constants_init
 
-   character (len=*), parameter :: statsAlarmID = 'stats'
-   character (len=*), parameter :: coupleAlarmID = 'coupling'
+   type (mpas_pool_type), public, pointer :: ocnConfigs
+   type (mpas_pool_type), public, pointer :: ocnPackages
+
+   character (len=*), public, parameter :: statsAlarmID = 'stats'
+   character (len=*), public, parameter :: coupleAlarmID = 'coupling'
 
    real (kind=RKIND), public ::      &
       rho_air               ,&! ambient air density (kg/m^3)

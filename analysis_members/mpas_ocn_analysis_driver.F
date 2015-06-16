@@ -19,7 +19,8 @@
 
 module ocn_analysis_driver
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timekeeping
    use mpas_timer
    use mpas_stream_manager
@@ -293,7 +294,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_compute_startup(domain, stream_manager, err)!{{{
+   subroutine ocn_analysis_compute_startup(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -308,7 +309,6 @@ contains
       !-----------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain
-      type (mpas_streamManager_type), intent(inout) :: stream_manager
 
       !-----------------------------------------------------------------
       !
@@ -343,7 +343,7 @@ contains
       if (config_use_global_stats.and.config_global_stats_compute_startup) then
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif 
@@ -353,7 +353,7 @@ contains
       if (config_use_AM_sfc_area_weighted_avg.and.config_AM_sfc_area_weighted_avg_compute_startup) then
          call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='sfcAreaOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='sfcAreaOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -363,7 +363,7 @@ contains
       if (config_use_AM_layer_volume_weighted_avg.and.config_AM_layer_volume_weighted_avg_compute_startup) then
          call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='layerVolOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='layerVolOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -373,7 +373,7 @@ contains
       if (config_use_zonal_mean.and.config_zonal_mean_compute_startup) then
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='zonalMeanOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='zonalMeanOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -382,7 +382,9 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_okubo_weiss_compute_startup', config_okubo_weiss_compute_startup)
       if (config_use_okubo_weiss.and.config_okubo_weiss_compute_startup) then
          call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
-         call mpas_stream_mgr_write(stream_manager, streamID='okuboWeissOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='okuboWeissOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
 
@@ -391,7 +393,7 @@ contains
        if (config_use_AM_water_mass_census.and.config_AM_water_mass_census_compute_startup) then
           call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
           call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(stream_manager, streamID='waterMassOutput', forceWriteNow=.true., ierr=err_tmp)
+          call mpas_stream_mgr_write(domain % streamManager, streamID='waterMassOutput', forceWriteNow=.true., ierr=err_tmp)
           call mpas_timer_stop('io_write')
           err = ior(err, err_tmp)
        endif
@@ -401,7 +403,7 @@ contains
       if (config_use_meridional_heat_transport.and.config_meridional_heat_transport_compute_startup) then
          call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='MerHeatTransOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, streamID='MerHeatTransOutput', forceWriteNow=.true., ierr=err_tmp)
          call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
@@ -529,7 +531,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_compute_w_alarms(stream_manager, domain, err)!{{{
+   subroutine ocn_analysis_compute_w_alarms(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -543,7 +545,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
       type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
@@ -575,56 +576,56 @@ contains
       timeLevel=1
       call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          endif 
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='sfcAreaOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='sfcAreaOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
          endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
       if (config_use_AM_layer_volume_weighted_avg) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='layerVolOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='layerVolOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
          endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
          endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
       if (config_use_okubo_weiss) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='okuboWeissOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='okuboWeissOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
          endif
       endif
 
        call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        if (config_use_AM_water_mass_census) then
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='waterMassOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='waterMassOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
              call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
           endif
        endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
       if (config_use_meridional_heat_transport) then
-        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='MerHeatTransOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+        if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='MerHeatTransOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
             call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
          endif
       endif
 
 !      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!        if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+!        if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) then
 !            call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         endif
 !      endif
@@ -751,7 +752,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_write(stream_manager, err)!{{{
+   subroutine ocn_analysis_write(streamManager, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -759,7 +760,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager
+      type (MPAS_streamManager_type), intent(inout) :: streamManager
 
       !-----------------------------------------------------------------
       !
@@ -797,10 +798,10 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
           call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', ierr=err_tmp)
+          call mpas_stream_mgr_write(streamManager, streamID='globalStatsOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='globalStatsOutput', ierr=err_tmp)
+          call mpas_stream_mgr_reset_alarms(streamManager, streamID='globalStatsOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
       endif
@@ -808,10 +809,10 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       if (config_use_AM_sfc_area_weighted_avg) then
           call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(stream_manager, streamID='sfcAreaOutput', ierr=err_tmp)
+          call mpas_stream_mgr_write(streamManager, streamID='sfcAreaOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='sfcAreaOutput', ierr=err_tmp)
+          call mpas_stream_mgr_reset_alarms(streamManager, streamID='sfcAreaOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
       endif
@@ -819,10 +820,10 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
       if (config_use_AM_layer_volume_weighted_avg) then
           call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(stream_manager, streamID='layerVolOutput', ierr=err_tmp)
+          call mpas_stream_mgr_write(streamManager, streamID='layerVolOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
           call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='layerVolOutput', ierr=err_tmp)
+          call mpas_stream_mgr_reset_alarms(streamManager, streamID='layerVolOutput', ierr=err_tmp)
           call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
       endif
@@ -830,10 +831,10 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='zonalMeanOutput', ierr=err_tmp)
+         call mpas_stream_mgr_write(streamManager, streamID='zonalMeanOutput', ierr=err_tmp)
          call mpas_timer_stop('io_write')
          call mpas_timer_start('io_reset_alarms', .false.)
-         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='zonalMeanOutput', ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(streamManager, streamID='zonalMeanOutput', ierr=err_tmp)
          call mpas_timer_stop('io_reset_alarms')
          err = ior(err, err_tmp)
       endif
@@ -841,10 +842,10 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_okubo_weiss', config_use_okubo_weiss)
       if (config_use_okubo_weiss) then
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='okuboWeissOutput', ierr=err_tmp)
+         call mpas_stream_mgr_write(streamManager, streamID='okuboWeissOutput', ierr=err_tmp)
          call mpas_timer_stop('io_write')
          call mpas_timer_start('io_reset_alarms', .false.)
-         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='okuboWeissOutput', ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(streamManager, streamID='okuboWeissOutput', ierr=err_tmp)
          call mpas_timer_stop('io_reset_alarms')
          err = ior(err, err_tmp)
       endif
@@ -852,10 +853,10 @@ contains
        call mpas_pool_get_config(ocnConfigs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
        if (config_use_AM_water_mass_census) then
            call mpas_timer_start('io_write', .false.)
-           call mpas_stream_mgr_write(stream_manager, streamID='waterMassOutput', ierr=err_tmp)
+           call mpas_stream_mgr_write(streamManager, streamID='waterMassOutput', ierr=err_tmp)
            call mpas_timer_stop('io_write')
            call mpas_timer_start('io_reset_alarms', .false.)
-           call mpas_stream_mgr_reset_alarms(stream_manager, streamID='waterMassOutput', ierr=err_tmp)
+           call mpas_stream_mgr_reset_alarms(streamManager, streamID='waterMassOutput', ierr=err_tmp)
            call mpas_timer_stop('io_reset_alarms')
           err = ior(err, err_tmp)
        endif
@@ -863,10 +864,10 @@ contains
      call mpas_pool_get_config(ocnConfigs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
      if (config_use_meridional_heat_transport) then
          call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='MerHeatTransOutput', ierr=err_tmp)
+         call mpas_stream_mgr_write(streamManager, streamID='MerHeatTransOutput', ierr=err_tmp)
          call mpas_timer_stop('io_write')
          call mpas_timer_start('io_reset_alarms', .false.)
-         call mpas_stream_mgr_reset_alarms(stream_manager, streamID='MerHeatTransOutput', ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(streamManager, streamID='MerHeatTransOutput', ierr=err_tmp)
          call mpas_timer_stop('io_reset_alarms')
         err = ior(err, err_tmp)
      endif
@@ -874,10 +875,10 @@ contains
 !      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !          call mpas_timer_start('io_write', .false.)
-!          call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!          call mpas_stream_mgr_write(streamManager, streamID='TEMPLATEOutput', ierr=err_tmp)
 !          call mpas_timer_stop('io_write')
 !          call mpas_timer_start('io_reset_alarms', .false.)
-!          call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+!          call mpas_stream_mgr_reset_alarms(streamManager, streamID='TEMPLATEOutput', ierr=err_tmp)
 !          call mpas_timer_stop('io_reset_alarms')
 !         err = ior(err, err_tmp)
 !      endif
