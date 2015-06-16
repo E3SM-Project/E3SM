@@ -32,9 +32,10 @@
         include 'f90papi.h'
 #endif
 
-        type (timer_node), pointer :: all_timers
+        type (timer_node), pointer :: all_timers => null()
         integer :: levels, synced
 
+        ! DWJ 06/12/2015 -- Needs to be removed for multiple domains
         type (dm_info), pointer :: domain_info
 
         public :: mpas_timer_start, &
