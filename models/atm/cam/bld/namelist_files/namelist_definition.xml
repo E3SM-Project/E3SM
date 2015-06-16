@@ -3020,6 +3020,12 @@ Default: .false.
 
 <!-- BSINGH - Ends-->
 
+<entry id="apply_mg1_bugfix" type="logical"  category="bugfixes"
+       group="phys_ctl_nl" valid_values="" >
+bugfix for MG1. 
+Default: .false.
+</entry>
+
 
 <!-- Diagnostics -->
 
