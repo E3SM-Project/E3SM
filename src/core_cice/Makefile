@@ -22,11 +22,14 @@ OBJS = 	mpas_cice_core.o \
 	mpas_cice_diagnostics.o \
 	mpas_cice_numerics.o \
 	mpas_cice_constants.o \
+	mpas_cice_column.o \
+	mpas_cice_history.o
 
-all: core_cice
+all: column_package core_cice
 
 core_cice: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
+	ar -ru libdycore.a column/*.o
 
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -43,7 +46,11 @@ post_build:
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
-mpas_cice_constants.o:
+mpas_cice_constants.o: column_package
+
+mpas_cice_column.o: column_package
+
+mpas_cice_history.o:
 
 mpas_cice_mesh.o: mpas_cice_constants.o
 
@@ -79,16 +86,20 @@ mpas_cice_advection.o: mpas_cice_mesh.o mpas_cice_debug.o
 
 mpas_cice_unit_test.o: mpas_cice_constants.o mpas_cice_velocity_solver_unit_tests.o
 
-mpas_cice_time_integration.o: mpas_cice_constants.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_unit_test.o mpas_cice_advection.o mpas_cice_diagnostics.o
+mpas_cice_time_integration.o: mpas_cice_constants.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_unit_test.o mpas_cice_advection.o mpas_cice_diagnostics.o mpas_cice_column.o mpas_cice_history.o
 
-mpas_cice_initialize.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocity_solver.o mpas_cice_testing.o mpas_cice_debug.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_advection.o
+mpas_cice_initialize.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocity_solver.o mpas_cice_testing.o mpas_cice_debug.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_advection.o mpas_cice_column.o mpas_cice_forcing.o
 
-mpas_cice_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o
+column_package:
+	(cd column; $(MAKE))
+
+mpas_cice_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o mpas_cice_column.o
 
 mpas_cice_core_interface.o: mpas_cice_core.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
+	(cd column; $(MAKE) clean)
 	$(RM) Registry_processed.xml
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
@@ -99,7 +110,8 @@ clean:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90
+
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./column
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./column
 endif

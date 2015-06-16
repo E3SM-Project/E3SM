@@ -37,7 +37,6 @@ module cice_core
    
       use mpas_derived_types
       use mpas_stream_manager
-      use cice_forcing, only: cice_forcing_init
    
       implicit none
    
@@ -53,6 +52,8 @@ module cice_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
       integer :: ierr
+
+      call mpas_pool_set_error_level(MPAS_POOL_WARN)
 
       iErr = 0
 
@@ -89,9 +90,6 @@ module cice_core
       call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
-      ! initialize forcing
-      call cice_forcing_init(domain, domain % streamManager)
-
       !
       ! Initialize core
       !
@@ -100,7 +98,7 @@ module cice_core
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+         call MPAS_pool_get_subpool(block % structs, "global_diagnostics", diagnosticsPool)
          call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = startTimeStamp
 
@@ -331,14 +329,14 @@ module cice_core
 
       type (block_type), pointer :: block
 
-      type (MPAS_pool_type), pointer :: diagnostics
+      type (MPAS_pool_type), pointer :: globalDiagnostics
       character(len=strKIND), pointer :: xtime
 
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
-         call MPAS_pool_get_array(diagnostics, "xtime", xtime)
+         call MPAS_pool_get_subpool(block % structs, "global_diagnostics", globalDiagnostics)
+         call MPAS_pool_get_array(globalDiagnostics, "xtime", xtime)
          xtime = timeStamp
 
          block => block % next

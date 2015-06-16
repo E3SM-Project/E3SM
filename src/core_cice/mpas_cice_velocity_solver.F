@@ -45,8 +45,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_init_velocity_solver(&
-       block, &
-       dt)!{{{
+       domain)!{{{
 
     use cice_velocity_solver_shared, only: &
          cice_init_evp
@@ -57,64 +56,94 @@ contains
     use cice_velocity_solver_variational, only: &
          cice_init_velocity_solver_variational
 
-    type (block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
-    real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
+    type(block_type), pointer :: &
+         block
 
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme, &
          config_variational_basis
 
     logical, pointer :: &
+         config_use_velocity_solver, &
          config_rotate_cartesian_grid, &
          config_include_metric_terms
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
          boundary, &
+         velocitySolver, &
          velocity_weak, &
          velocity_variational, &
-         velocity_pwl, &
-         configs
+         velocity_pwl
 
-    configs => block % configs
+    real(kind=RKIND), pointer :: &
+         dynamicsTimeStep, &
+         config_dt
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
-    call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
+    ! set things even if we dont want velocity
+    block => domain % blocklist
+    do while (associated(block))
 
-    call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
-    call MPAS_pool_get_config(configs, "config_variational_basis", config_variational_basis)
-    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
-    call MPAS_pool_get_config(configs, "config_include_metric_terms", config_include_metric_terms)
-    
-    call cice_init_evp(dt, configs)
+       call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
+       call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
 
-    if (trim(config_stress_divergence_scheme) == "weak") then
+       dynamicsTimeStep = config_dt
 
-       call cice_init_velocity_solver_weak(&
-            mesh, &
-            boundary, &
-            velocity_weak, &
-            config_rotate_cartesian_grid)
+       block => block % next
+    enddo
 
-    else if (trim(config_stress_divergence_scheme) == "variational") then
+    ! check if we initialize velocity solver
+    call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
 
-       call cice_init_velocity_solver_variational(&
-            mesh, &
-            velocity_variational, &
-            boundary, &
-            config_rotate_cartesian_grid, &
-            config_include_metric_terms, &
-            config_variational_basis)
+    if (config_use_velocity_solver) then
+ 
+       ! initialize the evp solver
+       call cice_init_evp(domain)
 
-    else 
+       block => domain % blocklist
+       do while (associated(block))
 
-       write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
-       stop
+          call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+          call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+          call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
+          call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
+
+          call MPAS_pool_get_config(block % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+          call MPAS_pool_get_config(block % configs, "config_variational_basis", config_variational_basis)
+          call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+          call MPAS_pool_get_config(block % configs, "config_include_metric_terms", config_include_metric_terms)
+
+          if (trim(config_stress_divergence_scheme) == "weak") then
+
+             call cice_init_velocity_solver_weak(&
+                  mesh, &
+                  boundary, &
+                  velocity_weak, &
+                  config_rotate_cartesian_grid)
+
+          else if (trim(config_stress_divergence_scheme) == "variational") then
+
+             call cice_init_velocity_solver_variational(&
+                  mesh, &
+                  velocity_variational, &
+                  boundary, &
+                  config_rotate_cartesian_grid, &
+                  config_include_metric_terms, &
+                  config_variational_basis)
+
+          else 
+
+             write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
+             stop
+
+          endif
+
+          block => block % next
+       enddo
 
     endif
 
@@ -140,13 +169,6 @@ contains
        domain, &
        clock, &
        dt)!{{{
-
-    use cice_velocity_solver_shared, only: &
-         ciceDynamicsTimeStep, &
-         ciceElasticTimeStep
-
-    !use mpas_constants, only: &
-    !     pii
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -189,9 +211,7 @@ contains
     ! subcycle the dynamics
     call subcycle_velocity_solver(&
          domain, &
-         clock, &
-         ciceDynamicsTimeStep, &
-         ciceElasticTimeStep)
+         clock)
 
     ! post subcycle
     block => domain % blocklist
@@ -233,6 +253,7 @@ contains
          mesh, &
          tracers, &
          icestate, &
+         tracers_aggregate, &
          velocity_solver, &
          boundary, &
          atmos_forcing, &
@@ -281,6 +302,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
@@ -295,10 +317,11 @@ contains
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
-    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
+
     call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
-    call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(icestate, "snowVolumeCell", snowVolumeCell)
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
 
@@ -636,19 +659,13 @@ contains
 
   subroutine subcycle_velocity_solver(&
        domain, &
-       clock, &
-       dtDynamics, &
-       dtElastic)!{{{
+       clock)!{{{
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
 
     type(MPAS_Clock_type), intent(in) :: &
          clock !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         dtDynamics, & !< Input: 
-         dtElastic     !< Input: 
  
     integer, pointer :: &
          config_elastic_subcycle_number
@@ -663,8 +680,6 @@ contains
        call single_subcycle_velocity_solver(&
             domain, &
             clock, &
-            dtDynamics, &
-            dtElastic, &
             iElasticSubcycle)
 
     enddo
@@ -686,8 +701,6 @@ contains
   subroutine single_subcycle_velocity_solver(&
        domain, &
        clock, &
-       dtDynamics, &
-       dtElastic, &
        iElasticSubcycle)!{{{                               
 
     use cice_velocity_solver_shared, only: &
@@ -708,10 +721,6 @@ contains
 
     type(MPAS_Clock_type), intent(in) :: &
          clock !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         dtDynamics, & !< Input: 
-         dtElastic     !< Input: 
 
     integer, intent(in) :: &
          iElasticSubcycle !< Input: !! testing
@@ -764,6 +773,9 @@ contains
          uOceanVelocityVertex, &
          vOceanVelocityVertex
 
+    real(kind=RKIND), pointer :: &
+         elasticTimeStep
+
     type(MPAS_pool_type), pointer :: &
          velocity_solver_fields
 
@@ -790,6 +802,7 @@ contains
 
        call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
 
+       call MPAS_pool_get_array(velocity_solver, "elasticTimeStep", elasticTimeStep)
        call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
        call MPAS_pool_get_array(velocity_solver, "solveStress", solveStress)
        call MPAS_pool_get_field(velocity_solver, "uVelocity", uVelocity)
@@ -818,7 +831,7 @@ contains
                vVelocity % array, &
                icePressure, &
                replacementPressure, &
-               dtElastic, &
+               elasticTimeStep, &
                config_evp_damping, &
                stressDivergenceU, &
                stressDivergenceV, &
@@ -834,7 +847,7 @@ contains
                vVelocity % array, &
                icePressure, &
                replacementPressure, &
-               dtElastic, &
+               elasticTimeStep, &
                config_evp_damping, &
                stressDivergenceU, &
                stressDivergenceV, &
@@ -872,7 +885,7 @@ contains
             oceanStressU, &
             oceanStressV, &
             oceanStressCoeff, &
-            dtElastic, &
+            elasticTimeStep, &
             mesh)
 
          block => block % next

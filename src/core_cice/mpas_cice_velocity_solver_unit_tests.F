@@ -45,11 +45,11 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_strain_rate_operator_unit_test(&
-       block, &
+       domain, &
        unit_test_subtype)!{{{
    
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
     character(len=*), intent(in) :: &
          unit_test_subtype !< Input: 
@@ -71,7 +71,7 @@ contains
        do itest = 1, ntests
           
           call cice_strain_rate_operator_unit_test_individual(&
-               block, &
+               domain, &
                trim(test_names(itest)))
 
        enddo ! itest
@@ -79,7 +79,7 @@ contains
     else
 
        call cice_strain_rate_operator_unit_test_individual(&
-            block, &
+            domain, &
             unit_test_subtype)
 
     endif
@@ -99,7 +99,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_strain_rate_operator_unit_test_individual(&
-       block, &
+       domain, &
        unit_test_subtype)!{{{
 
     use cice_velocity_solver_weak, only: &
@@ -122,19 +122,21 @@ contains
     use mpas_constants, only: &
          pii
     
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type) :: &
+         domain !< Input/Output: 
 
     character(len=*), intent(in) :: &
          unit_test_subtype !< Input: 
+
+    type(block_type), pointer :: &
+         block
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
          boundary, &
          velocity_solver, &
          velocity_weak, &
-         velocity_variational, &
-         configs
+         velocity_variational
     
     real(kind=RKIND), dimension(:), allocatable :: &
          strain11, &
@@ -212,307 +214,312 @@ contains
     real(kind=RKIND), parameter :: &
          polarAngleLimit = 0.95_RKIND * 0.5_RKIND * pii
 
-    configs => block % configs
-    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
-    call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+    call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+    call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
-    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
-    call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
+    block => domain % blocklist
+    do while (associated(block))
+       
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+       call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
+       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
-    sphere_radius = 6371220.0_RKIND
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+       call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+       call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+       sphere_radius = 6371220.0_RKIND
 
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "zCell", zCell)
-    call MPAS_pool_get_array(mesh, "latCell", latCell)
-    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+       call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+       call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+       call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+       call MPAS_pool_get_array(mesh, "xCell", xCell)
+       call MPAS_pool_get_array(mesh, "yCell", yCell)
+       call MPAS_pool_get_array(mesh, "zCell", zCell)
+       call MPAS_pool_get_array(mesh, "latCell", latCell)
+       call MPAS_pool_get_array(mesh, "lonCell", lonCell)
 
-    call MPAS_pool_get_array(velocity_solver, "solveStress", solveStress)
-    call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
-    call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocity_solver, "solveStress", solveStress)
+       call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
 
-    call MPAS_pool_get_array(boundary, "interiorCell", interiorCell)
+       call MPAS_pool_get_array(boundary, "interiorCell", interiorCell)
 
-    if (trim(config_stress_divergence_scheme) == "weak") then
-       call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
-       call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
-       call MPAS_pool_get_array(velocity_weak, "strain11", strain11_weak)
-       call MPAS_pool_get_array(velocity_weak, "strain22", strain22_weak)
-       call MPAS_pool_get_array(velocity_weak, "strain12", strain12_weak)
-    else if (trim(config_stress_divergence_scheme) == "variational") then
-       call MPAS_pool_get_array(velocity_variational, "strain11", strain11_variational)
-       call MPAS_pool_get_array(velocity_variational, "strain22", strain22_variational)
-       call MPAS_pool_get_array(velocity_variational, "strain12", strain12_variational)
-       call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
-       call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
-       call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
-    endif
-
-    open(54,file="strain_rate_test_"//trim(unit_test_subtype)//".txt",position="append")
-
-    write(54,*) "-----------------------------------------------------------"
-    write(54,*)
-    write(54,*) "Test type: ", trim(unit_test_subtype)
-    write(54,*)
-
-    allocate(strain11(nCells))
-    allocate(strain22(nCells))
-    allocate(strain12(nCells))
-    allocate(strain11_test(nCells))
-    allocate(strain22_test(nCells))
-    allocate(strain12_test(nCells))
-    allocate(strain11_diff(nCells))
-    allocate(strain22_diff(nCells))
-    allocate(strain12_diff(nCells))
-
-    allocate(lonVertexRotated0(nVertices))
-    allocate(latVertexRotated0(nVertices))
-    allocate(lonCellRotated0(nCells))
-    allocate(latCellRotated0(nCells))
-
-    do iVertex = 1, nVertices
-    
-       call cice_grid_rotation_forward(&
-            xp,               yp,               zp, &
-            xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
-            config_rotate_cartesian_grid)
-
-       call cice_latlon_from_xyz(&
-            latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
-            xp, yp, zp, sphere_radius)
-
-    enddo ! iVertex
-
-    do iCell = 1, nCells
-
-       call cice_grid_rotation_forward(&
-            xp,           yp,           zp, &
-            xCell(iCell), yCell(iCell), zCell(iCell), &
-            config_rotate_cartesian_grid)
-
-       call cice_latlon_from_xyz(&
-            latCellRotated0(iCell), lonCellRotated0(iCell), &
-            xp, yp, zp, sphere_radius)
-
-    enddo ! iCell
-
-    ! set solveStrain away from rotated pole
-    do iCell = 1, nCells
-
-       solveStress(iCell) = interiorCell(iCell)
-
-       if (abs(latCellRotated0(iCell)) > 0.8_RKIND * pii * 0.5_RKIND) then
-          solveStress(iCell) = 0
+       if (trim(config_stress_divergence_scheme) == "weak") then
+          call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
+          call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
+          call MPAS_pool_get_array(velocity_weak, "strain11", strain11_weak)
+          call MPAS_pool_get_array(velocity_weak, "strain22", strain22_weak)
+          call MPAS_pool_get_array(velocity_weak, "strain12", strain12_weak)
+       else if (trim(config_stress_divergence_scheme) == "variational") then
+          call MPAS_pool_get_array(velocity_variational, "strain11", strain11_variational)
+          call MPAS_pool_get_array(velocity_variational, "strain22", strain22_variational)
+          call MPAS_pool_get_array(velocity_variational, "strain12", strain12_variational)
+          call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+          call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
+          call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
        endif
 
-    enddo ! iCell
+       open(54,file="strain_rate_test_"//trim(unit_test_subtype)//".txt",position="append")
 
-    ! set test velocities and expected outputs
-    call spherical_test_strain(&
-         mesh, &
-         uVelocity,              &
-         vVelocity,              &
-         lonVertexRotated0,      &
-         latVertexRotated0,      &
-         strain11_test,          &
-         strain22_test,          &
-         strain12_test,          &
-         lonCellRotated0,        &
-         latCellRotated0,        &
-         nVertices,              &
-         nCells,                 &
-         trim(unit_test_subtype))
+       write(54,*) "-----------------------------------------------------------"
+       write(54,*)
+       write(54,*) "Test type: ", trim(unit_test_subtype)
+       write(54,*)
 
-    write(54,*) 
-    write(54,*) "Analytic solution:"
-    write(54,*) "strain11 (min/max):", minval(strain11_test,mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain11_test,mask=(solveStress(1:nCells)==1))
-    write(54,*) "strain22 (min/max):", minval(strain22_test,mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain22_test,mask=(solveStress(1:nCells)==1))
-    write(54,*) "strain12 (min/max):", minval(strain12_test,mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain12_test,mask=(solveStress(1:nCells)==1))
+       allocate(strain11(nCells))
+       allocate(strain22(nCells))
+       allocate(strain12(nCells))
+       allocate(strain11_test(nCells))
+       allocate(strain22_test(nCells))
+       allocate(strain12_test(nCells))
+       allocate(strain11_diff(nCells))
+       allocate(strain22_diff(nCells))
+       allocate(strain12_diff(nCells))
 
-    ! calculate strain
-    if (trim(config_stress_divergence_scheme) == "weak") then
+       allocate(lonVertexRotated0(nVertices))
+       allocate(latVertexRotated0(nVertices))
+       allocate(lonCellRotated0(nCells))
+       allocate(latCellRotated0(nCells))
 
-       call cice_strain_tensor_weak(&
+       do iVertex = 1, nVertices
+
+          call cice_grid_rotation_forward(&
+               xp,               yp,               zp, &
+               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+               config_rotate_cartesian_grid)
+
+          call cice_latlon_from_xyz(&
+               latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
+               xp, yp, zp, sphere_radius)
+
+       enddo ! iVertex
+
+       do iCell = 1, nCells
+
+          call cice_grid_rotation_forward(&
+               xp,           yp,           zp, &
+               xCell(iCell), yCell(iCell), zCell(iCell), &
+               config_rotate_cartesian_grid)
+
+          call cice_latlon_from_xyz(&
+               latCellRotated0(iCell), lonCellRotated0(iCell), &
+               xp, yp, zp, sphere_radius)
+
+       enddo ! iCell
+
+       ! set solveStrain away from rotated pole
+       do iCell = 1, nCells
+
+          solveStress(iCell) = interiorCell(iCell)
+
+          if (abs(latCellRotated0(iCell)) > 0.8_RKIND * pii * 0.5_RKIND) then
+             solveStress(iCell) = 0
+          endif
+
+       enddo ! iCell
+
+       ! set test velocities and expected outputs
+       call spherical_test_strain(&
             mesh, &
-            strain11_weak,       &
-            strain22_weak,       &
-            strain12_weak,       &
-            uVelocity,           &
-            vVelocity,           &
-            normalVectorPolygon, &
-            latCellRotated,      &
-            solveStress)
-       
-       strain11(1:nCells) = strain11_weak(1:nCells)
-       strain22(1:nCells) = strain22_weak(1:nCells)
-       strain12(1:nCells) = strain12_weak(1:nCells)
+            uVelocity,              &
+            vVelocity,              &
+            lonVertexRotated0,      &
+            latVertexRotated0,      &
+            strain11_test,          &
+            strain22_test,          &
+            strain12_test,          &
+            lonCellRotated0,        &
+            latCellRotated0,        &
+            nVertices,              &
+            nCells,                 &
+            trim(unit_test_subtype))
 
-    else if (trim(config_stress_divergence_scheme) == "variational") then
+       write(54,*) 
+       write(54,*) "Analytic solution:"
+       write(54,*) "strain11 (min/max):", minval(strain11_test,mask=(solveStress(1:nCells)==1)), &
+            maxval(strain11_test,mask=(solveStress(1:nCells)==1))
+       write(54,*) "strain22 (min/max):", minval(strain22_test,mask=(solveStress(1:nCells)==1)), &
+            maxval(strain22_test,mask=(solveStress(1:nCells)==1))
+       write(54,*) "strain12 (min/max):", minval(strain12_test,mask=(solveStress(1:nCells)==1)), &
+            maxval(strain12_test,mask=(solveStress(1:nCells)==1))
 
-       call cice_strain_tensor_variational(&
-            mesh, &
-            strain11_variational, &
-            strain22_variational, &
-            strain12_variational, &
-            uVelocity, &
-            vVelocity, &
-            basisGradientU, &
-            basisGradientV, &
-            tanLatVertexRotatedOverRadius, &
-            solveStress)
+       ! calculate strain
+       if (trim(config_stress_divergence_scheme) == "weak") then
 
-       call average_variational_stress(&
-            mesh, &
-            strain11_variational, &
-            strain22_variational, &
-            strain12_variational, &
-            strain11, &
-            strain22, &
-            strain12)
+          call cice_strain_tensor_weak(&
+               mesh, &
+               strain11_weak,       &
+               strain22_weak,       &
+               strain12_weak,       &
+               uVelocity,           &
+               vVelocity,           &
+               normalVectorPolygon, &
+               latCellRotated,      &
+               solveStress)
 
-    endif
+          strain11(1:nCells) = strain11_weak(1:nCells)
+          strain22(1:nCells) = strain22_weak(1:nCells)
+          strain12(1:nCells) = strain12_weak(1:nCells)
 
-    write(54,*) 
-    write(54,*) "Numerical solution:"
-    write(54,*) "strain11 (min/max):", minval(strain11(1:nCells),mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain11(1:nCells),mask=(solveStress(1:nCells)==1))
-    write(54,*) "strain22 (min/max):", minval(strain22(1:nCells),mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain22(1:nCells),mask=(solveStress(1:nCells)==1))
-    write(54,*) "strain12 (min/max):", minval(strain12(1:nCells),mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain12(1:nCells),mask=(solveStress(1:nCells)==1))
+       else if (trim(config_stress_divergence_scheme) == "variational") then
 
-    ! calculate difference
-    strain11_diff = strain11(1:nCells) - strain11_test
-    strain22_diff = strain22(1:nCells) - strain22_test
-    strain12_diff = strain12(1:nCells) - strain12_test
+          call cice_strain_tensor_variational(&
+               mesh, &
+               strain11_variational, &
+               strain22_variational, &
+               strain12_variational, &
+               uVelocity, &
+               vVelocity, &
+               basisGradientU, &
+               basisGradientV, &
+               tanLatVertexRotatedOverRadius, &
+               solveStress)
 
-    write(54,*) 
-    write(54,*) "Difference:"
-    write(54,*) "strain11 (min/max):", minval(strain11_diff,mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain11_diff,mask=(solveStress(1:nCells)==1))
-    write(54,*) "strain22 (min/max):", minval(strain22_diff,mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain22_diff,mask=(solveStress(1:nCells)==1))
-    write(54,*) "strain12 (min/max):", minval(strain12_diff,mask=(solveStress(1:nCells)==1)), &
-                                       maxval(strain12_diff,mask=(solveStress(1:nCells)==1))
+          call average_variational_stress(&
+               mesh, &
+               strain11_variational, &
+               strain22_variational, &
+               strain12_variational, &
+               strain11, &
+               strain22, &
+               strain12)
 
-    open(55,file="strains_"//trim(unit_test_subtype)//".txt")
-    do iCell = 1, nCells
-
-       write(55,*) iCell, solveStress(iCell), &
-            strain11(iCell), strain11_test(iCell), &
-            strain22(iCell), strain22_test(iCell), &
-            strain12(iCell), strain12_test(iCell), &
-            strain12(iCell) - strain12_test(iCell)
-
-    enddo ! iCell
-    close(55)
-
-    open(55,file="strain11_"//trim(unit_test_subtype)//".txt")
-    open(56,file="strain22_"//trim(unit_test_subtype)//".txt")
-    open(57,file="strain12_"//trim(unit_test_subtype)//".txt")
-    do iCell = 1, nCells
-       write(55,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
-            strain11(iCell), strain11_test(iCell), strain11_diff(iCell), &
-            strain11_diff(iCell) * real(solveStress(iCell),RKIND)
-       write(56,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
-            strain22(iCell), strain22_test(iCell), strain22_diff(iCell), &
-            strain22_diff(iCell) * real(solveStress(iCell),RKIND)
-       write(57,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
-            strain12(iCell), strain12_test(iCell), strain12_diff(iCell), &
-            strain12_diff(iCell) * real(solveStress(iCell),RKIND)
-    enddo ! iCell
-    close(55)
-    close(56)
-    close(57)
-
-    ! rms difference
-    call cice_rms_difference( &
-         strain11(1:nCells),    &
-         strain11_test,         &
-         solveStress(1:nCells), &
-         nCells,                &
-         rms_strain11)
-
-    call cice_rms_difference( &
-         strain22(1:nCells),    &
-         strain22_test,         &
-         solveStress(1:nCells), &
-         nCells,                &
-         rms_strain22)
-
-    call cice_rms_difference( &
-         strain12(1:nCells),    &
-         strain12_test,         &
-         solveStress(1:nCells), &
-         nCells,                &
-         rms_strain12)
-
-    write(54,*)
-    write(54,*) "RMS:"
-    write(54,*) "strain11:", rms_strain11
-    write(54,*) "strain22:", rms_strain22
-    write(54,*) "strain12:", rms_strain12
-
-    do iCell = 1, nCells
-
-       if (solveStress(iCell) == 0) then
-          strain11_test(iCell) = 0.0_RKIND
-          strain22_test(iCell) = 0.0_RKIND
-          strain12_test(iCell) = 0.0_RKIND
-          strain11_diff(iCell) = 0.0_RKIND
-          strain22_diff(iCell) = 0.0_RKIND
-          strain12_diff(iCell) = 0.0_RKIND
        endif
-       
-    enddo ! iCell
 
-    ! plot spatial distribution
-    call cice_plot_spherical_latlon(mesh, real(interiorCell,RKIND), "interiorCell_"//trim(unit_test_subtype)//".txt")
-    call cice_plot_spherical_latlon(mesh, real(solveStress,RKIND), "solveStress_"//trim(unit_test_subtype)//".txt")
-    call cice_plot_spherical_latlon(mesh, latCellRotated0, "latCellRotated0_"//trim(unit_test_subtype)//".txt")
+       write(54,*) 
+       write(54,*) "Numerical solution:"
+       write(54,*) "strain11 (min/max):", minval(strain11(1:nCells),mask=(solveStress(1:nCells)==1)), &
+            maxval(strain11(1:nCells),mask=(solveStress(1:nCells)==1))
+       write(54,*) "strain22 (min/max):", minval(strain22(1:nCells),mask=(solveStress(1:nCells)==1)), &
+            maxval(strain22(1:nCells),mask=(solveStress(1:nCells)==1))
+       write(54,*) "strain12 (min/max):", minval(strain12(1:nCells),mask=(solveStress(1:nCells)==1)), &
+            maxval(strain12(1:nCells),mask=(solveStress(1:nCells)==1))
 
-    call cice_plot_spherical_latlon(mesh, strain11,      "strain11_plot_"//trim(unit_test_subtype)//"_model.txt")
-    call cice_plot_spherical_latlon(mesh, strain11_test, "strain11_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-    call cice_plot_spherical_latlon(mesh, strain11_diff, "strain11_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       ! calculate difference
+       strain11_diff = strain11(1:nCells) - strain11_test
+       strain22_diff = strain22(1:nCells) - strain22_test
+       strain12_diff = strain12(1:nCells) - strain12_test
 
-    call cice_plot_spherical_latlon(mesh, strain22,      "strain22_plot_"//trim(unit_test_subtype)//"_model.txt")
-    call cice_plot_spherical_latlon(mesh, strain22_test, "strain22_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-    call cice_plot_spherical_latlon(mesh, strain22_diff, "strain22_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       write(54,*) 
+       write(54,*) "Difference:"
+       write(54,*) "strain11 (min/max):", minval(strain11_diff,mask=(solveStress(1:nCells)==1)), &
+            maxval(strain11_diff,mask=(solveStress(1:nCells)==1))
+       write(54,*) "strain22 (min/max):", minval(strain22_diff,mask=(solveStress(1:nCells)==1)), &
+            maxval(strain22_diff,mask=(solveStress(1:nCells)==1))
+       write(54,*) "strain12 (min/max):", minval(strain12_diff,mask=(solveStress(1:nCells)==1)), &
+            maxval(strain12_diff,mask=(solveStress(1:nCells)==1))
 
-    call cice_plot_spherical_latlon(mesh, strain12,      "strain12_plot_"//trim(unit_test_subtype)//"_model.txt")
-    call cice_plot_spherical_latlon(mesh, strain12_test, "strain12_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-    call cice_plot_spherical_latlon(mesh, strain12_diff, "strain12_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       open(55,file="strains_"//trim(unit_test_subtype)//".txt")
+       do iCell = 1, nCells
 
-    deallocate(strain11)
-    deallocate(strain22)
-    deallocate(strain12)
-    deallocate(strain11_test)
-    deallocate(strain22_test)
-    deallocate(strain12_test)
-    deallocate(strain11_diff)
-    deallocate(strain22_diff)
-    deallocate(strain12_diff)
+          write(55,*) iCell, solveStress(iCell), &
+               strain11(iCell), strain11_test(iCell), &
+               strain22(iCell), strain22_test(iCell), &
+               strain12(iCell), strain12_test(iCell), &
+               strain12(iCell) - strain12_test(iCell)
 
-    deallocate(lonVertexRotated0)
-    deallocate(latVertexRotated0)
-    deallocate(lonCellRotated0)
-    deallocate(latCellRotated0)
+       enddo ! iCell
+       close(55)
 
-    write(54,*)
+       open(55,file="strain11_"//trim(unit_test_subtype)//".txt")
+       open(56,file="strain22_"//trim(unit_test_subtype)//".txt")
+       open(57,file="strain12_"//trim(unit_test_subtype)//".txt")
+       do iCell = 1, nCells
+          write(55,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
+               strain11(iCell), strain11_test(iCell), strain11_diff(iCell), &
+               strain11_diff(iCell) * real(solveStress(iCell),RKIND)
+          write(56,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
+               strain22(iCell), strain22_test(iCell), strain22_diff(iCell), &
+               strain22_diff(iCell) * real(solveStress(iCell),RKIND)
+          write(57,*) iCell, lonCell(iCell) * ciceRadiansToDegrees, latCell(iCell) * ciceRadiansToDegrees, &
+               strain12(iCell), strain12_test(iCell), strain12_diff(iCell), &
+               strain12_diff(iCell) * real(solveStress(iCell),RKIND)
+       enddo ! iCell
+       close(55)
+       close(56)
+       close(57)
 
-    close(54)
+       ! rms difference
+       call cice_rms_difference( &
+            strain11(1:nCells),    &
+            strain11_test,         &
+            solveStress(1:nCells), &
+            nCells,                &
+            rms_strain11)
+
+       call cice_rms_difference( &
+            strain22(1:nCells),    &
+            strain22_test,         &
+            solveStress(1:nCells), &
+            nCells,                &
+            rms_strain22)
+
+       call cice_rms_difference( &
+            strain12(1:nCells),    &
+            strain12_test,         &
+            solveStress(1:nCells), &
+            nCells,                &
+            rms_strain12)
+
+       write(54,*)
+       write(54,*) "RMS:"
+       write(54,*) "strain11:", rms_strain11
+       write(54,*) "strain22:", rms_strain22
+       write(54,*) "strain12:", rms_strain12
+
+       do iCell = 1, nCells
+
+          if (solveStress(iCell) == 0) then
+             strain11_test(iCell) = 0.0_RKIND
+             strain22_test(iCell) = 0.0_RKIND
+             strain12_test(iCell) = 0.0_RKIND
+             strain11_diff(iCell) = 0.0_RKIND
+             strain22_diff(iCell) = 0.0_RKIND
+             strain12_diff(iCell) = 0.0_RKIND
+          endif
+
+       enddo ! iCell
+
+       ! plot spatial distribution
+       call cice_plot_spherical_latlon(mesh, real(interiorCell,RKIND), "interiorCell_"//trim(unit_test_subtype)//".txt")
+       call cice_plot_spherical_latlon(mesh, real(solveStress,RKIND), "solveStress_"//trim(unit_test_subtype)//".txt")
+       call cice_plot_spherical_latlon(mesh, latCellRotated0, "latCellRotated0_"//trim(unit_test_subtype)//".txt")
+
+       call cice_plot_spherical_latlon(mesh, strain11,      "strain11_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(mesh, strain11_test, "strain11_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(mesh, strain11_diff, "strain11_plot_"//trim(unit_test_subtype)//"_diff.txt")
+
+       call cice_plot_spherical_latlon(mesh, strain22,      "strain22_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(mesh, strain22_test, "strain22_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(mesh, strain22_diff, "strain22_plot_"//trim(unit_test_subtype)//"_diff.txt")
+
+       call cice_plot_spherical_latlon(mesh, strain12,      "strain12_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(mesh, strain12_test, "strain12_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(mesh, strain12_diff, "strain12_plot_"//trim(unit_test_subtype)//"_diff.txt")
+
+       deallocate(strain11)
+       deallocate(strain22)
+       deallocate(strain12)
+       deallocate(strain11_test)
+       deallocate(strain22_test)
+       deallocate(strain12_test)
+       deallocate(strain11_diff)
+       deallocate(strain22_diff)
+       deallocate(strain12_diff)
+
+       deallocate(lonVertexRotated0)
+       deallocate(latVertexRotated0)
+       deallocate(lonCellRotated0)
+       deallocate(latCellRotated0)
+
+       write(54,*)
+
+       close(54)
+
+       block => block % next
+    enddo
 
   end subroutine cice_strain_rate_operator_unit_test_individual!}}}
 
@@ -941,11 +948,11 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_stress_divergence_operator_unit_test(&
-       block, &
+       domain, &
        unit_test_subtype)!{{{
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type) :: &
+         domain !< Input/Output: 
 
     character(len=*), intent(in) :: &
          unit_test_subtype !< Input: 
@@ -969,7 +976,7 @@ contains
        do itest = 1, ntests
 
           call cice_stress_divergence_operator_unit_test_individual(&
-               block, &
+               domain, &
                trim(test_names(itest)))
 
        enddo ! itest
@@ -977,7 +984,7 @@ contains
     else
 
        call cice_stress_divergence_operator_unit_test_individual(&
-            block, &
+            domain, &
             unit_test_subtype)
 
     endif
@@ -997,7 +1004,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_stress_divergence_operator_unit_test_individual(&
-       block, &
+       domain, &
        unit_test_subtype)!{{{
 
     use cice_velocity_solver_weak, only: &
@@ -1020,19 +1027,21 @@ contains
     use mpas_constants, only: &
          pii
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
     character(len=*), intent(in) :: &
          unit_test_subtype !< Input: 
+
+    type(block_type), pointer :: &
+         block
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
          boundary, &
          velocity_solver, &
          velocity_weak, &
-         velocity_variational, &
-         configs
+         velocity_variational
 
     real(kind=RKIND), dimension(:), allocatable :: &
          stressDivergenceU_test, &
@@ -1107,274 +1116,278 @@ contains
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
-    configs => block % configs
+    call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+    call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
-    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
-    call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+    block => domain % blocklist
+    do while (associated(block))
+       
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+       call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
+       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
-    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
-    call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+       call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+       call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+       call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+       call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+       call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+       call MPAS_pool_get_array(mesh, "xCell", xCell)
+       call MPAS_pool_get_array(mesh, "yCell", yCell)
+       call MPAS_pool_get_array(mesh, "zCell", zCell)
+       call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+       call MPAS_pool_get_array(mesh, "lonVertex", lonVertex)
 
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
-    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "zCell", zCell)
-    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
-    call MPAS_pool_get_array(mesh, "lonVertex", lonVertex)
+       call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+       call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocity_solver, "stressDivergenceV", stressDivergenceV)
 
-    call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
-    call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
-    call MPAS_pool_get_array(velocity_solver, "stressDivergenceV", stressDivergenceV)
-
-    if (trim(config_stress_divergence_scheme) == "weak") then
-       call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
-       call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
-       call MPAS_pool_get_array(velocity_weak, "stress11", stress11_weak)
-       call MPAS_pool_get_array(velocity_weak, "stress22", stress22_weak)
-       call MPAS_pool_get_array(velocity_weak, "stress12", stress12_weak)
-    else if (trim(config_stress_divergence_scheme) == "variational") then
-       call MPAS_pool_get_array(velocity_variational, "stress11", stress11_variational)
-       call MPAS_pool_get_array(velocity_variational, "stress22", stress22_variational)
-       call MPAS_pool_get_array(velocity_variational, "stress12", stress12_variational)
-       call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
-       call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
-       call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
-       call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
-       call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
-    endif
-
-    open(54,file="stress_divergence_test_"//trim(unit_test_subtype)//".txt")
-
-    write(54,*) "-----------------------------------------------------------"
-    write(54,*)
-    write(54,*) "Test type: ", trim(unit_test_subtype)
-    write(54,*)
-
-    allocate(stressDivergenceU_test(nVertices))
-    allocate(stressDivergenceV_test(nVertices))
-    allocate(stressDivergenceU_diff(nVertices))
-    allocate(stressDivergenceV_diff(nVertices))
-
-    allocate(lonVertexRotated0(nVertices))
-    allocate(latVertexRotated0(nVertices))
-    allocate(lonCellRotated0(nCells))
-    allocate(latCellRotated0(nCells))
-
-    do iVertex = 1, nVertices
-    
-       call cice_grid_rotation_forward(&
-            xp,               yp,               zp, &
-            xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
-            config_rotate_cartesian_grid)
-
-       call cice_latlon_from_xyz(&
-            latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
-            xp, yp, zp, sphere_radius)
-
-    enddo ! iVertex
-
-    do iCell = 1, nCells
-
-       call cice_grid_rotation_forward(&
-            xp,           yp,           zp, &
-            xCell(iCell), yCell(iCell), zCell(iCell), &
-            config_rotate_cartesian_grid)
-
-       call cice_latlon_from_xyz(&
-            latCellRotated0(iCell), lonCellRotated0(iCell), &
-            xp, yp, zp, sphere_radius)
-
-    enddo ! iCell
-
-    ! set solveStrain away from rotated pole
-    do iVertex = 1, nVertices
-
-       solveVelocity(iVertex) = interiorVertex(iVertex)
-
-       if (abs(latVertexRotated0(iVertex)) > 0.8_RKIND * pii * 0.5_RKIND) then
-          solveVelocity(iVertex) = 0
+       if (trim(config_stress_divergence_scheme) == "weak") then
+          call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
+          call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
+          call MPAS_pool_get_array(velocity_weak, "stress11", stress11_weak)
+          call MPAS_pool_get_array(velocity_weak, "stress22", stress22_weak)
+          call MPAS_pool_get_array(velocity_weak, "stress12", stress12_weak)
+       else if (trim(config_stress_divergence_scheme) == "variational") then
+          call MPAS_pool_get_array(velocity_variational, "stress11", stress11_variational)
+          call MPAS_pool_get_array(velocity_variational, "stress22", stress22_variational)
+          call MPAS_pool_get_array(velocity_variational, "stress12", stress12_variational)
+          call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
+          call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
+          call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
+          call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+          call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
        endif
 
-    enddo ! iCell
+       open(54,file="stress_divergence_test_"//trim(unit_test_subtype)//".txt")
 
-    ! set test velocities and expected outputs
-    if (trim(config_stress_divergence_scheme) == "weak") then
-       call spherical_test_divergence_stress_weak(mesh, &
-            stress11_weak,          &
-            stress22_weak,          &
-            stress12_weak,          &
-            lonCellRotated0,        &
-            latCellRotated0,        &
-            stressDivergenceU_test, &
-            stressDivergenceV_test, &
-            lonVertexRotated0,      &
-            latVertexRotated0,      &
-            trim(unit_test_subtype))
-    else if (trim(config_stress_divergence_scheme) == "variational") then
-       call spherical_test_divergence_stress_variational(mesh, &
-            stress11_variational,          &
-            stress22_variational,          &
-            stress12_variational,          &
-            lonVertexRotated0,        &
-            latVertexRotated0,        &
-            stressDivergenceU_test, &
-            stressDivergenceV_test, &
-            lonVertexRotated0,      &
-            latVertexRotated0,      &
-            trim(unit_test_subtype))
-    endif
+       write(54,*) "-----------------------------------------------------------"
+       write(54,*)
+       write(54,*) "Test type: ", trim(unit_test_subtype)
+       write(54,*)
 
-    write(54,*)
-    write(54,*) "Analytic solution:"
-    write(54,*) "stressDivergenceU:", minval(stressDivergenceU_test,mask=(solveVelocity(1:nVertices)==1)), &
-                                      maxval(stressDivergenceU_test,mask=(solveVelocity(1:nVertices)==1))
-    write(54,*) "stressDivergenceV:", minval(stressDivergenceV_test,mask=(solveVelocity(1:nVertices)==1)), &
-                                      maxval(stressDivergenceV_test,mask=(solveVelocity(1:nVertices)==1))
+       allocate(stressDivergenceU_test(nVertices))
+       allocate(stressDivergenceV_test(nVertices))
+       allocate(stressDivergenceU_diff(nVertices))
+       allocate(stressDivergenceV_diff(nVertices))
 
-    ! calculate divergence of stress
-    if (trim(config_stress_divergence_scheme) == "weak") then
+       allocate(lonVertexRotated0(nVertices))
+       allocate(latVertexRotated0(nVertices))
+       allocate(lonCellRotated0(nCells))
+       allocate(latCellRotated0(nCells))
 
-       call cice_stress_divergence_weak(&
-            mesh, &
-            stressDivergenceU,    &
-            stressDivergenceV,    &
-            stress11_weak,        &
-            stress22_weak,        &
-            stress12_weak,        &
-            normalVectorTriangle, &
-            latVertexRotated,     &
-            solveVelocity)
+       do iVertex = 1, nVertices
 
-    else if (trim(config_stress_divergence_scheme) == "variational") then
-       
-       call cice_stress_divergence_variational(&
-            mesh, &
-            stressDivergenceU, &
-            stressDivergenceV, &
-            stress11_variational, &
-            stress22_variational, &
-            stress12_variational, &
-            basisIntegralsU, &
-            basisIntegralsV, &
-            basisIntegralsMetric, &
-            tanLatVertexRotatedOverRadius, &
-            cellVerticesAtVertex, &
-            solveVelocity)
+          call cice_grid_rotation_forward(&
+               xp,               yp,               zp, &
+               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+               config_rotate_cartesian_grid)
 
-    endif
+          call cice_latlon_from_xyz(&
+               latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
+               xp, yp, zp, sphere_radius)
 
-    write(54,*)
-    write(54,*) "Numerical solution:"
-    write(54,*) "stressDivergenceU:", minval(stressDivergenceU(1:nVertices),mask=(solveVelocity(1:nVertices)==1)), &
-                                      maxval(stressDivergenceU(1:nVertices),mask=(solveVelocity(1:nVertices)==1))
-    write(54,*) "stressDivergenceV:", minval(stressDivergenceV(1:nVertices),mask=(solveVelocity(1:nVertices)==1)), &
-                                      maxval(stressDivergenceV(1:nVertices),mask=(solveVelocity(1:nVertices)==1))
+       enddo ! iVertex
 
-    ! calculate difference
-    stressDivergenceU_diff = stressDivergenceU(1:nVertices) - &
-                             stressDivergenceU_test
-    stressDivergenceV_diff = stressDivergenceV(1:nVertices) - &
-                             stressDivergenceV_test
+       do iCell = 1, nCells
 
-    write(54,*)
-    write(54,*) "Difference:"
-    write(54,*) "stressDivergenceU:", minval(stressDivergenceU_diff,mask=(solveVelocity(1:nVertices)==1)), &
-                                      maxval(stressDivergenceU_diff,mask=(solveVelocity(1:nVertices)==1))
-    write(54,*) "stressDivergenceV:", minval(stressDivergenceV_diff,mask=(solveVelocity(1:nVertices)==1)), &
-                                      maxval(stressDivergenceV_diff,mask=(solveVelocity(1:nVertices)==1))
+          call cice_grid_rotation_forward(&
+               xp,           yp,           zp, &
+               xCell(iCell), yCell(iCell), zCell(iCell), &
+               config_rotate_cartesian_grid)
 
-    open(55, file="divergences_"//trim(unit_test_subtype)//".txt")
-    do iVertex = 1, nVertices
+          call cice_latlon_from_xyz(&
+               latCellRotated0(iCell), lonCellRotated0(iCell), &
+               xp, yp, zp, sphere_radius)
 
-       write(55,*) iVertex, solveVelocity(iVertex), &
-            stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), &
-            stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), &
-            stressDivergenceU(iVertex) - stressDivergenceU_test(iVertex), &
-            stressDivergenceV(iVertex) - stressDivergenceV_test(iVertex)
+       enddo ! iCell
 
-    enddo ! iVertex
-    close(55)
+       ! set solveStrain away from rotated pole
+       do iVertex = 1, nVertices
 
-    open(55,file="divergenceu_"//trim(unit_test_subtype)//".txt")
-    open(56,file="divergencev_"//trim(unit_test_subtype)//".txt")
-    do iVertex = 1, nVertices
-       write(55,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
-            stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), stressDivergenceU_diff(iVertex), &
-            stressDivergenceU_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
-       write(56,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
-            stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), stressDivergenceV_diff(iVertex), &
-            stressDivergenceV_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
-    enddo ! iVertex
-    close(55)
-    close(56)
+          solveVelocity(iVertex) = interiorVertex(iVertex)
 
-    ! rms difference
-    call cice_rms_difference( &
-         stressDivergenceU(1:nVertices), &
-         stressDivergenceU_test,         &
-         solveVelocity(1:nVertices),     &
-         nVertices,                      &
-         rms_divergenceU)
+          if (abs(latVertexRotated0(iVertex)) > 0.8_RKIND * pii * 0.5_RKIND) then
+             solveVelocity(iVertex) = 0
+          endif
 
-    call cice_rms_difference( &
-         stressDivergenceV(1:nVertices), &
-         stressDivergenceV_test,         &
-         solveVelocity(1:nVertices),     &
-         nVertices,                      &
-         rms_divergenceV)
+       enddo ! iCell
 
-    write(54,*) 
-    write(54,*) "RMS:"
-    write(54,*) "rms_divergenceU:", rms_divergenceU
-    write(54,*) "rms_divergenceV:", rms_divergenceV
-
-    do iVertex = 1, nVertices
-
-       if (solveVelocity(iVertex) == 0) then
-          stressDivergenceU_test(iVertex) = 0.0_RKIND
-          stressDivergenceU_test(iVertex) = 0.0_RKIND
-          stressDivergenceU_diff(iVertex) = 0.0_RKIND
-          stressDivergenceU_diff(iVertex) = 0.0_RKIND
+       ! set test velocities and expected outputs
+       if (trim(config_stress_divergence_scheme) == "weak") then
+          call spherical_test_divergence_stress_weak(mesh, &
+               stress11_weak,          &
+               stress22_weak,          &
+               stress12_weak,          &
+               lonCellRotated0,        &
+               latCellRotated0,        &
+               stressDivergenceU_test, &
+               stressDivergenceV_test, &
+               lonVertexRotated0,      &
+               latVertexRotated0,      &
+               trim(unit_test_subtype))
+       else if (trim(config_stress_divergence_scheme) == "variational") then
+          call spherical_test_divergence_stress_variational(mesh, &
+               stress11_variational,          &
+               stress22_variational,          &
+               stress12_variational,          &
+               lonVertexRotated0,        &
+               latVertexRotated0,        &
+               stressDivergenceU_test, &
+               stressDivergenceV_test, &
+               lonVertexRotated0,      &
+               latVertexRotated0,      &
+               trim(unit_test_subtype))
        endif
-       
-    enddo ! iCell
 
-    ! plot spatial distribution
-    call cice_plot_spherical_latlon(mesh, real(interiorVertex,RKIND), "interiorVertex_"//trim(unit_test_subtype)//".txt")
-    call cice_plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity_"//trim(unit_test_subtype)//".txt")
-    call cice_plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0_"//trim(unit_test_subtype)//".txt")
+       write(54,*)
+       write(54,*) "Analytic solution:"
+       write(54,*) "stressDivergenceU:", minval(stressDivergenceU_test,mask=(solveVelocity(1:nVertices)==1)), &
+            maxval(stressDivergenceU_test,mask=(solveVelocity(1:nVertices)==1))
+       write(54,*) "stressDivergenceV:", minval(stressDivergenceV_test,mask=(solveVelocity(1:nVertices)==1)), &
+            maxval(stressDivergenceV_test,mask=(solveVelocity(1:nVertices)==1))
 
-    call cice_plot_spherical_latlon(mesh, stressDivergenceU,      "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_model.txt")
-    call cice_plot_spherical_latlon(mesh, stressDivergenceU_test, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-    call cice_plot_spherical_latlon(mesh, stressDivergenceU_diff, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_diff.txt")
+       ! calculate divergence of stress
+       if (trim(config_stress_divergence_scheme) == "weak") then
 
-    call cice_plot_spherical_latlon(mesh, stressDivergenceV,      "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_model.txt")
-    call cice_plot_spherical_latlon(mesh, stressDivergenceV_test, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_analytical.txt")
-    call cice_plot_spherical_latlon(mesh, stressDivergenceV_diff, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_diff.txt")
+          call cice_stress_divergence_weak(&
+               mesh, &
+               stressDivergenceU,    &
+               stressDivergenceV,    &
+               stress11_weak,        &
+               stress22_weak,        &
+               stress12_weak,        &
+               normalVectorTriangle, &
+               latVertexRotated,     &
+               solveVelocity)
 
-    ! cleanup
-    deallocate(stressDivergenceU_test)
-    deallocate(stressDivergenceV_test)
-    deallocate(stressDivergenceU_diff)
-    deallocate(stressDivergenceV_diff)
+       else if (trim(config_stress_divergence_scheme) == "variational") then
 
-    deallocate(lonVertexRotated0)
-    deallocate(latVertexRotated0)
-    deallocate(lonCellRotated0)
-    deallocate(latCellRotated0)
+          call cice_stress_divergence_variational(&
+               mesh, &
+               stressDivergenceU, &
+               stressDivergenceV, &
+               stress11_variational, &
+               stress22_variational, &
+               stress12_variational, &
+               basisIntegralsU, &
+               basisIntegralsV, &
+               basisIntegralsMetric, &
+               tanLatVertexRotatedOverRadius, &
+               cellVerticesAtVertex, &
+               solveVelocity)
 
-    close(54)
+       endif
+
+       write(54,*)
+       write(54,*) "Numerical solution:"
+       write(54,*) "stressDivergenceU:", minval(stressDivergenceU(1:nVertices),mask=(solveVelocity(1:nVertices)==1)), &
+            maxval(stressDivergenceU(1:nVertices),mask=(solveVelocity(1:nVertices)==1))
+       write(54,*) "stressDivergenceV:", minval(stressDivergenceV(1:nVertices),mask=(solveVelocity(1:nVertices)==1)), &
+            maxval(stressDivergenceV(1:nVertices),mask=(solveVelocity(1:nVertices)==1))
+
+       ! calculate difference
+       stressDivergenceU_diff = stressDivergenceU(1:nVertices) - &
+            stressDivergenceU_test
+       stressDivergenceV_diff = stressDivergenceV(1:nVertices) - &
+            stressDivergenceV_test
+
+       write(54,*)
+       write(54,*) "Difference:"
+       write(54,*) "stressDivergenceU:", minval(stressDivergenceU_diff,mask=(solveVelocity(1:nVertices)==1)), &
+            maxval(stressDivergenceU_diff,mask=(solveVelocity(1:nVertices)==1))
+       write(54,*) "stressDivergenceV:", minval(stressDivergenceV_diff,mask=(solveVelocity(1:nVertices)==1)), &
+            maxval(stressDivergenceV_diff,mask=(solveVelocity(1:nVertices)==1))
+
+       open(55, file="divergences_"//trim(unit_test_subtype)//".txt")
+       do iVertex = 1, nVertices
+
+          write(55,*) iVertex, solveVelocity(iVertex), &
+               stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), &
+               stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), &
+               stressDivergenceU(iVertex) - stressDivergenceU_test(iVertex), &
+               stressDivergenceV(iVertex) - stressDivergenceV_test(iVertex)
+
+       enddo ! iVertex
+       close(55)
+
+       open(55,file="divergenceu_"//trim(unit_test_subtype)//".txt")
+       open(56,file="divergencev_"//trim(unit_test_subtype)//".txt")
+       do iVertex = 1, nVertices
+          write(55,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
+               stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), stressDivergenceU_diff(iVertex), &
+               stressDivergenceU_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
+          write(56,*) iVertex, lonVertex(iVertex) * ciceRadiansToDegrees, latVertex(iVertex) * ciceRadiansToDegrees, &
+               stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), stressDivergenceV_diff(iVertex), &
+               stressDivergenceV_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
+       enddo ! iVertex
+       close(55)
+       close(56)
+
+       ! rms difference
+       call cice_rms_difference( &
+            stressDivergenceU(1:nVertices), &
+            stressDivergenceU_test,         &
+            solveVelocity(1:nVertices),     &
+            nVertices,                      &
+            rms_divergenceU)
+
+       call cice_rms_difference( &
+            stressDivergenceV(1:nVertices), &
+            stressDivergenceV_test,         &
+            solveVelocity(1:nVertices),     &
+            nVertices,                      &
+            rms_divergenceV)
+
+       write(54,*) 
+       write(54,*) "RMS:"
+       write(54,*) "rms_divergenceU:", rms_divergenceU
+       write(54,*) "rms_divergenceV:", rms_divergenceV
+
+       do iVertex = 1, nVertices
+
+          if (solveVelocity(iVertex) == 0) then
+             stressDivergenceU_test(iVertex) = 0.0_RKIND
+             stressDivergenceU_test(iVertex) = 0.0_RKIND
+             stressDivergenceU_diff(iVertex) = 0.0_RKIND
+             stressDivergenceU_diff(iVertex) = 0.0_RKIND
+          endif
+
+       enddo ! iCell
+
+       ! plot spatial distribution
+       call cice_plot_spherical_latlon(mesh, real(interiorVertex,RKIND), "interiorVertex_"//trim(unit_test_subtype)//".txt")
+       call cice_plot_spherical_latlon(mesh, real(solveVelocity,RKIND), "solveVelocity_"//trim(unit_test_subtype)//".txt")
+       call cice_plot_spherical_latlon(mesh, latVertexRotated0, "latVertexRotated0_"//trim(unit_test_subtype)//".txt")
+
+       call cice_plot_spherical_latlon(mesh, stressDivergenceU,      "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(mesh, stressDivergenceU_test, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(mesh, stressDivergenceU_diff, "stressDivergenceU_plot_"//trim(unit_test_subtype)//"_diff.txt")
+
+       call cice_plot_spherical_latlon(mesh, stressDivergenceV,      "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_model.txt")
+       call cice_plot_spherical_latlon(mesh, stressDivergenceV_test, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_analytical.txt")
+       call cice_plot_spherical_latlon(mesh, stressDivergenceV_diff, "stressDivergenceV_plot_"//trim(unit_test_subtype)//"_diff.txt")
+
+       ! cleanup
+       deallocate(stressDivergenceU_test)
+       deallocate(stressDivergenceV_test)
+       deallocate(stressDivergenceU_diff)
+       deallocate(stressDivergenceV_diff)
+
+       deallocate(lonVertexRotated0)
+       deallocate(latVertexRotated0)
+       deallocate(lonCellRotated0)
+       deallocate(latCellRotated0)
+
+       close(54)
+
+       block => block % next
+    enddo
 
   end subroutine cice_stress_divergence_operator_unit_test_individual!}}}
 
@@ -1900,20 +1913,17 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_constitutive_relationship_unit_test(&
-       block)!{{{
+       domain)!{{{
 
     use cice_velocity_solver_shared, only: &
          cice_evp_constitutive_relation, &
          cice_init_evp
 
-    use cice_velocity_solver_shared, only: &
-         ciceElasticTimeStep
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output: 
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
-
-    type (MPAS_pool_type), pointer :: &
-         configs
+    type(block_type), pointer :: &
+         block
 
     integer, parameter :: &
          nTests = 2
@@ -1937,52 +1947,65 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
+    type(MPAS_pool_type), pointer :: &
+         velocitySolver
+
+    real(kind=RKIND), pointer :: &
+         elasticTimeStep
+
     integer :: &
          iTest
 
-    configs => block % configs
+    call MPAS_pool_get_config(domain % configs, "config_evp_damping", config_evp_damping)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
-    call MPAS_pool_get_config(configs, "config_evp_damping", config_evp_damping)
-    call MPAS_pool_get_config(configs, "config_dt", config_dt)
+    call cice_init_evp(domain)
 
-    call cice_init_evp(config_dt, configs)
+    block => domain % blocklist
+    do while (associated(block))
 
-    call constitutive_relationship_set_strains(&
-         stress11, &
-         stress22, &
-         stress12, &
-         icePressure, &
-         strain11, &
-         strain22, &
-         strain12)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
+       call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
 
-    areaCell = 1.0_RKIND
+       call constitutive_relationship_set_strains(&
+            stress11, &
+            stress22, &
+            stress12, &
+            icePressure, &
+            strain11, &
+            strain22, &
+            strain12)
 
-    do iTest = 1, nTests
+       areaCell = 1.0_RKIND
 
-       call cice_evp_constitutive_relation(&
-            stress11(iTest), &
-            stress22(iTest), &
-            stress12(iTest), &
-            strain11(iTest), &
-            strain22(iTest), &
-            strain12(iTest), &
-            icePressure(iTest), &
-            replacementPressure,   &
-            areaCell, &
-            ciceElasticTimeStep, &
-            config_evp_damping)
+       do iTest = 1, nTests
 
-    enddo ! iTest
+          call cice_evp_constitutive_relation(&
+               stress11(iTest), &
+               stress22(iTest), &
+               stress12(iTest), &
+               strain11(iTest), &
+               strain22(iTest), &
+               strain12(iTest), &
+               icePressure(iTest), &
+               replacementPressure,   &
+               areaCell, &
+               elasticTimeStep, &
+               config_evp_damping)
 
-    call constitutive_relationship_writeout(&
-         icePressure, &
-         strain11, &
-         strain22, &
-         strain12, &
-         stress11, &
-         stress22, &
-         stress12)
+       enddo ! iTest
+
+       call constitutive_relationship_writeout(&
+            icePressure, &
+            strain11, &
+            strain22, &
+            strain12, &
+            stress11, &
+            stress22, &
+            stress12)
+
+       block => block % next
+    enddo
 
   end subroutine cice_constitutive_relationship_unit_test!}}}
 

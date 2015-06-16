@@ -34,12 +34,21 @@ module cice_debug
        cice_time_output_variable_int_2D, &
        cice_plot_vertices_planar, &
        cice_plot_cells_planar, &
-       cice_debug_output_array
+       cice_debug_output_array, &
+       cice_debug_output_block, &
+       cice_debug_output_domain, &
+       cice_debug_write_out_fields, &
+       cice_writeout_configs, &
+       cice_debug_write_out_field, &
+       cice_debug_rotate_winds
 
   integer, private :: &
        iObject = 2, &
        iLabel  = 1, &
        iArrow  = 1
+
+  integer, public :: &
+       istep = 0
 
 contains
 
@@ -1946,7 +1955,7 @@ contains
          velocity_solver, &
          boundary, &
          atmos_forcing, &
-         icestate
+         tracers_aggregate
 
     integer, dimension(:), pointer :: &
          interiorVertex
@@ -2008,7 +2017,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
-    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
 
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
@@ -2042,7 +2051,7 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)    
     call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)    
 
-    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)    
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)    
 
     allocate(uVelocityGeographical(nVertices))
     allocate(vVelocityGeographical(nVertices))
@@ -2607,6 +2616,8 @@ contains
 
     close(22)
 
+    stop
+
   end subroutine cice_time_output_variable_int_2D
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2621,23 +2632,862 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_debug_output_array(array)
+  subroutine cice_debug_output_array(array,fileout)
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          array
 
+    character(len=*), optional :: fileout
+
     integer :: recl
 
-    recl = size(array,1) * 8
+    recl = size(array) * 2
 
-    open(60,file="mpas_array_comparison.dat",form="unformatted",access="direct",recl=recl)
+    if (present(fileout)) then
+       open(60,file=trim(fileout),form="unformatted",access="direct",recl=recl)
+    else
+       open(60,file="mpas_array_comparison.dat",form="unformatted",access="direct",recl=recl)
+    endif
 
     write(60,rec=1) array
 
     close(60)
 
+    !write(stderrUnit,*) "cice_debug_output_array"
+
   end subroutine cice_debug_output_array
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_output_block
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date Feburary 11th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_output_block(block)
+
+    type(block_type) :: block
+
+    type(mpas_pool_type), pointer :: &
+         pool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         array
+
+    call MPAS_pool_get_subpool(block % structs, "", pool)
+
+    call MPAS_pool_get_array(pool, "", array)
+
+    call cice_debug_output_array(array)
+
+    stop
+
+  end subroutine cice_debug_output_block
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_output_block
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date Feburary 11th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_output_domain(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(mpas_pool_type), pointer :: &
+         pool
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         array
+
+    character(len=200), parameter :: &
+         poolName  = "", &
+         fieldName = "absorbedShortwaveIceLayer"
+
+    write(stderrUnit,*) trim(poolName), " ", trim(fieldName)
+
+    block => domain % blocklist
+    do while (associated(block))
+       
+       call MPAS_pool_get_subpool(block % structs, trim(poolName), pool)
+
+       call MPAS_pool_get_array(pool, trim(fieldName), array, 1)
+
+       call cice_debug_output_array(array(1,1,:))
+
+       block => block % next
+    end do
+
+    stop
+    
+  end subroutine cice_debug_output_domain
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_write_out_field(domain, poolname, fieldname, cicename)
+
+    use mpas_constants
+
+    type(domain_type) :: domain
+
+    character(len=*), intent(in) :: &
+         poolname, &
+         fieldname, &
+         cicename
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         pool
+
+    type(MPAS_pool_field_info_type) :: fieldInfo
+
+    type(field1DReal), pointer :: array1D
+    type(field2DReal), pointer :: array2D
+    type(field3DReal), pointer :: array3D
+    type(field4DReal), pointer :: array4D
+
+    character(len=1000) :: fileout
+
+    integer :: iDim1, iDim2, iDim3
+
+    block => domain % blocklist
+
+    call MPAS_pool_get_subpool(block % structs, trim(poolname), pool)
+
+    call MPAS_pool_get_field_info(pool, trim(fieldname), fieldInfo)
+
+    write(stderrUnit,*) "cice_debug_write_out_field: ", fieldInfo % nDims, " ", trim(poolname), " ", trim(fieldname), " ", trim(cicename) 
+
+    select case (fieldInfo % nDims)
+    case(1)
+
+       call MPAS_pool_get_field(pool, trim(fieldname), array1D)
+
+       if (trim(fieldname) == "lonCell") where(array1D % array > pii) array1D % array = array1D % array - 2.0_RKIND * pii
+
+
+       if (array1D % isActive) then
+          fileout = "comparison/pop_mpas_array_comparison_"//trim(cicename)//".dat"
+          call cice_debug_output_array(array1D % array, trim(fileout))
+       endif
+
+    case(2)
+
+       call MPAS_pool_get_field(pool, trim(fieldname), array2D)
+       if (array2D % isActive) then
+          do iDim1 = 1, size(array2D % array,1)
+             write(fileout,fmt='(a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,".dat"
+             call cice_debug_output_array(array2D % array(iDim1,:), trim(fileout))
+          enddo
+       endif
+
+    case(3)
+
+       call MPAS_pool_get_field(pool, trim(fieldname), array3D)
+       if (array3D % isActive) then
+          do iDim1 = 1, size(array3D % array,1)
+             do iDim2 = 1, size(array3D % array,2)
+                if (size(array3D % array,1) == 1 .and. trim(fieldname) /= "snowEnthalpy" .and. trim(fieldname) /= "absorbedShortwaveSnowLayer") then
+                   write(fileout,fmt='(a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim2,".dat"
+                else
+                   write(fileout,fmt='(a,i1,a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,"_",iDim2,".dat"
+                endif
+                call cice_debug_output_array(array3D % array(iDim1,iDim2,:), trim(fileout))
+             enddo
+          enddo
+       endif
+
+    case(4)
+
+       call MPAS_pool_get_field(pool, trim(fieldname), array4D)
+       if (array4D % isActive) then
+          do iDim1 = 1, size(array4D % array,1)
+             do iDim2 = 1, size(array4D % array,2)
+                do iDim3 = 1, size(array4D % array,3)
+                   write(fileout,fmt='(a,i1,a,i1,a,i1,a)') "comparison/pop_mpas_array_comparison_"//trim(cicename)//"_",iDim1,"_",iDim2,"_",iDim3,".dat"
+                   call cice_debug_output_array(array4D % array(iDim1,iDim2,iDim3,:), trim(fileout))
+                enddo
+             enddo
+          enddo
+       endif
+
+    end select
+
+  end subroutine cice_debug_write_out_field
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_write_out_fields(domain, callingSubroutine, location)
+
+    type(domain_type) :: domain
+
+    character(len=*), intent(in) :: callingSubroutine
+
+    integer, intent(in) :: location
+
+    ! parameters where we want to writeout output
+    character(len=strKIND), parameter :: callingSubroutineDesired = "cice_timestep"
+    integer, parameter :: locationDesired = 3
+    integer, parameter :: iStepDesired = 8760
+
+! cice_init_column_shortwave           1           0
+! column_radiation           1           0
+! column_radiation           2           0
+! cice_init_column_shortwave           2           0
+! column_prep_radiation           1           1
+! column_prep_radiation           2           1
+! column_vertical_thermodynamics           1           1
+! column_vertical_thermodynamics           2           1
+! column_itd_thermodynamics           1           1
+! column_itd_thermodynamics           2           1
+! column_ridging           1           1
+! column_ridging           2           1
+! column_radiation           1           1
+! column_radiation           2           1
+
+    write(stderrUnit,*) trim(callingSubroutine), location, iStep
+
+    if (trim(callingSubroutine) == trim(callingSubroutineDesired) .and. &
+        location == locationDesired .and. &
+        iStep == iStepDesired) then
+
+       !write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
+       
+       ! tracer
+       call cice_debug_write_out_field(domain, "tracers", "iceAreaCategory", "aicen")
+       call cice_debug_write_out_field(domain, "tracers", "iceVolumeCategory", "vicen")   
+       call cice_debug_write_out_field(domain, "tracers", "snowVolumeCategory", "vsnon")
+       call cice_debug_write_out_field(domain, "tracers", "surfaceTemperature", "Tsfcn")
+       call cice_debug_write_out_field(domain, "tracers", "iceEnthalpy", "qicen")
+       call cice_debug_write_out_field(domain, "tracers", "iceSalinity", "sicen")
+       call cice_debug_write_out_field(domain, "tracers", "snowEnthalpy", "qsnon")
+       call cice_debug_write_out_field(domain, "tracers", "iceAge", "iagen")
+       call cice_debug_write_out_field(domain, "tracers", "firstYearIceArea", "FYn")
+       call cice_debug_write_out_field(domain, "tracers", "levelIceArea", "alvln")
+       call cice_debug_write_out_field(domain, "tracers", "levelIceVolume", "vlvln")
+       call cice_debug_write_out_field(domain, "tracers", "pondArea", "apndn")
+       call cice_debug_write_out_field(domain, "tracers", "pondDepth", "hpndn")
+       call cice_debug_write_out_field(domain, "tracers", "pondLidThickness", "ipndn")
+
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "iceAreaCell", "aice")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "iceVolumeCell", "vice")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "snowVolumeCell", "vsno")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "surfaceTemperatureCell", "Tsfc")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "iceEnthalpyCell", "qice")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "iceSalinityCell", "sice")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "snowEnthalpyCell", "qsno")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "iceAgeCell", "iage")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "firstYearIceAreaCell", "FY")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "levelIceAreaCell", "alvl")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "levelIceVolumeCell", "vlvl")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "pondAreaCell", "apnd")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "pondDepthCell", "hpnd")
+       call cice_debug_write_out_field(domain, "tracers_aggregate", "pondLidThicknessCell", "ipnd")
+
+       call cice_debug_write_out_field(domain, "icestate", "iceAreaCellInitial", "aice_init")
+       call cice_debug_write_out_field(domain, "icestate", "iceAreaCategoryInitial", "aicen_init")
+       call cice_debug_write_out_field(domain, "icestate", "iceVolumeCategoryInitial", "vicen_init")
+       !call cice_debug_write_out_field(domain, "icestate", "snowVolumeCategoryInitial", "vsnon_init")
+       call cice_debug_write_out_field(domain, "icestate", "openWaterArea", "aice0")
+
+       call cice_debug_write_out_field(domain, "atmos_coupling", "airPotentialTemperature", "potT")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "airTemperature", "Tair")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "airSpecificHumidity", "Qa")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "airDensity", "rhoa")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "shortwaveVisibleDirectDown", "swvdr")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "shortwaveVisibleDiffuseDown", "swvdf")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "shortwaveIRDirectDown", "swidr")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "shortwaveIRDiffuseDown", "swidf")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "longwaveDown", "flw")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "rainfallRate", "frain")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "snowfallRate", "fsnow")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "uAirVelocity", "uatm")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "vAirVelocity", "vatm")
+
+       call cice_debug_write_out_field(domain, "atmos_forcing", "windSpeed", "wind")
+       call cice_debug_write_out_field(domain, "atmos_forcing", "shortwaveDown", "fsw")
+       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceTemperature2m", "")
+       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceHumidity2m", "")
+       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceSpeed10m", "")
+       !call cice_debug_write_out_field(domain, "atmos_forcing", "sensibleTransferCoefficient", "shcoef")
+       !call cice_debug_write_out_field(domain, "atmos_forcing", "latentTransferCoefficient", "lhcoef")
+
+       call cice_debug_write_out_field(domain, "ocean_coupling", "seaSurfaceTemperature", "sst")
+       call cice_debug_write_out_field(domain, "ocean_coupling", "seaSurfaceSalinity", "sss")
+       call cice_debug_write_out_field(domain, "ocean_coupling", "seaFreezingTemperature", "Tf")
+       call cice_debug_write_out_field(domain, "ocean_coupling", "freezingMeltingPotential", "frzmlt")
+       call cice_debug_write_out_field(domain, "ocean_coupling", "uOceanVelocity", "uocn")
+       call cice_debug_write_out_field(domain, "ocean_coupling", "vOceanVelocity", "vocn")
+
+       call cice_debug_write_out_field(domain, "ridging", "ridgeConvergence", "rdg_conv")
+       call cice_debug_write_out_field(domain, "ridging", "ridgeShear", "rdg_shear")
+       call cice_debug_write_out_field(domain, "ridging", "areaLossRidge", "dardg1dt")
+       call cice_debug_write_out_field(domain, "ridging", "areaGainRidge", "dardg2dt")
+       call cice_debug_write_out_field(domain, "ridging", "iceVolumeRidged", "dvirdgdt")
+       call cice_debug_write_out_field(domain, "ridging", "openingRateRidge", "opening")
+       call cice_debug_write_out_field(domain, "ridging", "ridgeParticipationFunction", "aparticn")
+       call cice_debug_write_out_field(domain, "ridging", "ratioRidgeThicknessToIce", "krdgn")
+       call cice_debug_write_out_field(domain, "ridging", "fractionNewRidgeArea", "aredistn")
+       call cice_debug_write_out_field(domain, "ridging", "fractionNewRidgeVolume", "vredistn")
+       call cice_debug_write_out_field(domain, "ridging", "areaLossRidgeCategory", "dardg1ndt")
+       call cice_debug_write_out_field(domain, "ridging", "areaGainRidgeCategory", "dardg2ndt")
+       call cice_debug_write_out_field(domain, "ridging", "iceVolumeRidgedCategory", "dvirdgndt")
+       call cice_debug_write_out_field(domain, "ridging", "raftingIceArea", "araftn")
+       call cice_debug_write_out_field(domain, "ridging", "raftingIceVolume", "vraftn")
+
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "lateralIceMeltFraction", "rside")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "surfaceIceMelt", "meltt")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "surfaceIceMeltCategory", "melttn")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "basalIceMelt", "meltb")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "basalIceMeltCategory", "meltbn")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "lateralIceMelt", "meltl")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "snowMelt", "melts")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "snowMeltCategory", "meltsn")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "congelation", "congel")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "congelationCategory", "congeln")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "snowiceFormation", "snoice")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "snowiceFormationCategory", "snoicen")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "snowThicknessChange", "dsnow")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "snowThicknessChangeCategory", "dsnown")
+       call cice_debug_write_out_field(domain, "melt_growth_rates", "frazilFormation", "frazil")
+
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "surfaceHeatFlux", "fsurf")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "surfaceHeatFluxCategory", "fsurfn")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "surfaceConductiveFlux", "fcondtop")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "surfaceConductiveFluxCategory", "fcondtopn")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "longwaveUp", "flwout")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "sensibleHeatFlux", "fsens")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "latentHeatFlux", "flat")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "latentHeatFluxCategory", "flatn")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "evaporativeHeatFlux", "evap")
+
+       call cice_debug_write_out_field(domain, "ocean_fluxes", "oceanFreshWaterFlux", "fresh")
+       call cice_debug_write_out_field(domain, "ocean_fluxes", "oceanSaltFlux", "fsalt")
+       call cice_debug_write_out_field(domain, "ocean_fluxes", "oceanHeatFlux", "fhocn")
+       call cice_debug_write_out_field(domain, "ocean_fluxes", "oceanShortwaveFlux", "fswthru")
+
+       call cice_debug_write_out_field(domain, "shortwave", "solarZenithAngleCosine", "coszen")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoVisibleDirectCategory", "alvdrn")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoVisibleDiffuseCategory", "alvdfn")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoIRDirectCategory", "alidrn")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoIRDiffuseCategory", "alidfn")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoVisibleDirectCell", "alvdr")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoVisibleDiffuseCell", "alvdf")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoIRDirectCell", "alidr")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoIRDiffuseCell", "alidf")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoVisibleDirectArea", "alvdr_ai")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoVisibleDiffuseArea", "alvdf_ai")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoIRDirectArea", "alidr_ai")
+       call cice_debug_write_out_field(domain, "shortwave", "albedoIRDiffuseArea", "alidf_ai")
+       call cice_debug_write_out_field(domain, "shortwave", "shortwaveScalingFactor", "scale_factor")
+       call cice_debug_write_out_field(domain, "shortwave", "surfaceShortwaveFlux", "fswsfcn")
+       call cice_debug_write_out_field(domain, "shortwave", "interiorShortwaveFlux", "fswintn")
+       call cice_debug_write_out_field(domain, "shortwave", "penetratingShortwaveFlux", "fswthrun")
+       call cice_debug_write_out_field(domain, "shortwave", "shortwaveLayerPenetration", "fswpenln")
+       call cice_debug_write_out_field(domain, "shortwave", "absorbedShortwaveFlux", "fswabs")
+       call cice_debug_write_out_field(domain, "shortwave", "absorbedShortwaveSnowLayer", "Sswabsn")
+       call cice_debug_write_out_field(domain, "shortwave", "absorbedShortwaveIceLayer", "Iswabsn")
+       call cice_debug_write_out_field(domain, "shortwave", "bareIceAlbedoCategory", "albicen")
+       call cice_debug_write_out_field(domain, "shortwave", "snowAlbedoCategory", "albsnon")
+       call cice_debug_write_out_field(domain, "shortwave", "pondAlbedoCategory", "albpndn")
+       call cice_debug_write_out_field(domain, "shortwave", "bareIceAlbedoCell", "albice")
+       call cice_debug_write_out_field(domain, "shortwave", "snowAlbedoCell", "albsno")
+       call cice_debug_write_out_field(domain, "shortwave", "pondAlbedoCell", "albpnd")
+       call cice_debug_write_out_field(domain, "shortwave", "effectivePondAreaCategory", "apeffn")
+       call cice_debug_write_out_field(domain, "shortwave", "effectivePondAreaCell", "apeff_ai")
+
+       call cice_debug_write_out_field(domain, "drag", "airOceanDragCoefficientRatio", "Cdn_atm_ocn")
+       call cice_debug_write_out_field(domain, "drag", "oceanDragCoefficient", "Cdn_ocn")
+       call cice_debug_write_out_field(domain, "drag", "oceanDragCoefficientSkin", "Cdn_ocn_skin")
+       call cice_debug_write_out_field(domain, "drag", "oceanDragCoefficientFloe", "Cdn_ocn_floe")
+       call cice_debug_write_out_field(domain, "drag", "oceanDragCoefficientKeel", "Cdn_ocn_keel")
+       call cice_debug_write_out_field(domain, "drag", "airDragCoefficient", "Cdn_atm")
+       call cice_debug_write_out_field(domain, "drag", "airDragCoefficientSkin", "Cdn_atm_skin")
+       call cice_debug_write_out_field(domain, "drag", "airDragCoefficientFloe", "Cdn_atm_floe")
+       call cice_debug_write_out_field(domain, "drag", "airDragCoefficientPond", "Cdn_atm_pond")
+       call cice_debug_write_out_field(domain, "drag", "airDragCoefficientRidge", "Cdn_atm_rdg")
+       call cice_debug_write_out_field(domain, "drag", "dragFreeboard", "hfreebd")
+       call cice_debug_write_out_field(domain, "drag", "dragIceSnowDraft", "hdraft")
+       call cice_debug_write_out_field(domain, "drag", "dragRidgeHeight", "hridge")
+       call cice_debug_write_out_field(domain, "drag", "dragRidgeSeparation", "distrdg")
+       call cice_debug_write_out_field(domain, "drag", "dragKeelDepth", "hkeel")
+       call cice_debug_write_out_field(domain, "drag", "dragKeelSeparation", "dkeel")
+       call cice_debug_write_out_field(domain, "drag", "dragFloeLength", "lfloe")
+       call cice_debug_write_out_field(domain, "drag", "dragFloeSeparation", "dfloe")
+
+       call cice_debug_write_out_field(domain, "ponds", "pondFreshWaterFlux", "fpond")
+       call cice_debug_write_out_field(domain, "ponds", "pondSnowDepthDifference", "dhsn")
+       call cice_debug_write_out_field(domain, "ponds", "pondLidMeltFluxFraction", "ffracn")
+
+       call cice_debug_write_out_field(domain, "aerosols", "atmosAerosolFlux", "faero_atm")
+       call cice_debug_write_out_field(domain, "aerosols", "oceanAerosolFlux", "faero_ocn")
+       !call cice_debug_write_out_field(domain, "aerosols", "aerosolMassExtinctionCrossSection", "kaer_tab")
+       !call cice_debug_write_out_field(domain, "aerosols", "aerosolSingleScatterAlbedo", "waer_tab")
+       !call cice_debug_write_out_field(domain, "aerosols", "aerosolAsymmetryParameter", "gaer_tab")
+
+       !call cice_debug_write_out_field(domain, "biogeochemistry", "newlyFormedIce", "first_ice")
+       call cice_debug_write_out_field(domain, "biogeochemistry", "oceanBioFluxes", "flux_bio")
+       call cice_debug_write_out_field(domain, "biogeochemistry", "oceanBioConcentrations", "ocean_bio")
+
+       call cice_debug_write_out_field(domain, "initial", "initialSalinityProfile", "salinz")
+       call cice_debug_write_out_field(domain, "initial", "initialMeltingTemperatureProfile", "Tmltz")
+
+       call cice_debug_write_out_field(domain, "mesh", "lonCell", "TLON")
+       call cice_debug_write_out_field(domain, "mesh", "latCell", "TLAT")
+
+       stop
+
+    endif
+
+  end subroutine cice_debug_write_out_fields
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_writeout_config(domain, unit, mpasConfig, popConfig, type)
+
+    type(domain_type) :: domain
+
+    integer, intent(in) :: unit
+
+    character(len=*), intent(in) :: mpasConfig, popConfig, type
+
+    character(len=20) :: popConfigFixed
+
+    logical, pointer :: configLogical
+    integer, pointer :: configInteger
+    character(len=strKIND), pointer :: configCharacter
+    real(kind=RKIND), pointer :: configReal
+    integer :: configIntegerInt
+
+    write(popConfigFixed,*) trim(popConfig)
+
+    select case (trim(type))
+    case ("logical")
+       call MPAS_pool_get_config(domain % blocklist % configs, trim(mpasConfig), configLogical)
+       write(unit,*) popConfigFixed, configLogical
+    case ("integer")
+       call MPAS_pool_get_config(domain % blocklist % configs, trim(mpasConfig), configInteger)
+       write(unit,*) popConfigFixed, configInteger
+    case ("character")
+       call MPAS_pool_get_config(domain % blocklist % configs, trim(mpasConfig), configCharacter)
+       if ( trim(mpasConfig) == "config_thermodynamics_type" .or. &
+            trim(mpasConfig) == "config_itd_conversion_type" .or. &
+            trim(mpasConfig) == "config_category_bounds_type" .or. &
+            trim(mpasConfig) == "config_ice_strength_formulation" .or. &
+            trim(mpasConfig) == "config_ridging_participation_function" .or. &
+            trim(mpasConfig) == "config_ridging_redistribution_function") then
+          configIntegerInt = config_cice_int(trim(mpasConfig), configCharacter)
+          write(unit,*) popConfigFixed, configIntegerInt
+       else
+          write(unit,*) popConfigFixed, " ", trim(configCharacter)
+       endif
+    case ("real")
+       call MPAS_pool_get_config(domain % blocklist % configs, trim(mpasConfig), configReal)
+       write(unit,*) popConfigFixed, configReal
+    end select
+
+  end subroutine cice_writeout_config
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  function config_cice_int(configName, configValue) result(configValueCice)
+
+    character(len=*), intent(in) :: &
+         configName, &
+         configValue
+
+    integer :: configValueCice
+
+    select case (trim(configName))
+
+    ! ktherm
+    case ("config_thermodynamics_type")
+       
+       select case (trim(configValue))
+       case ("zero layer")
+          configValueCice = 0
+       case ("BL99")
+          configValueCice = 1
+       case ("mushy")
+          configValueCice = 2
+       end select
+
+    ! kitd
+    case ("config_itd_conversion_type")
+
+       select case (trim(configValue))
+       case ("delta function")
+          configValueCice = 0
+       case ("linear remap")
+          configValueCice = 1
+       end select
+
+    ! kcatbound
+    case ("config_category_bounds_type")
+
+       select case (trim(configValue))
+       case ("single category")
+          configValueCice = -1
+       case ("original")
+          configValueCice = 0
+       case ("new")
+          configValueCice = 1
+       case ("WMO")
+          configValueCice = 2
+       case ("asymptotic")
+          configValueCice = 3
+       end select
+
+    ! kstrength
+    case ("config_ice_strength_formulation")
+
+       select case (trim(configValue))
+       case ("Hibler79")
+          configValueCice = 0
+       case ("Rothrock75")
+          configValueCice = 1
+       end select
+
+    ! krdg_partic
+    case ("config_ridging_participation_function")
+
+       select case (trim(configValue))
+       case ("Thorndike75")
+          configValueCice = 0
+       case ("exponential")
+          configValueCice = 1
+       end select
+
+    ! krdg_redist
+    case ("config_ridging_redistribution_function")
+
+       select case (trim(configValue))
+       case ("Hibler80")
+          configValueCice = 0
+       case ("exponential")
+          configValueCice = 1
+       end select
+
+    end select
+
+  end function config_cice_int
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_writeout_configs(domain)
+
+    type(domain_type) :: domain
+
+    open(55,file="pop_mpas_config_comparison_mpas.txt",action="write")
+
+    call cice_writeout_config(domain, 55, "config_use_ice_age", "tr_iage", "logical")
+    call cice_writeout_config(domain, 55, "config_use_first_year_ice", "tr_FY", "logical")
+    call cice_writeout_config(domain, 55, "config_use_level_ice", "tr_lvl", "logical")
+    call cice_writeout_config(domain, 55, "config_use_meltponds", "tr_pond", "logical")
+    call cice_writeout_config(domain, 55, "config_use_cesm_meltponds", "tr_pond_cesm", "logical")
+    call cice_writeout_config(domain, 55, "config_use_level_meltponds", "tr_pond_lvl", "logical")
+    call cice_writeout_config(domain, 55, "config_use_topo_meltponds", "tr_pond_topo", "logical")
+    call cice_writeout_config(domain, 55, "config_use_aerosols", "tr_aero", "logical")
+    call cice_writeout_config(domain, 55, "config_use_brine", "tr_brine", "logical")
+
+    call cice_writeout_config(domain, 55, "config_shortwave_type", "shortwave", "character")
+    call cice_writeout_config(domain, 55, "config_albedo_type", "albedo_type", "character")
+    call cice_writeout_config(domain, 55, "config_visible_ice_albedo", "albicev", "real")
+    call cice_writeout_config(domain, 55, "config_infrared_ice_albedo", "albicei", "real")
+    call cice_writeout_config(domain, 55, "config_visible_snow_albedo", "albsnowv", "real")
+    call cice_writeout_config(domain, 55, "config_infrared_snow_albedo", "albsnowi", "real")
+    call cice_writeout_config(domain, 55, "config_variable_albedo_thickness_limit", "ahmax", "real")
+    call cice_writeout_config(domain, 55, "config_ice_shortwave_tuning_parameter", "R_ice", "real")
+    call cice_writeout_config(domain, 55, "config_pond_shortwave_tuning_parameter", "R_pnd", "real")
+    call cice_writeout_config(domain, 55, "config_snow_shortwave_tuning_parameter", "R_snw", "real")
+    call cice_writeout_config(domain, 55, "config_temp_change_snow_grain_radius_change", "dT_mlt", "real")
+    call cice_writeout_config(domain, 55, "config_max_melting_snow_grain_radius", "rsnw_mlt", "real")
+
+    call cice_writeout_config(domain, 55, "config_snow_to_ice_transition_depth", "hs0", "real")
+    call cice_writeout_config(domain, 55, "config_adjust_shortwave_meltwater_infiltration", "snowinfil", "logical")
+    call cice_writeout_config(domain, 55, "config_pond_refreezing_type", "frzpnd", "character")
+    call cice_writeout_config(domain, 55, "config_pond_flushing_timescale", "dpscale", "real")
+    call cice_writeout_config(domain, 55, "config_min_meltwater_retained_fraction", "rfracmin", "real")
+    call cice_writeout_config(domain, 55, "config_max_meltwater_retained_fraction", "rfracmax", "real")
+    call cice_writeout_config(domain, 55, "config_pond_depth_to_fraction_ratio", "pndaspect", "real")
+    call cice_writeout_config(domain, 55, "config_snow_on_pond_ice_tapering_parameter", "hs1", "real")
+    call cice_writeout_config(domain, 55, "config_critical_pond_ice_thickness", "hp1", "real")
+
+    call cice_writeout_config(domain, 55, "config_thermodynamics_type", "ktherm", "character")
+    call cice_writeout_config(domain, 55, "config_heat_conductivity_type", "conduct", "character")
+    call cice_writeout_config(domain, 55, "config_rapid_mode_channel_radius", "a_rapid_mode", "real")
+    call cice_writeout_config(domain, 55, "config_rapid_model_critical_Ra", "Rac_rapid_mode", "real")
+    call cice_writeout_config(domain, 55, "config_rapid_mode_aspect_ratio", "aspect_rapid_mode", "real")
+    call cice_writeout_config(domain, 55, "config_slow_mode_drainage_strength", "dSdt_slow_mode", "real")
+    call cice_writeout_config(domain, 55, "config_slow_mode_critical_porosity", "phi_c_slow_mode", "real")
+    call cice_writeout_config(domain, 55, "config_congelation_ice_porosity", "phi_i_mushy", "real")
+
+    call cice_writeout_config(domain, 55, "config_itd_conversion_type", "kitd", "character")
+    call cice_writeout_config(domain, 55, "config_category_bounds_type", "kcatbound", "character")
+
+    call cice_writeout_config(domain, 55, "config_ice_strength_formulation", "kstrength", "character")
+    call cice_writeout_config(domain, 55, "config_ridging_participation_function", "krdg_partic", "character")
+    call cice_writeout_config(domain, 55, "config_ridging_redistribution_function", "krdg_redist", "character")
+    call cice_writeout_config(domain, 55, "config_ridiging_efolding_scale", "mu_rdg", "real")
+
+    call cice_writeout_config(domain, 55, "config_atmos_boundary_method", "atmbndy", "character")
+    call cice_writeout_config(domain, 55, "config_calc_surface_stresses", "calc_strair", "logical")
+    call cice_writeout_config(domain, 55, "config_calc_surface_temperature", "calc_Tsfc", "logical")
+    call cice_writeout_config(domain, 55, "config_use_form_drag", "formdrag", "logical")
+    call cice_writeout_config(domain, 55, "config_use_high_frequency_coupling", "highfreq", "logical")
+    call cice_writeout_config(domain, 55, "config_boundary_layer_iteration_number", "natmiter", "integer")
+
+    call cice_writeout_config(domain, 55, "config_use_ocean_mixed_layer", "oceanmixed_ice", "logical")
+    call cice_writeout_config(domain, 55, "config_min_friction_velocity", "ustar_min", "real")
+
+    close(55)
+
+  end subroutine cice_writeout_configs
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+  
+  subroutine cice_debug_rotate_winds(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         atmos_coupling, &
+         ocean_coupling
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         uAirVelocity, &
+         vAirVelocity, &
+         uOceanVelocity, &
+         vOceanVelocity
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         ULAT, &
+         ULON, &
+         HTN, &
+         HTE, &
+         HUS, &
+         HUW, &
+         ANGLE, &
+         ANGLET
+
+    integer, parameter :: &
+         nx = 320, &
+         ny = 384
+
+    integer, dimension(:), allocatable :: &
+         iCell_map, i_map, j_map
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         recl, &
+         iCell
+
+    real(kind=RKIND) :: &
+         angle_0, &
+         angle_w, &
+         angle_s, &
+         angle_sw, &
+         workx, &
+         worky
+
+    real(kind=RKIND), parameter :: &
+         pi  = 3.14159265358979323846_RKIND, &
+         pi2 = 2.0_RKIND * pi
+    
+    block => domain % blocklist
+    do while (associated(block))
+
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+
+    call MPAS_pool_get_array(atmos_coupling, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmos_coupling, "vAirVelocity", vAirVelocity)
+
+    call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
+
+    call MPAS_pool_get_dimension(atmos_coupling, "nCells", nCells)
+
+    allocate(ULAT(0:nx+1,0:ny+1))
+    allocate(ULON(0:nx+1,0:ny+1))
+    allocate(HTN(0:nx+1,0:ny+1))
+    allocate(HTE(0:nx+1,0:ny+1))
+    allocate(HUS(0:nx+1,0:ny+1))
+    allocate(HUW(0:nx+1,0:ny+1))
+    allocate(ANGLE(0:nx+1,0:ny+1))
+    allocate(ANGLET(0:nx+1,0:ny+1))
+
+    ULAT = 0.0_RKIND
+    ULON = 0.0_RKIND
+    HTN = 0.0_RKIND
+    HTE = 0.0_RKIND
+    HUS = 0.0_RKIND
+    HUW = 0.0_RKIND
+    ANGLE = 0.0_RKIND
+    ANGLET = 0.0_RKIND
+
+    recl = 2 * nx * ny
+    open(55, file="/usr/projects/climate/akt/cice_mpas_comparison/cice/column_pkg/rundir/grid", form="unformatted", access="direct", recl=recl)
+    read(55,rec=1) ULAT(1:nx,1:ny)
+    read(55,rec=2) ULON(1:nx,1:ny)
+    read(55,rec=3) HTN(1:nx,1:ny)
+    read(55,rec=4) HTE(1:nx,1:ny)
+    read(55,rec=5) HUS(1:nx,1:ny)
+    read(55,rec=6) HUW(1:nx,1:ny)
+    read(55,rec=7) ANGLE(1:nx,1:ny)
+    close(55)
+
+    ! halo
+    ANGLE(0,:)    = ANGLE(nx,:)
+    ANGLE(nx+1,:) = ANGLE(1,:)
+    ANGLE(:,0)    = ANGLE(:,ny)
+    ANGLE(:,ny+1) = ANGLE(:,1)
+
+    allocate(iCell_map(nCells))
+    allocate(i_map(nCells))
+    allocate(j_map(nCells))
+
+    open(55,file="/usr/projects/climate/akt/cice_mpas_comparison/cice/column_pkg/rundir/mapping_pop_to_mpas_gx1.txt")
+    do iCell = 1, nCells
+       read(55,*) iCell_map(iCell), i_map(iCell), j_map(iCell)
+    enddo ! iCell
+    close(55)
+
+    do iCell = 1, nCells
+
+       angle_0  = ANGLE(i_map(iCell)  ,j_map(iCell)  ) !   w----0
+       angle_w  = ANGLE(i_map(iCell)-1,j_map(iCell)  ) !   |    |
+       angle_s  = ANGLE(i_map(iCell),  j_map(iCell)-1) !   |    |
+       angle_sw = ANGLE(i_map(iCell)-1,j_map(iCell)-1) !   sw---s
+       
+       if ( angle_0 < 0.0_RKIND ) then
+          if ( abs(angle_w - angle_0) > pi) &
+                   angle_w = angle_w  - pi2
+          if ( abs(angle_s - angle_0) > pi) &
+                   angle_s = angle_s  - pi2
+          if ( abs(angle_sw - angle_0) > pi) &
+                   angle_sw = angle_sw - pi2
+       endif
+       
+       ANGLET(i_map(iCell),j_map(iCell)) = angle_0 * 0.25_RKIND + angle_w * 0.25_RKIND &
+                                         + angle_s * 0.25_RKIND + angle_sw* 0.25_RKIND
+
+    enddo ! iCell
+
+    do iCell = 1, nCells
+
+       workx      = uAirVelocity(iCell) ! wind velocity, m/s
+       worky      = vAirVelocity(iCell)
+       uAirVelocity(iCell) = workx*cos(ANGLET(i_map(iCell),j_map(iCell))) & ! convert to POP grid
+                           + worky*sin(ANGLET(i_map(iCell),j_map(iCell)))   ! note uatm, vatm, wind
+       vAirVelocity(iCell) = worky*cos(ANGLET(i_map(iCell),j_map(iCell))) & !  are on the T-grid here
+                           - workx*sin(ANGLET(i_map(iCell),j_map(iCell)))
+
+       !workx      = uOceanVelocity(iCell)
+       !worky      = vOceanVelocity(iCell)
+       !uOceanVelocity(iCell) = workx*cos(ANGLET(i_map(iCell),j_map(iCell))) & ! convert to POP grid
+       !                      + worky*sin(ANGLET(i_map(iCell),j_map(iCell)))   ! note uatm, vatm, wind
+       !vOceanVelocity(iCell) = worky*cos(ANGLET(i_map(iCell),j_map(iCell))) & !  are on the T-grid here
+       !                      - workx*sin(ANGLET(i_map(iCell),j_map(iCell)))
+
+    enddo ! iCell
+       
+    deallocate(ULAT)
+    deallocate(ULON)
+    deallocate(HTN)
+    deallocate(HTE)
+    deallocate(HUS)
+    deallocate(HUW)
+    deallocate(ANGLE)
+    deallocate(ANGLET)
+
+    deallocate(iCell_map)
+    deallocate(i_map)
+    deallocate(j_map)
+
+    block => block % next
+    enddo
+
+  end subroutine cice_debug_rotate_winds
+ 
 !-----------------------------------------------------------------------
 
 end module cice_debug

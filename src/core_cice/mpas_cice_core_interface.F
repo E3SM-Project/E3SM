@@ -17,6 +17,7 @@ module cice_core_interface
    public
 
    contains
+
    !***********************************************************************
    !
    !  routine cice_setup_core
@@ -51,7 +52,6 @@ module cice_core_interface
 
    end subroutine cice_setup_core!}}}
 
-
    !***********************************************************************
    !
    !  routine cice_setup_domain
@@ -70,7 +70,6 @@ module cice_core_interface
 #include "inc/domain_variables.inc"
 
    end subroutine cice_setup_domain!}}}
-
 
    !***********************************************************************
    !
@@ -96,79 +95,292 @@ module cice_core_interface
       type (mpas_pool_type), intent(inout) :: packagePool
       integer :: ierr
 
-      logical, pointer :: &
-           config_use_velocity_solver, &
-           pkgWeakActive, &
-           pkgVariationalActive, &
-           pkgWachspressActive, &
-           pkgPieceWiseLinearActive
-
-      character(len=strKIND), pointer :: &
-           config_stress_divergence_scheme, &
-           config_variational_basis
-
       ierr = 0
 
-      !pkgWeak
-      !pkgVariational
-      !pkgWachspress
-      !pkgPieceWiseLinear
+      ! dynamics 
+      call setup_packages_dynamics(configPool, packagePool, ierr)
 
-      call MPAS_pool_get_config(configPool, "config_use_velocity_solver", config_use_velocity_solver)
-      call MPAS_pool_get_config(configPool, "config_stress_divergence_scheme", config_stress_divergence_scheme)
-      call MPAS_pool_get_config(configPool, "config_variational_basis", config_variational_basis)
+      ! column physics
+      call setup_packages_column_physics(configPool, packagePool, ierr)
 
-      call MPAS_pool_get_package(packagePool, "pkgWeakActive", pkgWeakActive)
-      call MPAS_pool_get_package(packagePool, "pkgVariationalActive", pkgVariationalActive)
-      call MPAS_pool_get_package(packagePool, "pkgWachspressActive", pkgWachspressActive)
-      call MPAS_pool_get_package(packagePool, "pkgPieceWiseLinearActive", pkgPieceWiseLinearActive)
-
-      ! is the velocity solver on
-      if (config_use_velocity_solver) then
-
-         ! stress divergence scheme
-         if (trim(config_stress_divergence_scheme) == "weak") then
-
-            ! weak stress divergence scheme
-            pkgWeakActive = .true.
-
-         else if (trim(config_stress_divergence_scheme) == "variational") then
-
-            ! variational stress divergence scheme
-            pkgVariationalActive = .true.
-
-            ! variational basis function scheme
-            if (trim(config_variational_basis) == "wachspress") then
-
-               ! wachspress basis functions
-               pkgWachspressActive = .true.
-               
-            else if (trim(config_variational_basis) == "pwl") then
-
-               ! piecewise linear basis functions
-               pkgPieceWiseLinearActive = .true.
-
-            else
-
-               ! unknown value of config_variational_basis
-               write(*,*) "Unknown variational scheme: ", trim(config_variational_basis)
-               ierr = 1
-
-            endif ! config_variational_basis
-
-         else
-
-            ! unknown value of config_stress_divergence_scheme
-            write(*,*) "Unknown stress divergence scheme: ", trim(config_stress_divergence_scheme)
-            ierr = 1
-
-         endif ! config_stress_divergence_scheme
-
-      endif ! config_use_velocity_solver
-
-   
 
    end function cice_setup_packages!}}}
+
+   !***********************************************************************
+   !
+   !  routine setup_packages_dynamics
+   !
+   !> \brief   
+   !> \author  Adrian K. Turner
+   !> \date    9th Feburary 2015
+   !> \details 
+   !>  
+   !
+   !-----------------------------------------------------------------------
+
+   subroutine setup_packages_dynamics(configPool, packagePool, ierr)!{{{
+
+     type (mpas_pool_type), intent(in) :: configPool
+     type (mpas_pool_type), intent(in) :: packagePool
+     integer, intent(out) :: ierr
+
+     logical, pointer :: &
+          config_use_velocity_solver
+
+     character(len=strKIND), pointer :: &
+          config_stress_divergence_scheme, &
+          config_variational_basis
+
+     logical, pointer :: &
+          pkgWeakActive, &
+          pkgVariationalActive, &
+          pkgWachspressActive, &
+          pkgPieceWiseLinearActive
+
+     !pkgWeak
+     !pkgVariational
+     !pkgWachspress
+     !pkgPieceWiseLinear
+     
+     call MPAS_pool_get_config(configPool, "config_use_velocity_solver", config_use_velocity_solver)
+     call MPAS_pool_get_config(configPool, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+     call MPAS_pool_get_config(configPool, "config_variational_basis", config_variational_basis)
+
+     call MPAS_pool_get_package(packagePool, "pkgWeakActive", pkgWeakActive)
+     call MPAS_pool_get_package(packagePool, "pkgVariationalActive", pkgVariationalActive)
+     call MPAS_pool_get_package(packagePool, "pkgWachspressActive", pkgWachspressActive)
+     call MPAS_pool_get_package(packagePool, "pkgPieceWiseLinearActive", pkgPieceWiseLinearActive)
+
+     ! is the velocity solver on
+     if (config_use_velocity_solver) then
+
+        ! stress divergence scheme
+        if (trim(config_stress_divergence_scheme) == "weak") then
+
+           ! weak stress divergence scheme
+           pkgWeakActive = .true.
+
+        else if (trim(config_stress_divergence_scheme) == "variational") then
+
+           ! variational stress divergence scheme
+           pkgVariationalActive = .true.
+
+           ! variational basis function scheme
+           if (trim(config_variational_basis) == "wachspress") then
+
+              ! wachspress basis functions
+              pkgWachspressActive = .true.
+
+           else if (trim(config_variational_basis) == "pwl") then
+
+              ! piecewise linear basis functions
+              pkgPieceWiseLinearActive = .true.
+
+           else
+
+              ! unknown value of config_variational_basis
+              write(*,*) "Unknown variational scheme: ", trim(config_variational_basis)
+              ierr = 1
+
+           endif ! config_variational_basis
+
+        else
+
+           ! unknown value of config_stress_divergence_scheme
+           write(*,*) "Unknown stress divergence scheme: ", trim(config_stress_divergence_scheme)
+           ierr = 1
+
+        endif ! config_stress_divergence_scheme
+
+     endif ! config_use_velocity_solver
+
+   end subroutine setup_packages_dynamics!}}}
+
+   !***********************************************************************
+   !
+   !  routine setup_packages_dynamics
+   !
+   !> \brief   
+   !> \author  Adrian K. Turner
+   !> \date    9th Feburary 2015
+   !> \details 
+   !>  
+   !
+   !-----------------------------------------------------------------------
+
+   subroutine setup_packages_column_physics(configPool, packagePool, ierr)!{{{
+
+     type (mpas_pool_type), intent(in) :: configPool
+     type (mpas_pool_type), intent(in) :: packagePool
+     integer, intent(out) :: ierr
+     
+     ! column physics package packages
+     logical, pointer :: &
+          config_use_column_package, &
+          config_use_column_shortwave, &
+          config_use_column_vertical_thermodynamics, &
+          config_use_column_biogeochemistry, &
+          config_use_column_itd_thermodynamics, &
+          config_use_column_ridging
+
+     logical, pointer :: &
+          pkgColumnShortwaveActive, &
+          pkgColumnVerticalThermodynamicsActive, &
+          pkgColumnBiogeochemistryActive, &
+          pkgColumnITDThermodynamicsActive, &
+          pkgColumnRidgingActive, &
+          pkgColumnAerosolsActive
+
+     ! column tracers
+     logical, pointer :: &
+          config_use_ice_age, &
+          config_use_first_year_ice, &
+          config_use_level_ice, &
+          config_use_meltponds, &
+          config_use_cesm_meltponds, &
+          config_use_level_meltponds, &
+          config_use_topo_meltponds, &
+          config_use_aerosols, &
+          config_use_brine
+
+     logical, pointer :: &
+          pkgColumnTracerIceAgeActive, &
+          pkgColumnTracerFirstYearIceActive, &
+          pkgColumnTracerLevelIceActive, &
+          pkgColumnTracerPondsActive, &
+          pkgColumnTracerLidThicknessActive, &
+          pkgColumnTracerAerosolsActive, &
+          pkgColumnTracerArrayStandInActive
+
+     ! other packages
+     logical, pointer :: &
+          config_use_form_drag
+
+     logical, pointer :: &
+          pkgColumnFormDragActive
+
+     ierr = 0
+
+     !-----------------------------------------------------------------------
+     ! column main routines
+     !-----------------------------------------------------------------------
+
+     !pkgColumnShortwave
+     !pkgColumnVerticalThermodynamics
+     !pkgColumnBiogeochemistry
+     !pkgColumnITDThermodynamics
+     !pkgColumnRidging
+
+     call MPAS_pool_get_config(configPool, "config_use_column_package", config_use_column_package)
+     call MPAS_pool_get_config(configPool, "config_use_column_shortwave", config_use_column_shortwave)
+     call MPAS_pool_get_config(configPool, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+     !call MPAS_pool_get_config(configPool, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+     call MPAS_pool_get_config(configPool, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
+     call MPAS_pool_get_config(configPool, "config_use_column_ridging", config_use_column_ridging)
+
+     call MPAS_pool_get_package(packagePool, "pkgColumnShortwaveActive", pkgColumnShortwaveActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnVerticalThermodynamicsActive", pkgColumnVerticalThermodynamicsActive)
+     !call MPAS_pool_get_package(packagePool, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnITDThermodynamicsActive", pkgColumnITDThermodynamicsActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnRidgingActive", pkgColumnRidgingActive)
+
+     pkgColumnShortwaveActive              = config_use_column_shortwave
+     pkgColumnVerticalThermodynamicsActive = config_use_column_vertical_thermodynamics
+     !pkgColumnBiogeochemistryActive        = config_use_column_biogeochemistry
+     pkgColumnITDThermodynamicsActive      = config_use_column_itd_thermodynamics
+     pkgColumnRidgingActive                = config_use_column_ridging
+
+     if (.not. config_use_column_package) then
+        pkgColumnShortwaveActive              = .false.
+        pkgColumnVerticalThermodynamicsActive = .false.
+        !pkgColumnBiogeochemistryActive        = .false.
+        pkgColumnITDThermodynamicsActive      = .false.
+        pkgColumnRidgingActive                = .false.
+     endif
+
+     pkgColumnShortwaveActive              = .true.
+     pkgColumnVerticalThermodynamicsActive = .true.
+     !pkgColumnBiogeochemistryActive        = .true.                                                                                                               
+     pkgColumnITDThermodynamicsActive      = .true.
+     pkgColumnRidgingActive                = .true.
+
+
+     !-----------------------------------------------------------------------
+     ! tracers
+     !-----------------------------------------------------------------------
+
+     !pkgColumnTracerIceAge
+     !pkgColumnTracerFirstYearIce
+     !pkgColumnTracerLevelIce
+     !pkgColumnTracerPonds
+     !pkgColumnTracerLidThickness
+     !pkgColumnTracerAerosols
+
+     call MPAS_pool_get_config(configPool, "config_use_ice_age", config_use_ice_age)
+     call MPAS_pool_get_config(configPool, "config_use_first_year_ice", config_use_first_year_ice)
+     call MPAS_pool_get_config(configPool, "config_use_level_ice", config_use_level_ice)
+     call MPAS_pool_get_config(configPool, "config_use_meltponds", config_use_meltponds)
+     call MPAS_pool_get_config(configPool, "config_use_cesm_meltponds", config_use_cesm_meltponds)
+     call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
+     call MPAS_pool_get_config(configPool, "config_use_topo_meltponds", config_use_topo_meltponds)
+     call MPAS_pool_get_config(configPool, "config_use_aerosols", config_use_aerosols)
+     call MPAS_pool_get_config(configPool, "config_use_brine", config_use_brine)
+
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerIceAgeActive", pkgColumnTracerIceAgeActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerFirstYearIceActive", pkgColumnTracerFirstYearIceActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerLevelIceActive", pkgColumnTracerLevelIceActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerPondsActive", pkgColumnTracerPondsActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerLidThicknessActive", pkgColumnTracerLidThicknessActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerAerosolsActive", pkgColumnTracerAerosolsActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnTracerArrayStandInActive", pkgColumnTracerArrayStandInActive)
+
+     pkgColumnTracerIceAgeActive       = config_use_ice_age
+     pkgColumnTracerFirstYearIceActive = config_use_first_year_ice
+     pkgColumnTracerLevelIceActive     = config_use_level_ice
+     pkgColumnTracerPondsActive        = config_use_meltponds
+     pkgColumnTracerLidThicknessActive = (config_use_level_meltponds .or. config_use_topo_meltponds)
+     pkgColumnTracerAerosolsActive     = config_use_aerosols
+
+     if (.not. config_use_column_package) then
+        pkgColumnTracerIceAgeActive       = .false.
+        pkgColumnTracerFirstYearIceActive = .false.
+        pkgColumnTracerLevelIceActive     = .false.
+        pkgColumnTracerPondsActive        = .false.
+        pkgColumnTracerLidThicknessActive = .false.
+        pkgColumnTracerAerosolsActive     = .false.
+     endif
+
+     if (.not. pkgColumnTracerIceAgeActive .or. &
+         .not. pkgColumnTracerFirstYearIceActive .or. &
+         .not. pkgColumnTracerLevelIceActive .or. &
+         .not. pkgColumnTracerPondsActive .or. &
+         .not. pkgColumnTracerLidThicknessActive .or. &
+         .not. pkgColumnTracerAerosolsActive) then
+        pkgColumnTracerArrayStandInActive = .true.
+     endif
+
+     pkgColumnTracerIceAgeActive       = .true.
+     pkgColumnTracerFirstYearIceActive = .true.
+     pkgColumnTracerLevelIceActive     = .true.
+     pkgColumnTracerPondsActive        = .true.
+     pkgColumnTracerLidThicknessActive = .true.
+     pkgColumnTracerAerosolsActive     = .true.
+     pkgColumnTracerArrayStandInActive = .true.
+
+     !-----------------------------------------------------------------------
+     ! other column packages
+     !-----------------------------------------------------------------------
+
+     !pkgColumnFormDrag
+
+     ! form drag
+     call MPAS_pool_get_config(configPool, "config_use_form_drag", config_use_form_drag)
+     call MPAS_pool_get_package(packagePool, "pkgColumnFormDragActive", pkgColumnFormDragActive)
+     pkgColumnFormDragActive = (config_use_column_package .and. config_use_column_vertical_thermodynamics .and.config_use_form_drag)
+
+     pkgColumnFormDragActive = .true.
+
+   end subroutine setup_packages_column_physics!}}}
 
 
    !***********************************************************************
@@ -197,9 +409,15 @@ module cice_core_interface
 
       ierr = 0
 
+      nullify(decompList)
+
       call mpas_decomp_create_decomp_list(decompList)
 
       decompFunc => mpas_uniform_decomp
+
+      if ( associated(decompList) ) then
+         write(0,*) ' It is associated (decompList that is)'
+      end if
 
       call mpas_decomp_register_method(decompList, 'uniform', decompFunc, iErr)
 
