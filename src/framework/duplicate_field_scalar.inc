@@ -42,7 +42,9 @@
             dst_cursor % recvList => src_cursor % recvList
             dst_cursor % copyList => src_cursor % copyList
          end if
-         dst_cursor % scalar = src_cursor % scalar
+         if ( dst_cursor % isActive .and. src_cursor % isActive ) then
+            dst_cursor % scalar = src_cursor % scalar
+         end if
 
 !        src_cursor => src_cursor % next
 !        if (.not. local_copy_only) then
