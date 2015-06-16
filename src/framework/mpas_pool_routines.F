@@ -1,6 +1,113 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!           POOL SUBROUTINES
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.com/license.html
+!
+!***********************************************************************
+!
+!  mpas_pool_routines
+!
+!> \brief   MPAS Pool Routines
+!> \author  Michael Duda, Doug Jacobsen
+!> \date    04/02/13
+!> \details 
+!> This module defines subroutines and functions for handling pools.
+!
+!-----------------------------------------------------------------------
+module mpas_pool_routines
+
+   use mpas_kind_types
+   use mpas_derived_types
+   use mpas_io_units
+   use mpas_field_routines
+   use mpas_dmpar
+   
+   interface mpas_pool_add_field
+      module procedure mpas_pool_add_field_0d_real
+      module procedure mpas_pool_add_field_1d_real
+      module procedure mpas_pool_add_field_2d_real
+      module procedure mpas_pool_add_field_3d_real
+      module procedure mpas_pool_add_field_4d_real
+      module procedure mpas_pool_add_field_5d_real
+      module procedure mpas_pool_add_field_0d_int
+      module procedure mpas_pool_add_field_1d_int
+      module procedure mpas_pool_add_field_2d_int
+      module procedure mpas_pool_add_field_3d_int
+      module procedure mpas_pool_add_field_0d_char
+      module procedure mpas_pool_add_field_1d_char
+      module procedure mpas_pool_add_field_0d_reals
+      module procedure mpas_pool_add_field_1d_reals
+      module procedure mpas_pool_add_field_2d_reals
+      module procedure mpas_pool_add_field_3d_reals
+      module procedure mpas_pool_add_field_4d_reals
+      module procedure mpas_pool_add_field_5d_reals
+      module procedure mpas_pool_add_field_0d_ints
+      module procedure mpas_pool_add_field_1d_ints
+      module procedure mpas_pool_add_field_2d_ints
+      module procedure mpas_pool_add_field_3d_ints
+      module procedure mpas_pool_add_field_0d_chars
+      module procedure mpas_pool_add_field_1d_chars
+   end interface
+
+   interface mpas_pool_get_field
+      module procedure mpas_pool_get_field_0d_real
+      module procedure mpas_pool_get_field_1d_real
+      module procedure mpas_pool_get_field_2d_real
+      module procedure mpas_pool_get_field_3d_real
+      module procedure mpas_pool_get_field_4d_real
+      module procedure mpas_pool_get_field_5d_real
+      module procedure mpas_pool_get_field_0d_int
+      module procedure mpas_pool_get_field_1d_int
+      module procedure mpas_pool_get_field_2d_int
+      module procedure mpas_pool_get_field_3d_int
+      module procedure mpas_pool_get_field_0d_char
+      module procedure mpas_pool_get_field_1d_char
+   end interface
+
+   interface mpas_pool_get_array
+      module procedure mpas_pool_get_array_0d_real
+      module procedure mpas_pool_get_array_1d_real
+      module procedure mpas_pool_get_array_2d_real
+      module procedure mpas_pool_get_array_3d_real
+      module procedure mpas_pool_get_array_4d_real
+      module procedure mpas_pool_get_array_5d_real
+      module procedure mpas_pool_get_array_0d_int
+      module procedure mpas_pool_get_array_1d_int
+      module procedure mpas_pool_get_array_2d_int
+      module procedure mpas_pool_get_array_3d_int
+      module procedure mpas_pool_get_array_0d_char
+      module procedure mpas_pool_get_array_1d_char
+   end interface
+
+   interface mpas_pool_add_config
+      module procedure mpas_pool_add_config_real
+      module procedure mpas_pool_add_config_int
+      module procedure mpas_pool_add_config_char
+      module procedure mpas_pool_add_config_logical
+   end interface
+
+   interface mpas_pool_get_config
+      module procedure mpas_pool_get_config_real
+      module procedure mpas_pool_get_config_int
+      module procedure mpas_pool_get_config_char
+      module procedure mpas_pool_get_config_logical
+   end interface
+
+   interface mpas_pool_add_dimension
+      module procedure mpas_pool_add_dimension_0d
+      module procedure mpas_pool_add_dimension_1d
+   end interface
+
+   interface mpas_pool_get_dimension
+      module procedure mpas_pool_get_dimension_0d
+      module procedure mpas_pool_get_dimension_1d
+   end interface
+
+   integer :: currentErrorLevel = MPAS_POOL_SILENT
+
+   contains
 
 
 !-----------------------------------------------------------------------
@@ -130,132 +237,71 @@
 
                ! Do this through brute force...
                if (associated(dptr % r0)) then
-                  if (associated(dptr % r0 % ioinfo)) then
-                     deallocate(dptr % r0 % ioinfo)
-                  end if
-
                   deallocate(dptr % r0)
                else if (associated(dptr % r1)) then
-                  if (associated(dptr % r1 % ioinfo)) then
-                     deallocate(dptr % r1 % ioinfo)
-                  end if
-
                   if (associated(dptr % r1 % array)) then
                      deallocate(dptr % r1 % array)
                   end if
 
                   deallocate(dptr % r1)
                else if (associated(dptr % r2)) then
-                  if (associated(dptr % r2 % ioinfo)) then
-                     deallocate(dptr % r2 % ioinfo)
-                  end if
-
                   if (associated(dptr % r2 % array)) then
                      deallocate(dptr % r2 % array)
                   end if
 
                   deallocate(dptr % r2)
                else if (associated(dptr % r3)) then
-                  if (associated(dptr % r3 % ioinfo)) then
-                     deallocate(dptr % r3 % ioinfo)
-                  end if
-
                   if (associated(dptr % r3 % array)) then
                      deallocate(dptr % r3 % array)
                   end if
 
                   deallocate(dptr % r3)
                else if (associated(dptr % r4)) then
-                  if (associated(dptr % r4 % ioinfo)) then
-                     deallocate(dptr % r4 % ioinfo)
-                  end if
-
                   if (associated(dptr % r4 % array)) then
                      deallocate(dptr % r4 % array)
                   end if
 
                   deallocate(dptr % r4)
                else if (associated(dptr % r5)) then
-                  if (associated(dptr % r5 % ioinfo)) then
-                     deallocate(dptr % r5 % ioinfo)
-                  end if
-
                   if (associated(dptr % r5 % array)) then
                      deallocate(dptr % r5 % array)
                   end if
 
                   deallocate(dptr % r5)
                else if (associated(dptr % i0)) then
-                  if (associated(dptr % i0 % ioinfo)) then
-                     deallocate(dptr % i0 % ioinfo)
-                  end if
-
                   deallocate(dptr % i0)
                else if (associated(dptr % i1)) then
-                  if (associated(dptr % i1 % ioinfo)) then
-                     deallocate(dptr % i1 % ioinfo)
-                  end if
-
                   if (associated(dptr % i1 % array)) then
                      deallocate(dptr % i1 % array)
                   end if
 
                   deallocate(dptr % i1)
                else if (associated(dptr % i2)) then
-                  if (associated(dptr % i2 % ioinfo)) then
-                     deallocate(dptr % i2 % ioinfo)
-                  end if
-
                   if (associated(dptr % i2 % array)) then
                      deallocate(dptr % i2 % array)
                   end if
 
                   deallocate(dptr % i2)
                else if (associated(dptr % i3)) then
-                  if (associated(dptr % i3 % ioinfo)) then
-                     deallocate(dptr % i3 % ioinfo)
-                  end if
-
                   if (associated(dptr % i3 % array)) then
                      deallocate(dptr % i3 % array)
                   end if
 
                   deallocate(dptr % i3)
                else if (associated(dptr % c0)) then
-                  if (associated(dptr % c0 % ioinfo)) then
-                     deallocate(dptr % c0 % ioinfo)
-                  end if
-
                   deallocate(dptr % c0)
                else if (associated(dptr % c1)) then
-                  if (associated(dptr % c1 % ioinfo)) then
-                     deallocate(dptr % c1 % ioinfo)
-                  end if
-
                   if (associated(dptr % c1 % array)) then
                      deallocate(dptr % c1 % array)
                   end if
 
                   deallocate(dptr % c1)
                else if (associated(dptr % l0)) then
-                  if (associated(dptr % l0 % ioinfo)) then
-                     deallocate(dptr % l0 % ioinfo)
-                  end if
-
                   deallocate(dptr % l0)
                else if (associated(dptr % r0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r0a(j) % ioinfo)) then
-                        deallocate(dptr % r0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % r0a)
                else if (associated(dptr % r1a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r1a(j) % ioinfo)) then
-                        deallocate(dptr % r1a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r1a(j) % array)) then
                         deallocate(dptr % r1a(j) % array)
                      end if
@@ -263,10 +309,6 @@
                   deallocate(dptr % r1a)
                else if (associated(dptr % r2a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r2a(j) % ioinfo)) then
-                        deallocate(dptr % r2a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r2a(j) % array)) then
                         deallocate(dptr % r2a(j) % array)
                      end if
@@ -274,10 +316,6 @@
                   deallocate(dptr % r2a)
                else if (associated(dptr % r3a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r3a(j) % ioinfo)) then
-                        deallocate(dptr % r3a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r3a(j) % array)) then
                         deallocate(dptr % r3a(j) % array)
                      end if
@@ -285,10 +323,6 @@
                   deallocate(dptr % r3a)
                else if (associated(dptr % r4a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r4a(j) % ioinfo)) then
-                        deallocate(dptr % r4a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r4a(j) % array)) then
                         deallocate(dptr % r4a(j) % array)
                      end if
@@ -296,28 +330,15 @@
                   deallocate(dptr % r4a)
                else if (associated(dptr % r5a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % r5a(j) % ioinfo)) then
-                        deallocate(dptr % r5a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % r5a(j) % array)) then
                         deallocate(dptr % r5a(j) % array)
                      end if
                   end do
                   deallocate(dptr % r5a)
                else if (associated(dptr % i0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i0a(j) % ioinfo)) then
-                        deallocate(dptr % i0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % i0a)
                else if (associated(dptr % i1a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i1a(j) % ioinfo)) then
-                        deallocate(dptr % i1a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % i1a(j) % array)) then
                         deallocate(dptr % i1a(j) % array)
                      end if
@@ -325,10 +346,6 @@
                   deallocate(dptr % i1a)
                else if (associated(dptr % i2a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i2a(j) % ioinfo)) then
-                        deallocate(dptr % i2a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % i2a(j) % array)) then
                         deallocate(dptr % i2a(j) % array)
                      end if
@@ -336,39 +353,21 @@
                   deallocate(dptr % i2a)
                else if (associated(dptr % i3a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % i3a(j) % ioinfo)) then
-                        deallocate(dptr % i3a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % i3a(j) % array)) then
                         deallocate(dptr % i3a(j) % array)
                      end if
                   end do
                   deallocate(dptr % i3a)
                else if (associated(dptr % c0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % c0a(j) % ioinfo)) then
-                        deallocate(dptr % c0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % c0a)
                else if (associated(dptr % c1a)) then
                   do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % c1a(j) % ioinfo)) then
-                        deallocate(dptr % c1a(j) % ioinfo)
-                     end if
-
                      if (associated(dptr % c1a(j) % array)) then
                         deallocate(dptr % c1a(j) % array)
                      end if
                   end do
                   deallocate(dptr % c1a)
                else if (associated(dptr % l0a)) then
-                  do j=1,dptr % contentsTimeLevs
-                     if (associated(dptr % l0a(j) % ioinfo)) then
-                        deallocate(dptr % l0a(j) % ioinfo)
-                     end if
-                  end do
                   deallocate(dptr % l0a)
                else
                   call pool_mesg('While destroying pool, member '//trim(ptr % key)//' has no valid field pointers.')
@@ -444,7 +443,6 @@
 
       end do
 
-      inPool % iteratorIndex = 1
       nullify(inPool % iterator)
 
    end subroutine mpas_pool_empty_pool!}}}
@@ -490,452 +488,448 @@
 
 !TODO: should we force destPool to have the same table size as srcPool?
 
-      do i=1,srcPool % size
+      ptr => srcPool % iteration_head
+      do while(associated(ptr))
 
-         ptr => srcPool % table(i) % head
-         do while(associated(ptr))
+         allocate(newmem)
+         newmem % key = ptr % key
+         newmem % keyLen = ptr % keyLen
+         newmem % contentsType = ptr % contentsType
+         allocate(newmem % data)
+         newmem % data % contentsType = ptr % data % contentsType
+         newmem % data % contentsDims = ptr % data % contentsDims
+         if (newTimeLevels /= -1) then
+            newmem % data % contentsTimeLevs = newTimeLevels
+         else
+            newmem % data % contentsTimeLevs = ptr % data % contentsTimeLevs
+         end if
 
-            allocate(newmem)
-            newmem % key = ptr % key
-            newmem % keyLen = ptr % keyLen
-            newmem % contentsType = ptr % contentsType
-            allocate(newmem % data)
-            newmem % data % contentsType = ptr % data % contentsType
-            newmem % data % contentsDims = ptr % data % contentsDims
-            if (newTimeLevels /= -1) then
-               newmem % data % contentsTimeLevs = newTimeLevels
+         if (ptr % contentsType == MPAS_POOL_DIMENSION) then
+
+            if (ptr % data % contentsDims > 0) then
+               allocate(newmem % data % simple_int_arr(size(ptr % data % simple_int_arr)))
+               newmem % data % simple_int_arr(:) = ptr % data % simple_int_arr(:)
             else
-               newmem % data % contentsTimeLevs = ptr % data % contentsTimeLevs
+               allocate(newmem % data % simple_int)
+               newmem % data % simple_int = ptr % data % simple_int
             end if
 
-            if (ptr % contentsType == MPAS_POOL_DIMENSION) then
+         else if (ptr % contentsType == MPAS_POOL_CONFIG) then
 
-               if (ptr % data % contentsDims > 0) then
-                  allocate(newmem % data % simple_int_arr(size(ptr % data % simple_int_arr)))
-                  newmem % data % simple_int_arr(:) = ptr % data % simple_int_arr(:)
-               else
-                  allocate(newmem % data % simple_int)
-                  newmem % data % simple_int = ptr % data % simple_int
-               end if
+            dptr => ptr % data
 
-            else if (ptr % contentsType == MPAS_POOL_CONFIG) then
+            if (dptr % contentsType == MPAS_POOL_REAL) then
+               allocate(newmem % data % simple_real)
+               newmem % data % simple_real = dptr % simple_real
+            else if (dptr % contentsType == MPAS_POOL_INTEGER) then
+               allocate(newmem % data % simple_int)
+               newmem % data % simple_int = dptr % simple_int
+            else if (dptr % contentsType == MPAS_POOL_CHARACTER) then
+               allocate(newmem % data % simple_char)
+               newmem % data % simple_char = dptr % simple_char
+            else if (dptr % contentsType == MPAS_POOL_LOGICAL) then
+               allocate(newmem % data % simple_logical)
+               newmem % data % simple_logical = dptr % simple_logical
+            end if
 
-               dptr => ptr % data
+         else if (ptr % contentsType == MPAS_POOL_FIELD) then
 
-               if (dptr % contentsType == MPAS_POOL_REAL) then
-                  allocate(newmem % data % simple_real)
-                  newmem % data % simple_real = dptr % simple_real
-               else if (dptr % contentsType == MPAS_POOL_INTEGER) then
-                  allocate(newmem % data % simple_int)
-                  newmem % data % simple_int = dptr % simple_int
-               else if (dptr % contentsType == MPAS_POOL_CHARACTER) then
-                  allocate(newmem % data % simple_char)
-                  newmem % data % simple_char = dptr % simple_char
-               else if (dptr % contentsType == MPAS_POOL_LOGICAL) then
-                  allocate(newmem % data % simple_logical)
-                  newmem % data % simple_logical = dptr % simple_logical
-               end if
+            dptr => ptr % data
 
-            else if (ptr % contentsType == MPAS_POOL_FIELD) then
-
-               dptr => ptr % data
-
-               ! Do this through brute force...
-               if (associated(dptr % r0)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r0a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r0, newmem % data % r0)
-                        newmem % data % r0a(j) = newmem % data % r0
-                        deallocate(newmem % data % r0)
-                     end do
-                  else
+            ! Do this through brute force...
+            if (associated(dptr % r0)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r0a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
                      call mpas_duplicate_field(dptr % r0, newmem % data % r0)
-                  end if
-               else if (associated(dptr % r1)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r1a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r1, newmem % data % r1)
-                        newmem % data % r1a(j) = newmem % data % r1
-                        deallocate(newmem % data % r1)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r1, newmem % data % r1)
-                  end if
-               else if (associated(dptr % r2)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r2a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r2, newmem % data % r2)
-                        newmem % data % r2a(j) = newmem % data % r2
-                        deallocate(newmem % data % r2)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r2, newmem % data % r2)
-                  end if
-               else if (associated(dptr % r3)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r3a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r3, newmem % data % r3)
-                        newmem % data % r3a(j) = newmem % data % r3
-                        deallocate(newmem % data % r3)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r3, newmem % data % r3)
-                  end if
-               else if (associated(dptr % r4)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r4a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r4, newmem % data % r4)
-                        newmem % data % r4a(j) = newmem % data % r4
-                        deallocate(newmem % data % r4)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r4, newmem % data % r4)
-                  end if
-               else if (associated(dptr % r5)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r5a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r5, newmem % data % r5)
-                        newmem % data % r5a(j) = newmem % data % r5
-                        deallocate(newmem % data % r5)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r5, newmem % data % r5)
-                  end if
-               else if (associated(dptr % i0)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i0a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i0, newmem % data % i0)
-                        newmem % data % i0a(j) = newmem % data % i0
-                        deallocate(newmem % data % i0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i0, newmem % data % i0)
-                  end if
-               else if (associated(dptr % i1)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i1a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i1, newmem % data % i1)
-                        newmem % data % i1a(j) = newmem % data % i1
-                        deallocate(newmem % data % i1)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i1, newmem % data % i1)
-                  end if
-               else if (associated(dptr % i2)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i2a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i2, newmem % data % i2)
-                        newmem % data % i2a(j) = newmem % data % i2
-                        deallocate(newmem % data % i2)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i2, newmem % data % i2)
-                  end if
-               else if (associated(dptr % i3)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i3a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i3, newmem % data % i3)
-                        newmem % data % i3a(j) = newmem % data % i3
-                        deallocate(newmem % data % i3)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i3, newmem % data % i3)
-                  end if
-               else if (associated(dptr % c0)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % c0a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % c0, newmem % data % c0)
-                        newmem % data % c0a(j) = newmem % data % c0
-                        deallocate(newmem % data % c0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % c0, newmem % data % c0)
-                  end if
-               else if (associated(dptr % c1)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % c1a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % c1, newmem % data % c1)
-                        newmem % data % c1a(j) = newmem % data % c1
-                        deallocate(newmem % data % c1)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % c1, newmem % data % c1)
-                  end if
-               else if (associated(dptr % l0)) then
-                  if (newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % l0a(newmem % data % contentsTimeLevs))
-                     do j = 1, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % l0, newmem % data % l0)
-                        newmem % data % l0a(j) = newmem % data % l0
-                        deallocate(newmem % data % l0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % l0, newmem % data % l0)
-                  end if
-               else if (associated(dptr % r0a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r0a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % r0a(j), newmem % data % r0)
-                        newmem % data % r0a(j) = newmem % data % r0
-                        deallocate(newmem % data % r0)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r0a(dptr % contentsTimeLevs), newmem % data % r0)
-                        newmem % data % r0a(j) = newmem % data % r0
-                        deallocate(newmem % data % r0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r0a(1), newmem % data % r0)
-                  end if
-               else if (associated(dptr % r1a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r1a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % r1a(j), newmem % data % r1)
-                        newmem % data % r1a(j) = newmem % data % r1
-                        deallocate(newmem % data % r1)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r1a(dptr % contentsTimeLevs), newmem % data % r1)
-                        newmem % data % r1a(j) = newmem % data % r1
-                        deallocate(newmem % data % r1)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r1a(1), newmem % data % r1)
-                  end if
-               else if (associated(dptr % r2a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r2a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % r2a(j), newmem % data % r2)
-                        newmem % data % r2a(j) = newmem % data % r2
-                        deallocate(newmem % data % r2)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r2a(dptr % contentsTimeLevs), newmem % data % r2)
-                        newmem % data % r2a(j) = newmem % data % r2
-                        deallocate(newmem % data % r2)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r2a(1), newmem % data % r2)
-                  end if
-               else if (associated(dptr % r3a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r3a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % r3a(j), newmem % data % r3)
-                        newmem % data % r3a(j) = newmem % data % r3
-                        deallocate(newmem % data % r3)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r3a(dptr % contentsTimeLevs), newmem % data % r3)
-                        newmem % data % r3a(j) = newmem % data % r3
-                        deallocate(newmem % data % r3)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r3a(1), newmem % data % r3)
-                  end if
-               else if (associated(dptr % r4a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r4a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % r4a(j), newmem % data % r4)
-                        newmem % data % r4a(j) = newmem % data % r4
-                        deallocate(newmem % data % r4)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r4a(dptr % contentsTimeLevs), newmem % data % r4)
-                        newmem % data % r4a(j) = newmem % data % r4
-                        deallocate(newmem % data % r4)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r4a(1), newmem % data % r4)
-                  end if
-               else if (associated(dptr % r5a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % r5a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % r5a(j), newmem % data % r5)
-                        newmem % data % r5a(j) = newmem % data % r5
-                        deallocate(newmem % data % r5)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % r5a(dptr % contentsTimeLevs), newmem % data % r5)
-                        newmem % data % r5a(j) = newmem % data % r5
-                        deallocate(newmem % data % r5)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % r5a(1), newmem % data % r5)
-                  end if
-               else if (associated(dptr % i0a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i0a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % i0a(j), newmem % data % i0)
-                        newmem % data % i0a(j) = newmem % data % i0
-                        deallocate(newmem % data % i0)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i0a(dptr % contentsTimeLevs), newmem % data % i0)
-                        newmem % data % i0a(j) = newmem % data % i0
-                        deallocate(newmem % data % i0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i0a(1), newmem % data % i0)
-                  end if
-               else if (associated(dptr % i1a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i1a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % i1a(j), newmem % data % i1)
-                        newmem % data % i1a(j) = newmem % data % i1
-                        deallocate(newmem % data % i1)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i1a(dptr % contentsTimeLevs), newmem % data % i1)
-                        newmem % data % i1a(j) = newmem % data % i1
-                        deallocate(newmem % data % i1)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i1a(1), newmem % data % i1)
-                  end if
-               else if (associated(dptr % i2a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i2a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % i2a(j), newmem % data % i2)
-                        newmem % data % i2a(j) = newmem % data % i2
-                        deallocate(newmem % data % i2)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i2a(dptr % contentsTimeLevs), newmem % data % i2)
-                        newmem % data % i2a(j) = newmem % data % i2
-                        deallocate(newmem % data % i2)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i2a(1), newmem % data % i2)
-                  end if
-               else if (associated(dptr % i3a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % i3a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % i3a(j), newmem % data % i3)
-                        newmem % data % i3a(j) = newmem % data % i3
-                        deallocate(newmem % data % i3)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % i3a(dptr % contentsTimeLevs), newmem % data % i3)
-                        newmem % data % i3a(j) = newmem % data % i3
-                        deallocate(newmem % data % i3)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % i3a(1), newmem % data % i3)
-                  end if
-               else if (associated(dptr % c0a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % c0a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % c0a(j), newmem % data % c0)
-                        newmem % data % c0a(j) = newmem % data % c0
-                        deallocate(newmem % data % c0)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % c0a(dptr % contentsTimeLevs), newmem % data % c0)
-                        newmem % data % c0a(j) = newmem % data % c0
-                        deallocate(newmem % data % c0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % c0a(1), newmem % data % c0)
-                  end if
-               else if (associated(dptr % c1a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % c1a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % c1a(j), newmem % data % c1)
-                        newmem % data % c1a(j) = newmem % data % c1
-                        deallocate(newmem % data % c1)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % c1a(dptr % contentsTimeLevs), newmem % data % c1)
-                        newmem % data % c1a(j) = newmem % data % c1
-                        deallocate(newmem % data % c1)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % c1a(1), newmem % data % c1)
-                  end if
-               else if (associated(dptr % l0a)) then
-                  if ( newmem % data % contentsTimeLevs > 1) then
-                     allocate(newmem % data % l0a(newmem % data % contentsTimeLevs))
-                     minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
-                     do j = 1, minTimeLevels
-                        call mpas_duplicate_field(dptr % l0a(j), newmem % data % l0)
-                        newmem % data % l0a(j) = newmem % data % l0
-                        deallocate(newmem % data % l0)
-                     end do
-
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
-                        call mpas_duplicate_field(dptr % l0a(dptr % contentsTimeLevs), newmem % data % l0)
-                        newmem % data % l0a(j) = newmem % data % l0
-                        deallocate(newmem % data % l0)
-                     end do
-                  else
-                     call mpas_duplicate_field(dptr % l0a(1), newmem % data % l0)
-                  end if
+                     newmem % data % r0a(j) = newmem % data % r0
+                     deallocate(newmem % data % r0)
+                  end do
                else
-                  call pool_mesg('While cloning pool, member '//trim(ptr % key)//' has no valid field pointers.')
+                  call mpas_duplicate_field(dptr % r0, newmem % data % r0)
                end if
+            else if (associated(dptr % r1)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r1a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r1, newmem % data % r1)
+                     newmem % data % r1a(j) = newmem % data % r1
+                     deallocate(newmem % data % r1)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r1, newmem % data % r1)
+               end if
+            else if (associated(dptr % r2)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r2a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r2, newmem % data % r2)
+                     newmem % data % r2a(j) = newmem % data % r2
+                     deallocate(newmem % data % r2)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r2, newmem % data % r2)
+               end if
+            else if (associated(dptr % r3)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r3a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r3, newmem % data % r3)
+                     newmem % data % r3a(j) = newmem % data % r3
+                     deallocate(newmem % data % r3)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r3, newmem % data % r3)
+               end if
+            else if (associated(dptr % r4)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r4a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r4, newmem % data % r4)
+                     newmem % data % r4a(j) = newmem % data % r4
+                     deallocate(newmem % data % r4)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r4, newmem % data % r4)
+               end if
+            else if (associated(dptr % r5)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r5a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r5, newmem % data % r5)
+                     newmem % data % r5a(j) = newmem % data % r5
+                     deallocate(newmem % data % r5)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r5, newmem % data % r5)
+               end if
+            else if (associated(dptr % i0)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i0a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i0, newmem % data % i0)
+                     newmem % data % i0a(j) = newmem % data % i0
+                     deallocate(newmem % data % i0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i0, newmem % data % i0)
+               end if
+            else if (associated(dptr % i1)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i1a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i1, newmem % data % i1)
+                     newmem % data % i1a(j) = newmem % data % i1
+                     deallocate(newmem % data % i1)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i1, newmem % data % i1)
+               end if
+            else if (associated(dptr % i2)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i2a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i2, newmem % data % i2)
+                     newmem % data % i2a(j) = newmem % data % i2
+                     deallocate(newmem % data % i2)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i2, newmem % data % i2)
+               end if
+            else if (associated(dptr % i3)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i3a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i3, newmem % data % i3)
+                     newmem % data % i3a(j) = newmem % data % i3
+                     deallocate(newmem % data % i3)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i3, newmem % data % i3)
+               end if
+            else if (associated(dptr % c0)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % c0a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % c0, newmem % data % c0)
+                     newmem % data % c0a(j) = newmem % data % c0
+                     deallocate(newmem % data % c0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % c0, newmem % data % c0)
+               end if
+            else if (associated(dptr % c1)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % c1a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % c1, newmem % data % c1)
+                     newmem % data % c1a(j) = newmem % data % c1
+                     deallocate(newmem % data % c1)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % c1, newmem % data % c1)
+               end if
+            else if (associated(dptr % l0)) then
+               if (newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % l0a(newmem % data % contentsTimeLevs))
+                  do j = 1, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % l0, newmem % data % l0)
+                     newmem % data % l0a(j) = newmem % data % l0
+                     deallocate(newmem % data % l0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % l0, newmem % data % l0)
+               end if
+            else if (associated(dptr % r0a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r0a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % r0a(j), newmem % data % r0)
+                     newmem % data % r0a(j) = newmem % data % r0
+                     deallocate(newmem % data % r0)
+                  end do
 
-            else if (ptr % contentsType == MPAS_POOL_SUBPOOL) then
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r0a(dptr % contentsTimeLevs), newmem % data % r0)
+                     newmem % data % r0a(j) = newmem % data % r0
+                     deallocate(newmem % data % r0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r0a(1), newmem % data % r0)
+               end if
+            else if (associated(dptr % r1a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r1a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % r1a(j), newmem % data % r1)
+                     newmem % data % r1a(j) = newmem % data % r1
+                     deallocate(newmem % data % r1)
+                  end do
 
-                call mpas_pool_create_pool(newmem % data % p, poolSize = ptr % data % p % size)
-                call mpas_pool_clone_pool(ptr % data % p, newmem % data % p)
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r1a(dptr % contentsTimeLevs), newmem % data % r1)
+                     newmem % data % r1a(j) = newmem % data % r1
+                     deallocate(newmem % data % r1)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r1a(1), newmem % data % r1)
+               end if
+            else if (associated(dptr % r2a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r2a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % r2a(j), newmem % data % r2)
+                     newmem % data % r2a(j) = newmem % data % r2
+                     deallocate(newmem % data % r2)
+                  end do
 
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r2a(dptr % contentsTimeLevs), newmem % data % r2)
+                     newmem % data % r2a(j) = newmem % data % r2
+                     deallocate(newmem % data % r2)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r2a(1), newmem % data % r2)
+               end if
+            else if (associated(dptr % r3a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r3a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % r3a(j), newmem % data % r3)
+                     newmem % data % r3a(j) = newmem % data % r3
+                     deallocate(newmem % data % r3)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r3a(dptr % contentsTimeLevs), newmem % data % r3)
+                     newmem % data % r3a(j) = newmem % data % r3
+                     deallocate(newmem % data % r3)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r3a(1), newmem % data % r3)
+               end if
+            else if (associated(dptr % r4a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r4a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % r4a(j), newmem % data % r4)
+                     newmem % data % r4a(j) = newmem % data % r4
+                     deallocate(newmem % data % r4)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r4a(dptr % contentsTimeLevs), newmem % data % r4)
+                     newmem % data % r4a(j) = newmem % data % r4
+                     deallocate(newmem % data % r4)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r4a(1), newmem % data % r4)
+               end if
+            else if (associated(dptr % r5a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % r5a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % r5a(j), newmem % data % r5)
+                     newmem % data % r5a(j) = newmem % data % r5
+                     deallocate(newmem % data % r5)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % r5a(dptr % contentsTimeLevs), newmem % data % r5)
+                     newmem % data % r5a(j) = newmem % data % r5
+                     deallocate(newmem % data % r5)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % r5a(1), newmem % data % r5)
+               end if
+            else if (associated(dptr % i0a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i0a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % i0a(j), newmem % data % i0)
+                     newmem % data % i0a(j) = newmem % data % i0
+                     deallocate(newmem % data % i0)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i0a(dptr % contentsTimeLevs), newmem % data % i0)
+                     newmem % data % i0a(j) = newmem % data % i0
+                     deallocate(newmem % data % i0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i0a(1), newmem % data % i0)
+               end if
+            else if (associated(dptr % i1a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i1a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % i1a(j), newmem % data % i1)
+                     newmem % data % i1a(j) = newmem % data % i1
+                     deallocate(newmem % data % i1)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i1a(dptr % contentsTimeLevs), newmem % data % i1)
+                     newmem % data % i1a(j) = newmem % data % i1
+                     deallocate(newmem % data % i1)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i1a(1), newmem % data % i1)
+               end if
+            else if (associated(dptr % i2a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i2a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % i2a(j), newmem % data % i2)
+                     newmem % data % i2a(j) = newmem % data % i2
+                     deallocate(newmem % data % i2)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i2a(dptr % contentsTimeLevs), newmem % data % i2)
+                     newmem % data % i2a(j) = newmem % data % i2
+                     deallocate(newmem % data % i2)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i2a(1), newmem % data % i2)
+               end if
+            else if (associated(dptr % i3a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % i3a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % i3a(j), newmem % data % i3)
+                     newmem % data % i3a(j) = newmem % data % i3
+                     deallocate(newmem % data % i3)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % i3a(dptr % contentsTimeLevs), newmem % data % i3)
+                     newmem % data % i3a(j) = newmem % data % i3
+                     deallocate(newmem % data % i3)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % i3a(1), newmem % data % i3)
+               end if
+            else if (associated(dptr % c0a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % c0a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % c0a(j), newmem % data % c0)
+                     newmem % data % c0a(j) = newmem % data % c0
+                     deallocate(newmem % data % c0)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % c0a(dptr % contentsTimeLevs), newmem % data % c0)
+                     newmem % data % c0a(j) = newmem % data % c0
+                     deallocate(newmem % data % c0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % c0a(1), newmem % data % c0)
+               end if
+            else if (associated(dptr % c1a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % c1a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % c1a(j), newmem % data % c1)
+                     newmem % data % c1a(j) = newmem % data % c1
+                     deallocate(newmem % data % c1)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % c1a(dptr % contentsTimeLevs), newmem % data % c1)
+                     newmem % data % c1a(j) = newmem % data % c1
+                     deallocate(newmem % data % c1)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % c1a(1), newmem % data % c1)
+               end if
+            else if (associated(dptr % l0a)) then
+               if ( newmem % data % contentsTimeLevs > 1) then
+                  allocate(newmem % data % l0a(newmem % data % contentsTimeLevs))
+                  minTimeLevels = min(dptr % contentsTimeLevs, newmem % data % contentsTimeLevs)
+                  do j = 1, minTimeLevels
+                     call mpas_duplicate_field(dptr % l0a(j), newmem % data % l0)
+                     newmem % data % l0a(j) = newmem % data % l0
+                     deallocate(newmem % data % l0)
+                  end do
+
+                  do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     call mpas_duplicate_field(dptr % l0a(dptr % contentsTimeLevs), newmem % data % l0)
+                     newmem % data % l0a(j) = newmem % data % l0
+                     deallocate(newmem % data % l0)
+                  end do
+               else
+                  call mpas_duplicate_field(dptr % l0a(1), newmem % data % l0)
+               end if
+            else
+               call pool_mesg('While cloning pool, member '//trim(ptr % key)//' has no valid field pointers.')
             end if
 
-            if (.not. pool_add_member(destPool, newmem % key, newmem)) then
-               call pool_mesg('Error: Had problems adding '//trim(newmem % key)//' to clone of pool.')
-            end if
+         else if (ptr % contentsType == MPAS_POOL_SUBPOOL) then
 
-            ptr => ptr % next
-         end do
+             call mpas_pool_create_pool(newmem % data % p, poolSize = ptr % data % p % size)
+             call mpas_pool_clone_pool(ptr % data % p, newmem % data % p)
 
+         end if
+
+         if (.not. pool_add_member(destPool, newmem % key, newmem)) then
+            call pool_mesg('Error: Had problems adding '//trim(newmem % key)//' to clone of pool.')
+         end if
+
+         ptr => ptr % iteration_next
       end do
 
    end subroutine mpas_pool_clone_pool!}}}
@@ -3150,93 +3144,93 @@
                   info % nDims = ptr % data % contentsDims
                   info % nTimeLevels = ptr % data % contentsTimeLevs
 
-				  if ( info % fieldType == MPAS_POOL_REAL ) then
-					 if ( info % nDims == 0 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % r0a(1) % isActive
-						else
-					       info % isActive = ptr % data % r0 % isActive
-						end if
-					 else if ( info % nDims == 1 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % r1a(1) % isActive
-						else
-					       info % isActive = ptr % data % r1 % isActive
-						end if
-					 else if ( info % nDims == 2 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % r2a(1) % isActive
-						else
-					       info % isActive = ptr % data % r2 % isActive
-						end if
-					 else if ( info % nDims == 3 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % r3a(1) % isActive
-						else
-					       info % isActive = ptr % data % r3 % isActive
-						end if
-					 else if ( info % nDims == 4 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % r4a(1) % isActive
-						else
-					       info % isActive = ptr % data % r4 % isActive
-						end if
-					 else if ( info % nDims == 5 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % r5a(1) % isActive
-						else
-					       info % isActive = ptr % data % r5 % isActive
-						end if
-					 end if
-				  else if (info % fieldType == MPAS_POOL_INTEGER ) then
-					 if ( info % nDims == 0 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % i0a(1) % isActive
-						else
-					       info % isActive = ptr % data % i0 % isActive
-						end if
-					 else if ( info % nDims == 1 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % i1a(1) % isActive
-						else
-					       info % isActive = ptr % data % i1 % isActive
-						end if
-					 else if ( info % nDims == 2 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % i2a(1) % isActive
-						else
-					       info % isActive = ptr % data % i2 % isActive
-						end if
-					 else if ( info % nDims == 3 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % i3a(1) % isActive
-						else
-					       info % isActive = ptr % data % i3 % isActive
-						end if
-					 end if
-				  else if (info % fieldType == MPAS_POOL_CHARACTER ) then
-					 if ( info % nDims == 0 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % c0a(1) % isActive
-						else
-					       info % isActive = ptr % data % c0 % isActive
-						end if
-					 else if ( info % nDims == 1 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % c1a(1) % isActive
-						else
-					       info % isActive = ptr % data % c1 % isActive
-						end if
-					 end if
-				  else if (info % fieldType == MPAS_POOL_LOGICAL ) then
-					 if ( info % nDims == 0 ) then
-					    if ( info % nTimeLevels > 1 ) then 
-					       info % isActive = ptr % data % l0a(1) % isActive
-						else
-					       info % isActive = ptr % data % l0 % isActive
-						end if
-					 end if
-				  end if
+                  if ( info % fieldType == MPAS_POOL_REAL ) then
+                     if ( info % nDims == 0 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % r0a(1) % isActive
+                        else
+                           info % isActive = ptr % data % r0 % isActive
+                        end if
+                     else if ( info % nDims == 1 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % r1a(1) % isActive
+                        else
+                           info % isActive = ptr % data % r1 % isActive
+                        end if
+                     else if ( info % nDims == 2 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % r2a(1) % isActive
+                        else
+                           info % isActive = ptr % data % r2 % isActive
+                        end if
+                     else if ( info % nDims == 3 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % r3a(1) % isActive
+                        else
+                           info % isActive = ptr % data % r3 % isActive
+                        end if
+                     else if ( info % nDims == 4 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % r4a(1) % isActive
+                        else
+                           info % isActive = ptr % data % r4 % isActive
+                        end if
+                     else if ( info % nDims == 5 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % r5a(1) % isActive
+                        else
+                           info % isActive = ptr % data % r5 % isActive
+                        end if
+                     end if
+                  else if (info % fieldType == MPAS_POOL_INTEGER ) then
+                     if ( info % nDims == 0 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % i0a(1) % isActive
+                        else
+                           info % isActive = ptr % data % i0 % isActive
+                        end if
+                     else if ( info % nDims == 1 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % i1a(1) % isActive
+                        else
+                           info % isActive = ptr % data % i1 % isActive
+                        end if
+                     else if ( info % nDims == 2 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % i2a(1) % isActive
+                        else
+                           info % isActive = ptr % data % i2 % isActive
+                        end if
+                     else if ( info % nDims == 3 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % i3a(1) % isActive
+                        else
+                           info % isActive = ptr % data % i3 % isActive
+                        end if
+                     end if
+                  else if (info % fieldType == MPAS_POOL_CHARACTER ) then
+                     if ( info % nDims == 0 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % c0a(1) % isActive
+                        else
+                           info % isActive = ptr % data % c0 % isActive
+                        end if
+                     else if ( info % nDims == 1 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % c1a(1) % isActive
+                        else
+                           info % isActive = ptr % data % c1 % isActive
+                        end if
+                     end if
+                  else if (info % fieldType == MPAS_POOL_LOGICAL ) then
+                     if ( info % nDims == 0 ) then
+                        if ( info % nTimeLevels > 1 ) then 
+                           info % isActive = ptr % data % l0a(1) % isActive
+                        else
+                           info % isActive = ptr % data % l0 % isActive
+                        end if
+                     end if
+                  end if
                   exit
                end if
             end if
@@ -5212,15 +5206,7 @@
       integer :: i
 
 
-      do i=1,inPool % size
-         if (associated(inPool % table(i) % head)) exit
-      end do
-      inPool % iteratorIndex = i
-      if (i <= inPool % size) then
-         inPool % iterator => inPool % table(i) % head
-      else
-         nullify(inPool % iterator)
-      end if
+      inPool % iterator => inPool % iteration_head
 
    end subroutine mpas_pool_begin_iteration!}}}
 
@@ -5267,20 +5253,7 @@
          mpas_pool_get_next_member = .true.
 
          ! Advance iterator to next item
-         inPool % iterator => inPool % iterator % next
-
-         ! We may have reached the end of list for current head pointer
-         if (.not. associated(inPool % iterator)) then
-            do i=inPool % iteratorIndex+1, inPool % size
-               if (associated(inPool % table(i) % head)) exit
-            end do
-            inPool % iteratorIndex = i
-            if (i <= inPool % size) then
-               inPool % iterator => inPool % table(i) % head
-            else
-               nullify(inPool % iterator)
-            end if
-         end if
+         inPool % iterator => inPool % iterator % iteration_next
 
       else
          mpas_pool_get_next_member = .false.
@@ -5365,7 +5338,7 @@
 
 !!!!!!!!!! Private subroutines !!!!!!!!!!
 
-   logical function pool_add_member(inPool, key, newmem)
+   logical function pool_add_member(inPool, key, newmem)!{{{
 
       implicit none
 
@@ -5403,10 +5376,22 @@
          ptr % next => newmem
       end if
 
-   end function pool_add_member
+      !
+      ! Link the new member into the iteration list
+      !
+      if (.not. associated(inPool % iteration_head)) then
+         inPool % iteration_head => newmem
+         inPool % iteration_tail => newmem
+      else
+         newmem % iteration_prev => inPool % iteration_tail
+         inPool % iteration_tail => newmem
+         newmem % iteration_prev % iteration_next => newmem
+      end if
+
+   end function pool_add_member!}}}
 
 
-   function pool_get_member(inPool, key, memType)
+   function pool_get_member(inPool, key, memType)!{{{
 
       implicit none
 
@@ -5440,7 +5425,7 @@
          ptr => ptr % next
       end do
 
-   end function pool_get_member
+   end function pool_get_member!}}}
 
 
    logical function pool_remove_member(inPool, key, memType)!{{{
@@ -5468,6 +5453,22 @@
             if (endl == ptr_prev % keyLen) then
                if (key(1:endl) == ptr_prev % key(1:endl)) then
                   inPool % table(hash) % head => ptr_prev % next
+
+                  !
+                  ! Un-link the member from the iteration list
+                  !
+                  if (associated(ptr_prev % iteration_prev)) then
+                     ptr_prev % iteration_prev % iteration_next => ptr_prev % iteration_next
+                  else
+                     inPool % iteration_head => ptr_prev % iteration_next
+                  end if
+
+                  if (associated(ptr_prev % iteration_next)) then
+                     ptr_prev % iteration_next % iteration_prev => ptr_prev % iteration_prev
+                  else
+                     inPool % iteration_tail => ptr_prev % iteration_prev
+                  end if
+
 !TODO: are there cases where we need to delete more data here?
                   deallocate(ptr_prev)
                   pool_remove_member = .true.
@@ -5483,6 +5484,22 @@
                if (endl == ptr % keyLen) then
                   if (key(1:endl) == ptr % key(1:endl)) then
                      ptr_prev % next => ptr % next
+
+                     !
+                     ! Un-link the member from the iteration list
+                     !
+                     if (associated(ptr % iteration_prev)) then
+                        ptr % iteration_prev % iteration_next => ptr % iteration_next
+                     else
+                        inPool % iteration_head => ptr % iteration_next
+                     end if
+   
+                     if (associated(ptr % iteration_next)) then
+                        ptr % iteration_next % iteration_prev => ptr % iteration_prev
+                     else
+                        inPool % iteration_tail => ptr % iteration_prev
+                     end if
+
 !TODO: are there cases where we need to delete more data here?
                      deallocate(ptr)
                      pool_remove_member = .true.
@@ -5501,7 +5518,7 @@
    end function pool_remove_member!}}}
 
 
-   subroutine pool_mesg(mesg)
+   subroutine pool_mesg(mesg)!{{{
 
       implicit none
 
@@ -5514,10 +5531,10 @@
          call mpas_dmpar_global_abort(trim(mesg))
       end if
 
-   end subroutine pool_mesg
+   end subroutine pool_mesg!}}}
 
 
-   subroutine pool_print_table_size(pool)
+   subroutine pool_print_table_size(pool)!{{{
 
       implicit none
 
@@ -5541,9 +5558,10 @@
       write(stderrUnit,*) '----------------'
       write(stderrUnit,*) 'Total: ', total_size
 
-   end subroutine pool_print_table_size
+   end subroutine pool_print_table_size!}}}
 
-   recursive subroutine pool_print_members(pool)
+
+   recursive subroutine pool_print_members(pool)!{{{
 
       implicit none
 
@@ -5588,9 +5606,10 @@
       write(stderrUnit, *) 'Done with pool'
       write(stderrUnit, *) ''
 
-   end subroutine pool_print_members
+   end subroutine pool_print_members!}}}
 
-   integer function pool_get_member_decomp_type(dimName) result(decompType)
+
+   integer function pool_get_member_decomp_type(dimName) result(decompType)!{{{
       character (len=*) :: dimName
 
 
@@ -5604,8 +5623,7 @@
          decompType = MPAS_DECOMP_VERTICES
       end if
 
-   end function pool_get_member_decomp_type
+   end function pool_get_member_decomp_type!}}}
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!           END POOL SUBROUTINES
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+end module mpas_pool_routines

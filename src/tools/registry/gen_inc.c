@@ -30,17 +30,23 @@ void write_model_variables(ezxml_t registry){/*{{{*/
 	corename = ezxml_attr(registry, "core");
 	version = ezxml_attr(registry, "version");
 
-	fd = fopen("model_variables.inc", "w+");
+	fd = fopen("core_variables.inc", "w+");
 
-	fortprintf(fd, "       character (len=StrKIND) :: modelName = '%s' !< Constant: Name of model\n", modelname);
-	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
-	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
-	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", suffix);
-	fortprintf(fd, "       character (len=StrKIND) :: streams_filename = 'streams.%s' !< Constant: Name of stream configuration file\n", suffix);
-	fortprintf(fd, "       character (len=StrKIND) :: executableName = '%s' !< Constant: Name of executable generated at build time.\n", exe_name);
-	fortprintf(fd, "       character (len=StrKIND) :: git_version = '%s' !< Constant: Version string from git-describe.\n", git_ver);
+	fortprintf(fd, "       core %% modelName = '%s'\n", modelname);
+	fortprintf(fd, "       core %% coreName = '%s'\n", corename);
+	fortprintf(fd, "       core %% modelVersion = '%s'\n", version);
+	fortprintf(fd, "       core %% executableName = '%s'\n", exe_name);
+	fortprintf(fd, "       core %% git_version = '%s'\n", git_ver);
 
 	fclose(fd);
+
+	fd = fopen("domain_variables.inc", "w+");
+
+	fortprintf(fd, "       domain %% namelist_filename = 'namelist.%s'\n", suffix);
+	fortprintf(fd, "       domain %% streams_filename = 'streams.%s'\n", suffix);
+
+	fclose(fd);
+
 }/*}}}*/
 
 
@@ -454,18 +460,20 @@ int parse_packages_from_registry(ezxml_t registry)/*{{{*/
 	FILE *fd;
 	char core_string[1024];
 
-	const_core = ezxml_attr(registry, "core");
+	const_core = ezxml_attr(registry, "core_abbrev");
 
 	fd = fopen("define_packages.inc", "w+");
 
-	sprintf(core_string, "_%s_", const_core);
+	sprintf(core_string, "%s", const_core);
 
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
-
-
-	fortprintf(fd, "   subroutine mpas_generate%spackages(packagePool)\n", core_string);
+	fortprintf(fd, "   function %s_define_packages(packagePool) result(iErr)\n", core_string);
+	fortprintf(fd, "      use mpas_derived_types\n");
+	fortprintf(fd, "      use mpas_pool_routines\n");
+	fortprintf(fd, "      use mpas_io_units\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: packagePool !< Input: MPAS Pool for containing package logicals.\n\n");
+	fortprintf(fd, "      integer :: iErr\n");
+	fortprintf(fd, "\n");
+	fortprintf(fd, "      iErr = 0\n");
 
 	// Parse Packages
 	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
@@ -477,7 +485,7 @@ int parse_packages_from_registry(ezxml_t registry)/*{{{*/
 		}
 	}
 
-	fortprintf(fd, "   end subroutine mpas_generate%spackages\n", core_string);
+	fortprintf(fd, "   end function %s_define_packages\n", core_string);
 
 	fclose(fd);
 
@@ -500,24 +508,32 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 	FILE *fd, *fd2;
 
-	const_core = ezxml_attr(registry, "core");
+	const_core = ezxml_attr(registry, "core_abbrev");
 
-	sprintf(core_string, "_%s_", const_core);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
+	sprintf(core_string, "%s", const_core);
 
 	fd = fopen("namelist_defines.inc", "w+");
 	fd2 = fopen("namelist_call.inc", "w+");
 
-	fortprintf(fd2, "   subroutine mpas_setup_namelists(configPool, namelistFilename, dminfo)\n");
+	fortprintf(fd2, "   function %s_setup_namelists(configPool, namelistFilename, dminfo) result(iErr)\n", core_string);
+	fortprintf(fd2, "      use mpas_derived_types\n");
+	fortprintf(fd2, "      use mpas_pool_routines\n");
+	fortprintf(fd2, "      use mpas_io_units\n");
 	fortprintf(fd2, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 	fortprintf(fd2, "      character (len=*), intent(in) :: namelistFilename\n");
 	fortprintf(fd2, "      type (dm_info), intent(in) :: dminfo\n");
+	fortprintf(fd2, "      integer :: iErr\n");
 	fortprintf(fd2, "\n");
 	fortprintf(fd2, "      integer :: unitNumber\n");
+	fortprintf(fd2, "      logical :: nmlExists\n");
 	fortprintf(fd2, "\n");
+	fortprintf(fd2, "      iErr = 0\n");
 	fortprintf(fd2, "      unitNumber = 21\n");
+	fortprintf(fd2, "      write(stderrUnit, *) 'Reading namelist from file '//trim(namelistFilename)\n");
+	fortprintf(fd2, "      inquire(file=trim(namelistFilename), exist=nmlExists)\n");
+	fortprintf(fd2, "      if ( .not. nmlExists ) then\n");
+	fortprintf(fd2, "         call mpas_dmpar_global_abort('ERROR: Namelist file '//trim(namelistFilename)//' does not exist.')\n");
+	fortprintf(fd2, "      end if\n");
 	fortprintf(fd2, "      open(unitNumber,file=trim(namelistFilename),status='old',form='formatted')\n");
 	fortprintf(fd2, "\n");
 
@@ -543,15 +559,17 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		}
 
 		// Add call to driver routine.
-		fortprintf(fd2, "      call mpas_setup%snmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
+		fortprintf(fd2, "      call %s_setup_nmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
 
 		// Start defining new subroutine for namelist record.
-		fortprintf(fd, "   subroutine mpas_setup%snmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
+		fortprintf(fd, "   subroutine %s_setup_nmlrec_%s(configPool, unitNumber, dminfo)\n", core_string, nmlrecname);
+		fortprintf(fd, "      use mpas_derived_types\n");
+		fortprintf(fd, "      use mpas_dmpar\n");
+		fortprintf(fd, "      use mpas_pool_routines\n");
+		fortprintf(fd, "      use mpas_io_units\n");
 		fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 		fortprintf(fd, "      integer, intent(in) :: unitNumber\n");
 		fortprintf(fd, "      type (dm_info), intent(in) :: dminfo\n");
-		fortprintf(fd, "\n");
-		fortprintf(fd, "      integer :: ierr\n");
 		fortprintf(fd, "      type (mpas_pool_type), pointer :: recordPool\n");
 		fortprintf(fd, "\n");
 
@@ -642,13 +660,13 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		fortprintf(fd, "\n");
 
 		// End new subroutine for namelist record.
-		fortprintf(fd, "   end subroutine mpas_setup%snmlrec_%s\n", core_string, nmlrecname);
+		fortprintf(fd, "   end subroutine %s_setup_nmlrec_%s\n", core_string, nmlrecname);
 		fortprintf(fd, "\n\n");
 	}
 
 	fortprintf(fd2, "\n");
 	fortprintf(fd2, "      close(unitNumber)\n");
-	fortprintf(fd2, "   end subroutine mpas_setup_namelists\n");
+	fortprintf(fd2, "   end function %s_setup_namelists\n", core_string);
 
 	return 0;
 }/*}}}*/
@@ -670,18 +688,17 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	int in_subpool, readable;
 
-	corename = ezxml_attr(registry, "core");
+	corename = ezxml_attr(registry, "core_abbrev");
 
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
+	sprintf(core_string, "%s", corename);
 
 	fd = fopen("block_dimension_routines.inc", "w+");
 
-	fortprintf(fd, "   subroutine mpas_setup%sderived_dimensions(readDimensions, dimensionPool, configPool)\n", core_string);
+	fortprintf(fd, "   function %s_setup_derived_dimensions(readDimensions, dimensionPool, configPool) result(iErr)\n", core_string);
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      use mpas_grid_types\n");
+	fortprintf(fd, "      use mpas_derived_types\n");
+	fortprintf(fd, "      use mpas_pool_routines\n");
+	fortprintf(fd, "      use mpas_io_units\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: readDimensions !< Input: Pool to pull read dimensions from\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool !< Input: Pool containing namelist options with configs\n");
@@ -738,6 +755,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "\n");
 
+	fortprintf(fd, "      iErr = 0\n");
 	fortprintf(fd, "      errLevel = mpas_pool_get_error_level()\n");
 	fortprintf(fd, "      call mpas_pool_set_error_level(MPAS_POOL_SILENT)\n");
 
@@ -798,7 +816,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				}
 				fortprintf(fd, "         call mpas_pool_add_dimension(dimensionPool, '%s', %s)\n", dimname, dimname);
 
-				fortprintf(fd, "	  else if ( %s == MPAS_MISSING_DIM ) then\n", dimname, dimname);
+				fortprintf(fd, "          else if ( %s == MPAS_MISSING_DIM ) then\n", dimname, dimname);
 				// Namelist defined dimension
 				if(strncmp(dimdef, "namelist:", 9) == 0){
 					snprintf(option_name, 1024, "%s", (dimdef)+9);
@@ -807,7 +825,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 					fortprintf(fd, "         %s = %s\n", dimname, dimdef);
 				}
 
-				fortprintf(fd, "	  end if\n\n");
+				fortprintf(fd, "          end if\n\n");
 			} else {
 				fortprintf(fd, "      if ( .not. associated(%s) ) then\n", dimname);
 				fortprintf(fd, "         allocate(%s)\n", dimname);
@@ -824,14 +842,16 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "      call mpas_pool_set_error_level(errLevel)\n\n");
 
-	fortprintf(fd, "   end subroutine mpas_setup%sderived_dimensions\n", core_string);
+	fortprintf(fd, "   end function %s_setup_derived_dimensions\n", core_string);
 
 	fortprintf(fd, "\n\n");
 
 	fortprintf(fd, "   subroutine mpas_setup%sdecomposed_dimensions(block, manager, readDimensions, dimensionPool, totalBlocks)\n", core_string);
 	fortprintf(fd, "\n");
-	fortprintf(fd, "      use mpas_grid_types\n");
+	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_decomp\n");
+	fortprintf(fd, "      use mpas_pool_routines\n");
+	fortprintf(fd, "      use mpas_io_units\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (block_type), intent(inout) :: block !< Input: Pointer to block\n");
 	fortprintf(fd, "      type (mpas_streamManager_type), intent(inout) :: manager !< Input: Stream manager\n");
@@ -870,13 +890,12 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "      if ( .not. associated(%s)) then\n", dimname);
 				fortprintf(fd, "         write(stderrUnit, *) 'WARNING: Dimension \'\'%s\'\' was not defined, and cannot be decomposed.'\n", dimname);
 				fortprintf(fd, "      else\n");
-				fortprintf(fd, "         call mpas_decomp_get_method(decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
+				fortprintf(fd, "         call mpas_decomp_get_method(block %% domain %% decompositions, '%s', decompFunc, iErr)\n", dimdecomp);
 				fortprintf(fd, "         if ( iErr /= MPAS_DECOMP_NOERR ) then\n");
 				fortprintf(fd, "            call mpas_dmpar_global_abort('ERROR: Decomposition method \'\'%s\'\' used by dimension \'\'%s\'\' does not exist.')\n", dimdecomp, dimname);
 				fortprintf(fd, "         end if\n");
 				fortprintf(fd, "\n");
 				fortprintf(fd, "         allocate(ownedIndices)\n");
-				fortprintf(fd, "         nullify(ownedIndices %% ioinfo)\n");
 				fortprintf(fd, "         ownedIndices %% hasTimeDimension = .false.\n");
 				fortprintf(fd, "         ownedIndices %% isActive = .true.\n");
 				fortprintf(fd, "         ownedIndices %% isVarArray = .false.\n");
@@ -1167,7 +1186,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "! Defining time level %d\n", time_lev);
 		fortprintf(fd, "      allocate( %s(%d) %% constituentNames(numConstituents) )\n", pointer_name, time_lev);
-		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, vararrname);
 		if (decomp != -1) {
 			fortprintf(fd, "      %s(%d) %% isDecomposed = .true.\n", pointer_name, time_lev);
@@ -1273,12 +1291,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "      %s%s(%d) %% isActive = .true.\n", spacing, pointer_name, time_lev);
 	}
-	fortprintf(fd, "      %scall mpas_pool_add_field(newSubPool, '%s', %s)\n", spacing, vararrname_in_code, pointer_name);
 
 	if (!no_packages) {
 		fortprintf(fd, "      end if\n");
 	}
-
+	fortprintf(fd, "      call mpas_pool_add_field(newSubPool, '%s', %s)\n", vararrname_in_code, pointer_name);
 	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", vararrname, pointer_name);
 	fortprintf(fd, "\n");
 
@@ -1364,7 +1381,6 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "\n");
 		fortprintf(fd, "! Setting up time level %d\n", time_lev);
-		fortprintf(fd, "      allocate(%s(%d) %% ioinfo)\n", pointer_name, time_lev);
 		fortprintf(fd, "      %s(%d) %% fieldName = '%s'\n", pointer_name, time_lev, varname);
 		fortprintf(fd, "      %s(%d) %% isVarArray = .false.\n", pointer_name, time_lev);
 		if (decomp != -1) {
@@ -1442,12 +1458,12 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	for(time_lev = 1; time_lev <= time_levs; time_lev++){
 		fortprintf(fd, "      %s%s(%d) %% isActive = .true.\n", package_spacing, pointer_name, time_lev);
 	}
-	fortprintf(fd, "      %scall mpas_pool_add_field(newSubPool, '%s', %s)\n", package_spacing, varname_in_code, pointer_name);
 
 	if(varpackages != NULL){
 		fortprintf(fd, "      end if\n");
 	}
 
+	fortprintf(fd, "      call mpas_pool_add_field(newSubPool, '%s', %s)\n" , varname_in_code, pointer_name);
 	fortprintf(fd, "      call mpas_pool_add_field(block %% allFields, '%s', %s)\n", varname, pointer_name);
 	fortprintf(fd, "\n");
 
@@ -1477,10 +1493,7 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	int skip_struct, no_packages;
 	int err;
 
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
+	sprintf(core_string, "%s", corename);
 
 	if(subpool){
 		sprintf(pool_name, "%s_subpool", parentname);
@@ -1502,7 +1515,10 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 		err = parse_struct(fd, registry, struct_xml, 1, structname, corename);
 	}
 
-	fortprintf(fd, "   subroutine mpas_generate%s%s_%s(block, structPool, dimensionPool, packagePool)\n", core_string, pool_name, structname);
+	fortprintf(fd, "   subroutine %s_generate_%s_%s(block, structPool, dimensionPool, packagePool)\n", core_string, pool_name, structname);
+	fortprintf(fd, "      use mpas_derived_types\n");
+	fortprintf(fd, "      use mpas_pool_routines\n");
+	fortprintf(fd, "      use mpas_io_units\n");
 	fortprintf(fd, "      type (block_type), intent(inout), pointer :: block\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: structPool\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
@@ -1548,35 +1564,11 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 
 	fortprintf(fd, "\n");
 
-	// Parse packages if they are defined
-	package_list[0] = '\0';
-	no_packages = build_struct_package_lists(superStruct, package_list);
-
-	spacing[0] = '\0';
-	if(!no_packages){
-		fortprintf(fd, "      if (");
-		string = strdup(package_list);
-		tofree = string;
-		token = strsep(&string, ";");
-		fortprintf(fd, "%sActive", token);
-
-		while( (token = strsep(&string, ";")) != NULL){
-			fortprintf(fd, " .or. %sActive", token);
-		}
-
-		fortprintf(fd, ") then\n");
-		sprintf(spacing, "   ");
-	}
-
 	// Setup new pool to be added into structPool
-	fortprintf(fd, "      %sallocate(newSubPool)\n", spacing);
-	fortprintf(fd, "      %scall mpas_pool_create_pool(newSubPool)\n", spacing);
-	fortprintf(fd, "      %scall mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", spacing, structnameincode);
-	fortprintf(fd, "      %scall mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", spacing, structname);
-
-	if(!no_packages){
-		fortprintf(fd, "      end if\n");
-	}
+	fortprintf(fd, "      allocate(newSubPool)\n");
+	fortprintf(fd, "      call mpas_pool_create_pool(newSubPool)\n");
+	fortprintf(fd, "      call mpas_pool_add_subpool(structPool, '%s', newSubPool)\n", structnameincode);
+	fortprintf(fd, "      call mpas_pool_add_subpool(block %% allStructs, '%s', newSubPool)\n", structname);
 
 	fortprintf(fd, "\n");
 
@@ -1597,7 +1589,7 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	// Extract all sub structs
 	for (struct_xml = ezxml_child(superStruct, "var_struct"); struct_xml; struct_xml = struct_xml->next){
 		substructname = ezxml_attr(struct_xml, "name");
-		fortprintf(fd, "      call mpas_generate%s%s_subpool_%s(block, newSubPool, dimensionPool, packagePool)\n", core_string, structname, substructname);
+		fortprintf(fd, "      call %s_generate_%s_subpool_%s(block, newSubPool, dimensionPool, packagePool)\n", core_string, structname, substructname);
 	}
 
 	fortprintf(fd, "\n");
@@ -1607,7 +1599,7 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      end if\n");
 	fortprintf(fd, "\n");
 
-	fortprintf(fd, "   end subroutine mpas_generate%s%s_%s\n", core_string, pool_name, structname);
+	fortprintf(fd, "   end subroutine %s_generate_%s_%s\n", core_string, pool_name, structname);
 	fortprintf(fd, "\n\n");
 
 	return 0;
@@ -1826,79 +1818,9 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 }/*}}}*/
 
 
-int generate_field_links(ezxml_t registry){/*{{{*/
-	ezxml_t struct_xml;
-	const char *corename;
-	FILE *fd;
-	int i, structDepth, err;
-
-	char core_string[1024];
-
-	structDepth = determine_struct_depth(0, registry);
-
-	corename = ezxml_attr(registry, "core");
-
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
-
-	fd = fopen("link_fields.inc", "w+");
-
-	fortprintf(fd, "   subroutine mpas%slink_fields(domain)\n", core_string);
-	fortprintf(fd, "      type (domain_type), intent(in) :: domain\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      type (block_type), pointer :: blockPtr\n");
-	fortprintf(fd, "      type (block_type), pointer :: prevBlock\n");
-	fortprintf(fd, "      type (block_type), pointer :: nextBlock\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      blockPtr => domain %% blocklist\n");
-	fortprintf(fd, "      do while(associated(blockPtr))\n");
-	fortprintf(fd, "         if (associated(blockPtr %% prev)) then\n");
-	fortprintf(fd, "            prevBlock => blockPtr %% prev\n");
-	fortprintf(fd, "         else\n");
-	fortprintf(fd, "            nullify(prevBlock)\n");
-	fortprintf(fd, "         end if\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "         if (associated(blockPtr %% next)) then\n");
-	fortprintf(fd, "            nextBlock => blockPtr %% next\n");
-	fortprintf(fd, "         else\n");
-	fortprintf(fd, "            nullify(nextBlock)\n");
-	fortprintf(fd, "         end if\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "         call mpas%slink_blocks(blockPtr, prevBlock, nextBlock)\n", core_string);
-	fortprintf(fd, "\n");
-	fortprintf(fd, "         blockPtr => blockPtr %% next\n");
-	fortprintf(fd, "      end do\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "   end subroutine mpas%slink_fields\n", core_string);
-	fortprintf(fd, "\n");
-	fortprintf(fd, "\n");
-	fortprintf(fd, "   subroutine mpas%slink_blocks(currentBlock, prevBlock, nextBlock)\n", core_string);
-	fortprintf(fd, "      type (block_type), pointer, intent(in) :: currentBlock\n");
-	fortprintf(fd, "      type (block_type), pointer, intent(in) :: prevBlock\n");
-	fortprintf(fd, "      type (block_type), pointer, intent(in) :: nextBlock\n");
-	write_field_pointers(fd);
-	for(i = 1; i <= structDepth; i++){
-		fortprintf(fd, "      type (mpas_pool_type), pointer :: poolLevel%d\n", i);
-		fortprintf(fd, "      type (mpas_pool_type), pointer :: prevPoolLevel%d\n", i);
-		fortprintf(fd, "      type (mpas_pool_type), pointer :: nextPoolLevel%d\n", i);
-	}
-	fortprintf(fd, "\n");
-
-	err = generate_struct_links(fd, 0, registry, registry);
-
-	fortprintf(fd, "   end subroutine mpas%slink_blocks\n", core_string);
-
-	fclose(fd);
-
-	return 0;
-}/*}}}*/
-
-
 int generate_immutable_struct_contents(FILE *fd, const char *streamname, ezxml_t varstruct_xml){/*{{{*/
-	ezxml_t var_xml, vararr_xml, substruct_xml;
 
+	ezxml_t var_xml, vararr_xml, substruct_xml;
 	const char *optname, *optstream;
 
 	/* Loop over fields looking for any that belong to the stream */
@@ -1942,32 +1864,33 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	ezxml_t streams_xml, stream_xml, var_xml, vararr_xml, varstruct_xml;
 	ezxml_t substream_xml, matchstreams_xml, matchstream_xml;
 
-	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optinterval_in, *optinterval_out, *optimmutable;
+	const char *optname, *opttype, *optvarname, *optstream, *optfilename, *optinterval_in, *optinterval_out, *optimmutable, *optpackages;
 	const char *optstructname, *optsubstreamname, *optmatchstreamname, *optmatchimmutable;
 	const char *corename;
 	FILE *fd;
 
 	char core_string[1024];
 
-	corename = ezxml_attr(registry, "core");
+	corename = ezxml_attr(registry, "core_abbrev");
 
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines
-	sprintf(core_string, "_");
+	sprintf(core_string, "%s", corename);
 
 	fd = fopen("setup_immutable_streams.inc", "w+");
 
 	fprintf(stderr, "---- GENERATING IMMUTABLE STREAMS ----\n");
 
-	fortprintf(fd, "subroutine mpas%ssetup_immutable_streams(manager)\n\n", core_string);
-	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_streamManager_type, MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
-	fortprintf(fd, "                                   MPAS_STREAM_OUTPUT, MPAS_STREAM_NONE, MPAS_STREAM_PROPERTY_IMMUTABLE, &\n");
-	fortprintf(fd, "                                   MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property, MPAS_stream_mgr_add_field, &\n");
-	fortprintf(fd, "                                   MPAS_stream_mgr_add_pool, MPAS_stream_mgr_set_property\n\n");
+	fortprintf(fd, "function %s_setup_immutable_streams(manager) result(iErr)\n\n", core_string);
+	fortprintf(fd, "   use MPAS_derived_types, only : MPAS_streamManager_type, &\n");
+	fortprintf(fd, "                                  MPAS_STREAM_INPUT_OUTPUT, MPAS_STREAM_INPUT, &\n");
+	fortprintf(fd, "                                  MPAS_STREAM_OUTPUT, MPAS_STREAM_NONE, MPAS_STREAM_PROPERTY_IMMUTABLE\n");
+	fortprintf(fd, "   use MPAS_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property, &\n");
+	fortprintf(fd, "                                   MPAS_stream_mgr_add_field, MPAS_stream_mgr_add_pool\n");
+	fortprintf(fd, "   use mpas_io_units\n\n");
 	fortprintf(fd, "   implicit none\n\n");
-	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n\n");
-	fortprintf(fd, "   integer :: ierr\n\n");
+	fortprintf(fd, "   type (MPAS_streamManager_type), pointer :: manager\n");
+	fortprintf(fd, "   character (len=StrKIND) :: packages\n");
+	fortprintf(fd, "   integer :: iErr\n\n");
+	fortprintf(fd, "   iErr = 0\n\n");
 
 	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
 		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
@@ -1994,6 +1917,11 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 				/* Loop over streams listed within the stream (only use immutable streams) */
 				for (substream_xml = ezxml_child(stream_xml, "stream"); substream_xml; substream_xml = ezxml_next(substream_xml)) {
 					optsubstreamname = ezxml_attr(substream_xml, "name");
+					optpackages = ezxml_attr(substream_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+					}
 
 					/* Find stream definition with matching name */
 					for (matchstreams_xml = ezxml_child(registry, "streams"); matchstreams_xml; matchstreams_xml = matchstreams_xml->next){
@@ -2006,23 +1934,33 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 									/* Loop over fields listed within the stream */
 									for (var_xml = ezxml_child(matchstream_xml, "var"); var_xml; var_xml = var_xml->next) {
 										optvarname = ezxml_attr(var_xml, "name");
-										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+										if (optpackages != NULL)
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+										else
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+										
 									}
 
 									/* Loop over arrays of fields listed within the stream */
 									for (vararr_xml = ezxml_child(matchstream_xml, "var_array"); vararr_xml; vararr_xml = vararr_xml->next) {
 										optvarname = ezxml_attr(vararr_xml, "name");
-										fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+										if (optpackages != NULL)
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+										else
+											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
 									}
 
 									/* Loop over var structs listed within the stream */
 									for (varstruct_xml = ezxml_child(matchstream_xml, "var_struct"); varstruct_xml; varstruct_xml = varstruct_xml->next) {
 										optstructname = ezxml_attr(varstruct_xml, "name");
-										fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+										if (optpackages != NULL)
+											fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optstructname);
+										else
+											fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
 									}
 
 								} else {
-									printf("ERROR: Immutable streams cannot contain mutable streams within them.\n");	
+									printf("ERROR: Immutable streams cannot contain mutable streams within them.\n");
 									printf("ERROR:     Immutable stream \'%s\' contains a mutable stream \'%s\'.\n", optname, optsubstreamname);
 									return 1;
 								}
@@ -2034,20 +1972,47 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 				/* Loop over var structs listed within the stream */
 				for (varstruct_xml = ezxml_child(stream_xml, "var_struct"); varstruct_xml; varstruct_xml = ezxml_next(varstruct_xml)) {
 					optstructname = ezxml_attr(varstruct_xml, "name");
-					fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+					optpackages = ezxml_attr(varstruct_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+						fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optstructname);
+					}
+					else {
+						fortprintf(fd, "   call MPAS_stream_mgr_add_pool(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optstructname);
+					}
+
 				}
 
 
 				/* Loop over arrays of fields listed within the stream */
 				for (vararr_xml = ezxml_child(stream_xml, "var_array"); vararr_xml; vararr_xml = ezxml_next(vararr_xml)) {
 					optvarname = ezxml_attr(vararr_xml, "name");
-					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					optpackages = ezxml_attr(vararr_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+					}
+					else {
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					}
+
 				}
 
 				/* Loop over fields listed within the stream */
 				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = ezxml_next(var_xml)) {
 					optvarname = ezxml_attr(var_xml, "name");
-					fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					optpackages = ezxml_attr(var_xml, "packages");
+
+					if (optpackages != NULL) {
+						fortprintf(fd, "   write(packages,\'(a)\') \'%s\'\n", optpackages);
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
+					}
+					else {
+						fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
+					}
+
 				}
 
 				/* Loop over fields looking for any that belong to the stream */
@@ -2061,7 +2026,7 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 	}
 
 
-	fortprintf(fd, "end subroutine mpas%ssetup_immutable_streams\n", core_string);
+	fortprintf(fd, "end function %s_setup_immutable_streams\n", core_string);
 
 	fortprintf(fd, "\n\n");
 
@@ -2385,12 +2350,9 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 
 	char *string, *tofree, *token;
 
-	corename = ezxml_attr(registry, "core");
+	corename = ezxml_attr(registry, "core_abbrev");
 
-	sprintf(core_string, "_%s_", corename);
-
-	// For now, don't include core name in subroutines.
-	sprintf(core_string, "_");
+	sprintf(core_string, "%s", corename);
 
 	fd = fopen("structs_and_variables.inc", "w+");
 
@@ -2398,7 +2360,9 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 		err = parse_struct(fd, registry, structs_xml, 0, '\0', corename);
 	}
 
-	fortprintf(fd, "   subroutine mpas_generate_structs(block, structPool, dimensionPool, packagePool)\n");
+	fortprintf(fd, "   subroutine %s_generate_structs(block, structPool, dimensionPool, packagePool)\n", core_string);
+	fortprintf(fd, "      use mpas_derived_types\n");
+	fortprintf(fd, "      use mpas_io_units\n");
 	fortprintf(fd, "      type (block_type), pointer, intent(inout) :: block\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: structPool\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
@@ -2409,13 +2373,13 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 	for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
 		structname = ezxml_attr(structs_xml, "name");
 
-		fortprintf(fd, "      call mpas_generate%spool_%s(block, structPool, dimensionPool, packagePool)\n", core_string, structname);
+		fortprintf(fd, "      call %s_generate_pool_%s(block, structPool, dimensionPool, packagePool)\n", core_string, structname);
 
 		fortprintf(fd, "\n");
 	}
 
 
-	fortprintf(fd, "   end subroutine mpas_generate_structs\n");
+	fortprintf(fd, "   end subroutine %s_generate_structs\n", core_string);
 
 	fclose(fd);
 

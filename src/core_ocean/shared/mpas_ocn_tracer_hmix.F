@@ -22,7 +22,8 @@
 
 module ocn_tracer_hmix
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use ocn_constants
    use ocn_tracer_hmix_del2

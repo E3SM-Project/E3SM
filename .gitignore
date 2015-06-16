@@ -53,3 +53,5 @@ stream_list.*
 # Intermediate files that may be produced by Intel compilers
 *.i
 *.i90
+
+src/core_*/inc

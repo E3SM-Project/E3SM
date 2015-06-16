@@ -7,8 +7,8 @@
 !
 !==================================================================================================
  module mpas_init_atm_surface
-! use mpas_configure
- use mpas_grid_types
+ use mpas_derived_types
+ use mpas_pool_routines
  use mpas_timekeeping
  use mpas_timer
  
@@ -302,7 +302,7 @@
  else if(field % iproj == PROJ_GAUSS) then
     call map_set(PROJ_GAUSS, proj, &
                  nlat = nint(field % deltalat), &
-                 loninc = real(field % deltalon,RKIND), &
+                 loninc = 360.0_RKIND / real(field % nx,RKIND), &
                  lat1 = real(field % startlat,RKIND), &
                  lon1 = real(field % startlon,RKIND))
 !   write(0,*) '--- The projection is PROJ_GAUSS.'

@@ -7,12 +7,13 @@
 !
 module mpas_bootstrapping
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_field_routines
+   use mpas_pool_routines
    use mpas_dmpar
    use mpas_block_decomp
    use mpas_block_creator
    use mpas_sort
-   use mpas_configure
    use mpas_timekeeping
    use mpas_io_streams
    use mpas_io_units
@@ -70,12 +71,13 @@ module mpas_bootstrapping
    !>            mpas_initialize_vectors()
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework_phase1(domain, mesh_filename) !{{{
+   subroutine mpas_bootstrap_framework_phase1(domain, mesh_filename, mesh_iotype) !{{{
 
       implicit none
 
       type (domain_type), pointer :: domain
       character(len=*), intent(in) :: mesh_filename
+      integer, intent(in) :: mesh_iotype
 
       type (block_type), pointer :: readingBlock
 
@@ -140,7 +142,7 @@ module mpas_bootstrapping
       nHalos = config_num_halos
 
 
-      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr=ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
          write(stderrUnit,*) ' '
          write(stderrUnit,*) '************************************************************************************'
@@ -345,14 +347,13 @@ module mpas_bootstrapping
    !>  and allocating all fields and structs.
    !
    !-----------------------------------------------------------------------
-   subroutine mpas_bootstrap_framework_phase2(stream_manager, domain) !{{{
+   subroutine mpas_bootstrap_framework_phase2(domain) !{{{
 
       use mpas_stream_manager
       use mpas_stream_list
 
       implicit none
 
-      type (mpas_streamManager_type), pointer :: stream_manager
       type (domain_type), pointer :: domain
 
       type (mpas_pool_type), pointer :: readableDimensions
@@ -362,6 +363,8 @@ module mpas_bootstrapping
       character (len=StrKIND) :: fieldName
       integer :: streamDirection
       logical :: streamActive
+      logical :: fieldActive
+      integer :: ioType
 
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -383,36 +386,42 @@ module mpas_bootstrapping
 
       ! Reading dimensions from streams
       write(stderrUnit,'(a)') 'Reading dimensions from input streams ...'
-      call mpas_stream_mgr_begin_iteration(stream_manager)
-      do while ( mpas_stream_mgr_get_next_stream(stream_manager, streamID = streamName, directionProperty = streamDirection, &
+      call mpas_stream_mgr_begin_iteration(domain % streamManager)
+      do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID = streamName, directionProperty = streamDirection, &
                                                  activeProperty = streamActive) )
 
          if ( streamActive .and. ( streamDirection == MPAS_STREAM_INPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
 
-            call mpas_stream_mgr_begin_iteration(stream_manager, streamID=streamName)
+            call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=streamName)
 
             ! Build stream dimension pool from the list of fields
             call mpas_pool_create_pool(streamDimensions)
 
-            do while ( mpas_stream_mgr_get_next_field(stream_manager, streamName, fieldName) )
+            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamName, fieldName, isActive=fieldActive) )
 
-               call get_dimlist_for_field(domain % blocklist % allFields, fieldName, dimNames)
+               if (fieldActive) then
+                  call get_dimlist_for_field(domain % blocklist % allFields, fieldName, dimNames)
 
-               do i=1,size(dimNames)
-                  call mpas_pool_get_dimension(streamDimensions, dimNames(i), dimValue)
-                  if ( .not. associated(dimValue) ) then
-                     call mpas_pool_add_dimension(streamDimensions, dimNames(i), MPAS_MISSING_DIM)
-                  end if
-               end do
-               deallocate(dimNames)
+                  do i=1,size(dimNames)
+                     call mpas_pool_get_dimension(streamDimensions, dimNames(i), dimValue)
+                     if ( .not. associated(dimValue) ) then
+                        call mpas_pool_add_dimension(streamDimensions, dimNames(i), MPAS_MISSING_DIM)
+                     end if
+                  end do
+                  deallocate(dimNames)
+               end if
 
             end do
 
             ! Determine stream filename
-            call mpas_get_stream_filename(stream_manager, streamID = streamName, filename = streamFilename, ierr = err_local)
+            call mpas_get_stream_filename(domain % streamManager, streamID = streamName, filename = streamFilename, ierr = err_local)
+
+            ! Determine stream io_type
+            call MPAS_stream_mgr_get_property(domain % streamManager, streamName, &
+                                              MPAS_STREAM_PROPERTY_IOTYPE, ioType, ierr = err_local)
 
             ! Try to open file
-            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, MPAS_IO_PNETCDF, ierr = err_local)
+            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, ioType, ierr = err_local)
 
             ! If to determine if file was opened or not.
             if ( err_local == MPAS_IO_NOERR ) then
@@ -480,7 +489,7 @@ module mpas_bootstrapping
       call mpas_pool_set_error_level(err_level)
 
       ! Allocate blocks, and copy indexTo arrays into blocks
-      call mpas_block_creator_finalize_block_phase2(stream_manager, domain % blocklist, readableDimensions)
+      call mpas_block_creator_finalize_block_phase2(domain % streamManager, domain % blocklist, readableDimensions)
       call mpas_link_fields(domain)
 
       call mpas_pool_destroy_pool(readableDimensions)
@@ -518,10 +527,6 @@ module mpas_bootstrapping
 
      ! Global cell indices
      allocate(indexToCellID)
-     allocate(indexToCellID % ioinfo)
-     indexToCellID % ioinfo % fieldName = 'indexToCellID'
-     indexToCellID % ioinfo % start(1) = readCellStart
-     indexToCellID % ioinfo % count(1) = nReadCells
      allocate(indexToCellID % array(nReadCells))
      allocate(readIndices(nReadCells))
      do i=1,nReadCells
@@ -540,10 +545,6 @@ module mpas_bootstrapping
 
      ! Number of cell/edges/vertices adjacent to each cell
      allocate(nEdgesOnCell)
-     allocate(nEdgesOnCell % ioinfo)
-     nEdgesOnCell % ioinfo % fieldName = 'nEdgesOnCell'
-     nEdgesOnCell % ioinfo % start(1) = readCellStart
-     nEdgesOnCell % ioinfo % count(1) = nReadCells
      allocate(nEdgesOnCell % array(nReadCells))
      call MPAS_io_inq_var(inputHandle, 'nEdgesOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'nEdgesOnCell', readIndices, ierr=ierr)
@@ -557,12 +558,6 @@ module mpas_bootstrapping
 
      ! Global indices of cells adjacent to each cell
      allocate(cellsOnCell)
-     allocate(cellsOnCell % ioinfo)
-     cellsOnCell % ioinfo % fieldName = 'cellsOnCell'
-     cellsOnCell % ioinfo % start(1) = 1
-     cellsOnCell % ioinfo % start(2) = readCellStart
-     cellsOnCell % ioinfo % count(1) = maxEdges
-     cellsOnCell % ioinfo % count(2) = nReadCells
      allocate(cellsOnCell % array(maxEdges,nReadCells))
      call MPAS_io_inq_var(inputHandle, 'cellsOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'cellsOnCell', readIndices, ierr=ierr)
@@ -577,12 +572,6 @@ module mpas_bootstrapping
 
      ! Global indices of edges adjacent to each cell
      allocate(edgesOnCell)
-     allocate(edgesOnCell % ioinfo)
-     edgesOnCell % ioinfo % fieldName = 'edgesOnCell'
-     edgesOnCell % ioinfo % start(1) = 1
-     edgesOnCell % ioinfo % start(2) = readCellStart
-     edgesOnCell % ioinfo % count(1) = maxEdges
-     edgesOnCell % ioinfo % count(2) = nReadCells
      allocate(edgesOnCell % array(maxEdges,nReadCells))
      call MPAS_io_inq_var(inputHandle, 'edgesOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'edgesOnCell', readIndices, ierr=ierr)
@@ -597,12 +586,6 @@ module mpas_bootstrapping
 
      ! Global indices of vertices adjacent to each cell
      allocate(verticesOnCell)
-     allocate(verticesOnCell % ioinfo)
-     verticesOnCell % ioinfo % fieldName = 'verticesOnCell'
-     verticesOnCell % ioinfo % start(1) = 1
-     verticesOnCell % ioinfo % start(2) = readCellStart
-     verticesOnCell % ioinfo % count(1) = maxEdges
-     verticesOnCell % ioinfo % count(2) = nReadCells
      allocate(verticesOnCell % array(maxEdges,nReadCells))
      call MPAS_io_inq_var(inputHandle, 'verticesOnCell', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'verticesOnCell', readIndices, ierr=ierr)
@@ -648,10 +631,6 @@ module mpas_bootstrapping
 
      ! Global edge indices
      allocate(indexToEdgeID)
-     allocate(indexToEdgeID % ioinfo)
-     indexToEdgeID % ioinfo % fieldName = 'indexToEdgeID'
-     indexToEdgeID % ioinfo % start(1) = readEdgeStart
-     indexToEdgeID % ioinfo % count(1) = nReadEdges
      allocate(indexToEdgeID % array(nReadEdges))
      allocate(indexToEdgeID % array(nReadEdges))
      do i=1,nReadEdges
@@ -672,12 +651,6 @@ module mpas_bootstrapping
      !    used for determining which edges are owned by a block, where
      !    iEdge is owned iff cellsOnEdge(1,iEdge) is an owned cell
      allocate(cellsOnEdge)
-     allocate(cellsOnEdge % ioinfo)
-     cellsOnEdge % ioinfo % fieldName = 'cellsOnEdge'
-     cellsOnEdge % ioinfo % start(1) = 1
-     cellsOnEdge % ioinfo % start(2) = readEdgeStart
-     cellsOnEdge % ioinfo % count(1) = 2
-     cellsOnEdge % ioinfo % count(2) = nReadEdges
      allocate(cellsOnEdge % array(2,nReadEdges))
      call MPAS_io_inq_var(inputHandle, 'cellsOnEdge', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'cellsOnEdge', readIndices, ierr=ierr)
@@ -717,10 +690,6 @@ module mpas_bootstrapping
 
      ! Global vertex indices
      allocate(indexToVertexID)
-     allocate(indexToVertexID % ioinfo)
-     indexToVertexID % ioinfo % fieldName = 'indexToVertexID'
-     indexToVertexID % ioinfo % start(1) = readVertexStart
-     indexToVertexID % ioinfo % count(1) = nReadVertices
      allocate(indexToVertexID % array(nReadVertices))
      allocate(readIndices(nReadVertices))
      do i=1,nReadVertices
@@ -741,12 +710,6 @@ module mpas_bootstrapping
      !    used for determining which vertices are owned by a block, where
      !    iVtx is owned iff cellsOnVertex(1,iVtx) is an owned cell
      allocate(cellsOnVertex)
-     allocate(cellsOnVertex % ioinfo)
-     cellsOnVertex % ioinfo % fieldName = 'cellsOnVertex'
-     cellsOnVertex % ioinfo % start(1) = 1
-     cellsOnVertex % ioinfo % start(2) = readVertexStart
-     cellsOnVertex % ioinfo % count(1) = vertexDegree
-     cellsOnVertex % ioinfo % count(2) = nReadVertices
      allocate(cellsOnVertex % array(vertexDegree,nReadVertices))
      call MPAS_io_inq_var(inputHandle, 'cellsOnVertex', ierr=ierr)
      call MPAS_io_set_var_indices(inputHandle, 'cellsOnVertex', readIndices, ierr=ierr)
@@ -785,7 +748,7 @@ module mpas_bootstrapping
    !>  zero size.
    !
    !-----------------------------------------------------------------------
-   subroutine get_dimlist_for_field(allFields, fieldName, dimNames)
+   subroutine get_dimlist_for_field(allFields, fieldName, dimNames)!{{{
 
       implicit none
 
@@ -923,8 +886,6 @@ module mpas_bootstrapping
 
       end if
 
-   end subroutine get_dimlist_for_field
-
-#include "setup_immutable_streams.inc"
+   end subroutine get_dimlist_for_field!}}}
 
 end module mpas_bootstrapping

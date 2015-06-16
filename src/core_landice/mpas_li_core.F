@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_core
+module li_core
 
    use mpas_framework
    use mpas_timekeeping
@@ -21,13 +21,10 @@ module mpas_core
    !
    !--------------------------------------------------------------------
 
-   public :: mpas_core_init, &
-             mpas_core_run, &
-             mpas_core_finalize, &
-             mpas_core_setup_packages, &
-             mpas_core_setup_clock, &
-             mpas_core_setup_decompositions, &
-             mpas_core_get_mesh_stream
+   public :: li_core_init, &
+             li_core_run, &
+             li_core_finalize, &
+             li_simulation_clock_init
 
    !--------------------------------------------------------------------
    !
@@ -46,7 +43,7 @@ module mpas_core
 
 !***********************************************************************
 !
-!  routine mpas_core_init
+!  function li_core_init
 !
 !> \brief   Initializes land ice core
 !> \author  Matt Hoffman
@@ -56,10 +53,10 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, stream_manager, startTimeStamp)
+   function li_core_init(domain, startTimeStamp) result(err)
    
-      use mpas_configure
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_stream_manager
       use li_velocity
       use li_setup
@@ -80,7 +77,6 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/output: Domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -125,15 +121,15 @@ module mpas_core
       err = ior(err, err_tmp)
 
       if (config_do_restart) then
-         call mpas_stream_mgr_read(stream_manager, streamID='restart', ierr=err_tmp)
+         call mpas_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
       else
-         call mpas_stream_mgr_read(stream_manager, streamID='input', ierr=err_tmp)
+         call mpas_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       end if
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='restart', ierr=err_tmp)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
       err = ior(err, err_tmp)
-      call MPAS_stream_mgr_reset_alarms(stream_manager, streamID='input', ierr=err_tmp)
+      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
       err = ior(err, err_tmp)
-      call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
 
 
@@ -164,17 +160,17 @@ module mpas_core
       ! check for errors and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in mpas_core_init. Aborting...")
+          call mpas_dmpar_global_abort("An error has occurred in li_core_init. Aborting...")
       endif
 
    !--------------------------------------------------------------------
-   end subroutine mpas_core_init
+   end function li_core_init
 
 
 
 !***********************************************************************
 !
-!  routine mpas_core_run
+!  function li_core_run
 !
 !> \brief   Runs the land ice core
 !> \author  Matt Hoffman
@@ -184,16 +180,16 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain, stream_manager)
+   function li_core_run(domain) result(err)
    
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
       use li_diagnostic_vars
       use li_setup
-      use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
-   
+
       implicit none
    
       !-----------------------------------------------------------------
@@ -208,7 +204,6 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -282,14 +277,14 @@ module mpas_core
       ! ===
       call mpas_timer_start("write output")
       if (config_write_output_on_startup) then
-         call mpas_stream_mgr_write(stream_manager, 'output', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
       endif
       call mpas_timer_stop("write output")
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in mpas_core_run before time-stepping. Aborting...")
+          call mpas_dmpar_global_abort("An error has occurred in li_core_run before time-stepping. Aborting...")
       endif
 
 
@@ -353,9 +348,9 @@ module mpas_core
          ! will allow that.
          ! Finally, set whence to latest_before so we have piecewise-constant forcing.
          ! Could add, e.g., linear interpolation later.
-         call mpas_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
+         call mpas_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
          err = ior(err, err_tmp)
-         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
 
@@ -364,7 +359,7 @@ module mpas_core
          ! ===
          call mpas_timer_start("write output")
          ! Update the restart_timestamp file with the new time, if needed.
-         if ( mpas_stream_mgr_ringing_alarms(stream_manager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) timeStamp
             close(22)
@@ -373,9 +368,9 @@ module mpas_core
          ! These calls will handle ALL output streams that need writing.
          ! [Could add them individually, as the ocean does, if some other actions are needed when a
          ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
-         call mpas_stream_mgr_write(stream_manager, ierr=err_tmp)
+         call mpas_stream_mgr_write(domain % streamManager, ierr=err_tmp)
          err = ior(err, err_tmp)
-         call mpas_stream_mgr_reset_alarms(stream_manager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager,   direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
          call mpas_timer_stop("write output")
 
@@ -383,20 +378,20 @@ module mpas_core
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
-             call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
+             call mpas_dmpar_global_abort("An error has occurred in li_core_run. Aborting...")
          endif
 
       end do
       call mpas_timer_stop("land ice core run")
 
    !--------------------------------------------------------------------
-   end subroutine mpas_core_run
+   end function li_core_run
 
 
 
 !***********************************************************************
 !
-!  routine mpas_core_finalize
+!  function li_core_finalize
 !
 !> \brief   Finalizes the land ice core
 !> \author  Matt Hoffman
@@ -405,10 +400,9 @@ module mpas_core
 !>  This routine finalizes the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_finalize(domain, stream_manager)
+   function li_core_finalize(domain) result(err)
    
-      use mpas_grid_types
-      use mpas_stream_manager
+      use mpas_derived_types
       use mpas_decomp
       use li_velocity, only: li_velocity_finalize
    
@@ -426,7 +420,6 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain    !< Input/output: Domain 
-      type (MPAS_streamManager_type), intent(inout) :: stream_manager   !< Input/output: Stream Manager
 
       !-----------------------------------------------------------------
       !
@@ -451,145 +444,16 @@ module mpas_core
       call mpas_destroy_clock(clock, err_tmp)
       err = ior(err, err_tmp)
 
-      call mpas_decomp_destroy_decomp_list(decompositions)
+      call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in mpas_core_finalize. Aborting...")
+          call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
       endif
 
    !--------------------------------------------------------------------
-   end subroutine mpas_core_finalize
-
-
-
-!***********************************************************************
-!
-!  routine mpas_core_setup_packages
-!
-!> \brief   Pacakge setup routine
-!> \author  Doug Jacobsen
-!> \date    September 2011
-!> \details 
-!>  This routine is intended to correctly configure the packages for this MPAS
-!>   core. It can use any Fortran logic to properly configure packages, and it
-!>   can also make use of any namelist options. All variables in the model are
-!>   *not* allocated until after this routine is called.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(configPool, packagePool, ierr)
-
-      implicit none
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-      integer, intent(out) :: ierr
-
-      ierr = 0
-
-   end subroutine mpas_core_setup_packages
-
-
-
-!***********************************************************************
-!
-!  routine mpas_core_setup_clock
-!
-!> \brief   Pacakge setup routine
-!> \author  Michael Duda
-!> \date    6 August 2014
-!> \details 
-!>  The purpose of this routine is to allow the core to set up a simulation
-!>  clock that will be used by the I/O subsystem for timing reads and writes
-!>  of I/O streams.
-!>  This routine is called from the superstructure after the framework 
-!>  has been initialized but before any fields have been allocated and 
-!>  initial fields have been read from input files. However, all namelist
-!>  options are available.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
-
-      implicit none
-
-      type (MPAS_Clock_type), intent(inout) :: core_clock
-      type (mpas_pool_type), intent(inout) :: configs
-      integer, intent(out) :: ierr
-
-      call simulation_clock_init(core_clock, configs, ierr)
-
-   end subroutine mpas_core_setup_clock
-
-
-!***********************************************************************
-!
-!  routine mpas_core_get_mesh_stream
-!
-!> \brief   Returns the name of the stream containing mesh information
-!> \author  Michael Duda
-!> \date    8 August 2014
-!> \details 
-!>  This routine returns the name of the I/O stream containing dimensions,
-!>  attributes, and mesh fields needed by the framework bootstrapping 
-!>  routine. At the time this routine is called, only namelist options 
-!>  are available.
-!
-!-----------------------------------------------------------------------
-subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
-
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: configs
-      character(len=*), intent(out) :: stream
-      integer, intent(out) :: ierr
-
-      logical, pointer :: config_do_restart
-
-      ierr = 0
-
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         ierr = 1
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
-
-   end subroutine mpas_core_get_mesh_stream
-
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_setup_decompositions
-   !
-   !> \brief   Decomposition setup routine
-   !> \author  Doug Jacobsen
-   !> \date    September 2011
-   !> \details 
-   !>  This routine is intended to create the decomposition list within a
-   !>  domain type, and register any decompositons the core wants within it.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(ierr)
-
-      use mpas_decomp
-
-      implicit none
-
-      integer, intent(out) :: ierr
-      procedure (mpas_decomp_function), pointer :: decompFunc
-
-      ierr = 0
-
-      call mpas_decomp_create_decomp_list(decompositions)
-
-      decompFunc => mpas_uniform_decomp
-
-      call mpas_decomp_register_method(decompositions, 'uniform', decompFunc, iErr)
-
-   end subroutine mpas_core_setup_decompositions
+   end function li_core_finalize
 
 
 !***********************************************************************
@@ -613,7 +477,8 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 !-----------------------------------------------------------------------
    subroutine landice_init_block(block, startTimeStamp, dminfo)
 
-      use mpas_grid_types
+      use mpas_derived_types
+      use mpas_pool_routines
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use li_setup
@@ -724,7 +589,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 !-----------------------------------------------------------------------
    subroutine landice_timestep(domain, itimestep, dt, timeStamp, err)
    
-      use mpas_grid_types
+      use mpas_derived_types
       use li_time_integration
       use mpas_timer
 !!!      use li_global_diagnostics
@@ -815,7 +680,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
 !***********************************************************************
 !
-!  routine simulation_clock_init
+!  routine li_simulation_clock_init
 !
 !> \brief   Initializes the simulation clock
 !> \author  ??
@@ -825,7 +690,10 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 !
 !-----------------------------------------------------------------------
 
-   subroutine simulation_clock_init(core_clock, configs, ierr)
+   subroutine li_simulation_clock_init(core_clock, configs, ierr)
+
+      use mpas_derived_types
+      use mpas_pool_routines
 
       implicit none
 
@@ -920,12 +788,12 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       ! === error check
       if (ierr > 0) then
-          write (0,*) "An error has occurred in simulation_clock_init."
+          write (0,*) "An error has occurred in li_simulation_clock_init."
       endif
 
    !--------------------------------------------------------------------
-   end subroutine simulation_clock_init
+   end subroutine li_simulation_clock_init
 
 
 
-end module mpas_core
+end module li_core

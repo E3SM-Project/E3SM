@@ -13,7 +13,8 @@
  module mpas_atmphys_landuse
  use mpas_dmpar
  use mpas_kind_types
- use mpas_grid_types
+ use mpas_derived_types
+ use mpas_pool_routines
 
  use mpas_atmphys_utilities
  use mpas_atmphys_vars

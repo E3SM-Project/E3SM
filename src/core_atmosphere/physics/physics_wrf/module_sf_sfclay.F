@@ -1,3 +1,10 @@
+!==================================================================================================
+! modifications made to sourcecode:
+! * changed ustm to an "inout" variable instead of an "out" variable.
+!   Laura D. Fowler (laura@ucar.edu / 2015-02-19).
+
+!==================================================================================================
+
 !WRF:MODEL_LAYER:PHYSICS
 !
 MODULE module_sf_sfclay
@@ -345,18 +352,20 @@ CONTAINS
                                                               P1D, &
                                                               T1D
  
+#if defined(mpas)
+!MPAS specific (Laura D. Fowler - 2013-03-06):
+      real,intent(in),dimension(ims:ime),optional   :: dxCell
+      real,intent(inout),dimension(ims:ime),optional:: ustm
+      real,intent(out),dimension(ims:ime),optional  :: ck,cka,cd,cda
+!MPAS specific end.
+#else
       REAL, OPTIONAL, DIMENSION( ims:ime )                       , &
                 INTENT(OUT)     ::              ck,cka,cd,cda,ustm
+#endif
 
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
-#if defined(mpas)
-!MPAS specific (Laura D. Fowler - 2013-03-06):
-      real,intent(in),dimension(ims:ime),optional:: dxCell
-!MPAS specific end.
-#endif
-      
 
 ! LOCAL VARS
 

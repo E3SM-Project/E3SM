@@ -17,11 +17,12 @@
 !-----------------------------------------------------------------------
 module mpas_dmpar
 
-   use mpas_dmpar_types
-   use mpas_grid_types
+   use mpas_derived_types
    use mpas_sort
    use mpas_hash
    use mpas_io_units
+
+   private
 
 #ifdef _MPI
 include 'mpif.h'
@@ -37,8 +38,47 @@ include 'mpif.h'
 #endif
 #endif
 
-   integer, parameter :: IO_NODE = 0
-   integer, parameter :: BUFSIZE = 6000
+   integer, parameter, public :: IO_NODE = 0
+   integer, parameter, public :: BUFSIZE = 6000
+
+   public :: mpas_dmpar_init
+   public :: mpas_dmpar_finalize
+   public :: mpas_dmpar_abort
+   public :: mpas_dmpar_bcast_int
+   public :: mpas_dmpar_bcast_ints
+   public :: mpas_dmpar_bcast_real
+   public :: mpas_dmpar_bcast_reals
+   public :: mpas_dmpar_bcast_double
+   public :: mpas_dmpar_bcast_doubles
+   public :: mpas_dmpar_bcast_logical
+   public :: mpas_dmpar_bcast_char
+   public :: mpas_dmpar_sum_int
+   public :: mpas_dmpar_sum_real
+   public :: mpas_dmpar_min_int
+   public :: mpas_dmpar_min_real
+   public :: mpas_dmpar_max_int
+   public :: mpas_dmpar_max_real
+   public :: mpas_dmpar_minloc_int
+   public :: mpas_dmpar_minloc_real
+   public :: mpas_dmpar_maxloc_int
+   public :: mpas_dmpar_maxloc_real
+   public :: mpas_dmpar_sum_int_array
+   public :: mpas_dmpar_min_int_array
+   public :: mpas_dmpar_max_int_array
+   public :: mpas_dmpar_sum_real_array
+   public :: mpas_dmpar_min_real_array
+   public :: mpas_dmpar_max_real_array
+   public :: mpas_dmpar_scatter_ints
+   public :: mpas_dmpar_get_index_range
+   public :: mpas_dmpar_compute_index_range
+   public :: mpas_dmpar_get_exch_list
+   public :: mpas_dmpar_build_comm_lists
+   public :: mpas_dmpar_init_multihalo_exchange_list
+   public :: mpas_dmpar_destroy_mulithalo_exchange_list
+   public :: mpas_dmpar_destroy_communication_list
+   public :: mpas_dmpar_destroy_exchange_list
+   public :: mpas_dmpar_global_abort
+   public :: mpas_dmpar_get_time
 
    interface mpas_dmpar_alltoall_field
       module procedure mpas_dmpar_alltoall_field1d_integer
@@ -49,6 +89,8 @@ include 'mpif.h'
       module procedure mpas_dmpar_alltoall_field4d_real
       module procedure mpas_dmpar_alltoall_field5d_real
    end interface
+
+   public :: mpas_dmpar_alltoall_field
 
    private :: mpas_dmpar_alltoall_field1d_integer
    private :: mpas_dmpar_alltoall_field2d_integer
@@ -70,6 +112,8 @@ include 'mpif.h'
       module procedure mpas_dmpar_exch_halo_field5d_real
    end interface
 
+   public :: mpas_dmpar_exch_halo_field
+
    private :: mpas_dmpar_exch_halo_field1d_integer
    private :: mpas_dmpar_exch_halo_field2d_integer
    private :: mpas_dmpar_exch_halo_field3d_integer
@@ -89,6 +133,8 @@ include 'mpif.h'
       module procedure mpas_dmpar_copy_field4d_real
       module procedure mpas_dmpar_copy_field5d_real
    end interface
+
+   public :: mpas_dmpar_copy_field
 
    private :: mpas_dmpar_copy_field1d_integer
    private :: mpas_dmpar_copy_field2d_integer
@@ -5925,8 +5971,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        end if
    end subroutine mpas_dmpar_copy_field5d_real!}}}
 
-end module mpas_dmpar
-
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_global_abort
 !
@@ -5939,11 +5983,7 @@ end module mpas_dmpar
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_global_abort(mesg)!{{{
 
-      use mpas_io_units
-
       implicit none
-
-      include 'mpif.h'
 
       character (len=*), intent(in) :: mesg !< Input: Abort message
 
@@ -5959,4 +5999,34 @@ end module mpas_dmpar
 
    end subroutine mpas_dmpar_global_abort!}}}
 
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_get_time
+!
+!> \brief MPAS dmpar get time routine
+!> \author Doug Jacobsen
+!> \date   06/11/2015
+!> \details
+!>  This routine returns the current time, either using the MPI interface, or
+!>  the system_clock interface.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_dmpar_get_time(curTime)!{{{
+
+      implicit none
+
+      real (kind=R8KIND), intent(out) :: curTime !< Output: Current time
+      integer :: clock, hz
+
+#ifdef _MPI
+      curTime = MPI_WTime()
+#else
+      call system_clock(count=clock)
+      call system_clock(count_rate=hz)
+      curTime = real(clock, kind=R8KIND) / real(hz, kind=R8KIND)
+#endif
+
+   end subroutine mpas_dmpar_get_time!}}}
+
+end module mpas_dmpar
 

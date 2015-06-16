@@ -9,8 +9,8 @@
  module mpas_init_atm_static
 !==================================================================================================
  use atm_advection
-! use mpas_configure
  use mpas_dmpar
+ use mpas_pool_routines
  use init_atm_hinterp
  use init_atm_llxy
 

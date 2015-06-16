@@ -19,7 +19,8 @@
 
 module ocn_surface_area_weighted_averages
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
@@ -132,8 +133,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_init_surface_area_weighted_averages(domain, err)!{{{
-
-      use mpas_packages
 
       !-----------------------------------------------------------------
       !

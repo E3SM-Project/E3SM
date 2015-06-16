@@ -20,11 +20,9 @@
 module mpas_block_decomp
 
    use mpas_dmpar
-   use mpas_dmpar_types
    use mpas_hash
    use mpas_sort
-   use mpas_grid_types
-   use mpas_configure
+   use mpas_derived_types
    use mpas_io_units
 
    type graph
@@ -55,8 +53,6 @@ module mpas_block_decomp
 !
 !-----------------------------------------------------------------------
    subroutine mpas_block_decomp_cells_for_proc(dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count, numBlocks, explicitProcDecomp, blockFilePrefix, procFilePrefix)!{{{
-
-      use mpas_configure
 
       implicit none
 
@@ -621,8 +617,6 @@ module mpas_block_decomp
 !
 !-----------------------------------------------------------------------
    subroutine mpas_build_block_proc_list(dminfo, procFilePrefix)!{{{
-
-     use mpas_configure
 
      implicit none
 

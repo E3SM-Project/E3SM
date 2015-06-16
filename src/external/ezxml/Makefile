@@ -2,9 +2,12 @@
 
 OBJS = ezxml.o
 
-all: $(OBJS)
+all: clean
+	$(MAKE) library
+
+library: $(OBJS)
 
 clean:
 	$(RM) *.o *.i
 
-.c.o: $(CC) $(CPPFLAGS) -c $<
+.c.o: $(CC) $(CFLAGS) $(CPPFLAGS) -c $<

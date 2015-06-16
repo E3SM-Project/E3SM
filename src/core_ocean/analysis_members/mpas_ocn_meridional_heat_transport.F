@@ -20,7 +20,8 @@
 
 module ocn_meridional_heat_transport
 
-   use mpas_grid_types
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
@@ -79,8 +80,6 @@ contains
 
    subroutine ocn_setup_packages_meridional_heat_transport(configPool, packagePool, err)!{{{
 
-      use mpas_packages
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -133,8 +132,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_init_meridional_heat_transport(domain, err)!{{{
-
-      use mpas_packages
 
       !-----------------------------------------------------------------
       !

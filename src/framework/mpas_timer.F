@@ -21,8 +21,9 @@
       module mpas_timer
 
         use mpas_kind_types
-        use mpas_grid_types
+        use mpas_derived_types
         use mpas_io_units
+        use mpas_dmpar
 
         implicit none
         save
@@ -31,19 +32,10 @@
         include 'f90papi.h'
 #endif
 
-        type timer_node
-          character (len=StrKIND) :: timer_name
-          logical :: running, printable
-          integer :: levels, calls, nlen
-          real (kind=R8KIND) :: start_time, end_time, total_time
-          real (kind=RKIND) :: max_time, min_time, avg_time
-          real (kind=RKIND) :: efficiency
-          type (timer_node), pointer :: next
-        end type timer_node
-
-        type (timer_node), pointer :: all_timers
+        type (timer_node), pointer :: all_timers => null()
         integer :: levels, synced
 
+        ! DWJ 06/12/2015 -- Needs to be removed for multiple domains
         type (dm_info), pointer :: domain_info
 
         public :: mpas_timer_start, &
@@ -66,9 +58,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_start(timer_name, clear_timer, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
 
           character (len=*), intent (in) :: timer_name !< Input: name of timer, stored as name of timer
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
@@ -172,12 +161,8 @@
 #ifdef _PAPI
             call PAPIF_get_real_usec(usecs, check_flag)
             current%start_time = usecs/1.0e6
-#elif _MPI
-            current%start_time = MPI_Wtime()
 #else
-            call system_clock (count=clock)
-            call system_clock (count_rate=hz)
-            current%start_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+            call mpas_dmpar_get_time(current % start_time)
 #endif
           endif
 
@@ -213,9 +198,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_stop(timer_name, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
@@ -267,12 +249,8 @@
 #ifdef _PAPI
             call PAPIF_get_real_usec(usecs, check_flag)
             current%end_time = usecs/1.0e6
-#elif _MPI
-            current%end_time = MPI_Wtime()
 #else
-            call system_clock(count=clock)
-            call system_clock(count_rate=hz)
-            current%end_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+            call mpas_dmpar_get_time(current % end_time)
 #endif
             
             time_temp = current%end_time - current%start_time
@@ -425,7 +403,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_sync()!{{{
-          use mpas_dmpar
 
           type (timer_node), pointer :: current
           real (kind=RKIND) :: all_total_time, all_max_time, all_min_time, all_ave_time
