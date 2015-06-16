@@ -19,7 +19,8 @@
                                   MPAS_STREAM_PROPERTY_RECORD_INTV   =  9, &
                                   MPAS_STREAM_PROPERTY_PRECISION     = 10, &
                                   MPAS_STREAM_PROPERTY_FILENAME_INTV = 11, &
-                                  MPAS_STREAM_PROPERTY_CLOBBER       = 12
+                                  MPAS_STREAM_PROPERTY_CLOBBER       = 12, &
+                                  MPAS_STREAM_PROPERTY_IOTYPE        = 13
 
     integer, public, parameter :: MPAS_STREAM_CLOBBER_NEVER     = 100, &
                                   MPAS_STREAM_CLOBBER_APPEND    = 101, &

@@ -46,7 +46,6 @@ module mpas_decomp
 !-----------------------------------------------------------------------
    subroutine mpas_decomp_create_decomp_list(decompList)!{{{
       type (mpas_decomp_list), pointer :: decompList
-      procedure (mpas_decomp_function), pointer :: decompFunc
 
       integer :: errLocal
 
@@ -83,7 +82,7 @@ module mpas_decomp
       do while (associated(decompList % next))
          decompCursor => decompList % next
 
-         if ( associated(decompList % next) ) then
+         if ( associated(decompCursor % next) ) then
             decompList % next => decompCursor % next
          else
             nullify(decompList % next)

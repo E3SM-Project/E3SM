@@ -754,9 +754,6 @@ int parse_reg_xml(ezxml_t registry)/*{{{*/
 	// Parse variable structures
 	err = parse_structs_from_registry(registry);
 
-	// Generate routines to link fields for multiple blocks
-	err = generate_field_links(registry);
-
 	// Generate code to read and write fields
 	err = generate_immutable_streams(registry);
 

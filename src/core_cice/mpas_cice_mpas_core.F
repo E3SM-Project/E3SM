@@ -38,7 +38,6 @@ module mpas_core
 
    subroutine mpas_core_init(domain, startTimeStamp)
    
-      use mpas_configure
       use mpas_derived_types
       use mpas_stream_manager
       use cice_forcing, only: cice_forcing_init

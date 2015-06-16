@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="init_atmosphere" version="3.3">
+<registry model="mpas" core="init_atmosphere" core_abbrev="init_atm" version="4.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -52,7 +52,7 @@
                 <nml_option name="config_geog_data_path"        type="character"     default_value="/glade/p/work/wrfhelp/WPS_GEOG/"/>
                 <nml_option name="config_met_prefix"            type="character"     default_value="CFSR"/>
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
-                <nml_option name="config_fg_interval"           type="integer"       default_value="21600"/>
+                <nml_option name="config_fg_interval"           type="integer"       default_value="86400"/>
                 <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
         </nml_record>
 
@@ -60,6 +60,8 @@
                 <nml_option name="config_ztop"                  type="real"          default_value="30000.0"/>
                 <nml_option name="config_nsmterrain"            type="integer"       default_value="1"/>
                 <nml_option name="config_smooth_surfaces"       type="logical"       default_value="true"/>
+                <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
+                <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
@@ -71,7 +73,6 @@
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
-                <nml_option name="config_frames_per_outfile"    type="integer"       default_value="0"                    in_defaults="false"/>
                 <nml_option name="config_pio_num_iotasks"       type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"            type="integer"       default_value="1"/>
         </nml_record>
@@ -325,7 +326,7 @@
                         <var name="rho" packages="met_stage_out"/>
                         <var name="theta" packages="met_stage_out"/>
                         <var name="v" packages="met_stage_out"/>
-                        <var name="rh" packages="met_stage_out"/>
+                        <var name="relhum" packages="met_stage_out"/>
                         <var name="uReconstructX" packages="met_stage_out"/>
                         <var name="uReconstructY" packages="met_stage_out"/>
                         <var name="uReconstructZ" packages="met_stage_out"/>
@@ -342,7 +343,7 @@
 		<stream name="surface" 
                         type="output" 
                         filename_template="x1.40962.sfc_update.nc"
-                        output_interval="none" 
+                        output_interval="86400" 
                         filename_interval="none"
                         packages="sfc_update"
                         immutable="true">
@@ -525,7 +526,7 @@
                 <var name="rho"                               type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="rh"                                type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="relhum"                            type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"/>
