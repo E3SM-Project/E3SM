@@ -44,8 +44,6 @@ contains
        clock, &
        dt)!{{{
 
-    use mpas_configure  
-
     use cice_mesh, only: cice_init_boundary
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
@@ -192,7 +190,6 @@ contains
   subroutine init_ice_state(&
        domain)!{{{
 
-    use mpas_configure
     use cice_testing, only: &
          cice_init_square_test_case_hex, &
          cice_init_square_point_test_case_hex

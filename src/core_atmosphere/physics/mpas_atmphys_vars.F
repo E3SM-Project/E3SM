@@ -35,6 +35,9 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
 !>    * renamed local variable conv_deep_scheme to convection_scheme.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!>    * added empty subroutine atmphys_vars_init that does not do anything, but needed for 
+!>      compiling MPAS with some compilers.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-01-12.
 
 
 !==================================================================================================
@@ -186,7 +189,7 @@
  real(kind=RKIND),public:: dt_cu
 
  logical,dimension(:,:),allocatable:: &
- 	cu_act_flag
+    cu_act_flag
  real(kind=RKIND),dimension(:,:),allocatable::   &
     rainc_p,          &!
     raincv_p,         &!
@@ -507,6 +510,16 @@
     tsk_p,            &!surface-skin temperature                                                [K]
     xice_p,           &!ice mask                                                                [-]
     xland_p            !land mask    (1 for land; 2 for water)                                  [-]
+
+
+ contains
+
+!==================================================================================================
+ subroutine atmphys_vars_init()
+!==================================================================================================
+!dummy subroutine that does not do anything.
+
+ end subroutine atmphys_vars_init
 
 !==================================================================================================
  end module mpas_atmphys_vars

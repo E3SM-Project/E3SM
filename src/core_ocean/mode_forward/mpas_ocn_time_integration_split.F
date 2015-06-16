@@ -462,6 +462,7 @@ module ocn_time_integration_split
                call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
                call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
+               call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
                call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityCur, 1)
                call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityNew, 2)
                call mpas_pool_get_array(statePool, 'ssh', sshNew, 2)
@@ -473,7 +474,7 @@ module ocn_time_integration_split
 
                allocate(uTemp(nVertLevels))
 
-               ! Put f*normalBaroclinicVelocity^{perp} in uNew as a work variable
+               ! Put f*normalBaroclinicVelocity^{perp} in normalVelocityNew as a work variable
                call ocn_fuperp(statePool, meshPool, 2)
 
                do iEdge = 1, nEdges
@@ -1247,6 +1248,7 @@ module ocn_time_integration_split
 
             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
             call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+            call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
             call mpas_pool_get_array(statePool, 'tracers', tracersCur, 1)
             call mpas_pool_get_array(statePool, 'tracers', tracersNew, 2)

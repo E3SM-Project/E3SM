@@ -1,6 +1,7 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_mpas_core.o \
+OBJS = mpas_ocn_core.o \
+       mpas_ocn_core_interface.o \
        mpas_ocn_time_integration.o \
        mpas_ocn_time_integration_rk4.o \
        mpas_ocn_time_integration_split.o
@@ -9,15 +10,17 @@ all: core_ocean
 
 core_ocean: $(OBJS) 
 
+mpas_ocn_core_interface.o: mpas_ocn_core.o
+
 mpas_ocn_time_integration.o: mpas_ocn_time_integration_rk4.o mpas_ocn_time_integration_split.o
 
 mpas_ocn_time_integration_rk4.o: 
 
 mpas_ocn_time_integration_split.o: 
 
-mpas_ocn_mpas_core.o: mpas_ocn_time_integration.o \
-                      mpas_ocn_time_integration_rk4.o \
-                      mpas_ocn_time_integration_split.o
+mpas_ocn_core.o: mpas_ocn_time_integration.o \
+                 mpas_ocn_time_integration_rk4.o \
+                 mpas_ocn_time_integration_split.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

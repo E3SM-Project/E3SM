@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_core
+module sw_core
 
    use mpas_framework
    use mpas_timekeeping
@@ -15,9 +15,8 @@ module mpas_core
    contains
 
 
-   subroutine mpas_core_init(domain, startTimeStamp)
+   function sw_core_init(domain, startTimeStamp) result(iErr)
    
-      use mpas_configure
       use mpas_derived_types
       use mpas_pool_routines
       use mpas_stream_manager
@@ -28,6 +27,7 @@ module mpas_core
    
       type (domain_type), intent(inout) :: domain
       character(len=*), intent(out) :: startTimeStamp
+      integer :: ierr
    
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block
@@ -38,17 +38,16 @@ module mpas_core
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
-      integer :: ierr
+
+      iErr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
-
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
       !
       clock => domain % clock
-
 
       !
       ! Set startTimeStamp based on the start time of the simulation clock
@@ -95,7 +94,7 @@ module mpas_core
          block => block % next
       end do
 
-   end subroutine mpas_core_init
+   end function sw_core_init
 
 
    subroutine simulation_clock_init(core_clock, configs, ierr)
@@ -110,9 +109,8 @@ module mpas_core
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       integer :: local_err
 
-      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time
       real (kind=RKIND), pointer :: config_dt
-
 
       ierr = 0
 
@@ -120,8 +118,6 @@ module mpas_core
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
-      call mpas_pool_get_config(configs, 'config_output_interval', config_output_interval)
-      call mpas_pool_get_config(configs, 'config_restart_interval', config_restart_interval)
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=local_err)
       call mpas_set_timeInterval(timeStep, dt=config_dt, ierr=local_err)
@@ -197,7 +193,7 @@ module mpas_core
    end subroutine mpas_init_block
    
    
-   subroutine mpas_core_run(domain)
+   function sw_core_run(domain) result(iErr)
    
       use mpas_derived_types
       use mpas_pool_routines
@@ -208,6 +204,7 @@ module mpas_core
       implicit none
    
       type (domain_type), intent(inout) :: domain
+      integer :: ierr
 
       integer :: itimestep
       real (kind=RKIND) :: dt
@@ -216,9 +213,10 @@ module mpas_core
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
-      integer :: ierr
       
       real (kind=RKIND), pointer :: config_dt
+
+      iErr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
    
@@ -264,7 +262,7 @@ module mpas_core
 
       end do
 
-   end subroutine mpas_core_run
+   end function sw_core_run
    
    
    subroutine mpas_timestep(domain, itimestep, dt, timeStamp)
@@ -329,21 +327,20 @@ module mpas_core
    end subroutine mpas_timestep
    
    
-   subroutine mpas_core_finalize(domain)
+   function sw_core_finalize(domain) result(iErr)
    
       use mpas_derived_types
-      use mpas_stream_manager
-      use mpas_decomp
    
       implicit none
 
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
- 
-     call mpas_destroy_clock(clock, ierr)
-     call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-   end subroutine mpas_core_finalize
+      iErr = 0
+ 
+      call mpas_destroy_clock(clock, ierr)
+
+   end function sw_core_finalize
 
 
    subroutine compute_mesh_scaling(meshPool)
@@ -419,41 +416,6 @@ module mpas_core
 
    !***********************************************************************
    !
-   !  routine mpas_core_setup_decompositions
-   !
-   !> \brief   Decomposition setup routine
-   !> \author  Doug Jacobsen
-   !> \date    September 2011
-   !> \details
-   !>  This routine is intended to create the decomposition list within a
-   !>  domain type, and register any decompositons the core wants within it.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(domain, ierr)!{{{
-
-      use mpas_derived_types
-      use mpas_decomp
-
-      implicit none
-
-      type (domain_type), intent(in) :: domain
-
-      integer, intent(out) :: ierr
-      procedure (mpas_decomp_function), pointer :: decompFunc
-
-      ierr = 0
-
-      call mpas_decomp_create_decomp_list(domain % decompositions)
-
-      decompFunc => mpas_uniform_decomp
-
-      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
-
-   end subroutine mpas_core_setup_decompositions!}}}
-
-
-   !***********************************************************************
-   !
    !  routine mpas_core_setup_clock
    !
    !> \brief   Pacakge setup routine
@@ -525,4 +487,4 @@ module mpas_core
 
    end subroutine mpas_core_get_mesh_stream
 
-end module mpas_core
+end module sw_core

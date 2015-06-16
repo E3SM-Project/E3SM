@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_core
+module li_core
 
    use mpas_framework
    use mpas_timekeeping
@@ -21,13 +21,10 @@ module mpas_core
    !
    !--------------------------------------------------------------------
 
-   public :: mpas_core_init, &
-             mpas_core_run, &
-             mpas_core_finalize, &
-             mpas_core_setup_packages, &
-             mpas_core_setup_clock, &
-             mpas_core_setup_decompositions, &
-             mpas_core_get_mesh_stream
+   public :: li_core_init, &
+             li_core_run, &
+             li_core_finalize, &
+             li_simulation_clock_init
 
    !--------------------------------------------------------------------
    !
@@ -46,7 +43,7 @@ module mpas_core
 
 !***********************************************************************
 !
-!  routine mpas_core_init
+!  function li_core_init
 !
 !> \brief   Initializes land ice core
 !> \author  Matt Hoffman
@@ -56,9 +53,8 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_init(domain, startTimeStamp)
+   function li_core_init(domain, startTimeStamp) result(err)
    
-      use mpas_configure
       use mpas_derived_types
       use mpas_pool_routines
       use mpas_stream_manager
@@ -164,17 +160,17 @@ module mpas_core
       ! check for errors and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in mpas_core_init. Aborting...")
+          call mpas_dmpar_global_abort("An error has occurred in li_core_init. Aborting...")
       endif
 
    !--------------------------------------------------------------------
-   end subroutine mpas_core_init
+   end function li_core_init
 
 
 
 !***********************************************************************
 !
-!  routine mpas_core_run
+!  function li_core_run
 !
 !> \brief   Runs the land ice core
 !> \author  Matt Hoffman
@@ -184,7 +180,7 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_core_run(domain)
+   function li_core_run(domain) result(err)
    
       use mpas_derived_types
       use mpas_pool_routines
@@ -288,7 +284,7 @@ module mpas_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in mpas_core_run before time-stepping. Aborting...")
+          call mpas_dmpar_global_abort("An error has occurred in li_core_run before time-stepping. Aborting...")
       endif
 
 
@@ -382,20 +378,20 @@ module mpas_core
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
-             call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
+             call mpas_dmpar_global_abort("An error has occurred in li_core_run. Aborting...")
          endif
 
       end do
       call mpas_timer_stop("land ice core run")
 
    !--------------------------------------------------------------------
-   end subroutine mpas_core_run
+   end function li_core_run
 
 
 
 !***********************************************************************
 !
-!  routine mpas_core_finalize
+!  function li_core_finalize
 !
 !> \brief   Finalizes the land ice core
 !> \author  Matt Hoffman
@@ -404,7 +400,7 @@ module mpas_core
 !>  This routine finalizes the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_finalize(domain)
+   function li_core_finalize(domain) result(err)
    
       use mpas_derived_types
       use mpas_decomp
@@ -453,143 +449,11 @@ module mpas_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in mpas_core_finalize. Aborting...")
+          call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
       endif
 
    !--------------------------------------------------------------------
-   end subroutine mpas_core_finalize
-
-
-
-!***********************************************************************
-!
-!  routine mpas_core_setup_packages
-!
-!> \brief   Pacakge setup routine
-!> \author  Doug Jacobsen
-!> \date    September 2011
-!> \details 
-!>  This routine is intended to correctly configure the packages for this MPAS
-!>   core. It can use any Fortran logic to properly configure packages, and it
-!>   can also make use of any namelist options. All variables in the model are
-!>   *not* allocated until after this routine is called.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(configPool, packagePool, ierr)
-
-      implicit none
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-      integer, intent(out) :: ierr
-
-      ierr = 0
-
-   end subroutine mpas_core_setup_packages
-
-
-
-!***********************************************************************
-!
-!  routine mpas_core_setup_clock
-!
-!> \brief   Pacakge setup routine
-!> \author  Michael Duda
-!> \date    6 August 2014
-!> \details 
-!>  The purpose of this routine is to allow the core to set up a simulation
-!>  clock that will be used by the I/O subsystem for timing reads and writes
-!>  of I/O streams.
-!>  This routine is called from the superstructure after the framework 
-!>  has been initialized but before any fields have been allocated and 
-!>  initial fields have been read from input files. However, all namelist
-!>  options are available.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_core_setup_clock(core_clock, configs, ierr)
-
-      implicit none
-
-      type (MPAS_Clock_type), intent(inout) :: core_clock
-      type (mpas_pool_type), intent(inout) :: configs
-      integer, intent(out) :: ierr
-
-      call simulation_clock_init(core_clock, configs, ierr)
-
-   end subroutine mpas_core_setup_clock
-
-
-!***********************************************************************
-!
-!  routine mpas_core_get_mesh_stream
-!
-!> \brief   Returns the name of the stream containing mesh information
-!> \author  Michael Duda
-!> \date    8 August 2014
-!> \details 
-!>  This routine returns the name of the I/O stream containing dimensions,
-!>  attributes, and mesh fields needed by the framework bootstrapping 
-!>  routine. At the time this routine is called, only namelist options 
-!>  are available.
-!
-!-----------------------------------------------------------------------
-subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
-
-      implicit none
-
-      type (mpas_pool_type), intent(in) :: configs
-      character(len=*), intent(out) :: stream
-      integer, intent(out) :: ierr
-
-      logical, pointer :: config_do_restart
-
-      ierr = 0
-
-      call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-      if (.not. associated(config_do_restart)) then
-         ierr = 1
-      else if (config_do_restart) then
-         write(stream,'(a)') 'restart'
-      else
-         write(stream,'(a)') 'input'
-      end if
-
-   end subroutine mpas_core_get_mesh_stream
-
-
-   !***********************************************************************
-   !
-   !  routine mpas_core_setup_decompositions
-   !
-   !> \brief   Decomposition setup routine
-   !> \author  Doug Jacobsen
-   !> \date    September 2011
-   !> \details 
-   !>  This routine is intended to create the decomposition list within a
-   !>  domain type, and register any decompositons the core wants within it.
-   !
-   !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_decompositions(domain, ierr)
-
-      use mpas_derived_types
-      use mpas_decomp
-
-      implicit none
-
-      type (domain_type), intent(in) :: domain
-
-      integer, intent(out) :: ierr
-      procedure (mpas_decomp_function), pointer :: decompFunc
-
-      ierr = 0
-
-      call mpas_decomp_create_decomp_list(domain % decompositions)
-
-      decompFunc => mpas_uniform_decomp
-
-      call mpas_decomp_register_method(domain % decompositions, 'uniform', decompFunc, iErr)
-
-   end subroutine mpas_core_setup_decompositions
+   end function li_core_finalize
 
 
 !***********************************************************************
@@ -816,7 +680,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
 !***********************************************************************
 !
-!  routine simulation_clock_init
+!  routine li_simulation_clock_init
 !
 !> \brief   Initializes the simulation clock
 !> \author  ??
@@ -826,7 +690,7 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 !
 !-----------------------------------------------------------------------
 
-   subroutine simulation_clock_init(core_clock, configs, ierr)
+   subroutine li_simulation_clock_init(core_clock, configs, ierr)
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -924,12 +788,12 @@ subroutine mpas_core_get_mesh_stream(configs, stream, ierr)
 
       ! === error check
       if (ierr > 0) then
-          write (0,*) "An error has occurred in simulation_clock_init."
+          write (0,*) "An error has occurred in li_simulation_clock_init."
       endif
 
    !--------------------------------------------------------------------
-   end subroutine simulation_clock_init
+   end subroutine li_simulation_clock_init
 
 
 
-end module mpas_core
+end module li_core

@@ -10,6 +10,7 @@ module mpas_timekeeping
    use mpas_kind_types
    use mpas_derived_types
    use mpas_io_units
+   use mpas_dmpar
 
    use ESMF
    use ESMF_BaseMod
@@ -596,6 +597,44 @@ module mpas_timekeeping
       end do
 
    end function mpas_alarm_interval
+
+
+   !-----------------------------------------------------------------------
+   !  routine mpas_alarm_get_next_ring_time
+   !
+   !> \brief This function returns the next ring time of an alarm.
+   !> \author Matthew Hoffman
+   !> \date   04/21/2015
+   !> \details This function returns the next ring time of an alarm.
+   !>   For the situation where mpas_alarm_get_next_ring_time() is called exactly
+   !>   at a ring time:
+   !>   * If the alarm has not yet been reset, then mpas_alarm_get_next_ring_time()
+   !>     will return the current time.
+   !>   * If the alarm has been reset, then it will return the following ring time
+   !>     (current time + alarmPtr % ringTimeInterval).
+   !-----------------------------------------------------------------------
+   type (MPAS_Time_type) function mpas_alarm_get_next_ring_time(clock, alarmId)
+
+      implicit none
+      type (MPAS_Clock_type), intent(in) :: clock
+      character (len=*), intent(in) :: alarmID
+      ! Local variables
+      type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      alarmPtr => clock % alarmListHead
+      do while (associated(alarmPtr))
+         if (trim(alarmPtr % alarmID) == trim(alarmID)) then
+            if ( clock % direction == MPAS_FORWARD ) then
+               mpas_alarm_get_next_ring_time = alarmPtr % prevRingTime + alarmPtr % ringTimeInterval
+            else
+               mpas_alarm_get_next_ring_time = alarmPtr % prevRingTime - alarmPtr % ringTimeInterval
+            end if
+            exit
+         end if
+         alarmPtr => alarmPtr % next
+      end do
+
+   end function mpas_alarm_get_next_ring_time
 
 
    subroutine mpas_print_alarm(clock, alarmID, ierr)
@@ -2072,6 +2111,8 @@ end module mpas_timekeeping
 
 
 subroutine wrf_error_fatal(msg)
+
+   use mpas_dmpar
 
    implicit none
 

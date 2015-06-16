@@ -65,6 +65,14 @@
 !>    * moved the definition of isurban to landuse_init_forMPAS in mpas_atmphys_landuse.F.
 !>      isurban is now defined as a function of the input landuse data file.
 !>      Dominikus Heinzeller (IMK) / 2014-07-24.
+!>    * removed the global variable qz0 and initialized the local variable qz0_p to 0. qz0 is only
+!>      used in the MYJ PBL parameterization which is not available in MPAS.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-03-05.
+!>    * in subroutine lsm_from_MPAS, modified the initialization of local variable dzs_p.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-04-11.
+!>    * in subroutine lsm_to_MPAS, removed updating isltyp, ivgtyp, shdmin, and shdmax as they
+!>      are constant in the Noah lsm.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-04-11.
 
 !>
 !> DOCUMENTATION:
@@ -221,7 +229,7 @@
 
  real(kind=RKIND),dimension(:),pointer  :: acsnom,acsnow,canwat,chs,chs2,chklowq,cpm,cqs2,glw, &
                                            grdflx,gsw,hfx,lai,lh,noahres,potevp,qfx,qgh,qsfc,  &
-                                           qz0,br,sfc_albedo,sfc_emibck,sfc_emiss,sfcrunoff,   &
+                                           br,sfc_albedo,sfc_emibck,sfc_emiss,sfcrunoff,       &
                                            smstav,smstot,snotime,snopcx,sr,udrunoff,z0,znt
  real(kind=RKIND),dimension(:),pointer  :: shdmin,shdmax,snoalb,sfc_albbck,snow,snowc,snowh,tmn, &
                                            skintemp,vegfra,xice,xland
@@ -253,7 +261,6 @@
  call mpas_pool_get_array(diag_physics,'qfx'       ,qfx       )
  call mpas_pool_get_array(diag_physics,'qgh'       ,qgh       )
  call mpas_pool_get_array(diag_physics,'qsfc'      ,qsfc      )
- call mpas_pool_get_array(diag_physics,'qz0'       ,qz0       )
  call mpas_pool_get_array(diag_physics,'br'        ,br        )
  call mpas_pool_get_array(diag_physics,'raincv'    ,raincv    )
  call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
@@ -290,8 +297,10 @@
  call mpas_pool_get_array(sfc_input,'smois'        ,smois     )
  call mpas_pool_get_array(sfc_input,'tslb'         ,tslb      )
 
+!In Registry.xml, dzs is a function of nCells. In the Noah lsm scheme, dzs is independent
+!of cell locations:
  do n = 1,num_soils
-    dzs_p(n) = maxval(dzs(n,:))
+    dzs_p(n) = dzs(n,its)
  enddo
 
  do j = jts,jte
@@ -326,7 +335,6 @@
     qfx_p(i,j)        = qfx(i)
     qgh_p(i,j)        = qgh(i)
     qsfc_p(i,j)       = qsfc(i)
-    qz0_p(i,j)        = qz0(i)
     br_p(i,j)         = br(i)
     sfc_albedo_p(i,j) = sfc_albedo(i)
     sfc_emibck_p(i,j) = sfc_emibck(i)
@@ -356,6 +364,7 @@
     xice_p(i,j)       = xice(i)
     xland_p(i,j)      = xland(i)
 
+    qz0_p(i,j) = 0._RKIND
  enddo
  enddo
 
@@ -382,7 +391,7 @@
 
  real(kind=RKIND),dimension(:),pointer  :: acsnom,acsnow,canwat,chs,chs2,chklowq,cpm,cqs2,glw, &
                                            grdflx,gsw,hfx,lai,lh,noahres,potevp,qfx,qgh,qsfc,  &
-                                           qz0,br,sfc_albedo,sfc_emibck,sfc_emiss,sfcrunoff,   &
+                                           br,sfc_albedo,sfc_emibck,sfc_emiss,sfcrunoff,       &
                                            smstav,smstot,snotime,snopcx,sr,udrunoff,z0,znt
  real(kind=RKIND),dimension(:),pointer  :: shdmin,shdmax,snoalb,sfc_albbck,snow,snowc,snowh,tmn, &
                                            skintemp,vegfra,xice,xland
@@ -413,7 +422,6 @@
  call mpas_pool_get_array(diag_physics,'qfx'       ,qfx       )
  call mpas_pool_get_array(diag_physics,'qgh'       ,qgh       )
  call mpas_pool_get_array(diag_physics,'qsfc'      ,qsfc      )
- call mpas_pool_get_array(diag_physics,'qz0'       ,qz0       )
  call mpas_pool_get_array(diag_physics,'br'        ,br        )
  call mpas_pool_get_array(diag_physics,'raincv'    ,raincv    )
  call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
@@ -481,7 +489,6 @@
     qfx(i)        = qfx_p(i,j)
     qgh(i)        = qgh_p(i,j)
     qsfc(i)       = qsfc_p(i,j)
-    qz0(i)        = qz0_p(i,j)
     br(i)         = br_p(i,j)
     sfc_albedo(i) = sfc_albedo_p(i,j)
     sfc_emibck(i) = sfc_emibck_p(i,j)
@@ -496,10 +503,6 @@
     z0(i)         = z0_p(i,j)
     znt(i)        = znt_p(i,j)
 
-    isltyp(i)     = isltyp_p(i,j)
-    ivgtyp(i)     = ivgtyp_p(i,j)
-    shdmin(i)     = shdmin_p(i,j)
-    shdmax(i)     = shdmax_p(i,j)
     snoalb(i)     = snoalb_p(i,j)
     sfc_albbck(i) = sfc_albbck_p(i,j)
     snow(i)       = snow_p(i,j)

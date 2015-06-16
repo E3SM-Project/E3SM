@@ -44,8 +44,6 @@ contains
        dt, &
        itimestep)!{{{
 
-    use mpas_configure
-
     use mpas_timer
 
     use cice_unit_test, only: &
