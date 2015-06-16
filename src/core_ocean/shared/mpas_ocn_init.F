@@ -351,7 +351,6 @@ end subroutine ocn_compute_max_level!}}}
 
       use mpas_derived_types
       use mpas_pool_routines
-      use mpas_configure
 
       implicit none
 

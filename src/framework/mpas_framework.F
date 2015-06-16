@@ -25,7 +25,6 @@ module mpas_framework
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
-   use mpas_configure
 
 
    contains

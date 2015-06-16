@@ -14,7 +14,6 @@ module mpas_bootstrapping
    use mpas_block_decomp
    use mpas_block_creator
    use mpas_sort
-   use mpas_configure
    use mpas_timekeeping
    use mpas_io_streams
    use mpas_io_units

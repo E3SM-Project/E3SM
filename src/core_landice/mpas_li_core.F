@@ -55,7 +55,6 @@ module li_core
 
    function li_core_init(domain, startTimeStamp) result(err)
    
-      use mpas_configure
       use mpas_derived_types
       use mpas_pool_routines
       use mpas_stream_manager
