@@ -111,15 +111,15 @@ contains
       !
       !-----------------------------------------------------------------
       
-      logical, pointer :: am_eliassen_palm_flux_tensor_Active
+      logical, pointer :: amEliassenPalmFluxTensorPkgActive
 
       err = 0
 
       call mpas_pool_get_package(packagePool, &
-          'am_eliassen_palm_flux_tensor_Active', am_eliassen_palm_flux_tensor_Active)
+          'amEliassenPalmFluxTensorPkgActive', amEliassenPalmFluxTensorPkgActive)
 
       ! turn on package for this analysis member
-      am_eliassen_palm_flux_tensor_Active = .true.
+      amEliassenPalmFluxTensorPkgActive = .true.
 
    end subroutine ocn_setup_packages_eliassen_palm_flux_tensor!}}}
 
