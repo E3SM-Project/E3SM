@@ -10,7 +10,6 @@ module test_seq_map
   use avect_wrapper_mod
   use simple_map_mod
   use create_mapper_mod
-  use mpi_wrapper_mod, only : mpi_init_wrapper, mpi_finalize_wrapper
   use shr_kind_mod, only : r8 => shr_kind_r8
   
   implicit none
@@ -33,7 +32,6 @@ contains
   subroutine setUp(this)
     class(TestSeqMap), intent(inout) :: this
 
-    call mpi_init_wrapper()
     call mct_init()
   end subroutine setUp
 
@@ -44,7 +42,6 @@ contains
     call mct_aVect_clean(this%av_s)
     call mct_aVect_clean(this%av_d)
     call mct_clean()
-    call mpi_finalize_wrapper()
   end subroutine tearDown
     
   @Test
