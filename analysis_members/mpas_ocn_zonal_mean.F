@@ -183,8 +183,8 @@ contains
 
       err = 0
 
-      minBin =  1.0e34
-      maxBin = -1.0e34
+      minBin =  1.0e34_RKIND
+      maxBin = -1.0e34_RKIND
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amZonalMean', amZonalMeanPool)
@@ -221,28 +221,28 @@ contains
       call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
       ! Set up bins. 
-      binBoundaryZonalMean = -1.0e34
-      binCenterZonalMean = -1.0e34
+      binBoundaryZonalMean = -1.0e34_RKIND
+      binCenterZonalMean = -1.0e34_RKIND
 
       ! Change min and max bin bounds to configuration settings, if applicable.
-      if (config_min_zonal_mean_bin > -1.0e33) then
+      if (config_min_zonal_mean_bin > -1.0e33_RKIND) then
          minBinDomain(1) = config_min_zonal_mean_bin
       else
          ! use measured min value, but decrease slightly to include least value.
-         minBinDomain(1) = minBinDomain(1) - 1.0e-10 * abs(minBinDomain(1))
+         minBinDomain(1) = minBinDomain(1) - 1.0e-10_RKIND * abs(minBinDomain(1))
       end if
 
-      if (config_max_zonal_mean_bin > -1.0e33) then
+      if (config_max_zonal_mean_bin > -1.0e33_RKIND) then
          maxBinDomain(1) = config_max_zonal_mean_bin
       else
          ! use measured max value, but increase slightly to include max value.
-         maxBinDomain(1) = maxBinDomain(1) + 1.0e-10 * abs(maxBinDomain(1))
+         maxBinDomain(1) = maxBinDomain(1) + 1.0e-10_RKIND * abs(maxBinDomain(1))
       end if
 
       binBoundaryZonalMean(1) = minBinDomain(1)
       binWidth = (maxBinDomain(1) - minBinDomain(1)) / nZonalMeanBinsUsed
 
-      binCenterZonalMean(1) = minBinDomain(1) + binWidth/2.0
+      binCenterZonalMean(1) = minBinDomain(1) + binWidth/2.0_RKIND
       do iBin = 2, nZonalMeanBinsUsed
          binBoundaryZonalMean(iBin) = binBoundaryZonalMean(iBin-1) + binWidth
          binCenterZonalMean(iBin) = binCenterZonalMean(iBin-1) + binWidth
@@ -339,7 +339,7 @@ contains
          totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
          normZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins))
 
-      sumZonalMean = 0.0
+      sumZonalMean = 0.0_RKIND
 
       block => domain % blocklist
       do while (associated(block))
@@ -414,15 +414,15 @@ contains
       do iBin = 1, nZonalMeanBinsUsed
          do k = 1, nVertLevels
             ! Check if there is any area accumulated.  If so, normalize by the area.
-            if (totalSumZonalMean(1,k,iBin) > 1.0e-12) then
+            if (totalSumZonalMean(1,k,iBin) > 1.0e-12_RKIND) then
                normZonalMean(:,k,iBin) = totalSumZonalMean(:,k,iBin) / totalSumZonalMean(1,k,iBin)
             else
-               normZonalMean(:,k,iBin) = -1.0e34
+               normZonalMean(:,k,iBin) = -1.0e34_RKIND
             end if
          end do
       end do
       do iBin = nZonalMeanBinsUsed + 1, nZonalMeanBins
-         normZonalMean(:,:,iBin) = -1.0e34
+         normZonalMean(:,:,iBin) = -1.0e34_RKIND
       end do
 
       ! Even though these variables do not include an index that is decomposed amongst 
