@@ -183,8 +183,8 @@ contains
 
       err = 0
 
-      minBin =  1.0e34
-      maxBin = -1.0e34
+      minBin =  1.0e34_RKIND
+      maxBin = -1.0e34_RKIND
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'MerHeatTrans', MerHeatTransPool)
@@ -220,21 +220,21 @@ contains
       call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
       ! Set up bins. 
-      binBoundaryMerHeatTrans = -1.0e34
+      binBoundaryMerHeatTrans = -1.0e34_RKIND
 
       ! Change min and max bin bounds to configuration settings, if applicable.
-      if (config_min_meridional_heat_transport_bin > -1.0e33) then
+      if (config_min_meridional_heat_transport_bin > -1.0e33_RKIND) then
          minBinDomain(1) = config_min_meridional_heat_transport_bin
       else
          ! use measured min value, but decrease slightly to include least value.
-         minBinDomain(1) = minBinDomain(1) - 1.0e-10 * abs(minBinDomain(1))
+         minBinDomain(1) = minBinDomain(1) - 1.0e-10_RKIND * abs(minBinDomain(1))
       end if
 
-      if (config_max_meridional_heat_transport_bin > -1.0e33) then
+      if (config_max_meridional_heat_transport_bin > -1.0e33_RKIND) then
          maxBinDomain(1) = config_max_meridional_heat_transport_bin
       else
          ! use measured max value, but increase slightly to include max value.
-         maxBinDomain(1) = maxBinDomain(1) + 1.0e-10 * abs(maxBinDomain(1))
+         maxBinDomain(1) = maxBinDomain(1) + 1.0e-10_RKIND * abs(maxBinDomain(1))
       end if
 
       binBoundaryMerHeatTrans(1) = minBinDomain(1)
@@ -337,7 +337,7 @@ contains
       allocate(totalSumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
       allocate(mht_meridional_integral(nVertLevels,nMerHeatTransBinsUsed))
 
-      sumMerHeatTrans = 0.0
+      sumMerHeatTrans = 0.0_RKIND
 
       block => domain % blocklist
       do while (associated(block))
