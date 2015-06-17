@@ -10,9 +10,6 @@ add_definitions(
   -DNUM_COMP_INST_ROF=1
   )
 
-# The following definitions are needed when building with the mpi-serial library
-add_definitions(-DNO_MPI2 -DNO_MPIMOD)
-
 # Add source directories from stubs. This should be done first, so that in the
 # case of name collisions, the drv versions take precedence (when there are two
 # files with the same name, the one added later wins).

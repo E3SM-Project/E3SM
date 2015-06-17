@@ -6,7 +6,6 @@ module test_avect_wrapper
   use avect_wrapper_mod
   use mct_mod
   use mct_wrapper_mod, only : mct_init, mct_clean
-  use mpi_wrapper_mod, only : mpi_init_wrapper, mpi_finalize_wrapper
   use shr_kind_mod, only : r8 => shr_kind_r8
 
   implicit none
@@ -24,7 +23,6 @@ contains
   subroutine setUp(this)
     class(TestCreateAvect), intent(inout) :: this
 
-    call mpi_init_wrapper()
     call mct_init()
   end subroutine setUp
 
@@ -33,7 +31,6 @@ contains
     
     call mct_aVect_clean(this%av)
     call mct_clean()
-    call mpi_finalize_wrapper()
   end subroutine tearDown
 
   @Test
