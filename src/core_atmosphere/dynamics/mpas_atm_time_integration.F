@@ -1412,10 +1412,15 @@ module atm_time_integration
       ! set the acoustic step perturbation variables by subtracting the RK timestep variables
       ! from their at the previous RK substep.
 
-      rho_pp(:,cellStart:cellEnd) = rho_p_save(:,cellStart:cellEnd) - rho_p(:,cellStart:cellEnd)
+
+! redefine rho_pp to be perturbation from time t, change 2
+!      rho_pp(:,cellStart:cellEnd) = rho_p_save(:,cellStart:cellEnd) - rho_p(:,cellStart:cellEnd)
+      rho_pp(:,cellStart:cellEnd) = 0.
+
 ! redefine ru_p to be perturbation from time t, change 1
 !      ru_p(:,edgeStart:edgeEnd) = ru_save(:,edgeStart:edgeEnd) - ru(:,edgeStart:edgeEnd)
       ru_p(:,edgeStart:edgeEnd) = 0.
+
       rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
       zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
       rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
@@ -1878,7 +1883,9 @@ module atm_time_integration
 
          do k = 1, nVertLevels
 
-            rho_p(k,iCell) = rho_p(k,iCell) + rho_pp(k,iCell)
+!  change for rho_pp from rho_pp = rho_p^ - rho_p^* to rho_p^ - rho_p^t; change 3
+!            rho_p(k,iCell) = rho_p(k,iCell) + rho_pp(k,iCell)
+            rho_p(k,iCell) = rho_p_save(k,iCell) + rho_pp(k,iCell)
 
             rho_zz(k,iCell) = rho_p(k,iCell) + rho_base(k,iCell)
          end do
@@ -2823,6 +2830,9 @@ module atm_time_integration
                                                     divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
                                                     h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign
+
+      real (kind=RKIND), dimension(:,:), pointer :: rr_save
+
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       real (kind=RKIND), dimension(:,:), pointer :: tend_u_euler, tend_w_euler, tend_theta_euler
@@ -2900,6 +2910,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
       call mpas_pool_get_array(diag, 'rho_base', rb)
       call mpas_pool_get_array(diag, 'rho_p', rr)
+      call mpas_pool_get_array(diag, 'rho_p_save', rr_save)
       call mpas_pool_get_array(diag, 'v', v)
       call mpas_pool_get_array(diag, 'kdiff', kdiff)
       call mpas_pool_get_array(diag, 'ru', ru)
@@ -3457,13 +3468,24 @@ module atm_time_integration
 
          do k=2,nVertLevels
 
+
+!  change for rho_pp from rho_pp = rho_p^ - rho_p^* to rho_p^ - rho_p^t; change 1
+
+!            tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))    &
+!                                  - cqw(k,iCell)*( rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))        &
+!                                  + gravity*  &
+!                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
+!                                             rr(k,iCell)*(1.+qtot(k,iCell)))                  &
+!                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
+!                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
+
             tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))    &
                                   - cqw(k,iCell)*( rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))        &
                                   + gravity*  &
                                    ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
-                                             rr(k,iCell)*(1.+qtot(k,iCell)))                  &
+                                             rr_save(k,iCell)*(1.+qtot(k,iCell)))                  &
                                     +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
-                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
+                                             rr_save(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
 
             if (rk_step == 1) then
                tend_w_pgf(k,iCell)  = cqw(k,iCell)*(rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))) 
