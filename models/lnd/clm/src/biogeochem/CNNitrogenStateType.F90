@@ -65,6 +65,7 @@ module CNNitrogenStateType
 
      ! wood product pools, for dynamic landcover
      real(r8), pointer :: seedn_col                    (:)     ! col (gN/m2) column-level pool for seeding new Patches
+     real(r8), pointer :: prod1n_col                   (:)     ! col (gN/m2) crop product N pool, 1-year lifespan
      real(r8), pointer :: prod10n_col                  (:)     ! col (gN/m2) wood product N pool, 10-year lifespan
      real(r8), pointer :: prod100n_col                 (:)     ! col (gN/m2) wood product N pool, 100-year lifespan
      real(r8), pointer :: totprodn_col                 (:)     ! col (gN/m2) total wood product N
@@ -191,6 +192,7 @@ contains
     allocate(this%sminn_col                (begc:endc))                   ; this%sminn_col                (:)   = nan
     allocate(this%ntrunc_col               (begc:endc))                   ; this%ntrunc_col               (:)   = nan
     allocate(this%seedn_col                (begc:endc))                   ; this%seedn_col                (:)   = nan
+    allocate(this%prod1n_col               (begc:endc))                   ; this%prod1n_col               (:)   = nan
     allocate(this%prod10n_col              (begc:endc))                   ; this%prod10n_col              (:)   = nan
     allocate(this%prod100n_col             (begc:endc))                   ; this%prod100n_col             (:)   = nan
     allocate(this%totprodn_col             (begc:endc))                   ; this%totprodn_col             (:)   = nan
@@ -522,6 +524,11 @@ contains
          avgflag='A', long_name='100-yr wood product N', &
          ptr_col=this%prod100n_col)
 
+    this%prod1n_col(begc:endc) = spval
+    call hist_addfld1d (fname='PROD1N', units='gN/m^2', &
+         avgflag='A', long_name='1-yr crop product N', &
+         ptr_col=this%prod1n_col)
+
     this%totprodn_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTPRODN', units='gN/m^2', &
          avgflag='A', long_name='total wood product N', &
@@ -696,6 +703,7 @@ contains
 
           ! dynamic landcover state variables
           this%seedn_col(c)         = 0._r8
+          this%prod1n_col(c)        = 0._r8
           this%prod10n_col(c)       = 0._r8
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
@@ -709,6 +717,7 @@ contains
        c = special_col(fc)
 
        this%seedn_col(c)    = 0._r8
+       this%prod1n_col(c)   = 0._r8
        this%prod10n_col(c)  = 0._r8	  
        this%prod100n_col(c) = 0._r8	  
        this%totprodn_col(c) = 0._r8	  
@@ -986,6 +995,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='prod100n', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod100n_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='prod1n', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%prod1n_col)
 
     ! decomp_cascade_state - the purpose of this is to check to make sure the bgc used 
     ! matches what the restart file was generated with.  
@@ -1503,6 +1516,7 @@ contains
 
       ! total wood product nitrogen
       this%totprodn_col(c) = &
+           this%prod1n_col(c) + &
            this%prod10n_col(c) + &
            this%prod100n_col(c)	 
 
