@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_eliassen_palm_flux_tensor
+module ocn_eliassen_palm
 
    use mpas_grid_types
    use mpas_timer
@@ -47,11 +47,11 @@ module ocn_eliassen_palm_flux_tensor
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_eliassen_palm_flux_tensor, &
-             ocn_init_eliassen_palm_flux_tensor, &
-             ocn_compute_eliassen_palm_flux_tensor, &
-             ocn_restart_eliassen_palm_flux_tensor, &
-             ocn_finalize_eliassen_palm_flux_tensor
+   public :: ocn_setup_packages_eliassen_palm, &
+             ocn_init_eliassen_palm, &
+             ocn_compute_eliassen_palm, &
+             ocn_restart_eliassen_palm, &
+             ocn_finalize_eliassen_palm
 
    !--------------------------------------------------------------------
    !
@@ -59,7 +59,7 @@ module ocn_eliassen_palm_flux_tensor
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: am_eliassen_palm_flux_tensorTimer
+   type (timer_node), pointer :: am_eliassen_palmTimer
    real (kind=RKIND), parameter :: epsilonEPFT=1.0e-15
 
 !***********************************************************************
@@ -68,7 +68,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_eliassen_palm_flux_tensor
+!  routine ocn_setup_packages_eliassen_palm
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Juan Saenz, Todd Ringler
@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_eliassen_palm_flux_tensor(configPool, packagePool, err)!{{{
+   subroutine ocn_setup_packages_eliassen_palm(configPool, packagePool, err)!{{{
 
       use mpas_packages
 
@@ -111,22 +111,22 @@ contains
       !
       !-----------------------------------------------------------------
       
-      logical, pointer :: amEliassenPalmFluxTensorPkgActive
+      logical, pointer :: amEliassenPalmPkgActive
 
       err = 0
 
       call mpas_pool_get_package(packagePool, &
-          'amEliassenPalmFluxTensorPkgActive', amEliassenPalmFluxTensorPkgActive)
+          'amEliassenPalmPkgActive', ameliassenPalmPkgActive)
 
       ! turn on package for this analysis member
-      amEliassenPalmFluxTensorPkgActive = .true.
+      amEliassenPalmPkgActive = .true.
 
-   end subroutine ocn_setup_packages_eliassen_palm_flux_tensor!}}}
+   end subroutine ocn_setup_packages_eliassen_palm!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_init_eliassen_palm_flux_tensor
+!  routine ocn_init_eliassen_palm
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Juan A. Saenz, Todd Ringler
@@ -137,7 +137,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_eliassen_palm_flux_tensor(domain, err)!{{{
+   subroutine ocn_init_eliassen_palm(domain, err)!{{{
 
       use mpas_packages
 
@@ -179,10 +179,10 @@ contains
       real (kind=RKIND), dimension(:), pointer :: buoyancyMidRef
       real (kind=RKIND), dimension(:), pointer :: buoyancyInterfaceRef
 
-      logical, pointer :: amEPFTActive, config_eliassen_palm_flux_tensor_do_restart, config_eliassen_palm_flux_tensor_reset
-      integer, pointer :: config_eliassen_palm_flux_tensor_nBuoyancyLayers
-      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomax_buoycoor
-      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor
+      logical, pointer :: amEPFTActive, config_eliassen_palm_do_restart, config_eliassen_palm_reset
+      integer, pointer :: config_eliassen_palm_nBuoyancyLayers
+      real (kind=RKIND), pointer :: config_eliassen_palm_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_rhomin_buoycoor
       real (kind=RKIND), pointer :: config_density0
 
       integer, pointer :: nSamplesEA
@@ -206,22 +206,22 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_do_restart', &
-        config_eliassen_palm_flux_tensor_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_reset', &
-        config_eliassen_palm_flux_tensor_reset)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_nBuoyancyLayers', &
-        config_eliassen_palm_flux_tensor_nBuoyancyLayers)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', &
-        config_eliassen_palm_flux_tensor_rhomax_buoycoor)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
-        config_eliassen_palm_flux_tensor_rhomin_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_do_restart', &
+        config_eliassen_palm_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_reset', &
+        config_eliassen_palm_reset)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_nBuoyancyLayers', &
+        config_eliassen_palm_nBuoyancyLayers)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomax_buoycoor', &
+        config_eliassen_palm_rhomax_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomin_buoycoor', &
+        config_eliassen_palm_rhomin_buoycoor)
       
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'amEliassenPalmFluxTensor', amEPFTPool)
+         call mpas_pool_get_subpool(block % structs, 'amEliassenPalm', amEPFTPool)
 
          !-----------------------------------------------------------------
          ! set up pointers
@@ -235,18 +235,18 @@ contains
          ! compute buoyancy and density increment of each layer
          ! at present we use layer interfaces that are evenly-spaced in buoyancy space
          !-----------------------------------------------------------------
-         nBuoyancyLayers = config_eliassen_palm_flux_tensor_nBuoyancyLayers
-         deltaDensity = (config_eliassen_palm_flux_tensor_rhomax_buoycoor &
-            - config_eliassen_palm_flux_tensor_rhomin_buoycoor) / config_eliassen_palm_flux_tensor_nBuoyancyLayers
+         nBuoyancyLayers = config_eliassen_palm_nBuoyancyLayers
+         deltaDensity = (config_eliassen_palm_rhomax_buoycoor &
+            - config_eliassen_palm_rhomin_buoycoor) / config_eliassen_palm_nBuoyancyLayers
          deltaBuoyancy = -gravity * deltaDensity / config_density0
 
          !-----------------------------------------------------------------
          ! compute density/bouyancy at top of each layer
          !-----------------------------------------------------------------
          do k = 1, nBuoyancyLayers
-            potentialDensityTopRef(k) = config_eliassen_palm_flux_tensor_rhomin_buoycoor + deltaDensity * (k-1)
+            potentialDensityTopRef(k) = config_eliassen_palm_rhomin_buoycoor + deltaDensity * (k-1)
             buoyancyInterfaceRef(k) = -gravity &
-              * (config_eliassen_palm_flux_tensor_rhomin_buoycoor - config_density0) / config_density0 &
+              * (config_eliassen_palm_rhomin_buoycoor - config_density0) / config_density0 &
               + deltaBuoyancy * (k-1)
          end do
          k=nBuoyancyLayers
@@ -260,13 +260,13 @@ contains
             buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          end do
          k=nBuoyancyLayers
-         potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k-1) + config_eliassen_palm_flux_tensor_rhomax_buoycoor)
+         potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k-1) + config_eliassen_palm_rhomax_buoycoor)
          buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          
          !-----------------------------------------------------------------
          ! initialize ensemble averages when it is not a restart or when a reset requested
          !-----------------------------------------------------------------
-         if (.not. config_eliassen_palm_flux_tensor_do_restart .or. config_eliassen_palm_flux_tensor_reset) then
+         if (.not. config_eliassen_palm_do_restart .or. config_eliassen_palm_reset) then
             call mpas_pool_get_array(amEPFTPool, 'nSamplesEA', nSamplesEA)
             call mpas_pool_get_array(amEPFTPool, 'buoyancyMaskEA', buoyancyMaskEA)
             call mpas_pool_get_array(amEPFTPool, 'sigmaEA', sigmaEA)
@@ -309,11 +309,11 @@ contains
       end do
 
 
-   end subroutine ocn_init_eliassen_palm_flux_tensor!}}}
+   end subroutine ocn_init_eliassen_palm!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_eliassen_palm_flux_tensor
+!  routine ocn_compute_eliassen_palm
 !
 !> \brief   Compute Eliassen-Palm flux tensor
 !> \author  Juan A. Saenz, Todd Ringler
@@ -328,7 +328,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_eliassen_palm_flux_tensor(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_eliassen_palm(domain, timeLevel, err)!{{{
 
       use mpas_vector_reconstruction
 
@@ -379,9 +379,9 @@ contains
       !-----------------------------------------------------------------
       ! define pointers to namelist config variables local to the EPFT module
       !-----------------------------------------------------------------
-      logical, pointer :: config_eliassen_palm_flux_tensor_debug
-      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor
-      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomax_buoycoor
+      logical, pointer :: config_eliassen_palm_debug
+      real (kind=RKIND), pointer :: config_eliassen_palm_rhomin_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_rhomax_buoycoor
 
       !-----------------------------------------------------------------
       ! define local scalars holding length of dimensions
@@ -568,19 +568,19 @@ contains
       dminfo = domain % dminfo
       
       
-      call mpas_timer_start("compute_eliassen_palm_flux_tensor", .false., &
-        am_eliassen_palm_flux_tensorTimer)
+      call mpas_timer_start("compute_eliassen_palm", .false., &
+        am_eliassen_palmTimer)
       
       
       !--------------------------------------------------
       ! get config variables
       !--------------------------------------------------
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_debug', &
-        config_eliassen_palm_flux_tensor_debug)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
-        config_eliassen_palm_flux_tensor_rhomin_buoycoor)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', &
-        config_eliassen_palm_flux_tensor_rhomax_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_debug', &
+        config_eliassen_palm_debug)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomin_buoycoor', &
+        config_eliassen_palm_rhomin_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomax_buoycoor', &
+        config_eliassen_palm_rhomax_buoycoor)
 
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
       rho0 = config_density0
@@ -592,10 +592,10 @@ contains
          !--------------------------------------------------
          ! assign pointers for each pool
          !--------------------------------------------------
-         call mpas_pool_get_subpool(block % structs, 'amEliassenPalmFluxTensor', am_epftPool)
+         call mpas_pool_get_subpool(block % structs, 'amEliassenPalm', am_epftPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'eliassenPalmFluxTensorScratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'eliassenPalmScratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
@@ -813,7 +813,7 @@ contains
          !-------------------------------------------------------------
          ! TEST for general consistency
          !-------------------------------------------------------------
-         if(config_eliassen_palm_flux_tensor_debug) then
+         if(config_eliassen_palm_debug) then
             print *, ' '
             print *, 'timeLevel:', timeLevel
             print *, ' '
@@ -836,7 +836,7 @@ contains
          ! stratified, horizontally uniform
          ! Interpolating from z, rho to z, rho
          !-------------------------------------------------------------
-         if(config_eliassen_palm_flux_tensor_debug) then
+         if(config_eliassen_palm_debug) then
            do i = 1, nCells
               array1_3D(:,i) = -zMid(:,nCells/2)
               array2_3D(:,i) = potentialDensity(:,nCells/2)
@@ -881,18 +881,18 @@ contains
          ! Interpolate z from that potential density to reference potential density
          ! compare to expected values
          !-------------------------------------------------------------
-         if(config_eliassen_palm_flux_tensor_debug) then
+         if(config_eliassen_palm_debug) then
             do i = 1,nCells
                do k = 1, nVertLevels
-                  array1_3D(k,i) = config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02 + &
+                  array1_3D(k,i) = config_eliassen_palm_rhomin_buoycoor*1.02 + &
                      (zMid(k,i)-zMid(1,i)) * &
-                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 &
-                     - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
+                     (config_eliassen_palm_rhomax_buoycoor*0.98 &
+                     - config_eliassen_palm_rhomin_buoycoor*1.02) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
-                  array2_3D(k,i) = config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02 + &
+                  array2_3D(k,i) = config_eliassen_palm_rhomin_buoycoor*1.02 + &
                      (zTop(k,i)-zMid(1,i)) * &
-                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 &
-                     - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) / &
+                     (config_eliassen_palm_rhomax_buoycoor*0.98 &
+                     - config_eliassen_palm_rhomin_buoycoor*1.02) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
                end do
             end do
@@ -902,10 +902,10 @@ contains
             do i = 1,nCells
                do k = 1, nBuoyancyLayers
                   array2_3Dbuoy(k,i) = zMid(1,i) + &
-                     (potentialDensityMidRef(k) - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02) * &
+                     (potentialDensityMidRef(k) - config_eliassen_palm_rhomin_buoycoor*1.02) * &
                      (zMid(nVertLevels,i) - zMid(1,i)) / &
-                     (config_eliassen_palm_flux_tensor_rhomax_buoycoor*0.98 &
-                     - config_eliassen_palm_flux_tensor_rhomin_buoycoor*1.02)
+                     (config_eliassen_palm_rhomax_buoycoor*0.98 &
+                     - config_eliassen_palm_rhomin_buoycoor*1.02)
                end do
             end do
             do i = 1,nCells
@@ -1093,7 +1093,7 @@ contains
          !-------------------------------------------------------------
          ! compute the force applied to the momentum equation as div(EPFT)
          !-------------------------------------------------------------
-         call calculateDivEPFT(config_eliassen_palm_flux_tensor_debug, &
+         call calculateDivEPFT(config_eliassen_palm_debug, &
             domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, EPFT, divEPFT)
          
@@ -1106,7 +1106,7 @@ contains
          !-------------------------------------------------------------
          ! compute div(ErtelPVFlux) to obtain tendency of Ertel's PV
          !-------------------------------------------------------------
-        call calculateErtelPVTendencyFromPVFlux(config_eliassen_palm_flux_tensor_debug, &
+        call calculateErtelPVTendencyFromPVFlux(config_eliassen_palm_debug, &
             domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
             meshPool, sigmaEA, ErtelPVFlux, ErtelPVTendency)
 
@@ -1129,7 +1129,7 @@ contains
          ! TEST:
          ! calculate potential vorticity fluxes using curl of u
          !-------------------------------------------------------------
-         if(config_eliassen_palm_flux_tensor_debug) then
+         if(config_eliassen_palm_debug) then
 
             call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
             
@@ -1227,7 +1227,7 @@ contains
       !-------------------------------------------------------------
       ! TESTS: tallying up tests across processors.
       !-------------------------------------------------------------
-      if(config_eliassen_palm_flux_tensor_debug) then
+      if(config_eliassen_palm_debug) then
         RMSglobal1 = 1.0D36
         call mpas_dmpar_sum_int(dminfo, nCellsCum, nCellsGlobal) 
         call mpas_dmpar_sum_real(dminfo, RMSlocal1, RMSglobal1)
@@ -1276,19 +1276,19 @@ contains
       endif
 
 
-      call mpas_timer_stop("eliassen_palm_flux_tensor", am_eliassen_palm_flux_tensorTimer)
+      call mpas_timer_stop("eliassen_palm", am_eliassen_palmTimer)
 
-      if(config_eliassen_palm_flux_tensor_debug) then
+      if(config_eliassen_palm_debug) then
          write(stderrUnit, *) ' '
          write(stderrUnit, *) 'exiting ocn_compute_epft'
          write(stderrUnit, *) ' '
       end if
 
-    end subroutine ocn_compute_eliassen_palm_flux_tensor!}}}
+    end subroutine ocn_compute_eliassen_palm!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_eliassen_palm_flux_tensor
+!  routine ocn_restart_eliassen_palm
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -1299,7 +1299,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_eliassen_palm_flux_tensor(domain, err)!{{{
+   subroutine ocn_restart_eliassen_palm(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1331,11 +1331,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_eliassen_palm_flux_tensor!}}}
+   end subroutine ocn_restart_eliassen_palm!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_eliassen_palm_flux_tensor
+!  routine ocn_finalize_eliassen_palm
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Juan A. Saenz
@@ -1346,7 +1346,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_eliassen_palm_flux_tensor(domain, err)!{{{
+   subroutine ocn_finalize_eliassen_palm(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1378,9 +1378,9 @@ contains
 
       err = 0
 
-      write(stderrUnit,*) 'ocn_finalize_eliassen_palm_flux_tensor'
+      write(stderrUnit,*) 'ocn_finalize_eliassen_palm'
 
-   end subroutine ocn_finalize_eliassen_palm_flux_tensor!}}}
+   end subroutine ocn_finalize_eliassen_palm!}}}
 
 
 
@@ -1504,25 +1504,25 @@ contains
       integer :: k, iCell, iCellMinBound, iCellMaxBound
       logical :: printWarning
 
-      real (kind=RKIND), pointer :: config_eliassen_palm_flux_tensor_rhomin_buoycoor, &
-        config_eliassen_palm_flux_tensor_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_eliassen_palm_rhomin_buoycoor, &
+        config_eliassen_palm_rhomax_buoycoor
 
-      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomin_buoycoor', &
-        config_eliassen_palm_flux_tensor_rhomin_buoycoor)
-      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_flux_tensor_rhomax_buoycoor', &
-        config_eliassen_palm_flux_tensor_rhomax_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_rhomin_buoycoor', &
+        config_eliassen_palm_rhomin_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_eliassen_palm_rhomax_buoycoor', &
+        config_eliassen_palm_rhomax_buoycoor)
 
       printWarning = .false.
       iCellMinBound = -1
       iCellMaxBound = -1
 
       do iCell = 1, nCells
-         if (potentialDensity(1,iCell) < config_eliassen_palm_flux_tensor_rhomin_buoycoor) then
+         if (potentialDensity(1,iCell) < config_eliassen_palm_rhomin_buoycoor) then
             printWarning = .true.
             iCellMinBound = iCell
             exit
          end if
-         if (potentialDensity(maxLevelCell(iCell),iCell) > config_eliassen_palm_flux_tensor_rhomax_buoycoor) then
+         if (potentialDensity(maxLevelCell(iCell),iCell) > config_eliassen_palm_rhomax_buoycoor) then
             printWarning = .true.
             iCellMaxBound = iCell
             exit
@@ -2632,6 +2632,6 @@ contains
    end subroutine mpas_vector_R3Cell_to_Edge!}}}
 
 
-end module ocn_eliassen_palm_flux_tensor
+end module ocn_eliassen_palm
 
 ! vim: foldmethod=marker

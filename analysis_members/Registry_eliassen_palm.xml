@@ -1,61 +1,61 @@
-<nml_record name="eliassen_palm_flux_tensor" mode="forward;analysis">
-  <nml_option name="config_use_AM_eliassen_palm_flux_tensor" 
+<nml_record name="eliassen_palm" mode="forward;analysis">
+  <nml_option name="config_use_AM_eliassen_palm" 
     type="logical" 
     default_value=".false." 
     units="unitless"
-    description="If true, ocean analysis member eliassen_palm_flux_tensor is called."
+    description="If true, ocean analysis member eliassen_palm is called."
     possible_values=".true. or .false."
   />
-  <nml_option name="config_eliassen_palm_flux_tensor_reset" 
+  <nml_option name="config_eliassen_palm_reset" 
     type="logical" 
     default_value=".false." 
     units="unitless"
 		description="If true, all EPfT fields in the restart file are re-initialized to zero"
 		possible_values=".true. or .false."
 		/>
-  <nml_option name="config_eliassen_palm_flux_tensor_compute_interval" 
+  <nml_option name="config_eliassen_palm_compute_interval" 
       type="character" 
       default_value="same_as_output" 
       units="unitless"
       description="Timestamp determining how often analysis member computation should be performed."
       possible_values="'DDDD_HH:MM:SS', 'same_as_output'"
     />
-  <nml_option name="config_eliassen_palm_flux_tensor_compute_startup" 
+  <nml_option name="config_eliassen_palm_compute_startup" 
       type="logical" 
       default_value=".true." 
       units="unitless"
       description="Logical flag determining if an analysis member computation occurs on start-up."
       possible_values=".true. or .false."
     />
-  <nml_option name="config_eliassen_palm_flux_tensor_directory" 
+  <nml_option name="config_eliassen_palm_directory" 
       type="character" 
       default_value="analysis_members"
       units="unitless"
-      description="subdirectory to write Elliassen-Palm flux tensor files"
+      description="subdirectory to write Elliassen-Palm analysis member files"
       possible_values="any valid directory name"
   />
-  <nml_option name="config_eliassen_palm_flux_tensor_debug" 
+  <nml_option name="config_eliassen_palm_debug" 
       type="logical" 
       default_value=".false." 
       units="unitless"
       description="If true, debugging code is turned on."
       possible_values=".true. or .false."
   />
-  <nml_option name="config_eliassen_palm_flux_tensor_nBuoyancyLayers" 
+  <nml_option name="config_eliassen_palm_nBuoyancyLayers" 
       type="integer" 
       default_value="45"
       units="-"
       description="Number of reference buoyancy layers."
       possible_values="any positive real value."
   />
-  <nml_option name="config_eliassen_palm_flux_tensor_rhomin_buoycoor" 
+  <nml_option name="config_eliassen_palm_rhomin_buoycoor" 
       type="real" 
       default_value="900" 
       units="kg m^{-3}"
       description="Minimum density used in defining the first buoyancy coordinate layer"
       possible_values="any positive real value."
   />
-  <nml_option name="config_eliassen_palm_flux_tensor_rhomax_buoycoor"
+  <nml_option name="config_eliassen_palm_rhomax_buoycoor"
       type="real" 
       default_value="1080" 
       units="kg m^{-3}"
@@ -66,7 +66,7 @@
 
 <dims>
   <dim name="nBuoyancyLayers" 
-    definition="namelist:config_eliassen_palm_flux_tensor_nBuoyancyLayers"
+    definition="namelist:config_eliassen_palm_nBuoyancyLayers"
     description="The number of buoyancy layers used for buoyancy coordinates."
   />
   <dim name="nBuoyancyLayersP1" 
@@ -77,33 +77,33 @@
 
 
 <packages>
-  <package name="amEliassenPalmFluxTensorPkg" 
-    description="This package includes variables required for the amEliassenPalmFluxTensor analysis member."/>
+  <package name="amEliassenPalmPkg" 
+    description="This package includes variables required for the amEliassenPalm analysis member."/>
 </packages>
   
 <streams>
 
 <!--
-  <stream name="eliassenPalmFluxTensorInput" 
+  <stream name="eliassenPalmInput" 
     type="input"
     mode="forward;analysis"
-    filename_template="eliassen_palm_flux_tensor_input.$Y-$M-$D.nc"
+    filename_template="eliassen_palm_input.$Y-$M-$D.nc"
     filename_interval="01-00-00_00:00:00"
     input_interval="initial_only"
-    packages="amEliassenPalmFluxTensorPkg"
+    packages="amEliassenPalmPkg"
     clobber_mode="truncate"
     runtime_format="single_file">
     <var name="xtime"/> 
     <var name="potentialDensityMidRef"/> 
   </stream>
 --!>
-  <stream name="eliassenPalmFluxTensorOutput" 
+  <stream name="eliassenPalmOutput" 
     type="output"
     mode="forward;analysis"
-    filename_template="analysis_members/eliassen_palm_flux_tensor_output.$Y-$M-$D.nc"
+    filename_template="analysis_members/eliassen_palm_output.$Y-$M-$D.nc"
     filename_interval="01-00-00_00:00:00"
     output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmFluxTensorPkg"
+    packages="amEliassenPalmPkg"
     clobber_mode="truncate"
     runtime_format="single_file">
     <var name="xtime"/> 
@@ -135,14 +135,14 @@
     <var name="ErtelPV"/> 
   </stream>
 
-  <stream name="eliassenPalmFluxTensorRestart" 
+  <stream name="eliassenPalmRestart" 
     type="input;output"
     mode="forward;analysis"
-    filename_template="restarts/eliassen_palm_flux_tensor_restart.$Y-$M-$D.nc"
+    filename_template="restarts/eliassen_palm_restart.$Y-$M-$D.nc"
     filename_interval="01-00-00_00:00:00"
     input_interval="initial_only"
     output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmFluxTensorPkg"
+    packages="amEliassenPalmPkg"
     clobber_mode="truncate"
     runtime_format="single_file">
     <var name="xtime"/> 
@@ -168,7 +168,7 @@
   </stream>
 </streams>
   
-<var_struct name="amEliassenPalmFluxTensorScratch" time_levs="1">
+<var_struct name="amEliassenPalmScratch" time_levs="1">
   <var name="firstLayerBuoyCoor" 
     type="integer" 
     dimensions="nCells Time" 
@@ -370,9 +370,9 @@
 	/>
 </var_struct>
 
-<var_struct name="amEliassenPalmFluxTensor" 
+<var_struct name="amEliassenPalm" 
   time_levs="1"
-  packages="amEliassenPalmFluxTensorPkg">
+  packages="amEliassenPalmPkg">
   <var name="potentialDensityMidRef" 
     type="real" 
     dimensions="nBuoyancyLayers" 
