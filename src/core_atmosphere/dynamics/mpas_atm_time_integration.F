@@ -1423,8 +1423,10 @@ module atm_time_integration
 
       rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
       zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
-      rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
 
+! redefine rw_p to be perturbation from time t, change 1
+!      rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
+      rw_p(:,cellStart:cellEnd) = 0.
 
       ! we solve for omega instead of w (see Klemp et al MWR 2007),
       ! so here we change the w_p tendency to an omega_p tendency
@@ -1489,9 +1491,12 @@ module atm_time_integration
                                                     tend_ru, tend_rho, tend_rt, tend_rw,     &
                                                     zgrid, cofwr, cofwz, w
 
-! redefine ru_p to be perturbation from time t, change 3a
+! redefine ru_p to be perturbation from time t, change 3a  ! temporary
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: ru_save
+! redefine rw_p to be perturbation from time t, change 3a  ! temporary
+      real (kind=RKIND), dimension(:,:), pointer :: rw
+      real (kind=RKIND), dimension(:,:), pointer :: rw_save
 
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw, dcEdge, areaCell, cofrz, dvEdge
 
@@ -1510,7 +1515,6 @@ module atm_time_integration
 
       integer, pointer :: nEdges, nCellsSolve
 
-
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
@@ -1518,7 +1522,9 @@ module atm_time_integration
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+!  change needed for rw_p, change 6 (see rayleigh damping)
       call mpas_pool_get_array(state, 'w', w, 2)
+!      call mpas_pool_get_array(state, 'w', w, 1)
 
       call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
       call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', zz_rtheta_pp_old)
@@ -1564,9 +1570,12 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'cf2', cf2)
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-! redefine ru_p to be perturbation from time t, change 3b
+! redefine ru_p to be perturbation from time t, change 3b ! temporary
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(diag, 'ru_save', ru_save)
+! redefine rw_p to be perturbation from time t, change 3b ! temporary
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'rw_save', rw_save)
 
       ! epssm is the offcentering coefficient for the vertically implicit integration.
       ! smdiv is the 3D divergence-damping coefficient.
@@ -1715,11 +1724,24 @@ module atm_time_integration
       do iCell=cellSolveStart,cellSolveEnd
 
          do k=1, nVertLevels
+! redefine rw_p to be perturbation from time t, change 4 ! temporary
+!            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
+!                            - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell))
+!            ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
+!                               - resm*rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)      &
+!                               -coftz(k,iCell)*rw_p(k,iCell))
             rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
-                            - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell))
+                            - cofrz(k)*resm*(  rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell)) &
+                                             - rw_p(k  ,iCell) - (rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
             ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
-                               - resm*rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)      &
-                               -coftz(k,iCell)*rw_p(k,iCell))
+                               - resm*rdzw(k)*( coftz(k+1,iCell)*(rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell))) &
+                                               -coftz(k  ,iCell)*(rw_p(k  ,iCell) + (rw_save(k  ,iCell) - rw(k  ,iCell))) )
+            rs(k,iCell) = rs(k,iCell) &
+                            - cofrz(k)*( (rw_save(k+1,iCell) - rw(k+1,iCell)) &
+                                        -(rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
+            ts(k,iCell) = ts(k,iCell) &
+                               - rdzw(k)*( coftz(k+1,iCell)*((rw_save(k+1,iCell) - rw(k+1,iCell))) &
+                                          -coftz(k  ,iCell)*((rw_save(k  ,iCell) - rw(k  ,iCell))) )
          end do
 
          do k=2, nVertLevels
@@ -1750,11 +1772,19 @@ module atm_time_integration
          ! the implicit Rayleigh damping on w (gravity-wave absorbing) 
 
          do k=2,nVertLevels
-            rw_p(k,iCell) = (rw_p(k,iCell)-dts*dss(k,iCell)*               &
+! redefine rw_p to be perturbation from time t, change 6
+! original code
+!            rw_p(k,iCell) = (rw_p(k,iCell)-dts*dss(k,iCell)*               &
+!                        (fzm(k)*zz (k,iCell)+fzp(k)*zz (k-1,iCell))        &
+!                        *(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))       &
+!                                 *w(k,iCell)    )/(1.0+dts*dss(k,iCell))
+
+            rw_p(k,iCell) = (rw_p(k,iCell) + (rw_save(k  ,iCell) - rw(k  ,iCell)) -dts*dss(k,iCell)*               &
                         (fzm(k)*zz (k,iCell)+fzp(k)*zz (k-1,iCell))        &
                         *(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))       &
-                                 *w(k,iCell)    )/(1.0+dts*dss(k,iCell))
- 
+                                 *w(k,iCell)    )/(1.0+dts*dss(k,iCell)) &
+                         - (rw_save(k  ,iCell) - rw(k  ,iCell))
+
             ! accumulate (rho*omega)' for use later in scalar transport
 
             wwAvg(k,iCell) = wwAvg(k,iCell) + 0.5*(1.0+epssm)*rw_p(k,iCell)
@@ -1893,9 +1923,11 @@ module atm_time_integration
          w(1,iCell) = 0.0
 
          do k = 2, nVertLevels
-            wwAvg(k,iCell) = rw(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
-
-            rw(k,iCell) = rw(k,iCell) + rw_p(k,iCell)
+! redefine rw_p to be perturbation from time t, change 2
+!            wwAvg(k,iCell) = rw(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
+!            rw(k,iCell) = rw(k,iCell) + rw_p(k,iCell)
+            wwAvg(k,iCell) = rw_save(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
+            rw(k,iCell) = rw_save(k,iCell) + rw_p(k,iCell)
 
 
           ! pick up part of diagnosed w from omega
