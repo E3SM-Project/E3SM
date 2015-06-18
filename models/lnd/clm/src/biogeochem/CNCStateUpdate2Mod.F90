@@ -12,8 +12,6 @@ module CNCStateUpdate2Mod
   use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
-  use PatchType        , only : pft
-  use pftvarcon        , only : npcropmin
   !
   implicit none
   save
@@ -133,7 +131,6 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                   & 
-         ivt => pft%itype      , & ! Input:  [integer (:)]  pft vegetation type
          cf => carbonflux_vars , &
          cs => carbonstate_vars  &
          )
@@ -174,13 +171,6 @@ contains
          cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          - cf%hrv_deadstemc_to_prod100c_patch(p)        * dt
          cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         - cf%hrv_livecrootc_to_litter_patch(p)         * dt
          cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         - cf%hrv_deadcrootc_to_litter_patch(p)         * dt
-
-         ! crops
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-             cs%livestemc_patch(p)       = cs%livestemc_patch(p)          - cf%hrv_livestemc_to_prod1c_patch(p)          *dt
-             cs%leafc_patch(p)           = cs%leafc_patch(p)              - cf%hrv_leafc_to_prod1c_patch(p)              *dt
-             cs%grainc_patch(p)          = cs%grainc_patch(p)             - cf%hrv_grainc_to_prod1c_patch(p)             *dt
-         end if
 
          ! xsmrpool
          cs%xsmrpool_patch(p)            = cs%xsmrpool_patch(p)           - cf%hrv_xsmrpool_to_atm_patch(p)              * dt

@@ -25,8 +25,6 @@ module CropType
   type, public :: crop_type
      real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
      real(r8), pointer :: gddtsoi_patch           (:)   ! patch growing degree-days from planting (top two soil layers) (ddays)
-     real(r8), pointer :: crpyld_patch            (:)   ! patch crop yield (bu/acre)
-     real(r8), pointer :: dmyield_patch           (:)   ! patch crop yield (t/ha)
 
    contains
      procedure, public  :: Init
@@ -79,8 +77,6 @@ contains
 
     allocate(this%gddplant_patch           (begp:endp))                      ; this%gddplant_patch           (:)   = spval
     allocate(this%gddtsoi_patch            (begp:endp))                      ; this%gddtsoi_patch            (:)   = spval
-    allocate(this%crpyld_patch             (begp:endp))                      ; this%crpyld_patch             (:)   = spval
-    allocate(this%dmyield_patch            (begp:endp))                      ; this%dmyield_patch            (:)   = spval
     
   end subroutine InitAllocate
 
@@ -111,16 +107,6 @@ contains
     call hist_addfld1d (fname='GDDTSOI', units='ddays', &
          avgflag='A', long_name='Growing degree-days from planting (top two soil layers)', &
          ptr_patch=this%gddtsoi_patch, default='inactive')
-
-    this%crpyld_patch(begp:endp) = spval
-    call hist_addfld1d (fname='CRPYLD', units='bu/acre', &
-         avgflag='X', long_name='Crop yield (bu/acre)', &
-         ptr_patch=this%crpyld_patch)
-
-    this%dmyield_patch(begp:endp) = spval
-    call hist_addfld1d (fname='DMYIELD', units='t/ha', &
-         avgflag='X', long_name='Crop yield (t/ha)', &
-         ptr_patch=this%dmyield_patch)
 
   end subroutine InitHistory
 

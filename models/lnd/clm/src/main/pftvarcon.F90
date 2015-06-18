@@ -143,9 +143,6 @@ module pftvarcon
   real(r8), allocatable :: fleafcn(:)      !C:N during grain fill; leaf
   real(r8), allocatable :: ffrootcn(:)     !C:N during grain fill; fine root
   real(r8), allocatable :: fstemcn(:)      !C:N during grain fill; stem
-  real(r8), allocatable :: presharv(:)     !porportion of residue harvested
-  real(r8), allocatable :: convfact(:)     !conversion factor to bu/acre
-  real(r8), allocatable :: fyield(:)       !fraction of grain that is actually harvested
 
   ! pft parameters for CNDV code
   ! from LPJ subroutine pftparameters
@@ -335,10 +332,7 @@ contains
     allocate( fertnitro     (0:mxpft) )
     allocate( fleafcn       (0:mxpft) )  
     allocate( ffrootcn      (0:mxpft) ) 
-    allocate( fstemcn       (0:mxpft) )
-    allocate( presharv      (0:mxpft) )
-    allocate( convfact      (0:mxpft) )
-    allocate( fyield        (0:mxpft) )  
+    allocate( fstemcn       (0:mxpft) )  
     allocate( pftpar20      (0:mxpft) )   
     allocate( pftpar28      (0:mxpft) )   
     allocate( pftpar29      (0:mxpft) )   
@@ -464,12 +458,6 @@ contains
     call ncd_io('ffrootcn',ffrootcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fstemcn',fstemcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-     call ncd_io('presharv',presharv, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
- call ncd_io('convfact',convfact, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
- call ncd_io('fyield',fyield, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     if (use_vertsoilc) then
        call ncd_io('rootprof_beta',rootprof_beta, 'read', ncid, readvar=readv, posNOTonfile=.true.)

@@ -12,8 +12,6 @@ module CNNStateUpdate2Mod
   use clm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  use PatchType           , only : pft
-  use pftvarcon           , only : npcropmin
   !
   implicit none
   save
@@ -137,7 +135,6 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                      & 
-         ivt => pft%itype         , & ! Input:  [integer  (:) ]  pft vegetation type
          nf => nitrogenflux_vars  , &
          ns => nitrogenstate_vars   &
          )
@@ -175,12 +172,6 @@ contains
          ns%livecrootn_patch(p) = ns%livecrootn_patch(p) - nf%hrv_livecrootn_to_litter_patch(p) * dt
          ns%deadcrootn_patch(p) = ns%deadcrootn_patch(p) - nf%hrv_deadcrootn_to_litter_patch(p) * dt
          ns%retransn_patch(p)   = ns%retransn_patch(p)   - nf%hrv_retransn_to_litter_patch(p)   * dt
-
-       if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-           ns%livestemn_patch(p)= ns%livestemn_patch(p)  - nf%hrv_livestemn_to_prod1n_patch(p)  * dt
-           ns%leafn_patch(p)    = ns%leafn_patch(p)      - nf%hrv_leafn_to_prod1n_patch(p)      * dt
-           ns%grainn_patch(p)   = ns%grainn_patch(p)     - nf%hrv_grainn_to_prod1n_patch(p)     * dt
-       end if
 
          ! storage pools
          ns%leafn_storage_patch(p)      = ns%leafn_storage_patch(p)      - nf%hrv_leafn_storage_to_litter_patch(p)      * dt
