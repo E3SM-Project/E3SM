@@ -1421,7 +1421,9 @@ module atm_time_integration
 !      ru_p(:,edgeStart:edgeEnd) = ru_save(:,edgeStart:edgeEnd) - ru(:,edgeStart:edgeEnd)
       ru_p(:,edgeStart:edgeEnd) = 0.
 
-      rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
+! redefine rtheta_pp to be perturbation from time t, change 1
+!      rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
+      rtheta_pp(:,cellStart:cellEnd) = 0.
       zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
 
 ! redefine rw_p to be perturbation from time t, change 1
@@ -1937,14 +1939,26 @@ module atm_time_integration
 
          w(nVertLevels+1,iCell) = 0.0
 
+! redefine rtheta_pp to be perturbation from time t, change 2
+!         if (rk_step == 3) then
+!            do k = 1, nVertLevels
+!               rtheta_p(k,iCell) = rtheta_p(k,iCell) + rtheta_pp(k,iCell) &
+!                                 - dt * rho_zz(k,iCell) * rt_diabatic_tend(k,iCell)
+!            end do
+!         else
+!            do k = 1, nVertLevels
+!               rtheta_p(k,iCell) = rtheta_p(k,iCell) + rtheta_pp(k,iCell)
+!            end do
+!         end if
+
          if (rk_step == 3) then
             do k = 1, nVertLevels
-               rtheta_p(k,iCell) = rtheta_p(k,iCell) + rtheta_pp(k,iCell) &
+               rtheta_p(k,iCell) = rtheta_p_save(k,iCell) + rtheta_pp(k,iCell) &
                                  - dt * rho_zz(k,iCell) * rt_diabatic_tend(k,iCell)
             end do
          else
             do k = 1, nVertLevels
-               rtheta_p(k,iCell) = rtheta_p(k,iCell) + rtheta_pp(k,iCell)
+               rtheta_p(k,iCell) = rtheta_p_save(k,iCell) + rtheta_pp(k,iCell)
             end do
          end if
 
@@ -3032,6 +3046,8 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
+         tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
+
          ! Smagorinsky eddy viscosity, based on horizontal deformation (in this case on model coordinate surfaces).
          ! The integration coefficients were precomputed and stored in defc_a and defc_b
 
@@ -3087,6 +3103,9 @@ module atm_time_integration
             h_divergence(k,iCell) = h_divergence(k,iCell) * r
             tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
 
+            ! qtot should be moved somewhere else - it is fixed over the dynamics steps
+            ! but we are touching the scalars needlessly every acoustic step 
+
             do iq = moist_start, moist_end
                qtot(k,iCell) = qtot(k,iCell) + scalars(iq, k, iCell)
             end do
@@ -3097,23 +3116,23 @@ module atm_time_integration
       !
       ! dp / dz
       !
-      do iCell = cellStart,cellEnd
+      ! only needed on first rk_step with pert variables defined a pert from time t
+      !
+      if(rk_step == 1) then
+        do iCell = cellStart,cellEnd
 
-         k = 1
-           dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp(k+1,iCell) - pp(k,iCell))   &
-                                + pzp(k,iCell)*(pp(k+2,iCell) - pp(k,iCell)) )
-         do k = 2, nVertLevels-1
-            dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp(k+1,iCell) - pp(k  ,iCell))  &
-                                 + pzm(k,iCell)*(pp(k  ,iCell) - pp(k-1,iCell)) )
-         end do
+           k = 1
+             dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp(k+1,iCell) - pp(k,iCell))   &
+                                  + pzp(k,iCell)*(pp(k+2,iCell) - pp(k,iCell)) )
+           do k = 2, nVertLevels-1
+              dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp(k+1,iCell) - pp(k  ,iCell))  &
+                                   + pzm(k,iCell)*(pp(k  ,iCell) - pp(k-1,iCell)) )
+           end do
    
-         k = nVertLevels
-         dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
-
-!         do k = 1,nVertLevels-1
-!            dpdz(k,iCell) = pp(k+1,iCell) - pp(k,iCell)
-!         end do
-      end do
+           k = nVertLevels
+           dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
+        end do
+      end if
 
 !$OMP BARRIER
 
@@ -3151,15 +3170,20 @@ module atm_time_integration
 !                    *(pzm(k,cell2)*dpdz(k-1,cell2)         &
 !                     +pzm(k,cell1)*dpdz(k-1,cell1))   
 !
+!  change rtheta_pp to perturbation from time t
+!  horizontal pressure gradiant is only computed at time t (rk_step == 1) and stored.
+
+      if(rk_step == 1) then
          do k=1,nVertLevels
-
-!            tend_u(k,iEdge) =  - cqu(k,iEdge)*((pp(k,cell2)-pp(k,cell1))/dcEdge(iEdge)   &
-!                                    - dpzx(k) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
-
-            tend_u(k,iEdge) =  - cqu(k,iEdge)*((pp(k,cell2)-pp(k,cell1))/dcEdge(iEdge)   &
-                                    - zxu(k,iEdge)*(dpdz(k,cell1)+dpdz(k,cell2)) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
+            tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*((pp(k,cell2)-pp(k,cell1))/dcEdge(iEdge)   &
+                                        - zxu(k,iEdge)*(dpdz(k,cell1)+dpdz(k,cell2)) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
+            tend_u(k,iEdge) = 0.
          end do
-
+      else
+         do k=1,nVertLevels
+            tend_u(k,iEdge) = 0.
+         end do
+      end if
 
          ! vertical transport of u
 
@@ -3217,7 +3241,9 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
-         tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
+!  dp/dx now already in tend_u_euler
+!
+!         tend_u_euler(1:nVertLevels,edgeStart:edgeEnd) = 0.0
 
 !$OMP BARRIER
 
@@ -3498,6 +3524,16 @@ module atm_time_integration
 
       !  Note: next we are also dividing through by the cell area after the horizontal flux divergence
 
+
+!  change from rtheta_pp defined as difference from time t.
+!  vertical pressure gradient held at time t.  We will pull buoyance term over later
+
+         if(rk_step == 1) then
+            do k=2,nVertLevels
+              tend_w_euler(k,iCell) = tend_w_euler(k,iCell)- cqw(k,iCell)*rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))
+            end do
+          end if
+
          do k=2,nVertLevels
 
 
@@ -3512,21 +3548,23 @@ module atm_time_integration
 !                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
 
             tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))    &
-                                  - cqw(k,iCell)*( rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))        &
-                                  + gravity*  &
+                                  - cqw(k,iCell)*(        &
+                                    gravity*  &
                                    ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
                                              rr_save(k,iCell)*(1.+qtot(k,iCell)))                  &
                                     +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
                                              rr_save(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
 
-            if (rk_step == 1) then
-               tend_w_pgf(k,iCell)  = cqw(k,iCell)*(rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))) 
-               tend_w_buoy(k,iCell) = cqw(k,iCell)*gravity* &
-                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +       &
-                                             rr(k,iCell)*(1.+qtot(k,iCell)))     &
-                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
-                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) )
-            end if
+
+!  diagnostics (not used in physics).  no longer needed
+!            if (rk_step == 1) then
+!               tend_w_pgf(k,iCell)  = cqw(k,iCell)*(rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))) 
+!               tend_w_buoy(k,iCell) = cqw(k,iCell)*gravity* &
+!                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +       &
+!                                             rr(k,iCell)*(1.+qtot(k,iCell)))     &
+!                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
+!                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) )
+!            end if
 
          end do
       end do
