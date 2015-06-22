@@ -304,6 +304,7 @@ module atm_time_integration
       end do
 
       call mpas_timer_start('atm_compute_moist_coefficients')
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -317,6 +318,9 @@ module atm_time_integration
          call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
          call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
+         call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+
+         allocate(qtot(nVertLevels,nCells+1))  ! new allocation of qtot
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
             nthreads = OMP_get_num_threads()
@@ -373,7 +377,7 @@ module atm_time_integration
    
                allocate(delsq_theta(nVertLevels,nCells+1))
                allocate(delsq_w(nVertLevels,nCells+1))
-               allocate(qtot(nVertLevels,nCells+1))
+!!               allocate(qtot(nVertLevels,nCells+1))  ! initializing this earlier in solution sequence
                allocate(delsq_divergence(nVertLevels,nCells+1))
                allocate(delsq_u(nVertLevels,nEdges+1))
                allocate(delsq_circulation(nVertLevels,nVertices+1))
@@ -405,7 +409,7 @@ module atm_time_integration
 
                deallocate(delsq_theta)
                deallocate(delsq_w)
-               deallocate(qtot)
+!!               deallocate(qtot)  ! deallocation after dynamics step complete, see below
                deallocate(delsq_divergence)
                deallocate(delsq_u)
                deallocate(delsq_circulation)
@@ -826,6 +830,9 @@ module atm_time_integration
 
       end do DYNAMICS_SUBSTEPS
 
+
+       deallocate(qtot)  !  we are finished with qtot now...
+
       !
       !  split transport, at present RK3
       !
@@ -1158,7 +1165,7 @@ module atm_time_integration
 
       integer :: iEdge, iCell, k, cell1, cell2, iq
       integer, pointer :: nCells, nEdges, nVertLevels, nCellsSolve
-      real (kind=RKIND) :: qtot
+      real (kind=RKIND) :: qtotal
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: moist_start, moist_end
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
@@ -1177,27 +1184,38 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'cqw', cqw)
       call mpas_pool_get_array(diag, 'cqu', cqu)
 
+      do iCell = cellSolveStart,cellSolveEnd
+         qtot(1:nVertLevels,iCell) = 0.0
+         do k = 1,nVertLevels
+            do iq = moist_start, moist_end
+               qtot(k,iCell) = qtot(k,iCell) + scalars(iq, k, iCell)
+            end do
+         end do
+      end do    
 
       do iCell = cellSolveStart,cellSolveEnd
          do k = 2, nVertLevels
-            qtot = 0.0
+            qtotal = 0.0
             do iq = moist_start, moist_end
-               qtot = qtot + 0.5 * (scalars(iq, k, iCell) + scalars(iq, k-1, iCell))
+               qtotal = qtotal + 0.5 * (scalars(iq, k, iCell) + scalars(iq, k-1, iCell))
             end do
-            cqw(k,iCell) = 1.0 / (1.0 + qtot)
+            qtotal = 0.5*(qtot(k,iCell)+qtot(k-1,iCell))
+            cqw(k,iCell) = 1.0 / (1.0 + qtotal)
          end do
       end do
+
+!  would need to compute qtot for all cells and an openmp barrier to use qtot below.
 
       do iEdge = edgeStart,edgeEnd
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
             do k = 1, nVertLevels
-               qtot = 0.0
+               qtotal = 0.0
                do iq = moist_start, moist_end
-                  qtot = qtot + 0.5 * ( scalars(iq, k, cell1) + scalars(iq, k, cell2) )
+                  qtotal = qtotal + 0.5 * ( scalars(iq, k, cell1) + scalars(iq, k, cell2) )
                end do
-               cqu(k,iEdge) = 1.0 / (1.0 + qtot)
+               cqu(k,iEdge) = 1.0 / (1.0 + qtotal)
             end do
          end if
       end do
@@ -1238,7 +1256,7 @@ module atm_time_integration
 
       real (kind=RKIND), dimension( nVertLevels ) :: b_tri,c_tri
       real (kind=RKIND), pointer :: epssm
-      real (kind=RKIND) :: dtseps, c2, qtot, rcv
+      real (kind=RKIND) :: dtseps, c2, qtotal, rcv
 
       integer, pointer :: moist_start, moist_end
 
@@ -1297,12 +1315,13 @@ module atm_time_integration
          coftz(nVertLevels+1,iCell) = 0.0
          do k=1,nVertLevels
 
-            qtot = 0.
-            do iq = moist_start, moist_end
-               qtot = qtot + scalars(iq, k, iCell)
-            end do
+!            qtotal = 0.
+!            do iq = moist_start, moist_end
+!               qtotal = qtotal + scalars(iq, k, iCell)
+!            end do
+            qtotal = qtot(k,iCell)
 
-            cofwt(k,iCell) = .5*dtseps*rcv*zz(k,iCell)*gravity*rb(k,iCell)/(1.+qtot)  &
+            cofwt(k,iCell) = .5*dtseps*rcv*zz(k,iCell)*gravity*rb(k,iCell)/(1.+qtotal)  &
                                 *p(k,iCell)/((rtb(k,iCell)+rt(k,iCell))*pb(k,iCell))
          end do
 
@@ -3078,7 +3097,7 @@ module atm_time_integration
       ! compute horiontal mass-flux divergence, add vertical mass flux divergence to complete tend_rho
 
       do iCell = cellStart,cellEnd
-         qtot(1:nVertLevels,iCell) = 0.0
+!         qtot(1:nVertLevels,iCell) = 0.0
          r = 1.0 / areaCell(iCell)
          do k = 1,nVertLevels
             h_divergence(k,iCell) = h_divergence(k,iCell) * r
@@ -3086,9 +3105,9 @@ module atm_time_integration
             ! qtot should be moved somewhere else - it is fixed over the dynamics steps
             ! but we are touching the scalars needlessly every acoustic step 
 
-            do iq = moist_start, moist_end
-               qtot(k,iCell) = qtot(k,iCell) + scalars(iq, k, iCell)
-            end do
+!            do iq = moist_start, moist_end
+!               qtot(k,iCell) = qtot(k,iCell) + scalars(iq, k, iCell)
+!            end do
 
          end do
       end do    
@@ -3477,28 +3496,26 @@ module atm_time_integration
 
       !  Note: next we are also dividing through by the cell area after the horizontal flux divergence
 
+         do k=2,nVertLevels
+            tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))
+         end do
 
 !  change from rtheta_pp defined as difference from time t.
 !  vertical pressure gradient held at time t.  We will pull buoyance term over later
 
          if(rk_step == 1) then
             do k=2,nVertLevels
-              tend_w_euler(k,iCell) = tend_w_euler(k,iCell)- cqw(k,iCell)*rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))
-            end do
-          end if
-
-         do k=2,nVertLevels
-
-            tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))    &
+              tend_w_euler(k,iCell) = tend_w_euler(k,iCell)- cqw(k,iCell)*rdzu(k)*(pp(k,iCell)-pp(k-1,iCell)) &
                                   - cqw(k,iCell)*(        &
                                     gravity*  &
                                    ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
                                              rr_save(k,iCell)*(1.+qtot(k,iCell)))                  &
                                     +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
                                              rr_save(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
-         end do
-      end do
+            end do
+          end if
 
+      end do
 
 ! add in mixing terms for w
 
