@@ -303,6 +303,7 @@ module atm_time_integration
          block => block % next
       end do
 
+      call mpas_timer_start('atm_compute_moist_coefficients')
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -335,9 +336,6 @@ module atm_time_integration
             vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
             vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
 
-!         call atm_rk_integration_setup(state, diag, &
-!                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-!                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
          call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
                                               cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                               cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
@@ -345,6 +343,7 @@ module atm_time_integration
 
          block => block % next
       end do
+      call mpas_timer_stop('atm_compute_moist_coefficients')
 
       call mpas_timer_stop('atm_rk_integration_setup')
 
@@ -355,42 +354,6 @@ module atm_time_integration
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
          RK3_DYNAMICS : do rk_step = 1, 3  ! Runge-Kutta loop
-
-            call mpas_timer_start('atm_compute_moist_coefficients')
-            block => domain % blocklist
-            do while (associated(block))
-               ! The coefficients are set for owned cells (cqw) and for all edges of owned cells, 
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-
-!$OMP PARALLEL PRIVATE(cellStart,cellEnd,cellSolveStart,cellSolveEnd,vertexStart,vertexEnd,vertexSolveStart,vertexSolveEnd,edgeStart,edgeEnd,edgeSolveStart,EdgeSolveEnd,nthreads,threadid)
-               nthreads = OMP_get_num_threads()
-               threadid = OMP_get_thread_num()
-   
-               cellStart = (threadid * nCells / nthreads) + 1
-               cellEnd = ((threadid+1) * nCells / nthreads)
-               edgeStart = (threadid * nEdges / nthreads) + 1
-               edgeEnd = ((threadid+1) * nEdges / nthreads)
-               vertexStart = (threadid * nVertices / nthreads) + 1
-               vertexEnd = ((threadid+1) * nVertices / nthreads)
-   
-               cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
-               cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
-               edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
-               edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
-               vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
-               vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
-
-!               call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh, &     !MGD could do away with dimensions arg
-!                                          cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-!                                          cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-!$OMP END PARALLEL
-   
-               block => block % next
-            end do
-            call mpas_timer_stop('atm_compute_moist_coefficients')
-
 
             call mpas_timer_start('atm_compute_dyn_tend')
             block => domain % blocklist
@@ -1712,7 +1675,7 @@ module atm_time_integration
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
             do k=1,nVertLevels
-               ru_p(k,iEdge) = ru_p(k,iEdge) + dts*tend_ru(k,iEdge)
+               ru_p(k,iEdge) = dts*tend_ru(k,iEdge)
                ruAvg(k,iEdge) = ruAvg(k,iEdge) + ru_p(k,iEdge)
             end do
 
@@ -1735,10 +1698,10 @@ module atm_time_integration
             do k=1,nVertLevels
 
 ! redefine ru_p to be perturbation from time t, change 3c
-!               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge)
-               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*(ru_p(k,iEdge) + ru_save(k,iEdge)-ru(k,iEdge))
+               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge)
                rs(k,iCell) = rs(k,iCell)-flux/areaCell(iCell)
-   
+
+               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*(ru_p(k,iEdge) + ru_save(k,iEdge)-ru(k,iEdge))
                flux = flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
                ts(k,iCell) = ts(k,iCell)-flux/areaCell(iCell)
 
@@ -1761,20 +1724,23 @@ module atm_time_integration
 
          do k=1, nVertLevels
 ! redefine rw_p to be perturbation from time t, change 4 ! temporary
-!            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
-!                            - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell))
+            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
+                            - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell)) 
+!                            - dts*rdzw(k)*( (rw_save(k+1,iCell) - rw(k+1,iCell)) &
+!                                            -(rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
 !            ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
 !                               - resm*rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)      &
 !                               -coftz(k,iCell)*rw_p(k,iCell))
-            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
-                            - cofrz(k)*resm*(  rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell)) &
-                                             - rw_p(k  ,iCell) - (rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
+
+!            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
+!                            - cofrz(k)*resm*(  rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell)) &
+!                                             - rw_p(k  ,iCell) - (rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
             ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
                                - resm*rdzw(k)*( coftz(k+1,iCell)*(rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell))) &
                                                -coftz(k  ,iCell)*(rw_p(k  ,iCell) + (rw_save(k  ,iCell) - rw(k  ,iCell))) )
-            rs(k,iCell) = rs(k,iCell) &
-                            - cofrz(k)*( (rw_save(k+1,iCell) - rw(k+1,iCell)) &
-                                        -(rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
+!            rs(k,iCell) = rs(k,iCell) &
+!                            - dts*rdzw(k)*( (rw_save(k+1,iCell) - rw(k+1,iCell)) &
+!                                            -(rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
             ts(k,iCell) = ts(k,iCell) &
                                - rdzw(k)*( coftz(k+1,iCell)*((rw_save(k+1,iCell) - rw(k+1,iCell))) &
                                           -coftz(k  ,iCell)*((rw_save(k  ,iCell) - rw(k  ,iCell))) )
@@ -2909,7 +2875,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
                                                     divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
-                                                    h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign
+                                                    h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save
 
       real (kind=RKIND), dimension(:,:), pointer :: rr_save
 
@@ -2961,6 +2927,8 @@ module atm_time_integration
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
 
+      real (kind=RKIND), dimension(100) :: hdiv
+
       flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
                 ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
 
@@ -2994,7 +2962,9 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'v', v)
       call mpas_pool_get_array(diag, 'kdiff', kdiff)
       call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'ru_save', ru_save)
       call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'rw_save', rw_save)
       call mpas_pool_get_array(diag, 'divergence', divergence)
       call mpas_pool_get_array(diag, 'vorticity', vorticity)
       call mpas_pool_get_array(diag, 'ke', ke)
@@ -3119,6 +3089,7 @@ module atm_time_integration
 
       do iCell=cellStart,cellEnd
          h_divergence(1:nVertLevels,iCell) = 0.0
+         hdiv(1:nVertLevels) = 0.0
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge)
@@ -3135,7 +3106,6 @@ module atm_time_integration
          r = 1.0 / areaCell(iCell)
          do k = 1,nVertLevels
             h_divergence(k,iCell) = h_divergence(k,iCell) * r
-            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
 
             ! qtot should be moved somewhere else - it is fixed over the dynamics steps
             ! but we are touching the scalars needlessly every acoustic step 
@@ -3148,13 +3118,12 @@ module atm_time_integration
       end do    
 
       !
-      ! dp / dz
+      ! dp / dz and tend_rho
       !
       ! only needed on first rk_step with pert variables defined a pert from time t
       !
       if(rk_step == 1) then
         do iCell = cellStart,cellEnd
-
            k = 1
              dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp(k+1,iCell) - pp(k,iCell))   &
                                   + pzp(k,iCell)*(pp(k+2,iCell) - pp(k,iCell)) )
@@ -3162,9 +3131,12 @@ module atm_time_integration
               dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp(k+1,iCell) - pp(k  ,iCell))  &
                                    + pzm(k,iCell)*(pp(k  ,iCell) - pp(k-1,iCell)) )
            end do
-   
            k = nVertLevels
            dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
+
+          do k = 1,nVertLevels
+            tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
+          end do
         end do
       end if
 
