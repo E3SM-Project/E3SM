@@ -2,7 +2,7 @@
 .SUFFIXES: .F90 .o .c .f90
 # name of macros file - but default this is generic
 
-VPATH := $(TIMING_DIR) $(GPTL_DIR)
+VPATH := $(GPTL_DIR)
 
 # Determine whether to compile threaded or not
 ifeq ($(strip $(BUILD_THREADED)),TRUE)
@@ -29,10 +29,6 @@ endif
 include $(MACFILE)
 
 INCLDIR += -I$(GPTL_DIR)
-
-ifdef GPTL_CPPDEFS
-  CPPDEFS += $(GPTL_CPPDEFS)
-endif
 
 ifeq ($(strip $(MPILIB)), mpi-serial)
   CC      := $(SCC)
