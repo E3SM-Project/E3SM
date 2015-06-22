@@ -8,8 +8,8 @@ cd $CASEROOT
 set CASE    = `./xmlquery CASE -value`
 set CASE0   = ${CASE}
 set CASER0  = ${CASEROOT}
-set CASERR1 = ${CASEROOT}.ref1
-set CASERR2 = ${CASEROOT}.ref2
+set CASERR1 = ${CASEROOT}/${CASE}.ref1
+set CASERR2 = ${CASEROOT}/${CASE}.ref2
 
 # turn on memory leak check - if comparing with baseline also 
 # compare memory highwater mark from baseline 
