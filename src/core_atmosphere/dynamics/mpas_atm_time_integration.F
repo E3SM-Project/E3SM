@@ -1694,19 +1694,11 @@ module atm_time_integration
             iEdge = edgesOnCell(i,iCell)
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-
             do k=1,nVertLevels
-
-! redefine ru_p to be perturbation from time t, change 3c
-               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge)
-               rs(k,iCell) = rs(k,iCell)-flux/areaCell(iCell)
-
-               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*(ru_p(k,iEdge) + ru_save(k,iEdge)-ru(k,iEdge))
-               flux = flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
-               ts(k,iCell) = ts(k,iCell)-flux/areaCell(iCell)
-
+               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge)/areaCell(iCell)
+               rs(k,iCell) = rs(k,iCell)-flux
+               ts(k,iCell) = ts(k,iCell)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
             end do
-
          end do
       end do
 
@@ -1714,7 +1706,7 @@ module atm_time_integration
 
       zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
 
-!$OMP BARRIER
+!$OMP BARRIER  ! Why is there a barrier here?????
 
       ! vertically implicit acoustic and gravity wave integration.
       ! this follows Klemp et al MWR 2007, with the addition of an implicit Rayleigh damping of w
@@ -1723,27 +1715,11 @@ module atm_time_integration
       do iCell=cellSolveStart,cellSolveEnd
 
          do k=1, nVertLevels
-! redefine rw_p to be perturbation from time t, change 4 ! temporary
             rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
                             - cofrz(k)*resm*(rw_p(k+1,iCell)-rw_p(k,iCell)) 
-!                            - dts*rdzw(k)*( (rw_save(k+1,iCell) - rw(k+1,iCell)) &
-!                                            -(rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
-!            ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
-!                               - resm*rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)      &
-!                               -coftz(k,iCell)*rw_p(k,iCell))
-
-!            rs(k,iCell) = rho_pp(k,iCell) + dts*tend_rho(k,iCell) + rs(k,iCell)      &
-!                            - cofrz(k)*resm*(  rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell)) &
-!                                             - rw_p(k  ,iCell) - (rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
             ts(k,iCell) = rtheta_pp(k,iCell) + dts*tend_rt(k,iCell) + ts(k,iCell)    &
-                               - resm*rdzw(k)*( coftz(k+1,iCell)*(rw_p(k+1,iCell) + (rw_save(k+1,iCell) - rw(k+1,iCell))) &
-                                               -coftz(k  ,iCell)*(rw_p(k  ,iCell) + (rw_save(k  ,iCell) - rw(k  ,iCell))) )
-!            rs(k,iCell) = rs(k,iCell) &
-!                            - dts*rdzw(k)*( (rw_save(k+1,iCell) - rw(k+1,iCell)) &
-!                                            -(rw_save(k  ,iCell) - rw(k  ,iCell)) ) 
-            ts(k,iCell) = ts(k,iCell) &
-                               - rdzw(k)*( coftz(k+1,iCell)*((rw_save(k+1,iCell) - rw(k+1,iCell))) &
-                                          -coftz(k  ,iCell)*((rw_save(k  ,iCell) - rw(k  ,iCell))) )
+                               - resm*rdzw(k)*( coftz(k+1,iCell)*rw_p(k+1,iCell)      &
+                                               -coftz(k,iCell)*rw_p(k,iCell))
          end do
 
          do k=2, nVertLevels
@@ -3513,17 +3489,6 @@ module atm_time_integration
 
          do k=2,nVertLevels
 
-
-!  change for rho_pp from rho_pp = rho_p^ - rho_p^* to rho_p^ - rho_p^t; change 1
-
-!            tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))    &
-!                                  - cqw(k,iCell)*( rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))        &
-!                                  + gravity*  &
-!                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
-!                                             rr(k,iCell)*(1.+qtot(k,iCell)))                  &
-!                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
-!                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
-
             tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))    &
                                   - cqw(k,iCell)*(        &
                                     gravity*  &
@@ -3531,18 +3496,6 @@ module atm_time_integration
                                              rr_save(k,iCell)*(1.+qtot(k,iCell)))                  &
                                     +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
                                              rr_save(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
-
-
-!  diagnostics (not used in physics).  no longer needed
-!            if (rk_step == 1) then
-!               tend_w_pgf(k,iCell)  = cqw(k,iCell)*(rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))) 
-!               tend_w_buoy(k,iCell) = cqw(k,iCell)*gravity* &
-!                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +       &
-!                                             rr(k,iCell)*(1.+qtot(k,iCell)))     &
-!                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
-!                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) )
-!            end if
-
          end do
       end do
 
@@ -3586,6 +3539,23 @@ module atm_time_integration
          end do
       end do
 
+!  addition to pick up perturbation flux for rtheta_pp equation
+
+      if(rk_step > 1) then
+        do iCell=cellSolveStart,cellSolveEnd
+          do i=1,nEdgesOnCell(iCell) 
+            iEdge = edgesOnCell(i,iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k=1,nVertLevels
+               flux = edgesOnCell_sign(i,iCell)*dvEdge(iEdge)*(ru_save(k,iEdge)-ru(k,iEdge))
+               flux = flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
+!               tend_theta(k,iCell) = tend_theta(k,iCell)-flux/areaCell(iCell)
+               tend_theta(k,iCell) = tend_theta(k,iCell)-flux  ! division by areaCell picked up down below
+            end do
+          end do
+        end do
+      end if
 
       !
       !  horizontal mixing for theta_m - we could combine this with advection directly (i.e. as a turbulent flux),
@@ -3661,12 +3631,15 @@ module atm_time_integration
          wdtz(1) = 0.0
 
          k = 2
-         wdtz(k) =  rw(k,icell)*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))
+!!         wdtz(k) =  rw(k,icell)*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))  ! rtheta_pp redefinition
+         wdtz(k) =  rw_save(k,icell)*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))
          do k=3,nVertLevels-1
             wdtz(k) = flux3( theta_m(k-2,iCell),theta_m(k-1,iCell),theta_m(k,iCell),theta_m(k+1,iCell), rw(k,iCell), coef_3rd_order )
+            wdtz(k) =  wdtz(k) + (rw_save(k,icell)-rw(k,iCell))*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))  ! rtheta_pp redefinition
          end do
          k = nVertLevels
-         wdtz(k) =  rw(k,icell)*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))
+!!         wdtz(k) =  rw(k,icell)*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))
+         wdtz(k) =  rw_save(k,icell)*(fzm(k)*theta_m(k,iCell)+fzp(k)*theta_m(k-1,iCell))  ! rtheta_pp redefinition
 
          wdtz(nVertLevels+1) = 0.0
 
