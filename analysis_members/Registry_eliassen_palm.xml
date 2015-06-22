@@ -6,6 +6,13 @@
     description="If true, ocean analysis member eliassen_palm is called."
     possible_values=".true. or .false."
   />
+  <nml_option name="config_eliassen_palm_do_restart" 
+    type="logical" 
+    default_value=".false." 
+    units="unitless"
+		description="If true, all EPfT fields are initialized using a restart file"
+		possible_values=".true. or .false."
+		/>
   <nml_option name="config_eliassen_palm_reset" 
     type="logical" 
     default_value=".false." 
@@ -75,98 +82,10 @@
   />
 </dims>
 
-
 <packages>
   <package name="amEliassenPalmPkg" 
     description="This package includes variables required for the amEliassenPalm analysis member."/>
 </packages>
-  
-<streams>
-
-<!--
-  <stream name="eliassenPalmInput" 
-    type="input"
-    mode="forward;analysis"
-    filename_template="eliassen_palm_input.$Y-$M-$D.nc"
-    filename_interval="01-00-00_00:00:00"
-    input_interval="initial_only"
-    packages="amEliassenPalmPkg"
-    clobber_mode="truncate"
-    runtime_format="single_file">
-    <var name="xtime"/> 
-    <var name="potentialDensityMidRef"/> 
-  </stream>
---!>
-  <stream name="eliassenPalmOutput" 
-    type="output"
-    mode="forward;analysis"
-    filename_template="analysis_members/eliassen_palm_output.$Y-$M-$D.nc"
-    filename_interval="01-00-00_00:00:00"
-    output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmPkg"
-    clobber_mode="truncate"
-    runtime_format="single_file">
-    <var name="xtime"/> 
-    <var name="potentialDensityMidRef"/> 
-    <var name="potentialDensityTopRef"/> 
-    <var name="nSamplesEA"/> 
-    <var name="buoyancyMaskEA"/> 
-    <var name="sigmaEA"/> 
-    <var name="heightMidBuoyCoorEA"/> 
-    <var name="heightTopBuoyCoorEA"/> 
-    <var name="heightMidBuoyCoorSqEA"/> 
-    <var name="montgPotBuoyCoorEA"/> 
-    <var name="montgPotGradZonalEA"/> 
-    <var name="montgPotGradMeridEA"/> 
-    <var name="heightMGradZonalEA"/> 
-    <var name="heightMGradMeridEA"/> 
-    <var name="uusigmaEA"/> 
-    <var name="vvsigmaEA"/> 
-    <var name="uvsigmaEA"/> 
-    <var name="uwsigmaEA"/> 
-    <var name="vwsigmaEA"/> 
-    <var name="uTWA"/> 
-    <var name="vTWA"/> 
-    <var name="wTWA"/> 
-    <var name="EPFT"/> 
-    <var name="divEPFT"/> 
-    <var name="ErtelPVFlux"/> 
-    <var name="ErtelPVTendency"/> 
-    <var name="ErtelPV"/> 
-  </stream>
-
-  <stream name="eliassenPalmRestart" 
-    type="input;output"
-    mode="forward;analysis"
-    filename_template="restarts/eliassen_palm_restart.$Y-$M-$D.nc"
-    filename_interval="01-00-00_00:00:00"
-    input_interval="initial_only"
-    output_interval="00-00-01_00:00:00"
-    packages="amEliassenPalmPkg"
-    clobber_mode="truncate"
-    runtime_format="single_file">
-    <var name="xtime"/> 
-    <var name="nSamplesEA"/> 
-    <var name="buoyancyMaskEA"/> 
-    <var name="sigmaEA"/> 
-    <var name="potentialDensityMidRef"/> 
-    <var name="heightMidBuoyCoorEA"/> 
-    <var name="heightTopBuoyCoorEA"/> 
-    <var name="heightMidBuoyCoorSqEA"/> 
-    <var name="montgPotBuoyCoorEA"/> 
-    <var name="montgPotGradZonalEA"/> 
-    <var name="montgPotGradMeridEA"/> 
-    <var name="heightMGradZonalEA"/> 
-    <var name="heightMGradMeridEA"/> 
-    <var name="usigmaEA"/> 
-    <var name="vsigmaEA"/> 
-    <var name="uusigmaEA"/> 
-    <var name="vvsigmaEA"/> 
-    <var name="uvsigmaEA"/> 
-    <var name="uwsigmaEA"/> 
-    <var name="vwsigmaEA"/> 
-  </stream>
-</streams>
   
 <var_struct name="amEliassenPalmScratch" time_levs="1">
   <var name="firstLayerBuoyCoor" 
@@ -469,6 +388,12 @@
     units="m^2 s^{-2}"
     description="Meridional velocity times sigma, ensemble average"
   />
+  <var name="varpisigmaEA" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s{-1}"
+    description="Vertical velocity in buoyancy coordinates times sigma, ensemble average"
+  />
   <var name="uusigmaEA" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
@@ -487,13 +412,13 @@
     units="m^2 s^{-2}"
     description="Zonal velocity times meridional velocity times sigma, ensemble average"
   />
-  <var name="uwsigmaEA" 
+  <var name="uvarpisigmaEA" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
     description="Zonal velocity times vertical velocity in buoyancy coordinates times sigma, ensemble average"
   />
-  <var name="vwsigmaEA" 
+  <var name="vvarpisigmaEA" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
@@ -511,7 +436,7 @@
     units="m s^{-1}"
     description="Meridional velocity, thickness weighted"
   />
-  <var name="wTWA" 
+  <var name="varpiTWA" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="m s^{-3}"
@@ -548,4 +473,92 @@
     description="Ertel PV on buoyancy surfaces"
   />
 </var_struct>
+
+<streams>
+
+<!--
+  <stream name="eliassenPalmInput" 
+    type="input"
+    mode="forward;analysis"
+    filename_template="eliassen_palm_input.$Y-$M-$D.nc"
+    filename_interval="01-00-00_00:00:00"
+    input_interval="initial_only"
+    packages="amEliassenPalmPkg"
+    clobber_mode="truncate"
+    runtime_format="single_file">
+    <var name="xtime"/> 
+    <var name="potentialDensityMidRef"/> 
+  </stream>
+--!>
+  <stream name="eliassenPalmOutput" 
+    type="output"
+    mode="forward;analysis"
+    filename_template="analysis_members/eliassen_palm_output.$Y-$M-$D.nc"
+    filename_interval="01-00-00_00:00:00"
+    output_interval="00-00-01_00:00:00"
+    packages="amEliassenPalmPkg"
+    clobber_mode="truncate"
+    runtime_format="single_file">
+    <var name="xtime"/> 
+    <var name="potentialDensityMidRef"/> 
+    <var name="potentialDensityTopRef"/> 
+    <var name="nSamplesEA"/> 
+    <var name="buoyancyMaskEA"/> 
+    <var name="sigmaEA"/> 
+    <var name="heightMidBuoyCoorEA"/> 
+    <var name="heightTopBuoyCoorEA"/> 
+    <var name="heightMidBuoyCoorSqEA"/> 
+    <var name="montgPotBuoyCoorEA"/> 
+    <var name="montgPotGradZonalEA"/> 
+    <var name="montgPotGradMeridEA"/> 
+    <var name="heightMGradZonalEA"/> 
+    <var name="heightMGradMeridEA"/> 
+    <var name="uusigmaEA"/> 
+    <var name="vvsigmaEA"/> 
+    <var name="uvsigmaEA"/> 
+    <var name="uvarpisigmaEA"/> 
+    <var name="vvarpisigmaEA"/> 
+    <var name="uTWA"/> 
+    <var name="vTWA"/> 
+    <var name="varpiTWA"/> 
+    <var name="EPFT"/> 
+    <var name="divEPFT"/> 
+    <var name="ErtelPVFlux"/> 
+    <var name="ErtelPVTendency"/> 
+    <var name="ErtelPV"/> 
+  </stream>
+
+  <stream name="eliassenPalmRestart" 
+    type="input;output"
+    mode="forward;analysis"
+    filename_template="restarts/eliassen_palm_restart.$Y-$M-$D.nc"
+    filename_interval="01-00-00_00:00:00"
+    input_interval="initial_only"
+    output_interval="00-00-01_00:00:00"
+    packages="amEliassenPalmPkg"
+    clobber_mode="truncate"
+    runtime_format="single_file">
+    <var name="xtime"/> 
+    <var name="nSamplesEA"/> 
+    <var name="buoyancyMaskEA"/> 
+    <var name="sigmaEA"/> 
+    <var name="potentialDensityMidRef"/> 
+    <var name="heightMidBuoyCoorEA"/> 
+    <var name="heightTopBuoyCoorEA"/> 
+    <var name="heightMidBuoyCoorSqEA"/> 
+    <var name="montgPotBuoyCoorEA"/> 
+    <var name="montgPotGradZonalEA"/> 
+    <var name="montgPotGradMeridEA"/> 
+    <var name="heightMGradZonalEA"/> 
+    <var name="heightMGradMeridEA"/> 
+    <var name="usigmaEA"/> 
+    <var name="vsigmaEA"/> 
+    <var name="uusigmaEA"/> 
+    <var name="vvsigmaEA"/> 
+    <var name="uvsigmaEA"/> 
+    <var name="uvarpisigmaEA"/> 
+    <var name="vvarpisigmaEA"/> 
+  </stream>
+</streams>
+  
 

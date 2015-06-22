@@ -201,8 +201,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: uusigmaEA
       real (kind=RKIND), dimension(:,:), pointer :: vvsigmaEA
       real (kind=RKIND), dimension(:,:), pointer :: uvsigmaEA
-      real (kind=RKIND), dimension(:,:), pointer :: uwsigmaEA
-      real (kind=RKIND), dimension(:,:), pointer :: vwsigmaEA
+      real (kind=RKIND), dimension(:,:), pointer :: uvarpisigmaEA
+      real (kind=RKIND), dimension(:,:), pointer :: vvarpisigmaEA
 
       err = 0
 
@@ -282,8 +282,8 @@ contains
             call mpas_pool_get_array(amEPFTPool, 'uusigmaEA', uusigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'vvsigmaEA', vvsigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'uvsigmaEA', uvsigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'uwsigmaEA', uwsigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'vwsigmaEA', vwsigmaEA)
+            call mpas_pool_get_array(amEPFTPool, 'uvarpisigmaEA', uvarpisigmaEA)
+            call mpas_pool_get_array(amEPFTPool, 'vvarpisigmaEA', vvarpisigmaEA)
 
             nSamplesEA = 0.0
             buoyancyMaskEA = 0.0
@@ -300,8 +300,8 @@ contains
             uusigmaEA = 0.0
             vvsigmaEA = 0.0
             uvsigmaEA = 0.0
-            uwsigmaEA = 0.0
-            vwsigmaEA = 0.0
+            uvarpisigmaEA = 0.0
+            vvarpisigmaEA = 0.0
          end if
 
          block => block % next
@@ -403,7 +403,7 @@ contains
       ! define mesh variables
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:), pointer :: fCell
-      real(KIND=RKIND), dimension(:,:), pointer :: cellMask
+      integer, dimension(:,:), pointer :: cellMask
 
       !-----------------------------------------------------------------
       ! define fields related to the Ensemble Average (EA)
@@ -420,19 +420,19 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: heightMGradMeridEA
       real(KIND=RKIND), dimension(:,:), pointer :: usigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: vsigmaEA
-      real(KIND=RKIND), dimension(:,:), pointer :: wsigmaEA
+      real(KIND=RKIND), dimension(:,:), pointer :: varpisigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: uusigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: vvsigmaEA
       real(KIND=RKIND), dimension(:,:), pointer :: uvsigmaEA
-      real(KIND=RKIND), dimension(:,:), pointer :: uwsigmaEA
-      real(KIND=RKIND), dimension(:,:), pointer :: vwsigmaEA
+      real(KIND=RKIND), dimension(:,:), pointer :: uvarpisigmaEA
+      real(KIND=RKIND), dimension(:,:), pointer :: vvarpisigmaEA
       
       !-----------------------------------------------------------------
       ! define the Thickness-Weighted Average (TWA) velocity
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:,:), pointer :: uTWA
       real(KIND=RKIND), dimension(:,:), pointer :: vTWA
-      real(KIND=RKIND), dimension(:,:), pointer :: wTWA
+      real(KIND=RKIND), dimension(:,:), pointer :: varpiTWA
       
       !-----------------------------------------------------------------
       ! define Ertel's potential vorticity and related fields
@@ -532,8 +532,8 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: density
       real(KIND=RKIND), dimension(:,:), pointer :: potentialDensity
       real(KIND=RKIND), dimension(:,:), pointer :: pressure
-      real(KIND=RKIND), dimension(:,:), pointer :: normalVelocityZonal
-      real(KIND=RKIND), dimension(:,:), pointer :: normalVelocityMeridional
+      real(KIND=RKIND), dimension(:,:), pointer :: velocityZonal
+      real(KIND=RKIND), dimension(:,:), pointer :: velocityMeridional
       real(KIND=RKIND), dimension(:,:), pointer :: relativeVorticityCell ! jas used for testing
       !real(KIND=RKIND), dimension(:,:), pointer :: wCellCenter
 
@@ -556,6 +556,7 @@ contains
       
       err = 0
 
+      nCellsCum = 0
       RMSlocal1  = 0.0
       RMSlocal2  = 0.0
       RMSglobal1 = 0.0
@@ -595,7 +596,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'amEliassenPalm', am_epftPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'eliassenPalmScratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'amEliassenPalmScratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
@@ -737,10 +738,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
          call mpas_pool_get_array(diagnosticsPool, 'density', density)
-         call mpas_pool_get_array(diagnosticsPool, 'potentialdensity', potentialDensity)
+         call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
          call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZonal', normalVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'normalVelocityMeridional', normalVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          
          !--------------------------------------------------
          ! variables that define the vertical coordinate system in density/buoyancy space
@@ -767,15 +768,15 @@ contains
          call mpas_pool_get_array(am_epftPool, 'heightMGradMeridEA', HeightMGradMeridEA)
          call mpas_pool_get_array(am_epftPool, 'usigmaEA', usigmaEA)
          call mpas_pool_get_array(am_epftPool, 'vsigmaEA', vsigmaEA)
-         call mpas_pool_get_array(am_epftPool, 'wsigmaEA', wsigmaEA)
+         call mpas_pool_get_array(am_epftPool, 'varpisigmaEA', varpisigmaEA)
          call mpas_pool_get_array(am_epftPool, 'uusigmaEA', uusigmaEA)
          call mpas_pool_get_array(am_epftPool, 'vvsigmaEA', vvsigmaEA)
          call mpas_pool_get_array(am_epftPool, 'uvsigmaEA', uvsigmaEA)
-         call mpas_pool_get_array(am_epftPool, 'uwsigmaEA', uwsigmaEA)
-         call mpas_pool_get_array(am_epftPool, 'vwsigmaEA', vwsigmaEA)
+         call mpas_pool_get_array(am_epftPool, 'uvarpisigmaEA', uvarpisigmaEA)
+         call mpas_pool_get_array(am_epftPool, 'vvarpisigmaEA', vvarpisigmaEA)
          call mpas_pool_get_array(am_epftPool, 'uTWA', uTWA)
          call mpas_pool_get_array(am_epftPool, 'vTWA', vTWA)
-         call mpas_pool_get_array(am_epftPool, 'wTWA', wTWA)
+         call mpas_pool_get_array(am_epftPool, 'varpiTWA', varpiTWA)
 
          !--------------------------------------------------
          ! Eliassen-Palm Flux Tensor and related products
@@ -937,11 +938,11 @@ contains
             -potentialDensityTopRef, heightTopBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, normalVelocityZonal, &
+            maxLevelCell, -potentialDensity, velocityZonal, &
             -potentialDensityMidRef, uMidBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, normalVelocityMeridional, &
+            maxLevelCell, -potentialDensity, velocityMeridional, &
             -potentialDensityMidRef, vMidBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
@@ -963,8 +964,8 @@ contains
             do k = 1, firstLayerBuoyCoor(i)-1
               heightMidBuoyCoor(k,i) = zTop(1,i)
               heightTopBuoyCoor(k,i) = zTop(1,i)
-              uMidBuoyCoor(k,i) = normalVelocityZonal(1,i)
-              vMidBuoyCoor(k,i) = normalVelocityMeridional(1,i)
+              uMidBuoyCoor(k,i) = velocityZonal(1,i)
+              vMidBuoyCoor(k,i) = velocityMeridional(1,i)
               densityMidBuoyCoor(k,i) = density(1,i)
               densityTopBuoyCoor(k,i) = density(1,i)
               ! diabatic
@@ -973,8 +974,8 @@ contains
             do k = lastLayerBuoyCoor(i) + 1, nBuoyancyLayers
               heightMidBuoyCoor(k,i) = -bottomDepth(i)
               heightTopBuoyCoor(k,i) = -bottomDepth(i)
-              uMidBuoyCoor(k,i) = normalVelocityZonal(maxLevelCell(i),i)
-              vMidBuoyCoor(k,i) = normalVelocityMeridional(maxLevelCell(i),i)
+              uMidBuoyCoor(k,i) = velocityZonal(maxLevelCell(i),i)
+              vMidBuoyCoor(k,i) = velocityMeridional(maxLevelCell(i),i)
               densityMidBuoyCoor(k,i) = density(maxLevelCell(i),i)
               densityTopBuoyCoor(k,i) = density(maxLevelCell(i),i)
               ! diabatic
@@ -1039,8 +1040,8 @@ contains
 
          ! Diabatic terms
          !wrk3DBuoyCoor = wMidBuoyCoor * sigma
-         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, wsigmaEA)
-         wsigmaEA = 0.0
+         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, varpisigmaEA)
+         varpisigmaEA = 0.0
 
    
          !-------------------------------------------------------------
@@ -1057,13 +1058,13 @@ contains
 
          ! Diabatic terms
          !wrk3DBuoyCoor = uMidBuoyCoor * wMidBuoyCoor * sigma
-         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uwsigmaEA)
-         uwsigmaEA = 0.0
+         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uvarpisigmaEA)
+         uvarpisigmaEA = 0.0
 
          ! Diabatic terms
          !wrk3DBuoyCoor = vMidBuoyCoor * wMidBuoyCoor* sigma
-         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, vwsigmaEA)
-         vwsigmaEA = 0.0
+         !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, vvarpisigmaEA)
+         vvarpisigmaEA = 0.0
    
          !-------------------------------------------------------------
          ! update number of samples in ensemble average
@@ -1077,8 +1078,8 @@ contains
          call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, usigmaEA,  uTWA)
          call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, vsigmaEA,  vTWA)
          ! Diabatic terms
-         !call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, wsigmaEA,  wTWA)
-         wTWA = 0.0
+         !call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, varpisigmaEA,  varpiTWA)
+         varpiTWA = 0.0
 
          !-------------------------------------------------------------
          ! based on current estimate of ensemble-average state,
@@ -1087,8 +1088,8 @@ contains
          call calculateEPFTfromTWA(nBuoyancyLayers, nCells, &
             sigmaEA, heightMidBuoyCoorEA, &
             heightMidBuoyCoorSqEA, montgPotGradZonalEA, montgPotGradMeridEA, &
-            heightMGradZonalEA, heightMGradMeridEA, uTWA, vTWA, wTWA, &
-            uusigmaEA, vvsigmaEA, uvsigmaEA, uwsigmaEA, vwsigmaEA, EPFT)
+            heightMGradZonalEA, heightMGradMeridEA, uTWA, vTWA, varpiTWA, &
+            uusigmaEA, vvsigmaEA, uvsigmaEA, uvarpisigmaEA, vvarpisigmaEA, EPFT)
 
          !-------------------------------------------------------------
          ! compute the force applied to the momentum equation as div(EPFT)
@@ -1961,8 +1962,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine calculateEPFTfromTWA(nLayers, nCells, &
-         sigmaEA, heightEA, heightSqEA, MxEA, MyEA, HMxEA, HMyEA, uTWA, vTWA, wTWA, &
-         uuSigmaEA, vvSigmaEA, uvSigmaEA, uwSigmaEA, vwSigmaEA, Etensor)!{{{
+         sigmaEA, heightEA, heightSqEA, MxEA, MyEA, HMxEA, HMyEA, uTWA, vTWA, varpiTWA, &
+         uuSigmaEA, vvSigmaEA, uvSigmaEA, uvarpisigmaEA, vvarpisigmaEA, Etensor)!{{{
       integer, intent(in) :: nLayers, nCells
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: sigmaEA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightEA
@@ -1973,12 +1974,12 @@ contains
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: HMyEA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uTWA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vTWA
-      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: wTWA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: varpiTWA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uuSigmaEA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vvSigmaEA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uvSigmaEA
-      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uwSigmaEA
-      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vwSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uvarpisigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vvarpisigmaEA
       real (kind=RKIND), dimension(3, 3, nLayers, nCells), intent(out) :: Etensor
    
       ! local variables
@@ -1997,8 +1998,8 @@ contains
             uppupp = uuSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*uTWA(kLayer,iCell)
             vppvpp = vvSigmaEA(kLayer,iCell) / sigma - vTWA(kLayer,iCell)*vTWA(kLayer,iCell)
             uppvpp = uvSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*vTWA(kLayer,iCell)
-            uppwpp = uwSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*wTWA(kLayer,iCell)
-            vppwpp = vwSigmaEA(kLayer,iCell) / sigma - vTWA(kLayer,iCell)*wTWA(kLayer,iCell)
+            uppwpp = uvarpisigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*varpiTWA(kLayer,iCell)
+            vppwpp = vvarpisigmaEA(kLayer,iCell) / sigma - vTWA(kLayer,iCell)*varpiTWA(kLayer,iCell)
             HpHp   = heightSqEA(kLayer,iCell) - heightEA(kLayer,iCell)*heightEA(kLayer,iCell)
             HpMxp  = HMxEA(kLayer,iCell) - heightEA(kLayer,iCell)*MxEA(kLayer,iCell)
             HpMyp  = HMyEA(kLayer,iCell) - heightEA(kLayer,iCell)*MyEA(kLayer,iCell)
@@ -2072,7 +2073,7 @@ contains
       ! variables used for testing and debugging
       real (kind=RKIND), dimension(:), allocatable :: divExact
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
-      real (kind=RKIND), dimension(:,:), pointer :: boundaryCell
+      integer, dimension(:,:), pointer :: boundaryCell
 
       if (debugFlag) then
         allocate(divExact(nCells+1))
