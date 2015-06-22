@@ -506,7 +506,6 @@
     <var name="buoyancyMaskEA"/> 
     <var name="sigmaEA"/> 
     <var name="heightMidBuoyCoorEA"/> 
-    <var name="heightTopBuoyCoorEA"/> 
     <var name="heightMidBuoyCoorSqEA"/> 
     <var name="montgPotBuoyCoorEA"/> 
     <var name="montgPotGradZonalEA"/> 
@@ -544,7 +543,6 @@
     <var name="sigmaEA"/> 
     <var name="potentialDensityMidRef"/> 
     <var name="heightMidBuoyCoorEA"/> 
-    <var name="heightTopBuoyCoorEA"/> 
     <var name="heightMidBuoyCoorSqEA"/> 
     <var name="montgPotBuoyCoorEA"/> 
     <var name="montgPotGradZonalEA"/> 
