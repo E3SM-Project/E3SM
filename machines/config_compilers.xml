@@ -845,10 +845,11 @@ for mct, etc.
 
 <compiler COMPILER="nag" MACH="hobart">
  <NETCDF_PATH> /usr/local/netcdf_c-4.3.2_f-4.4.1-nag-6.0</NETCDF_PATH>
- <MPI_PATH MPILIB="openmpi"> /cluster/openmpi-1.8.4-gcc-g++-4.8.3-nag-6.0</MPI_PATH>
+ <MPI_PATH MPILIB="openmpi"> /cluster/openmpi-1.8.3-gcc-g++-4.8.3-nag-6.0</MPI_PATH>
  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
  <!-- needed for nag pio build.. -->
  <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
+ <ADD_LDFLAGS> -lpthread</ADD_LDFLAGS>
  <!-- Experimental wrapper for OpenMP. -->
  <!-- <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,rpath=/home/santos/lib/fake_omp  -->
 </compiler>

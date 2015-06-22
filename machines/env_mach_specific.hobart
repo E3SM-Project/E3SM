@@ -30,6 +30,8 @@ endif
 
 if ( $COMPILER == "nag" ) then
     module load compiler/nag/6.0
+	module unload mpi/nag/openmpi-1.8.5
+	module load mpi/nag/openmpi-1.8.3
 endif
 
 if ( $COMPILER == "gnu" ) then
