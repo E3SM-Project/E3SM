@@ -254,7 +254,7 @@ contains
 
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_global_stats", .false., amGlobalStatsTimer)
+      call mpas_timer_start("AM_global_stats", .false., amGlobalStatsTimer)
 
       call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
 
@@ -690,7 +690,7 @@ contains
       maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
       sumGlobalStats(1:nVariables) =  sums(1:nVariables)
 
-      call mpas_timer_stop("global_stats", amGlobalStatsTimer)
+      call mpas_timer_stop("AM_global_stats", amGlobalStatsTimer)
 
    end subroutine ocn_compute_global_stats!}}}
 

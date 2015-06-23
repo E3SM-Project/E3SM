@@ -320,7 +320,7 @@ contains
       err = 0
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_meridional_heat_transport", .false., MerHeatTransTimer)
+      call mpas_timer_start("AM_meridional_heat_transport", .false., MerHeatTransTimer)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'MerHeatTrans', MerHeatTransPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
@@ -460,7 +460,7 @@ contains
       deallocate(totalSumMerHeatTrans)
       deallocate(mht_meridional_integral)
 
-      call mpas_timer_stop("meridional_heat_transport", MerHeatTransTimer)
+      call mpas_timer_stop("AM_meridional_heat_transport", MerHeatTransTimer)
 
    end subroutine ocn_compute_meridional_heat_transport!}}}
 
