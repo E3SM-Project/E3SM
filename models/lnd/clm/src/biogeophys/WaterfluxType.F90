@@ -552,6 +552,7 @@ contains
     endif
 
     do_io = .true.
+    readvar = .false.
     if (flag == 'read') then
        ! On a read, confirm that this variable has the expected size; if not, don't read
        ! it (instead give it a default value). This is needed to support older initial
@@ -559,19 +560,20 @@ contains
        call ncd_inqvdlen(ncid, 'n_irrig_steps_left', 1, dimlen, err_code)
        if (dimlen /= nump_global) then
           do_io = .false.
-          readvar = .false.
        end if
-    else if (flag == 'define' .or. do_io) then
+    end if
+    if (do_io) then
        call restartvar(ncid=ncid, flag=flag, varname='n_irrig_steps_left', xtype=ncd_int,  &
             dim1name='pft', &
             long_name='number of irrigation time steps left', units='#', &
             interpinic_flag='interp', readvar=readvar, data=this%n_irrig_steps_left_patch)
-       if (flag=='read' .and. .not. readvar) then
-          this%n_irrig_steps_left_patch = 0
-       end if
+    end if
+    if (flag=='read' .and. .not. readvar) then
+       this%n_irrig_steps_left_patch = 0
     end if
 
     do_io = .true.
+    readvar = .false.
     if (flag == 'read') then
        ! On a read, confirm that this variable has the expected size; if not, don't read
        ! it (instead give it a default value). This is needed to support older initial
@@ -579,16 +581,16 @@ contains
        call ncd_inqvdlen(ncid, 'irrig_rate', 1, dimlen, err_code)
        if (dimlen /= nump_global) then
           do_io = .false.
-          readvar = .false.
        end if
-    else if (flag == 'define' .or. do_io) then
+    end if
+    if (do_io) then
        call restartvar(ncid=ncid, flag=flag, varname='irrig_rate', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='irrigation rate', units='mm/s', &
             interpinic_flag='interp', readvar=readvar, data=this%irrig_rate_patch)
-       if (flag=='read' .and. .not. readvar) then
-          this%irrig_rate_patch = 0.0_r8
-       end if
+    end if
+    if (flag=='read' .and. .not. readvar) then
+       this%irrig_rate_patch = 0.0_r8
     end if
 
   end subroutine Restart
