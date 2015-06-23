@@ -293,7 +293,7 @@ contains
       call mpas_pool_get_package(ocnPackages, 'frazilIceActive', frazilIcePkgActive)
 
       ! start timer
-      call mpas_timer_start("compute_surface_area_weighted_averages", .false., amSfcAreaWeighedAvgTimer)
+      call mpas_timer_start("AM_surface_area_weighted_averages", .false., amSfcAreaWeighedAvgTimer)
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -511,7 +511,7 @@ contains
       deallocate(workBufferMaxReduced)
 
       ! stop timer
-      call mpas_timer_stop("surface_area_weighted_averages", amSfcAreaWeighedAvgTimer)
+      call mpas_timer_stop("AM_surface_area_weighted_averages", amSfcAreaWeighedAvgTimer)
 
    contains
 
