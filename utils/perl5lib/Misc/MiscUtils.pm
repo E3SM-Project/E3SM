@@ -1,13 +1,9 @@
 #!/usr/bin/env perl
 # -*- mode: cperl; cperl-indent-level: 4; indent-tabs-mode: nil; -*-
 #==============================================================================
-# File: UserdefinedUtils.pm
+# File: Misc.pm
 #
-# Purpose: Provide a simpler way to configure userdefined machines
-# without modifying the cime machines directory (don't want everyones
-# machine included in cime) or hand modifying xml files in case
-# directories (not possible for automated testing).
-#
+# Misc utility code that didn't fit in any other module.
 #
 #==============================================================================
 use strict;
@@ -25,6 +21,9 @@ my @EXPORT = qw(getConfigDirs getConfigXMLRoot getBatchSystemType);
 
 #==============================================================================
 sub getConfigDirs {
+    #
+    # Return a list of directories to search for configuration xml files.
+    #
     my ($caseroot, $machroot) = @_;
     my @configdirs = ( "$ENV{'HOME'}\/.cime", $machroot, $caseroot . '/Tools' );
     return \@configdirs;
@@ -32,6 +31,11 @@ sub getConfigDirs {
 
 #==============================================================================
 sub getConfigXMLRoot {
+    #
+    # Reusable function to extract the xml root for a the first file
+    # that contains a caller specified xpath query. Example use is to
+    # find the xml file that contains a specific machine.
+    #
     my $machroot = shift;
     my $caseroot = shift;
     my $filename = shift;
@@ -54,7 +58,7 @@ sub getConfigXMLRoot {
         }
     }
     if(! @mach) {
-        die "Could not find '$xpathmatch' in any '$filename' in directories: $configdirs";
+        die "Could not find '$xpathmatch' in any '$filename' in directories: @{$configdirs}";
     }
     return $root;
 }
@@ -62,6 +66,13 @@ sub getConfigXMLRoot {
 #==============================================================================
 sub getBatchSystemType
 {
+    #
+    # Get the name of the batch system for a specified machine.
+    #
+    # NOTE(bja, 2015-06) this should probably be in a module called
+    # "BatchUtils", but it isn't consistent with the current module
+    # with that name.
+    #
     my $machine = shift;
     my $machroot = shift;
     my $caseroot = shift;
