@@ -70,7 +70,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -126,8 +126,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -173,7 +173,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -264,7 +264,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: workBufferSum, workBufferSumReduced
       real (kind=RKIND), dimension(:), allocatable :: workBufferMin, workBufferMinReduced
       real (kind=RKIND), dimension(:), allocatable :: workBufferMax, workBufferMaxReduced
-     
+
       ! assume no error
       err = 0
 
@@ -360,14 +360,14 @@ contains
 
          ! get pointers to data that will be analyzed
          ! listed in the order in which the fields appear in {avg,min,max}ValueWithinOceanLayerRegion
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
          call mpas_pool_get_array(diagnosticsPool, 'density', density)
          call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
          call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-         call mpas_pool_get_array(statePool, 'tracers', tracers)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
@@ -456,7 +456,7 @@ contains
           do iLevel=1,nVertLevels
              avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) + avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion)
           enddo
-        enddo 
+        enddo
         do iDataField=4,nDefinedDataFields
           avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) / max(avgValueWithinOceanVolumeRegion(3,iRegion),1.0e-8_RKIND)
         enddo
@@ -499,9 +499,9 @@ contains
    contains
 
    subroutine compute_mask(iLevel, maxLevelCell, nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
-   ! this subroutines produces a 0/1 mask that is multiplied with workArray to 
+   ! this subroutines produces a 0/1 mask that is multiplied with workArray to
    ! allow for min/max/avg to represent specific regions of the ocean domain
-   ! 
+   !
    ! NOTE: computes_mask is temporary. workMask should be intent(in) to this entire module !
    !
    integer, intent(in) :: iLevel, nCells, nCellsSolve, iRegion
@@ -604,7 +604,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -651,7 +651,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Todd Ringler
 !> \date    April 24, 2015
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !

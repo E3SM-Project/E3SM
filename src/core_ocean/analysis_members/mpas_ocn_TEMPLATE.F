@@ -18,21 +18,21 @@
 !>  1. Copy these to your new analysis member name:
 !>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
 !>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
-!>  
+!>
 !>  2. In those two new files, replace the following text:
 !>     TEMPLATE, FILL_IN_AUTHOR, FILL_IN_DATE
 !>     Typically TEMPLATE uses underscores, like your_new_name
-!>  
+!>
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
-!>  
+!>
 !>  4. In mpas_ocn_analysis_driver.F, add calls for your analysis member
 !>     by copying lines with TEMPLATE.
-!>  
+!>
 !>  5. In src/core_ocean/analysis_members/Makefile, add your
 !>     new analysis member everywhere you see
 !>     mpas_ocn_global_stats.o
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -89,7 +89,7 @@ contains
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
-!> \details 
+!> \details
 !>  This routine is intended to configure the packages for this MPAS
 !>   ocean analysis member
 !
@@ -143,8 +143,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -190,7 +190,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -273,7 +273,7 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
-         ! Computations which are functions of nCells, nEdges, or nVertices 
+         ! Computations which are functions of nCells, nEdges, or nVertices
          ! must be placed within this block loop
          ! Here are some example loops
          do iCell = 1,nCellsSolve
@@ -293,7 +293,7 @@ contains
 !      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
 !      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
 
-      ! Even though some variables do not include an index that is decomposed amongst 
+      ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
       ! correct values for writing output.
       block => domain % blocklist
@@ -316,7 +316,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -363,7 +363,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
