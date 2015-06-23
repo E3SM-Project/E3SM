@@ -32,7 +32,7 @@ to t/test_what_you_want_to_test.pm
 Note: the contents of template_test_XXX.pm are valid tests and are
 part of the test suite. This file should always be valid.
 
-New test files are picked up automatically by test_build_namelist.pl.
+New test files are picked up automatically by test_p5lib.pl.
 
 Inside the new test module:
 
@@ -55,12 +55,13 @@ Inside the new test module:
   descriptor of the branch (if phys==clm4_5) or condition being
   tested. This will make the failure output more useful.
 
-* To create each test, simply create a minimal opts and nl_flags hash
-  and pass them into the function you want to test, then check the results.
+* To create each test, simply create a minimal set of input opts and
+  pass them into the function you want to test, then check the
+  results.
 
 * Multiple tests can be placed in each function (including loops), but
-  this make it harder to what failed and why. By using one test per
-  test function, the failure messages will be more useful.
+  this make it harder to understand what failed and why. By using one
+  test per test function, the failure messages will be more useful.
 
 * Rather than describing the test in comments, it should be described
   in the message string. The message string should be printed to the
@@ -69,10 +70,18 @@ Inside the new test module:
   will become out of date.
 
 * To keep the tests machine independent, we don't want to require the
-  presence of the cesm input data repository. To meet this requirement
-  but still allow for testing of key functionality, modify or add new
-  mock xml files in t/input to point to mock files in the source
-  tree. Since build-namelist will not be reading netcdf data files,
-  mocks can be empty text files.
+  presence of the cesm input data repository. There are two options
+  meet this requirement but still allow for testing of key
+  functionality:
+
+  1. write and destroy small temporary input files as part
+  of the test fixtures. prefered.
+
+  2. modify or add new mock xml files in cime/utils/perl5lib/t/input
+  and point to them as part of the tets.
+
+  Any test that simply tests for the existance of a file should not
+  include a large source file in the repo. Just create an empty text
+  file.
 
 
