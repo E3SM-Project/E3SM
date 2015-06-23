@@ -248,7 +248,7 @@ contains
 
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_TEMPLATE", .false., am_TEMPLATETimer)
+      call mpas_timer_start("AM_TEMPLATE", .false., am_TEMPLATETimer)
 
       block => domain % blocklist
       do while (associated(block))
@@ -305,7 +305,7 @@ contains
          block => block % next
       end do
 
-      call mpas_timer_stop("TEMPLATE", am_TEMPLATETimer)
+      call mpas_timer_stop("AM_TEMPLATE", am_TEMPLATETimer)
 
    end subroutine ocn_compute_TEMPLATE!}}}
 

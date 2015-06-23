@@ -321,7 +321,7 @@ contains
       err = 0
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_zonal_mean", .false., amZonalMeanTimer)
+      call mpas_timer_start("AM_zonal_mean", .false., amZonalMeanTimer)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'amZonalMean', amZonalMeanPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
@@ -462,7 +462,7 @@ contains
 
       deallocate(sumZonalMean,totalSumZonalMean,normZonalMean)
 
-      call mpas_timer_stop("zonal_mean", amZonalMeanTimer)
+      call mpas_timer_stop("AM_zonal_mean", amZonalMeanTimer)
 
    end subroutine ocn_compute_zonal_mean!}}}
 

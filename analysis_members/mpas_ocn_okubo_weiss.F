@@ -1535,7 +1535,7 @@ contains
       logical, pointer :: config_compute_OW_eddy_census
       real (kind=RKIND), pointer :: OW_normalization, Lam2_normalization, threshold
 
-      call mpas_timer_start("compute_okubo_weiss", .false., amOkuboWeissTimer)
+      call mpas_timer_start("AM_okubo_weiss", .false., amOkuboWeissTimer)
       err = 0
       dminfo = domain % dminfo
 
@@ -1618,7 +1618,7 @@ contains
          block => block % next
       end do
 
-      call mpas_timer_stop("compute_okubo_weiss", amOkuboWeissTimer)
+      call mpas_timer_stop("AM_okubo_weiss", amOkuboWeissTimer)
 
    end subroutine ocn_compute_okubo_weiss!}}}
 

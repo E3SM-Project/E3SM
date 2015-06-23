@@ -265,7 +265,7 @@ contains
       if ( .not. amWaterMassCensusPkgActive ) return
 
       ! start timer
-      call mpas_timer_start("compute_water_mass_census", .false., amWaterMassCensusTimer)
+      call mpas_timer_start("AM_water_mass_census", .false., amWaterMassCensusTimer)
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -471,7 +471,7 @@ contains
       deallocate(workMask)
 
       ! stop timer
-      call mpas_timer_stop("water_mass_census", amWaterMassCensusTimer)
+      call mpas_timer_stop("AM_water_mass_census", amWaterMassCensusTimer)
 
    contains
 
