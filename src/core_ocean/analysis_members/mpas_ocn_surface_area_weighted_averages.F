@@ -495,7 +495,7 @@ contains
             avgValueWithinOceanRegion(iDataField,iRegion) = avgValueWithinOceanRegion(iDataField,iRegion) / max(avgValueWithinOceanRegion(2,iRegion),1.0e-8_RKIND)
          enddo
          ! normalize total area by number of cells in region
-         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8)
+         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8_RKIND)
       enddo
 
       ! deallocate scratch fields
@@ -600,8 +600,8 @@ contains
    enddo
 
    do iData=1,nDefinedDataFields
-      workMin(iData) = minval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5)
-      workMax(iData) = maxval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5)
+      workMin(iData) = minval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5_RKIND)
+      workMax(iData) = maxval(workArray(iData,1:nCellsSolve),workMask(1:nCellsSolve)>0.5_RKIND)
    enddo
 
    end subroutine compute_statistics!}}}

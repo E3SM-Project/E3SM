@@ -282,8 +282,8 @@ contains
       kBufferLength=3*nOceanRegionsTmpCensus*nTemperatureBins*nSalinityBins
       allocate(workBufferSum(kBufferLength))
       allocate(workBufferSumReduced(kBufferLength))
-      workBufferSum=0.0
-      workBufferSumReduced=0.0
+      workBufferSum=0.0_RKIND
+      workBufferSumReduced=0.0_RKIND
 
       ! all code below will go away when regionMask is intent(in)
       ! allocate region mask and fill array
@@ -335,9 +335,9 @@ contains
       enddo ! iRegion
        
       ! initialize intent(out) of this analysis member
-      waterMassFractionalDistribution(:,:,:)=0.0
-      potentialDensityOfTSDiagram(:,:,:)=0.0
-      zPositionOfTSDiagram(:,:,:)=0.0
+      waterMassFractionalDistribution(:,:,:)=0.0_RKIND
+      potentialDensityOfTSDiagram(:,:,:)=0.0_RKIND
+      zPositionOfTSDiagram(:,:,:)=0.0_RKIND
 
       ! loop over blocks
       block => domain % blocklist
@@ -441,16 +441,16 @@ contains
       do iRegion=1,nOceanRegionsTmpCensus
         potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
           potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
-          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8)
+          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8_RKIND)
         zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
           zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
-          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8)
+          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8_RKIND)
       enddo
       enddo
       enddo
 
       ! use workBufferSum as workspace to find total volume for each region
-      workBufferSum = 0.0
+      workBufferSum = 0.0_RKIND
       do iTemperatureBin=1,nTemperatureBins
       do iSalinityBin=1,nSalinityBins
       do iRegion=1,nOceanRegionsTmpCensus
@@ -461,7 +461,7 @@ contains
 
       ! use this sum to convert waterMassFractionalDistribution from total volume to fractional volume
       do iRegion=1,nOceanRegionsTmpCensus
-        waterMassFractionalDistribution(:,:,iRegion) = waterMassFractionalDistribution(:,:,iRegion) / max(workBufferSum(iRegion),1.0e-8)
+        waterMassFractionalDistribution(:,:,iRegion) = waterMassFractionalDistribution(:,:,iRegion) / max(workBufferSum(iRegion),1.0e-8_RKIND)
       enddo
 
       ! deallocate buffers
@@ -497,47 +497,47 @@ contains
    if (iRegion.eq.1) then
       ! Arctic
       do iCell=1,nCellsSolve
-        if(latCell(iCell).lt. 60.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. 60.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt. 15.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt.-15.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt. 15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt.-15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.-50.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.-50.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.210.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.270.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.270.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.160.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.210.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.160.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.190.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.240.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.190.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.240.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
       write(6,*) ' Nino 3.4 ', sum(workMask)
    else
