@@ -273,7 +273,7 @@ contains
       if ( .not. amLayerVolWeightedAvgPkgActive ) return
 
       ! start timer
-      call mpas_timer_start("compute_layer_volume_weighted_averages", .false., amLayerVolWeightedAvgTimer)
+      call mpas_timer_start("AM_layer_volume_weighted_averages", .false., amLayerVolWeightedAvgTimer)
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -494,7 +494,7 @@ contains
       deallocate(workBufferMaxReduced)
 
       ! stop timer
-      call mpas_timer_stop("layer_volume_weighted_averages", amLayerVolWeightedAvgTimer)
+      call mpas_timer_stop("AM_layer_volume_weighted_averages", amLayerVolWeightedAvgTimer)
 
    contains
 
