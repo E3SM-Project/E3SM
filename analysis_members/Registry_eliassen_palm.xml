@@ -491,11 +491,10 @@
   </stream>
 --!>
   <stream name="eliassenPalmOutput" 
-    type="output"
-    mode="forward;analysis"
+    type="none"
     filename_template="analysis_members/eliassen_palm_output.$Y-$M-$D.nc"
-    filename_interval="01-00-00_00:00:00"
     output_interval="00-00-01_00:00:00"
+    filename_interval="01-00-00_00:00:00"
     packages="amEliassenPalmPkg"
     clobber_mode="truncate"
     runtime_format="single_file">
