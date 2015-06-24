@@ -260,7 +260,7 @@ contains
             buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          end do
          k=nBuoyancyLayers
-         potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k-1) + config_eliassen_palm_rhomax_buoycoor)
+         potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k) + config_eliassen_palm_rhomax_buoycoor)
          buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          
          !-----------------------------------------------------------------
@@ -586,6 +586,11 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
       rho0 = config_density0
       
+      if(config_eliassen_palm_debug) then
+         write(stderrUnit, *) ' '
+         write(stderrUnit, *) 'starting ocn_compute_epft'
+         write(stderrUnit, *) ' '
+      end if
       
       block => domain % blocklist
       do while (associated(block))
@@ -817,13 +822,23 @@ contains
          if(config_eliassen_palm_debug) then
             print *, ' '
             print *, 'timeLevel:', timeLevel
+            print *, 'nBuoyancyLayers:', timeLevel
             print *, ' '
-            print *, 'potentialDensityTopRef'
+            print *, 'config_eliassen_palm_rhomin_buoycoor, config_eliassen_palm_rhomax_buoycoor'
+            print *, config_eliassen_palm_rhomin_buoycoor, config_eliassen_palm_rhomax_buoycoor
+            print *, '(config_eliassen_palm_rhomax_buoycoor - config_eliassen_palm_rhomin_buoycoor)/nBuoyancyLayers'
+            print *, (config_eliassen_palm_rhomax_buoycoor - config_eliassen_palm_rhomin_buoycoor)/nBuoyancyLayers
+            print *, 'potentialDensityTopRef (nBuoyancyLayers)'
             print *, potentialDensityTopRef
-            print *, 'potentialDensityMidRef'
+            print *, 'potentialDensityTopRef(2:nBuoyancyLayers)-potentialDensityTopRef(:nBuoyancyLayers-1)'
+            print *, potentialDensityTopRef(2:nBuoyancyLayers)-potentialDensityTopRef(:nBuoyancyLayers-1)
+            print *, 'potentialDensityMidRef (nBuoyancyLayers)'
             print *, potentialDensityMidRef
+            print *, 'potentialDensityMidRef(2:nBuoyancyLayers)-potentialDensityMidRef(:nBuoyancyLayers-1)'
+            print *, potentialDensityMidRef(2:nBuoyancyLayers)-potentialDensityMidRef(:nBuoyancyLayers-1)
+            print *, 'nCells,nBuoyancyLayers', nCells,nBuoyancyLayers
             print *, 'nCells*nBuoyancyLayers', nCells*nBuoyancyLayers
-            print *, 'sum(buoyancyMask)', sum(buoyancyMask)
+            print *, 'No. valid cells in buoyancy coords sum(buoyancyMask)', sum(buoyancyMask)
             print *, 'nCells*nVertLevels', nCells*nVertLevels
             print *, 'sum(cellMask)', sum(cellMask)
             print *, 'minval(potentialDensity), maxval(potentialDensity)'
