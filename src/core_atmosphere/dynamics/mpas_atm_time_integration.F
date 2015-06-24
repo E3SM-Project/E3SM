@@ -3433,7 +3433,7 @@ module atm_time_integration
 !$OMP BARRIER
 
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_theta_euler(1:nVertLevels,iCell) = 0.0
+!!            tend_theta_euler(1:nVertLevels,iCell) = 0.0  ! why is this here???
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
@@ -3586,6 +3586,7 @@ module atm_time_integration
          delsq_theta(1:nVertLevels,cellStart:cellEnd) = 0.0
 
          do iCell=cellStart,cellEnd
+            tend_theta_euler(1:nVertLevels,iCell) = 0.0
             r_areaCell = 1./areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
