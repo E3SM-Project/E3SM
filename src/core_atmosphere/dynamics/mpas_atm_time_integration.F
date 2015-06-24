@@ -2846,7 +2846,7 @@ module atm_time_integration
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq, iAdvCell
       real (kind=RKIND) :: flux, workpv
-      real (kind=RKIND) :: edge_sign
+      real (kind=RKIND) :: edge_sign, pr_scale
 
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
       integer, pointer :: moist_start, moist_end
@@ -3380,23 +3380,23 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            tend_w_euler(1:nVertLevels+1,iCell) = 0.0
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               do k=2,nVertLevels
-                  w_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
-                                         * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
-                  w_turb_flux = w_turb_flux * meshScalingDel2(iEdge)
-                  flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * w_turb_flux
-                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-               end do
-           
-            end do
-         end do
+!         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+!            tend_w_euler(1:nVertLevels+1,iCell) = 0.0
+!            do i=1,nEdgesOnCell(iCell)
+!               iEdge = edgesOnCell(i,iCell)
+!               cell1 = cellsOnEdge(1,iEdge)
+!               cell2 = cellsOnEdge(2,iEdge)
+!
+!               do k=2,nVertLevels
+!                  w_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
+!                                         * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
+!                  w_turb_flux = w_turb_flux * meshScalingDel2(iEdge)
+!                  flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * w_turb_flux
+!                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+!               end do
+!           
+!            end do
+!         end do
 
 
 !  !OMP BARRIER  why is this openmp barrier here???
@@ -3410,40 +3410,49 @@ module atm_time_integration
          delsq_w(1:nVertLevels,cellStart:cellEnd) = 0.0
 
          do iCell=cellStart,cellEnd
+            tend_w_euler(1:nVertLevels+1,iCell) = 0.0
+            r_areaCell = 1./areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
+
+               edge_sign = 0.5 * r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
+
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
-               do k=2,nVertLevels
-                  delsq_w(k,iCell) = delsq_w(k,iCell) + edgesOnCell_sign(i,iCell) * dvEdge(iEdge) &
-                                         * 0.5*(rho_edge(k,iEdge)+rho_edge(k-1,iEdge))*(w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
+              do k=2,nVertLevels
+
+!                  delsq_w(k,iCell) = delsq_w(k,iCell) + 0.5*edge_sign*(rho_edge(k,iEdge)+rho_edge(k-1,iEdge))*(w(k,cell2) - w(k,cell1))
+                  w_turb_flux =  edge_sign*(rho_edge(k,iEdge)+rho_edge(k-1,iEdge))*(w(k,cell2) - w(k,cell1))
+                  delsq_w(k,iCell) = delsq_w(k,iCell) + w_turb_flux
+                  w_turb_flux = w_turb_flux * meshScalingDel2(iEdge) * 0.25 * &
+                                  (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))
+                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + w_turb_flux
                end do
-           
             end do
          end do
 
-         do iCell = cellStart,cellEnd
-            r = 1.0 / areaCell(iCell)
-            do k=2,nVertLevels
-               delsq_w(k,iCell) = delsq_w(k,iCell) * r
-            end do
-         end do
+!         do iCell = cellStart,cellEnd
+!            r = 1.0 / areaCell(iCell)
+!            do k=2,nVertLevels
+!               delsq_w(k,iCell) = delsq_w(k,iCell) * r
+!            end do
+!         end do
 
 !$OMP BARRIER
 
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
 !!            tend_theta_euler(1:nVertLevels,iCell) = 0.0  ! why is this here???
+            r_areaCell = h_mom_eddy_visc4/areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
+               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)/dcEdge(iEdge)
+
                do k=2,nVertLevels
-                  w_turb_flux = h_mom_eddy_visc4 * (delsq_w(k,cell2) - delsq_w(k,cell1)) / dcEdge(iEdge)
-                  w_turb_flux = w_turb_flux * meshScalingDel4(iEdge)
-                  flux = dvEdge(iEdge) * w_turb_flux
-                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edge_sign * (delsq_w(k,cell2) - delsq_w(k,cell1))
                end do
            
             end do
@@ -3591,6 +3600,7 @@ module atm_time_integration
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                edge_sign = r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
+               pr_scale = prandtl_inv * meshScalingDel2(iEdge)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                do k=1,nVertLevels
@@ -3600,7 +3610,7 @@ module atm_time_integration
 
                   theta_turb_flux = edge_sign*(theta_m(k,cell2) - theta_m(k,cell1))*rho_edge(k,iEdge)
                   delsq_theta(k,iCell) = delsq_theta(k,iCell) + theta_turb_flux
-                  theta_turb_flux = theta_turb_flux*0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * prandtl_inv * meshScalingDel2(iEdge)
+                  theta_turb_flux = theta_turb_flux*0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * pr_scale
                   tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + theta_turb_flux
 
 !!                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv & 
@@ -3620,17 +3630,17 @@ module atm_time_integration
 !$OMP BARRIER
 
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+            r_areaCell = h_theta_eddy_visc4*prandtl_inv/areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
+
                iEdge = edgesOnCell(i,iCell)
-               edge_sign = edgesOnCell_sign(i,iCell)
+               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)/dcEdge(iEdge)
+
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
                do k=1,nVertLevels
-                  theta_turb_flux = h_theta_eddy_visc4*prandtl_inv*(delsq_theta(k,cell2) - delsq_theta(k,cell1))/dcEdge(iEdge)
-                  theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
-                  flux = dvEdge (iEdge) * theta_turb_flux
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) - edge_sign*(delsq_theta(k,cell2) - delsq_theta(k,cell1))
                end do
 
             end do
