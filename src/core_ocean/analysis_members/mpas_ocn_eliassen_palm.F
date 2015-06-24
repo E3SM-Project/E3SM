@@ -854,11 +854,11 @@ contains
          !-------------------------------------------------------------
          if(config_eliassen_palm_debug) then
            do i = 1, nCells
-              array1_3D(:,i) = -zMid(:,nCells/2)
+              array1_3D(:,i) = zMid(:,nCells/2)
               array2_3D(:,i) = potentialDensity(:,nCells/2)
            end do
            print *, ' '
-           print *, 'Testing interpolatoin function'
+           print *, 'TEST1: Testing interpolatoin function'
            print *, 'Interpolating from (z, rho) to (z, rho)'
            print *, 'call linear_interp_1d_field_along_column(nVertLevels, nCells, &
               nVertLevels, maxLevelCell, array1_3D, array2_3D, array1_3D(:,1), array3_3D)'
@@ -872,8 +872,8 @@ contains
               maxLevelCell, array1_3D, array2_3D, array1_3D(:,1), array3_3D)
            print *, 'array1_3D(:,1)'
            print *, array1_3D(:,1)
-           print *, '-zMid(:,nCells/2)'
-           print *, -zMid(:,nCells/2)
+           print *, 'zMid(:,nCells/2)'
+           print *, zMid(:,nCells/2)
            print *, 'array2_3D(:,1)'
            print *, array2_3D(:,1)
            print *, 'array3_3D(:,1)'
@@ -892,10 +892,10 @@ contains
 
          !-------------------------------------------------------------
          ! INTERPOLATION TEST 2
-         ! Define a stratification where potential density varies linearly with depth
-         ! Using reference potential density that varies linearly with index
-         ! Interpolate z from that potential density to reference potential density
-         ! compare to expected values
+         ! Define a stratification where potential density varies linearly with depth.
+         ! Using reference potential density that varies linearly with index.
+         ! Interpolate z from that potential density to reference potential density.
+         ! Compare to expected values.
          !-------------------------------------------------------------
          if(config_eliassen_palm_debug) then
             do i = 1,nCells
@@ -930,6 +930,15 @@ contains
                      ((array1_3Dbuoy(k,i) - array2_3Dbuoy(k,i))/array2_3Dbuoy(k,i))**2
                end do
             end do
+            print *, ' '
+            print *, 'TEST2: Testing interpolation function'
+            print *, 'interpolating a linear function'
+            print *, 'array1_3Dbuoy(:,nCells/2)'
+            print *, array1_3Dbuoy(:,nCells/2)
+            print *, 'array2_3Dbuoy(:,nCells/2)'
+            print *, array2_3Dbuoy(:,nCells/2)
+            print *, 'array1_3Dbuoy(:,nCells/2) - array2_3Dbuoy(:,nCells/2)'
+            print *, array1_3Dbuoy(:,nCells/2) - array2_3Dbuoy(:,nCells/2)
          endif
 
 
@@ -1596,6 +1605,12 @@ contains
       integer :: iCell, maxLevel, kB, kBBottom, kBTop, kDataAbove, kDataBelow, kData
       real (kind=RKIND) :: dx, dy
 
+
+      !-----------------------------------------------------------------
+      ! test for monoticity of xFieldIn
+      !-----------------------------------------------------------------
+      ! jas issue : to do
+
       !-----------------------------------------------------------------
       ! initialize intent(out)
       !-----------------------------------------------------------------
@@ -2169,6 +2184,8 @@ contains
          ! use q=3 as a test vector
          if (q.eq.3 .and. debugFlag) then
            print *, ' '
+           print *, 'calculateDivEPFT:'
+           print *, 'layer, RMS relative error on layer :'
            do kLayer = 1,nLayers
               wrk = sqrt( &
                 sum( &
@@ -2177,7 +2194,7 @@ contains
                 )**2 * &
                 (1.0 - boundaryCell(1,:)) &
                 ) / nCells )
-              print *, 'div RMS relative error on layer:', wrk
+              print *, kLayer, wrk
            enddo
          endif
 
@@ -2390,6 +2407,8 @@ contains
          
       if (debugFlag) then
         print *, ' '
+        print *, 'calculateErtelPVTendencyFromPVFlux:'
+        print *, 'k, RMS relative error on layer:'
         do k= 1,nLayers
            wrk = sqrt( &
              sum( &
@@ -2398,7 +2417,7 @@ contains
              )**2 * &
              (1.0 - boundaryCell(1,:)) &
              ) / nCells )
-           print *, 'div RMS relative error on layer:', wrk
+           print *, k, wrk
         enddo
       endif
 
