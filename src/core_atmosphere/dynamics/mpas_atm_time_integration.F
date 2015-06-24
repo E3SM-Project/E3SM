@@ -2885,7 +2885,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
-      real (kind=RKIND) :: prandtl_inv
+      real (kind=RKIND) :: prandtl_inv, r_areaCell
 
 
       real (kind=RKIND), pointer :: r_earth
@@ -2908,8 +2908,6 @@ module atm_time_integration
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
-
-      real (kind=RKIND), dimension(100) :: hdiv
 
       flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
                 ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
@@ -3071,7 +3069,6 @@ module atm_time_integration
 
       do iCell=cellStart,cellEnd
          h_divergence(1:nVertLevels,iCell) = 0.0
-         hdiv(1:nVertLevels) = 0.0
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge)
@@ -3568,40 +3565,55 @@ module atm_time_integration
 
       if (rk_step == 1) then
 
-         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            do i=1,nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               do k=1,nVertLevels
-                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv  &
-                                        *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
-                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
-                  flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
-                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
-               end do
-
-            end do
-         end do
-
+! Smagorinsky 2nd order horizontal mixing
+!         do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
+!            do i=1,nEdgesOnCell(iCell)
+!               iEdge = edgesOnCell(i,iCell)
+!               cell1 = cellsOnEdge(1,iEdge)
+!               cell2 = cellsOnEdge(2,iEdge)
+!
+!               do k=1,nVertLevels
+!                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv  &
+!                                        *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+!                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
+!                  flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
+!                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+!               end do
+!
+!            end do
+!         end do
 
          delsq_theta(1:nVertLevels,cellStart:cellEnd) = 0.0
 
          do iCell=cellStart,cellEnd
+            r_areaCell = 1./areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
-               edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
+               edge_sign = r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                do k=1,nVertLevels
-                  delsq_theta(k,iCell) = delsq_theta(k,iCell) + edge_sign * rho_edge(k,iEdge) * (theta_m(k,cell2) - theta_m(k,cell1))
+!!                  delsq_theta(k,iCell) = delsq_theta(k,iCell) + edge_sign * rho_edge(k,iEdge) * (theta_m(k,cell2) - theta_m(k,cell1))
+
+!  we are computing the Smagorinsky filter at more points than needed here
+
+                  theta_turb_flux = edge_sign*(theta_m(k,cell2) - theta_m(k,cell1))*rho_edge(k,iEdge)
+                  delsq_theta(k,iCell) = delsq_theta(k,iCell) + theta_turb_flux
+                  theta_turb_flux = theta_turb_flux*0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * prandtl_inv * meshScalingDel2(iEdge)
+                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + theta_turb_flux
+
+!!                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv & 
+!!                                        *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+!!                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
+!!                  flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
+!!                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+
                end do
             end do
-            r = 1.0 / areaCell(iCell)
-            do k=1,nVertLevels
-               delsq_theta(k,iCell) = delsq_theta(k,iCell) * r
-            end do
+!!            r = 1.0 / areaCell(iCell)
+!!            do k=1,nVertLevels
+!!               delsq_theta(k,iCell) = delsq_theta(k,iCell) * r
+!!            end do
          end do
 
 !$OMP BARRIER
