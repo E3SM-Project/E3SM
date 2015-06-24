@@ -57,7 +57,7 @@ echo "" >>& $TESTSTATUS_LOG
 
 #--- set apt case name, remember main case name and exeroot
 set CASER0 = ${CASEROOT}
-set CASERR = ${CASEROOT}/${CASE}.apt
+set CASERR = ${CASEROOT}.apt
 set EXEROOT0 = ${EXEROOT}
 
 #======================================================================
