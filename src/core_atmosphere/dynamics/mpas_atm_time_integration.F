@@ -48,7 +48,7 @@ module atm_time_integration
 
    ! Used in compute_solve_diagnostics
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
-
+   real (kind=RKIND), allocatable, dimension(:,:) :: ke_edge
 
    contains
 
@@ -728,6 +728,7 @@ module atm_time_integration
                call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
                allocate(ke_vertex(nVertLevels,nVertices))
+               allocate(ke_edge(nVertLevels,nEdges))
    
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
                nthreads = OMP_get_num_threads()
@@ -745,6 +746,7 @@ module atm_time_integration
 !$OMP END PARALLEL
 
                deallocate(ke_vertex)
+               deallocate(ke_edge)
 
                block => block % next
             end do
@@ -1451,8 +1453,9 @@ module atm_time_integration
 
 ! redefine rtheta_pp to be perturbation from time t, change 1
 !      rtheta_pp(:,cellStart:cellEnd) = rtheta_p_save(:,cellStart:cellEnd) - rtheta_p(:,cellStart:cellEnd)
+!      zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
       rtheta_pp(:,cellStart:cellEnd) = 0.
-      zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
+      zz_rtheta_pp_old(:,cellStart:cellEnd) = 0.
 
 ! redefine rw_p to be perturbation from time t, change 1
 !      rw_p(:,cellStart:cellEnd) = rw_save(:,cellStart:cellEnd) - rw(:,cellStart:cellEnd)
@@ -1465,17 +1468,19 @@ module atm_time_integration
       ! this requires us to use the same flux divergence as is used in the theta eqn - see Klemp et al MWR 2003.
 
       do iCell=cellStart,cellEnd
-         do k = 2, nVertLevels
-            w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
-         end do
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             do k = 2, nVertLevels
                flux = edgesOnCell_sign(i,iCell) * (fzm(k) * u_tend(k,iEdge) + fzp(k) * u_tend(k-1,iEdge))
+!               w_tend(k,iCell) = w_tend(k,iCell)   &
+!                        - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux   &
+!                        * (fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)) 
                w_tend(k,iCell) = w_tend(k,iCell)   &
-                        - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux   &
-                        * (fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)) 
+                        - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux
             end do
+         end do
+         do k = 2, nVertLevels
+            w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
          end do
       end do
 
@@ -1909,9 +1914,6 @@ module atm_time_integration
       do iCell=cellStart,cellEnd
 
          do k = 1, nVertLevels
-
-!  change for rho_pp from rho_pp = rho_p^ - rho_p^* to rho_p^ - rho_p^t; change 3
-!            rho_p(k,iCell) = rho_p(k,iCell) + rho_pp(k,iCell)
             rho_p(k,iCell) = rho_p_save(k,iCell) + rho_pp(k,iCell)
 
             rho_zz(k,iCell) = rho_p(k,iCell) + rho_base(k,iCell)
@@ -1920,31 +1922,15 @@ module atm_time_integration
          w(1,iCell) = 0.0
 
          do k = 2, nVertLevels
-! redefine rw_p to be perturbation from time t, change 2
-!            wwAvg(k,iCell) = rw(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
-!            rw(k,iCell) = rw(k,iCell) + rw_p(k,iCell)
             wwAvg(k,iCell) = rw_save(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
             rw(k,iCell) = rw_save(k,iCell) + rw_p(k,iCell)
 
-
-          ! pick up part of diagnosed w from omega
-            w(k,iCell) = rw(k,iCell)/( (fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))   &
-                                      *(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell)) )
+          ! pick up part of diagnosed w from omega - divide by density later
+            w(k,iCell) = rw(k,iCell)/(fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))
+                                      
          end do
 
          w(nVertLevels+1,iCell) = 0.0
-
-! redefine rtheta_pp to be perturbation from time t, change 2
-!         if (rk_step == 3) then
-!            do k = 1, nVertLevels
-!               rtheta_p(k,iCell) = rtheta_p(k,iCell) + rtheta_pp(k,iCell) &
-!                                 - dt * rho_zz(k,iCell) * rt_diabatic_tend(k,iCell)
-!            end do
-!         else
-!            do k = 1, nVertLevels
-!               rtheta_p(k,iCell) = rtheta_p(k,iCell) + rtheta_pp(k,iCell)
-!            end do
-!         end if
 
          if (rk_step == 3) then
             do k = 1, nVertLevels
@@ -1983,9 +1969,6 @@ module atm_time_integration
          cell2 = cellsOnEdge(2,iEdge)
 
          do k = 1, nVertLevels
-! redefine ru_p to be perturbation from time t, change 2
-!            ruAvg(k,iEdge) = ru(k,iEdge) + (ruAvg(k,iEdge) / real(ns,RKIND))
-!            ru(k,iEdge) = ru(k,iEdge) + ru_p(k,iEdge)
             ruAvg(k,iEdge) = ru_save(k,iEdge) + (ruAvg(k,iEdge) / real(ns,RKIND))
             ru(k,iEdge) = ru_save(k,iEdge) + ru_p(k,iEdge)
             u(k,iEdge) = 2.*ru(k,iEdge)/(rho_zz(k,cell1)+rho_zz(k,cell2))
@@ -2005,17 +1988,21 @@ module atm_time_integration
 
             flux = (cf1*ru(1,iEdge) + cf2*ru(2,iEdge) + cf3*ru(3,iEdge))
             w(1,iCell) = w(1,iCell) + edgesOnCell_sign(i,iCell) * &
-                                   (zb_cell(1,i,iCell) + sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(1,i,iCell))  &
-                                   * flux/(cf1*rho_zz(1,iCell)+cf2*rho_zz(2,iCell)+cf3*rho_zz(3,iCell))
+                                   (zb_cell(1,i,iCell) + sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(1,i,iCell))*flux
 
             do k = 2, nVertLevels
                flux = (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
                w(k,iCell) = w(k,iCell) + edgesOnCell_sign(i,iCell) * &
-                                    (zb_cell(k,i,iCell)+sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(k,i,iCell)) &
-                                    * flux/(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))
+                                    (zb_cell(k,i,iCell)+sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(k,i,iCell))*flux
             end do
 
          end do
+
+         w(1,iCell) = w(1,iCell)/(cf1*rho_zz(1,iCell)+cf2*rho_zz(2,iCell)+cf3*rho_zz(3,iCell))
+         do k = 2, nVertLevels
+           w(k,iCell) = w(k,iCell)/(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))
+         end do
+
       end do
 
    end subroutine atm_recover_large_step_variables
@@ -3712,7 +3699,7 @@ module atm_time_integration
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
 
       logical, parameter :: hollingsworth=.true.
-      real (kind=RKIND) :: ke_fact
+      real (kind=RKIND) :: ke_fact, efac
       real (kind=RKIND), pointer :: config_apvm_upwinding
 
 
@@ -3772,8 +3759,16 @@ module atm_time_integration
          do k=1,nVertLevels
             h_edge(k,iEdge) = 0.5 * (h(k,cell1) + h(k,cell2))
          end do
-      end do
 
+!  the first openmp barrier below is set so that ke_edge is computed
+!  it would be good to move this somewhere else?
+
+         efac = dcEdge(iEdge)*dvEdge(iEdge)
+         do k=1,nVertLevels
+            ke_edge(k,iEdge) = efac*u(k,iEdge)**2
+         end do
+
+      end do
 
       !
       ! Compute circulation and relative vorticity at each vertex
@@ -3813,6 +3808,8 @@ module atm_time_integration
       end do
 
 
+!$OMP BARRIER
+
       !
       ! Compute kinetic energy in each cell (Ringler et al JCP 2009)
       !
@@ -3823,7 +3820,8 @@ module atm_time_integration
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             do k=1,nVertLevels
-               ke(k,iCell) = ke(k,iCell) + 0.25 * dcEdge(iEdge) * dvEdge(iEdge) * u(k,iEdge)**2
+!               ke(k,iCell) = ke(k,iCell) + 0.25 * dcEdge(iEdge) * dvEdge(iEdge) * u(k,iEdge)**2
+               ke(k,iCell) = ke(k,iCell) + 0.25 * ke_edge(k,iEdge)
             end do
          end do
          do k=1,nVertLevels
@@ -3844,10 +3842,12 @@ module atm_time_integration
             r = 0.25 / areaTriangle(iVertex) 
             do k=1,nVertLevels
 
-               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2  &
-                                        +dcEdge(EdgesOnVertex(2,iVertex))*dvEdge(EdgesOnVertex(2,iVertex))*u(k,EdgesOnVertex(2,iVertex))**2  &
-                                        +dcEdge(EdgesOnVertex(3,iVertex))*dvEdge(EdgesOnVertex(3,iVertex))*u(k,EdgesOnVertex(3,iVertex))**2  &
-                                      ) * r
+!               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2  &
+!                                        +dcEdge(EdgesOnVertex(2,iVertex))*dvEdge(EdgesOnVertex(2,iVertex))*u(k,EdgesOnVertex(2,iVertex))**2  &
+!                                        +dcEdge(EdgesOnVertex(3,iVertex))*dvEdge(EdgesOnVertex(3,iVertex))*u(k,EdgesOnVertex(3,iVertex))**2  &
+!                                      ) * r
+
+               ke_vertex(k,iVertex) = (  ke_edge(k,EdgesOnVertex(1,iVertex))+ke_edge(k,EdgesOnVertex(2,iVertex))+ke_edge(k,EdgesOnVertex(3,iVertex)) )*r
 
             end do
          end do

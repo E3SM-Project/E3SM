@@ -266,6 +266,7 @@ module atm_core
       call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
 
       allocate(ke_vertex(nVertLevels,nVertices))   ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
+      allocate(ke_edge(nVertLevels,nEdges))   ! ke_edge is a module variable defined in mpas_atm_time_integration.F
 
 !$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
       nthreads = OMP_get_num_threads()
@@ -296,6 +297,7 @@ module atm_core
 !$OMP END PARALLEL
 
       deallocate(ke_vertex)
+      deallocate(ke_edge)
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
