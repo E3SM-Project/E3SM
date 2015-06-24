@@ -30,7 +30,8 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: qtot 
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_theta, delsq_w, delsq_divergence
    real (kind=RKIND), allocatable, dimension(:,:) :: delsq_u
-   real (kind=RKIND), allocatable, dimension(:,:) :: delsq_circulation, delsq_vorticity
+!   real (kind=RKIND), allocatable, dimension(:,:) :: delsq_circulation    ! no longer used -> removed 
+   real (kind=RKIND), allocatable, dimension(:,:) :: delsq_vorticity
    real (kind=RKIND), allocatable, dimension(:,:) :: dpdz
 
    ! Used in advance_acoustic_step
@@ -380,7 +381,7 @@ module atm_time_integration
 !!               allocate(qtot(nVertLevels,nCells+1))  ! initializing this earlier in solution sequence
                allocate(delsq_divergence(nVertLevels,nCells+1))
                allocate(delsq_u(nVertLevels,nEdges+1))
-               allocate(delsq_circulation(nVertLevels,nVertices+1))
+!!               allocate(delsq_circulation(nVertLevels,nVertices+1))  ! no longer used -> removed 
                allocate(delsq_vorticity(nVertLevels,nVertices+1))
                allocate(dpdz(nVertLevels,nCells+1))
 
@@ -412,7 +413,7 @@ module atm_time_integration
 !!               deallocate(qtot)  ! deallocation after dynamics step complete, see below
                deallocate(delsq_divergence)
                deallocate(delsq_u)
-               deallocate(delsq_circulation)
+!!               deallocate(delsq_circulation)    ! no longer used -> removed 
                deallocate(delsq_vorticity)
                deallocate(dpdz)
    
@@ -2846,7 +2847,7 @@ module atm_time_integration
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq, iAdvCell
       real (kind=RKIND) :: flux, workpv
-      real (kind=RKIND) :: edge_sign, pr_scale
+      real (kind=RKIND) :: edge_sign, pr_scale, r_dc, r_dv, u_mix_scale
 
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
       integer, pointer :: moist_start, moist_end
@@ -3203,25 +3204,25 @@ module atm_time_integration
 
 !$OMP BARRIER
 
-         do iEdge=edgeSolveStart,edgeSolveEnd
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            vertex1 = verticesOnEdge(1,iEdge)
-            vertex2 = verticesOnEdge(2,iEdge)
-   
-            do k=1,nVertLevels
+!         do iEdge=edgeSolveStart,edgeSolveEnd
+!            cell1 = cellsOnEdge(1,iEdge)
+!            cell2 = cellsOnEdge(2,iEdge)
+!            vertex1 = verticesOnEdge(1,iEdge)
+!            vertex2 = verticesOnEdge(2,iEdge)
+!   
+!            do k=1,nVertLevels
                !
                ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
                !                    only valid for h_mom_eddy_visc2 == constant
                !
-               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
-                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge),0.25*dcEdge(iEdge))
-               u_diffusion = rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion
-               u_diffusion = u_diffusion * meshScalingDel2(iEdge)
-   
-               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + u_diffusion
-            end do
-         end do
+!               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
+!                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge),0.25*dcEdge(iEdge))
+!               u_diffusion = rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion
+!               u_diffusion = u_diffusion * meshScalingDel2(iEdge)
+!   
+!               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) + u_diffusion
+!            end do
+!         end do
 
 
          ! del^4 horizontal filter.  We compute this as del^2 ( del^2 (u) ).
@@ -3234,6 +3235,8 @@ module atm_time_integration
             cell2 = cellsOnEdge(2,iEdge)
             vertex1 = verticesOnEdge(1,iEdge)
             vertex2 = verticesOnEdge(2,iEdge)
+            r_dc = 1./dcEdge(iEdge)
+            r_dv = 1./max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
 
             do k=1,nVertLevels
 
@@ -3241,29 +3244,40 @@ module atm_time_integration
                ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
                !                    only valid for h_mom_eddy_visc4 == constant
                !
-               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
-                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
+!               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
+!                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
+
+               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) * r_dc  &
+                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) * r_dv
 
                delsq_u(k,iEdge) = delsq_u(k,iEdge) + u_diffusion
+
+               ! include 2nd-orer diffusion here 
+               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) &
+                                       + rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion * meshScalingDel2(iEdge)
+
             end do
          end do
 
 !$OMP BARRIER
 
          do iVertex=vertexStart,vertexEnd
-            delsq_circulation(1:nVertLevels,iVertex) = 0.0
+!            delsq_circulation(1:nVertLevels,iVertex) = 0.0
+            delsq_vorticity(1:nVertLevels,iVertex) = 0.0
+            r = 1.0 / areaTriangle(iVertex)
             do i=1,vertexDegree
                iEdge = edgesOnVertex(i,iVertex)
-               edge_sign = dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
+               edge_sign = r * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
                do k=1,nVertLevels
-                  delsq_circulation(k,iVertex) = delsq_circulation(k,iVertex) + edge_sign * delsq_u(k,iEdge)
+!                  delsq_circulation(k,iVertex) = delsq_circulation(k,iVertex) + edge_sign * delsq_u(k,iEdge)
+                  delsq_vorticity(k,iVertex) = delsq_vorticity(k,iVertex) + edge_sign * delsq_u(k,iEdge)
                end do
             end do
-            r = 1.0 / areaTriangle(iVertex)
+!            r = 1.0 / areaTriangle(iVertex)
 !MGD optimize by using delsq_vorticity from the outset
-            do k=1,nVertLevels
-               delsq_vorticity(k,iVertex) = delsq_circulation(k,iVertex) * r
-            end do
+!            do k=1,nVertLevels
+!               delsq_vorticity(k,iVertex) = delsq_circulation(k,iVertex) * r
+!            end do
          end do
 
          do iCell=cellStart,cellEnd
@@ -3271,14 +3285,14 @@ module atm_time_integration
             r = 1.0 / areaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
-               edge_sign = dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
+               edge_sign = r * dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
                do k=1,nVertLevels
                   delsq_divergence(k,iCell) = delsq_divergence(k,iCell) + edge_sign * delsq_u(k,iEdge)
                end do
             end do
-            do k = 1,nVertLevels
-               delsq_divergence(k,iCell) = delsq_divergence(k,iCell) * r
-            end do
+!            do k = 1,nVertLevels
+!               delsq_divergence(k,iCell) = delsq_divergence(k,iCell) * r
+!            end do
          end do
 
 !$OMP BARRIER
@@ -3288,6 +3302,10 @@ module atm_time_integration
             cell2 = cellsOnEdge(2,iEdge)
             vertex1 = verticesOnEdge(1,iEdge)
             vertex2 = verticesOnEdge(2,iEdge)
+
+            u_mix_scale = meshScalingDel4(iEdge)*h_mom_eddy_visc4
+            r_dc = u_mix_scale*config_del4u_div_factor/dcEdge(iEdge)
+            r_dv = u_mix_scale/max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
 
             do k=1,nVertLevels
 
@@ -3299,12 +3317,18 @@ module atm_time_integration
                !    relative to the rotational part.  The stability constraint on the divergence component is much less
                !    stringent than the rotational part, and this flexibility may be useful.
                !
-               u_diffusion =  rho_edge(k,iEdge) * ( config_del4u_div_factor * ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) / dcEdge(iEdge)  &
-                           -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) / max(dvEdge(iEdge), 0.25*dcEdge(iEdge)) &
-                                                  )
+!               u_diffusion =  rho_edge(k,iEdge) * ( config_del4u_div_factor * ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) / dcEdge(iEdge)  &
+!                           -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) / max(dvEdge(iEdge), 0.25*dcEdge(iEdge)) &
+!                                                  )
+!
+!               u_diffusion = u_diffusion * meshScalingDel4(iEdge)
+!               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - h_mom_eddy_visc4 * u_diffusion
 
-               u_diffusion = u_diffusion * meshScalingDel4(iEdge)
-               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - h_mom_eddy_visc4 * u_diffusion
+               u_diffusion =  rho_edge(k,iEdge) *  ( ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) * r_dc  &
+                                                    -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) * r_dv )
+               tend_u_euler(k,iEdge) = tend_u_euler(k,iEdge) - u_diffusion
+
+
             end do
          end do
 
