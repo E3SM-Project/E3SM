@@ -29,7 +29,7 @@ contains
     real(r8), intent(out) :: frac_rain    ! fraction of precipitation falling as rain
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'shr_precip_partition_rain_snow_ramp'
     !-----------------------------------------------------------------------
 
