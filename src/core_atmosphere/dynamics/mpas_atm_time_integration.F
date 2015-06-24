@@ -2872,7 +2872,7 @@ module atm_time_integration
 
       real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
       real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q
-      real (kind=RKIND) :: theta_turb_flux, r
+      real (kind=RKIND) :: theta_turb_flux, w_turb_flux, r
 
       integer, dimension(:,:), pointer :: advCellsForEdge
       integer, dimension(:), pointer :: nAdvCellsForEdge
@@ -3388,10 +3388,10 @@ module atm_time_integration
                cell2 = cellsOnEdge(2,iEdge)
 
                do k=2,nVertLevels
-                  theta_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
+                  w_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
                                          * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
-                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
-                  flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * theta_turb_flux
+                  w_turb_flux = w_turb_flux * meshScalingDel2(iEdge)
+                  flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * w_turb_flux
                   tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
                end do
            
@@ -3399,7 +3399,7 @@ module atm_time_integration
          end do
 
 
-!$OMP BARRIER
+!  !OMP BARRIER  why is this openmp barrier here???
 
          ! del^4 horizontal filter.  We compute this as del^2 ( del^2 (u) ).
          !
@@ -3440,9 +3440,9 @@ module atm_time_integration
                cell2 = cellsOnEdge(2,iEdge)
 
                do k=2,nVertLevels
-                  theta_turb_flux = h_mom_eddy_visc4 * (delsq_w(k,cell2) - delsq_w(k,cell1)) / dcEdge(iEdge)
-                  theta_turb_flux = theta_turb_flux * meshScalingDel4(iEdge)
-                  flux = dvEdge(iEdge) * theta_turb_flux
+                  w_turb_flux = h_mom_eddy_visc4 * (delsq_w(k,cell2) - delsq_w(k,cell1)) / dcEdge(iEdge)
+                  w_turb_flux = w_turb_flux * meshScalingDel4(iEdge)
+                  flux = dvEdge(iEdge) * w_turb_flux
                   tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
                end do
            
