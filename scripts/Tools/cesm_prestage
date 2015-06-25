@@ -65,7 +65,7 @@ if (($GET_REFCASE == 'TRUE') && ($RUN_TYPE != 'startup') && ($CONTINUE_RUN == 'F
     echo "  > mkdir -p $DIN_LOC_ROOT/$refdir"
     echo "  > cd $DIN_LOC_ROOT/$refdir"
     echo "  > cd .."
-    echo "  > svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/$refdir"
+    echo "  > svn export --force https://acme-svn2.ornl.gov/acme-repo/trunk/inputdata/$refdir"
     echo "or set GET_REFCASE to FALSE in env_run.xml, "
     echo "   and prestage the restart data to $RUNDIR manually"
     echo "*****************************************************************"
