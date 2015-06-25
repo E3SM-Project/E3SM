@@ -395,6 +395,7 @@ add_default($nl, 'run_barriers', 'COMP_RUN_BARRIERS'=>"$xmlvars{'COMP_RUN_BARRIE
 add_default($nl, 'bfbflag', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'do_budgets','BUDGETS'=>"$xmlvars{'BUDGETS'}");
 
+add_default($nl, 'flux_diurnal');
 add_default($nl, 'flux_albav');
 add_default($nl, 'flux_epbal');
 add_default($nl, 'info_debug');
@@ -430,6 +431,14 @@ add_default($nl, 'histaux_a2x24hr');
 add_default($nl, 'histaux_l2x');
 add_default($nl, 'histaux_r2x');
 add_default($nl, 'histaux_l2x1yr');
+add_default($nl, 'histavg_atm');
+add_default($nl, 'histavg_lnd');
+add_default($nl, 'histavg_ocn');
+add_default($nl, 'histavg_ice');
+add_default($nl, 'histavg_rof');
+add_default($nl, 'histavg_glc');
+add_default($nl, 'histavg_wav');
+add_default($nl, 'histavg_xao');
 
 add_default($nl, 'vect_map');
 add_default($nl, 'eps_frac');
