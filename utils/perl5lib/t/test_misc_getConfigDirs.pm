@@ -49,30 +49,30 @@ sub teardown : Test(teardown) {
 # tests
 #
 #-------------------------------------------------------------------------------
-sub test_misc_getConfigDirs__homeFirst : Tests {
+sub test_misc_getConfigDirs__homeSecond : Tests {
   my $self = shift;
 
-  my $msg = "Test that the getConfigDirs returns \$HOME/.cime as the first path.\n";
+  my $msg = "Test that the getConfigDirs returns \$HOME/.cime as the second path.\n";
 
   my $caseroot = './foo/bar/Tools';
   my $machroot = '/abc/def/machines';
   my $expected = qr/\.cime$/;
   my $result = Misc::MiscUtils::getConfigDirs($caseroot, $machroot);
-  like(@{$result}[0], $expected) || diag($msg);
+  like(@{$result}[1], $expected) || diag($msg);
 }
 
 #-------------------------------------------------------------------------------
 
-sub test_misc_getConfigDirs__caseToolsLast : Tests {
+sub test_misc_getConfigDirs__caseToolsFirst : Tests {
   my $self = shift;
 
-  my $msg = "Test that the getConfigDirs returns the case tools directory as the last path.\n";
+  my $msg = "Test that the getConfigDirs returns the case tools directory as the first path.\n";
 
   my $caseroot = './foo/bar/Tools';
   my $machroot = '/abc/def/machines';
   my $expected = qr/\/Tools$/;
   my $result = Misc::MiscUtils::getConfigDirs($caseroot, $machroot);
-  like(@{$result}[$#{$result}], $expected) || diag($msg);
+  like(@{$result}[0], $expected) || diag($msg);
 }
 
 

@@ -1,27 +1,27 @@
 Unit test directory for CIME perl5lib
--------------------------------------------
+=====================================
 
 The goal of the unit test suite for cime perl5lib is to have machine
 independent tests that will run anywhere in seconds and have high
 coverage of the critical decision making code.
 
 Running
-=======
+-------
 
 To run the unit tests for cime perl5lib:
 
-$ prove test_p5lib.pl 
+    $ prove test_p5lib.pl 
 
 The test output has been optimized to most useful when run through
 prove (a standard part of all modern perl distributions). Developers
 who prefer standard Test::More output can run the tests by running the
 script:
 
-$ ./test_p5lib.pl
+    $ ./test_p5lib.pl
 
 
 Creating New Tests
-==================
+------------------
 
 To create a new test suite, copy the file:
 
@@ -66,22 +66,23 @@ Inside the new test module:
 * Rather than describing the test in comments, it should be described
   in the message string. The message string should be printed to the
   screen when the test fails with "... || diag($msg)". This provides a
-  useful failure message without duplicating information comments that
-  will become out of date.
+  useful failure message without duplicating information in comments
+  that are probably out of date.
 
 * To keep the tests machine independent, we don't want to require the
-  presence of the cesm input data repository. There are two options
-  meet this requirement but still allow for testing of key
-  functionality:
+  presence of the model input data repository or other files at system
+  specific locations. There are two options meet this requirement but
+  still allow for testing of key functionality:
 
-  1. write and destroy small temporary input files as part
-  of the test fixtures. prefered.
+  1. Write and destroy small temporary input files as part of the test
+  fixtures. This keeps the tests self contained and focused. Any test
+  that simply tests for the existance of a file should not include a
+  large source file in the repo. Just create an empty text
+  file. (**prefered**)
 
-  2. modify or add new mock xml files in cime/utils/perl5lib/t/input
-  and point to them as part of the tets.
+  2. Modify or add new mock xml files in cime/utils/perl5lib/t/input
+  and point to them as part of the tets. (**discouraged**)
 
-  Any test that simply tests for the existance of a file should not
-  include a large source file in the repo. Just create an empty text
-  file.
-
+  Side effects of this convention is that we minimize hard code paths
+  and ensure we aren't depending on any one projects conventions.
 

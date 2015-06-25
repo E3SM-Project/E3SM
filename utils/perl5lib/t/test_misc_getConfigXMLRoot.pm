@@ -44,6 +44,7 @@ sub startup : Test(startup => 0) {
     <machine MACH="bar">
     </machine>
     <machine MACH="zombie">
+        <action>shamble quickly</action>
     </machine>
 </config_machines>
 MSG
@@ -63,6 +64,7 @@ MSG
     <machine MACH="bob">
     </machine>
     <machine MACH="zombie">
+        <action>eat brains</action>
     </machine>
 </config_machines>
 MSG
@@ -127,16 +129,17 @@ sub test_misc_getConfigXMLRoot__returnsValidElementMachRoot : Tests {
 sub test_misc_getConfigXMLRoot__returnsValidElementMachRootCaseRoot : Tests {
   my $self = shift;
 
-  my $msg = "Test that the xml root element from machroot is returned when the element is in batch machroot and caseroot.\n";
+  my $msg = "Test that the xml root element from caseroot is returned when the element is in machroot and caseroot.\n";
 
-  my $expected = undef;
+  my $expected = "shamble quickly";
   my $filename = "tmp_mach.xml";
-  my $xpathmatch = "/config_machines/machine[\@MACH=\"baz\"]";
-  my $result = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
-                                                 $self->{'caseroot'},
-                                                 $filename,
-                                                 $xpathmatch);
-  isnt($result, $expected) || diag($msg);
+  my $xpathmatch = "/config_machines/machine[\@MACH=\"zombie\"]";
+  my $xmlroot = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
+                                                  $self->{'caseroot'},
+                                                  $filename,
+                                                  $xpathmatch);
+  my $result = $xmlroot->findnodes("/config_machines/machine[\@MACH=\"zombie\"]/action");
+  is($result, $expected) || diag($msg);
 }
 
 sub test_misc_getConfigXMLRoot__returnsInvalid : Tests {

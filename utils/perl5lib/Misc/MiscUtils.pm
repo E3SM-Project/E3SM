@@ -24,15 +24,18 @@ sub getConfigDirs {
     #
     # Return a list of directories to search for configuration xml files.
     #
+    # The desired order is specific --> general, [ caseroot, ~/.cime,
+    # machines ], to ensure user overrides are properly picked up.
+    #
     my ($caseroot, $machroot) = @_;
-    my @configdirs = ( "$ENV{'HOME'}\/.cime", $machroot, $caseroot . '/Tools' );
+    my @configdirs = ($caseroot . '/Tools', "$ENV{'HOME'}\/.cime", $machroot);
     return \@configdirs;
 }
 
 #==============================================================================
 sub getConfigXMLRoot {
     #
-    # Reusable function to extract the xml root for a the first file
+    # Reusable function to extract the xml root from the first file
     # that contains a caller specified xpath query. Example use is to
     # find the xml file that contains a specific machine.
     #
