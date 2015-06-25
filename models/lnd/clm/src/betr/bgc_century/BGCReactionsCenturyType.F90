@@ -16,6 +16,7 @@ module BGCReactionsCenturyType
 !
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use clm_varctl            , only : iulog
+  use abortutils            , only : endrun
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use clm_time_manager      , only : get_nstep
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
@@ -247,7 +248,7 @@ contains
   integer :: nelm, itemp_mem
   integer :: itemp, itemp_vgrp, itemp_v, itemp_grp
   integer :: c_loc, n_loc, trcid
-  logical :: carbon_only = .true.  
+  logical :: carbon_only = .false.  
   !type(file_desc_t) :: ncid
   
   !ncid%fh=10
