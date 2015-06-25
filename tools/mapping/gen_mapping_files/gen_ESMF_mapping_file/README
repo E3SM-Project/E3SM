@@ -73,8 +73,8 @@ where
    point).
  --machine (or -mach)
    Name of the machine you are running on. Currently supports yellowstone,
-   geyser, caldera, and jaguar. Note that this script will determines the
-   machine name automatically from the hostfile command.
+   geyser, caldera, pronghorn, and jaguar. Note that this script will
+   determine the machine name automatically from the hostfile command.
  -d
    toggle debug-only 
  --help or -h  

@@ -115,7 +115,7 @@ Only used for lookup in CESM Machines files."""
     )
 parser.add_option(
     "--enable-genf90", dest="genf90", action="store_true",
-    default=False,
+    default=True,
     help="""Use genf90.pl to regenerate out-of-date sources from .F90.in
 templates.
 
@@ -326,7 +326,7 @@ def cmake_stage(name, test_spec_dir):
             cmake_command.append("-DENABLE_GENF90=ON")
             if cesm_root_dir is not None:
                 genf90_dir = os.path.join(
-                    cesm_root_dir, "tools", "cprnc", "genf90"
+                    cesm_root_dir, "cime", "externals", "genf90"
                     )
                 cmake_command.append("-DCMAKE_PROGRAM_PATH="+genf90_dir)
 

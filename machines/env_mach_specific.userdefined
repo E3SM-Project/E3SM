@@ -18,4 +18,6 @@ if($status == 0) then
 #module load netcdf
 
 #limit coredumpsize unlimited
-
+if ( $?PERL ) then
+  printenv
+endif

@@ -55,3 +55,6 @@ module list
 limit stacksize unlimited
 limit datasize  unlimited
 
+if ( $?PERL ) then
+  printenv
+endif

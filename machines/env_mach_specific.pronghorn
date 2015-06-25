@@ -105,3 +105,6 @@ setenv OMP_STACKSIZE 256M
 #else
 #  setenv MP_EUIDEVELOP min
 #endif
+if ( $?PERL ) then
+  printenv
+endif

@@ -75,7 +75,7 @@ module docn_comp_mod
   real(R8),parameter :: latice  = shr_const_latice  ! latent heat of fusion
   real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal  ! ocean reference salinity
 
-  integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq  ! field indices
+  integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
 
@@ -86,21 +86,21 @@ module docn_comp_mod
   integer , pointer :: imask(:)
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
 
-  integer(IN),parameter :: ktrans = 28
+  integer(IN),parameter :: ktrans = 29
   character(12),parameter  :: avifld(1:ktrans) = &
      (/ "ifrac       ","pslv        ","duu10n      ","taux        ","tauy        ", &
         "swnet       ","lat         ","sen         ","lwup        ","lwdn        ", &
         "melth       ","salt        ","prec        ","snow        ","rain        ", &
         "evap        ","meltw       ","rofl        ","rofi        ",                &
         "t           ","u           ","v           ","dhdx        ","dhdy        ", &
-        "s           ","q           ","h           ","qbot        "                 /)
+        "s           ","q           ","h           ","qbot        ","fswpen      "  /)
   character(12),parameter  :: avofld(1:ktrans) = &
      (/ "Si_ifrac    ","Sa_pslv     ","So_duu10n   ","Foxx_taux   ","Foxx_tauy   ", &
         "Foxx_swnet  ","Foxx_lat    ","Foxx_sen    ","Foxx_lwup   ","Faxa_lwdn   ", &
         "Fioi_melth  ","Fioi_salt   ","Faxa_prec   ","Faxa_snow   ","Faxa_rain   ", &
         "Foxx_evap   ","Fioi_meltw  ","Foxx_rofl   ","Foxx_rofi   ",                &
         "So_t        ","So_u        ","So_v        ","So_dhdx     ","So_dhdy     ", &
-        "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   "                 /)
+        "So_s        ","Fioo_q      ","strm_h      ","strm_qbot   ","So_fswpen   "  /)
 
   save
 
@@ -397,6 +397,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     kv    = mct_aVect_indexRA(o2x,'So_v')
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
+    kswp  = mct_aVect_indexRA(o2x,'So_fswpen')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q')
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
@@ -598,9 +599,25 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    call t_barrierf('docn_BARRIER',mpicom)
    call t_startf('docn')
 
-   !--- copy all fields from streams to o2x as default ---
+   !--- defaults, copy all fields from streams to o2x ---
 
    if (trim(ocn_mode) /= 'NULL') then
+
+      !--- defaults ---
+      lsize = mct_avect_lsize(o2x)
+      do n = 1,lsize
+         o2x%rAttr(kt   ,n) = TkFrz
+         o2x%rAttr(ks   ,n) = ocnsalt
+         o2x%rAttr(ku   ,n) = 0.0_r8
+         o2x%rAttr(kv   ,n) = 0.0_r8
+         o2x%rAttr(kdhdx,n) = 0.0_r8
+         o2x%rAttr(kdhdy,n) = 0.0_r8
+         o2x%rAttr(kq   ,n) = 0.0_r8
+         o2x%rAttr(kswp ,n) = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr)/1.0_R8)) + &
+              0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
+      enddo
+
+      !--- copy streams to o2x ---
       call t_startf('docn_strdata_advance')
       call shr_strdata_advance(SDOCN,currentYMD,currentTOD,mpicom,'docn')
       call t_stopf('docn_strdata_advance')
@@ -631,6 +648,8 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
          o2x%rAttr(kdhdx,n) = 0.0_r8
          o2x%rAttr(kdhdy,n) = 0.0_r8
          o2x%rAttr(kq   ,n) = 0.0_r8
+         o2x%rAttr(kswp ,n) = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr)/1.0_R8)) + &
+              0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
       enddo
 
    case('SOM')

@@ -10,7 +10,6 @@ setenv RUNDIR				`./xmlquery RUNDIR			-value `
 setenv LOGDIR				`./xmlquery LOGDIR			-value `
 setenv DOUT_S				`./xmlquery DOUT_S			-value `
 setenv DOUT_S_ROOT			`./xmlquery DOUT_S_ROOT			-value `
-setenv DOUT_S_GENERATE_TSERIES		`./xmlquery DOUT_S_GENERATE_TSERIES	-value `
 setenv DOUT_S_SAVE_ALL_ON_DISK		`./xmlquery DOUT_S_SAVE_ALL_ON_DISK	-value `
 setenv DOUT_S_SAVE_HISTORY_FILES	`./xmlquery DOUT_S_SAVE_HISTORY_FILES	-value `
 setenv MACH				`./xmlquery MACH			-value `
@@ -75,28 +74,6 @@ if ($DOUT_S == 'TRUE' && $exceeded_max_time == 0) then
   echo "Archiving ccsm output to $DOUT_S_ROOT"
   echo "Calling the short-term archiving script st_archive"
    ./st_archive 
-
-# -------------------------------------------------------------------------
-# Generate time series variable files - currently only working on yellowstone
-# -------------------------------------------------------------------------
-  if ($DOUT_S_GENERATE_TSERIES == 'TRUE') then
-     if ($DOUT_S_SAVE_ALL_ON_DISK == 'TRUE' && $MACH == 'yellowstone') then
-	if ($DOUT_S_SAVE_HISTORY_FILES == 'FALSE') then
-	    echo "*WARNING* successful generation of the variable time series files"
-	    echo "will delete all the time slice history files in $DOUT_S_ROOT"
-	 else
-	    echo "History time slice files will be saved after variable time series files"
-	    echo "are generated. Please manually remove history files in order to"
-	    echo "conserve disk space."
-	 endif
-         echo "Starting generating variable time series files to $DOUT_S_ROOT"
-	 ./Tools/tseries_generate.submit >>& $CASEROOT/tseriesStatus
-         echo "Completed generating variable time series files to $DOUT_S_ROOT"
-     else
-	 echo "Variable time series file generation depends on $DOUT_S and $DOUT_S_SAVE_ALL_ON_DISK set to TRUE"
-	 echo "Variable time series files were not generated."   
-     endif
-  endif
 endif
 
 # -------------------------------------------------------------------------
