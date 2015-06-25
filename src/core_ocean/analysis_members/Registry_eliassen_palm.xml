@@ -206,12 +206,23 @@
     description="work array"
 	/>
   <var name="wrk3DBuoyCoor" 
-    persistence="scratch" 
     type="real" 
     dimensions="nBuoyancyLayers nCells" 
     units="unitless" 
     description="work array"
 	/>
+  <var name="wrkVector" 
+    type="real" 
+    dimensions="R3 nBuoyancyLayers nCells" 
+    units="unitless"
+    description="Work vector array"
+  />
+  <var name="wrkTensor" 
+    type="real" 
+    dimensions="R3 R3 nBuoyancyLayers nCells" 
+    units="unitless"
+    description="Work tensor array"
+  />
   <!-- 
   Test variables 
   -->
@@ -442,36 +453,89 @@
     units="m s^{-3}"
     description="Vertical velocity, thickness weighted"
   />
+
   <var name="EPFT" 
     type="real" 
     dimensions="R3 R3 nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
     description="Eliassen-Palm flux tensor"
   />
+  
   <var name="divEPFT" 
     type="real" 
     dimensions="R3 nBuoyancyLayers nCells Time" 
     units="m s^{-2}"
     description="Divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
   />
+  <var name="divEPFT1" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s^{-2}"
+    description="First component of the divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+  />
+  <var name="divEPFT2" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s^{-2}"
+    description="Second component of the divergence of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+  />
+  <var name="divEPFTshear1" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s^{-2}"
+    description="First component of divergence of shear components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+  />
+  <var name="divEPFTshear2" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s^{-2}"
+    description="Second component of divergence of shear components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+  />
+  <var name="divEPFTdrag1" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s^{-2}"
+    description="First component of divergence of form drag components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+  />
+  <var name="divEPFTdrag2" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m s^{-2}"
+    description="Second component of divergence of form drag components of the Eliassen-Palm flux tensor, in buoyancy coordinates"
+  />
+
   <var name="ErtelPVFlux" 
     type="real" 
     dimensions="R3 nBuoyancyLayers nCells Time" 
     units="m"
     description="Ertel potential vorticity flux in buoyancy coordinates"
   />
+  <var name="ErtelPVFlux1" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m"
+    description="First component of the Ertel potential vorticity flux in buoyancy coordinates"
+  />
+  <var name="ErtelPVFlux2" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m"
+    description="Second component of the Ertel potential vorticity flux in buoyancy coordinates"
+  />
+
   <var name="ErtelPVTendency" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="s s^{-1}"
     description="Tendency of Ertel PV due to divergence of eddy PV fluxes"
   />
-<var name="ErtelPV" 
+  <var name="ErtelPV" 
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="s"
     description="Ertel PV on buoyancy surfaces"
   />
+
 </var_struct>
 
 <streams>
