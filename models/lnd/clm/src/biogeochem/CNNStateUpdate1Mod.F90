@@ -50,7 +50,7 @@ contains
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
     real(r8):: dt        ! radiation time step (seconds)
-    real(r8), parameter :: frootc_nfix_thc = 5._r8  !threshold fine root carbon for nitrogen fixation gC/m2
+    real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
     !-----------------------------------------------------------------------
 
     associate(                                                                                           & 

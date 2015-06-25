@@ -1450,6 +1450,13 @@ contains
          waterflux_vars%qflx_irrig_patch(bounds%begp:bounds%endp), &
          waterflux_vars%qflx_irrig_col(bounds%begc:bounds%endc))
 
+    call p2c (bounds, num_nolakec, filter_nolakec, &
+         waterflux_vars%qflx_tran_veg_patch(bounds%begp:bounds%endp), &
+         waterflux_vars%qflx_tran_veg_col(bounds%begc:bounds%endc) )
+
+    call p2c (bounds, num_nolakec, filter_nolakec, &
+         waterflux_vars%qflx_evap_veg_patch(bounds%begp:bounds%endp), &
+         waterflux_vars%qflx_evap_veg_col (bounds%begc:bounds%endc))
   end subroutine clm_drv_patch2col
 
   !------------------------------------------------------------------------
