@@ -440,12 +440,20 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: ErtelPV
       real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVTendency
       real(KIND=RKIND), dimension(:,:,:), pointer :: ErtelPVFlux
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVFlux1
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVFlux2
 
       !-----------------------------------------------------------------
       ! define the Eliassen-Palm flux tensor and related fields
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:,:,:,:), pointer :: EPFT
       real(KIND=RKIND), dimension(:,:,:), pointer :: divEPFT
+      real(KIND=RKIND), dimension(:,:), pointer :: divEPFT1
+      real(KIND=RKIND), dimension(:,:), pointer :: divEPFT2
+      real(KIND=RKIND), dimension(:,:), pointer :: divEPFTshear1
+      real(KIND=RKIND), dimension(:,:), pointer :: divEPFTshear2
+      real(KIND=RKIND), dimension(:,:), pointer :: divEPFTdrag1
+      real(KIND=RKIND), dimension(:,:), pointer :: divEPFTdrag2
 
       !-----------------------------------------------------------------
       ! define scratch fields used as work variables and for testing
@@ -471,6 +479,8 @@ contains
       type(field2DReal), pointer :: wrk3DnVertLevelsP1Field
       type(field2DReal), pointer :: wrk3DnVertLevelsField
       type(field2DReal), pointer :: wrk3DBuoyCoorField
+      type(field3DReal), pointer :: wrkVectorField
+      type(field4DReal), pointer :: wrkTensorField
 
       type(field2DReal), pointer :: array1_3DField
       type(field2DReal), pointer :: array2_3DField
@@ -509,6 +519,8 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevelsP1
       real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevels
       real(KIND=RKIND), dimension(:,:), pointer :: wrk3DBuoyCoor
+      real(KIND=RKIND), dimension(:,:,:), pointer :: wrkVector
+      real(KIND=RKIND), dimension(:,:,:,:), pointer :: wrkTensor
 
       real(KIND=RKIND), dimension(:,:), pointer :: array1_3D
       real(KIND=RKIND), dimension(:,:), pointer :: array2_3D
@@ -642,6 +654,8 @@ contains
          call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevelsP1', wrk3DnVertLevelsP1Field)
          call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevels', wrk3DnVertLevelsField)
          call mpas_pool_get_field(scratchPool, 'wrk3DBuoyCoor', wrk3DBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'wrkVector', wrkVectorField)
+         call mpas_pool_get_field(scratchPool, 'wrkTensor', wrkTensorField)
          
          call mpas_pool_get_field(scratchPool, 'array1_3D', array1_3DField)
          call mpas_pool_get_field(scratchPool, 'array2_3D', array2_3DField)
@@ -680,6 +694,8 @@ contains
          call mpas_allocate_scratch_field(wrk3DnVertLevelsP1Field, .true.)
          call mpas_allocate_scratch_field(wrk3DnVertLevelsField, .true.)
          call mpas_allocate_scratch_field(wrk3DBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(wrkVectorField, .true.)
+         call mpas_allocate_scratch_field(wrkTensorField, .true.)
 
          call mpas_allocate_scratch_field(array1_3DField, .true.)
          call mpas_allocate_scratch_field(array2_3DField, .true.)
@@ -718,6 +734,8 @@ contains
          wrk3DnVertLevelsP1      => wrk3DnVertLevelsP1Field % array
          wrk3DnVertLevels        => wrk3DnVertLevelsField % array
          wrk3DBuoyCoor           => wrk3DBuoyCoorField % array
+         wrkVector               => wrkVectorField % array
+         wrkTensor               => wrkTensorField % array
          
          array1_3D =>  array1_3DField % array
          array2_3D =>  array2_3DField % array
@@ -788,7 +806,15 @@ contains
          !--------------------------------------------------
          call mpas_pool_get_array(am_epftPool, 'EPFT', EPFT)
          call mpas_pool_get_array(am_epftPool, 'divEPFT', divEPFT)
-         call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux', ErtelPVFlux)
+         call mpas_pool_get_array(am_epftPool, 'divEPFT1', divEPFT1)
+         call mpas_pool_get_array(am_epftPool, 'divEPFT2', divEPFT2)
+         call mpas_pool_get_array(am_epftPool, 'divEPFTshear1', divEPFTshear1)
+         call mpas_pool_get_array(am_epftPool, 'divEPFTshear2', divEPFTshear2)
+         call mpas_pool_get_array(am_epftPool, 'divEPFTdrag1', divEPFTdrag1)
+         call mpas_pool_get_array(am_epftPool, 'divEPFTdrag2', divEPFTdrag2)
+         call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux' , ErtelPVFlux)
+         call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux1', ErtelPVFlux1)
+         call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux2', ErtelPVFlux2)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVTendency', ErtelPVTendency)
          call mpas_pool_get_array(am_epftPool, 'ErtelPV', ErtelPV)
          
@@ -1096,8 +1122,8 @@ contains
          nSamplesEA = nSamplesEA + 1
    
          !-------------------------------------------------------------
-         ! based on current estimate of ensemble-average state,
          ! compute the thickness-weighted average velocity
+         ! based on current estimate of ensemble-average state
          !-------------------------------------------------------------
          call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, usigmaEA,  uTWA)
          call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, vsigmaEA,  vTWA)
@@ -1106,8 +1132,8 @@ contains
          varpiTWA = 0.0
 
          !-------------------------------------------------------------
-         ! based on current estimate of ensemble-average state,
          ! compute the Eliassen-Palm flux tensor
+         ! based on current estimate of ensemble-average state
          !-------------------------------------------------------------
          call calculateEPFTfromTWA(nBuoyancyLayers, nCells, &
             sigmaEA, heightMidBuoyCoorEA, &
@@ -1116,22 +1142,49 @@ contains
             uusigmaEA, vvsigmaEA, uvsigmaEA, uvarpisigmaEA, vvarpisigmaEA, EPFT)
 
          !-------------------------------------------------------------
-         ! compute the force applied to the momentum equation as div(EPFT)
+         ! compute the total force from the EPFT: div(EPFT)
          !-------------------------------------------------------------
          call calculateDivEPFT(config_eliassen_palm_debug, &
             domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, EPFT, divEPFT)
+          ! decompose the vector into its components for output
+         divEPFT1 = divEPFT(1,:,:)
+         divEPFT2 = divEPFT(2,:,:)
+         
+         !-------------------------------------------------------------
+         ! compute the force from horizontal shear component of the EPFT
+         !-------------------------------------------------------------
+         wrkTensor = 0.0
+         wrkTensor(1:2,1:2,:,:) = EPFT(1:2,1:2,:,:)
+         call calculateDivEPFT(config_eliassen_palm_debug, &
+            domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
+            meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, wrkTensor, wrkVector)
+         divEPFTshear1 = wrkVector(1,:,:)
+         divEPFTshear2 = wrkVector(2,:,:)
+         
+         !-------------------------------------------------------------
+         ! compute the force from vertical form drag component of the EPFT
+         !-------------------------------------------------------------
+         wrkTensor = 0.0
+         wrkTensor(3,1:2,:,:) = EPFT(3,1:2,:,:)
+         call calculateDivEPFT(config_eliassen_palm_debug, &
+            domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
+            meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, wrkTensor, wrkVector)
+         divEPFTdrag1 = wrkVector(1,:,:)
+         divEPFTdrag2 = wrkVector(2,:,:)
          
          !-------------------------------------------------------------
          ! transform div(EPFT) into a flux of Ertel's PV
          !-------------------------------------------------------------
-        call calculateErtelPVFlux(nCells, nBuoyancyLayers, &
+         call calculateErtelPVFlux(nCells, nBuoyancyLayers, &
             sigmaEA, divEPFT, ErtelPVFlux)
+         ErtelPVFlux1 = ErtelPVFlux(1,:,:)
+         ErtelPVFlux2 = ErtelPVFlux(2,:,:)
 
          !-------------------------------------------------------------
          ! compute div(ErtelPVFlux) to obtain tendency of Ertel's PV
          !-------------------------------------------------------------
-        call calculateErtelPVTendencyFromPVFlux(config_eliassen_palm_debug, &
+         call calculateErtelPVTendencyFromPVFlux(config_eliassen_palm_debug, &
             domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
             meshPool, sigmaEA, ErtelPVFlux, ErtelPVTendency)
 
@@ -1994,6 +2047,7 @@ contains
    subroutine calculateEPFTfromTWA(nLayers, nCells, &
          sigmaEA, heightEA, heightSqEA, MxEA, MyEA, HMxEA, HMyEA, uTWA, vTWA, varpiTWA, &
          uuSigmaEA, vvSigmaEA, uvSigmaEA, uvarpisigmaEA, vvarpisigmaEA, Etensor)!{{{
+      implicit none
       integer, intent(in) :: nLayers, nCells
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: sigmaEA
       real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightEA
@@ -2017,6 +2071,7 @@ contains
       real (kind=RKIND) :: sigma
       real (kind=RKIND) :: uppupp, vppvpp, uppvpp, uppwpp, vppwpp
       real (kind=RKIND) :: HpHp, HpMxp, HpMyp
+      real (kind=RKIND) :: dummy1, dummy2, dummy3
       
       Etensor = 0.0
 
@@ -2030,9 +2085,10 @@ contains
             uppvpp = uvSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*vTWA(kLayer,iCell)
             uppwpp = uvarpisigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*varpiTWA(kLayer,iCell)
             vppwpp = vvarpisigmaEA(kLayer,iCell) / sigma - vTWA(kLayer,iCell)*varpiTWA(kLayer,iCell)
+
             HpHp   = heightSqEA(kLayer,iCell) - heightEA(kLayer,iCell)*heightEA(kLayer,iCell)
-            HpMxp  = HMxEA(kLayer,iCell) - heightEA(kLayer,iCell)*MxEA(kLayer,iCell)
-            HpMyp  = HMyEA(kLayer,iCell) - heightEA(kLayer,iCell)*MyEA(kLayer,iCell)
+            HpMxp  = HMxEA(kLayer,iCell) - heightEA(kLayer,iCell) * MxEA(kLayer,iCell)
+            HpMyp  = HMyEA(kLayer,iCell) - heightEA(kLayer,iCell) * MyEA(kLayer,iCell)
 
             !EPTF_pq(x,y,z) is represented as EPFT(p,q,kLayer,iCell)
             !column 1: Eu
