@@ -603,7 +603,6 @@ module atm_core
    
    end subroutine atm_compute_restart_diagnostics
 
-
    subroutine atm_do_timestep(domain, dt, itimestep)
    
       use mpas_timekeeping

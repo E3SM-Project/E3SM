@@ -33,7 +33,7 @@
 
 !local variables:
  integer :: iCell,iVert,iVertD,k,kk
- integer, pointer :: nCells, nVertLevels, nVertices, vertexDegree
+ integer, pointer :: nCells, nVertLevels, nVertices, vertexDegree, nIsoLevelsT, nIsoLevelsZ
  integer :: nVertLevelsP1
  integer, pointer :: index_qv
  integer, dimension(:,:), pointer :: cellsOnVertex
@@ -48,6 +48,12 @@
  real (kind=RKIND), dimension(:,:), pointer :: qvapor, relhum, theta_m, vorticity
  real (kind=RKIND), dimension(:,:), pointer :: umeridional, uzonal, vvel
  real (kind=RKIND), dimension(:,:,:), pointer :: scalars
+
+ real (kind=RKIND), dimension(:), pointer :: t_iso_levels
+ real (kind=RKIND), dimension(:), pointer :: z_iso_levels
+ real (kind=RKIND), dimension(:,:), pointer :: t_isobaric
+ real (kind=RKIND), dimension(:,:), pointer :: z_isobaric
+ real (kind=RKIND), dimension(:), pointer :: meanT_500_300
 
  real (kind=RKIND), dimension(:), pointer :: temperature_200hPa
  real (kind=RKIND), dimension(:), pointer :: temperature_500hPa
@@ -103,6 +109,8 @@
  call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
  call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
  call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+ call mpas_pool_get_dimension(mesh, 'nIsoLevelsT', nIsoLevelsT)
+ call mpas_pool_get_dimension(mesh, 'nIsoLevelsZ', nIsoLevelsZ)
  call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
  nVertLevelsP1 = nVertLevels + 1
@@ -128,6 +136,12 @@
  call mpas_pool_get_array(diag, 'uReconstructMeridional', umeridional)
  call mpas_pool_get_array(diag, 'uReconstructZonal', uzonal)
  call mpas_pool_get_array(diag, 'relhum', relhum)
+
+ call mpas_pool_get_array(mesh, 't_iso_levels', t_iso_levels)
+ call mpas_pool_get_array(mesh, 'z_iso_levels', z_iso_levels)
+ call mpas_pool_get_array(diag, 't_isobaric', t_isobaric)
+ call mpas_pool_get_array(diag, 'z_isobaric', z_isobaric)
+ call mpas_pool_get_array(diag, 'meanT_500_300', meanT_500_300)
 
  call mpas_pool_get_array(diag, 'temperature_200hPa', temperature_200hPa)
  call mpas_pool_get_array(diag, 'temperature_500hPa', temperature_500hPa)
@@ -171,6 +185,26 @@
  if(.not.allocated(pressure2)   ) allocate(pressure2(nVertLevelsP1,nCells)   )
  if(.not.allocated(pressure_v)  ) allocate(pressure_v(nVertLevels,nVertices) )
  if(.not.allocated(temperature) ) allocate(temperature(nVertLevels,nCells)   )
+
+ t_iso_levels(1) = 30000.0
+ t_iso_levels(2) = 35000.0
+ t_iso_levels(3) = 40000.0
+ t_iso_levels(4) = 45000.0
+ t_iso_levels(5) = 50000.0
+
+ z_iso_levels(1)  = 30000.0
+ z_iso_levels(2)  = 35000.0
+ z_iso_levels(3)  = 40000.0
+ z_iso_levels(4)  = 45000.0
+ z_iso_levels(5)  = 50000.0
+ z_iso_levels(6)  = 55000.0
+ z_iso_levels(7)  = 60000.0
+ z_iso_levels(8)  = 65000.0
+ z_iso_levels(9)  = 70000.0
+ z_iso_levels(10) = 75000.0
+ z_iso_levels(11) = 80000.0
+ z_iso_levels(12) = 85000.0
+ z_iso_levels(13) = 90000.0
 
 !calculation of total pressure at cell centers (at mass points):
  do iCell = 1, nCells
@@ -266,6 +300,7 @@
  temperature_700hPa(1:nCells) = field_interp(1:nCells,3)
  temperature_850hPa(1:nCells) = field_interp(1:nCells,4)
 ! write(0,*) '--- end interpolate temperature:'
+
 
 !... relative humidity:
  do iCell = 1, nCells
@@ -402,11 +437,96 @@
 
  if(allocated(field_interp)) deallocate(field_interp)
  if(allocated(press_interp)) deallocate(press_interp)
- if(allocated(pressure)    ) deallocate(pressure    )
  if(allocated(pressureCp1) ) deallocate(pressureCp1 )
- if(allocated(pressure2)   ) deallocate(pressure2   )
  if(allocated(pressure_v)  ) deallocate(pressure_v  )
+ if(allocated(tmp) )         deallocate(tmp )
+
+   deallocate(field_in)
+   deallocate(press_in)
+
+   !!!!!!!!!!! Additional temperature levels for vortex tracking !!!!!!!!!!!
+
+   allocate(field_in(nCells, nVertLevels))
+   allocate(press_in(nCells, nVertLevels))
+   allocate(field_interp(nCells, nIsoLevelsT))
+   allocate(press_interp(nCells, nIsoLevelsT))
+
+   do k=1,nIsoLevelsT
+      press_interp(:,k) = t_iso_levels(k)
+   end do
+
+   ! Additional temperature levels for vortex tracking
+   do iCell=1,nCells
+   do k=1,nVertLevels
+      kk = nVertLevels+1-k
+      field_in(iCell,kk) = temperature(k,iCell)
+   end do
+   end do
+
+   do iCell=1,nCells
+   do k=1,nVertLevels
+      kk = nVertLevels+1-k
+      press_in(iCell,kk) = pressure(k,iCell) * 100.0
+   end do
+   end do
+
+   call interp_tofixed_pressure(nCells, nVertLevels, nIsoLevelsT, press_in, field_in, press_interp, field_interp)
+
+   do k=1,nIsoLevelsT
+      t_isobaric(k,1:nCells) = field_interp(1:nCells,k)
+   end do
+
+
+   !!!!!!!!!!! Calculate mean temperature in 500 hPa - 300 hPa layer !!!!!!!!!!!
+
+   call compute_layer_mean(meanT_500_300, 50000.0, 30000.0, field_in, press_in)
+
+
+   deallocate(field_in)
+   deallocate(field_interp)
+   deallocate(press_in)
+   deallocate(press_interp)
+
+
+   !!!!!!!!!!! Additional height levels for vortex tracking !!!!!!!!!!!
+
+   allocate(field_in(nCells, nVertLevelsP1))
+   allocate(press_in(nCells, nVertLevelsP1))
+   allocate(field_interp(nCells, nIsoLevelsZ))
+   allocate(press_interp(nCells, nIsoLevelsZ))
+
+   do k=1,nIsoLevelsZ
+      press_interp(:,k) = z_iso_levels(k)
+   end do
+
+   do iCell=1,nCells
+   do k=1,nVertLevelsP1
+      kk = nVertLevelsP1+1-k
+      field_in(iCell,kk) = height(k,iCell)
+   end do
+   end do
+
+   do iCell=1,nCells
+   do k=1,nVertLevelsP1
+      kk = nVertLevelsP1+1-k
+      press_in(iCell,kk) = pressure2(k,iCell) * 100.0
+   end do
+   end do
+
+   call interp_tofixed_pressure(nCells, nVertLevelsP1, nIsoLevelsZ, press_in, field_in, press_interp, field_interp)
+
+   do k=1,nIsoLevelsZ
+      z_isobaric(k,1:nCells) = field_interp(1:nCells,k)
+   end do
+
+   deallocate(field_in)
+   deallocate(field_interp)
+   deallocate(press_in)
+   deallocate(press_interp)
+
  if(allocated(temperature) ) deallocate(temperature )
+ if(allocated(pressure2)   ) deallocate(pressure2   )
+ if(allocated(pressure)    ) deallocate(pressure    )
 
 !formats:
 ! 201 format(i5,4(1x,e15.8))
@@ -639,6 +759,129 @@
     if (allocated(t_msl))  deallocate(t_msl)
 
  end subroutine compute_slp
+
+!***********************************************************************
+!
+!  routine compute_layer_mean
+!
+!> \brief   Computes the mean of a field in the specified layer.
+!> \author  Michael Duda
+!> \date    3 July 2014
+!> \details
+!>  Given a 3d pressure field, press_in(nCells,nVertLevels), with pressure 
+!>  increasing with vertical index, and a 3d field, 
+!>  field_in(nCells,nVertLevels) with levels in the same order, this routine
+!>  will compute the mean of the field for each column between pressures
+!>  p1 and p2.
+!
+!----------------------------------------------------------------------- 
+ subroutine compute_layer_mean(layerMean, p1, p2, field_in, press_in)
+
+    implicit none
+
+    real(kind=RKIND), dimension(:), intent(out) :: layerMean
+    real(kind=RKIND), intent(in) :: p1, p2
+    real(kind=RKIND), dimension(:,:), intent(in) :: field_in
+    real(kind=RKIND), dimension(:,:), intent(in) :: press_in
+
+    integer :: nCells, nVertLevels
+    integer :: iCell, k
+    integer :: k_bot, k_top
+    real(kind=RKIND) :: p_bot, p_top
+    real(kind=RKIND) :: wtop_p, wtop_m
+    real(kind=RKIND) :: wbot_p, wbot_m
+    real(kind=RKIND) :: wtotal, w
+    real(kind=RKIND) :: temp
+
+
+    !
+    ! Get dimensions of input arrays
+    !
+    nCells = size(field_in, 1) 
+    nVertLevels = size(field_in, 2) 
+
+
+    !
+    ! Check that pressure is increasing with index
+    !
+    if (press_in(1,1) > press_in(1,nVertLevels)) then
+        write(stderrUnit,*) 'Error in compute_layer_mean: pressure should increase with index'
+        layerMean(:) = 0.0
+        return
+    end if
+
+    
+    !
+    ! Set the pressure at the top and bottom of the layer
+    !
+    if (p1 < p2) then
+       p_top = p1
+       p_bot = p2
+    else
+       p_top = p2
+       p_bot = p1
+    end if
+
+
+    !
+    ! For each column, compute the mean value of the field between p_bot and
+    ! p_top, with the field weighted by delta-p in each layer
+    !
+    do iCell=1,nCells
+       k_bot = -1
+       k_top = -1
+
+       ! Search for trapping levels: k_top is the index just above (or equal to)
+       ! p_top, and k_bot is the index just above (or equal to) p_bot.
+       do k=1,nVertLevels-1
+          if (press_in(iCell,k) <= p_top .and. press_in(iCell,k+1) > p_top) then
+             k_top = k
+             wtop_p = (p_top - press_in(iCell,k)) / (press_in(iCell,k+1) - press_in(iCell,k))
+             wtop_m = (press_in(iCell,k+1) - p_top) / (press_in(iCell,k+1) - press_in(iCell,k))
+          end if
+          if (press_in(iCell,k) <= p_bot .and. press_in(iCell,k+1) > p_bot) then
+             k_bot = k
+             wbot_m = (p_bot - press_in(iCell,k)) / (press_in(iCell,k+1) - press_in(iCell,k))
+             wbot_p = (press_in(iCell,k+1) - p_bot) / (press_in(iCell,k+1) - press_in(iCell,k))
+          end if
+       end do
+
+       if (k_top == -1 .or. k_bot == -1) then      ! Layer intersects top or bottom boundary
+
+          layerMean(iCell) = 0.0  
+
+       else if (k_top == k_bot) then               ! Layer lies entirely within a single model layer
+
+          layerMean(iCell) = wtop_m * field_in(iCell,k_top) + wtop_p * field_in(iCell,k_top+1)
+          layerMean(iCell) = layerMean(iCell) + wbot_m * field_in(iCell,k_bot) + wbot_p * field_in(iCell,k_bot+1)
+          layerMean(iCell) = 0.5 * layerMean(iCell)
+
+       else
+
+          ! First layer: from p_top down to press_in(iCell,k_top+1)
+          wtotal = press_in(iCell,k_top+1) - p_top  
+          temp = wtop_m * field_in(iCell,k_top) + wtop_p * field_in(iCell,k_top+1)
+          layerMean(iCell) = wtotal * 0.5 * (field_in(iCell,k_top+1) + temp)
+
+          ! Middle layers
+          do k=k_top+1,k_bot-1
+             w = press_in(iCell,k+1) - press_in(iCell,k)
+             wtotal = wtotal + w
+             layerMean(iCell) = layerMean(iCell) + w * 0.5 * (field_in(iCell,k) + field_in(iCell,k+1))
+          end do
+
+          ! Last layer: from press_in(iCell,k_bot) down to p_bot
+          w = p_bot - press_in(iCell,k_bot)
+          wtotal = wtotal + w
+          temp = wbot_m * field_in(iCell,k_bot) + wbot_p * field_in(iCell,k_bot+1)
+          layerMean(iCell) = layerMean(iCell) + w * 0.5 * (field_in(iCell,k_bot) + temp)
+
+          layerMean(iCell) = layerMean(iCell) / wtotal
+       end if
+
+    end do
+
+ end subroutine compute_layer_mean
 
 !==================================================================================================
  end module mpas_atm_interp_diagnostics

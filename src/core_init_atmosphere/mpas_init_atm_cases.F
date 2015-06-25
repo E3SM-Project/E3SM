@@ -2528,6 +2528,7 @@ module init_atm_cases
       integer, dimension(:), pointer :: mask_array
       integer, dimension(nEdges), target :: edge_mask
       character (len=StrKIND) :: fname
+      logical :: is_sfc_field
 
       real (kind=RKIND) :: flux, fluxk, lat1, lat2, eta_v, r_pert, u_pert, lat_pert, lon_pert, r
       real (kind=RKIND) :: lat, lon, x, y
@@ -2560,6 +2561,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nlat) :: lat_2d
       real (kind=RKIND) :: dlat
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
+      real (kind=RKIND) :: alt, als, zetal, zl
 
       character (len=StrKIND), pointer :: config_met_prefix
       character (len=StrKIND), pointer :: config_start_time
@@ -2569,6 +2571,7 @@ module init_atm_cases
       integer, pointer :: config_nsm
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
+      logical, pointer :: config_tc_vertical_grid
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
       logical, pointer :: config_smooth_surfaces
@@ -2602,6 +2605,9 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructMeridional
 
       real (kind=RKIND), dimension(:), pointer :: psfc
+      real (kind=RKIND), dimension(:), pointer :: t2
+      real (kind=RKIND), dimension(:), pointer :: q2
+      real (kind=RKIND), dimension(:), pointer :: rh2
       real (kind=RKIND), dimension(:), pointer :: skintemp
       real (kind=RKIND), dimension(:), pointer :: snow
       real (kind=RKIND), dimension(:), pointer :: snowc
@@ -2624,6 +2630,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_nsm', config_nsm)
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
+      call mpas_pool_get_config(configs, 'config_tc_vertical_grid', config_tc_vertical_grid)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
@@ -2707,6 +2714,9 @@ module init_atm_cases
       call mpas_pool_get_array(fg, 'st_fg', st_fg)
       call mpas_pool_get_array(fg, 'sm_fg', sm_fg)
       call mpas_pool_get_array(fg, 'psfc', psfc)
+      call mpas_pool_get_array(fg, 't2', t2)
+      call mpas_pool_get_array(fg, 'q2', q2)
+      call mpas_pool_get_array(fg, 'rh2', rh2)
       call mpas_pool_get_array(fg, 'skintemp', skintemp)
       call mpas_pool_get_array(fg, 'snow', snow)
       call mpas_pool_get_array(fg, 'snowc', snowc)
@@ -2754,6 +2764,13 @@ module init_atm_cases
       do while (istatus == 0)
          if (index(field % field, 'SOILHGT') /= 0) then
 
+
+write(0,*) 'USING ECMWF TERRAIN...'
+
+            interp_list(1) = FOUR_POINT
+            interp_list(2) = SEARCH
+            interp_list(3) = 0
+
             !
             ! Set up projection
             !
@@ -2778,6 +2795,15 @@ module init_atm_cases
                ndims = 1
             end if
 
+            allocate(rslab(-2:field % nx+3, field % ny))
+            rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
+            rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
+            rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
+            rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
+            rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
+            rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
+            rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
+
             do i=1,nInterpPoints
                lat = latPoints(i)*DEG_PER_RAD
                lon = lonPoints(i)*DEG_PER_RAD
@@ -2785,13 +2811,23 @@ module init_atm_cases
                if (x < 0.5) then
                   lon = lon + 360.0
                   call latlon_to_ij(proj, lat, lon, x, y)
+               else if (x >= real(field%nx)+0.5) then
+                  lon = lon - 360.0
+                  call latlon_to_ij(proj, lat, lon, x, y)
+               end if
+               if (y < 0.5) then
+                  y = 1.0
+               else if (y >= real(field%ny)+0.5) then
+                  y = real(field%ny)
                end if
                if (ndims == 1) then
-                  destField1d(i) = interp_sequence(x, y, 1, field % slab, 1, field % nx, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
+                  destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
                else if (ndims == 2) then
-                  destField2d(k,i) = interp_sequence(x, y, 1, field % slab, 1, field % nx, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
+                  destField2d(k,i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, -1.e30_RKIND, interp_list, 1)
                end if
             end do
+
+            deallocate(rslab)
          end if
    
          deallocate(field % slab)
@@ -2861,15 +2897,55 @@ module init_atm_cases
 
 !     Metrics for hybrid coordinate and vertical stretching
 
-      str = 1.5
-!      str = 1.
-      zt = config_ztop
-      dz = zt/float(nz1)
+      if (config_tc_vertical_grid) then
 
-      do k=1,nz
-         zw(k) = (real(k-1)/real(nz1))**str*zt
-         if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
-      end do
+         write(0,*) 'Setting up vertical levels as in 2014 TC experiments'
+
+         zt = config_ztop
+         dz = zt/float(nz1)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 2014 TC experiments
+! When switching between 41 and 55 levels in the namelist, also
+!    comment/uncomment the appropriate section of code below...
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! ww: for 41 level fit
+!         als   =  .075
+!         alt   = 1.23
+!         zetal =  .31
+! ww: for 55 level fit
+         als   =  .075
+         alt   = 1.7
+         zetal =  .75
+
+         do k=1,nz
+            zl = 1.-alt*(1.-zetal)
+            if ((real(k-1)/real(nz1)).LT.zetal) then
+                 zw(k) =              (als*real(K-1)/real(nz1)      &
+                     +(3.*(1.-alt)+2.*(alt-als)*zetal)              &
+                                     *((K-1)*dz/(zt*zetal))**2      &
+                     -(2.*(1.-alt) +  (alt-als)*zetal)              &
+                                     *(real(k-1)*dz/(zt*zetal))**3) * zt
+            else
+                 zw(K) = (zl+alt*(real(K-1)/real(nz1)-zetal))*zt
+            end if
+            if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
+         end do
+
+      else
+
+         write(0,*) 'Setting up vertical levels as in MPAS 2.0 and earlier'
+
+         str = 1.5
+         zt = config_ztop
+         dz = zt/float(nz1)
+
+         do k=1,nz
+            zw(k) = (real(k-1)/real(nz1))**str*zt
+            if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
+         end do
+      end if
 
 !     ah(k) governs the transition between terrain-following 
 !        and pure height coordinates
@@ -3792,6 +3868,14 @@ write(0,*) 'Interpolating SKINTEMP'
                   if (x < 0.5) then
                      lon = lon + 360.0
                      call latlon_to_ij(proj, lat, lon, x, y)
+                  else if (x >= real(field%nx)+0.5) then
+                     lon = lon - 360.0
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                  end if
+                  if (y < 0.5) then
+                     y = 1.0
+                  else if (y >= real(field%ny)+0.5) then
+                     y = real(field%ny)
                   end if
                   if (ndims == 1) then
                      if (maskval /= -1.0) then
@@ -3815,6 +3899,57 @@ write(0,*) 'Interpolating SKINTEMP'
                end if
             end do
 
+            !
+            ! In addition to interpolating wind fields to cell edges, we should
+            ! also intperolate to cell centers at the surface in order to
+            ! produce U10 and V10 fields
+            !
+            is_sfc_field = .false.
+            mask_array => landmask
+            if (index(field % field, 'UU') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'u10', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            else if (index(field % field, 'VV') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'v10', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            else if (index(field % field, 'TT') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 't2', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            else if (index(field % field, 'RH') /= 0 .and. vert_level(k) == 200100.0) then
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'rh2', destField1d)
+               ndims = 1
+               is_sfc_field = .true.
+            end if
+
+            if (is_sfc_field) then
+               do i=1,nInterpPoints
+                  lat = latPoints(i)*DEG_PER_RAD
+                  lon = lonPoints(i)*DEG_PER_RAD
+                  call latlon_to_ij(proj, lat, lon, x, y)
+                  if (x < 0.5) then
+                     lon = lon + 360.0
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                  end if
+                  destField1d(i) = interp_sequence(x, y, 1, rslab, -2, field % nx + 3, 1, field % ny, 1, 1, &
+                                                   msgval, interp_list, 1, maskval=maskval, mask_array=maskslab)
+               end do
+            end if
+
             deallocate(rslab)
      
          end if
@@ -3824,7 +3959,6 @@ write(0,*) 'Interpolating SKINTEMP'
       end do
 
       call read_met_close()
-
 
       !
       ! Check how many distinct levels we actually found in the meteorological data
@@ -3958,6 +4092,14 @@ write(0,*) 'PROCESSING SEAICE'
                      if (x < 0.5) then
                         lon = lon + 360.0
                         call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
                      end if
                      if (ndims == 1) then
                         destField1d(i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
@@ -3984,6 +4126,105 @@ write(0,*) 'PROCESSING SEAICE'
       end if
 
       call read_met_close()
+
+
+      !
+      ! Get OMLD climatology from a separate file
+      !
+      call read_met_init('OMLD', .true., config_start_time(1:13), istatus)
+
+      if (istatus /= 0) then
+         write(0,*) 'OMLD file not found...'
+      end if
+
+      if (istatus == 0) then
+         call read_next_met_field(field, istatus)
+         do while (istatus == 0)
+            if (index(field % field, 'OMLD') /= 0) then
+
+write(0,*) 'PROCESSING OMLD'
+
+               !
+               ! Set up projection
+               !
+               call map_init(proj)
+          
+               if (field % iproj == PROJ_LATLON) then
+                  call map_set(PROJ_LATLON, proj, &
+                               latinc = real(field % deltalat,RKIND), &
+                               loninc = real(field % deltalon,RKIND), &
+                               knowni = 1.0_RKIND, &
+                               knownj = 1.0_RKIND, &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
+               else
+                  write(stderrUnit,*) 'ERROR: We were expecting OMLD field to be on a lat-lon projection...'
+               end if
+
+               if (index(field % field, 'OMLD') /= 0) then
+                  nInterpPoints = nCells
+                  latPoints => latCell
+                  lonPoints => lonCell
+                  call mpas_pool_get_array(state, 'h_oml_initial', destField1d)
+                  ndims = 1
+               end if
+   
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+   
+               masked = 1
+               fillval = 0.0
+               msgval = 0.0
+               mask_array => landmask
+
+
+               allocate(rslab(field % nx, field % ny))
+               rslab(:,:) = field % slab(:,:)
+               do i=1,nInterpPoints
+                  if (mask_array(i) /= masked) then
+                     lat = latPoints(i)*DEG_PER_RAD
+                     lon = lonPoints(i)*DEG_PER_RAD
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                     if (x < 0.5) then
+                        lon = lon + 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
+                     end if
+                     if (ndims == 1) then
+                        destField1d(i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                        if (destField1d(i) == msgval) destField1d(i) = fillval
+                     else if (ndims == 2) then
+                        destField2d(k,i) = interp_sequence(x, y, 1, rslab, 1, field % nx, 1, field % ny, 1, 1, msgval, interp_list, 1)
+                        if (destField2d(k,i) == msgval) destField2d(k,i) = fillval
+                     end if
+                  else
+                     if (ndims == 1) then
+                        destField1d(i) = fillval
+                     else if (ndims == 2) then
+                        destField2d(k,i) = fillval
+                     end if
+                  end if
+               end do
+               deallocate(rslab)
+
+            end if
+      
+            deallocate(field % slab)
+            call read_next_met_field(field, istatus)
+         end do
+      end if
+
+      call read_met_close()
+
 
       if (allocated(maskslab)) deallocate(maskslab)
 
@@ -4174,9 +4415,16 @@ write(0,*) 'PROCESSING SEAICE'
 
       !
       ! Diagnose fields needed in initial conditions file (u, w, rho, theta, scalars)
-      ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
+      ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular temperature
       !
       do iCell=1,nCells
+
+         ! Q2
+         es = 6.112 * exp((17.27*(t2(iCell) - 273.16))/(t2(iCell) - 35.86))
+         rs = 0.622 * es * 100. / (psfc(iCell) - es * 100.)
+         q2(iCell) = 0.01 * rs * rh2(iCell)
+    
+
          do k=1,nVertLevels
 
             ! QV
@@ -4458,6 +4706,8 @@ write(0,*) 'PROCESSING SEAICE'
          else if (extrap_type == 1) then
             slope = (zf(2,2) - zf(2,1)) / (zf(1,2) - zf(1,1))
             vertical_interp = zf(2,1) + slope * (target_z - zf(1,1))
+         else if (extrap_type == 2) then
+            vertical_interp = zf(2,1) - (target_z - zf(1,1))*0.0065
          end if
          return
       end if

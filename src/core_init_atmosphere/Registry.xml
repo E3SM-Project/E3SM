@@ -62,6 +62,7 @@
                 <nml_option name="config_smooth_surfaces"       type="logical"       default_value="true"/>
                 <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
                 <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
+                <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"/>
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
@@ -338,6 +339,12 @@
                         <var name="theta_base" packages="met_stage_out"/>
                         <var name="surface_pressure" packages="met_stage_out"/>
                         <var name="precipw" packages="met_stage_out"/>
+			<var name="h_oml_initial"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="rh2"/>
+			<var name="t2"/>
 		</stream>
 
 		<stream name="surface" 
@@ -479,6 +486,9 @@
                         <var name="qc"      array_group="moist"/>
                         <var name="qr"      array_group="moist"/>
                 </var_array>
+
+                <!-- Climatology for ocean mixed-layer depth -->
+                <var name="h_oml_initial"              type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="fg" time_levs="1">
@@ -519,6 +529,13 @@
                 <var name="vegfra"                            type="real"     dimensions="nCells Time"/>
                 <var name="sfc_albbck"                        type="real"     dimensions="nCells Time"/>
                 <var name="xland"                             type="real"     dimensions="nCells Time"/>
+
+                <!-- diagnostic fields that we get from first-guess data, and which we want to have at model initial output time -->
+                <var name="u10"                               type="real"     dimensions="nCells Time"/>
+                <var name="v10"                               type="real"     dimensions="nCells Time"/>
+                <var name="q2"                                type="real"     dimensions="nCells Time"/>
+                <var name="t2"                                type="real"     dimensions="nCells Time"/>
+                <var name="rh2"                               type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="diag" time_levs="1">

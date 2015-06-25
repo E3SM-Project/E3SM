@@ -19,6 +19,8 @@
                 <dim name="R3"                 definition="3"/>
                 <dim name="nVertLevels"/>
                 <dim name="nVertLevelsP1"      definition="nVertLevels+1"/>
+                <dim name="nIsoLevelsT"         definition="5"/>
+                <dim name="nIsoLevelsZ"         definition="13"/>
                 <dim name="nMonths"            definition="namelist:months"/>
                 <dim name="nSoilLevels"        definition="namelist:num_soil_layers"/>
                 <dim name="nLags"              definition="namelist:input_soil_temperature_lag"/>
@@ -207,6 +209,11 @@
 			<var name="seaice"/>
 			<var name="xice"/>
 			<var name="xland"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="t2"/>
+			<var name="precipw"/>
 			<var name="dzs"/>
 			<var name="sh2o"/>
 			<var name="smois"/>
@@ -221,6 +228,7 @@
 			<var name="ol2"/>
 			<var name="ol3"/>
 			<var name="ol4"/>
+			<var name="h_oml_initial"/>
 		</stream>
 
 		<stream name="restart" 
@@ -386,8 +394,8 @@
 			<var name="u10"/>
 			<var name="v10"/>
 			<var name="q2"/>
-			<var name="t2m"/>
-			<var name="th2m"/>
+			<var name="t2"/>
+			<var name="th2"/>
 			<var name="dusfcg"/>
 			<var name="dvsfcg"/>
 			<var name="dtaux3d"/>
@@ -509,6 +517,13 @@
 			<var name="ol2"/>
 			<var name="ol3"/>
 			<var name="ol4"/>
+			<var name="t_oml"/>
+			<var name="t_oml_initial"/>
+			<var name="t_oml_200m_initial"/>
+			<var name="h_oml"/>
+			<var name="h_oml_initial"/>
+			<var name="hu_oml"/>
+			<var name="hv_oml"/>
 		</stream>
 
 		<stream name="output" 
@@ -641,6 +656,18 @@
 			<var name="vorticity_200hPa"/>
 			<var name="vorticity_500hPa"/>
 			<var name="vorticity_850hPa"/>
+			<var name="t_oml"/>
+			<var name="t_oml_initial"/>
+			<var name="t_oml_200m_initial"/>
+			<var name="h_oml"/>
+			<var name="h_oml_initial"/>
+			<var name="hu_oml"/>
+			<var name="hv_oml"/>
+			<var name="t_isobaric"/>
+			<var name="t_iso_levels"/>
+			<var name="z_isobaric"/>
+			<var name="z_iso_levels"/>
+			<var name="meanT_500_300"/>
 		</stream>
 
 		<stream name="surface" 
@@ -756,6 +783,9 @@
 
                 <!-- Arrays needed only in the CAM LW and SW radiation codes: Aerosols -->
                 <var name="m_hybi"                    type="real"     dimensions="nAerLevels nCells"/>
+
+                <var name="t_iso_levels"              type="real"     dimensions="nIsoLevelsT"/>
+                <var name="z_iso_levels"              type="real"     dimensions="nIsoLevelsZ"/>
         </var_struct>
 
         <var_struct name="state" time_levs="2">
@@ -906,6 +936,10 @@
                 <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"/>
+
+                <var name="t_isobaric"             type="real"     dimensions="nIsoLevelsT nCells Time"/>
+                <var name="z_isobaric"             type="real"     dimensions="nIsoLevelsZ nCells Time"/>
+                <var name="meanT_500_300"          type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="tend" time_levs="1">
@@ -990,6 +1024,12 @@
                 <nml_option name="config_bucket_radt"                type="real"          default_value="1.0e9"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainc"               type="real"          default_value="100.0"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainnc"              type="real"          default_value="100.0"      in_defaults="false"/>
+
+                <nml_option name="config_oml1d"                      type="logical"       default_value="false"      in_defaults="false"/>
+                <nml_option name="config_oml_hml0"                   type="real"          default_value="30.0"       in_defaults="false"/>
+                <nml_option name="config_oml_gamma"                  type="real"          default_value="0.14"       in_defaults="false"/>
+                <nml_option name="config_oml_relaxation_time"        type="real"          default_value="864000."    in_defaults="false"/>
+                
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
@@ -1080,9 +1120,9 @@
                 <var name="exch_h"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- TEMPORARY: -->
-		<var name="kzh"                               type="real"     dimensions="nVertLevels nCells Time"/>
-		<var name="kzm"                               type="real"     dimensions="nVertLevels nCells Time"/>
-		<var name="kzq"                               type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="kzh"           type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="kzm"           type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="kzq"           type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1122,8 +1162,8 @@
                 <!--  q2        :specific humidity at 2m                                                        [kg/kg] -->
                 <!--  u10       :u at 10 m                                                                        [m/s] -->
                 <!--  v10       :v at 10 m                                                                        [m/s] -->
-                <!--  t2m       :temperature at 2m                                                                  [K] -->
-                <!--  th2m      :potential temperature at 2m                                                        [K] -->
+                <!--  t2        :temperature at 2m                                                                  [K] -->
+                <!--  th2       :potential temperature at 2m                                                        [K] -->
 
                 <var name="hfx"           type="real"     dimensions="nCells Time"/>
                 <var name="mavail"        type="real"     dimensions="nCells Time"/>
@@ -1161,8 +1201,8 @@
                 <var name="u10"           type="real"     dimensions="nCells Time"/>
                 <var name="v10"           type="real"     dimensions="nCells Time"/>
                 <var name="q2"            type="real"     dimensions="nCells Time"/>
-                <var name="t2m"           type="real"     dimensions="nCells Time"/>
-                <var name="th2m"          type="real"     dimensions="nCells Time"/>
+                <var name="t2"            type="real"     dimensions="nCells Time"/>
+                <var name="th2"           type="real"     dimensions="nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1416,6 +1456,27 @@
                 <var name="xicem"         type="real"     dimensions="nCells Time"/>
                 <var name="z0"            type="real"     dimensions="nCells Time"/>
                 <var name="zs"            type="real"     dimensions="nCells Time"/>
+
+                <!-- ================================================================================================== -->
+                <!-- ... PARAMETERIZATION OF THE 1D OCEAN MIXED LAYER                                                   -->
+                <!-- ================================================================================================== -->
+
+                <!-- t_oml              :ocean mixed layer temperature                                              [K] -->
+                <!-- t_oml_initial      :ocean mixed layer temperature at initial time                              [K] -->
+                <!-- t_oml_200m_initial :ocean mixed layer 200 m mean temperature at initial time                   [K] -->
+                <!-- h_oml              :ocean mixed layer depth                                                    [m] -->
+                <!-- h_oml_initial      :ocean mixed layer depth at initial time                                    [m] -->
+                <!-- hu_oml             :ocean mixed layer integrated u (zonal velocity)                        [m^2/s] -->
+                <!-- hv_oml             :ocean mixed layer integrated v (meridional velocity)                   [m^2/s] -->
+
+                <var name="t_oml"                 type="real"     dimensions="nCells Time"/>
+                <var name="t_oml_initial"         type="real"     dimensions="nCells Time"/>
+                <var name="t_oml_200m_initial"    type="real"     dimensions="nCells Time"/>
+                <var name="h_oml"                 type="real"     dimensions="nCells Time"/>
+                <var name="h_oml_initial"         type="real"     dimensions="nCells Time"/>
+                <var name="hu_oml"                type="real"     dimensions="nCells Time"/>
+                <var name="hv_oml"                type="real"     dimensions="nCells Time"/>
+
         </var_struct>
 
         <var_struct name="tend_physics" time_levs="1">
