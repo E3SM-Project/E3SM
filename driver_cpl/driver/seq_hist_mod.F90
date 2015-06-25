@@ -33,7 +33,7 @@ module seq_hist_mod
    use seq_comm_mct,      only: CPLID, GLOID, logunit, loglevel
    use seq_comm_mct,      only: num_inst_atm, num_inst_lnd, num_inst_ocn
    use seq_comm_mct,      only: num_inst_ice, num_inst_glc, num_inst_wav
-   use seq_comm_mct,      only: num_inst_rof
+   use seq_comm_mct,      only: num_inst_rof, num_inst_xao
 
    use prep_ocn_mod,      only: prep_ocn_get_r2x_ox
    use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox
@@ -93,6 +93,15 @@ module seq_hist_mod
    logical     :: rof_prognostic         ! .true.  => rof comp expects input
    logical     :: glc_prognostic         ! .true.  => glc comp expects input
    logical     :: wav_prognostic         ! .true.  => wav comp expects input
+
+   logical     :: histavg_atm            ! .true.  => write atm fields to average history file
+   logical     :: histavg_lnd            ! .true.  => write lnd fields to average history file
+   logical     :: histavg_ocn            ! .true.  => write ocn fields to average history file
+   logical     :: histavg_ice            ! .true.  => write ice fields to average history file
+   logical     :: histavg_rof            ! .true.  => write rof fields to average history file
+   logical     :: histavg_glc            ! .true.  => write glc fields to average history file
+   logical     :: histavg_wav            ! .true.  => write wav fields to average history file
+   logical     :: histavg_xao            ! .true.  => write flux xao fields to average history file
 
    logical     :: cdf64                  ! true => use 64 bit addressing in netCDF files
 
@@ -430,6 +439,8 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
    type(mct_aVect), save  :: x2g_gx_avg(num_inst_glc)
    type(mct_aVect), save  :: w2x_wx_avg(num_inst_wav)
    type(mct_aVect), save  :: x2w_wx_avg(num_inst_wav)
+   type(mct_aVect), save, pointer  :: xao_ox_avg(:)
+   type(mct_aVect), save, pointer  :: xao_ax_avg(:)
 
    integer(IN)    , save  :: cnt                 ! counts samples in tavg
    real(r8)       , save  :: tbnds(2)            ! CF1.0 time bounds
@@ -476,6 +487,14 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
         glc_nx=glc_nx,  glc_ny=glc_ny,       &
         wav_nx=wav_nx,  wav_ny=wav_ny,       &
         ocn_nx=ocn_nx,  ocn_ny=ocn_ny,       &
+        histavg_atm=histavg_atm,             &
+        histavg_lnd=histavg_lnd,             &
+        histavg_ocn=histavg_ocn,             &
+        histavg_ice=histavg_ice,             &
+        histavg_rof=histavg_rof,             &
+        histavg_glc=histavg_glc,             &
+        histavg_wav=histavg_wav,             &
+        histavg_xao=histavg_xao,             &
         cpl_cdf64=cdf64 )
 
    ! Get current date from clock needed to label the histavg pointer file
@@ -485,7 +504,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
         calendar=calendar)
 
    if (first_call) then
-      if (atm_present) then
+      if (atm_present .and. histavg_atm) then
          do iidx = 1,  num_inst_atm
             c2x => component_get_c2x_cx(atm(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -498,7 +517,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2a_ax_avg(iidx))
          enddo
       endif
-      if (lnd_present) then
+      if (lnd_present .and. histavg_lnd) then
          do iidx = 1,  num_inst_lnd
             c2x => component_get_c2x_cx(lnd(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -511,7 +530,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2l_lx_avg(iidx))
          enddo
       endif
-      if (rof_present .and. ocnrof_prognostic) then
+      if (rof_present .and. histavg_rof) then
          do iidx = 1,  num_inst_rof
             c2x => component_get_c2x_cx(rof(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -524,7 +543,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2r_rx_avg(iidx))
          enddo
       endif
-      if (ocn_present) then
+      if (ocn_present .and. histavg_ocn) then
          do iidx = 1,  num_inst_ocn
             c2x => component_get_c2x_cx(ocn(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -537,7 +556,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2o_ox_avg(iidx))
          enddo
       endif
-      if (ice_present) then
+      if (ice_present .and. histavg_ice) then
          do iidx = 1,  num_inst_ice
             c2x => component_get_c2x_cx(ice(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -550,7 +569,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2i_ix_avg(iidx))
          enddo
       endif
-      if (glc_present) then
+      if (glc_present .and. histavg_glc) then
          do iidx = 1,  num_inst_glc
             c2x => component_get_c2x_cx(glc(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -563,7 +582,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2g_gx_avg(iidx))
          enddo
       endif
-      if (wav_present) then
+      if (wav_present .and. histavg_wav) then
          do iidx = 1,  num_inst_wav
             c2x => component_get_c2x_cx(wav(iidx))
             lsize = mct_aVect_lsize(c2x)
@@ -576,6 +595,24 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             call mct_aVect_zero(x2w_wx_avg(iidx))
          enddo
       endif
+      if (ocn_present .and. histavg_xao) then
+         allocate(xao_ox_avg(num_inst_xao))
+         xao_ox => prep_aoflux_get_xao_ox()
+         do iidx = 1,  num_inst_xao
+            lsize = mct_aVect_lsize(xao_ox(iidx))
+            call mct_aVect_init(xao_ox_avg(iidx), xao_ox(iidx), lsize)
+            call mct_aVect_zero(xao_ox_avg(iidx))
+         enddo
+      endif
+      if (atm_present .and. histavg_xao) then
+         allocate(xao_ax_avg(num_inst_xao))
+         xao_ax => prep_aoflux_get_xao_ax()
+         do iidx = 1,  num_inst_xao
+            lsize = mct_aVect_lsize(xao_ax(iidx))
+            call mct_aVect_init(xao_ax_avg(iidx), xao_ax(iidx), lsize)
+            call mct_aVect_zero(xao_ax_avg(iidx))
+         enddo
+      endif
       cnt = 0
       tbnds(1) = prev_time
       first_call = .false.
@@ -583,7 +620,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
 
    if (.not.write_now) then
       cnt = cnt + 1
-      if (atm_present) then
+      if (atm_present .and. histavg_atm) then
          do iidx = 1,  num_inst_atm
             c2x => component_get_c2x_cx(atm(iidx))
             x2c => component_get_x2c_cx(atm(iidx))
@@ -591,7 +628,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2a_ax_avg(iidx)%rAttr = x2a_ax_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
-      if (lnd_present) then
+      if (lnd_present .and. histavg_lnd) then
          do iidx = 1,  num_inst_lnd
             c2x => component_get_c2x_cx(lnd(iidx))
             x2c => component_get_x2c_cx(lnd(iidx))
@@ -599,7 +636,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2l_lx_avg(iidx)%rAttr = x2l_lx_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
-      if (rof_present .and. ocnrof_prognostic) then
+      if (rof_present .and. histavg_rof) then
          do iidx = 1,  num_inst_rof
             c2x => component_get_c2x_cx(rof(iidx))
             x2c => component_get_x2c_cx(rof(iidx))
@@ -607,7 +644,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2r_rx_avg(iidx)%rAttr = x2r_rx_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
-      if (ocn_present) then
+      if (ocn_present .and. histavg_ocn) then
          do iidx = 1,  num_inst_ocn
             c2x => component_get_c2x_cx(ocn(iidx))
             x2c => component_get_x2c_cx(ocn(iidx))
@@ -615,7 +652,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2o_ox_avg(iidx)%rAttr = x2o_ox_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
-      if (ice_present) then
+      if (ice_present .and. histavg_ice) then
          do iidx = 1,  num_inst_ice
             c2x => component_get_c2x_cx(ice(iidx))
             x2c => component_get_x2c_cx(ice(iidx))
@@ -623,7 +660,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2i_ix_avg(iidx)%rAttr = x2i_ix_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
-      if (glc_present) then
+      if (glc_present .and. histavg_glc) then
          do iidx = 1,  num_inst_glc
             c2x => component_get_c2x_cx(glc(iidx))
             x2c => component_get_x2c_cx(glc(iidx))
@@ -631,7 +668,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2g_gx_avg(iidx)%rAttr = x2g_gx_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
-      if (wav_present) then
+      if (wav_present .and. histavg_wav) then
          do iidx = 1,  num_inst_wav
             c2x => component_get_c2x_cx(wav(iidx))
             x2c => component_get_x2c_cx(wav(iidx))
@@ -639,12 +676,24 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2w_wx_avg(iidx)%rAttr = x2w_wx_avg(iidx)%rAttr + x2c%rAttr
          enddo
       endif
+      if (ocn_present .and. histavg_xao) then
+         xao_ox => prep_aoflux_get_xao_ox()
+         do iidx = 1,  num_inst_ocn
+            xao_ox_avg(iidx)%rAttr = xao_ox_avg(iidx)%rAttr + xao_ox(iidx)%rAttr
+         enddo
+      endif
+      if (atm_present .and. histavg_xao) then
+         xao_ax => prep_aoflux_get_xao_ax()
+         do iidx = 1,  num_inst_ocn
+            xao_ax_avg(iidx)%rAttr = xao_ax_avg(iidx)%rAttr + xao_ax(iidx)%rAttr
+         enddo
+      endif
 
    else
 
       cnt = cnt + 1
       tbnds(2) = curr_time
-      if (atm_present) then
+      if (atm_present .and. histavg_atm) then
          do iidx = 1,  num_inst_atm
             c2x => component_get_c2x_cx(atm(iidx))
             x2c => component_get_x2c_cx(atm(iidx))
@@ -652,7 +701,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2a_ax_avg(iidx)%rAttr = (x2a_ax_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
-      if (lnd_present) then
+      if (lnd_present .and. histavg_lnd) then
          do iidx = 1,  num_inst_lnd
             c2x => component_get_c2x_cx(lnd(iidx))
             x2c => component_get_x2c_cx(lnd(iidx))
@@ -660,7 +709,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2l_lx_avg(iidx)%rAttr = (x2l_lx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
-      if (rof_present .and. ocnrof_prognostic) then
+      if (rof_present .and. histavg_rof) then
          do iidx = 1,  num_inst_rof
             c2x => component_get_c2x_cx(rof(iidx))
             x2c => component_get_x2c_cx(rof(iidx))
@@ -668,7 +717,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2r_rx_avg(iidx)%rAttr = (x2r_rx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
-      if (ocn_present) then
+      if (ocn_present .and. histavg_ocn) then
          do iidx = 1,  num_inst_ocn
             c2x => component_get_c2x_cx(ocn(iidx))
             x2c => component_get_x2c_cx(ocn(iidx))
@@ -676,7 +725,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2o_ox_avg(iidx)%rAttr = (x2o_ox_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
-      if (ice_present) then
+      if (ice_present .and. histavg_ice) then
          do iidx = 1,  num_inst_ice
             c2x => component_get_c2x_cx(ice(iidx))
             x2c => component_get_x2c_cx(ice(iidx))
@@ -684,7 +733,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2i_ix_avg(iidx)%rAttr = (x2i_ix_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
-      if (glc_present) then
+      if (glc_present .and. histavg_glc) then
          do iidx = 1,  num_inst_glc
             c2x => component_get_c2x_cx(glc(iidx))
             x2c => component_get_x2c_cx(glc(iidx))
@@ -692,12 +741,24 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
             x2g_gx_avg(iidx)%rAttr = (x2g_gx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
-      if (wav_present) then
+      if (wav_present .and. histavg_wav) then
          do iidx = 1,  num_inst_wav
             c2x => component_get_c2x_cx(wav(iidx))
             x2c => component_get_x2c_cx(wav(iidx))
             w2x_wx_avg(iidx)%rAttr = (w2x_wx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
             x2w_wx_avg(iidx)%rAttr = (x2w_wx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+         enddo
+      endif
+      if (ocn_present .and. histavg_xao) then
+         xao_ox => prep_aoflux_get_xao_ox()
+         do iidx = 1,  num_inst_ocn
+            xao_ox_avg(iidx)%rAttr = (xao_ox_avg(iidx)%rAttr + xao_ox(iidx)%rAttr) / (cnt * 1.0_r8)
+         enddo
+      endif
+      if (atm_present .and. histavg_xao) then
+         xao_ax => prep_aoflux_get_xao_ax()
+         do iidx = 1,  num_inst_ocn
+            xao_ax_avg(iidx)%rAttr = (xao_ax_avg(iidx)%rAttr + xao_ax(iidx)%rAttr) / (cnt * 1.0_r8)
          enddo
       endif
 
@@ -754,7 +815,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                     time_units=time_units, time_cal=calendar, time_val=avg_time, &
                     whead=whead, wdata=wdata, tbnds=tbnds)
             endif
-            if (atm_present) then
+            if (atm_present .and. histavg_atm) then
                gsmap => component_get_gsmap_cx(atm(1))
                dom   => component_get_dom_cx(atm(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
@@ -767,7 +828,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
                     pre='a2xavg', tavg=.true.)
             endif
-            if (lnd_present) then
+            if (lnd_present .and. histavg_lnd) then
                gsmap => component_get_gsmap_cx(lnd(1))
                dom   => component_get_dom_cx(lnd(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_lx',  &
@@ -780,7 +841,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                     pre='x2lavg', tavg=.true.)
             endif
 
-            if (rof_present .and. ocnrof_prognostic) then
+            if (rof_present .and. histavg_rof) then
                gsmap => component_get_gsmap_cx(rof(1))
                dom   => component_get_dom_cx(rof(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_rx',  &
@@ -792,7 +853,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                     nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
                     pre='x2ravg', tavg=.true.)
             endif
-            if (ocn_present) then
+            if (ocn_present .and. histavg_ocn) then
                gsmap => component_get_gsmap_cx(ocn(1))
                dom   => component_get_dom_cx(ocn(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
@@ -804,7 +865,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                     nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
                     pre='x2oavg', tavg=.true.)
             endif
-            if (ice_present) then
+            if (ice_present .and. histavg_ice) then
                gsmap => component_get_gsmap_cx(ice(1))
                dom   => component_get_dom_cx(ice(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
@@ -816,7 +877,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
                                  pre='x2iavg', tavg=.true.)
             endif
-            if (glc_present) then
+            if (glc_present .and. histavg_glc) then
                gsmap => component_get_gsmap_cx(glc(1))
                dom   => component_get_dom_cx(glc(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_gx',  &
@@ -828,7 +889,7 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                                  nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
                                  pre='x2gavg', tavg=.true.)
             endif
-            if (wav_present) then
+            if (wav_present .and. histavg_wav) then
                gsmap => component_get_gsmap_cx(wav(1))
                dom   => component_get_dom_cx(wav(1))
                call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
@@ -840,51 +901,73 @@ subroutine seq_hist_writeavg(infodata, EClock_d, &
                                  nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
                                  pre='x2wavg', tavg=.true.)
             endif
+            if (ocn_present .and. histavg_xao) then
+               gsmap => component_get_gsmap_cx(ocn(1))
+               call seq_io_write(hist_file, gsmap, xao_ox_avg, 'xao_ox',  &
+                                 nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
+                                 pre='xaooavg', tavg=.true.)
+            endif
+            if (atm_present .and. histavg_xao) then
+               gsmap => component_get_gsmap_cx(atm(1))
+               call seq_io_write(hist_file, gsmap, xao_ax_avg, 'xao_ax',  &
+                                 nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
+                                 pre='xaoaavg', tavg=.true.)
+            endif
          enddo
 
          call seq_io_close(hist_file)
          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
-         if (atm_present) then
+         if (atm_present .and. histavg_atm) then
             do iidx = 1,  num_inst_atm
                call mct_aVect_zero(a2x_ax_avg(iidx))
                call mct_aVect_zero(x2a_ax_avg(iidx))
             enddo
          endif
-         if (lnd_present) then
+         if (lnd_present .and. histavg_lnd) then
             do iidx = 1,  num_inst_lnd
                call mct_aVect_zero(l2x_lx_avg(iidx))
                call mct_aVect_zero(x2l_lx_avg(iidx))
             enddo
          endif
-         if (rof_present .and. ocnrof_prognostic) then
+         if (rof_present .and. histavg_rof) then
             do iidx = 1,  num_inst_rof
                call mct_aVect_zero(r2x_rx_avg(iidx))
                call mct_aVect_zero(x2r_rx_avg(iidx))
             enddo
          endif
-         if (ocn_present) then
+         if (ocn_present .and. histavg_ocn) then
             do iidx = 1,  num_inst_ocn
                call mct_aVect_zero(o2x_ox_avg(iidx))
                call mct_aVect_zero(x2o_ox_avg(iidx))
             enddo
          endif
-         if (ice_present) then
+         if (ice_present .and. histavg_ice) then
             do iidx = 1,  num_inst_ice
                call mct_aVect_zero(i2x_ix_avg(iidx))
                call mct_aVect_zero(x2i_ix_avg(iidx))
             enddo
          endif
-         if (glc_present) then
+         if (glc_present .and. histavg_glc) then
             do iidx = 1,  num_inst_glc
                call mct_aVect_zero(g2x_gx_avg(iidx))
                call mct_aVect_zero(x2g_gx_avg(iidx))
             enddo
          endif 
-         if (wav_present) then
+         if (wav_present .and. histavg_wav) then
             do iidx = 1,  num_inst_wav
                call mct_aVect_zero(w2x_wx_avg(iidx))
                call mct_aVect_zero(x2w_wx_avg(iidx))
+            enddo
+         endif
+         if (ocn_present .and. histavg_xao) then
+            do iidx = 1,  num_inst_xao
+               call mct_aVect_zero(xao_ox_avg(iidx))
+            enddo
+         endif
+         if (atm_present .and. histavg_xao) then
+            do iidx = 1,  num_inst_xao
+               call mct_aVect_zero(xao_ax_avg(iidx))
             enddo
          endif
          cnt = 0

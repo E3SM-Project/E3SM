@@ -60,6 +60,14 @@ if ($status != 0) then
     exit -1
 endif
 
+# Run the short-term archiver.. this is a short-term hack until
+# a better solution can be found.
+./$CASE.st_archive
+if($status != 0) then
+    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    exit -1
+endif 
+
 # must look in short term archiving directory for cpl log files
 set CplLogFile = `ls -1t $DOUT_S_ROOT_LOCKED/cpl/logs/cpl.log* | head -1`
 if ( $?CplLogFile ) then

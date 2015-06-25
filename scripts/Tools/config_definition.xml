@@ -2945,7 +2945,59 @@
 	 sdesc="Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)"
 	 ></entry>
 
+  <entry id="PERL5LIB"
+	 type="char"
+	 valid_values=""
+	 value=""
+	 group="build_derived"
+	 sdesc="Perl 5 library directory"
+	 ></entry>
 
+  <!-- ======================================================================= -->
+  <!-- config_machines.xml - variables for batch configuration in              -->
+  <!-- config_machines                                                         -->
+  <!--========================================================================  -->
+  
+  <entry id="batch_system"
+	 type="char"
+	 valid_values=""
+	 value="UNSET"
+	 group="config_batch"
+	 sdesc="The batch system type for this particular machine"
+	 ></entry>
+  
+  <entry id="mpirun"
+	 type="char"
+	 valid_values=""
+	 value="UNSET"
+	 group="config_batch"
+	 sdesc="The mpi run command associated with the machine configured batch system"
+	 ></entry>
+  
+  <entry id="module_system"
+	 type="char"
+	 valid_values=""
+	 value="UNSET"
+	 group="config_batch"
+	 sdesc="The module system type defined for this machine"
+	 ></entry>
+  
+  <entry id="module_init_path"
+	 type="char"
+	 valid_values=""
+	 value="UNSET"
+	 group="config_batch"
+	 sdesc="The module initialization path for module system defined for this machine"
+	 ></entry>
+  
+  <entry id="module_cmd_path"
+	 type="char"
+	 valid_values=""
+	 value="UNSET"
+	 group="config_batch"
+	 sdesc="The module command path for module system defined for this machine"
+	 ></entry>
+  
   <!-- ======================================================================= -->
   <!-- env_run.xml - drv namelist                                              -->
   <!-- ======================================================================= -->
@@ -3167,6 +3219,14 @@
 	 sdesc="command used to submit to batch system"
 	 ></entry>
 
+  <entry id="BATCHREDIRECT"
+	 type="char"
+	 valid_values=""
+	 value="UNSET"
+	 group="run_mach"
+	 sdesc="Batch redirect character"
+	 ></entry>
+  
   <entry id="DIN_LOC_ROOT" 
 	 type="char"
 	 valid_values=""  
@@ -3250,6 +3310,18 @@
 	 ldesc="If TRUE, create hardlinks from the short term archive $DOUT_S_ROOT.locked/$CASE
 		directory to the $DOUT_S_ROOT/$CASE directory."
 	 ></entry> 
+
+  <entry id="DOUT_S_GENERATE_TSERIES" 
+	 type="logical"
+	 valid_values="TRUE,FALSE"  
+	 value="FALSE" 
+	 group="run_dout"
+	 sdesc="logical to generate time-series files from the history time-slice files"
+	 ldesc="
+		If TRUE, create the single variable time series files using the history time slice files.
+		All the time invariant metadata is included in each variable time series file header. 
+		Rules for how the tseries files are created are specified in the env_archive.xml file."
+	 ></entry>
 
   <entry id="DOUT_S_SAVE_HISTORY_FILES" 
 	 type="logical"
@@ -3951,6 +4023,66 @@
 	 group="case_test"
 	 sdesc="Whether to clean the test after it is built/run"
 	 ></entry>
+
+  <!-- ======================================================================= -->
+  <!-- diagnostics package toggles to include as part of CESM in-line job run  -->
+  <!-- ======================================================================= -->
+
+  <entry id="OMWG_POSTPROC_DIAGS" 
+	 type="logical"
+	 valid_values="TRUE,FALSE"  
+	 value="FALSE" 
+	 group="run_dout"
+	 sdesc="logical to call the OMWG diagnostics plotting packages as part
+		of the CESM run script after the successful completion of the short term 
+		archiver"
+	 ldesc="
+		If TRUE, this calls the OMWG diagnostics package parallel python wrapper
+		script to generate climatological plots associated with the run job output.
+		See the OMWG diagnostics documentation for more details."
+	 ></entry> 
+  
+  <entry id="AMWG_POSTPROC_DIAGS" 
+	 type="logical"
+	 valid_values="TRUE,FALSE"  
+	 value="FALSE" 
+	 group="run_dout"
+	 sdesc="logical to call the AMWG diagnostics plotting packages as part
+		of the CESM run script after the successful completion of the short term 
+		archiver"
+	 ldesc="
+		If TRUE, this calls the AMWG diagnostics package parallel python wrapper
+		script to generate climatological plots associated with the run job output.
+		See the AMWG diagnostics documentation for more details."
+	 ></entry> 
+
+  <entry id="LMWG_POSTPROC_DIAGS" 
+	 type="logical"
+	 valid_values="TRUE,FALSE"  
+	 value="FALSE" 
+	 group="run_dout"
+	 sdesc="logical to call the LMWG diagnostics plotting packages as part
+		of the CESM run script after the successful completion of the short term 
+		archiver"
+	 ldesc="
+		If TRUE, this calls the LMWG diagnostics package parallel python wrapper
+		script to generate climatological plots associated with the run job output.
+		See the LMWG diagnostics documentation for more details."
+	 ></entry> 
+
+  <entry id="PCWG_POSTPROC_DIAGS" 
+	 type="logical"
+	 valid_values="TRUE,FALSE"  
+	 value="FALSE" 
+	 group="run_dout"
+	 sdesc="logical to call the PCWG diagnostics plotting packages as part
+		of the CESM run script after the successful completion of the short term 
+		archiver"
+	 ldesc="
+		If TRUE, this calls the PCWG diagnostics package parallel python wrapper
+		script to generate climatological plots associated with the run job output.
+		See the PCWG diagnostics documentation for more details."
+	 ></entry> 
 
   <!-- ======================================================================= -->
   <!-- env_postprocess.xml - post processing toggle variables                  -->
@@ -5064,5 +5196,7 @@
 	 sdesc="Controls whether to create depth profiles of Regional area-average TEMP and SALT bias and stddev plots"
 	 ldesc="Logical to control whether to create depth profiles of Regional area-average TEMP and SALT bias and stddev
 		plots (TRUE) or not (FALSE)."></entry>
+
+
 
 </config_definition>

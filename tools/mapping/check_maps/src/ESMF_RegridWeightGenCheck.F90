@@ -642,8 +642,14 @@ program OfflineTester
               !   L1 error - avg = 1.004e-7, sigma = 2.312e-7
               !   L2 error - avg = 4.934e-6, sigma = 8.707e-6
               !   Area error - avg = 5.472e-12, sigma = 1.383e-11
+              !
+              ! NOTE(wjs, 2015-05-14)  Increasing reltwoErrorBound from 4e-5 to 1e-4 to
+              ! accommodate slightly larger differences in glc -> lnd mapping files.
+              ! (This is due to the fact that the source grid is regional, so the
+              ! destination grid ends up with some values that have 0's averaged in at
+              ! the margins of the source region.)
               reltotErrorBound = 2.0d-6
-              reltwoErrorBound = 4.0d-5
+              reltwoErrorBound = 1.0d-4
               totAreaBound = 6.8d-11
             case (3)
               !   L1 error - avg = 2.203e-3, sigma = 2.857e-3
