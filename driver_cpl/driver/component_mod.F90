@@ -1177,7 +1177,10 @@ contains
           call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-
+          
+          if (present(timer_comp_run)) then
+             call t_drvstopf (trim(timer_comp_run))
+          end if
        end if
     end do
 

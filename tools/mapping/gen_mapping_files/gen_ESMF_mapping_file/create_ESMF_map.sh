@@ -4,7 +4,7 @@
 # SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/gen_mapping_files/gen_ESMF_mapping_file/create_ESMF_map.sh $
 #
 # Create needed mapping files for gen_domain and coupler mapping
-# Currently supported on yellowstone, geyser, caldera and jaguarpf
+# Currently supported on yellowstone, geyser, caldera, pronghorn, and jaguarpf
 # 
 #===============================================================================
 echo $0
@@ -71,8 +71,8 @@ usage() {
   echo '   point).'
   echo ' --machine (or -mach)'
   echo '   Name of the machine you are running on. Currently supports yellowstone,'
-  echo '   geyser, caldera, and jaguar. Note that this script will determines the'
-  echo '   machine name automatically from the hostfile command.'
+  echo '   geyser, caldera, pronghorn, and jaguar. Note that this script will'
+  echo '   determine the machine name automatically from the hostfile command.'
   echo ' -d'
   echo '   toggle debug-only '
   echo ' --help or -h  '
@@ -80,10 +80,10 @@ usage() {
   echo ''
   echo 'You can also set the following env variables:'
   echo '  ESMFBIN_PATH - Path to ESMF binaries '
-  echo '                 (Leave unset on yellowstone and caldera and the tool'
+  echo '                 (Leave unset on yellowstone/caldera/pronghorn and the tool'
   echo '                 will be loaded from modules)'
   echo '  MPIEXEC ------ Name of mpirun executable'
-  echo '                 (default is mpirun.lsf on yellowstone and caldera; if'
+  echo '                 (default is mpirun.lsf on yellowstone/caldera/pronghorn; if'
   echo '                 you run interactively on yellowstone, mpi is not used)'
   echo '  REGRID_PROC -- Number of MPI processors to use (jaguar only!)'
   echo '                 (default is 8)'
@@ -231,6 +231,9 @@ if [ $MACH == "UNSET" ]; then
     caldera* )
       MACH="caldera"
     ;;
+    pronghorn* )
+      MACH="pronghorn"
+    ;;
     jaguarpf* )
       MACH="jaguar"
     ;;
@@ -306,8 +309,8 @@ fi
 #-------------------------------------------------------------------------------
  
 case $MACH in
-  ## yellowstone, geyser, or caldera
-  "yellowstone" | "geyser" | "caldera" )
+  ## yellowstone, geyser, caldera, or pronghorn
+  "yellowstone" | "geyser" | "caldera" | "pronghorn" )
     # From tcsh, script will not find module command
     # So check to see if module works, otherwise source an init file
     module list > /dev/null 2>&1 || source /etc/profile.d/modules.sh

@@ -324,3 +324,11 @@
         PARAMETER (MPI_INFO_NULL=0)
 
 
+!
+! Library version string (must match C value)
+!
+
+        INTEGER MPI_MAX_LIBRARY_VERSION_STRING
+        PARAMETER (MPI_MAX_LIBRARY_VERSION_STRING=80)
+
+

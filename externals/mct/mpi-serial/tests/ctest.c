@@ -925,7 +925,13 @@ void structtests()
 
 int main(int argc, char ** argv)
 {
+  char version[MPI_MAX_LIBRARY_VERSION_STRING];
+  int vlen;
+
   MPI_Init(&argc, &argv);
+  
+  MPI_Get_library_version(version,&vlen);
+  printf("MPI version=\"%s\" (len=%d)\n",version,vlen);
   
 //  structtests();
 //  indexed_test();

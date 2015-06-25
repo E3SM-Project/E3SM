@@ -10,8 +10,9 @@ use warnings;
 use Data::Dumper;
 use Cwd qw( getcwd chdir);
 use File::Basename;
+use Getopt::Long;
 
-
+my %opts;
 # Take the testspec.$machine.$testid.xml file, parse it, 
 # and get the names of the case directories
 # This is a copy of the routine in cs.status  - these tools should be
@@ -76,25 +77,57 @@ sub getTestStatus
   return $tests;
 }
 
+
+
+sub getOpts
+{
+	GetOptions(
+        "testspec=s"    => \$opts{'testspec'},
+	"help|h"		=> \$opts{'help'},
+	);
+
+}
+
+sub usage()
+{
+my $usage = <<EOF;
+SYNOPSIS
+    ./cs.submit
+	Running cs.submit without arguments will submit the latest test set 
+    found in the current directory. 
+
+    ./cs.submit --testspec testspec.xml 
+    Submit tests for ONLY the suite specified by the given testspec.xml file. 
+    
+EOF
+print $usage;
+exit(0);
+}
+
+
+getOpts();
+usage() if defined $opts{'help'};
+
 # find the testspec.xml. 
 my $testroot =  getcwd;
 my $csstatus;
 my $testspec;
-if ( $0 !~ /cs.submit\.(.*)$/ ) { 
-      opendir(D,$testroot);
-      my @testspec = grep /testspec\..*\.xml$/,readdir(D);
-      closedir(D);
-      
-      $testspec = $testspec[0];
-      if($#testspec > 0){
-	  foreach(@testspec){
-	      $testspec = $_ if(-A $_ < -A $testspec);
-	  }
-      }
+
+if(defined $opts{'testspec'}){
+    $testspec = $opts{'testspec'};
 }else{
-    $csstatus = "cs.status.$1";
-    $testspec = "$testroot/testspec.$1.xml";
+    # find all the testspec xml files in the current directory
+    opendir(D, $testroot) or die "can't open $testroot ";
+    my @testspecs = grep { /^testspec.*xml$/ } readdir(D);
+    closedir(D);
+    $testspec = $testspecs[0];
+    foreach(@testspecs){
+	$testspec = $_ if(-A $_ < -A $testspec);
+    }
 }
+
+
+
 # Find the scriptsroot
 open my $SPEC, "<", $testspec or die $!;
 my @speclines = grep (/scriptsroot/, <$SPEC>);

@@ -2,6 +2,7 @@
 #ifndef _MPI_H_
 #define _MPI_H_
 
+#define MPI_MAX_LIBRARY_VERSION_STRING (80)
 
 typedef int MPI_Comm;
 typedef int MPI_Request;
