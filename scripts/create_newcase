@@ -9,14 +9,12 @@
 #-----------------------------------------------------------------------------------------------
 
 use strict;
+use Cwd;
 use English;
 use Getopt::Long;
-use Cwd qw( getcwd abs_path chdir);
 use IO::File;
 use IO::Handle;
 use Data::Dumper;
-use File::Basename;
-use File::Path qw(mkpath);
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
 # If not found, print a warning message then exit. 
@@ -51,27 +49,27 @@ END
 
 (my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
 my $ProgDir = $1;                      # name of directory containing this script -- may be a
-                                       # relative or absolute path, or null if the script is in
-                                       # the user's PATH
+# relative or absolute path, or null if the script is in
+# the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = abs_path($ProgDir);
+    $cfgdir = absolute_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
 
-my $cimeroot = abs_path("$cfgdir/../");
-(-d "$cimeroot")  or  die <<"EOF";
-** Cannot find cimeroot directory \"$cimeroot\" **
+my $ccsmroot = absolute_path("$cfgdir/..");
+(-d "$ccsmroot")  or  die <<"EOF";
+** Cannot find ccsmroot directory \"$ccsmroot\" **
 EOF
-    
+
 
 #-----------------------------------------------------------------------------------------------
-if ($#ARGV == -1) {
-    usage();
+    if ($#ARGV == -1) {
+	usage();
 }
-my $machdir="$cimeroot/machines";
+my $machdir="$cfgdir/ccsm_utils/Machines";
 
 #-----------------------------------------------------------------------------------------------
 
@@ -102,33 +100,31 @@ OPTIONS
                                     redundant with _M confopts setting
   -mach_dir <path>         Specify the locations of the Machines directory (optional).
                            default: $machdir
-  -user_mods_dir <path>    Path to directory with user_nl_* files and xmlchange
-                           commands to use (optional). For non-test cases, this 
-                           can also include SourceMods
-  -confopts <value>        Specify some additional configuration options (optional) as follows:
-                           _AOA  = aoflux on atm grid
-                           _AOE  = aoflux on exch grid
-                           _CG   = gregorian calendar
-                           _D    = debug
-                           _E    = esmf interfaces
-                           _IOP* = PnetCDF IO test where * is  A(atm), C(cpl), G(glc), 
-                                   I(ice), L(clm), O(ocn), W(wav) or blank (all components)
-                           _L*   = set run length y, m, d, h, s, n(nsteps) plus integer 
-                                   (ie _Lm6 for 6 months) 
-                           _M*   = set the mpilib where * is default, mpi-serial, mpich, etc
-                           _N*   = set NINST_ env value to * where * is an integer
-                           _P*   = set pecount to specific values include 
-                                   T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
+  -user_mods_dir <path>    Path to directory with user_nl_* files and xmlchange_cmnds to use (optional).
+  -confopts <value>        Specify some addition configuration options (optional)
+                           _AOA = aoflux on atm grid
+                           _AOE = aoflux on exch grid
+                           _CG  = gregorian calendar
+                           _D   = debug
+                           _E   = esmf interfaces
+                           _IOP*= PnetCDF IO test where * is 
+                                  A(atm), C(cpl), G(glc) , I(ice), L(clm), O(ocn), 
+                                  W(wav) or blank (all components)
+                           _L*  = set run length y, m, d, h, s, n(nsteps) plus integer (ie _Lm6 for 6 months) 
+                           _M*  = set the mpilib where * is default, mpi-serial, mpich, etc
+                           _N*  = set NINST_ env value to * where * is an integer
+                           _P*  = set pecount to specific values include T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
   -pecount <name>          Value of S,M,L,X1,X2 (optional). 
                            default: M, partially redundant with confopts _P
-  -pes_file <name>         Full pathname of pes file to use (will overwrite default settings) 
-                           (optional). See sample_pes_file.xml for an example.
-  -user_compset <name>     Long name for new user compset to use (optional)
-                           This assumes that all of the compset settings in the 
-                           long name have been defined in Tools/config_compsets.xml
+  -pes_file <name>         Full pathname of pes file to use (will overwrite default settings) (optional).
+                           See sample_pes_file.xml for an example.
+  -user_compset            Long name for new user compset to use (optional)
+                           This assumes that all of the compset settings in the long name have been defined
+                           in ccsm_utils/Case.template/config_compsets.xml
   -user_grid_file <name>   Full pathname of grid file to use (optional)
-                           This should be a "copy" of Tools/config_grid.xml
-                           with the new user grid changes added to it
+                           This should be a "copy" of ccsm_utils/Case.template/config_grid.xml with the
+                           new user grid changes added to it
+  -nosavetiming            Change the default for SAVE_TIMING in env_run.xml to .FALSE. (optional).
   -help [or -h]            Print usage to STDOUT (optional).
   -list <type>             Only list valid values, type can be [compsets, grids, machines] (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
@@ -136,8 +132,7 @@ OPTIONS
   -verbose [or -v]         Turn on verbose echoing of settings made by create_newcase (optional).
   -xmlmode <name>          Sets format of xml files; normal or expert (optional). (default is normal) 
   -nowarning               Turns off checking of the known_problems repository. (default is on)
-  -sharedlibroot           Used for re-using build components when building multiple CESM cases, 
-                           default is \$EXEROOT
+  -sharedlibroot           Used for re-using build components when building multiple CESM cases, default is \$EXEROOT
 
 EXAMPLES
 
@@ -145,7 +140,7 @@ EXAMPLES
   ./create_newcase -case mycase2 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _D_P16
   ./create_newcase -case mycase4 -res f19_g16 -compset MYCOMP -compset_file mycompset_file -mach yellowstone
   ./create_newcase -case mycase5 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _CG_E -pes_file mypes_file
-
+  /
 EOF
 }
 
@@ -176,6 +171,7 @@ GetOptions(
     "pes_file=s"                => \$opts{'pes_file'}, 
     "compset_file=s"            => \$opts{'compset_file'},
     "user_grid_file=s"          => \$opts{'user_grid_file'},
+    "nosavetiming"              => \$opts{'nosavetiming'},
     "s|silent"                  => \$opts{'silent'},
     "testname=s"                => \$opts{'testname'},
     "testlist"                  => \$opts{'testlist'},
@@ -217,14 +213,10 @@ if (!$opts{'list'} && !$opts{'testlist'}) {
     } else {
 	die "ERROR: create_newcase must include the input argument, -case \n";
     }
-	
-    if (-d $case) {
-	die "Case directory $case already exists \n";
+    $caseroot = absolute_path("$case");
+    if (-d $caseroot) {
+	die "Caseroot directory $caseroot already exists \n";
     }
-
-    mkpath($case); 
-    $caseroot = abs_path("$case");
-
     my @dirs = split "/", $caseroot, -1;  # The -1 prevents split from stripping trailing nulls
     my $num = scalar @dirs;
     $case = $dirs[$num-1];
@@ -314,9 +306,9 @@ EOF
 
 # Check for the configuration definition file.
 my $config_def_file = "config_definition.xml";
-(-f "$cfgdir/Tools/$config_def_file")  or  die <<"EOF";
+(-f "$cfgdir/ccsm_utils/Case.template/$config_def_file")  or  die <<"EOF";
 ** Cannot find configuration definition file \"$config_def_file\" in directory 
-    \"$cfgdir/Tools/$config_def_file\" **
+    \"$cfgdir/ccsm_utils/Case.template/$config_def_file\" **
 EOF
 
 # Compset definition file.
@@ -327,7 +319,7 @@ if (defined $opts{'compset_file'}){
     ** Cannot find user specified compset parameters file \"$compset_file\"  **
 EOF
 } else {
-    $compset_file = "$cfgdir/Tools/config_compsets.xml";
+    $compset_file = "$cfgdir/ccsm_utils/Case.template/config_compsets.xml";
     (-f $compset_file)  or  die <<"EOF";
     ** Cannot find default compset parameters file \"$compset_file\"  **
 EOF
@@ -341,7 +333,7 @@ if (defined $opts{'user_grid_file'}){
     ** Cannot find user specified grid definition file \"$grid_file\"  **
 EOF
 } else {
-    $grid_file = "$cfgdir/Tools/config_grid.xml";
+    $grid_file = "$cfgdir/ccsm_utils/Case.template/config_grid.xml";
     (-f $grid_file)  or  die <<"EOF";
     ** Cannot find default grid definition file \"$grid_file\"  **
 EOF
@@ -361,39 +353,35 @@ EOF
     \"$machdir\" **
 EOF
 
-# The XML::Lite module is required to parse the XML configuration files.
-(-f "$cimeroot/utils/perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$cimeroot/utils/perl5lib\" **
+# Tests file
+    my $tests_file = 'config_tests.xml';
+(-f "$cfgdir/ccsm_utils/Testcases/$tests_file")  or  die <<"EOF";
+** Cannot find test parameters file \"$tests_file\" in directory 
+    \"$cfgdir/ccsm_utils/Testcases\" **
 EOF
 
-# Tests file
-my $tests_file = 'config_tests.xml';
-(-f "$cimeroot/scripts/Testing/Testcases/$tests_file")  or  die <<"EOF";
-** Cannot find test parameters file \"$tests_file\" in directory 
-    \"$cimeroot/scripts/Testing/Testcases\" **
+# The XML::Lite module is required to parse the XML configuration files.
+(-f "$cfgdir/ccsm_utils/Tools/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory 
+    \"$cfgdir/ccsm_utils/Tools/perl5lib\" **
 EOF
 
 # The ConfigCase module provides utilities to store and manipulate the configuration.
-(-f "$cimeroot/scripts/Tools/ConfigCase.pm")  or  die <<"EOF";
+(-f "$cfgdir/ccsm_utils/Case.template/ConfigCase.pm")  or  die <<"EOF";
 ** Cannot find perl module \"ConfigCase.pm\" in directory 
-    \"$cimeroot/scripts/Tools\" **
+    \"$cfgdir/ccsm_utils/Case.template\" **
 EOF
 
-if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
+    if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ("$cfgdir", 
-	    "$cimeroot/scripts/Tools", 
-	    "$cimeroot/utils/perl5lib");
-
+my @dirs = ($cfgdir, "$cfgdir/ccsm_utils/Case.template", "$cfgdir/ccsm_utils/Tools", "$cfgdir/ccsm_utils/Tools/perl5lib");
 unshift @INC, @dirs;
 require XML::Lite;
 require ConfigCase;
 require ProjectTools;
-require UserModsTools;
 require Testing::CESMTest;
 require Testing::TestLists; 
 
@@ -401,7 +389,7 @@ require Testing::TestLists;
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
 if ($opts{'testlist'}) {
-    print_tests("$cfgdir/Testing/Testcases/config_tests.xml");
+    print_tests("$cfgdir/ccsm_utils/Testcases/config_tests.xml");
 }
 if ($opts{'list'}) {
     if ($opts{'list'} eq "compsets") {
@@ -433,11 +421,14 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Create new config object if not just listing valid values
-my $cfg_ref = ConfigCase->new("$cfgdir/Tools/$config_def_file"); 
+my $cfg_ref = ConfigCase->new("$cfgdir/ccsm_utils/Case.template/$config_def_file"); 
 #if ($print>=2) { print "A new config reference object was created$eol";}
 
 #-----------------------------------------------------------------------------------------------
 # (1) Set compset/grid parameters
+my $sysmod = "mkdir -p $caseroot"; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
 my $file = "$caseroot/README.case";
 my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
 print $fh "$commandline\n\n\n";
@@ -461,7 +452,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 #-----------------------------------------------------------------------------------------------
 # (3) Check if grid is valid for given compset
-check_grid("$cfgdir/Tools/config_compsets.xml", $grid, $compset_longname);
+check_grid("$cfgdir/ccsm_utils/Case.template/config_compsets.xml", $grid, $compset_longname);
 
 if ($print>=2) { print "Grid is valid for input compset. $eol"; }
 
@@ -473,21 +464,21 @@ if ( $opts{'compset'} ) {
    my %case;
    $case{'compset'} = $opts{'compset'};
    $case{'grid'} = $opts{'res'};
-#   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir); TODO
-#   $testsforcase = $testlistobj->findTestsForCase(\%case); TODO
+   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir);
+   $testsforcase = $testlistobj->findTestsForCase(\%case);
 } else {
    $testsforcase = "WARNING!:: User compset names are NOT tested by the standard CESM process.\n" .
                    "           Thus you may likely find that this configuration will NOT work.\n" .
                    "           And you are completely on your own to figure out how to get it working.";
 }
 my $banner = '-' x 80;
-# print "$banner\n";
+print "$banner\n";
 if ( defined($support_level) ) {
    print "Compset and grid support levels for this case are:\n";
    print "$support_level\n";
 }
 print "$testsforcase\n";
-# print "$banner\n";
+print "$banner";
 #-----------------------------------------------------------------------------------------------
 # (4) Machine parameters
 
@@ -538,7 +529,7 @@ if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 # (5) Testname parameters
 if (defined $opts{'testname'}) {
     $testname = $opts{'testname'};
-    set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $cfg_ref);
+    set_test("$cfgdir/ccsm_utils/Testcases/config_tests.xml", $testname, $cfg_ref);
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -643,16 +634,8 @@ if (defined $opts{'pes_file'}) {
 	# Need the test name with the options passed to ConfigCase->set_pes
 	# so that if we want to exclude or include a PE layout for a test, we 
 	# can match on the test name. 
-        my $testwithopts = $opts{'testname'} . $opts{'confopts'};
-        # check the supported config_pes file.xml first
+	my $testwithopts = $opts{'testname'} . $opts{'confopts'};
 	$cfg_ref->set_pes("$machdir/config_pes.xml", \%decomp, $pecount, $print, $testwithopts);
-
-        # now potentially override with unsupported user config_pes.xml file.
-        my $pes_file = "$ENV{'HOME'}/.cesm/config_pes.xml";
-        if ( -f "$pes_file") {
-          print "\nUsing UNSUPPORTED userdefined config_pes.xml : \"~/.cesm/config_pes.xml\"\n";
-          $cfg_ref->set_pes("$pes_file", \%decomp, $pecount, $print, $testwithopts);
-        }
     }
 
     if ($decomp{NTASKS_ATM} == 1 && $decomp{NTASKS_LND} == 1 &&
@@ -835,16 +818,17 @@ foreach my $xvar ( @xvars ) {
 
 my $ccsmuser = "$ENV{'LOGNAME'}";
 $cfg_ref->set('CCSMUSER', "$ccsmuser");
+
 $cfg_ref->set('CASEROOT', "$caseroot");
 $cfg_ref->set('CASE'    , "$case");
-$cfg_ref->set('CIMEROOT', "$cimeroot");
-$cfg_ref->set('SRCROOT' , "$cimeroot/../");
-$cfg_ref->set('CCSMROOT', "$cimeroot/../");
+$cfg_ref->set('CCSMROOT', "$ccsmroot");
 $cfg_ref->set('XMLMODE' , "$xmlmode");
 
 my $repotag;
-if (-f "$cimeroot/ChangeLog") { 
-    $repotag =`cat $cimeroot/ChangeLog | grep 'Tag name:' | head -1`;
+if (-f "$ccsmroot/ChangeLog") { 
+    $repotag =`cat $ccsmroot/ChangeLog | grep 'Tag name:' | head -1`;
+} else {
+    $repotag =`cat $ccsmroot/models/atm/cam/doc/ChangeLog | grep 'Tag name:' | head -1`;
 }
 my @repotag = split(/ /,$repotag); 
 $repotag = $repotag[2]; 
@@ -864,29 +848,30 @@ if(defined $opts{'sharedlibroot'})
 #-----------------------------------------------------------------------------------------------
 
 my $sysmod;
-my $scriptsroot = "$cimeroot/scripts";
+my $scriptsroot = "$ccsmroot/scripts";
 
 print "Creating $caseroot $eol";
-chdir ("$caseroot");
 
 # Create relevant directories in $caseroot
-my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools Tools/XML/Lite);
-foreach my $newdir ( @newdirs ) {
-    mkpath($newdir); 
+my @mkdirs = qw(. SourceMods LockedFiles Buildconf Tools/XML/Lite Tools/pythonlib);
+foreach my $mkdir ( @mkdirs ) {
+    $sysmod = "mkdir -p $caseroot/$mkdir"; 
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Copy relevant files into $caseroot
 my @files = (
-    "$scriptsroot/Tools/cesm_setup", 
-    "$scriptsroot/Tools/testcase_setup", 
-    "$scriptsroot/Tools/check_input_data", 
-    "$scriptsroot/Tools/archive_metadata.sh", 
-    "$scriptsroot/Tools/check_case", 
-    "$scriptsroot/Tools/create_production_test", 
-    "$scriptsroot/Tools/xmlchange",
-    "$scriptsroot/Tools/xmlquery",
-    "$scriptsroot/Tools/st_archive", 
-    "$scriptsroot/Tools/README.post_process", 
+    "$scriptsroot/ccsm_utils/Tools/cesm_setup", 
+    "$scriptsroot/ccsm_utils/Tools/check_input_data", 
+    "$scriptsroot/ccsm_utils/Tools/archive_metadata.sh", 
+    "$scriptsroot/ccsm_utils/Tools/check_case", 
+    "$scriptsroot/ccsm_utils/Tools/create_production_test", 
+    "$scriptsroot/ccsm_utils/Tools/xmlchange",
+    "$scriptsroot/ccsm_utils/Tools/xmlquery",
+    "$scriptsroot/ccsm_utils/Tools/st_archive", 
+    "$scriptsroot/ccsm_utils/Tools/tseries_generate.submit", 
+    "$scriptsroot/ccsm_utils/Tools/tseries_generate.run", 
+    "$scriptsroot/ccsm_utils/Tools/README.post_process", 
     ); 
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot"; 
@@ -895,128 +880,148 @@ foreach my $file (@files) {
 $sysmod = "chmod u+w $caseroot/create_production_test";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-my $mkbatch = "$ENV{'HOME'}/.cesm/mkbatch.$mach";
-if (! -f "$mkbatch") {
-    $mkbatch = "$machdir/mkbatch.$mach";
-} else {
-    print "\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cesm/mkbatch.$mach\"\n";
+# Copy relevant files into $caseroot/Tools/
+@files = ("$scriptsroot/ccsm_utils/Tools/cesm_prerun_setup", 
+	  "$scriptsroot/ccsm_utils/Tools/cesm_postrun_setup", 
+	  "$scriptsroot/ccsm_utils/Tools/cesm_buildstart", 
+	  "$scriptsroot/ccsm_utils/Tools/cesm_buildnml", 
+	  "$scriptsroot/ccsm_utils/Tools/cesm_prestage",
+	  "$scriptsroot/ccsm_utils/Tools/cesm_buildexe", 
+	  "$scriptsroot/ccsm_utils/Tools/ccsm_getenv", 
+	  "$scriptsroot/ccsm_utils/Tools/ccsm_check_lockedfiles", 
+	  "$scriptsroot/ccsm_utils/Tools/xml2env",
+	  "$scriptsroot/ccsm_utils/Tools/lt_archive.sh", 
+	  "$scriptsroot/ccsm_utils/Tools/st_archive", 
+	  "$scriptsroot/ccsm_utils/Tools/user_nlcreate", 
+	  "$scriptsroot/ccsm_utils/Tools/user_nl_add",
+	  "$scriptsroot/ccsm_utils/Tools/mdiag_reduce.csh",
+	  "$scriptsroot/ccsm_utils/Tools/mdiag_reduce.pl",
+	  "$scriptsroot/ccsm_utils/Tools/timing/getTiming.csh", 
+	  "$scriptsroot/ccsm_utils/Tools/timing/getTiming2.pl",
+	  "$scriptsroot/ccsm_utils/Case.template/config_definition.xml",
+	  "$scriptsroot/ccsm_utils/Case.template/config_grid.xml",
+	  "$scriptsroot/ccsm_utils/Case.template/config_compsets.xml",
+	  "$scriptsroot/ccsm_utils/Case.template/config_archive.xml",
+	  "$scriptsroot/ccsm_utils/Case.template/config_archive.xsd",
+	  "$scriptsroot/ccsm_utils/Case.template/ConfigCase.pm",
+	  "$scriptsroot/ccsm_utils/Tools/SetupTools.pm",
+	  "$scriptsroot/acme/acme_util.py",
+	  "$scriptsroot/acme/compare_namelists",
+	  "$scriptsroot/acme/compare_namelists.py",
+	  "$scriptsroot/acme/simple_compare",
+	  "$scriptsroot/acme/simple_compare.py",
+	  "$scriptsroot/ccsm_utils/Tools/cesm_tseries_generator.py",
+	  "$machdir/taskmaker.pl", 
+	  "$machdir/Makefile",
+	  "$machdir/mkSrcfiles", 
+	  "$machdir/mkDepends", 
+	  "$machdir/mkbatch.$mach");
+foreach my $file (@files) {
+    $sysmod = "cp -p $file $caseroot/Tools/."; 
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
-# Copy relevant files into $caseroot/Tools/
-@files = (
-    "$scriptsroot/Tools/config_definition.xml",
-    "$scriptsroot/Tools/config_grid.xml",
-    "$scriptsroot/Tools/config_compsets.xml",
-    "$scriptsroot/Tools/config_archive.xml",
-    "$scriptsroot/Tools/config_archive.xsd",
-    "$scriptsroot/Tools/ConfigCase.pm",
-    "$scriptsroot/Tools/cesm_buildnml", 
-    "$scriptsroot/Tools/cesm_prestage", 
-    "$scriptsroot/Tools/cesm_prerun_setup", 
-    "$scriptsroot/Tools/cesm_postrun_setup", 
-    "$scriptsroot/Tools/check_lockedfiles", 
-    "$scriptsroot/Tools/lt_archive.sh", 
-    "$scriptsroot/Tools/st_archive", 
-    "$scriptsroot/Tools/getTiming", 
-    "$scriptsroot/Tools/SetupTools.pm",
-    "$scriptsroot/Tools/ProjectTools.pm",
-    "$scriptsroot/Tools/compare_namelists.pl",
-    "$machdir/ccsm_getenv", 
-    "$machdir/taskmaker.pl", 
-    "$machdir/Makefile",
-    "$machdir/mkSrcfiles", 
-    "$machdir/mkDepends");
-    #"$mkbatch");
-
+# Copy relevant files into $caseroot/Tools/pythonlib
+@files = ("$scriptsroot/ccsm_utils/Tools/pythonlib/cesmEnvLib.py");
 foreach my $file (@files) {
-    $sysmod = "cp -p $file $caseroot/Tools/. "; 
+    $sysmod = "cp -p $file $caseroot/Tools/pythonlib/."; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Create $case.build
-$sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
+my $file = "${caseroot}/${case}.build";
+$sysmod = "cp ${caseroot}/Tools/cesm_buildstart $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "chmod 755 $caseroot/$case.build";
+$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
-# Create $caseroot/Buildconf/cesm_build.pl
-$sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
+$sysmod = "cat ${caseroot}/Tools/cesm_prestage >> $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "chmod 755 $caseroot/Buildconf/cesm_build.pl";
+$sysmod = "cat ${caseroot}/Tools/cesm_buildexe >> $file";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Create $case.clean_build
-$sysmod = "cp $scriptsroot/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+$sysmod = "cp $scriptsroot/ccsm_utils/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.submit
-$sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit"; 
+$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/cesm_submit $caseroot/$case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.l_archive
-#my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch";
-#system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch ${machdir}/mkbatch.$mach";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-# Create $caseroot preview_namelist file
+# Create preview_namelist file
 my $file = "${caseroot}/preview_namelists"; 
-$sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
+$sysmod = "cp  $scriptsroot/ccsm_utils/Tools/preview_namelists $file"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Copy relevant files into $caseroot/Tools/XML directory
-$sysmod = "cp -p $cimeroot/utils/perl5lib/XML/Lite.pm    $caseroot/Tools/XML"; 
+$sysmod = "cp -p $scriptsroot/ccsm_utils/Tools/perl5lib/XML/Lite.pm $caseroot/Tools/XML"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "cp -p $cimeroot/utils/perl5lib/XML/Lite/Element.pm  $caseroot/Tools/XML/Lite"; 
+$sysmod = "cp -p $scriptsroot/ccsm_utils/Tools/perl5lib/XML/Lite/Element.pm $caseroot/Tools/XML/Lite"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create relevant files in the $caseroot/Buildconf
 my $buildconf  = "$caseroot/Buildconf";
-my $comps_atm  = $cfg_ref->get("COMP_ATM"); 
-my $comps_lnd  = $cfg_ref->get("COMP_LND"); 
-my $comps_ocn  = $cfg_ref->get("COMP_OCN"); 
-my $comps_ice  = $cfg_ref->get("COMP_ICE"); 
-my $comps_glc  = $cfg_ref->get("COMP_GLC"); 
-my $comps_rof  = $cfg_ref->get("COMP_ROF"); 
-my $comps_wav  = $cfg_ref->get("COMP_WAV");
-my @comps      = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav); 
-
+my @models     = qw(COMP_ATM COMP_LND COMP_ICE COMP_OCN COMP_GLC COMP_ROF COMP_WAV);
+my @comps_atm  = $cfg_ref->get_valid_values("COMP_ATM"); 
+my @comps_lnd  = $cfg_ref->get_valid_values("COMP_LND"); 
+my @comps_ocn  = $cfg_ref->get_valid_values("COMP_OCN"); 
+my @comps_ice  = $cfg_ref->get_valid_values("COMP_ICE"); 
+my @comps_glc  = $cfg_ref->get_valid_values("COMP_GLC"); 
+my @comps_rof  = $cfg_ref->get_valid_values("COMP_ROF"); 
+my @comps_wav  = $cfg_ref->get_valid_values("COMP_WAV");
+my @comps      = (@comps_atm, @comps_lnd, @comps_ocn, @comps_ice, @comps_glc, @comps_rof, @comps_wav); 
 foreach my $comp (@comps)  {
     $comp =~ s/\'//g;
-    my $compdir;
-    if ($comp =~ /^d[ailor]/) {
-	$compdir = "$cimeroot/components/data_comps/$comp/bld";
-    } elsif ($comp =~ /^s[aiglorw]/) {
-	$compdir = "$cimeroot/components/stub_comps/$comp/bld";
-    } elsif ($comp =~ /^x[aiglorw]/) {
-	$compdir = "$cimeroot/components/xcpl_comps/$comp/bld";
-    } else {
-	$compdir = "$cimeroot/../components/$comp/bld";
+    foreach my $model (@models) {
+	my $model_name = $cfg_ref->get($model);
+	if ($model_name eq $comp) {
+	    my $blddir;
+	    if ($model eq 'COMP_ATM') {$blddir = "$ccsmroot/models/atm/$comp/bld"}; 
+	    if ($model eq 'COMP_LND') {$blddir = "$ccsmroot/models/lnd/$comp/bld"}; 
+	    if ($model eq 'COMP_ICE') {$blddir = "$ccsmroot/models/ice/$comp/bld"}; 
+	    if ($model eq 'COMP_OCN') {$blddir = "$ccsmroot/models/ocn/$comp/bld"}; 
+	    if ($model eq 'COMP_GLC') {$blddir = "$ccsmroot/models/glc/$comp/bld"}; 
+	    if ($model eq 'COMP_WAV') {$blddir = "$ccsmroot/models/wav/$comp/bld"};
+	    if ($model eq 'COMP_ROF') {$blddir = "$ccsmroot/models/rof/$comp/bld"}; 
+	    $sysmod = "cp -p $blddir/*build*.csh $buildconf/.";
+	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    if (-f "$blddir/$comp.template" || -f "$blddir/$comp.cpl7.template") {
+		$sysmod = "cp -p $blddir/${comp}*template $buildconf/${comp}.user_nl.csh";
+		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    }
+	}
     }
-    $sysmod = "cp -p $compdir/$comp.buildlib $buildconf/.";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    
-    $sysmod = "cp -p $compdir/$comp.buildnml $buildconf/.";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    
-    if ($comp eq "cism") {
-	$sysmod = "cp -p $compdir/$comp.template $buildconf/.";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    }
-    if ($comp eq 'cice') {
-	$sysmod = "cp $cimeroot/../components/cice/bld/generate_cice_decomp.pl $buildconf/."; 
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    }
-    if ($comp eq 'pop') {
-	$sysmod = "cp $cimeroot/../components/pop/bld/generate_pop_decomp.pl $buildconf/."; 
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    } 
 }
-$sysmod = "cp -p $cimeroot/driver_cpl/bld/cpl.buildnml $buildconf/.";
+$sysmod = "cp -p $ccsmroot/models/drv/bld/*.build*.csh $buildconf/.";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "cp -p $cimeroot/driver_cpl/bld/model.buildexe $buildconf/.";
+$sysmod = "cp -p $ccsmroot/models/drv/bld/cpl.template $buildconf/cpl.user_nl.csh";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
+foreach my $comp (@comps)  {
+    foreach my $model (@models) {
+	if ($cfg_ref->get($model) eq $comp) {
+	    my $component = $cfg_ref->get($model); 
+	    if ($component eq 'cice') {
+		$sysmod = "cp $ccsmroot/models/ice/cice/bld/generate_cice_decomp.pl $buildconf/."; 
+		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+		$sysmod = "cp $ccsmroot/models/ice/cice/bld/cice_decomp.xml $buildconf/."; 
+		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    }
+	    if ($component eq 'pop2') {
+		$sysmod = "cp $ccsmroot/models/ocn/pop2/bld/generate_pop_decomp.pl $buildconf/."; 
+		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+		$sysmod = "cp $ccsmroot/models/ocn/pop2/bld/pop_decomp.xml $buildconf/."; 
+		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    } 
+	}
+    }
+}
 foreach my $lib ("gptl", "mct", "csm_share", "pio") {
     my $sysmod = "cp ${machdir}/buildlib.${lib} $caseroot/Buildconf/.";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -1025,20 +1030,30 @@ foreach my $lib ("gptl", "mct", "csm_share", "pio") {
 # Create the relevant $caseroot/Sourcemods directories
 my $moddir = "$caseroot/SourceMods";
 foreach my $comp (@comps)  {
-    mkpath("$moddir/src.$comp"); 
-    if ($comp eq 'cism') {
-	mkpath("$moddir/src.$comp/glimmer-cism");
-	open(README, ">", "$moddir/src.$comp/README") or
-	    die "cannot open > $moddir/src.$comp/README: $!";
-	print README
-	    "Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
-	    "This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism.\n\n",
-	    "Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
-	close(README);
+    foreach my $model (@models) {
+	if ($cfg_ref->get($model) eq $comp) {
+	    $sysmod = "mkdir -p $moddir/src.$comp"; 
+	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    if ($comp eq 'cism') {
+		$sysmod = "mkdir $moddir/src.$comp/glimmer-cism";
+		system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+		open(README, ">", "$moddir/src.$comp/README") or
+		    die "cannot open > $moddir/src.$comp/README: $!";
+		print README
+		    "Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
+		    "This includes any files that are in the glimmer-cism subdirectory of models/glc/cism.\n\n",
+		    "Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
+		close(README);
+	    }
+	}
     }
 }
-mkpath("$caseroot/SourceMods/src.share"); 
-mkpath("$caseroot/SourceMods/src.drv"); 
+$sysmod = "mkdir -p $caseroot/SourceMods/src.share"; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "mkdir -p $caseroot/SourceMods/src.drv"  ; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "chmod -R u+w $caseroot/SourceMods"; 
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create machine specific environment file (env_mach_specific)
 if(-e "$machdir/env_mach_specific.$mach" ) {
@@ -1048,10 +1063,11 @@ if(-e "$machdir/env_mach_specific.$mach" ) {
 }
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-$sysmod = "chmod 755 $caseroot/env_mach_specific";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
 # Copy Depends files if they exist
+if( -e "$machdir/Depends.$mach.$compiler" ) {
+    $sysmod = "cp $machdir/Depends.$mach.$compiler $caseroot/";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
 if( -e "$machdir/Depends.$mach" ) {
     $sysmod = "cp $machdir/Depends.$mach $caseroot/";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -1060,27 +1076,42 @@ if( -e "$machdir/Depends.$compiler" ) {
     $sysmod = "cp $machdir/Depends.$compiler $caseroot/";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
+}
+
+# The following creates mach_syslog
+if( -e "$machdir/syslog.$mach" ) {
+  $sysmod = "cp $machdir/syslog.$mach $caseroot/Tools/mach_syslog";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $machdir/syslog.generic $caseroot/Tools/mach_syslog";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
 
 # Write the xml files
 $cfg_ref->write_file("$caseroot/env_case.xml"   , "xml");
-if ($print) {print "Created $caseroot/env_case.xml \n";}
-
+print "Created $caseroot/env_case.xml \n";
 $cfg_ref->write_file("$caseroot/env_mach_pes.xml", "xml");  
-if ($print) {print "Created $caseroot/env_mach_pes.xml \n";}
-
+print "Created $caseroot/env_mach_pes.xml \n";
 $cfg_ref->write_file("$caseroot/env_build.xml"  , "xml");
-if ($print) {print "Created $caseroot/env_build.xml \n";}
-
+print "Created $caseroot/env_build.xml \n";
 $cfg_ref->write_file("$caseroot/env_run.xml"    , "xml");
-if ($print) {print "Created $caseroot/env_run.xml \n";}
+print "Created $caseroot/env_run.xml \n";
+$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/ccsm_utils/Case.template");
+print "Created $caseroot/env_archive.xml \n";
 
-$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/Tools");
-if ($print) {print "Created $caseroot/env_archive.xml \n";}
+# set the default to not archive performance data and associated provenance
+if ($opts{'nosavetiming'}) {
+  my $cwd = getcwd(); # current working directory
+  chdir "$caseroot";
+  $sysmod = './xmlchange -file env_run.xml -id SAVE_TIMING -val "FALSE"';
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+  chdir "$cwd";
+}
 
 # Copy env_case.xml in to locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-if ($print) {print "Locking file $caseroot/env_case.xml \n";}
+print "Locking file $caseroot/env_case.xml \n";
 
 my $file = "$caseroot/CaseStatus";
 my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
@@ -1093,26 +1124,175 @@ printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hou
 
 # Copy the user_mods_dir files in and apply them
 if ( defined($user_mods_dir) ) {
-   my $is_test = 0;
-   if ($testname) {
-      $is_test = 1;
-   }
-   UserModsTools::apply_mods($user_mods_dir, $caseroot, $print, $is_test);
+    my @user_nl_files = glob("$user_mods_dir/user_nl*");
+    my @xmlchange_cmnds_file = "$user_mods_dir/xmlchange_cmnds";
+    my @source_mods_dir = glob("$user_mods_dir/SourceMods/*");
+
+    if(! @user_nl_files && ! @xmlchange_cmnds_file && ! @source_mods_dir)
+    {
+	die "ERROR: There are no user_nl files, xmlchange_cmds file, or SourceMods directories";
+    }
+    else
+    {
+	# Copy the user_nl_* files over
+	foreach my $file(@user_nl_files)
+	{
+	    if (-f "$file") {
+		if ($print>=2) { print "Copy $file over.$eol"; }
+		my $copy = "cp $file $caseroot";
+		system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+	    }
+	}
+	# Copy the xmlchange_cmnds file over and execute it
+	foreach my $file(@xmlchange_cmnds_file)
+	{
+	    if (-f "$file") {
+		if ($print>=2) { print "Copy $file over.$eol"; }
+		my $copy = "cp $file $caseroot";
+		system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+		chmod 0777, "$caseroot/xmlchange_cmnds";
+		my $cwd = getcwd(); # current working directory
+		chdir "$caseroot";
+		if ($print>=2) { print "Execute $file.$eol"; }
+		system ("./xmlchange_cmnds");
+		chdir "$cwd";
+	    }
+	}
+	# Copy any files in SourceMods over provided the same directory exists in the case
+	foreach my $dir(@source_mods_dir)
+	{
+	    if ($print>=2) { print "Copy $dir over.$eol"; }
+	    if ( $dir =~ m/(SourceMods\/.+)/ ) {
+		my $mydir = "$caseroot/$1";
+		if (-d "$dir" && -d "$mydir" ) {
+		    foreach my $file( glob("$dir/*") )
+		    {
+			if ($print>=2) { print "Copy $file over.$eol"; }
+			my $copy = "cp $file $mydir";
+			system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+		    }
+		}
+	    }
+	}
+    }
 }
+
+#-----------------------------------------------------------------------------------------------
+# (11) check that the pyreshaper tool is installed in the inputdata location on the machine
+#-----------------------------------------------------------------------------------------------
+
+#my $cmd = "module load python";
+#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
+#$cmd = "module load all-python-libs";
+#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
+#$cmd = "pushd $ccsmroot/tools/pyReshaper";
+#system($cmd) == 0 or warn "WARNING: unable to execute '$cmd'";
+#$cmd = "python setup.py install -- 
+
 
 #-----------------------------------------------------------------------------------------------
 # (12) Create $caseroot run setup scripts (other than batch)
 #-----------------------------------------------------------------------------------------------
 
-if ($print) {print "Successfully created the case for $mach \n";}
+print "Successfully created the case for $mach \n";
 if ($print>=2) { print "create_xml done.$eol"; }
 
 # Finished create_newcase
 exit 0;
 
 #-----------------------------------------------------------------------------------------------
-# FINISHED ####################################################################################
+# FINNISHED ####################################################################################
 #-----------------------------------------------------------------------------------------------
+
+sub absolute_path {
+    #
+# Convert a pathname into an absolute pathname, expanding any . or .. characters.
+# Assumes pathnames refer to a local filesystem.
+# Assumes the directory separator is "/".
+    #
+    my $path = shift;
+    my $cwd = getcwd();  # current working directory
+    my $abspath;         # resulting absolute pathname
+
+# Strip off any leading or trailing whitespace.  (This pattern won't match if
+# there's embedded whitespace.
+    $path =~ s!^\s*(\S*)\s*$!$1!;
+
+# Convert relative to absolute path.
+
+    if ($path =~ m!^\.$!) {          # path is "."
+	return $cwd;
+    } elsif ($path =~ m!^\./!) {     # path starts with "./"
+	$path =~ s!^\.!$cwd!;
+    } elsif ($path =~ m!^\.\.$!) {   # path is ".."
+	$path = "$cwd/..";
+    } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
+	$path = "$cwd/$path";
+    } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
+	$path = "$cwd/$path";
+    }
+
+    my ($dir, @dirs2);
+    my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+    # This enables correct processing of the input "/".
+
+    # Remove any "" that are not leading.
+    for (my $i=0; $i<=$#dirs; ++$i) {
+	if ($i == 0 or $dirs[$i] ne "") {
+	    push @dirs2, $dirs[$i];
+	}
+    }
+    @dirs = ();
+
+    # Remove any "."
+    foreach $dir (@dirs2) {
+	unless ($dir eq ".") {
+	    push @dirs, $dir;
+	}
+    }
+    @dirs2 = ();
+
+    # Remove the "subdir/.." parts.
+    foreach $dir (@dirs) {
+	if ( $dir !~ /^\.\.$/ ) {
+	    push @dirs2, $dir;
+	} else {
+	    pop @dirs2;   # remove previous dir when current dir is ..
+	}
+    }
+    if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
+    $abspath = join '/', @dirs2;
+    return( $abspath );
+}
+
+#-------------------------------------------------------------------------------
+
+sub subst_env_path {
+    #
+    # Substitute for any environment variables contained in a pathname.
+    # Assumes the directory separator is "/".
+    #
+    my $path = shift;
+    my $newpath;         # resulting pathname
+
+    # Strip off any leading or trailing whitespace.  (This pattern won't match if
+    # there's embedded whitespace.
+    $path =~ s!^\s*(\S*)\s*$!$1!;
+
+    my ($dir, @dirs2);
+    my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
+    # This enables correct processing of the input "/".
+
+    foreach $dir (@dirs) {
+	if ( $dir =~ /^\$(.+)$/ ) {
+	    push @dirs2, $ENV{$1};
+	} else {
+	    push @dirs2, $dir;
+	}
+    }
+    $newpath = join '/', @dirs2;
+    return( $newpath );
+}
 
 #-------------------------------------------------------------------------------
 
@@ -1128,7 +1308,7 @@ sub get_option {
 	--$max_tries;
 	$ans =~ s/^\s+//;
 	$ans =~ s/\s+$//;
-	# Check for null response which indicates that default is accepted.
+# Check for null response which indicates that default is accepted.
 	unless ($ans) { return ""; }
 	foreach $expect (@expect) {
 	    if ($ans =~ /^$expect$/i) { return $expect; }
@@ -1156,10 +1336,10 @@ sub print_hash {
 
 sub set_compset
 {
-    # Set the parameters for the specified compset and grid.  
-    # The parameters are read from an input file, and if no compset/grid matches are
-    # found then issue error message.
-    # This routine uses the configuration defined at the package level ($cfg_ref).
+# Set the parameters for the specified compset and grid.  
+# The parameters are read from an input file, and if no compset/grid matches are
+# found then issue error message.
+# This routine uses the configuration defined at the package level ($cfg_ref).
 
     my ($compset_file, $compset, $grid_file, $grid, $cfg_ref, $caseroot, $user_compset) = @_;
 
@@ -1175,7 +1355,7 @@ sub set_compset
     $name eq "config_compset" or die
 	"file $compset_file is not a compset parameters file\n";
 
-    # Strip any leading or trailing whitespace 
+# Strip any leading or trailing whitespace 
     $grid = clean($grid);
     $compset = clean($compset);
 
@@ -1195,9 +1375,9 @@ sub set_compset
     my @e;
     my %attr = ();
 
-    # ========================================================
-    # Determine compset longname
-    # ========================================================
+# ========================================================
+# Determine compset longname
+# ========================================================
 
     if ($user_compset) {
 	$compset_shortname = ' ';
@@ -1240,16 +1420,16 @@ NAME:
 	}
     }
 
-    # ========================================================
-    # Determine grid longname 
-    # - only use this name for matches later on
-    # ========================================================
+# ========================================================
+# Determine grid longname 
+# - only use this name for matches later on
+# ========================================================
 
     my $atm_grid, my $lnd_grid, my $ice_grid, my $ocn_grid;
     my $rof_grid, my $glc_grid, my $wav_grid;
     my $cism_grid, my $mask_grid; 
 
-    # first determine if there is any compset attribute for this grid
+# first determine if there is any compset attribute for this grid
     $found = 0;
     @e = $xml_comp->elements_by_name( "COMPSET" );
 NAME:
@@ -1277,7 +1457,7 @@ NAME:
 	}
     }
 
-    # if not found - determine if there is any other match for this grid
+# if not found - determine if there is any other match for this grid
     if ($found == 0) {
 	@e = $xml_grid->elements_by_name( "GRID" );
 	while ( my $e = shift @e ) {
@@ -1289,9 +1469,9 @@ NAME:
 	    $support = clean($attr{'support_level'});
 	    if ($grid =~ /$lname/ || $grid eq $sname || $grid eq $alias)  {
 		if ($attr{'compset'}) { 
-		    # do nothing
+# do nothing
 		} else {
-		    if ($print) {print " grid longname is $grid_longname \n";}
+		    print " grid longname is $grid_longname \n";
                     if ( $support ) {
                        $support_level .= "Grid ($sname): $support\n";
                     }
@@ -1305,7 +1485,7 @@ NAME:
 	}
     }
 
-    # quit if nothing was found
+# quit if nothing was found
     unless ($found) { 
 	print "set_compset: no match for grid $grid_longname \n";
 	print "             to see supported grids issue - \n";
@@ -1324,9 +1504,9 @@ NAME:
 	$cfg_ref->set('CISM_GRID',$cism_grid);
     }
 
-    # ========================================================
-    # check that compset is supported for target grid
-    # ========================================================
+# ========================================================
+# check that compset is supported for target grid
+# ========================================================
 
     @e = $xml_comp->elements_by_name( "COMPSET" );
     while ( my $e = shift @e ) {
@@ -1336,10 +1516,10 @@ NAME:
 	    my $compset_grid = clean($attr{'grid'});
 	    if ($compset_grid) {
 		if ($grid_longname =~ /$compset_grid/) {
-		    # do nothing
+# do nothing
 		} else {
 		    if ($grid_longname =~ /CLM_USRDAT/) {
-			# do nothing 
+# do nothing 
 		    } else {
 			die "ERROR: $compset_longname \n is not supported for \n $grid_longname \n";
 		    }
@@ -1348,9 +1528,9 @@ NAME:
 	}
     }
 
-    # ========================================================
-    # set component grid sizes and grid name
-    # ========================================================
+# ========================================================
+# set component grid sizes and grid name
+# ========================================================
 
     @e = $xml_grid->elements_by_name( "gridhorz" );
     while ( my $e = shift @e ) {
@@ -1373,7 +1553,7 @@ NAME:
                        $support_level .= "Grid ($hgrid): $support\n";
                     }
 		    if ($desc_grid =~ m/$val/) {
-			# do nothing
+# do nothing
 		    } else {
 			$desc_grid = $desc_grid . " $val";
 		    }
@@ -1422,15 +1602,14 @@ NAME:
 	}
     }
 
+
     my $atm_grid = $cfg_ref->get('ATM_GRID');
     my $lnd_grid = $cfg_ref->get('LND_GRID');
     my $ocn_grid = $cfg_ref->get('OCN_GRID');
     my $rof_grid = $cfg_ref->get('ROF_GRID');
     my $wav_grid = $cfg_ref->get('WAV_GRID');
     my $glc_grid = $cfg_ref->get('GLC_GRID');
-    my $ice_grid = $cfg_ref->get('ICE_GRID');
     my $mask_grid = $cfg_ref->get('MASK_GRID');
-
     if ($atm_grid =~ 'UNSET') {die "atm_grid in $grid_longname is not supported \n";}
     if ($lnd_grid =~ 'UNSET') {die "lnd_grid in $grid_longname is not supported \n";}
     if ($ocn_grid =~ 'UNSET') {die "ocn_grid in $grid_longname is not supported \n";}
@@ -1439,9 +1618,9 @@ NAME:
     if ($glc_grid =~ 'UNSET') {die "glc_grid in $grid_longname is not supported \n";}
     if ($mask_grid =~ 'UNSET') {die "mask_grid in $grid_longname is not supported \n";}
 
-    # ========================================================
-    # Set grid domain files
-    # ========================================================
+# ========================================================
+# Set grid domain files
+# ========================================================
 
     @e = $xml_grid->elements_by_name( "griddom" );
     while ( my $e = shift @e ) {
@@ -1732,37 +1911,35 @@ NAME:
 
     if ($compset_longname =~ /CISM/) {
 	$grid = $cfg_ref->get('CISM_GRID');
-	if ($print) {print "  CISM_GRID = $grid \n";}
+	print "  CISM_GRID = $grid \n";  
     }
 
-    if ($print) {
-	# output to standard out
-	print     "Component set: longname (shortname) (alias) \n";
-	if ($compset_aliasname) {
-	    print     "  $compset_longname ($compset_shortname) ($compset_aliasname) \n";
-	} else {
-	    print     "  $compset_longname ($compset_shortname) \n";
-	}
-	print "Component set Description: \n";
-	print " $desc_comp \n";
-	print "Grid: \n";
-	print "  $grid_longname ($grid_shortname) \n";
-	print "  ATM_GRID = $gra  NX_ATM=$nxa NY_ATM=$nya \n";
-	print "  LND_GRID = $grl  NX_LND=$nxl NX_LND=$nyl \n";
-	print "  ICE_GRID = $gri  NX_ICE=$nxi NX_ICE=$nyi \n";
-	print "  OCN_GRID = $gro  NX_OCN=$nxo NX_OCN=$nyo \n";
-	print "  ROF_GRID = $grr  NX_ROF=$nxr NX_ROF=$nyr \n";
-	print "  GLC_GRID = $grg  NX_GLC=$nxg NX_GLC=$nyg \n";
-	print "  WAV_GRID = $grw  NX_WAV=$nxw NX_WAV=$nyw \n";
-	print "Grid Description: \n";
-	print " $desc_grid \n";
-	print "Non-Default Options: \n";
-	my @ids = keys %newout;
-	foreach my $id (sort @ids) {
-	    print     "  $id: $newout{$id} \n";
-	} 
-	print "\n";
+    # output to standard out
+    print     "Component set: longname (shortname) (alias) \n";
+    if ($compset_aliasname) {
+	print     "  $compset_longname ($compset_shortname) ($compset_aliasname) \n";
+    } else {
+	print     "  $compset_longname ($compset_shortname) \n";
     }
+    print "Component set Description: \n";
+    print " $desc_comp \n";
+    print "Grid: \n";
+    print "  $grid_longname ($grid_shortname) \n";
+    print "  ATM_GRID = $gra  NX_ATM=$nxa NY_ATM=$nya \n";
+    print "  LND_GRID = $grl  NX_LND=$nxl NX_LND=$nyl \n";
+    print "  ICE_GRID = $gri  NX_ICE=$nxi NX_ICE=$nyi \n";
+    print "  OCN_GRID = $gro  NX_OCN=$nxo NX_OCN=$nyo \n";
+    print "  ROF_GRID = $grr  NX_ROF=$nxr NX_ROF=$nyr \n";
+    print "  GLC_GRID = $grg  NX_GLC=$nxg NX_GLC=$nyg \n";
+    print "  WAV_GRID = $grw  NX_WAV=$nxw NX_WAV=$nyw \n";
+    print "Grid Description: \n";
+    print " $desc_grid \n";
+    print "Non-Default Options: \n";
+    my @ids = keys %newout;
+    foreach my $id (sort @ids) {
+	print     "  $id: $newout{$id} \n";
+    } 
+    print "\n";
 
     # output to README.case
     my $fh = new IO::File;
@@ -1790,7 +1967,8 @@ NAME:
     my @ids = keys %newout;
     foreach my $id (sort @ids) {
 	print $fh "  $id: $newout{$id} \n";
-    }
+    } 
+
     return ($compset_longname, $compset_shortname, $grid_longname, $grid_shortname, $support_level); 
 }
 
@@ -2139,10 +2317,8 @@ sub check_known_problems
 {
     # Check the CESM repository for known problems, see the SVN url below.  
     # If there is a known_problems file in the repository that matches 
-    if ($print) {
-	print "-------------------------------------------------------------------------------\n";
-	print "For a list of potential issues in the current tag, please point your web browser to:\n";
-	print "https://svn-ccsm-models.cgd.ucar.edu/cesm1/known_problems/\n";
-	print "-------------------------------------------------------------------------------\n";
-    }
+    print "-------------------------------------------------------------------------------\n";
+    print "For a list of potential issues in the current tag, please point your web browser to:\n";
+    print "https://svn-ccsm-models.cgd.ucar.edu/cesm1/known_problems/\n";
+    print "-------------------------------------------------------------------------------\n";
 }
