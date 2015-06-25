@@ -366,7 +366,6 @@ CONTAINS
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
-
 ! LOCAL VARS
 
       REAL,     DIMENSION( its:ite )        ::                 ZA, &
@@ -400,12 +399,14 @@ CONTAINS
       REAL    ::  DTG,PSIX,DTTHX,PSIX10,PSIT,PSIT2,PSIQ,PSIQ2,PSIQ10
       REAL    ::  FLUXC,VSGD,Z0Q,VISC,RESTAR,CZIL,RESTAR2
       REAL    ::  ZW, ZN1, ZN2
+      REAL    ::  Z0T
 !-------------------------------------------------------------------
       KL=kte
 
       DO i=its,ite
 ! PSFC cb
          PSFC(I)=PSFCPA(I)/1000.
+         if(ust(i).eq.0.) ust(i)=0.0001
       ENDDO
 !                                                      
 !----CONVERT GROUND TEMPERATURE TO POTENTIAL TEMPERATURE:  
@@ -467,7 +468,14 @@ CONTAINS
       DO 60 I=its,ite
         E1=SVP1*EXP(SVP2*(TGDSA(I)-SVPT0)/(TGDSA(I)-SVP3))                       
 !  for land points QSFC can come from previous time step
-        if(xland(i).gt.1.5.or.qsfc(i).le.0.0)QSFC(I)=EP2*E1/(PSFC(I)-E1)                                                 
+!       if(xland(i).gt.1.5.or.qsfc(i).le.0.0)QSFC(I)=EP2*E1/(PSFC(I)-E1)                                                 
+        IF (xland(i).gt.1.5) THEN
+! ww: effect of salinity (Fairall, ECMWF)
+           QSFC(I)=EP2*E1/(PSFC(I)-E1)*0.98
+!          QSFC(I)=EP2*E1/(PSFC(I)-E1)*1.00
+        ELSE IF (qsfc(i).le.0.0) THEN
+           QSFC(I)=EP2*E1/(PSFC(I)-E1)
+        ENDIF
 ! QGH CHANGED TO USE LOWEST-LEVEL AIR TEMP CONSISTENT WITH MYJSFC CHANGE
 ! Q2SAT = QGH IN LSM
         E1=SVP1*EXP(SVP2*(T1D(I)-SVPT0)/(T1D(I)-SVP3))                       
@@ -529,7 +537,9 @@ CONTAINS
         ELSE
           DTHVM=0.
         ENDIF
-        VCONV = 2.*SQRT(DTHVM)
+! ww:  XLAND=2: WATER, reduce VCONV effect
+        VCONV = SQRT(DTHVM)
+!       VCONV = 2.*SQRT(DTHVM)
         endif
 ! Mahrt and Sun low-res correction
 !MPAS specific (Laura D. Fowler): We take into accound the actual size of individual
@@ -730,6 +740,23 @@ CONTAINS
         PSIQ2=ALOG(KARMAN*UST(I)*2./XKA+2./ZL)-PSIH2(I)                                   
 ! AHW: mods to compute ck, cd
         PSIQ10=ALOG(KARMAN*UST(I)*10./XKA+10./ZL)-PSIH10(I)
+! ww: try Fairall 2001 to compute z0q and z0t:
+        IF ( (XLAND(I)-1.5).GE.0. ) THEN
+              VISC=(1.32+0.009*(SCR3(I)-273.15))*1.E-5
+!             VISC=1.326e-5*(1. + 6.542e-3*SCR3(I) + 8.301e-6*SCR3(I)*SCR3(I) &
+!                 - 4.84e-9*SCR3(I)*SCR3(I)*SCR3(I))
+              RESTAR=UST(I)*ZNT(I)/VISC
+              Z0T = (5.5e-5)*(RESTAR**(-0.60))
+              Z0T = MIN(Z0T,1.1e-4)
+              Z0T = MAX(Z0T,2.0e-9)
+              Z0Q = Z0T
+
+              PSIQ=max(ALOG((ZA(I)+Z0Q)/Z0Q)-PSIH(I), 2.)
+              PSIT=max(ALOG((ZA(I)+Z0T)/Z0T)-PSIH(I), 2.)
+              PSIQ2=max(ALOG((2.+Z0Q)/Z0Q)-PSIH2(I), 2.)
+              PSIT2=max(ALOG((2.+Z0T)/Z0T)-PSIH2(I), 2.)
+              PSIQ10=max(ALOG((10.+Z0Q)/Z0Q)-PSIH10(I), 2.)
+        ENDIF
         IF ( PRESENT(ISFTCFLX) ) THEN
            IF ( ISFTCFLX.EQ.1 .AND. (XLAND(I)-1.5).GE.0. ) THEN
 ! v3.1
@@ -830,7 +857,9 @@ CONTAINS
                                                                                  
       DO 360 I=its,ite
         IF((XLAND(I)-1.5).GE.0)THEN                                            
-          ZNT(I)=CZO*UST(I)*UST(I)/G+OZO                                   
+! ww: EC version
+          ZNT(I)=CZO*UST(I)*UST(I)/G+0.11*1.5E-5/UST(I)
+!         ZNT(I)=CZO*UST(I)*UST(I)/G+OZO
 ! AHW: change roughness length, and hence the drag coefficients Ck and Cd
           IF ( PRESENT(ISFTCFLX) ) THEN
              IF ( ISFTCFLX.NE.0 ) THEN
