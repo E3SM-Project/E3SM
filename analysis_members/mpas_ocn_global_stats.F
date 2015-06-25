@@ -57,6 +57,7 @@ module ocn_global_stats
    !--------------------------------------------------------------------
 
    type (timer_node), pointer :: amGlobalStatsTimer
+   character (len=StrKIND), pointer :: config_global_stats_directory
 
 !***********************************************************************
 
@@ -169,12 +170,13 @@ contains
 
       err = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_global_stats_directory',config_global_stats_directory)
       call mpas_pool_get_config(domain % configs, 'config_global_stats_text_file', config_global_stats_text_file)
       if (config_global_stats_text_file) then
       dminfo => domain % dminfo
       if (dminfo % my_proc_id == IO_NODE) then
          fileID = getFreeUnit()
-         open(fileID,file='stats_readme.txt',STATUS='UNKNOWN', POSITION='rewind')
+         open(fileID,file=trim(config_global_stats_directory)//'/stats_readme.txt',STATUS='UNKNOWN', POSITION='rewind')
 
             write (fileID,'(a)') 'readme file for MPAS-Ocean global statistics'
             write (fileID,'(/,a)') 'stats_time.txt. contains: timeIndex, timestamp, CFLNumberGlobal'
@@ -762,28 +764,28 @@ contains
          ! write out the data to files
          if (dminfo % my_proc_id == IO_NODE) then
             fileID = getFreeUnit()
-            open(fileID,file='stats_min.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_min.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') time_days, mins(1:nVariables)
             close (fileID)
-            open(fileID,file='stats_max.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_max.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') time_days, maxes(1:nVariables)
             close (fileID)
-            open(fileID,file='stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') time_days, sums(1:nVariables)
             close (fileID)
-            open(fileID,file='stats_rms.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_rms.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') time_days, rms(1:nVariables)
             close (fileID)
-            open(fileID,file='stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') time_days, averages(1:nVariables)
             close (fileID)
-            open(fileID,file='stats_time.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_time.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(a)') trim(xtime)
             close (fileID)
-            open(fileID,file='stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') verticalSumMins(1:nVariables)
             close (fileID)
-            open(fileID,file='stats_colmax.txt',STATUS='UNKNOWN', POSITION='append')
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_colmax.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') verticalSumMaxes(1:nVariables)
             close (fileID)
          end if
