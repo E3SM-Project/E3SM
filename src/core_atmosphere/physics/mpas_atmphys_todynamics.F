@@ -32,6 +32,9 @@
 !>
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
+!>    * added calculation of the advective tendency of the potential temperature due to horizontal
+!>      and vertical advection, and horizontal mixing (diffusion).
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-19.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * modified sourcecode to use pools.
@@ -53,13 +56,13 @@
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
- type(mpas_pool_type),intent(inout):: tend_physics
  type(mpas_pool_type),intent(in):: configs
  integer, intent(in):: rk_step
 
 !inout variables:
 !----------------
  type(mpas_pool_type),intent(inout):: tend
+ type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables:
 !----------------
@@ -77,12 +80,14 @@
                                            rqrcuten,rqicuten,rqscuten, &
                                            rucuten,rvcuten
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw,rthratensw                                    
+ real(kind=RKIND),dimension(:,:),pointer:: rthdynten
  
- real(kind=RKIND),dimension(:,:),pointer:: tend_theta,tend_u
+ real(kind=RKIND),dimension(:,:),pointer  :: tend_theta,tend_theta_euler,tend_diabatic,tend_u
  real(kind=RKIND),dimension(:,:,:),pointer:: tend_scalars
- real(kind=RKIND),dimension(:,:),pointer:: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
+ real(kind=RKIND),dimension(:,:),pointer  :: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
 
  real(kind=RKIND):: tem
+ real(kind=RKIND):: coeff
  real(kind=RKIND),dimension(:,:),allocatable:: rublten_Edge,rucuten_Edge
 
  character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
@@ -117,6 +122,8 @@
  call mpas_pool_get_dimension(state, 'index_qg', index_qg)
  qv => scalars(index_qv,:,:)
 
+ call mpas_pool_get_array(tend, 'rt_diabatic_tend', tend_diabatic)
+
  call mpas_pool_get_array(tend_physics, 'rublten', rublten)
  call mpas_pool_get_array(tend_physics, 'rvblten', rvblten)
  call mpas_pool_get_array(tend_physics, 'rthblten', rthblten)
@@ -136,8 +143,11 @@
  call mpas_pool_get_array(tend_physics, 'rthratenlw', rthratenlw)
  call mpas_pool_get_array(tend_physics, 'rthratensw', rthratensw)
 
+ call mpas_pool_get_array(tend_physics, 'rthdynten' , rthdynten)
+
  call mpas_pool_get_array(tend, 'u', tend_u)
  call mpas_pool_get_array(tend, 'theta_m', tend_theta)
+ call mpas_pool_get_array(tend, 'theta_euler', tend_theta_euler)
  call mpas_pool_get_array(tend, 'scalars_tend', tend_scalars)
  tend_qv => tend_scalars(index_qv,:,:)
  tend_qc => tend_scalars(index_qc,:,:)
@@ -157,6 +167,24 @@
  tend_qi = 0._RKIND
  tend_qs = 0._RKIND
  tend_qg = 0._RKIND
+
+!save the tendency of the modified potential temperature due to horizontal and vertical advections,
+!and mixing before adding tendencies due to physics processes (PBL,convection,radiation) for use in
+!the Grell-GF and new Tiedtke parameterization of convection:
+ do i = 1, nCellsSolve
+ do k = 1, nVertLevels
+    coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
+    rthdynten(k,i) = coeff*(tend_theta(k,i)-tend_theta_euler(k,i) &
+                   - mass(k,i)*tend_diabatic(k,i))/mass(k,i)
+ enddo
+ enddo
+ write(0,*) '--- end calculate rthdynten:'
+!do i = 200,200
+!do k = 1, nVertLevels
+!   write(0,201) i,k,mass(k,i),tend_theta(k,i),tend_diabatic(k,i),rthdynten(k,i)
+!enddo
+!write(0,*)
+!enddo
 
 !add coupled tendencies due to PBL processes:
  if(config_pbl_scheme .ne. 'off') then

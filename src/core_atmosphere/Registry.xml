@@ -461,6 +461,7 @@
 			<var name="rqrcuten"/>
 			<var name="rqscuten"/>
 			<var name="rqvdynten"/>
+			<var name="rthdynten"/>
 			<var name="rucuten"/>
 			<var name="rvcuten"/>
 			<var name="rublten"/>
@@ -1443,7 +1444,9 @@
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
+                <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
                 <var name="rqvdynten"   type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rthdynten"   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rucuten"     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rvcuten"     type="real"     dimensions="nVertLevels nCells Time"/>
 

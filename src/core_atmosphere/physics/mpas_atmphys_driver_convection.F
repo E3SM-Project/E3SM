@@ -137,6 +137,8 @@
        enddo
 
     case ("tiedtke")
+       if(.not.allocated(dx_p)         ) allocate(dx_p(ims:ime,jms:jme)                 )
+       if(.not.allocated(area_p)       ) allocate(area_p(ims:ime,jms:jme)               )
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -144,6 +146,8 @@
        if(.not.allocated(rqvdynblten_p)) allocate(rqvdynblten_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(rucuten_p)    ) allocate(rucuten_p(ims:ime,kms:kme,jms:jme)    )
        if(.not.allocated(rvcuten_p)    ) allocate(rvcuten_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(rthblten_p)   ) allocate(rthblten_p(ims:ime,kms:kme,jms:jme)   )
+       if(.not.allocated(rthdynten_p)  ) allocate(rthdynten_p(ims:ime,kms:kme,jms:jme)  )
 
        do i = its,ite
        do j = jts,jte
@@ -160,6 +164,8 @@
           rqvdynblten_p(i,k,j) = 0._RKIND
           rucuten_p(i,k,j)     = 0._RKIND
           rvcuten_p(i,k,j)     = 0._RKIND
+          rthblten_p(i,k,j)    = 0._RKIND
+          rthdynten_p(i,k,j)   = 0._RKIND
        enddo
        enddo
        enddo
@@ -195,6 +201,8 @@
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
     case ("tiedtke")
+       if(allocated(dx_p)         ) deallocate(dx_p         )
+       if(allocated(area_p)       ) deallocate(area_p       )
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -202,6 +210,8 @@
        if(allocated(rqvdynblten_p)) deallocate(rqvdynblten_p)
        if(allocated(rucuten_p)    ) deallocate(rucuten_p    )
        if(allocated(rvcuten_p)    ) deallocate(rvcuten_p    )
+       if(allocated(rthblten_p)   ) deallocate(rthblten_p   )
+       if(allocated(rthdynten_p)  ) deallocate(rthdynten_p  )
 
     case default
 
@@ -356,7 +366,7 @@
 !       write(0,*) '--- enter subroutine cu_tiedtke:'
        call cu_tiedtke ( &
              pcps        = pres_hyd_p    , p8w             = pres2_hyd_p ,           &
-             znu         = znu_hyd_p     , t3d             = t_p         ,           &              
+                                           t3d             = t_p         ,           &              
              dt          = dt_dyn        , itimestep       = itimestep   ,           &
              stepcu      = n_cu          , raincv          = raincv_p    ,           &
              pratec      = pratec_p      , hfx             = hfx_p       ,           &
@@ -365,7 +375,7 @@
              qv3d        = qv_p          , qc3d            = qc_p        ,           &
              qi3d        = qi_p          , pi3d            = pi_p        ,           &
              rho3d       = rho_p         , qvften          = rqvdynten_p ,           &
-             qvpblten    = rqvdynblten_p , dz8w            = dz_p        ,           &
+                                           dz8w            = dz_p        ,           &
              xland       = xland_p       , cu_act_flag     = cu_act_flag ,           &
              f_qv        = f_qv          , f_qc            = f_qc        ,           &
              f_qr        = f_qr          , f_qi            = f_qi        ,           &
@@ -373,6 +383,7 @@
              rqvcuten    = rqvcuten_p    , rqccuten        = rqccuten_p  ,           &
              rqicuten    = rqicuten_p    , rucuten         = rucuten_p   ,           &
              rvcuten     = rvcuten_p     ,                                           &
+             dxCell      = dx_p          , thften          = rthdynten_p ,           &
              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
@@ -407,6 +418,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: w0avg
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten 
  real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten 
+ real(kind=RKIND),dimension(:,:),pointer:: rthblten,rthdynten,rthratensw,rthratenlw
 
 !--------------------------------------------------------------------------------------------------
 ! write(0,*)
@@ -436,6 +448,10 @@
  call mpas_pool_get_array(tend_physics,'rvcuten'  ,rvcuten  )
  call mpas_pool_get_array(tend_physics,'rqvblten' ,rqvblten )
  call mpas_pool_get_array(tend_physics,'rqvdynten',rqvdynten)
+ call mpas_pool_get_array(tend_physics,'rthdynten',rthdynten)
+ call mpas_pool_get_array(tend_physics,'rthblten' ,rthblten )
+ call mpas_pool_get_array(tend_physics,'rthratensw' ,rthratensw )
+ call mpas_pool_get_array(tend_physics,'rthratenlw' ,rthratenlw )
 
  do j = jts,jte
  do i = its,ite
@@ -484,6 +500,8 @@
           xland_p(i,j) = xland(i)
           hfx_p(i,j)   = hfx(i)
           qfx_p(i,j)   = qfx(i)
+          area_p(i,j)  = areaCell(i)
+          dx_p(i,j)    = dcEdge_m(i)
        enddo
 
        do k = kts,kte
@@ -492,8 +510,11 @@
           rqvdynten_p(i,k,j)   = rqvdynten(k,i)
           rucuten_p(i,k,j)     = rucuten(k,i)
           rvcuten_p(i,k,j)     = rvcuten(k,i)
+          rthdynten_p(i,k,j)   = (rthblten(k,i)+rthratensw(k,i)+rthratenlw(k,i))*pi_p(i,k,j)
+!         rthdynten_p(i,k,j)   = (rthdynten(k,i)+rthblten(k,i)+rthratensw(k,i)+rthratenlw(k,i))*pi_p(i,k,j)
        enddo
        enddo
+       if(j.eq.jts) write(0,*) 'pi_p = ',pi_p(its,35,j), pi_p(ite,35,j)
        enddo
  
     case default

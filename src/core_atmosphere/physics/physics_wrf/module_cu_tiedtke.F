@@ -1,7 +1,8 @@
 !==================================================================================================
-!WRF version 3.6 of the Tiedtke parameterization of deep convection. Implemented in MPAS
-!on 2014-06-26.
+!WRF version 3.7 of the new Tiedtke (cu_ntiedtke) parameterization of deep convection. 
+!Implemented in MPAS on 2015-06-14.
 !Laura D. Fowler (birch.mmm.ucar.edu) / 2014-06-26.
+!Wei      Wang   (yellowstone.ucar.edu) / 2015-06-14.
 !==================================================================================================
 !>
 !> add-ons and modifications to sourcecode:
@@ -10,209 +11,189 @@
 
 !-----------------------------------------------------------------------
 !
-!WRF:MODEL_LAYER:PHYSICS
+!wrf:model_layer:physics
 !
-!####################TIEDTKE SCHEME#########################
-!   Taken from the IPRC iRAM - Yuqing Wang, University of Hawaii
-!   Added by Chunxi Zhang and Yuqing Wang to WRF3.2, May, 2010
-!   refenrence: Tiedtke (1989, MWR, 117, 1779-1800)
-!               Nordeng, T.E., (1995), CAPE closure and organized entrainment/detrainment
-!               Yuqing Wang et al. (2003,J. Climate, 16, 1721-1738) for improvements 
-!                                                  for cloud top detrainment 
-!                       (2004, Mon. Wea. Rev., 132, 274-296), improvements for PBL clouds
-!                        (2007,Mon. Wea. Rev., 135, 567-585), diurnal cycle of precipitation
-!   This scheme is on testing
+!####################tiedtke scheme#########################
+!    m.tiedtke      e.c.m.w.f.      1989 
+!    j.morcrette                    1992
+!--------------------------------------------    
+!    modifications
+!    C. zhang & Yuqing Wang         2011-2014
+!
+!   modified from IPRC IRAM - yuqing wang, university of hawaii
+!               & ICTP REGCM4.4
+!
+!   this scheme is experimental. There are many updates to the old Tiedtke scheme (cu_physics=6)
+!   update notes:
+!        the new Tiedtke scheme is similar to the Tiedtke scheme used in REGCM4 and ECMWF cy40r1.
+!        the major differences to the old Tiedtke (cu_physics=6) scheme are,
+!        (a) New trigger functions for deep and shallow convections (Jakob and Siebesma 2003;
+!            Bechtold et al. 2004, 2008, 2014).
+!        (b) Non-equilibrium situations are considered in the closure for deep convection
+!            (Bechtold et al. 2014).
+!        (c) New convection time scale for the deep convection closure (Bechtold et al. 2008).
+!        (d) New entrainment and detrainment rates for all convection types (Bechtold et al. 2008).
+!        (e) New formula for the conversion from cloud water/ice to rain/snow (Sundqvist 1978).
+!        (f) Different way to include cloud scale pressure gradients (Gregory et al. 1997;
+!            Wu and Yanai 1994)
+!
+!   other refenrence: tiedtke (1989, mwr, 117, 1779-1800)
+!                     IFS documentation - cy33r1, cy37r2, cy38r1, cy40r1
+!
 !###########################################################
-MODULE module_cu_tiedtke
-!
+
+module module_cu_tiedtke
+
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-! epsl--- allowed minimum value for floating calculation
-!---------------------------------------------------------------
-      real,parameter ::  epsl  = 1.0e-20
-      real,parameter ::  t000  = 273.15
-      real,parameter ::  hgfr  = 233.15   ! defined in param.f in explct
-!-------------------------------------------------------------    
-!  Ends the parameters set
-!++++++++++++++++++++++++++++
 #if defined(mpas)
-!... In MPAS, the variable RV is already defined in ./src/framework/mpas_constants.F. Here,
-!    we declare RV as a private variable to avoid conflicts at compilation time.
-!    Laura D. Fowler (birch.mmm.ucar.edu) / 2014-06-26.
-     REAL,PRIVATE :: G,CPV,RV
-     REAL :: API,A,EOMEGA,RD,CPD,RCPD,VTMPC1,VTMPC2,   &
-             RHOH2O,ALV,ALS,ALF,CLW,TMELT,SOLC,STBO,DAYL,YEARL, &
-             C1ES,C2ES,C3LES,C3IES,C4LES,C4IES,C5LES,C5IES,ZRG 
+     use mpas_constants, only:rd=>rgas, rv=>rv, &
+   &       cpd=>cp, g=>gravity              
+     use mpas_atmphys_constants, only:alv=>xlv, als=>xls, alf=>xlf
 #else
-     REAL,PRIVATE :: G,CPV
-     REAL :: API,A,EOMEGA,RD,RV,CPD,RCPD,VTMPC1,VTMPC2,   &
-             RHOH2O,ALV,ALS,ALF,CLW,TMELT,SOLC,STBO,DAYL,YEARL, &
-             C1ES,C2ES,C3LES,C3IES,C4LES,C4IES,C5LES,C5IES,ZRG 
+     use module_model_constants, only:rd=>r_d, rv=>r_v, &
+   &       cpd=>cp, alv=>xlv, als=>xls, alf=>xlf, g              
 #endif
 
-     REAL :: ENTRPEN,ENTRSCV,ENTRMID,ENTRDD,CMFCTOP,RHM,RHC,    &
-             CMFCMAX,CMFCMIN,CMFDEPS,RHCDD,CPRCON,CRIRH,ZBUO0,  &
-             fdbk,ZTAU
- 
-     INTEGER :: orgen,nturben,cutrigger
+     implicit none
+     real,private :: rcpd,vtmpc1,tmelt,                &
+             c1es,c2es,c3les,c3ies,c4les,c4ies,c5les,c5ies,zrg
 
-     REAL :: CVDIFTS, CEVAPCU1, CEVAPCU2,ZDNOPRC
-    
-  
-     PARAMETER(A=6371.22E03,                                    &
-      ALV=2.5008E6,                 &                  
-      ALS=2.8345E6,                 &
-      ALF=ALS-ALV,                  &
-      CPD=1005.46,                  &
-      CPV=1869.46,                  & ! CPV in module is 1846.4
-      RCPD=1.0/CPD,                 &
-      RHOH2O=1.0E03,                & 
-      TMELT=273.16,                 &
-      G=9.806,                      & ! G=9.806
-      ZRG=1.0/G,                    &
-      RD=287.05,                    &
-      RV=461.51,                    &
-      C1ES=610.78,                  &
-      C2ES=C1ES*RD/RV,              &
-      C3LES=17.269,                 &
-      C4LES=35.86,                  &
-      C5LES=C3LES*(TMELT-C4LES),    &
-      C3IES=21.875,                 &
-      C4IES=7.66,                   &
-      C5IES=C3IES*(TMELT-C4IES),    &
-      API=3.141593,                 & ! API=2.0*ASIN(1.)
-      VTMPC1=RV/RD-1.0,             &
-      VTMPC2=CPV/CPD-1.0,           &
-      CVDIFTS=1.0,                  &
-      CEVAPCU1=1.93E-6*261.0*0.5/G, & 
-      CEVAPCU2=1.E3/(38.3*0.293) )
+     real,private :: r5alvcp,r5alscp,ralvdcp,ralsdcp,ralfdcp,rtwat,rtber,rtice 
+     real,private :: entrdd,cmfcmax,cmfcmin,cmfdeps,zdnoprc,cprcon
+     integer,private :: ntrigger,momtrans,p950,p650
 
-     
-!                SPECIFY PARAMETERS FOR MASSFLUX-SCHEME
-!                  --------------------------------------
-!                   These are tunable parameters
+     parameter(         &
+      rcpd=1.0/cpd,     &
+      tmelt=273.16,     &
+      zrg=1.0/g,        &
+      c1es=610.78,      &
+      c2es=c1es*rd/rv,  &
+      c3les=17.2693882, &
+      c3ies=21.875,     &
+      c4les=35.86,      &
+      c4ies=7.66,       &
+      c5les=c3les*(tmelt-c4les),  &
+      c5ies=c3ies*(tmelt-c4ies),  &
+      r5alvcp=c5les*alv*rcpd,     &
+      r5alscp=c5ies*als*rcpd,     &
+      ralvdcp=alv*rcpd,           &
+      ralsdcp=als*rcpd,           &
+      ralfdcp=alf*rcpd,           &
+      rtwat=tmelt,                &
+      rtber=tmelt-5.,             &
+      rtice=tmelt-23.,            &
+      vtmpc1=rv/rd-1.0 )
 !
-!     ENTRPEN: AVERAGE ENTRAINMENT RATE FOR PENETRATIVE CONVECTION
-!     -------
-!
-      PARAMETER(ENTRPEN=1.0E-4)
-!
-!     ENTRSCV: AVERAGE ENTRAINMENT RATE FOR SHALLOW CONVECTION
-!     -------
-!
-      PARAMETER(ENTRSCV=1.2E-3)
-!
-!     ENTRMID: AVERAGE ENTRAINMENT RATE FOR MIDLEVEL CONVECTION
-!     -------
-!
-      PARAMETER(ENTRMID=1.0E-4)
-!
-!     ENTRDD: AVERAGE ENTRAINMENT RATE FOR DOWNDRAFTS
+!     entrdd: average entrainment & detrainment rate for downdrafts
 !     ------
 !
-      PARAMETER(ENTRDD =2.0E-4)
+      parameter(entrdd = 3.0e-4)
 !
-!     CMFCTOP:   RELATIVE CLOUD MASSFLUX AT LEVEL ABOVE NONBUOYANCY LEVEL
+!     cmfcmax:   maximum massflux value allowed for updrafts etc
 !     -------
 !
-      PARAMETER(CMFCTOP=0.30)
+      parameter(cmfcmax = 1.0)
 !
-!     CMFCMAX:   MAXIMUM MASSFLUX VALUE ALLOWED FOR UPDRAFTS ETC
+!     cmfcmin:   minimum massflux value (for safety)
 !     -------
 !
-      PARAMETER(CMFCMAX=1.0)
+      parameter(cmfcmin = 1.e-10)
 !
-!     CMFCMIN:   MINIMUM MASSFLUX VALUE (FOR SAFETY)
+!     cmfdeps:   fractional massflux for downdrafts at lfs
 !     -------
 !
-      PARAMETER(CMFCMIN=1.E-10)
-!
-!     CMFDEPS:   FRACTIONAL MASSFLUX FOR DOWNDRAFTS AT LFS
-!     -------
-!
-      PARAMETER(CMFDEPS=0.30)
-!
-!     CPRCON:  COEFFICIENTS FOR DETERMINING CONVERSION FROM CLOUD WATER
-!
-      PARAMETER(CPRCON = 1.1E-3/G)
-!
-!     ZDNOPRC: The pressure depth below which no precipitation
-!
-      PARAMETER(ZDNOPRC =1.5E4)
-!--------------------
-     PARAMETER(orgen=1)   ! Old organized entrainment rate
-!      PARAMETER(orgen=2)   ! New organized entrainment rate
+      parameter(cmfdeps = 0.30)
 
-     PARAMETER(nturben=1) ! old deep turburent entrainment/detrainment rate
-!      PARAMETER(nturben=2) ! New deep turburent entrainment/detrainment rate
-
-     PARAMETER(cutrigger=1) ! Old trigger function
-!      PARAMETER(cutrigger=2) ! New trigger function
+!     zdnoprc:   deep cloud is thicker than this height
 !
+      parameter(zdnoprc = 2.0e4)
+!     -------
+!   
+!     cprcon:    coefficient from cloud water to rain water
+!   
+      parameter(cprcon = 1.4e-3)
+!     -------
+!
+!     momtrans: momentum transport method
+!
+      parameter(momtrans = 2 )
+!     -------
+
 !--------------------
-      PARAMETER(RHC=0.80,RHM=1.0,ZBUO0=0.50)
+!     switches for deep, mid, shallow convections, downdraft, and momemtum transport
+!     ------------------
+      logical :: lmfpen,lmfmid,lmfscv,lmfdd,lmfdudv
+      parameter(lmfpen=.true.,lmfmid=.true.,lmfscv=.true.,lmfdd=.true.,lmfdudv=.true.)
 !--------------------
-      PARAMETER(CRIRH=0.70,fdbk = 1.0,ZTAU = 1800.0)
-!--------------------
-      LOGICAL :: LMFPEN,LMFMID,LMFSCV,LMFDD,LMFDUDV
-      PARAMETER(LMFPEN=.TRUE.,LMFMID=.TRUE.,LMFSCV=.TRUE.,LMFDD=.TRUE.,LMFDUDV=.TRUE.)
-!--------------------
-!#################### END of Variables definition##########################
+!#################### end of variables definition##########################
 !-----------------------------------------------------------------------
 !
-CONTAINS
+contains
 !-----------------------------------------------------------------------
-     SUBROUTINE CU_TIEDTKE(                                    &
-                 DT,ITIMESTEP,STEPCU                            &
-                ,RAINCV,PRATEC,QFX,HFX,ZNU                      &
-                ,U3D,V3D,W,T3D,QV3D,QC3D,QI3D,PI3D,RHO3D        &
-                ,QVFTEN,QVPBLTEN                                &
-                ,DZ8W,PCPS,P8W,XLAND,CU_ACT_FLAG                &
+#if defined(mpas)
+     subroutine cu_tiedtke(                                     &
+                 dt,itimestep,stepcu                            &
+                ,raincv,pratec,qfx,hfx                          &
+                ,u3d,v3d,w,t3d,qv3d,qc3d,qi3d,pi3d,rho3d        &
+                ,qvften,thften                                  &
+                ,dz8w,pcps,p8w,xland,cu_act_flag,dxCell         &
                 ,ids,ide, jds,jde, kds,kde                      &
                 ,ims,ime, jms,jme, kms,kme                      &
                 ,its,ite, jts,jte, kts,kte                      &
-                ,RTHCUTEN,RQVCUTEN,RQCCUTEN,RQICUTEN            &
-                ,RUCUTEN, RVCUTEN                               &
-                ,F_QV    ,F_QC    ,F_QR    ,F_QI    ,F_QS       &
+                ,rthcuten,rqvcuten,rqccuten,rqicuten            &
+                ,rucuten, rvcuten                               &
+                ,f_qv    ,f_qc    ,f_qr    ,f_qi    ,f_qs       &
                                                                 )
+#else
+     subroutine cu_ntiedtke(                                    &
+                 dt,itimestep,stepcu                            &
+                ,raincv,pratec,qfx,hfx                          &
+                ,u3d,v3d,w,t3d,qv3d,qc3d,qi3d,pi3d,rho3d        &
+                ,qnvften,thften                                  &
+                ,dz8w,pcps,p8w,xland,cu_act_flag,dx             &
+                ,ids,ide, jds,jde, kds,kde                      &
+                ,ims,ime, jms,jme, kms,kme                      &
+                ,its,ite, jts,jte, kts,kte                      &
+                ,rthcuten,rqvcuten,rqccuten,rqicuten            &
+                ,rucuten, rvcuten                               &
+                ,f_qv    ,f_qc    ,f_qr    ,f_qi    ,f_qs       &
+                                                                )
+#endif
 !-------------------------------------------------------------------
-      IMPLICIT NONE
+      implicit none
 !-------------------------------------------------------------------
-!-- U3D         3D u-velocity interpolated to theta points (m/s)
-!-- V3D         3D v-velocity interpolated to theta points (m/s)
-!-- TH3D        3D potential temperature (K)
-!-- T3D         temperature (K)
-!-- QV3D        3D water vapor mixing ratio (Kg/Kg)
-!-- QC3D        3D cloud mixing ratio (Kg/Kg)
-!-- QI3D        3D ice mixing ratio (Kg/Kg)
-!-- RHO3D       3D air density (kg/m^3)
-!-- P8w         3D hydrostatic pressure at full levels (Pa)
-!-- Pcps        3D hydrostatic pressure at half levels (Pa)
-!-- PI3D        3D exner function (dimensionless)
-!-- QVFTEN      3D water vapor advection tendency 
-!-- QVPBLTEN    3D water vapor tendency due to a PBL
-!-- RTHCUTEN      Theta tendency due to 
-!                 cumulus scheme precipitation (K/s)
-!-- RUCUTEN       U wind tendency due to 
-!                 cumulus scheme precipitation (K/s)
-!-- RVCUTEN       V wind tendency due to 
-!                 cumulus scheme precipitation (K/s)
-!-- RQVCUTEN      Qv tendency due to 
+!-- u3d         3d u-velocity interpolated to theta points (m/s)
+!-- v3d         3d v-velocity interpolated to theta points (m/s)
+!-- th3d        3d potential temperature (k)
+!-- t3d         temperature (k)
+!-- qv3d        3d water vapor mixing ratio (kg/kg)
+!-- qc3d        3d cloud mixing ratio (kg/kg)
+!-- qi3d        3d ice mixing ratio (kg/kg)
+!-- rho3d       3d air density (kg/m^3)
+!-- p8w         3d hydrostatic pressure at full levels (pa)
+!-- pcps        3d hydrostatic pressure at half levels (pa)
+!-- pi3d        3d exner function (dimensionless)
+!-- qvften      3d total advective moisture tendency (kg kg-1 s-1)
+!-- thften      3d total advective temperature tendency (k s-1)
+!-- rthcuten      theta tendency due to 
+!                 cumulus scheme precipitation (k/s)
+!-- rucuten       u wind tendency due to 
+!                 cumulus scheme precipitation (k/s)
+!-- rvcuten       v wind tendency due to 
+!                 cumulus scheme precipitation (k/s)
+!-- rqvcuten      qv tendency due to 
 !                 cumulus scheme precipitation (kg/kg/s)
-!-- RQRCUTEN      Qr tendency due to 
+!-- rqccuten      qc tendency due to 
 !                 cumulus scheme precipitation (kg/kg/s)
-!-- RQCCUTEN      Qc tendency due to 
+!-- rqicuten      qi tendency due to 
 !                 cumulus scheme precipitation (kg/kg/s)
-!-- RQSCUTEN      Qs tendency due to 
-!                 cumulus scheme precipitation (kg/kg/s)
-!-- RQICUTEN      Qi tendency due to 
-!                 cumulus scheme precipitation (kg/kg/s)
-!-- RAINC         accumulated total cumulus scheme precipitation (mm)
-!-- RAINCV        cumulus scheme precipitation (mm)
-!-- PRATEC        precipitiation rate from cumulus scheme (mm/s)
+!-- rainc         accumulated total cumulus scheme precipitation (mm)
+!-- raincv        cumulus scheme precipitation (mm)
+!-- pratec        precipitiation rate from cumulus scheme (mm/s)
 !-- dz8w        dz between full levels (m)
-!-- QFX         upward moisture flux at the surface (kg/m^2/s)
-!-- DT          time step (s)
-!-- F_QV etc    flag values for tendencies, not used
+!-- qfx         upward moisture flux at the surface (kg/m^2/s)
+!-- hfx         upward heat flux at the surface (w/m^2) 
+!-- dt          time step (s)
 !-- ids         start index for i in domain
 !-- ide         end index for i in domain
 !-- jds         start index for j in domain
@@ -232,3331 +213,3573 @@ CONTAINS
 !-- kts         start index for k in tile
 !-- kte         end index for k in tile
 !-------------------------------------------------------------------
-      INTEGER, INTENT(IN) ::            ids,ide, jds,jde, kds,kde,      &
+      integer, intent(in) ::            ids,ide, jds,jde, kds,kde,      &
                                         ims,ime, jms,jme, kms,kme,      &
                                         its,ite, jts,jte, kts,kte,      &
-                                        ITIMESTEP,                      &
-                                        STEPCU
+                                        itimestep,                      &
+                                        stepcu
 
-      REAL,    INTENT(IN) ::                                            &
-                                        DT
+!MPAS specific (Laura D. Fowler 2013-08-23): In MPAS, the mean distance between cell
+!centers varies between cells, in particular, for variable-resolution meshes. Below,
+!we take into account the actual mean distance between cell centers.
+#if defined(mpas)
+      real,intent(in):: dt
+      real,intent(in),dimension(ims:ime,jms:jme):: dxCell
+#else
+      real,    intent(in) ::                                            &
+                                        dt,                             &
+                                        dx
+#endif
 
 
-      REAL,    DIMENSION(ims:ime, jms:jme), INTENT(IN) ::               &
-                                        XLAND
+      real,    dimension(ims:ime, jms:jme), intent(in) ::               &
+                                        xland
 
-      REAL,    DIMENSION(ims:ime, jms:jme), INTENT(INOUT) ::            &
-                                        RAINCV, PRATEC
+      real,    dimension(ims:ime, jms:jme), intent(inout) ::            &
+                                        raincv, pratec
 
-      LOGICAL, DIMENSION(IMS:IME,JMS:JME), INTENT(INOUT) ::             &
-                                        CU_ACT_FLAG
+      logical, dimension(ims:ime,jms:jme), intent(inout) ::             &
+                                        cu_act_flag
 
 
-      REAL,    DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) ::      &
-                                        DZ8W,                           &
-                                        P8w,                            &
-                                        Pcps,                           &
-                                        PI3D,                           &
-                                        QC3D,                           &
-                                        QVFTEN,                         &
-                                        QVPBLTEN,                       &
-                                        QI3D,                           &
-                                        QV3D,                           &
-                                        RHO3D,                          &
-                                        T3D,                            &
-                                        U3D,                            &
-                                        V3D,                            &
-                                        W                              
+      real,    dimension(ims:ime, kms:kme, jms:jme), intent(in) ::      &
+                                        dz8w,                           &
+                                        pcps,                           &
+                                        p8w,                            &
+                                        pi3d,                           &
+                                        qc3d,                           &
+                                        qvften,                         &
+                                        thften,                         &
+                                        qi3d,                           &
+                                        qv3d,                           &
+                                        rho3d,                          &
+                                        t3d,                            &
+                                        u3d,                            &
+                                        v3d,                            &
+                                        w
+      real,    dimension(ims:ime, jms:jme) ::                           &
+                                        qfx,                            &
+                                        hfx                            
 
-!--------------------------- OPTIONAL VARS ----------------------------
-                                                                                                      
-      REAL, DIMENSION(ims:ime, kms:kme, jms:jme),                       &
-               OPTIONAL, INTENT(INOUT) ::                               &
-                                        RQCCUTEN,                       &
-                                        RQICUTEN,                       &
-                                        RQVCUTEN,                       &
-                                        RTHCUTEN,                       &
-                                        RUCUTEN,                        &
-                                        RVCUTEN
-                                                                                                      
+!--------------------------- optional vars ----------------------------
+
+      real, dimension(ims:ime, kms:kme, jms:jme),                       &
+               optional, intent(inout) ::                               &
+                                        rqccuten,                       &
+                                        rqicuten,                       &
+                                        rqvcuten,                       &
+                                        rthcuten,                       &
+                                        rucuten,                        &
+                                        rvcuten
+
 !
-! Flags relating to the optional tendency arrays declared above
-! Models that carry the optional tendencies will provdide the
+! flags relating to the optional tendency arrays declared above
+! models that carry the optional tendencies will provdide the
 ! optional arguments at compile time; these flags all the model
 ! to determine at run-time whether a particular tracer is in
 ! use or not.
 !
-     LOGICAL, OPTIONAL ::                                      &
-                                                   F_QV      &
-                                                  ,F_QC      &
-                                                  ,F_QR      &
-                                                  ,F_QI      &
-                                                  ,F_QS
- 
-!--------------------------- LOCAL VARS ------------------------------
+     logical, optional ::                                      &
+                                                   f_qv      &
+                                                  ,f_qc      &
+                                                  ,f_qr      &
+                                                  ,f_qi      &
+                                                  ,f_qs
 
-      REAL,    DIMENSION(ims:ime, jms:jme) ::                           &
-                                        QFX,                            &
-                                        HFX        
+!--------------------------- local vars ------------------------------
+      real      ::                                      &
+                                        delt,                           &
+                                        rdelt
 
-      REAL      ::                                      &
-                                        DELT,                           &
-                                        RDELT                          
+      real     , dimension(its:ite) ::                  &
+                                        rcs,                            &
+                                        rn,                             &
+                                        evap,                           &
+                                        heatflux                       
+      integer  , dimension(its:ite) ::  slimsk
 
-      REAL     , DIMENSION(its:ite) ::                  &
-                                        RCS,                            &
-                                        RN,                             &
-                                        EVAP,                           &
-                                        heatflux,                       &
-                                        rho2d                            
-      INTEGER  , DIMENSION(its:ite) ::  SLIMSK                         
-      
 
-      REAL     , DIMENSION(its:ite, kts:kte+1) ::       &
-                                        PRSI                            
+      real     , dimension(its:ite, kts:kte+1) ::         &
+                                        prsi,           &
+                                        ghti,           &
+                                          zi 
 
-      REAL     , DIMENSION(its:ite, kts:kte) ::         &
-                                        DEL,                            &
-                                        DOT,                            &
-                                        PHIL,                           &
-                                        PRSL,                           &
-                                        Q1,                             & 
-                                        Q2,                             &
-                                        Q3,                             &
-                                        Q1B,                            &
-                                        Q1BL,                           &
-                                        Q11,                            &
-                                        Q12,                            &  
-                                        T1,                             & 
-                                        U1,                             & 
-                                        V1,                             & 
-                                        ZI,                             & 
-                                        ZL,                             &
-                                        OMG,                            &
-                                        GHT 
+      real     , dimension(its:ite, kts:kte) ::         &
+                                        dot,                            &
+                                        prsl,                           &
+                                        q1,                             &
+                                        q2,                             &
+                                        q3,                             &
+                                        q1b,                            &
+                                        t1b,                            &
+                                        q11,                            &
+                                        q12,                            &
+                                        t1,                             &
+                                        u1,                             &
+                                        v1,                             &
+                                        zl,                             &
+                                        omg,                            &
+                                        ghtl                           
 
-      INTEGER, DIMENSION(its:ite) ::                                    &
-                                        KBOT,                           &
-                                        KTOP                           
+      integer, dimension(its:ite) ::                                    &
+                                        kbot,                           &
+                                        ktop
 
-      INTEGER ::                                                        &
-                                        I,                              &
-                                        IM,                             &
-                                        J,                              &
-                                        K,                              &
-                                        KM,                             &
-                                        KP,                             &
-                                        KX
-
+      integer ::                                                        &
+                                        i,                              &
+                                        im,                             &
+                                        j,                              &
+                                        k,                              &
+                                        km,                             &
+                                        kp,                             &
+                                        kx,                             &
+                                        kx1
 
 !-------other local variables----
+      integer                      :: zz
 #if defined(mpas)
-!MPAS specific (Laura D. Fowler):
-      INTEGER,DIMENSION(its:ite):: KTYPE
-      REAL,DIMENSION(its:ite,kts:kte):: SIG1
-      REAL,DIMENSION(ims:ime,kms:kme,jms:jme):: ZNU
-      INTEGER:: zz 
-#else
-      INTEGER,DIMENSION( its:ite ) :: KTYPE
-      REAL, DIMENSION( kts:kte )   :: sig1      ! half sigma levels
-      REAL, DIMENSION( kms:kme )   :: ZNU
-      INTEGER                      :: zz 
+!     real                         :: dx
+      real  , dimension(its:ite)   :: dx
 #endif
 !-----------------------------------------------------------------------
 !
+!
+!***  check to see if this is a convection timestep
+!
 
-      DO J=JTS,JTE
-         DO I=ITS,ITE
-            CU_ACT_FLAG(I,J)=.TRUE.
-         ENDDO
-      ENDDO
- 
-      IM=ITE-ITS+1
-      KX=KTE-KTS+1
-      DELT=DT*STEPCU
-      RDELT=1./DELT
+!-----------------------------------------------------------------------
+      do j=jts,jte
+         do i=its,ite
+            cu_act_flag(i,j)=.true.
+         enddo
+      enddo
 
-!-------------  J LOOP (OUTER) --------------------------------------------------
+      im=ite-its+1
+      kx=kte-kts+1
+      kx1=kx+1
+      delt=dt*stepcu
+      rdelt=1./delt
 
-   DO J=jts,jte
+!-------------  j loop (outer) --------------------------------------------------
+
+   do j=jts,jte
 
 ! --------------- compute zi and zl -----------------------------------------
-      DO i=its,ite
-        ZI(I,KTS)=0.0
-      ENDDO
-
-      DO k=kts+1,kte
-        KM=k-1
-        DO i=its,ite
-          ZI(I,K)=ZI(I,KM)+dz8w(i,km,j)
-        ENDDO
-      ENDDO
-
-      DO k=kts+1,kte
-        KM=k-1
-        DO i=its,ite
-          ZL(I,KM)=(ZI(I,K)+ZI(I,KM))*0.5
-        ENDDO
-      ENDDO
-
-      DO i=its,ite
-        ZL(I,KTE)=2.*ZI(I,KTE)-ZL(I,KTE-1)
-      ENDDO
+      do i=its,ite
+        zi(i,kts)=0.0
+      enddo
+!
+      do k=kts,kte
+        do i=its,ite
+          zi(i,k+1)=zi(i,k)+dz8w(i,k,j)
+        enddo
+      enddo
+!
+      do k=kts,kte
+        do i=its,ite
+          zl(i,k)=0.5*(zi(i,k)+zi(i,k+1))
+        enddo
+      enddo
 
 ! --------------- end compute zi and zl -------------------------------------
-      DO i=its,ite
-        SLIMSK(i)=int(ABS(XLAND(i,j)-2.))
-      ENDDO
+      do i=its,ite
+        slimsk(i)=int(abs(xland(i,j)-2.))
+      enddo
 
-      DO k=kts,kte
+      do k=kts,kte
         kp=k+1
-        DO i=its,ite
-          DOT(i,k)=-0.5*g*rho3d(i,k,j)*(w(i,k,j)+w(i,kp,j))
-        ENDDO
-      ENDDO
+        do i=its,ite
+          dot(i,k)=-0.5*g*rho3d(i,k,j)*(w(i,k,j)+w(i,kp,j))
+        enddo
+      enddo
 
-#if defined(mpas)
-      DO k=kts,kte
-        zz = kte+1-k        
-        DO i=its,ite
-          U1(i,zz)   = U3D(i,k,j)
-          V1(i,zz)   = V3D(i,k,j)
-          T1(i,zz)   = T3D(i,k,j)
-          Q1(i,zz)   = QV3D(i,k,j)
-          Q1B(i,zz)  = QVFTEN(i,k,j)
-          Q1BL(i,zz) = QVPBLTEN(i,k,j)
-          Q2(i,zz)   = QC3D(i,k,j)
-          Q3(i,zz)   = QI3D(i,k,j)
-          OMG(i,zz)  = DOT(i,k)
-          GHT(i,zz)  = ZL(i,k)
-          PRSL(i,zz) = Pcps(i,k,j)
-        ENDDO
-      ENDDO
-#else
-      DO k=kts,kte
-        zz = kte+1-k        
-        DO i=its,ite
-          U1(i,zz)=U3D(i,k,j)
-          V1(i,zz)=V3D(i,k,j)
-          T1(i,zz)=T3D(i,k,j)
-          Q1(i,zz)= QV3D(i,k,j)
-          if(itimestep == 1) then
-             Q1B(i,zz)=0.
-             Q1BL(i,zz)=0.
-          else
-             Q1B(i,zz)=QVFTEN(i,k,j)
-             Q1BL(i,zz)=QVPBLTEN(i,k,j)
-          endif
-          Q2(i,zz)=QC3D(i,k,j)
-          Q3(i,zz)=QI3D(i,k,j)
-          OMG(i,zz)=DOT(i,k)
-          GHT(i,zz)=ZL(i,k)
-          PRSL(i,zz) = Pcps(i,k,j)
-        ENDDO
-      ENDDO
-#endif
-
-      DO k=kts,kte+1
-        zz = kte+2-k
-        DO i=its,ite
-          PRSI(i,zz) = P8w(i,k,j)
-        ENDDO
-      ENDDO 
-
-#if defined(mpas)
-!MPAS specific (Laura D. Fowler):
-      DO k=kts,kte
-         zz = kte+1-k
-         DO i=its,ite
-            sig1(i,zz) = znu(i,k,j)
-         ENDDO
-      ENDDO
-#else
-      DO k=kts,kte
-         zz = kte+1-k
-         sig1(zz) = ZNU(k)
-      ENDDO
-#endif
-
-!###############before call TIECNV, we need EVAP########################
-!       EVAP is the vapor flux at the surface
-!########################################################################
-!
-      DO i=its,ite
-        EVAP(i) = QFX(i,j)
-        heatflux(i)=HFX(i,j)
-        rho2d(i) = rho3d(i,1,j)
-      ENDDO
-!########################################################################
-      CALL TIECNV(U1,V1,T1,Q1,Q2,Q3,Q1B,Q1BL,GHT,OMG,PRSL,PRSI,EVAP,heatflux,rho2d,             &
-                  RN,SLIMSK,KTYPE,IM,KX,KX+1,sig1,DELT)      
-
-      DO I=ITS,ITE
-         RAINCV(I,J)=RN(I)/STEPCU
-         PRATEC(I,J)=RN(I)/(STEPCU * DT)
-      ENDDO
-
-      DO K=KTS,KTE
+      do k=kts,kte
         zz = kte+1-k
-        DO I=ITS,ITE
-          RTHCUTEN(I,K,J)=(T1(I,zz)-T3D(I,K,J))/PI3D(I,K,J)*RDELT
-          RQVCUTEN(I,K,J)=(Q1(I,zz)-QV3D(I,K,J))*RDELT
-          RUCUTEN(I,K,J) =(U1(I,zz)-U3D(I,K,J))*RDELT
-          RVCUTEN(I,K,J) =(V1(I,zz)-V3D(I,K,J))*RDELT 
-        ENDDO
-      ENDDO
+        do i=its,ite
+          u1(i,zz)=u3d(i,k,j)
+          v1(i,zz)=v3d(i,k,j)
+          t1(i,zz)=t3d(i,k,j)
+          q1(i,zz)=qv3d(i,k,j)
+          if(itimestep == 1) then
+             q1b(i,zz)=0.
+             t1b(i,zz)=0.
+          else
+             q1b(i,zz)=qvften(i,k,j)
+             t1b(i,zz)=thften(i,k,j)
+          endif
+          q2(i,zz)=qc3d(i,k,j)
+          q3(i,zz)=qi3d(i,k,j)
+          omg(i,zz)=dot(i,k)
+          ghtl(i,zz)=zl(i,k)
+          prsl(i,zz) = pcps(i,k,j)
+        enddo
+      enddo
 
-      IF(PRESENT(RQCCUTEN))THEN
-        IF ( F_QC ) THEN
-          DO K=KTS,KTE
+      do k=kts,kte+1
+        zz = kte+2-k
+        do i=its,ite
+          ghti(i,zz) = zi(i,k)
+          prsi(i,zz) = p8w(i,k,j) 
+        enddo
+      enddo
+!
+      do i=its,ite
+        evap(i)    = qfx(i,j)
+        heatflux(i)= hfx(i,j)
+      enddo
+
+#if defined(mpas)
+      do i=its,ite
+         dx(i)   = dxCell(i,j)
+         if (i.eq.its) write(0,201) j,i,dx(i)
+      enddo
+  201 format(i3,i8,1x,e15.8)
+#endif
+
+!
+!########################################################################
+      call tiecnvn(u1,v1,t1,q1,q2,q3,q1b,t1b,ghtl,ghti,omg,prsl,prsi,evap,heatflux,  &
+                  rn,slimsk,im,kx,kx1,delt,dx)
+
+      do i=its,ite
+         raincv(i,j)=rn(i)/stepcu
+         pratec(i,j)=rn(i)/(stepcu * dt)
+      enddo
+
+      do k=kts,kte
+        zz = kte+1-k
+        do i=its,ite
+          rthcuten(i,k,j)=(t1(i,zz)-t3d(i,k,j))/pi3d(i,k,j)*rdelt
+          rqvcuten(i,k,j)=(q1(i,zz)-qv3d(i,k,j))*rdelt
+          rucuten(i,k,j) =(u1(i,zz)-u3d(i,k,j))*rdelt
+          rvcuten(i,k,j) =(v1(i,zz)-v3d(i,k,j))*rdelt
+        enddo
+      enddo
+
+      if(present(rqccuten))then
+        if ( f_qc ) then
+          do k=kts,kte
             zz = kte+1-k
-            DO I=ITS,ITE
-              RQCCUTEN(I,K,J)=(Q2(I,zz)-QC3D(I,K,J))*RDELT
-            ENDDO
-          ENDDO
-        ENDIF
-      ENDIF
+            do i=its,ite
+              rqccuten(i,k,j)=(q2(i,zz)-qc3d(i,k,j))*rdelt
+            enddo
+          enddo
+        endif
+      endif
 
-      IF(PRESENT(RQICUTEN))THEN
-        IF ( F_QI ) THEN
-          DO K=KTS,KTE
+      if(present(rqicuten))then
+        if ( f_qi ) then
+          do k=kts,kte
             zz = kte+1-k
-            DO I=ITS,ITE
-              RQICUTEN(I,K,J)=(Q3(I,zz)-QI3D(I,K,J))*RDELT
-            ENDDO
-          ENDDO
-        ENDIF
-      ENDIF
+            do i=its,ite
+              rqicuten(i,k,j)=(q3(i,zz)-qi3d(i,k,j))*rdelt
+            enddo
+          enddo
+        endif
+      endif
 
 
-   ENDDO
+   enddo
 
-   END SUBROUTINE CU_TIEDTKE
+   end subroutine cu_tiedtke
 
 !====================================================================
-   SUBROUTINE tiedtkeinit(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQICUTEN,          &
-                     RUCUTEN,RVCUTEN,                                   &
-                     RESTART,P_QC,P_QI,P_FIRST_SCALAR,                  &
+   subroutine ntiedtkeinit(rthcuten,rqvcuten,rqccuten,rqicuten,         &
+                     rucuten,rvcuten,rthften,rqvften,                   &
+                     restart,p_qc,p_qi,p_first_scalar,                  &
                      allowed_to_read,                                   &
                      ids, ide, jds, jde, kds, kde,                      &
                      ims, ime, jms, jme, kms, kme,                      &
                      its, ite, jts, jte, kts, kte)
 !--------------------------------------------------------------------
-   IMPLICIT NONE
+   implicit none
 !--------------------------------------------------------------------
-   LOGICAL , INTENT(IN)           ::  allowed_to_read,restart
-   INTEGER , INTENT(IN)           ::  ids, ide, jds, jde, kds, kde, &
+   logical , intent(in)           ::  allowed_to_read,restart
+   integer , intent(in)           ::  ids, ide, jds, jde, kds, kde, &
                                       ims, ime, jms, jme, kms, kme, &
                                       its, ite, jts, jte, kts, kte
-   INTEGER , INTENT(IN)           ::  P_FIRST_SCALAR, P_QI, P_QC
+   integer , intent(in)           ::  p_first_scalar, p_qi, p_qc
 
-   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::  &
-                                                              RTHCUTEN, &
-                                                              RQVCUTEN, &
-                                                              RQCCUTEN, &
-                                                              RQICUTEN, &
-                                                              RUCUTEN,RVCUTEN 
+   real,     dimension( ims:ime , kms:kme , jms:jme ) , intent(out) ::  &
+                                                              rthcuten, &
+                                                              rqvcuten, &
+                                                              rqccuten, &
+                                                              rqicuten, &
+                                                              rucuten,rvcuten,&
+                                                              rthften,rqvften
 
-   INTEGER :: i, j, k, itf, jtf, ktf
+   integer :: i, j, k, itf, jtf, ktf
 
    jtf=min0(jte,jde-1)
    ktf=min0(kte,kde-1)
    itf=min0(ite,ide-1)
 
-   IF(.not.restart)THEN
+   if(.not.restart)then
+     do j=jts,jtf
+     do k=kts,ktf
+     do i=its,itf
+       rthcuten(i,k,j)=0.
+       rqvcuten(i,k,j)=0.
+       rucuten(i,k,j)=0.
+       rvcuten(i,k,j)=0.
+     enddo
+     enddo
+     enddo
+
      DO j=jts,jtf
      DO k=kts,ktf
      DO i=its,itf
-       RTHCUTEN(i,k,j)=0.
-       RQVCUTEN(i,k,j)=0.
-       RUCUTEN(i,k,j)=0.
-       RVCUTEN(i,k,j)=0.
+        rthften(i,k,j)=0.
+        rqvften(i,k,j)=0.
      ENDDO
      ENDDO
      ENDDO
 
-     IF (P_QC .ge. P_FIRST_SCALAR) THEN
-        DO j=jts,jtf
-        DO k=kts,ktf
-        DO i=its,itf
-           RQCCUTEN(i,k,j)=0.
-        ENDDO
-        ENDDO
-        ENDDO
-     ENDIF
+     if (p_qc .ge. p_first_scalar) then
+        do j=jts,jtf
+        do k=kts,ktf
+        do i=its,itf
+           rqccuten(i,k,j)=0.
+        enddo
+        enddo
+        enddo
+     endif
 
-     IF (P_QI .ge. P_FIRST_SCALAR) THEN
-        DO j=jts,jtf
-        DO k=kts,ktf
-        DO i=its,itf
-           RQICUTEN(i,k,j)=0.
-        ENDDO
-        ENDDO
-        ENDDO
-     ENDIF
-   ENDIF
+     if (p_qi .ge. p_first_scalar) then
+        do j=jts,jtf
+        do k=kts,ktf
+        do i=its,itf
+           rqicuten(i,k,j)=0.
+        enddo
+        enddo
+        enddo
+     endif
+   endif
 
-      END SUBROUTINE tiedtkeinit
+   end subroutine ntiedtkeinit
 
-! ------------------------------------------------------------------------
-
-!------------This is the combined version for tiedtke---------------
-!----------------------------------------------------------------
-!  In this module only the mass flux convection scheme of the ECMWF is included
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!#############################################################
-!
-!             LEVEL 1 SUBROUTINEs
-!
-!#############################################################
-!********************************************************
-!        subroutine TIECNV
-!********************************************************
-      SUBROUTINE TIECNV(pu,pv,pt,pqv,pqc,pqi,pqvf,pqvbl,poz,pomg,  &
-           pap,paph,evap,hfx,rho,zprecc,lndj,KTYPE,lq,km,km1,sig1,dt)
 !-----------------------------------------------------------------
-!  This is the interface between the meso-scale model and the mass 
+!          level 1 subroutine 'tiecnvn'
+!-----------------------------------------------------------------
+      subroutine tiecnvn(pu,pv,pt,pqv,pqc,pqi,pqvf,ptf,poz,pzz,pomg, &
+     &         pap,paph,evap,hfx,zprecc,lndj,lq,km,km1,dt,dx)
+!-----------------------------------------------------------------
+!  this is the interface between the model and the mass 
 !  flux convection module
 !-----------------------------------------------------------------
       implicit none
+!
+      real pu(lq,km),   pv(lq,km),   pt(lq,km),   pqv(lq,km)
+      real poz(lq,km),  pomg(lq,km), evap(lq),    zprecc(lq)
+      real pzz(lq,km1)
 
-      real pu(lq,km),pv(lq,km),pt(lq,km),pqv(lq,km),pqvf(lq,km)
-      real poz(lq,km),pomg(lq,km),evap(lq),zprecc(lq),pqvbl(lq,km)
-      real PHHFL(lq),RHO(lq),hfx(lq)
-      REAL PUM1(lq,km),    PVM1(lq,km),                             &
-          PTTE(lq,km),    PQTE(lq,km),  PVOM(lq,km),  PVOL(lq,km),  &
-          PVERV(lq,km),   PGEO(lq,km),  PAP(lq,km),   PAPH(lq,km1)
-      REAL PQHFL(lq),      ZQQ(lq,km),   PAPRC(lq),    PAPRS(lq),   &
-          PRSFC(lq),      PSSFC(lq),    PAPRSM(lq),   PCTE(lq,km)
-      REAL ZTP1(lq,km),    ZQP1(lq,km),  ZTU(lq,km),   ZQU(lq,km),  &
-          ZLU(lq,km),     ZLUDE(lq,km), ZMFU(lq,km),  ZMFD(lq,km),  &
-          ZQSAT(lq,km),   pqc(lq,km),   pqi(lq,km),   ZRAIN(lq)
+      real pum1(lq,km),    pvm1(lq,km),  ztt(lq,km),                &
+     &     ptte(lq,km),    pqte(lq,km),  pvom(lq,km),  pvol(lq,km), &
+     &     pverv(lq,km),   pgeo(lq,km),  pap(lq,km),   paph(lq,km1)
+      real pqhfl(lq),      zqq(lq,km),    &
+     &     prsfc(lq),      pssfc(lq),    pcte(lq,km), &
+     &     phhfl(lq),      hfx(lq),      pgeoh(lq,km1)
+      real ztp1(lq,km),    zqp1(lq,km),  ztu(lq,km),   zqu(lq,km),  &
+     &     zlu(lq,km),     zlude(lq,km), zmfu(lq,km),  zmfd(lq,km), &
+     &     zqsat(lq,km),   pqc(lq,km),   pqi(lq,km),   zrain(lq)
+      real pqvf(lq,km),    ptf(lq,km)
 
+      integer icbot(lq),   ictop(lq),     ktype(lq),   lndj(lq)
+      logical locum(lq)
+!
+      real ztmst,fliq,fice,ztc,zalf,tt
+      integer i,j,k,lq,km,km1
 #if defined(mpas)
-!MPAS specific (Laura D. Fowler):
-      REAL sig(km1)
-      REAL sig1(lq,km)
+      real dx(lq)
+      real dt,ztpp1
 #else
-      REAL sig(km1),sig1(km)
+      real dt,dx,ztpp1
 #endif
-      INTEGER ICBOT(lq),   ICTOP(lq),     KTYPE(lq),   lndj(lq)
-      REAL  dt
-      LOGICAL LOCUM(lq)
-
-      real PSHEAT,PSRAIN,PSEVAP,PSMELT,PSDISS,TT
-      real ZTMST,ZTPP1,fliq,fice,ZTC,ZALF
-      integer i,j,k,lq,lp,km,km1
-!      real TLUCUA
-!      external TLUCUA
-
-      ZTMST=dt
-!  Masv flux diagnostics.
-
-      PSHEAT=0.0
-      PSRAIN=0.0
-      PSEVAP=0.0
-      PSMELT=0.0
-      PSDISS=0.0
-      DO 8 j=1,lq
-        ZRAIN(j)=0.0
-        LOCUM(j)=.FALSE.
-        PRSFC(j)=0.0
-        PSSFC(j)=0.0
-        PAPRC(j)=0.0
-        PAPRS(j)=0.0
-        PAPRSM(j)=0.0
-        PQHFL(j)=evap(j)
-        PHHFL(j)=hfx(j)
-    8 CONTINUE
-
-!     CONVERT MODEL VARIABLES FOR MFLUX SCHEME
-
-      DO 10 k=1,km
-        DO 10 j=1,lq
-          PTTE(j,k)=0.0
-          PCTE(j,k)=0.0
-          PVOM(j,k)=0.0
-          PVOL(j,k)=0.0
-          ZTP1(j,k)=pt(j,k)
-          ZQP1(j,k)=pqv(j,k)/(1.0+pqv(j,k))
-          PUM1(j,k)=pu(j,k)
-          PVM1(j,k)=pv(j,k)
-          PVERV(j,k)=pomg(j,k)
-          PGEO(j,k)=G*poz(j,k)
-          TT=ZTP1(j,k)
-          ZQSAT(j,k)=TLUCUA(TT)/PAP(j,k)
-          ZQSAT(j,k)=MIN(0.5,ZQSAT(j,k))
-          ZQSAT(j,k)=ZQSAT(j,k)/(1.-VTMPC1*ZQSAT(j,k))
-          PQTE(j,k)=pqvf(j,k)+pqvbl(j,k)
-          ZQQ(j,k)=PQTE(j,k)
-   10 CONTINUE
+      real zew,zqs,zcor
+!
+      ztmst=dt
+!
+!  masv flux diagnostics.
+!
+      do j=1,lq
+        zrain(j)=0.0
+        locum(j)=.false.
+        prsfc(j)=0.0
+        pssfc(j)=0.0
+        pqhfl(j)=evap(j)
+        phhfl(j)=hfx(j)
+        pgeoh(j,km1)=g*pzz(j,km1)
+      end do
+!
+!     convert model variables for mflux scheme
+!
+      do k=1,km
+        do j=1,lq
+          pcte(j,k)=0.0
+          pvom(j,k)=0.0
+          pvol(j,k)=0.0
+          ztp1(j,k)=pt(j,k)
+          zqp1(j,k)=pqv(j,k)/(1.0+pqv(j,k))
+          pum1(j,k)=pu(j,k)
+          pvm1(j,k)=pv(j,k)
+          pverv(j,k)=pomg(j,k)
+          pgeo(j,k)=g*poz(j,k)
+          pgeoh(j,k)=g*pzz(j,k)
+          tt=ztp1(j,k)
+          zew  = foeewm(tt)                                      
+          zqs  = zew/pap(j,k)                                      
+          zqs  = min(0.5,zqs)                                         
+          zcor = 1./(1.-vtmpc1*zqs)                                    
+          zqsat(j,k)=zqs*zcor      
+          pqte(j,k)=pqvf(j,k) 
+          zqq(j,k) =pqte(j,k)
+          ptte(j,k)=ptf(j,k)
+          ztt(j,k) =ptte(j,k)
+        end do
+      end do
 !
 !-----------------------------------------------------------------------
-!*    2.     CALL 'CUMASTR'(MASTER-ROUTINE FOR CUMULUS PARAMETERIZATION)
+!*    2.     call 'cumastrn'(master-routine for cumulus parameterization)
 !
-      CALL CUMASTR_NEW &
-         (lq,       km,       km1,      km-1,    ZTP1,   &
-          ZQP1,     PUM1,     PVM1,     PVERV,   ZQSAT,  &
-          PQHFL,    ZTMST,    PAP,      PAPH,    PGEO,   &
-          PTTE,     PQTE,     PVOM,     PVOL,    PRSFC,  & 
-          PSSFC,    PAPRC,    PAPRSM,   PAPRS,   LOCUM,  &
-          KTYPE,    ICBOT,    ICTOP,    ZTU,     ZQU,    &
-          ZLU,      ZLUDE,    ZMFU,     ZMFD,    ZRAIN,  &
-          PSRAIN,   PSEVAP,   PSHEAT,   PSDISS,  PSMELT, &
-          PCTE,     PHHFL,       RHO,    sig1,     lndj)
+      call cumastrn        &
+     &    (lq,       km,       km1,      km-1,    ztp1, &
+     &     zqp1,     pum1,     pvm1,     pverv,   zqsat,&
+     &     pqhfl,    ztmst,    pap,      paph,    pgeo, &
+     &     ptte,     pqte,     pvom,     pvol,    prsfc,&
+     &     pssfc,    locum,                             &
+     &     ktype,    icbot,    ictop,    ztu,     zqu,  &
+     &     zlu,      zlude,    zmfu,     zmfd,    zrain,&
+     &     pcte,     phhfl,    lndj,     pgeoh,   dx)
 !
-!     TO INCLUDE THE CLOUD WATER AND CLOUD ICE DETRAINED FROM CONVECTION
+!     to include the cloud water and cloud ice detrained from convection
 !
-      IF(fdbk.ge.1.0e-9) THEN
-      DO 20 K=1,km
-      DO 20 j=1,lq
-      If(PCTE(j,k).GT.0.0) then
-        ZTPP1=pt(j,k)+PTTE(j,k)*ZTMST
-        if(ZTPP1.ge.t000) then
-           fliq=1.0
-           ZALF=0.0
-        else if(ZTPP1.le.hgfr) then
-           fliq=0.0
-           ZALF=ALF
-        else
-           ZTC=ZTPP1-t000
-           fliq=0.0059+0.9941*exp(-0.003102*ZTC*ZTC)
-           ZALF=ALF
-        endif
+      do k=1,km
+      do j=1,lq
+      if(pcte(j,k).gt.0.) then
+        fliq=foealfa(ztp1(j,k))
         fice=1.0-fliq
-        pqc(j,k)=pqc(j,k)+fliq*PCTE(j,k)*ZTMST
-        pqi(j,k)=pqi(j,k)+fice*PCTE(j,k)*ZTMST
-        PTTE(j,k)=PTTE(j,k)-ZALF*RCPD*fliq*PCTE(j,k)
-      Endif
-   20 CONTINUE
-      ENDIF
-!
-      DO 75 k=1,km
-        DO 75 j=1,lq
-          pt(j,k)=ZTP1(j,k)+PTTE(j,k)*ZTMST
-          ZQP1(j,k)=ZQP1(j,k)+(PQTE(j,k)-ZQQ(j,k))*ZTMST
-          pqv(j,k)=ZQP1(j,k)/(1.0-ZQP1(j,k))
-   75 CONTINUE
-      DO 85 j=1,lq
-        zprecc(j)=amax1(0.0,(PRSFC(j)+PSSFC(j))*ZTMST)
-   85 CONTINUE
-      IF (LMFDUDV) THEN
-        DO 100 k=1,km
-          DO 100 j=1,lq
-            pu(j,k)=pu(j,k)+PVOM(j,k)*ZTMST
-            pv(j,k)=pv(j,k)+PVOL(j,k)*ZTMST
-  100   CONTINUE
-      ENDIF
-!
-      RETURN
-      END SUBROUTINE TIECNV
-
-!#############################################################
-!
-!             LEVEL 2 SUBROUTINEs
-!
-!#############################################################
-!***********************************************************
-!           SUBROUTINE CUMASTR_NEW
-!***********************************************************
-      SUBROUTINE CUMASTR_NEW                             &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   PTEN,  &
-          PQEN,     PUEN,     PVEN,     PVERV,    PQSEN, &
-          PQHFL,    ZTMST,    PAP,      PAPH,     PGEO,  &
-          PTTE,     PQTE,     PVOM,     PVOL,     PRSFC, &
-          PSSFC,    PAPRC,    PAPRSM,   PAPRS,    LDCUM, &
-          KTYPE,    KCBOT,    KCTOP,    PTU,      PQU,   &
-          PLU,      PLUDE,    PMFU,     PMFD,     PRAIN, &
-          PSRAIN,   PSEVAP,   PSHEAT,   PSDISS,   PSMELT,& 
-          PCTE,     PHHFL,       RHO,     sig1,     lndj)
-!
-!***CUMASTR*  MASTER ROUTINE FOR CUMULUS MASSFLUX-SCHEME
-!     M.TIEDTKE      E.C.M.W.F.     1986/1987/1989
-!***PURPOSE
-!   -------
-!          THIS ROUTINE COMPUTES THE PHYSICAL TENDENCIES OF THE
-!     PROGNOSTIC VARIABLES T,Q,U AND V DUE TO CONVECTIVE PROCESSES.
-!     PROCESSES CONSIDERED ARE: CONVECTIVE FLUXES, FORMATION OF
-!     PRECIPITATION, EVAPORATION OF FALLING RAIN BELOW CLOUD BASE,
-!     SATURATED CUMULUS DOWNDRAFTS.
-!***INTERFACE.
-!   ----------
-!          *CUMASTR* IS CALLED FROM *MSSFLX*
-!     THE ROUTINE TAKES ITS INPUT FROM THE LONG-TERM STORAGE
-!     T,Q,U,V,PHI AND P AND MOISTURE TENDENCIES.
-!     IT RETURNS ITS OUTPUT TO THE SAME SPACE
-!      1.MODIFIED TENDENCIES OF MODEL VARIABLES
-!      2.RATES OF CONVECTIVE PRECIPITATION
-!        (USED IN SUBROUTINE SURF)
-!      3.CLOUD BASE, CLOUD TOP AND PRECIP FOR RADIATION
-!        (USED IN SUBROUTINE CLOUD)
-!***METHOD
-!   ------
-!     PARAMETERIZATION IS DONE USING A MASSFLUX-SCHEME.
-!        (1) DEFINE CONSTANTS AND PARAMETERS
-!        (2) SPECIFY VALUES (T,Q,QS...) AT HALF LEVELS AND
-!            INITIALIZE UPDRAFT- AND DOWNDRAFT-VALUES IN 'CUINI'
-!        (3) CALCULATE CLOUD BASE IN 'CUBASE'
-!            AND SPECIFY CLOUD BASE MASSFLUX FROM PBL MOISTURE BUDGET
-!        (4) DO CLOUD ASCENT IN 'CUASC' IN ABSENCE OF DOWNDRAFTS
-!        (5) DO DOWNDRAFT CALCULATIONS:
-!              (A) DETERMINE VALUES AT LFS IN 'CUDLFS'
-!              (B) DETERMINE MOIST DESCENT IN 'CUDDRAF'
-!              (C) RECALCULATE CLOUD BASE MASSFLUX CONSIDERING THE
-!                  EFFECT OF CU-DOWNDRAFTS
-!        (6) DO FINAL CLOUD ASCENT IN 'CUASC'
-!        (7) DO FINAL ADJUSMENTS TO CONVECTIVE FLUXES IN 'CUFLX',
-!            DO EVAPORATION IN SUBCLOUD LAYER
-!        (8) CALCULATE INCREMENTS OF T AND Q IN 'CUDTDQ'
-!        (9) CALCULATE INCREMENTS OF U AND V IN 'CUDUDV'
-!***EXTERNALS.
-!   ----------
-!       CUINI:  INITIALIZES VALUES AT VERTICAL GRID USED IN CU-PARAMETR.
-!       CUBASE: CLOUD BASE CALCULATION FOR PENETR.AND SHALLOW CONVECTION
-!       CUASC:  CLOUD ASCENT FOR ENTRAINING PLUME
-!       CUDLFS: DETERMINES VALUES AT LFS FOR DOWNDRAFTS
-!       CUDDRAF:DOES MOIST DESCENT FOR CUMULUS DOWNDRAFTS
-!       CUFLX:  FINAL ADJUSTMENTS TO CONVECTIVE FLUXES (ALSO IN PBL)
-!       CUDQDT: UPDATES TENDENCIES FOR T AND Q
-!       CUDUDV: UPDATES TENDENCIES FOR U AND V
-!***SWITCHES.
-!   --------
-!          LMFPEN=.T.   PENETRATIVE CONVECTION IS SWITCHED ON
-!          LMFSCV=.T.   SHALLOW CONVECTION IS SWITCHED ON
-!          LMFMID=.T.   MIDLEVEL CONVECTION IS SWITCHED ON
-!          LMFDD=.T.    CUMULUS DOWNDRAFTS SWITCHED ON
-!          LMFDUDV=.T.  CUMULUS FRICTION SWITCHED ON
-!***
-!     MODEL PARAMETERS (DEFINED IN SUBROUTINE CUPARAM)
-!     ------------------------------------------------
-!     ENTRPEN    ENTRAINMENT RATE FOR PENETRATIVE CONVECTION
-!     ENTRSCV    ENTRAINMENT RATE FOR SHALLOW CONVECTION
-!     ENTRMID    ENTRAINMENT RATE FOR MIDLEVEL CONVECTION
-!     ENTRDD     ENTRAINMENT RATE FOR CUMULUS DOWNDRAFTS
-!     CMFCTOP    RELATIVE CLOUD MASSFLUX AT LEVEL ABOVE NONBUOYANCY
-!                LEVEL
-!     CMFCMAX    MAXIMUM MASSFLUX VALUE ALLOWED FOR
-!     CMFCMIN    MINIMUM MASSFLUX VALUE (FOR SAFETY)
-!     CMFDEPS    FRACTIONAL MASSFLUX FOR DOWNDRAFTS AT LFS
-!     CPRCON     COEFFICIENT FOR CONVERSION FROM CLOUD WATER TO RAIN
-!***REFERENCE.
-!   ----------
-!          PAPER ON MASSFLUX SCHEME (TIEDTKE,1989)
-!-----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   KLEVM1
-      REAL      ZTMST
-      REAL      PSRAIN, PSEVAP, PSHEAT, PSDISS, PSMELT, ZCONS2
-      INTEGER   JK,JL,IKB
-      REAL      ZQUMQE, ZDQMIN, ZMFMAX, ZALVDCP, ZQALV
-      REAL      ZHSAT, ZGAM, ZZZ, ZHHAT, ZBI, ZRO, ZDZ, ZDHDZ, ZDEPTH
-      REAL      ZFAC, ZRH, ZPBMPT, DEPT, ZHT, ZEPS
-      INTEGER   ICUM, ITOPM2
-      REAL     PTEN(KLON,KLEV),        PQEN(KLON,KLEV), &
-              PUEN(KLON,KLEV),        PVEN(KLON,KLEV),  &
-              PTTE(KLON,KLEV),        PQTE(KLON,KLEV),  &
-              PVOM(KLON,KLEV),        PVOL(KLON,KLEV),  &
-              PQSEN(KLON,KLEV),       PGEO(KLON,KLEV),  &
-              PAP(KLON,KLEV),         PAPH(KLON,KLEVP1),& 
-              PVERV(KLON,KLEV),       PQHFL(KLON),      &
-              PHHFL(KLON),            RHO(KLON)
-      REAL     PTU(KLON,KLEV),         PQU(KLON,KLEV),  &
-              PLU(KLON,KLEV),         PLUDE(KLON,KLEV), &
-              PMFU(KLON,KLEV),        PMFD(KLON,KLEV),  &
-              PAPRC(KLON),            PAPRS(KLON),      &
-              PAPRSM(KLON),           PRAIN(KLON),      &
-              PRSFC(KLON),            PSSFC(KLON)
-      REAL     ZTENH(KLON,KLEV),       ZQENH(KLON,KLEV),&
-              ZGEOH(KLON,KLEV),       ZQSENH(KLON,KLEV),&
-              ZTD(KLON,KLEV),         ZQD(KLON,KLEV),   &
-              ZMFUS(KLON,KLEV),       ZMFDS(KLON,KLEV), &
-              ZMFUQ(KLON,KLEV),       ZMFDQ(KLON,KLEV), &
-              ZDMFUP(KLON,KLEV),      ZDMFDP(KLON,KLEV),& 
-              ZMFUL(KLON,KLEV),       ZRFL(KLON),       &
-              ZUU(KLON,KLEV),         ZVU(KLON,KLEV),   &
-              ZUD(KLON,KLEV),         ZVD(KLON,KLEV)
-      REAL     ZENTR(KLON),            ZHCBASE(KLON),   &
-              ZMFUB(KLON),            ZMFUB1(KLON),     &
-              ZDQPBL(KLON),           ZDQCV(KLON) 
-      REAL     ZSFL(KLON),             ZDPMEL(KLON,KLEV), &
-              PCTE(KLON,KLEV),        ZCAPE(KLON),        &
-              ZHEAT(KLON),            ZHHATT(KLON,KLEV),  &
-              ZHMIN(KLON),            ZRELH(KLON)
-#if defined(mpas)
-!MPAS specific (Laura D. Fowler):
-      REAL     sig1(KLON,KLEV)
-#else
-      REAL     sig1(KLEV)
-#endif
-      INTEGER  ILAB(KLON,KLEV),        IDTOP(KLON),   &
-              ICTOP0(KLON),           ILWMIN(KLON)    
-      INTEGER  KCBOT(KLON),            KCTOP(KLON),   &
-              KTYPE(KLON),            IHMIN(KLON),    &
-              KTOP0,                  lndj(KLON)
-      LOGICAL  LDCUM(KLON)
-      LOGICAL  LODDRAF(KLON),          LLO1
-      REAL     CRIRH1
-!-------------------------------------------
-!     1.    SPECIFY CONSTANTS AND PARAMETERS
-!-------------------------------------------
-  100 CONTINUE
-      ZCONS2=1./(G*ZTMST)
-!--------------------------------------------------------------
-!*    2.    INITIALIZE VALUES AT VERTICAL GRID POINTS IN 'CUINI'
-!--------------------------------------------------------------
-  200 CONTINUE
-      CALL CUINI &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   PTEN,  &
-          PQEN,     PQSEN,    PUEN,     PVEN,     PVERV, &
-          PGEO,     PAPH,     ZGEOH,    ZTENH,    ZQENH,  &
-          ZQSENH,   ILWMIN,   PTU,      PQU,      ZTD,   &
-          ZQD,      ZUU,      ZVU,      ZUD,      ZVD,   &
-          PMFU,     PMFD,     ZMFUS,    ZMFDS,    ZMFUQ, &
-          ZMFDQ,    ZDMFUP,   ZDMFDP,   ZDPMEL,   PLU,  &
-          PLUDE,    ILAB)
-!----------------------------------
-!*    3.0   CLOUD BASE CALCULATIONS
-!----------------------------------
-  300 CONTINUE
-!*         (A) DETERMINE CLOUD BASE VALUES IN 'CUBASE'
-!          -------------------------------------------
-      CALL CUBASE &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   ZTENH, &
-          ZQENH,    ZGEOH,    PAPH,     PTU,      PQU,   &
-          PLU,      PUEN,     PVEN,     ZUU,      ZVU,   &
-          LDCUM,    KCBOT,    ILAB)
-!*          (B) DETERMINE TOTAL MOISTURE CONVERGENCE AND
-!*              THEN DECIDE ON TYPE OF CUMULUS CONVECTION
-!               -----------------------------------------
-       JK=1
-       DO 310 JL=1,KLON
-       ZDQCV(JL) =PQTE(JL,JK)*(PAPH(JL,JK+1)-PAPH(JL,JK))
-       ZDQPBL(JL)=0.0
-       IDTOP(JL)=0
-  310  CONTINUE
-       DO 320 JK=2,KLEV
-       DO 315 JL=1,KLON
-       ZDQCV(JL)=ZDQCV(JL)+PQTE(JL,JK)*(PAPH(JL,JK+1)-PAPH(JL,JK))
-       IF(JK.GE.KCBOT(JL)) ZDQPBL(JL)=ZDQPBL(JL)+PQTE(JL,JK)  &
-                                    *(PAPH(JL,JK+1)-PAPH(JL,JK))
-  315 CONTINUE
-  320 CONTINUE
-
-      if(cutrigger .eq. 1) then
-        DO JL=1,KLON
-         KTYPE(JL)=0
-        IF(ZDQCV(JL).GT.MAX(0.,1.1*PQHFL(JL)*G)) THEN
-         KTYPE(JL)=1
-        ELSE
-         KTYPE(JL)=2
-        ENDIF
-        END DO
-      else if(cutrigger .eq. 2) then
-         CALL CUTYPE  &
-          ( KLON,     KLEV,     KLEVP1,   KLEVM1,  &
-          ZTENH,   ZQENH,       ZQSENH,    ZGEOH,     PAPH,  &
-          RHO,     PHHFL,         PQHFL,    KTYPE,    lndj   )
-      end if
-!*         (C) DETERMINE MOISTURE SUPPLY FOR BOUNDARY LAYER
-!*             AND DETERMINE CLOUD BASE MASSFLUX IGNORING
-!*             THE EFFECTS OF DOWNDRAFTS AT THIS STAGE
-!              ------------------------------------------
-!      do jl=1,klon
-!        if(ktype(jl) .ge. 1 ) then
-!              write(6,*)"ktype=", KTYPE(jl)
-!        end if
-!      end do
-
-      DO 340 JL=1,KLON
-      IKB=KCBOT(JL)
-      ZQUMQE=PQU(JL,IKB)+PLU(JL,IKB)-ZQENH(JL,IKB)
-      ZDQMIN=MAX(0.01*ZQENH(JL,IKB),1.E-10)
-      IF(ZDQPBL(JL).GT.0..AND.ZQUMQE.GT.ZDQMIN.AND.LDCUM(JL)) THEN
-         ZMFUB(JL)=ZDQPBL(JL)/(G*MAX(ZQUMQE,ZDQMIN))
-      ELSE
-         ZMFUB(JL)=0.01
-         LDCUM(JL)=.FALSE.
-      ENDIF
-      ZMFMAX=(PAPH(JL,IKB)-PAPH(JL,IKB-1))*ZCONS2
-      ZMFUB(JL)=MIN(ZMFUB(JL),ZMFMAX)
-!------------------------------------------------------
-!*    4.0   DETERMINE CLOUD ASCENT FOR ENTRAINING PLUME
-!------------------------------------------------------
-  400 CONTINUE
-!*         (A) ESTIMATE CLOUD HEIGHT FOR ENTRAINMENT/DETRAINMENT
-!*             CALCULATIONS IN CUASC (MAX.POSSIBLE CLOUD HEIGHT
-!*             FOR NON-ENTRAINING PLUME, FOLLOWING A.-S.,1974)
-! -------------------------------------------------------------
-      IKB=KCBOT(JL)
-      ZHCBASE(JL)=CPD*PTU(JL,IKB)+ZGEOH(JL,IKB)+ALV*PQU(JL,IKB)
-      ICTOP0(JL)=KCBOT(JL)-1
-  340 CONTINUE
-      ZALVDCP=ALV/CPD
-      ZQALV=1./ALV
-      DO 420 JK=KLEVM1,3,-1
-      DO 420 JL=1,KLON
-      ZHSAT=CPD*ZTENH(JL,JK)+ZGEOH(JL,JK)+ALV*ZQSENH(JL,JK)
-      ZGAM=C5LES*ZALVDCP*ZQSENH(JL,JK)/  &
-          ((1.-VTMPC1*ZQSENH(JL,JK))*(ZTENH(JL,JK)-C4LES)**2)
-      ZZZ=CPD*ZTENH(JL,JK)*0.608
-      ZHHAT=ZHSAT-(ZZZ+ZGAM*ZZZ)/(1.+ZGAM*ZZZ*ZQALV)* &
-                 MAX(ZQSENH(JL,JK)-ZQENH(JL,JK),0.)
-      ZHHATT(JL,JK)=ZHHAT
-      IF(JK.LT.ICTOP0(JL).AND.ZHCBASE(JL).GT.ZHHAT) ICTOP0(JL)=JK
-  420 CONTINUE
-      DO 430 JL=1,KLON
-      JK=KCBOT(JL)
-      ZHSAT=CPD*ZTENH(JL,JK)+ZGEOH(JL,JK)+ALV*ZQSENH(JL,JK)
-      ZGAM=C5LES*ZALVDCP*ZQSENH(JL,JK)/   &
-          ((1.-VTMPC1*ZQSENH(JL,JK))*(ZTENH(JL,JK)-C4LES)**2)
-      ZZZ=CPD*ZTENH(JL,JK)*0.608
-      ZHHAT=ZHSAT-(ZZZ+ZGAM*ZZZ)/(1.+ZGAM*ZZZ*ZQALV)* &
-                 MAX(ZQSENH(JL,JK)-ZQENH(JL,JK),0.)
-      ZHHATT(JL,JK)=ZHHAT
-  430 CONTINUE
-!
-! Find lowest possible org. detrainment level
-!
-      DO 440 JL = 1, KLON
-         ZHMIN(JL) = 0.
-         IF( LDCUM(JL).AND.KTYPE(JL).EQ.1 ) THEN
-            IHMIN(JL) = KCBOT(JL)
-         ELSE
-            IHMIN(JL) = -1
-         END IF
- 440  CONTINUE 
-!
-      ZBI = 1./(25.*G)
-      DO 450 JK = KLEV, 1, -1
-      DO 450 JL = 1, KLON
-      LLO1 = LDCUM(JL).AND.KTYPE(JL).EQ.1.AND.IHMIN(JL).EQ.KCBOT(JL)
-      IF (LLO1.AND.JK.LT.KCBOT(JL).AND.JK.GE.ICTOP0(JL)) THEN
-        IKB = KCBOT(JL)
-        ZRO = RD*ZTENH(JL,JK)/(G*PAPH(JL,JK))
-        ZDZ = (PAPH(JL,JK)-PAPH(JL,JK-1))*ZRO
-        ZDHDZ=(CPD*(PTEN(JL,JK-1)-PTEN(JL,JK))+ALV*(PQEN(JL,JK-1)-   &
-          PQEN(JL,JK))+(PGEO(JL,JK-1)-PGEO(JL,JK)))*G/(PGEO(JL,      &
-          JK-1)-PGEO(JL,JK))
-        ZDEPTH = ZGEOH(JL,JK) - ZGEOH(JL,IKB)
-        ZFAC = SQRT(1.+ZDEPTH*ZBI)
-        ZHMIN(JL) = ZHMIN(JL) + ZDHDZ*ZFAC*ZDZ
-        ZRH = -ALV*(ZQSENH(JL,JK)-ZQENH(JL,JK))*ZFAC
-        IF (ZHMIN(JL).GT.ZRH) IHMIN(JL) = JK
-      END IF
- 450  CONTINUE 
-      DO 460 JL = 1, KLON
-      IF (LDCUM(JL).AND.KTYPE(JL).EQ.1) THEN
-        IF (IHMIN(JL).LT.ICTOP0(JL)) IHMIN(JL) = ICTOP0(JL)
-      END IF
-      IF(KTYPE(JL).EQ.1) THEN
-        ZENTR(JL)=ENTRPEN
-      ELSE
-        ZENTR(JL)=ENTRSCV
-      ENDIF
-      if(lndj(JL).eq.1) ZENTR(JL)=ZENTR(JL)*1.05
- 460  CONTINUE 
-!*         (B) DO ASCENT IN 'CUASC'IN ABSENCE OF DOWNDRAFTS
-!----------------------------------------------------------
-      CALL CUASC_NEW &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   ZTENH,   &
-          ZQENH,    PUEN,     PVEN,     PTEN,     PQEN,    &
-          PQSEN,    PGEO,     ZGEOH,    PAP,      PAPH,    &
-          PQTE,     PVERV,    ILWMIN,   LDCUM,    ZHCBASE, &
-          KTYPE,    ILAB,     PTU,      PQU,      PLU,     &
-          ZUU,      ZVU,      PMFU,     ZMFUB,    ZENTR,   &
-          ZMFUS,    ZMFUQ,    ZMFUL,    PLUDE,    ZDMFUP,  &
-          KCBOT,    KCTOP,    ICTOP0,   ICUM,     ZTMST,   &
-          IHMIN,    ZHHATT,   ZQSENH)
-      IF(ICUM.EQ.0) GO TO 1000
-!*     (C) CHECK CLOUD DEPTH AND CHANGE ENTRAINMENT RATE ACCORDINGLY
-!          CALCULATE PRECIPITATION RATE (FOR DOWNDRAFT CALCULATION)
-!------------------------------------------------------------------
-      DO 480 JL=1,KLON
-      ZPBMPT=PAPH(JL,KCBOT(JL))-PAPH(JL,KCTOP(JL))
-      IF(LDCUM(JL)) ICTOP0(JL)=KCTOP(JL)
-      IF(LDCUM(JL).AND.KTYPE(JL).EQ.1.AND.ZPBMPT.LT.ZDNOPRC) KTYPE(JL)=2
-      IF(KTYPE(JL).EQ.2) then
-        ZENTR(JL)=ENTRSCV
-        if(lndj(JL).eq.1) ZENTR(JL)=ZENTR(JL)*1.05
+        pqc(j,k)=pqc(j,k)+fliq*pcte(j,k)*ztmst
+        pqi(j,k)=pqi(j,k)+fice*pcte(j,k)*ztmst
       endif
-      ZRFL(JL)=ZDMFUP(JL,1)
-  480 CONTINUE
-      DO 490 JK=2,KLEV
-      DO 490 JL=1,KLON
-          ZRFL(JL)=ZRFL(JL)+ZDMFUP(JL,JK)
-  490 CONTINUE
-!-----------------------------------------
-!*    5.0   CUMULUS DOWNDRAFT CALCULATIONS
-!-----------------------------------------
-  500 CONTINUE
-      IF(LMFDD) THEN
-!*      (A) DETERMINE LFS IN 'CUDLFS'
-!--------------------------------------
-         CALL CUDLFS &
-         (KLON,     KLEV,     KLEVP1,   ZTENH,    ZQENH,  &
-          PUEN,     PVEN,     ZGEOH,    PAPH,     PTU,    &
-          PQU,      ZUU,      ZVU,      LDCUM,    KCBOT,  &
-          KCTOP,    ZMFUB,    ZRFL,     ZTD,      ZQD,    &
-          ZUD,      ZVD,      PMFD,     ZMFDS,    ZMFDQ,  &
-          ZDMFDP,   IDTOP,    LODDRAF)
-!*     (B)  DETERMINE DOWNDRAFT T,Q AND FLUXES IN 'CUDDRAF'
-!------------------------------------------------------------
-         CALL CUDDRAF &
-         (KLON,     KLEV,     KLEVP1,   ZTENH,    ZQENH,  &
-          PUEN,     PVEN,     ZGEOH,    PAPH,     ZRFL,   &
-          LODDRAF,  ZTD,      ZQD,      ZUD,      ZVD,    &
-          PMFD,     ZMFDS,    ZMFDQ,    ZDMFDP)
-!*     (C)  RECALCULATE CONVECTIVE FLUXES DUE TO EFFECT OF
-!           DOWNDRAFTS ON BOUNDARY LAYER MOISTURE BUDGET
-!-----------------------------------------------------------
-      END IF
-!
-!-- 5.1 Recalculate cloud base massflux from a cape closure
-!       for deep convection (ktype=1) and by PBL equilibrium
-!       taking downdrafts into account for shallow convection
-!       (ktype=2)
-!       implemented by Y. WANG based on ECHAM4 in Nov. 2001.
-!
-      DO 510 JL=1,KLON
-        ZHEAT(JL)=0.0
-        ZCAPE(JL)=0.0
-        ZRELH(JL)=0.0
-        ZMFUB1(JL)=ZMFUB(JL)
-  510 CONTINUE
-!
-      DO 511 JL=1,KLON
-      IF(LDCUM(JL).AND.KTYPE(JL).EQ.1) THEN
-      do jk=KLEVM1,2,-1
-      if(abs(paph(jl,jk)*0.01 - 300) .lt. 50.) then
-        KTOP0=MAX(jk,KCTOP(JL))
-        exit
-      end if
       end do
-!      KTOP0=MAX(12,KCTOP(JL))
-       DO JK=2,KLEV
-       IF(JK.LE.KCBOT(JL).AND.JK.GT.KCTOP(JL)) THEN
-         ZRO=PAPH(JL,JK)/(RD*ZTENH(JL,JK))
-         ZDZ=(PAPH(JL,JK)-PAPH(JL,JK-1))/(G*ZRO)
-         ZHEAT(JL)=ZHEAT(JL)+((PTEN(JL,JK-1)-PTEN(JL,JK)   &
-           +G*ZDZ/CPD)/ZTENH(JL,JK)+0.608*(PQEN(JL,JK-1)-  &
-           PQEN(JL,JK)))*(PMFU(JL,JK)+PMFD(JL,JK))*G/ZRO
-         ZCAPE(JL)=ZCAPE(JL)+G*((PTU(JL,JK)*(1.+.608*PQU(JL,JK) &
-           -PLU(JL,JK)))/(ZTENH(JL,JK)*(1.+.608*ZQENH(JL,JK))) &
-           -1.0)*ZDZ
-       ENDIF
-       IF(JK.LE.KCBOT(JL).AND.JK.GT.KTOP0) THEN
-         dept=(PAPH(JL,JK)-PAPH(JL,JK-1))/(PAPH(JL,KCBOT(JL))-  &
-            PAPH(JL,KTOP0))
-         ZRELH(JL)=ZRELH(JL)+dept*PQEN(JL,JK)/PQSEN(JL,JK)
-       ENDIF
-       ENDDO
+      end do
 !
-       
-       if(cutrigger .eq. 1 ) then 
-         IF(lndj(JL).EQ.1) then
-           CRIRH1=CRIRH*0.8
-         ELSE
-           CRIRH1=CRIRH
-         ENDIF
-       else
-          CRIRH1=0.
-       end if
+      do k=1,km
+        do j=1,lq
+          pt(j,k)=  ztp1(j,k)+(ptte(j,k)-ztt(j,k))*ztmst
+          zqp1(j,k)=zqp1(j,k)+(pqte(j,k)-zqq(j,k))*ztmst
+          pqv(j,k)=zqp1(j,k)/(1.0-zqp1(j,k))
+        end do
+      end do
 
-       IF(ZRELH(JL).GE.CRIRH1 .AND. ZCAPE(JL) .GT. 100.) THEN
-         IKB=KCBOT(JL)
-         ZHT=ZCAPE(JL)/(ZTAU*ZHEAT(JL))
-         ZMFUB1(JL)=MAX(ZMFUB(JL)*ZHT,0.01)
-         ZMFMAX=(PAPH(JL,IKB)-PAPH(JL,IKB-1))*ZCONS2
-         ZMFUB1(JL)=MIN(ZMFUB1(JL),ZMFMAX)
-       ELSE
-         ZMFUB1(JL)=0.01
-         ZMFUB(JL)=0.01
-         LDCUM(JL)=.FALSE.
-        ENDIF
-       ENDIF
-  511  CONTINUE
+      do j=1,lq
+        zprecc(j)=amax1(0.0,(prsfc(j)+pssfc(j))*ztmst)
+      end do
+
+      if (lmfdudv) then
+        do k=1,km
+          do j=1,lq
+            pu(j,k)=pu(j,k)+pvom(j,k)*ztmst
+            pv(j,k)=pv(j,k)+pvol(j,k)*ztmst
+          end do
+        end do
+      endif
 !
-!*  5.2   RECALCULATE CONVECTIVE FLUXES DUE TO EFFECT OF
-!         DOWNDRAFTS ON BOUNDARY LAYER MOISTURE BUDGET
-!--------------------------------------------------------
-       DO 512 JL=1,KLON
-        IF(KTYPE(JL).NE.1) THEN
-           IKB=KCBOT(JL)
-           IF(PMFD(JL,IKB).LT.0.0.AND.LODDRAF(JL)) THEN
-              ZEPS=CMFDEPS
-           ELSE
-              ZEPS=0.
-           ENDIF
-           ZQUMQE=PQU(JL,IKB)+PLU(JL,IKB)-          &
-                 ZEPS*ZQD(JL,IKB)-(1.-ZEPS)*ZQENH(JL,IKB)
-           ZDQMIN=MAX(0.01*ZQENH(JL,IKB),1.E-10)
-           ZMFMAX=(PAPH(JL,IKB)-PAPH(JL,IKB-1))*ZCONS2
-           IF(ZDQPBL(JL).GT.0..AND.ZQUMQE.GT.ZDQMIN.AND.LDCUM(JL) &
-             .AND.ZMFUB(JL).LT.ZMFMAX) THEN
-              ZMFUB1(JL)=ZDQPBL(JL)/(G*MAX(ZQUMQE,ZDQMIN))
-           ELSE
-              ZMFUB1(JL)=ZMFUB(JL)
-           ENDIF
-           LLO1=(KTYPE(JL).EQ.2).AND.ABS(ZMFUB1(JL)  &
-                -ZMFUB(JL)).LT.0.2*ZMFUB(JL)
-           IF(.NOT.LLO1) ZMFUB1(JL)=ZMFUB(JL)
-           ZMFUB1(JL)=MIN(ZMFUB1(JL),ZMFMAX)
-        END IF
-  512   CONTINUE
-        DO 530 JK=1,KLEV
-        DO 530 JL=1,KLON
-        IF(LDCUM(JL)) THEN
-           ZFAC=ZMFUB1(JL)/MAX(ZMFUB(JL),1.E-10)
-           PMFD(JL,JK)=PMFD(JL,JK)*ZFAC
-           ZMFDS(JL,JK)=ZMFDS(JL,JK)*ZFAC
-           ZMFDQ(JL,JK)=ZMFDQ(JL,JK)*ZFAC
-           ZDMFDP(JL,JK)=ZDMFDP(JL,JK)*ZFAC
-        ELSE
-           PMFD(JL,JK)=0.0
-           ZMFDS(JL,JK)=0.0
-           ZMFDQ(JL,JK)=0.0
-           ZDMFDP(JL,JK)=0.0
-        ENDIF
-  530   CONTINUE
-        DO 538 JL=1,KLON
-           IF(LDCUM(JL)) THEN
-              ZMFUB(JL)=ZMFUB1(JL)
-           ELSE
-              ZMFUB(JL)=0.0
-           ENDIF
-  538   CONTINUE
-!
-!---------------------------------------------------------------
-!*    6.0      DETERMINE FINAL CLOUD ASCENT FOR ENTRAINING PLUME
-!*             FOR PENETRATIVE CONVECTION (TYPE=1),
-!*             FOR SHALLOW TO MEDIUM CONVECTION (TYPE=2)
-!*             AND FOR MID-LEVEL CONVECTION (TYPE=3).
-!---------------------------------------------------------------
-  600 CONTINUE
-      CALL CUASC_NEW &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   ZTENH,  &
-          ZQENH,    PUEN,     PVEN,     PTEN,     PQEN,   &
-          PQSEN,    PGEO,     ZGEOH,    PAP,      PAPH,   &
-          PQTE,     PVERV,    ILWMIN,   LDCUM,    ZHCBASE,& 
-          KTYPE,    ILAB,     PTU,      PQU,      PLU,    &
-          ZUU,      ZVU,      PMFU,     ZMFUB,    ZENTR,  &
-          ZMFUS,    ZMFUQ,    ZMFUL,    PLUDE,    ZDMFUP, &
-          KCBOT,    KCTOP,    ICTOP0,   ICUM,     ZTMST,  &
-          IHMIN,    ZHHATT,   ZQSENH)
-!----------------------------------------------------------
-!*    7.0      DETERMINE FINAL CONVECTIVE FLUXES IN 'CUFLX'
-!----------------------------------------------------------
-  700 CONTINUE
-      CALL CUFLX &
-         (KLON,     KLEV,     KLEVP1,   PQEN,     PQSEN,  &
-          ZTENH,    ZQENH,    PAPH,     ZGEOH,    KCBOT,  &
-          KCTOP,    IDTOP,    KTYPE,    LODDRAF,  LDCUM,  &
-          PMFU,     PMFD,     ZMFUS,    ZMFDS,    ZMFUQ,  &
-          ZMFDQ,    ZMFUL,    PLUDE,    ZDMFUP,   ZDMFDP, &
-          ZRFL,     PRAIN,    PTEN,     ZSFL,     ZDPMEL, &
-          ITOPM2,   ZTMST,    sig1)
-!----------------------------------------------------------------
-!*    8.0      UPDATE TENDENCIES FOR T AND Q IN SUBROUTINE CUDTDQ
-!----------------------------------------------------------------
-  800 CONTINUE
-      CALL CUDTDQ                                          &
-         (KLON,     KLEV,     KLEVP1,   ITOPM2,   PAPH,    &
-          LDCUM,    PTEN,     PTTE,     PQTE,     ZMFUS,   &
-          ZMFDS,    ZMFUQ,    ZMFDQ,    ZMFUL,    ZDMFUP,  &
-          ZDMFDP,   ZTMST,    ZDPMEL,   PRAIN,    ZRFL,    &
-          ZSFL,     PSRAIN,   PSEVAP,   PSHEAT,   PSMELT,  &
-          PRSFC,    PSSFC,    PAPRC,    PAPRSM,   PAPRS,   &
-          PQEN,     PQSEN,    PLUDE,    PCTE)
-!----------------------------------------------------------------
-!*    9.0      UPDATE TENDENCIES FOR U AND U IN SUBROUTINE CUDUDV
-!----------------------------------------------------------------
-  900 CONTINUE
-      IF(LMFDUDV) THEN
-      CALL CUDUDV  &
-         (KLON,     KLEV,     KLEVP1,   ITOPM2,   KTYPE,   &
-          KCBOT,    PAPH,     LDCUM,    PUEN,     PVEN,    &
-          PVOM,     PVOL,     ZUU,      ZUD,      ZVU,     &
-          ZVD,      PMFU,     PMFD,     PSDISS)
-      END IF
- 1000 CONTINUE
-      RETURN
-      END SUBROUTINE CUMASTR_NEW
-!
+      return
+      end subroutine tiecnvn
 
 !#############################################################
 !
-!             LEVEL 3 SUBROUTINEs
+!             level 2 subroutines
 !
 !#############################################################
-!**********************************************
-!       SUBROUTINE CUINI
-!**********************************************
+!***********************************************************
+!           subroutine cumastrn
+!***********************************************************
+      subroutine cumastrn  &
+     &    (klon,     klev,     klevp1,   klevm1,   pten, &
+     &     pqen,     puen,     pven,     pverv,    pqsen,&
+     &     pqhfl,    ztmst,    pap,      paph,     pgeo, &
+     &     ptte,     pqte,     pvom,     pvol,     prsfc,& 
+     &     pssfc,    ldcum,                              &
+     &     ktype,    kcbot,    kctop,    ptu,      pqu,&
+     &     plu,      plude,    pmfu,     pmfd,     prain,&
+     &     pcte,     phhfl,    lndj,     zgeoh,   dx)
+      implicit none
 !
-      SUBROUTINE CUINI                                    &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   PTEN,   &
-          PQEN,     PQSEN,    PUEN,     PVEN,     PVERV,  &
-          PGEO,     PAPH,     PGEOH,    PTENH,    PQENH,  &
-          PQSENH,   KLWMIN,   PTU,      PQU,      PTD,    &
-          PQD,      PUU,      PVU,      PUD,      PVD,    &
-          PMFU,     PMFD,     PMFUS,    PMFDS,    PMFUQ,  &
-          PMFDQ,    PDMFUP,   PDMFDP,   PDPMEL,   PLU,    &
-          PLUDE,    KLAB)
-!      M.TIEDTKE         E.C.M.W.F.     12/89
-!***PURPOSE
+!***cumastrn*  master routine for cumulus massflux-scheme
+!     m.tiedtke      e.c.m.w.f.      1986/1987/1989
+!     modifications
+!     y.wang         i.p.r.c         2001
+!     c.zhang                        2012
+!***purpose
 !   -------
-!          THIS ROUTINE INTERPOLATES LARGE-SCALE FIELDS OF T,Q ETC.
-!          TO HALF LEVELS (I.E. GRID FOR MASSFLUX SCHEME),
-!          AND INITIALIZES VALUES FOR UPDRAFTS AND DOWNDRAFTS
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!***METHOD.
-!  --------
-!          FOR EXTRAPOLATION TO HALF LEVELS SEE TIEDTKE(1989)
-!***EXTERNALS
-!   ---------
-!          *CUADJTQ* TO SPECIFY QS AT HALF LEVELS
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   klevm1
-      INTEGER   JK,JL,IK, ICALL
-      REAL      ZDP, ZZS
-      REAL     PTEN(KLON,KLEV),        PQEN(KLON,KLEV),    &
-              PUEN(KLON,KLEV),        PVEN(KLON,KLEV),     &
-              PQSEN(KLON,KLEV),       PVERV(KLON,KLEV),    &
-              PGEO(KLON,KLEV),        PGEOH(KLON,KLEV),    &
-              PAPH(KLON,KLEVP1),      PTENH(KLON,KLEV),    &
-              PQENH(KLON,KLEV),       PQSENH(KLON,KLEV)
-      REAL     PTU(KLON,KLEV),         PQU(KLON,KLEV),     &
-              PTD(KLON,KLEV),         PQD(KLON,KLEV),      &
-              PUU(KLON,KLEV),         PUD(KLON,KLEV),      &
-              PVU(KLON,KLEV),         PVD(KLON,KLEV),      &
-              PMFU(KLON,KLEV),        PMFD(KLON,KLEV),     &
-              PMFUS(KLON,KLEV),       PMFDS(KLON,KLEV),    &
-              PMFUQ(KLON,KLEV),       PMFDQ(KLON,KLEV),    &
-              PDMFUP(KLON,KLEV),      PDMFDP(KLON,KLEV),   & 
-              PLU(KLON,KLEV),         PLUDE(KLON,KLEV)
-      REAL     ZWMAX(KLON),            ZPH(KLON),          &
-              PDPMEL(KLON,KLEV)
-      INTEGER  KLAB(KLON,KLEV),        KLWMIN(KLON)
-      LOGICAL  LOFLAG(KLON)
+!          this routine computes the physical tendencies of the
+!     prognostic variables t,q,u and v due to convective processes.
+!     processes considered are: convective fluxes, formation of
+!     precipitation, evaporation of falling rain below cloud base,
+!     saturated cumulus downdrafts.
+!***method
+!   ------
+!     parameterization is done using a massflux-scheme.
+!        (1) define constants and parameters
+!        (2) specify values (t,q,qs...) at half levels and
+!            initialize updraft- and downdraft-values in 'cuinin'
+!        (3) calculate cloud base in 'cutypen', calculate cloud types in cutypen,
+!            and specify cloud base massflux
+!        (4) do cloud ascent in 'cuascn' in absence of downdrafts
+!        (5) do downdraft calculations:
+!              (a) determine values at lfs in 'cudlfsn'
+!              (b) determine moist descent in 'cuddrafn'
+!              (c) recalculate cloud base massflux considering the
+!                  effect of cu-downdrafts
+!        (6) do final adjusments to convective fluxes in 'cuflxn',
+!            do evaporation in subcloud layer
+!        (7) calculate increments of t and q in 'cudtdqn'
+!        (8) calculate increments of u and v in 'cududvn'
+!***externals.
+!   ----------
+!       cuinin:  initializes values at vertical grid used in cu-parametr.
+!       cutypen: cloud bypes, 1: deep cumulus 2: shallow cumulus
+!       cuascn:  cloud ascent for entraining plume
+!       cudlfsn: determines values at lfs for downdrafts
+!       cuddrafn:does moist descent for cumulus downdrafts
+!       cuflxn:  final adjustments to convective fluxes (also in pbl)
+!       cudqdtn: updates tendencies for t and q
+!       cududvn: updates tendencies for u and v
+!***switches.
+!   --------
+!          lmfmid=.t.   midlevel convection is switched on
+!          lmfdd=.t.    cumulus downdrafts switched on
+!          lmfdudv=.t.  cumulus friction switched on
+!***
+!     model parameters (defined in subroutine cuparam)
+!     ------------------------------------------------
+!     entrdd     entrainment rate for cumulus downdrafts
+!     cmfcmax    maximum massflux value allowed for
+!     cmfcmin    minimum massflux value (for safety)
+!     cmfdeps    fractional massflux for downdrafts at lfs
+!     cprcon     coefficient for conversion from cloud water to rain
+!***reference.
+!   ----------
+!          paper on massflux scheme (tiedtke,1989)
+!-----------------------------------------------------------------
+      integer  klev,klon,klevp1,klevm1
+      real     pten(klon,klev),        pqen(klon,klev),& 
+     &         puen(klon,klev),        pven(klon,klev),&
+     &         ptte(klon,klev),        pqte(klon,klev),&
+     &         pvom(klon,klev),        pvol(klon,klev),&
+     &         pqsen(klon,klev),       pgeo(klon,klev),&
+     &         pap(klon,klev),         paph(klon,klevp1),&
+     &         pverv(klon,klev),       pqhfl(klon),&
+     &         phhfl(klon)            
+      real     ptu(klon,klev),         pqu(klon,klev),&
+     &         plu(klon,klev),         plude(klon,klev),&
+     &         pmfu(klon,klev),        pmfd(klon,klev),&
+     &         prain(klon),&
+     &         prsfc(klon),            pssfc(klon)
+      real     ztenh(klon,klev),       zqenh(klon,klev),&
+     &         zgeoh(klon,klevp1),     zqsenh(klon,klev),&
+     &         ztd(klon,klev),         zqd(klon,klev),&
+     &         zmfus(klon,klev),       zmfds(klon,klev),&
+     &         zmfuq(klon,klev),       zmfdq(klon,klev),&
+     &         zdmfup(klon,klev),      zdmfdp(klon,klev),&
+     &         zmful(klon,klev),       zrfl(klon),&
+     &         zuu(klon,klev),         zvu(klon,klev),&
+     &         zud(klon,klev),         zvd(klon,klev),&
+     &         zlglac(klon,klev)
+      real     pmflxr(klon,klevp1),    pmflxs(klon,klevp1)
+      real     zhcbase(klon),& 
+     &         zmfub(klon),            zmfub1(klon),&
+     &         zdqpbl(klon),           zdhpbl(klon)          
+      real     zsfl(klon),             zdpmel(klon,klev),&
+     &         pcte(klon,klev),        zcape(klon),&
+     &         zcape1(klon),           zcape2(klon),&
+     &         ztauc(klon),            ztaubl(klon),&
+     &         zheat(klon)            
+      real     wup(klon),              zdqcv(klon)            
+      real     wbase(klon),            zmfuub(klon)
+      real     upbl(klon)
+#if defined(mpas)
+      real     dx(klon)
+#else
+      real     dx
+#endif
+      real     pmfude_rate(klon,klev), pmfdde_rate(klon,klev)
+      real     zmfuus(klon,klev),      zmfdus(klon,klev)
+      real     zuv2(klon,klev),ztenu(klon,klev),ztenv(klon,klev)
+      real     zmfuvb(klon),zsum12(klon),zsum22(klon)
+      integer  ilab(klon,klev),        idtop(klon),&
+     &         ictop0(klon),           ilwmin(klon)
+      integer  kdpl(klon)
+      integer  kcbot(klon),            kctop(klon),&
+     &         ktype(klon),            lndj(klon)
+      logical  ldcum(klon)
+      logical  loddraf(klon),          llo1,   llo2(klon)
+
+!  local varaiables
+      real     zcons,zcons2,zqumqe,zdqmin,zdh,zmfmax
+      real     zalfaw,zalv,zqalv,zc5ldcp,zc4les,zhsat,zgam,zzz,zhhat
+      real     zpbmpt,zro,zdz,zdp,zeps,zfac,wspeed
+      integer  jl,jk,ik
+      integer  ikb,ikt,icum,itopm2
+      real     ztmst,ztau,zerate,zderate,zmfa
+      real     zmfs(klon),pmean(klev),zlon
+      real     zduten,zdvten,ztdis,pgf_u,pgf_v
+!-------------------------------------------
+!     1.    specify constants and parameters
+!-------------------------------------------
+      zcons=1./(g*ztmst)
+      zcons2=3./(g*ztmst)
+
+      zlon = real(klon)
+      do jk = klev , 1 , -1
+        pmean(jk) = sum(pap(:,jk))/zlon
+      end do
+      p950 = klev-2
+      p650 = klev-2  
+      do jk = klev , 3 , -1
+        if ( pmean(jk)/pmean(klev)*1.013250e5 >  950.e2 ) p950 = jk
+        if ( pmean(jk)/pmean(klev)*1.013250e5 >  650.e2 ) p650 = jk
+      end do
+      p950 = min(klev-2,p950)
+!--------------------------------------------------------------
+!*    2.    initialize values at vertical grid points in 'cuini'
+!--------------------------------------------------------------
+      call cuinin &
+     &    (klon,     klev,     klevp1,   klevm1,   pten, &
+     &     pqen,     pqsen,    puen,     pven,     pverv,&
+     &     pgeo,     paph,     zgeoh,    ztenh,    zqenh,&
+     &     zqsenh,   ilwmin,   ptu,      pqu,      ztd,  &
+     &     zqd,      zuu,      zvu,      zud,      zvd,  &
+     &     pmfu,     pmfd,     zmfus,    zmfds,    zmfuq,&
+     &     zmfdq,    zdmfup,   zdmfdp,   zdpmel,   plu,  &
+     &     plude,    ilab)
+
+!----------------------------------
+!*    3.0   cloud base calculations
+!----------------------------------
+!*         (a) determine cloud base values in 'cutypen',
+!              and the cumulus type 1 or 2
+!          -------------------------------------------
+       call cutypen &
+     &     ( klon,     klev,     klevp1,   klevm1,     pqen,&
+     &      ztenh,    zqenh,     zqsenh,    zgeoh,     paph,&
+     &      phhfl,    pqhfl,       pgeo,    pqsen,      pap,&
+     &       pten,     lndj,        ptu,      pqu,     ilab,&
+     &      ldcum,    kcbot,     ictop0,    ktype,    wbase,    plu,   kdpl)
+
+!*         (b) assign the first guess mass flux at cloud base
+!              ------------------------------------------
+       do jl=1,klon
+         zdhpbl(jl)=0.0
+         upbl(jl) = 0.0
+         idtop(jl)=0
+       end do
+
+       do jk=2,klev
+       do jl=1,klon
+         if(jk.ge.kcbot(jl) .and. ldcum(jl)) then
+            zdhpbl(jl)=zdhpbl(jl)+(alv*pqte(jl,jk)+cpd*ptte(jl,jk))&
+     &                 *(paph(jl,jk+1)-paph(jl,jk))
+            wspeed = sqrt(puen(jl,jk)**2 + pven(jl,jk)**2) 
+            upbl(jl) = upbl(jl) + wspeed*(paph(jl,jk+1)-paph(jl,jk))
+         end if
+       end do
+       end do
+
+      do jl=1,klon
+        if(ldcum(jl)) then
+           ikb=kcbot(jl)
+           zmfmax = (paph(jl,ikb)-paph(jl,ikb-1))*zcons2
+           if(ktype(jl) == 1) then
+             zmfub(jl)= 0.1*zmfmax
+           else if ( ktype(jl) == 2 ) then
+             zqumqe = pqu(jl,ikb) + plu(jl,ikb) - zqenh(jl,ikb)
+             zdqmin = max(0.01*zqenh(jl,ikb),1.e-10)
+             zdh = cpd*(ptu(jl,ikb)-ztenh(jl,ikb)) + alv*zqumqe
+             zdh = g*max(zdh,1.e5*zdqmin)
+             if ( zdhpbl(jl) > 0. ) then
+               zmfub(jl) = zdhpbl(jl)/zdh
+               zmfub(jl) = min(zmfub(jl),zmfmax)
+             else
+               zmfub(jl) = 0.1*zmfmax
+               ldcum(jl) = .false.
+             end if
+            end if  
+        else
+           zmfub(jl) = 0.
+        end if
+      end do
+!------------------------------------------------------
+!*    4.0   determine cloud ascent for entraining plume
+!------------------------------------------------------
+!*    (a) do ascent in 'cuasc'in absence of downdrafts
+!----------------------------------------------------------
+      call cuascn &
+     &    (klon,     klev,     klevp1,   klevm1,   ztenh,&
+     &     zqenh,    puen,     pven,     pten,     pqen,&
+     &     pqsen,    pgeo,     zgeoh,    pap,      paph,&
+     &     pqte,     pverv,    ilwmin,   ldcum,    zhcbase,&
+     &     ktype,    ilab,     ptu,      pqu,      plu,&
+     &     zuu,      zvu,      pmfu,     zmfub,&
+     &     zmfus,    zmfuq,    zmful,    plude,    zdmfup,&
+     &     kcbot,    kctop,    ictop0,   icum,     ztmst,&
+     &     zqsenh,   zlglac,   lndj,     wup,      wbase,   kdpl,  pmfude_rate )
+
+!*     (b) check cloud depth and change entrainment rate accordingly
+!          calculate precipitation rate (for downdraft calculation)
+!------------------------------------------------------------------
+      do jl=1,klon
+        if ( ldcum(jl) ) then
+          ikb = kcbot(jl)
+          itopm2 = kctop(jl)
+          zpbmpt = paph(jl,ikb) - paph(jl,itopm2)
+          if ( ktype(jl) == 1 .and. zpbmpt <  zdnoprc ) ktype(jl) = 2
+          if ( ktype(jl) == 2 .and. zpbmpt >= zdnoprc ) ktype(jl) = 1
+          ictop0(jl) = kctop(jl)
+        end if
+        zrfl(jl)=zdmfup(jl,1)
+      end do
+
+      do jk=2,klev
+        do jl=1,klon
+          zrfl(jl)=zrfl(jl)+zdmfup(jl,jk)
+        end do
+      end do
+
+      do jk = 1,klev
+      do jl = 1,klon
+        pmfd(jl,jk) = 0.
+        zmfds(jl,jk) = 0.
+        zmfdq(jl,jk) = 0.
+        zdmfdp(jl,jk) = 0.
+        zdpmel(jl,jk) = 0.
+      end do
+      end do
+
+!-----------------------------------------
+!*    6.0   cumulus downdraft calculations
+!-----------------------------------------
+      if(lmfdd) then
+!*      (a) determine lfs in 'cudlfsn'
+!--------------------------------------
+        call cudlfsn    &
+     &    (klon,     klev,&
+     &     kcbot,    kctop,    lndj,   ldcum,   &
+     &     ztenh,    zqenh,    puen,     pven,   &
+     &     pten,     pqsen,    pgeo,              &
+     &     zgeoh,    paph,     ptu,      pqu,      plu,   &
+     &     zuu,      zvu,      zmfub,    zrfl,             &
+     &     ztd,      zqd,      zud,      zvd,               &
+     &     pmfd,     zmfds,    zmfdq,    zdmfdp,             &
+     &     idtop,    loddraf)
+!*     (b)  determine downdraft t,q and fluxes in 'cuddrafn'
 !------------------------------------------------------------
-!*    1.       SPECIFY LARGE SCALE PARAMETERS AT HALF LEVELS
-!*             ADJUST TEMPERATURE FIELDS IF STATICLY UNSTABLE
-!*             FIND LEVEL OF MAXIMUM VERTICAL VELOCITY
-! -----------------------------------------------------------
-  100 CONTINUE
-      ZDP=0.5
-      DO 130 JK=2,KLEV
-      DO 110 JL=1,KLON
-      PGEOH(JL,JK)=PGEO(JL,JK)+(PGEO(JL,JK-1)-PGEO(JL,JK))*ZDP
-      PTENH(JL,JK)=(MAX(CPD*PTEN(JL,JK-1)+PGEO(JL,JK-1),   &
-                  CPD*PTEN(JL,JK)+PGEO(JL,JK))-PGEOH(JL,JK))*RCPD
-      PQSENH(JL,JK)=PQSEN(JL,JK-1)
-      ZPH(JL)=PAPH(JL,JK)
-      LOFLAG(JL)=.TRUE.
-  110 CONTINUE
-      IK=JK
-      ICALL=0
-      CALL CUADJTQ(KLON,KLEV,IK,ZPH,PTENH,PQSENH,LOFLAG,ICALL)
-      DO 120 JL=1,KLON
-      PQENH(JL,JK)=MIN(PQEN(JL,JK-1),PQSEN(JL,JK-1))    &
-                 +(PQSENH(JL,JK)-PQSEN(JL,JK-1))
-      PQENH(JL,JK)=MAX(PQENH(JL,JK),0.)
-  120 CONTINUE
-  130 CONTINUE
-      DO 140 JL=1,KLON
-      PTENH(JL,KLEV)=(CPD*PTEN(JL,KLEV)+PGEO(JL,KLEV)-   &
-                     PGEOH(JL,KLEV))*RCPD
-      PQENH(JL,KLEV)=PQEN(JL,KLEV)
-      PTENH(JL,1)=PTEN(JL,1)
-      PQENH(JL,1)=PQEN(JL,1)
-      PGEOH(JL,1)=PGEO(JL,1)
-      KLWMIN(JL)=KLEV
-      ZWMAX(JL)=0.
-  140 CONTINUE
-      DO 160 JK=KLEVM1,2,-1
-      DO 150 JL=1,KLON
-      ZZS=MAX(CPD*PTENH(JL,JK)+PGEOH(JL,JK),   &
-             CPD*PTENH(JL,JK+1)+PGEOH(JL,JK+1))
-      PTENH(JL,JK)=(ZZS-PGEOH(JL,JK))*RCPD
-  150 CONTINUE
-  160 CONTINUE
-      DO 190 JK=KLEV,3,-1
-      DO 180 JL=1,KLON
-      IF(PVERV(JL,JK).LT.ZWMAX(JL)) THEN
-         ZWMAX(JL)=PVERV(JL,JK)
-         KLWMIN(JL)=JK
-      END IF
-  180 CONTINUE
-  190 CONTINUE
+        call cuddrafn                                         &
+     &   ( klon,     klev,     loddraf,                      &
+     &     ztenh,    zqenh,    puen,     pven,                 &
+     &     pgeo,     zgeoh,    paph,     zrfl,                  &
+     &     ztd,      zqd,      zud,      zvd,      pmfu,         &
+     &     pmfd,     zmfds,    zmfdq,    zdmfdp,   pmfdde_rate      )
 !-----------------------------------------------------------
-!*    2.0      INITIALIZE VALUES FOR UPDRAFTS AND DOWNDRAFTS
-!-----------------------------------------------------------
-  200 CONTINUE
-      DO 230 JK=1,KLEV
-      IK=JK-1
-      IF(JK.EQ.1) IK=1
-      DO 220 JL=1,KLON
-      PTU(JL,JK)=PTENH(JL,JK)
-      PTD(JL,JK)=PTENH(JL,JK)
-      PQU(JL,JK)=PQENH(JL,JK)
-      PQD(JL,JK)=PQENH(JL,JK)
-      PLU(JL,JK)=0.
-      PUU(JL,JK)=PUEN(JL,IK)
-      PUD(JL,JK)=PUEN(JL,IK)
-      PVU(JL,JK)=PVEN(JL,IK)
-      PVD(JL,JK)=PVEN(JL,IK)
-      PMFU(JL,JK)=0.
-      PMFD(JL,JK)=0.
-      PMFUS(JL,JK)=0.
-      PMFDS(JL,JK)=0.
-      PMFUQ(JL,JK)=0.
-      PMFDQ(JL,JK)=0.
-      PDMFUP(JL,JK)=0.
-      PDMFDP(JL,JK)=0.
-      PDPMEL(JL,JK)=0.
-      PLUDE(JL,JK)=0.
-      KLAB(JL,JK)=0
-  220 CONTINUE
-  230 CONTINUE
-      RETURN
-      END SUBROUTINE CUINI   
+      end if
+!
+!-----------------------------------------------------------------------
+!* 6.0          closure and clean work
+! ------
+!-- 6.1 recalculate cloud base massflux from a cape closure
+!       for deep convection (ktype=1) 
+!
+      do jl=1,klon
+      if(ldcum(jl) .and. ktype(jl) .eq. 1) then
+        ikb = kcbot(jl)
+        ikt = kctop(jl)
+        zheat(jl)=0.0
+        zcape(jl)=0.0
+        zcape1(jl)=0.0
+        zcape2(jl)=0.0
+        zmfub1(jl)=zmfub(jl)
+    
+        upbl(jl) = max(2.,upbl(jl)/(paph(jl,klev+1)-paph(jl,ikb)))
+        ztauc(jl)  = (zgeoh(jl,ikt)-zgeoh(jl,ikb)) / &
+                   ((2.+ min(15.0,wup(jl)))*g)
+        if(lndj(jl) .eq. 1) then 
+          ztaubl(jl) = ztauc(jl)
+        else
+          ztaubl(jl) = (zgeoh(jl,ikb)-zgeoh(jl,klev+1))*zrg/upbl(jl)
+        end if
+      end if    
+      end do
+!
+      do jk = 1 , klev
+      do jl = 1 , klon
+        llo1 = ldcum(jl) .and. ktype(jl) .eq. 1
+        if ( llo1 .and. jk <= kcbot(jl) .and. jk > kctop(jl) ) then
+          ikb = kcbot(jl)
+          zdz = pgeo(jl,jk-1)-pgeo(jl,jk)
+          zdp = pap(jl,jk)-pap(jl,jk-1)
+          zheat(jl) = zheat(jl) + ((pten(jl,jk-1)-pten(jl,jk)+zdz*rcpd) / &
+                      ztenh(jl,jk)+vtmpc1*(pqen(jl,jk-1)-pqen(jl,jk))) * &
+                      (g*(pmfu(jl,jk)+pmfd(jl,jk)))
+          zcape1(jl) = zcape1(jl) + ((ptu(jl,jk)-ztenh(jl,jk))/ztenh(jl,jk) + &
+                      vtmpc1*(pqu(jl,jk)-zqenh(jl,jk))-plu(jl,jk))*zdp
+        end if
+
+        if ( llo1 .and. jk >= kcbot(jl) ) then
+          ikb = kcbot(jl)
+          if(paph(jl,klev+1)-paph(jl,ikb) <= 50.e2) then
+            zdp = paph(jl,jk+1)-paph(jl,jk)
+            zcape2(jl) = zcape2(jl) + ztaubl(jl)* &
+                      (ptte(jl,jk)+vtmpc1*pten(jl,jk)*pqte(jl,jk))*zdp 
+          end if
+        end if
+      end do
+      end do
+
+      do jl=1,klon
+       if(ldcum(jl).and.ktype(jl).eq.1) then
+           ikb = kcbot(jl)
+           ikt = kctop(jl)
+#if defined(mpas)
+           ztau = ztauc(jl) * (1.+1.33e-5*dx(jl))
+#else
+           ztau = ztauc(jl) * (1.+1.33e-5*dx)
+#endif
+           ztau = max(ztmst,ztau)
+           ztau = max(720.,ztau)
+           ztau = min(10800.,ztau)
+           zcape2(jl)= max(0.,zcape2(jl))
+           zcape(jl) = max(0.,min(zcape1(jl)-zcape2(jl),5000.))
+           zheat(jl) = max(1.e-4,zheat(jl))
+           zmfub1(jl) = (zcape(jl)*zmfub(jl))/(zheat(jl)*ztau)
+           zmfub1(jl) = max(zmfub1(jl),0.001)
+           zmfmax=(paph(jl,ikb)-paph(jl,ikb-1))*zcons2
+           zmfub1(jl)=min(zmfub1(jl),zmfmax)
+       end if
+      end do
+!
+!*  6.2   recalculate convective fluxes due to effect of
+!         downdrafts on boundary layer moist static energy budget (ktype=2)
+!--------------------------------------------------------
+       do jl=1,klon
+         if(ldcum(jl) .and. ktype(jl) .eq. 2) then
+           ikb=kcbot(jl)
+           if(pmfd(jl,ikb).lt.0.0 .and. loddraf(jl)) then
+              zeps=-pmfd(jl,ikb)/max(zmfub(jl),cmfcmin)
+           else
+              zeps=0.
+           endif
+           zqumqe=pqu(jl,ikb)+plu(jl,ikb)-  &
+     &            zeps*zqd(jl,ikb)-(1.-zeps)*zqenh(jl,ikb)
+           zdqmin=max(0.01*zqenh(jl,ikb),cmfcmin)
+           zmfmax=(paph(jl,ikb)-paph(jl,ikb-1))*zcons2
+!  using moist static engergy closure instead of moisture closure
+           zdh=cpd*(ptu(jl,ikb)-zeps*ztd(jl,ikb)- &
+     &       (1.-zeps)*ztenh(jl,ikb))+alv*zqumqe
+           zdh=g*max(zdh,1.e5*zdqmin)
+           if(zdhpbl(jl).gt.0.)then
+             zmfub1(jl)=zdhpbl(jl)/zdh
+           else
+             zmfub1(jl) = zmfub(jl)
+           end if
+           zmfub1(jl) = min(zmfub1(jl),zmfmax)
+         end if
+
+!*  6.3   mid-level convection - nothing special
+!---------------------------------------------------------
+         if(ldcum(jl) .and. ktype(jl) .eq. 3 ) then
+            zmfub1(jl) = zmfub(jl)
+         end if
+
+       end do
+
+!*  6.4   scaling the downdraft mass flux
+!---------------------------------------------------------
+       do jk=1,klev
+       do jl=1,klon
+        if( ldcum(jl) ) then
+           zfac=zmfub1(jl)/max(zmfub(jl),cmfcmin)
+           pmfd(jl,jk)=pmfd(jl,jk)*zfac
+           zmfds(jl,jk)=zmfds(jl,jk)*zfac
+           zmfdq(jl,jk)=zmfdq(jl,jk)*zfac
+           zdmfdp(jl,jk)=zdmfdp(jl,jk)*zfac
+           pmfdde_rate(jl,jk) = pmfdde_rate(jl,jk)*zfac
+        end if
+       end do
+       end do
+
+!*  6.5   scaling the updraft mass flux
+! --------------------------------------------------------
+    do jl = 1,klon
+      if ( ldcum(jl) ) zmfs(jl) = zmfub1(jl)/max(cmfcmin,zmfub(jl))
+    end do
+    do jk = 2 , klev
+      do jl = 1,klon
+        if ( ldcum(jl) .and. jk >= kctop(jl)-1 ) then
+          ikb = kcbot(jl)
+          if ( jk>ikb ) then
+            zdz = ((paph(jl,klev+1)-paph(jl,jk))/(paph(jl,klev+1)-paph(jl,ikb)))
+            pmfu(jl,jk) = pmfu(jl,ikb)*zdz
+          end if
+          zmfmax = (paph(jl,jk)-paph(jl,jk-1))*zcons2
+          if ( pmfu(jl,jk)*zmfs(jl) > zmfmax ) then
+            zmfs(jl) = min(zmfs(jl),zmfmax/pmfu(jl,jk))
+          end if
+        end if
+      end do
+    end do
+    do jk = 2 , klev
+      do jl = 1,klon
+        if ( ldcum(jl) .and. jk <= kcbot(jl) .and. jk >= kctop(jl)-1 ) then
+          pmfu(jl,jk) = pmfu(jl,jk)*zmfs(jl)
+          zmfus(jl,jk) = zmfus(jl,jk)*zmfs(jl)
+          zmfuq(jl,jk) = zmfuq(jl,jk)*zmfs(jl)
+          zmful(jl,jk) = zmful(jl,jk)*zmfs(jl)
+          zdmfup(jl,jk) = zdmfup(jl,jk)*zmfs(jl)
+          plude(jl,jk) = plude(jl,jk)*zmfs(jl)
+          pmfude_rate(jl,jk) = pmfude_rate(jl,jk)*zmfs(jl)
+        end if
+      end do
+    end do
+
+!*    6.6  if ktype = 2, kcbot=kctop is not allowed
+! ---------------------------------------------------
+    do jl = 1,klon
+      if ( ktype(jl) == 2 .and. &
+           kcbot(jl) == kctop(jl) .and. kcbot(jl) >= klev-1 ) then
+        ldcum(jl) = .false.
+        ktype(jl) = 0
+      end if
+    end do
+
+!*   6.7  set downdraft mass fluxes to zero above cloud top
+!----------------------------------------------------
+    do jl = 1,klon
+      if ( loddraf(jl) .and. idtop(jl) <= kctop(jl) ) then
+        idtop(jl) = kctop(jl) + 1
+      end if
+    end do
+    do jk = 2 , klev
+      do jl = 1,klon
+        if ( loddraf(jl) ) then
+          if ( jk < idtop(jl) ) then
+            pmfd(jl,jk) = 0.
+            zmfds(jl,jk) = 0.
+            zmfdq(jl,jk) = 0.
+            pmfdde_rate(jl,jk) = 0.
+            zdmfdp(jl,jk) = 0.
+          else if ( jk == idtop(jl) ) then
+            pmfdde_rate(jl,jk) = 0.
+          end if
+        end if
+      end do
+    end do
+!----------------------------------------------------------
+!*    7.0      determine final convective fluxes in 'cuflx'
+!----------------------------------------------------------
+       call cuflxn                                        &                  
+     &  (  klon,     klev,     ztmst                       &                                       
+     &  ,  pten,     pqen,     pqsen,    ztenh,   zqenh     &                  
+     &  ,  paph,     pap,      zgeoh,    lndj,    ldcum      &                 
+     &  ,  kcbot,    kctop,    idtop,    itopm2               &                 
+     &  ,  ktype,    loddraf                                   &                 
+     &  ,  pmfu,     pmfd,     zmfus,    zmfds                  &               
+     &  ,  zmfuq,    zmfdq,    zmful,    plude                   &              
+     &  ,  zdmfup,   zdmfdp,   zdpmel,   zlglac                   &             
+     &  ,  prain,    pmfdde_rate, pmflxr, pmflxs )     
+
+      do jl=1,klon
+        prsfc(jl) = pmflxr(jl,klev+1)
+        pssfc(jl) = pmflxs(jl,klev+1)
+      end do
+
+!----------------------------------------------------------------
+!*    8.0      update tendencies for t and q in subroutine cudtdq
+!----------------------------------------------------------------
+      call cudtdqn(klon,klev,itopm2,kctop,idtop,ldcum,loddraf, &
+                 ztmst,paph,zgeoh,pgeo,pten,ztenh,pqen,zqenh,pqsen,     &
+                 zlglac,plude,pmfu,pmfd,zmfus,zmfds,zmfuq,zmfdq,zmful,   &
+                 zdmfup,zdpmel,ptte,pqte,pcte)
+!----------------------------------------------------------------
+!*    9.0      update tendencies for u and u in subroutine cududv
+!----------------------------------------------------------------
+      if(lmfdudv) then
+      do jk = klev-1 , 2 , -1
+        ik = jk + 1
+        do jl = 1,klon
+          if ( ldcum(jl) ) then
+            if ( jk == kcbot(jl) .and. ktype(jl) < 3 ) then
+              ikb = kdpl(jl)
+              zuu(jl,jk) = puen(jl,ikb-1)
+              zvu(jl,jk) = pven(jl,ikb-1)
+            else if ( jk == kcbot(jl) .and. ktype(jl) == 3 ) then
+              zuu(jl,jk) = puen(jl,jk-1)
+              zvu(jl,jk) = pven(jl,jk-1)
+            end if
+            if ( jk < kcbot(jl) .and. jk >= kctop(jl) ) then
+            if(momtrans .eq. 1)then
+              zfac = 0.
+              if ( ktype(jl) == 1 .or. ktype(jl) == 3 ) zfac = 2.
+              if ( ktype(jl) == 1 .and. jk <= kctop(jl)+2 ) zfac = 3.
+              zerate = pmfu(jl,jk) - pmfu(jl,ik) + &
+                (1.+zfac)*pmfude_rate(jl,jk)
+              zderate = (1.+zfac)*pmfude_rate(jl,jk)
+              zmfa = 1./max(cmfcmin,pmfu(jl,jk))
+              zuu(jl,jk) = (zuu(jl,ik)*pmfu(jl,ik) + &
+                zerate*puen(jl,jk)-zderate*zuu(jl,ik))*zmfa
+              zvu(jl,jk) = (zvu(jl,ik)*pmfu(jl,ik) + &
+                zerate*pven(jl,jk)-zderate*zvu(jl,ik))*zmfa
+            else
+              if(ktype(jl) == 1 .or. ktype(jl) == 3) then
+                pgf_u   =  -0.7*0.5*(pmfu(jl,ik)*(puen(jl,ik)-puen(jl,jk))+&
+                                   pmfu(jl,jk)*(puen(jl,jk)-puen(jl,jk-1)))
+                pgf_v   =  -0.7*0.5*(pmfu(jl,ik)*(pven(jl,ik)-pven(jl,jk))+&
+                                   pmfu(jl,jk)*(pven(jl,jk)-pven(jl,jk-1)))
+              else
+                pgf_u   = 0.
+                pgf_v   = 0.
+              end if
+              zerate = pmfu(jl,jk) - pmfu(jl,ik) + pmfude_rate(jl,jk)
+              zderate = pmfude_rate(jl,jk)
+              zmfa = 1./max(cmfcmin,pmfu(jl,jk))
+              zuu(jl,jk) = (zuu(jl,ik)*pmfu(jl,ik) + &
+                zerate*puen(jl,jk)-zderate*zuu(jl,ik)+pgf_u)*zmfa
+              zvu(jl,jk) = (zvu(jl,ik)*pmfu(jl,ik) + &
+                zerate*pven(jl,jk)-zderate*zvu(jl,ik)+pgf_v)*zmfa
+            end if
+            end if
+          end if
+        end do
+      end do
+
+      if(lmfdd) then
+      do jk = 3 , klev
+        ik = jk - 1
+        do jl = 1,klon
+          if ( ldcum(jl) ) then
+            if ( jk == idtop(jl) ) then
+              zud(jl,jk) = 0.5*(zuu(jl,jk)+puen(jl,ik))
+              zvd(jl,jk) = 0.5*(zvu(jl,jk)+pven(jl,ik))
+            else if ( jk > idtop(jl) ) then
+              zerate = -pmfd(jl,jk) + pmfd(jl,ik) + pmfdde_rate(jl,jk)
+              zmfa = 1./min(-cmfcmin,pmfd(jl,jk))
+              zud(jl,jk) = (zud(jl,ik)*pmfd(jl,ik) - &
+                zerate*puen(jl,ik)+pmfdde_rate(jl,jk)*zud(jl,ik))*zmfa
+              zvd(jl,jk) = (zvd(jl,ik)*pmfd(jl,ik) - &
+                zerate*pven(jl,ik)+pmfdde_rate(jl,jk)*zvd(jl,ik))*zmfa
+            end if
+          end if
+        end do
+      end do
+      end if
+!   --------------------------------------------------
+!   rescale massfluxes for stability in Momentum
+!------------------------------------------------------------------------
+      zmfs(:) = 1.
+      do jk = 2 , klev
+        do jl = 1, klon
+          if ( ldcum(jl) .and. jk >= kctop(jl)-1 ) then
+            zmfmax = (paph(jl,jk)-paph(jl,jk-1))*zcons
+            if ( pmfu(jl,jk) > zmfmax .and. jk >= kctop(jl) ) then
+              zmfs(jl) = min(zmfs(jl),zmfmax/pmfu(jl,jk))
+            end if
+          end if
+        end do
+      end do
+      do jk = 1 , klev
+        do jl = 1, klon
+          zmfuus(jl,jk) = pmfu(jl,jk)
+          zmfdus(jl,jk) = pmfd(jl,jk)
+          if ( ldcum(jl) .and. jk >= kctop(jl)-1 ) then
+            zmfuus(jl,jk) = pmfu(jl,jk)*zmfs(jl)
+            zmfdus(jl,jk) = pmfd(jl,jk)*zmfs(jl)
+          end if
+        end do
+      end do
+!*  9.1          update u and v in subroutine cududvn
+!-------------------------------------------------------------------
+     do jk = 1 , klev
+        do jl = 1, klon
+          ztenu(jl,jk) = pvom(jl,jk)
+          ztenv(jl,jk) = pvol(jl,jk)
+        end do
+      end do
+
+      call cududvn(klon,klev,itopm2,ktype,kcbot,kctop, &
+                  ldcum,ztmst,paph,puen,pven,zmfuus,zmfdus,zuu,  &
+                  zud,zvu,zvd,pvom,pvol)
+
+!  calculate KE dissipation
+      do jl = 1, klon
+        zsum12(jl) = 0.
+        zsum22(jl) = 0.
+      end do
+        do jk = 1 , klev
+          do jl = 1, klon
+            zuv2(jl,jk) = 0.
+            if ( ldcum(jl) .and. jk >= kctop(jl)-1 ) then
+              zdz = (paph(jl,jk+1)-paph(jl,jk))
+              zduten = pvom(jl,jk) - ztenu(jl,jk)
+              zdvten = pvol(jl,jk) - ztenv(jl,jk)
+              zuv2(jl,jk) = sqrt(zduten**2+zdvten**2)
+              zsum22(jl) = zsum22(jl) + zuv2(jl,jk)*zdz
+              zsum12(jl) = zsum12(jl) - &
+                (puen(jl,jk)*zduten+pven(jl,jk)*zdvten)*zdz
+            end if
+          end do
+        end do
+        do jk = 1 , klev
+          do jl = 1, klon
+            if ( ldcum(jl) .and. jk>=kctop(jl)-1 ) then
+              ztdis = rcpd*zsum12(jl)*zuv2(jl,jk)/max(1.e-15,zsum22(jl))
+              ptte(jl,jk) = ptte(jl,jk) + ztdis
+            end if
+          end do
+        end do
+
+      end if
+      return
+      end subroutine cumastrn
 
 !**********************************************
-!       SUBROUTINE CUBASE
-!********************************************** 
-      SUBROUTINE CUBASE &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   PTENH, &
-          PQENH,    PGEOH,    PAPH,     PTU,      PQU,   &
-          PLU,      PUEN,     PVEN,     PUU,      PVU,   &
-          LDCUM,    KCBOT,    KLAB)
-!      THIS ROUTINE CALCULATES CLOUD BASE VALUES (T AND Q)
-!      FOR CUMULUS PARAMETERIZATION
-!      M.TIEDTKE         E.C.M.W.F.     7/86 MODIF.  12/89
-!***PURPOSE.
-!   --------
-!          TO PRODUCE CLOUD BASE VALUES FOR CU-PARAMETRIZATION
-!***INTERFACE
+!    level 3  subroutine cuinin
+!**********************************************
+!
+      subroutine cuinin &
+     &    (klon,     klev,     klevp1,   klevm1,   pten,&
+     &     pqen,     pqsen,    puen,     pven,     pverv,&
+     &     pgeo,     paph,     pgeoh,    ptenh,    pqenh,&
+     &     pqsenh,   klwmin,   ptu,      pqu,      ptd,&
+     &     pqd,      puu,      pvu,      pud,      pvd,&
+     &     pmfu,     pmfd,     pmfus,    pmfds,    pmfuq,&
+     &     pmfdq,    pdmfup,   pdmfdp,   pdpmel,   plu,&
+     &     plude,    klab)
+      implicit none
+!      m.tiedtke         e.c.m.w.f.     12/89
+!***purpose
+!   -------
+!          this routine interpolates large-scale fields of t,q etc.
+!          to half levels (i.e. grid for massflux scheme),
+!          and initializes values for updrafts and downdrafts
+!***interface
 !   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!          INPUT ARE ENVIRONM. VALUES OF T,Q,P,PHI AT HALF LEVELS.
-!          IT RETURNS CLOUD BASE VALUES AND FLAGS AS FOLLOWS;
-!                 KLAB=1 FOR SUBCLOUD LEVELS
-!                 KLAB=2 FOR CONDENSATION LEVEL
-!***METHOD.
+!          this routine is called from *cumastr*.
+!***method.
 !  --------
-!          LIFT SURFACE AIR DRY-ADIABATICALLY TO CLOUD BASE
-!          (NON ENTRAINING PLUME,I.E.CONSTANT MASSFLUX)
-!***EXTERNALS
+!          for extrapolation to half levels see tiedtke(1989)
+!***externals
 !   ---------
-!          *CUADJTQ* FOR ADJUSTING T AND Q DUE TO CONDENSATION IN ASCENT
+!          *cuadjtq* to specify qs at half levels
 ! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   klevm1
-      INTEGER   JL,JK,IS,IK,ICALL,IKB
-      REAL      ZBUO,ZZ
-      REAL     PTENH(KLON,KLEV),       PQENH(KLON,KLEV),  &
-              PGEOH(KLON,KLEV),       PAPH(KLON,KLEVP1)
-      REAL     PTU(KLON,KLEV),         PQU(KLON,KLEV),   &
-              PLU(KLON,KLEV)
-      REAL     PUEN(KLON,KLEV),        PVEN(KLON,KLEV),  &
-              PUU(KLON,KLEV),         PVU(KLON,KLEV) 
-      REAL     ZQOLD(KLON,KLEV),       ZPH(KLON)
-      INTEGER  KLAB(KLON,KLEV),        KCBOT(KLON)
-      LOGICAL  LDCUM(KLON),            LOFLAG(KLON)
-!***INPUT VARIABLES:
-!       PTENH [ZTENH] - Environment Temperature on half levels. (CUINI)
-!       PQENH [ZQENH] - Env. specific humidity on half levels. (CUINI)
-!       PGEOH [ZGEOH] - Geopotential on half levels, (MSSFLX)
-!       PAPH - Pressure of half levels. (MSSFLX)
-!***VARIABLES MODIFIED BY CUBASE:
-!       LDCUM - Logical denoting profiles. (CUBASE)
-!       KTYPE - Convection type - 1: Penetrative  (CUMASTR)
-!                                 2: Stratocumulus (CUMASTR)
-!                                 3: Mid-level  (CUASC)
-!       PTU - Cloud Temperature.
-!       PQU - Cloud specific Humidity.
-!       PLU - Cloud Liquid Water (Moisture condensed out)
-!       KCBOT - Cloud Base Level. (CUBASE)
-!       KLAB [ILAB] - Level Label - 1: Sub-cloud layer (CUBASE)
-!------------------------------------------------
-!     1.       INITIALIZE VALUES AT LIFTING LEVEL
-!------------------------------------------------
-  100 CONTINUE
-      DO 110 JL=1,KLON
-        KLAB(JL,KLEV)=1
-        KCBOT(JL)=KLEVM1
-        LDCUM(JL)=.FALSE.
-        PUU(JL,KLEV)=PUEN(JL,KLEV)*(PAPH(JL,KLEVP1)-PAPH(JL,KLEV))
-        PVU(JL,KLEV)=PVEN(JL,KLEV)*(PAPH(JL,KLEVP1)-PAPH(JL,KLEV))
-  110 CONTINUE
-!-------------------------------------------------------
-!     2.0      DO ASCENT IN SUBCLOUD LAYER,
-!              CHECK FOR EXISTENCE OF CONDENSATION LEVEL,
-!              ADJUST T,Q AND L ACCORDINGLY IN *CUADJTQ*,
-!              CHECK FOR BUOYANCY AND SET FLAGS
-!-------------------------------------------------------
-      DO 200 JK=1,KLEV
-      DO 200 JL=1,KLON
-        ZQOLD(JL,JK)=0.0
-  200 CONTINUE
-      DO 290 JK=KLEVM1,2,-1
-        IS=0
-        DO 210 JL=1,KLON
-          IF(KLAB(JL,JK+1).EQ.1) THEN
-             IS=IS+1
-             LOFLAG(JL)=.TRUE.
-          ELSE
-             LOFLAG(JL)=.FALSE.
-          ENDIF
-          ZPH(JL)=PAPH(JL,JK)
-  210   CONTINUE
-        IF(IS.EQ.0) GO TO 290
-        DO 220 JL=1,KLON
-          IF(LOFLAG(JL)) THEN
-             PQU(JL,JK)=PQU(JL,JK+1)
-             PTU(JL,JK)=(CPD*PTU(JL,JK+1)+PGEOH(JL,JK+1)  &
-                       -PGEOH(JL,JK))*RCPD
-             ZBUO=PTU(JL,JK)*(1.+VTMPC1*PQU(JL,JK))-      &
-                 PTENH(JL,JK)*(1.+VTMPC1*PQENH(JL,JK))+ZBUO0
-             IF(ZBUO.GT.0.) KLAB(JL,JK)=1
-             ZQOLD(JL,JK)=PQU(JL,JK)
-          END IF
-  220   CONTINUE
-        IK=JK
-        ICALL=1
-        CALL CUADJTQ(KLON,KLEV,IK,ZPH,PTU,PQU,LOFLAG,ICALL)
-        DO 240 JL=1,KLON
-          IF(LOFLAG(JL).AND.PQU(JL,JK).NE.ZQOLD(JL,JK)) THEN
-             KLAB(JL,JK)=2
-             PLU(JL,JK)=PLU(JL,JK)+ZQOLD(JL,JK)-PQU(JL,JK)
-             ZBUO=PTU(JL,JK)*(1.+VTMPC1*PQU(JL,JK))-      &
-                 PTENH(JL,JK)*(1.+VTMPC1*PQENH(JL,JK))+ZBUO0
-             IF(ZBUO.GT.0.) THEN
-                KCBOT(JL)=JK
-                LDCUM(JL)=.TRUE.
-             END IF
-          END IF
-  240   CONTINUE
-!             CALCULATE AVERAGES OF U AND V FOR SUBCLOUD ARA,.
-!             THE VALUES WILL BE USED TO DEFINE CLOUD BASE VALUES.
-        IF(LMFDUDV) THEN
-           DO 250 JL=1,KLON
-             IF(JK.GE.KCBOT(JL)) THEN
-                PUU(JL,KLEV)=PUU(JL,KLEV)+           &
-                          PUEN(JL,JK)*(PAPH(JL,JK+1)-PAPH(JL,JK))
-                PVU(JL,KLEV)=PVU(JL,KLEV)+           &
-                          PVEN(JL,JK)*(PAPH(JL,JK+1)-PAPH(JL,JK))
-             END IF
- 250       CONTINUE
-        END IF
-  290 CONTINUE
-      IF(LMFDUDV) THEN
-         DO 310 JL=1,KLON
-         IF(LDCUM(JL)) THEN
-            IKB=KCBOT(JL)
-            ZZ=1./(PAPH(JL,KLEVP1)-PAPH(JL,IKB))
-            PUU(JL,KLEV)=PUU(JL,KLEV)*ZZ
-            PVU(JL,KLEV)=PVU(JL,KLEV)*ZZ
-         ELSE
-            PUU(JL,KLEV)=PUEN(JL,KLEVM1)
-            PVU(JL,KLEV)=PVEN(JL,KLEVM1)
-         END IF
- 310     CONTINUE
-      END IF
-      RETURN
-      END SUBROUTINE CUBASE
+      integer  klon,klev,klevp1,klevm1
+      real     pten(klon,klev),        pqen(klon,klev),&
+     &         puen(klon,klev),        pven(klon,klev),&
+     &         pqsen(klon,klev),       pverv(klon,klev),&
+     &         pgeo(klon,klev),        pgeoh(klon,klevp1),&
+     &         paph(klon,klevp1),      ptenh(klon,klev),&
+     &         pqenh(klon,klev),       pqsenh(klon,klev)
+      real     ptu(klon,klev),         pqu(klon,klev),&
+     &         ptd(klon,klev),         pqd(klon,klev),&
+     &         puu(klon,klev),         pud(klon,klev),&
+     &         pvu(klon,klev),         pvd(klon,klev),&
+     &         pmfu(klon,klev),        pmfd(klon,klev),&
+     &         pmfus(klon,klev),       pmfds(klon,klev),&
+     &         pmfuq(klon,klev),       pmfdq(klon,klev),&
+     &         pdmfup(klon,klev),      pdmfdp(klon,klev),&
+     &         plu(klon,klev),         plude(klon,klev)
+      real     zwmax(klon),            zph(klon), &
+     &         pdpmel(klon,klev)
+      integer  klab(klon,klev),        klwmin(klon)
+      logical  loflag(klon)
+!  local variables
+      integer  jl,jk
+      integer  icall,ik
+      real     zzs
+!------------------------------------------------------------
+!*    1.       specify large scale parameters at half levels
+!*             adjust temperature fields if staticly unstable
+!*             find level of maximum vertical velocity
+! -----------------------------------------------------------
+      do jk=2,klev
+      do jl=1,klon
+        ptenh(jl,jk)=(max(cpd*pten(jl,jk-1)+pgeo(jl,jk-1), &
+     &             cpd*pten(jl,jk)+pgeo(jl,jk))-pgeoh(jl,jk))*rcpd
+        pqsenh(jl,jk)= pqsen(jl,jk-1)
+        zph(jl)=paph(jl,jk)
+        loflag(jl)=.true.
+      end do
+      ik=jk
+      icall=0
+      call cuadjtqn(klon,klev,ik,zph,ptenh,pqsenh,loflag,icall)
+      do jl=1,klon
+        pqenh(jl,jk)=min(pqen(jl,jk-1),pqsen(jl,jk-1)) &
+     &            +(pqsenh(jl,jk)-pqsen(jl,jk-1))
+        pqenh(jl,jk)=max(pqenh(jl,jk),0.)
+      end do
+      end do
 
-!**********************************************
-!       SUBROUTINE CUTYPE
-!********************************************** 
-      SUBROUTINE CUTYPE    &
-        ( KLON,     KLEV,     KLEVP1,   KLEVM1,&
-          PTENH,   PQENH,     PQSENH,    PGEOH,   PAPH,&
-          RHO,      HFX,         QFX,    KTYPE,   lndj   )
-!      THIS ROUTINE CALCULATES CLOUD BASE and TOP
-!      AND RETURN CLOUD TYPES
-!      ZHANG & WANG      IPRC           12/2010
-!***PURPOSE.
+      do jl=1,klon
+        ptenh(jl,klev)=(cpd*pten(jl,klev)+pgeo(jl,klev)- &
+     &                pgeoh(jl,klev))*rcpd
+        pqenh(jl,klev)=pqen(jl,klev)
+        ptenh(jl,1)=pten(jl,1)
+        pqenh(jl,1)=pqen(jl,1)
+        klwmin(jl)=klev
+        zwmax(jl)=0.
+      end do
+
+      do jk=klevm1,2,-1
+      do jl=1,klon
+        zzs=max(cpd*ptenh(jl,jk)+pgeoh(jl,jk), &
+     &        cpd*ptenh(jl,jk+1)+pgeoh(jl,jk+1))
+        ptenh(jl,jk)=(zzs-pgeoh(jl,jk))*rcpd
+      end do
+      end do
+
+      do jk=klev,3,-1
+      do jl=1,klon
+        if(pverv(jl,jk).lt.zwmax(jl)) then
+           zwmax(jl)=pverv(jl,jk)
+           klwmin(jl)=jk
+        end if
+      end do
+      end do
+!-----------------------------------------------------------
+!*    2.0      initialize values for updrafts and downdrafts
+!-----------------------------------------------------------
+      do jk=1,klev
+      ik=jk-1
+      if(jk.eq.1) ik=1
+      do jl=1,klon
+      ptu(jl,jk)=ptenh(jl,jk)
+      ptd(jl,jk)=ptenh(jl,jk)
+      pqu(jl,jk)=pqenh(jl,jk)
+      pqd(jl,jk)=pqenh(jl,jk)
+      plu(jl,jk)=0.
+      puu(jl,jk)=puen(jl,ik)
+      pud(jl,jk)=puen(jl,ik)
+      pvu(jl,jk)=pven(jl,ik)
+      pvd(jl,jk)=pven(jl,ik)
+      klab(jl,jk)=0
+      end do
+      end do
+      return
+      end subroutine cuinin
+
+!---------------------------------------------------------
+!  level 3 souroutines
+!--------------------------------------------------------
+      subroutine cutypen & 
+     &   (  klon,    klev,     klevp1,   klevm1,     pqen,&
+     &     ptenh,   pqenh,     pqsenh,    pgeoh,     paph,& 
+     &       hfx,     qfx,       pgeo,    pqsen,      pap,&
+     &      pten,    lndj,       cutu,     cuqu,    culab,&
+     &     ldcum,   cubot,      cutop,    ktype,    wbase,    culu,   kdpl  )
+!      zhang & wang      iprc           2011-2013
+!***purpose.
 !   --------
-!          TO PRODUCE CLOUD TYPE for CU-PARAMETERIZATIONS
-!***INTERFACE
+!          to produce first guess updraught for cu-parameterizations
+!          calculates condensation level, and sets updraught base variables and
+!          first guess cloud type
+!***interface
 !   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!          INPUT ARE ENVIRONM. VALUES OF T,Q,P,PHI AT HALF LEVELS.
-!          IT RETURNS CLOUD TYPES AS FOLLOWS;
-!                 KTYPE=1 FOR deep cumulus
-!                 KTYPE=2 FOR shallow cumulus
-!***METHOD.
+!          this routine is called from *cumastr*.
+!          input are environm. values of t,q,p,phi at half levels.
+!          it returns cloud types as follows;
+!                 ktype=1 for deep cumulus
+!                 ktype=2 for shallow cumulus
+!***method.
 !  --------
 !          based on a simplified updraught equation
-!            partial(Hup)/partial(z)=eta(H - Hup)
+!            partial(hup)/partial(z)=eta(h - hup)
 !            eta is the entrainment rate for test parcel
-!            H stands for dry static energy or the total water specific humidity
-!            references: Christian Jakob, 2003: A new subcloud model for mass-flux convection schemes
-!                        influence on triggering, updraft properties, and model climate, Mon.Wea.Rev.
+!            h stands for dry static energy or the total water specific humidity
+!            references: christian jakob, 2003: a new subcloud model for
+!            mass-flux convection schemes
+!                        influence on triggering, updraft properties, and model
+!                        climate, mon.wea.rev.
 !                        131, 2765-2778
 !            and
-!                        IFS Documentation - Cy33r1 
-!          
-!***EXTERNALS
-!   ---------
-!          *CUADJTQ* FOR ADJUSTING T AND Q DUE TO CONDENSATION IN ASCENT
+!                        ifs documentation - cy36r1,cy38r1 
+!***input variables:
+!       ptenh [ztenh] - environment temperature on half levels. (cuini)
+!       pqenh [zqenh] - env. specific humidity on half levels. (cuini)
+!       pgeoh [zgeoh] - geopotential on half levels, (mssflx)
+!       paph - pressure of half levels. (mssflx)
+!       rho  - density of the lowest model level
+!       qfx  - net upward moisture flux at the surface (kg/m^2/s)
+!       hfx  - net upward heat flux at the surface (w/m^2)
+!***variables output by cutype:
+!       ktype - convection type - 1: penetrative  (cumastr)
+!                                 2: stratocumulus (cumastr)
+!                                 3: mid-level  (cuasc)
+!       information for updraft parcel (ptu,pqu,plu,kcbot,klab,kdpl...)
 ! ----------------------------------------------------------------
 !-------------------------------------------------------------------
-      IMPLICIT NONE
+      implicit none
 !-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   klevm1
-      INTEGER   JL,JK,IS,IK,ICALL,IKB,LEVELS
-      REAL     PTENH(KLON,KLEV),       PQENH(KLON,KLEV), &
-                                       PQSENH(KLON,KLEV),&
-               PGEOH(KLON,KLEV),       PAPH(KLON,KLEVP1)
-      REAL     ZRELH(KLON)
-      REAL     QFX(KLON),RHO(KLON),HFX(KLON)
-      REAL     ZQOLD(KLON,KLEV),       ZPH(KLON)
-      INTEGER  KCTOP(KLON),KCBOT(KLON)
-      INTEGER  KTYPE(KLON),LCLFLAG(KLON)
-      LOGICAL  TOPFLAG(KLON),DEEPFLAG(KLON),MYFLAG(KLON)
+      integer  klon, klev, klevp1, klevm1
+      real     ptenh(klon,klev),       pqenh(klon,klev),& 
+     &         pqsen(klon,klev),       pqsenh(klon,klev),&
+     &         pgeoh(klon,klevp1),     paph(klon,klevp1),&
+     &         pap(klon,klev),         pqen(klon,klev)
+      real     pten(klon,klev)
+      real     ptu(klon,klev),pqu(klon,klev),plu(klon,klev)
+      real     pgeo(klon,klev)
+      integer  klab(klon,klev)
+      integer  kctop(klon),kcbot(klon)
 
-      REAL     part1(klon), part2(klon), root(klon)
-      REAL     conw(klon),deltT(klon),deltQ(klon)
-      REAL     eta(klon),dz(klon),coef(klon)
-      REAL     dhen(KLON,KLEV), dh(KLON,KLEV),qh(KLON,KLEV)
-      REAL      Tup(KLON,KLEV),Qup(KLON,KLEV),ql(KLON,KLEV)
-      REAL       ww(KLON,KLEV),Kup(KLON,KLEV)
-      REAL     Vtup(KLON,KLEV),Vten(KLON,KLEV),buoy(KLON,KLEV)
+      real     qfx(klon),hfx(klon)
+      real     zph(klon)
+      integer  lndj(klon)
+      logical  loflag(klon), deepflag(klon), resetflag(klon)
 
-      INTEGER  lndj(KLON)
-      REAL     CRIRH1
-!***INPUT VARIABLES:
-!       PTENH [ZTENH] - Environment Temperature on half levels. (CUINI)
-!       PQENH [ZQENH] - Env. specific humidity on half levels. (CUINI)
-!       PGEOH [ZGEOH] - Geopotential on half levels, (MSSFLX)
-!       PAPH - Pressure of half levels. (MSSFLX)
-!       RHO  - Density of the lowest Model level
-!       QFX  - net upward moisture flux at the surface (kg/m^2/s)
-!       HFX  - net upward heat flux at the surface (W/m^2)
-!***VARIABLES OUTPUT BY CUTYPE:
-!       KTYPE - Convection type - 1: Penetrative  (CUMASTR)
-!                                 2: Stratocumulus (CUMASTR)
-!                                 3: Mid-level  (CUASC)
+! output variables
+      real     cutu(klon,klev), cuqu(klon,klev), culu(klon,klev)
+      integer  culab(klon,klev)
+      real     wbase(klon)
+      integer  ktype(klon),cubot(klon),cutop(klon),kdpl(klon)
+      logical  ldcum(klon)
+
+! local variables
+      real     zqold(klon)
+      real     rho, part1, part2, root, conw, deltt, deltq
+      real     eta(klon),dz(klon),coef(klon)
+      real     dhen(klon,klev), dh(klon,klev)
+      real     plude(klon,klev)
+      real     kup(klon,klev)
+      real     vptu(klon,klev),vten(klon,klev)
+      real     zbuo(klon,klev),abuoy(klon,klev)
+  
+      real     zz,zdken,zdq
+      real     fscale,crirh1,pp
+      real     atop1,atop2,abot
+      real     tmix,zmix,qmix,pmix
+      real     zlglac,dp,t13
+      integer  nk,is,ikb,ikt
+
+      real     zqsu,zcor,zdp,zesdp,zalfaw,zfacw,zfaci,zfac,zdsdp,zdqsdt,zdtdp
+      real     zpdifftop, zpdiffbot
+      integer  zcbase(klon)
+      integer  jl,jk,ik,icall,levels
+      logical  needreset, lldcum(klon)
 !--------------------------------------------------------------
-      DO JL=1,KLON
-        KCBOT(JL)=KLEVM1
-        KCTOP(JL)=KLEVM1
-        KTYPE(JL)=0
-      END DO
+      t13 = 1.0/3.0
+!
+      do jl=1,klon
+        kcbot(jl)=klev
+        kctop(jl)=klev
+        kdpl(jl) =klev
+        ktype(jl)=0
+        wbase(jl)=0.
+        ldcum(jl)=.false.
+      end do
+
+      if(lmfscv) then
 !-----------------------------------------------------------
 ! let's do test,and check the shallow convection first
-! the first level is JK+1
-! define deltaT and deltaQ
+! the first level is klev
+! define deltat and deltaq
 !-----------------------------------------------------------
-      DO JK=1,KLEV
-      DO JL=1,KLON
-        ZQOLD(JL,JK)=0.0
-           ql(jl,jk)=0.0  ! parcel liquid water
-          Tup(jl,jk)=0.0  ! parcel temperature
-          Qup(jl,jk)=0.0  ! parcel specific humidity
+      do jk=1,klev
+      do jl=1,klon
+          plu(jl,jk)=culu(jl,jk)  ! parcel liquid water
+          ptu(jl,jk)=cutu(jl,jk)  ! parcel temperature
+          pqu(jl,jk)=cuqu(jl,jk)  ! parcel specific humidity
+          klab(jl,jk)=culab(jl,jk)
            dh(jl,jk)=0.0  ! parcel dry static energy
-           qh(jl,jk)=0.0  ! parcel total water specific humidity
-           ww(jl,jk)=0.0  ! parcel vertical speed (m/s)
          dhen(jl,jk)=0.0  ! environment dry static energy
-          Kup(jl,jk)=0.0  ! updraught kinetic energy for parcel
-         Vtup(jl,jk)=0.0  ! parcel virtual temperature considering water-loading
-         Vten(jl,jk)=0.0  ! environment virtual temperature
-         buoy(jl,jk)=0.0  ! parcel buoyancy
-      END DO
-      END DO
+          kup(jl,jk)=0.0  ! updraught kinetic energy for parcel
+         vptu(jl,jk)=0.0  ! parcel virtual temperature considering water-loading
+         vten(jl,jk)=0.0  ! environment virtual temperature
+         zbuo(jl,jk)=0.0  ! parcel buoyancy
+         abuoy(jl,jk)=0.0
+      end do
+      end do
 
       do jl=1,klon
-         lclflag(jl) = 0  ! flag for the condensation level
-         conw(jl)    = 0.0 ! convective-scale velocity,also used for the vertical speed at the first level
-         myflag(jl)  = .true. ! just as input for cuadjqt subroutine
-        topflag(jl)  = .false.! flag for whether the cloud top is found
+         zqold(jl) = 0.
+         lldcum(jl) = .false.
+         loflag(jl) = .true.
       end do
 
 ! check the levels from lowest level to second top level
-      do JK=KLEVM1,2,-1
-        DO JL=1,KLON
-          ZPH(JL)=PAPH(JL,JK)
-        END DO
+      do jk=klevm1,2,-1
 
 ! define the variables at the first level      
-      if(jk .eq. KLEVM1) then
+      if(jk .eq. klevm1) then
       do jl=1,klon
-        part1(jl) = 1.5*0.4*pgeoh(jl,jk+1)/(rho(jl)*ptenh(jl,jk+1))
-        part2(jl) = hfx(jl)/cpd+0.61*ptenh(jl,jk+1)*qfx(jl)
-        root(jl) = 0.001-part1(jl)*part2(jl)
-        if(root(jl) .gt. 0) then
-          conw(jl) = 1.2*(root(jl))**(1.0/3.0)
+        rho=paph(jl,klev+1)/ &
+     &         (rd*(pten(jl,klev)*(1.+vtmpc1*pqen(jl,klev))))
+        part1 = 1.5*0.4*(pgeoh(jl,klev)-pgeoh(jl,klev+1))/ &
+     &              (rho*pten(jl,klev))
+        part2 = -hfx(jl)*rcpd-vtmpc1*pten(jl,klev)*qfx(jl)
+        root  = 0.001-part1*part2
+        if(part2 .lt. 0.) then
+           conw  = 1.2*(root)**t13
+           deltt = max(1.5*hfx(jl)/(rho*cpd*conw),0.)
+           deltq = max(1.5*qfx(jl)/(rho*conw),0.)
+           kup(jl,klev) = 0.5*(conw**2)
+           pqu(jl,klev)= pqenh(jl,klev) + deltq
+          dhen(jl,klev)= pgeoh(jl,klev) + ptenh(jl,klev)*cpd
+           dh(jl,klev) = dhen(jl,klev)  + deltt*cpd
+          ptu(jl,klev) = (dh(jl,klev)-pgeoh(jl,klev))*rcpd 
+          vptu(jl,klev)=ptu(jl,klev)*(1.+vtmpc1*pqu(jl,klev))
+          vten(jl,klev)=ptenh(jl,klev)*(1.+vtmpc1*pqenh(jl,klev))
+          zbuo(jl,klev)=(vptu(jl,klev)-vten(jl,klev))/vten(jl,klev)
+          klab(jl,klev) = 1
         else
-          conw(jl) = -1.2*(-root(jl))**(1.0/3.0)
-        end if
-        deltT(jl) = -1.5*hfx(jl)/(rho(jl)*cpd*conw(jl))
-        deltQ(jl) = -1.5*qfx(jl)/(rho(jl)*conw(jl))
-
-        Tup(jl,jk+1) = ptenh(jl,jk+1) + deltT(jl)
-        Qup(jl,jk+1) = pqenh(jl,jk+1) + deltQ(jl)
-         ql(jl,jk+1) = 0.
-         dh(jl,jk+1) = pgeoh(jl,jk+1) + Tup(jl,jk+1)*cpd
-         qh(jl,jk+1) = pqenh(jl,jk+1) + deltQ(jl) + ql(jl,jk+1)
-         ww(jl,jk+1) = conw(jl)
-      end do
-      end if
-
-! the next levels, we use the variables at the first level as initial values
-      do jl=1,klon
-      if(.not. topflag(jl)) then
-        eta(jl) = 0.5*(0.55/(pgeoh(jl,jk)*zrg)+1.0e-3)
-        dz(jl)  = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
-        coef(jl)= eta(jl)*dz(jl)
-        dhen(jl,jk) = pgeoh(jl,jk) + cpd*ptenh(jl,jk)
-        dh(jl,jk) = (coef(jl)*dhen(jl,jk) + dh(jl,jk+1))/(1+coef(jl))
-        qh(jl,jk) = (coef(jl)*pqenh(jl,jk)+ qh(jl,jk+1))/(1+coef(jl))
-        Tup(jl,jk) = (dh(jl,jk)-pgeoh(jl,jk))*RCPD
-        Qup(jl,jk) = qh(jl,jk) - ql(jl,jk+1)
-        zqold(jl,jk) = Qup(jl,jk)
-      end if
-      end do
-! check if the parcel is saturated
-      ik=jk
-      icall=1
-      call CUADJTQ(klon,klev,ik,zph,Tup,Qup,myflag,icall)
-      do jl=1,klon
-        if( .not. topflag(jl) .and. zqold(jl,jk) .ne. Qup(jl,jk) ) then
-          lclflag(jl) = lclflag(jl) + 1
-          ql(jl,jk) = ql(jl,jk+1) + zqold(jl,jk) - Qup(jl,jk)
-          dh(jl,jk) = pgeoh(jl,jk) + cpd*Tup(jl,jk)
+          loflag(jl) = .false.
         end if
       end do
-
-! compute the updraft speed
-      do jl=1,klon
-        if(.not. topflag(jl))then
-          Kup(jl,jk+1) = 0.5*ww(jl,jk+1)**2
-          Vtup(jl,jk) = Tup(jl,jk)*(1.+VTMPC1*Qup(jl,jk)-ql(jl,jk))
-          Vten(jl,jk) = ptenh(jl,jk)*(1.+VTMPC1*pqenh(jl,jk))
-          buoy(jl,jk) = (Vtup(jl,jk) - Vten(jl,jk))/Vten(jl,jk)*g
-          Kup(jl,jk)  = (Kup(jl,jk+1) + 0.333*dz(jl)*buoy(jl,jk))/ &
-                        (1+2*2*eta(jl)*dz(jl))
-          if(Kup(jl,jk) .gt. 0 ) then
-             ww(jl,jk) = sqrt(2*Kup(jl,jk))
-             if(lclflag(jl) .eq. 1 ) kcbot(jl) = jk
-             if(jk .eq. 2) then
-                kctop(jl) = jk
-                topflag(jl)= .true.
-             end if
-          else
-             ww(jl,jk) = 0
-             kctop(jl) = jk + 1
-             topflag(jl) = .true.
-          end if
-         end if
-      end do
-      end do ! end all the levels
-
-      do jl=1,klon
-        if(paph(jl,kcbot(jl)) - paph(jl,kctop(jl)) .lt. ZDNOPRC .and. &
-          paph(jl,kcbot(jl)) - paph(jl,kctop(jl)) .gt. 0 &
-           .and. lclflag(jl) .gt. 0) then
-           ktype(jl) = 2
-         end if
-      end do
-
-!-----------------------------------------------------------
-! Next, let's check the deep convection
-! the first level is JK
-! define deltaT and deltaQ
-!----------------------------------------------------------
-! we check the parcel starting level by level (from the second lowest level to the next 12th level,
-! usually, the 12th level around 700 hPa for common eta levels)
-      do levels=KLEVM1-1,KLEVM1-12,-1
-      DO JK=1,KLEV
-      DO JL=1,KLON
-        ZQOLD(JL,JK)=0.0
-           ql(jl,jk)=0.0  ! parcel liquid water
-          Tup(jl,jk)=0.0  ! parcel temperature
-          Qup(jl,jk)=0.0  ! parcel specific humidity
-           dh(jl,jk)=0.0  ! parcel dry static energy
-           qh(jl,jk)=0.0  ! parcel total water specific humidity
-           ww(jl,jk)=0.0  ! parcel vertical speed (m/s)
-         dhen(jl,jk)=0.0  ! environment dry static energy
-          Kup(jl,jk)=0.0  ! updraught kinetic energy for parcel
-         Vtup(jl,jk)=0.0  ! parcel virtual temperature considering water-loading
-         Vten(jl,jk)=0.0  ! environment virtual temperature
-         buoy(jl,jk)=0.0  ! parcel buoyancy
-      END DO
-      END DO
-
-      do jl=1,klon
-         lclflag(jl) = 0  ! flag for the condensation level
-         kctop(jl) = levels
-         kcbot(jl) = levels
-         myflag(jl)  = .true. ! just as input for cuadjqt subroutine
-        topflag(jl)  = .false.! flag for whether the cloud top is found
-      end do
-
-! check the levels from lowest level to second top level
-      do JK=levels,2,-1
-        DO JL=1,KLON
-          ZPH(JL)=PAPH(JL,JK)
-        END DO
-
-! define the variables at the first level      
-      if(jk .eq. levels) then
-      do jl=1,klon
-        deltT(jl) = 0.2
-        deltQ(jl) = 1.0e-4
-
-        if(paph(jl,KLEVM1-1)-paph(jl,jk) .le. 6.e3) then
-         ql(jl,jk+1) = 0.
-        Tup(jl,jk+1) = 0.25*(ptenh(jl,jk+1)+ptenh(jl,jk)+ &
-                             ptenh(jl,jk-1)+ptenh(jl,jk-2)) + &
-                      deltT(jl)
-        dh(jl,jk+1) = 0.25*(pgeoh(jl,jk+1)+pgeoh(jl,jk)+ &
-                            pgeoh(jl,jk-1)+pgeoh(jl,jk-2)) + &
-                      Tup(jl,jk+1)*cpd 
-        qh(jl,jk+1) = 0.25*(pqenh(jl,jk+1)+pqenh(jl,jk)+ &
-                            pqenh(jl,jk-1)+pqenh(jl,jk-2))+ &
-                      deltQ(jl) + ql(jl,jk+1)
-        Qup(jl,jk+1) = qh(jl,jk+1) - ql(jl,jk+1)
-        else
-         ql(jl,jk+1) = 0.
-        Tup(jl,jk+1) = ptenh(jl,jk+1) + deltT(jl)
-         dh(jl,jk+1) = pgeoh(jl,jk+1) + Tup(jl,jk+1)*cpd
-         qh(jl,jk+1) = pqenh(jl,jk+1) + deltQ(jl)
-        Qup(jl,jk+1) =    qh(jl,jk+1) - ql(jl,jk+1)
-        end if
-      ww(jl,jk+1) = 1.0
-
-      end do
       end if
-
-! the next levels, we use the variables at the first level as initial values
+ 
+      is=0
       do jl=1,klon
-      if(.not. topflag(jl)) then
-        eta(jl) = 1.1e-4
-        dz(jl)  = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
-        coef(jl)= eta(jl)*dz(jl)
-        dhen(jl,jk) = pgeoh(jl,jk) + cpd*ptenh(jl,jk)
-        dh(jl,jk) = (coef(jl)*dhen(jl,jk) + dh(jl,jk+1))/(1+coef(jl))
-        qh(jl,jk) = (coef(jl)*pqenh(jl,jk)+ qh(jl,jk+1))/(1+coef(jl))
-        Tup(jl,jk) = (dh(jl,jk)-pgeoh(jl,jk))*RCPD
-        Qup(jl,jk) = qh(jl,jk) - ql(jl,jk+1)
-        zqold(jl,jk) = Qup(jl,jk)
-      end if
-      end do
-! check if the parcel is saturated
-      ik=jk
-      icall=1
-      call CUADJTQ(klon,klev,ik,zph,Tup,Qup,myflag,icall)
-      do jl=1,klon
-        if( .not. topflag(jl) .and. zqold(jl,jk) .ne. Qup(jl,jk) ) then
-          lclflag(jl) = lclflag(jl) + 1
-          ql(jl,jk) = ql(jl,jk+1) + zqold(jl,jk) - Qup(jl,jk)
-          dh(jl,jk) = pgeoh(jl,jk) + cpd*Tup(jl,jk)
-        end if
-      end do
-
-! compute the updraft speed
-      do jl=1,klon
-        if(.not. topflag(jl))then
-          Kup(jl,jk+1) = 0.5*ww(jl,jk+1)**2
-          Vtup(jl,jk) = Tup(jl,jk)*(1.+VTMPC1*Qup(jl,jk)-ql(jl,jk))
-          Vten(jl,jk) = ptenh(jl,jk)*(1.+VTMPC1*pqenh(jl,jk))
-          buoy(jl,jk) = (Vtup(jl,jk) - Vten(jl,jk))/Vten(jl,jk)*g
-          Kup(jl,jk)  = (Kup(jl,jk+1) + 0.333*dz(jl)*buoy(jl,jk))/ &
-                        (1+2*2*eta(jl)*dz(jl))
-          if(Kup(jl,jk) .gt. 0 ) then
-             ww(jl,jk) = sqrt(2*Kup(jl,jk))
-             if(lclflag(jl) .eq. 1 ) kcbot(jl) = jk
-             if(jk .eq. 2) then
-                kctop(jl) = jk
-                topflag(jl)= .true.
-             end if
-          else
-             ww(jl,jk) = 0
-             kctop(jl) = jk + 1
-             topflag(jl) = .true.
-          end if
-         end if
-      end do
-      end do ! end all the levels
-
-      do jl = 1, klon
-       if(paph(jl,kcbot(jl)) - paph(jl,kctop(jl)) .gt. ZDNOPRC .and. &
-              lclflag(jl) .gt. 0 ) then
-         ZRELH(JL) = 0.
-         do jk=kcbot(jl),kctop(jl),-1
-           ZRELH(JL)=ZRELH(JL)+ PQENH(JL,JK)/PQSENH(JL,JK)
-         end do
-         ZRELH(JL) = ZRELH(JL)/(kcbot(jl)-kctop(jl)+1)
-
-         if(lndj(JL) .eq. 1) then
-           CRIRH1 = CRIRH*0.8
-         else
-           CRIRH1 = CRIRH
-         end if
-         if(ZRELH(JL) .ge. CRIRH1) ktype(jl)  = 1
-       end if
-      end do
-
-       end do ! end all cycles
-
-      END SUBROUTINE CUTYPE
-
-!
-!**********************************************
-!       SUBROUTINE CUASC_NEW
-!********************************************** 
-      SUBROUTINE CUASC_NEW &
-         (KLON,     KLEV,     KLEVP1,   KLEVM1,   PTENH,  &
-          PQENH,    PUEN,     PVEN,     PTEN,     PQEN,   &
-          PQSEN,    PGEO,     PGEOH,    PAP,      PAPH,   &
-          PQTE,     PVERV,    KLWMIN,   LDCUM,    PHCBASE,& 
-          KTYPE,    KLAB,     PTU,      PQU,      PLU,    &
-          PUU,      PVU,      PMFU,     PMFUB,    PENTR,  &
-          PMFUS,    PMFUQ,    PMFUL,    PLUDE,    PDMFUP, & 
-          KCBOT,    KCTOP,    KCTOP0,   KCUM,     ZTMST,  &
-          KHMIN,    PHHATT,   PQSENH)
-!     THIS ROUTINE DOES THE CALCULATIONS FOR CLOUD ASCENTS
-!     FOR CUMULUS PARAMETERIZATION
-!     M.TIEDTKE         E.C.M.W.F.     7/86 MODIF.  12/89
-!     Y.WANG            IPRC           11/01 MODIF.
-!***PURPOSE.
-!   --------
-!          TO PRODUCE CLOUD ASCENTS FOR CU-PARAMETRIZATION
-!          (VERTICAL PROFILES OF T,Q,L,U AND V AND CORRESPONDING
-!           FLUXES AS WELL AS PRECIPITATION RATES)
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!***METHOD.
-!  --------
-!          LIFT SURFACE AIR DRY-ADIABATICALLY TO CLOUD BASE
-!          AND THEN CALCULATE MOIST ASCENT FOR
-!          ENTRAINING/DETRAINING PLUME.
-!          ENTRAINMENT AND DETRAINMENT RATES DIFFER FOR
-!          SHALLOW AND DEEP CUMULUS CONVECTION.
-!          IN CASE THERE IS NO PENETRATIVE OR SHALLOW CONVECTION
-!          CHECK FOR POSSIBILITY OF MID LEVEL CONVECTION
-!          (CLOUD BASE VALUES CALCULATED IN *CUBASMC*)
-!***EXTERNALS
-!   ---------
-!          *CUADJTQ* ADJUST T AND Q DUE TO CONDENSATION IN ASCENT
-!          *CUENTR_NEW*  CALCULATE ENTRAINMENT/DETRAINMENT RATES
-!          *CUBASMC* CALCULATE CLOUD BASE VALUES FOR MIDLEVEL CONVECTION
-!***REFERENCE
-!   ---------
-!          (TIEDTKE,1989)
-!***INPUT VARIABLES:
-!       PTENH [ZTENH] - Environ Temperature on half levels. (CUINI)
-!       PQENH [ZQENH] - Env. specific humidity on half levels. (CUINI)
-!       PUEN - Environment wind u-component. (MSSFLX)
-!       PVEN - Environment wind v-component. (MSSFLX)
-!       PTEN - Environment Temperature. (MSSFLX)
-!       PQEN - Environment Specific Humidity. (MSSFLX)
-!       PQSEN - Environment Saturation Specific Humidity. (MSSFLX)
-!       PGEO - Geopotential. (MSSFLX)
-!       PGEOH [ZGEOH] - Geopotential on half levels, (MSSFLX)
-!       PAP - Pressure in Pa.  (MSSFLX)
-!       PAPH - Pressure of half levels. (MSSFLX)
-!       PQTE - Moisture convergence (Delta q/Delta t). (MSSFLX)
-!       PVERV - Large Scale Vertical Velocity (Omega). (MSSFLX)
-!       KLWMIN [ILWMIN] - Level of Minimum Omega. (CUINI)
-!       KLAB [ILAB] - Level Label - 1: Sub-cloud layer.
-!                                   2: Condensation Level (Cloud Base)
-!       PMFUB [ZMFUB] - Updraft Mass Flux at Cloud Base. (CUMASTR)
-!***VARIABLES MODIFIED BY CUASC:
-!       LDCUM - Logical denoting profiles. (CUBASE)
-!       KTYPE - Convection type - 1: Penetrative  (CUMASTR)
-!                                 2: Stratocumulus (CUMASTR)
-!                                 3: Mid-level  (CUASC)
-!       PTU - Cloud Temperature.
-!       PQU - Cloud specific Humidity.
-!       PLU - Cloud Liquid Water (Moisture condensed out)
-!       PUU [ZUU] - Cloud Momentum U-Component.
-!       PVU [ZVU] - Cloud Momentum V-Component.
-!       PMFU - Updraft Mass Flux.
-!       PENTR [ZENTR] - Entrainment Rate. (CUMASTR ) (CUBASMC)
-!       PMFUS [ZMFUS] - Updraft Flux of Dry Static Energy. (CUBASMC)
-!       PMFUQ [ZMFUQ] - Updraft Flux of Specific Humidity.
-!       PMFUL [ZMFUL] - Updraft Flux of Cloud Liquid Water.
-!       PLUDE - Liquid Water Returned to Environment by Detrainment.
-!       PDMFUP [ZMFUP] - FLUX DIFFERENCE OF PRECIP. IN UPDRAFTS
-!       KCBOT - Cloud Base Level. (CUBASE)
-!       KCTOP -
-!       KCTOP0 [ICTOP0] - Estimate of Cloud Top. (CUMASTR)
-!       KCUM [ICUM] -
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   klevm1,kcum
-      REAL      ZTMST,ZCONS2,ZDZ,ZDRODZ
-      INTEGER   JL,JK,IKB,IK,IS,IKT,ICALL
-      REAL      ZMFMAX,ZFAC,ZMFTEST,ZDPRHO,ZMSE,ZNEVN,ZODMAX
-      REAL      ZQEEN,ZSEEN,ZSCDE,ZGA,ZDT,ZSCOD
-      REAL      ZQUDE,ZQCOD, ZMFUSK, ZMFUQK,ZMFULK
-      REAL      ZBUO, ZPRCON, ZLNEW, ZZ, ZDMFEU, ZDMFDU
-      REAL      ZBUOYZ,ZZDMF
-      REAL     PTENH(KLON,KLEV),       PQENH(KLON,KLEV), &
-              PUEN(KLON,KLEV),        PVEN(KLON,KLEV),   &
-              PTEN(KLON,KLEV),        PQEN(KLON,KLEV),   &
-              PGEO(KLON,KLEV),        PGEOH(KLON,KLEV),  &
-              PAP(KLON,KLEV),         PAPH(KLON,KLEVP1), &
-              PQSEN(KLON,KLEV),       PQTE(KLON,KLEV),   &
-              PVERV(KLON,KLEV),       PQSENH(KLON,KLEV)  
-      REAL     PTU(KLON,KLEV),         PQU(KLON,KLEV),   &
-              PUU(KLON,KLEV),         PVU(KLON,KLEV),    &
-              PMFU(KLON,KLEV),        ZPH(KLON),         &
-              PMFUB(KLON),            PENTR(KLON),       &
-              PMFUS(KLON,KLEV),       PMFUQ(KLON,KLEV),  &
-              PLU(KLON,KLEV),         PLUDE(KLON,KLEV),  &
-              PMFUL(KLON,KLEV),       PDMFUP(KLON,KLEV)
-      REAL     ZDMFEN(KLON),           ZDMFDE(KLON),     &
-              ZMFUU(KLON),            ZMFUV(KLON),       &
-              ZPBASE(KLON),           ZQOLD(KLON),       &
-              PHHATT(KLON,KLEV),      ZODETR(KLON,KLEV), &
-              ZOENTR(KLON,KLEV),      ZBUOY(KLON)
-      REAL     PHCBASE(KLON)
-      INTEGER  KLWMIN(KLON),           KTYPE(KLON),      &
-              KLAB(KLON,KLEV),        KCBOT(KLON),       &
-              KCTOP(KLON),            KCTOP0(KLON),      &
-              KHMIN(KLON)
-      LOGICAL LDCUM(KLON),            LOFLAG(KLON)
-      integer leveltop,levelbot
-      real    tt(klon),ttb(klon)
-      real    zqsat(klon), zqsatb(klon)
-      real    fscale(klon)
-
-!--------------------------------
-!*    1.       SPECIFY PARAMETERS
-!--------------------------------
-  100 CONTINUE
-      ZCONS2=1./(G*ZTMST)
-!---------------------------------
-!     2.        SET DEFAULT VALUES
-!---------------------------------
-  200 CONTINUE
-      DO 210 JL=1,KLON
-        ZMFUU(JL)=0.
-        ZMFUV(JL)=0.
-        ZBUOY(JL)=0.
-        IF(.NOT.LDCUM(JL)) KTYPE(JL)=0
-  210 CONTINUE
-      DO 230 JK=1,KLEV
-      DO 230 JL=1,KLON
-          PLU(JL,JK)=0.
-          PMFU(JL,JK)=0.
-          PMFUS(JL,JK)=0.
-          PMFUQ(JL,JK)=0.
-          PMFUL(JL,JK)=0.
-          PLUDE(JL,JK)=0.
-          PDMFUP(JL,JK)=0.
-          ZOENTR(JL,JK)=0.
-          ZODETR(JL,JK)=0.
-          IF(.NOT.LDCUM(JL).OR.KTYPE(JL).EQ.3) KLAB(JL,JK)=0
-          IF(.NOT.LDCUM(JL).AND.PAPH(JL,JK).LT.4.E4) KCTOP0(JL)=JK
-  230 CONTINUE
-!------------------------------------------------
-!     3.0      INITIALIZE VALUES AT LIFTING LEVEL
-!------------------------------------------------
-      DO 310 JL=1,KLON
-        KCTOP(JL)=KLEVM1
-        IF(.NOT.LDCUM(JL)) THEN
-           KCBOT(JL)=KLEVM1
-           PMFUB(JL)=0.
-           PQU(JL,KLEV)=0.
-        END IF
-        PMFU(JL,KLEV)=PMFUB(JL)
-        PMFUS(JL,KLEV)=PMFUB(JL)*(CPD*PTU(JL,KLEV)+PGEOH(JL,KLEV))
-        PMFUQ(JL,KLEV)=PMFUB(JL)*PQU(JL,KLEV)
-        IF(LMFDUDV) THEN
-           ZMFUU(JL)=PMFUB(JL)*PUU(JL,KLEV)
-           ZMFUV(JL)=PMFUB(JL)*PVU(JL,KLEV)
-        END IF
-  310 CONTINUE
-!
-!-- 3.1 Find organized entrainment at cloud base
-!
-      DO 322 JL=1,KLON
-      LDCUM(JL)=.FALSE.
-      IF (KTYPE(JL).EQ.1) THEN
-       IKB = KCBOT(JL)
-       if(orgen .eq. 1 ) then
-! old scheme
-       ZBUOY(JL)=G*((PTU(JL,IKB)-PTENH(JL,IKB))/PTENH(JL,IKB)+ &
-               0.608*(PQU(JL,IKB)-PQENH(JL,IKB)))
-       IF (ZBUOY(JL).GT.0.) THEN
-        ZDZ = (PGEO(JL,IKB-1)-PGEO(JL,IKB))*ZRG
-        ZDRODZ = -LOG(PTEN(JL,IKB-1)/PTEN(JL,IKB))/ZDZ -  &
-                 G/(RD*PTENH(JL,IKB))
-        ZOENTR(JL,IKB-1)=ZBUOY(JL)*0.5/(1.+ZBUOY(JL)*ZDZ) &
-                +ZDRODZ
-        ZOENTR(JL,IKB-1) = MIN(ZOENTR(JL,IKB-1),1.E-3)
-        ZOENTR(JL,IKB-1) = MAX(ZOENTR(JL,IKB-1),0.)
-       END IF
-! New scheme
-! Let's define the fscale
-        else if(orgen .eq. 2 ) then
-        tt(jl) = ptenh(jl,ikb-1)
-        zqsat(jl) = TLUCUA(tt(jl))/paph(jl,ikb-1)
-        zqsat(jl) = zqsat(jl)/(1.-VTMPC1*zqsat(jl))
-        ttb(jl) = ptenh(jl,ikb)
-        zqsatb(jl) = TLUCUA(ttb(jl))/paph(jl,ikb)
-        zqsatb(jl) = zqsatb(jl)/(1.-VTMPC1*zqsatb(jl))
-        fscale(jl) = (zqsat(jl)/zqsatb(jl))**3
-! end of defining the fscale
-        zoentr(jl,ikb-1) = 1.E-3*(1.3-PQEN(jl,ikb-1)/PQSEN(jl,ikb-1))*fscale(jl)
-        zoentr(jl,ikb-1) = MIN(zoentr(jl,ikb-1),1.E-3)
-        zoentr(jl,ikb-1) = MAX(zoentr(jl,ikb-1),0.)
-       end if
-      END IF
-  322 CONTINUE 
-!
-!-----------------------------------------------------------------
-!     4.       DO ASCENT: SUBCLOUD LAYER (KLAB=1) ,CLOUDS (KLAB=2)
-!              BY DOING FIRST DRY-ADIABATIC ASCENT AND THEN
-!              BY ADJUSTING T,Q AND L ACCORDINGLY IN *CUADJTQ*,
-!              THEN CHECK FOR BUOYANCY AND SET FLAGS ACCORDINGLY
-!-----------------------------------------------------------------
-  400 CONTINUE
-
-! let's define the levels in which the middle level convection could be activated
-      do jk=KLEVM1,2,-1
-      if(abs(paph(1,jk)*0.01 - 250) .lt. 50.) then
-        leveltop = jk
-        exit
-      end if
-      end do
-      leveltop = min(KLEV-15,leveltop)
-      levelbot = KLEVM1 - 4
-        
-      DO 480 JK=KLEVM1,2,-1
-!                  SPECIFY CLOUD BASE VALUES FOR MIDLEVEL CONVECTION
-!                  IN *CUBASMC* IN CASE THERE IS NOT ALREADY CONVECTION
-! ---------------------------------------------------------------------
-      IK=JK
-      IF(LMFMID.AND.IK.LT.levelbot.AND.IK.GT.leveltop) THEN
-      CALL CUBASMC  &
-         (KLON,     KLEV,     KLEVM1,   IK,      PTEN,  &
-          PQEN,     PQSEN,    PUEN,     PVEN,    PVERV, &
-          PGEO,     PGEOH,    LDCUM,    KTYPE,   KLAB,  &
-          PMFU,     PMFUB,    PENTR,    KCBOT,   PTU,   &
-          PQU,      PLU,      PUU,     PVU,      PMFUS, &
-          PMFUQ,    PMFUL,    PDMFUP,  ZMFUU,    ZMFUV)
-      ENDIF
-      IS=0
-      DO 410 JL=1,KLON
-        ZQOLD(JL)=0.0
-        IS=IS+KLAB(JL,JK+1)
-        IF(KLAB(JL,JK+1).EQ.0) KLAB(JL,JK)=0
-        LOFLAG(JL)=KLAB(JL,JK+1).GT.0
-        ZPH(JL)=PAPH(JL,JK)
-        IF(KTYPE(JL).EQ.3.AND.JK.EQ.KCBOT(JL)) THEN
-           ZMFMAX=(PAPH(JL,JK)-PAPH(JL,JK-1))*ZCONS2
-           IF(PMFUB(JL).GT.ZMFMAX) THEN
-              ZFAC=ZMFMAX/PMFUB(JL)
-              PMFU(JL,JK+1)=PMFU(JL,JK+1)*ZFAC
-              PMFUS(JL,JK+1)=PMFUS(JL,JK+1)*ZFAC
-              PMFUQ(JL,JK+1)=PMFUQ(JL,JK+1)*ZFAC
-              ZMFUU(JL)=ZMFUU(JL)*ZFAC
-              ZMFUV(JL)=ZMFUV(JL)*ZFAC
-              PMFUB(JL)=ZMFMAX
-           END IF
-        END IF
-  410 CONTINUE
-      IF(IS.EQ.0) GO TO 480
-!
-!*     SPECIFY ENTRAINMENT RATES IN *CUENTR_NEW*
-! -------------------------------------
-      IK=JK
-      CALL CUENTR_NEW &
-         (KLON,     KLEV,     KLEVP1,   IK,       PTENH,&
-          PAPH,     PAP,      PGEOH,    KLWMIN,   LDCUM,&
-          KTYPE,    KCBOT,    KCTOP0,   ZPBASE,   PMFU, &
-          PENTR,    ZDMFEN,   ZDMFDE,   ZODETR,   KHMIN)
-!
-!      DO ADIABATIC ASCENT FOR ENTRAINING/DETRAINING PLUME
-! -------------------------------------------------------
-! Do adiabatic ascent for entraining/detraining plume
-! the cloud ensemble entrains environmental values
-! in turbulent detrainment cloud ensemble values are detrained
-! in organized detrainment the dry static energy and
-! moisture that are neutral compared to the
-! environmental air are detrained
-!
-      DO 420 JL=1,KLON
-      IF(LOFLAG(JL)) THEN
-        IF(JK.LT.KCBOT(JL)) THEN
-         ZMFTEST=PMFU(JL,JK+1)+ZDMFEN(JL)-ZDMFDE(JL)
-         ZMFMAX=MIN(ZMFTEST,(PAPH(JL,JK)-PAPH(JL,JK-1))*ZCONS2)
-         ZDMFEN(JL)=MAX(ZDMFEN(JL)-MAX(ZMFTEST-ZMFMAX,0.),0.)
-        END IF
-        ZDMFDE(JL)=MIN(ZDMFDE(JL),0.75*PMFU(JL,JK+1))
-        PMFU(JL,JK)=PMFU(JL,JK+1)+ZDMFEN(JL)-ZDMFDE(JL)
-        IF (JK.LT.kcbot(jl)) THEN
-          zdprho = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
-          zoentr(jl,jk) = zoentr(jl,jk)*zdprho*pmfu(jl,jk+1)
-          zmftest = pmfu(jl,jk) + zoentr(jl,jk)-zodetr(jl,jk)
-          zmfmax = MIN(zmftest,(paph(jl,jk)-paph(jl,jk-1))*zcons2)
-          zoentr(jl,jk) = MAX(zoentr(jl,jk)-MAX(zmftest-zmfmax,0.),0.)
-        END IF
-!
-! limit organized detrainment to not allowing for too deep clouds
-!
-        IF (ktype(jl).EQ.1.AND.jk.LT.kcbot(jl).AND.jk.LE.khmin(jl)) THEN
-          zmse = cpd*ptu(jl,jk+1) + alv*pqu(jl,jk+1) + pgeoh(jl,jk+1)
-          ikt = kctop0(jl)
-          znevn=(pgeoh(jl,ikt)-pgeoh(jl,jk+1))*(zmse-phhatt(jl,  &
-               jk+1))*zrg
-          IF (znevn.LE.0.) znevn = 1.
-          zdprho = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
-          zodmax = ((phcbase(jl)-zmse)/znevn)*zdprho*pmfu(jl,jk+1)
-          zodmax = MAX(zodmax,0.)
-          zodetr(jl,jk) = MIN(zodetr(jl,jk),zodmax)
-        END IF
-        zodetr(jl,jk) = MIN(zodetr(jl,jk),0.75*pmfu(jl,jk))
-        pmfu(jl,jk) = pmfu(jl,jk) + zoentr(jl,jk) - zodetr(jl,jk)
-        ZQEEN=PQENH(JL,JK+1)*ZDMFEN(JL)
-        zqeen=zqeen + pqenh(jl,jk+1)*zoentr(jl,jk)
-        ZSEEN=(CPD*PTENH(JL,JK+1)+PGEOH(JL,JK+1))*ZDMFEN(JL)
-        zseen=zseen+(cpd*ptenh(jl,jk+1)+pgeoh(jl,jk+1))*  &
-             zoentr(jl,jk)
-        ZSCDE=(CPD*PTU(JL,JK+1)+PGEOH(JL,JK+1))*ZDMFDE(JL)
-! find moist static energy that give nonbuoyant air
-        zga = alv*pqsenh(jl,jk+1)/(rv*(ptenh(jl,jk+1)**2))
-        zdt = (plu(jl,jk+1)-0.608*(pqsenh(jl,jk+1)-pqenh(jl, &
-               jk+1)))/(1./ptenh(jl,jk+1)+0.608*zga)
-        zscod = cpd*ptenh(jl,jk+1) + pgeoh(jl,jk+1) + cpd*zdt
-        zscde = zscde + zodetr(jl,jk)*zscod
-        zqude = pqu(jl,jk+1)*zdmfde(jl)
-        zqcod = pqsenh(jl,jk+1) + zga*zdt
-        zqude = zqude + zodetr(jl,jk)*zqcod
-        plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
-        plude(jl,jk) = plude(jl,jk)+plu(jl,jk+1)*zodetr(jl,jk)
-        zmfusk = pmfus(jl,jk+1) + zseen - zscde
-        zmfuqk = pmfuq(jl,jk+1) + zqeen - zqude
-        zmfulk = pmful(jl,jk+1) - plude(jl,jk)
-        plu(jl,jk) = zmfulk*(1./MAX(cmfcmin,pmfu(jl,jk)))
-        pqu(jl,jk) = zmfuqk*(1./MAX(cmfcmin,pmfu(jl,jk)))
-        ptu(jl,jk)=(zmfusk*(1./MAX(cmfcmin,pmfu(jl,jk)))-  &
-            pgeoh(jl,jk))*rcpd
-        ptu(jl,jk) = MAX(100.,ptu(jl,jk))
-        ptu(jl,jk) = MIN(400.,ptu(jl,jk))
-        zqold(jl) = pqu(jl,jk)
-      END IF
-  420 CONTINUE
-!*             DO CORRECTIONS FOR MOIST ASCENT
-!*             BY ADJUSTING T,Q AND L IN *CUADJTQ*
-!------------------------------------------------
-      IK=JK
-      ICALL=1
-!
-      CALL CUADJTQ(KLON,KLEV,IK,ZPH,PTU,PQU,LOFLAG,ICALL)
-!
-      DO 440 JL=1,KLON
-      IF(LOFLAG(JL).AND.PQU(JL,JK).NE.ZQOLD(JL)) THEN
-         KLAB(JL,JK)=2
-         PLU(JL,JK)=PLU(JL,JK)+ZQOLD(JL)-PQU(JL,JK)
-         ZBUO=PTU(JL,JK)*(1.+VTMPC1*PQU(JL,JK)-PLU(JL,JK))-  &
-        PTENH(JL,JK)*(1.+VTMPC1*PQENH(JL,JK))
-         IF(KLAB(JL,JK+1).EQ.1) ZBUO=ZBUO+ZBUO0
-         IF(ZBUO.GT.0..AND.PMFU(JL,JK).GT.0.01*PMFUB(JL).AND. &
-                            JK.GE.KCTOP0(JL)) THEN
-            KCTOP(JL)=JK
-            LDCUM(JL)=.TRUE.
-            IF(ZPBASE(JL)-PAPH(JL,JK).GE.ZDNOPRC) THEN
-               ZPRCON=CPRCON
-            ELSE
-               ZPRCON=0.
-            ENDIF
-            ZLNEW=PLU(JL,JK)/(1.+ZPRCON*(PGEOH(JL,JK)-PGEOH(JL,JK+1)))
-            PDMFUP(JL,JK)=MAX(0.,(PLU(JL,JK)-ZLNEW)*PMFU(JL,JK))
-            PLU(JL,JK)=ZLNEW
-         ELSE
-            KLAB(JL,JK)=0
-            PMFU(JL,JK)=0.
-         END IF
-      END IF
-      IF(LOFLAG(JL)) THEN
-         PMFUL(JL,JK)=PLU(JL,JK)*PMFU(JL,JK)
-         PMFUS(JL,JK)=(CPD*PTU(JL,JK)+PGEOH(JL,JK))*PMFU(JL,JK)
-         PMFUQ(JL,JK)=PQU(JL,JK)*PMFU(JL,JK)
-      END IF
-  440 CONTINUE
-!
-      IF(LMFDUDV) THEN
-!
-        DO 460 JL=1,KLON
-        zdmfen(jl) = zdmfen(jl) + zoentr(jl,jk)
-        zdmfde(jl) = zdmfde(jl) + zodetr(jl,jk)
-           IF(LOFLAG(JL)) THEN
-              IF(KTYPE(JL).EQ.1.OR.KTYPE(JL).EQ.3) THEN
-                 IF(ZDMFEN(JL).LE.1.E-20) THEN
-                    ZZ=3.
-                 ELSE
-                    ZZ=2.
-                 ENDIF
-              ELSE
-                 IF(ZDMFEN(JL).LE.1.0E-20) THEN
-                    ZZ=1.
-                 ELSE
-                    ZZ=0.
-                 ENDIF
-              END IF
-              ZDMFEU=ZDMFEN(JL)+ZZ*ZDMFDE(JL)
-              ZDMFDU=ZDMFDE(JL)+ZZ*ZDMFDE(JL)
-              ZDMFDU=MIN(ZDMFDU,0.75*PMFU(JL,JK+1))
-              ZMFUU(JL)=ZMFUU(JL)+                              &
-                       ZDMFEU*PUEN(JL,JK)-ZDMFDU*PUU(JL,JK+1)   
-              ZMFUV(JL)=ZMFUV(JL)+                              &
-                       ZDMFEU*PVEN(JL,JK)-ZDMFDU*PVU(JL,JK+1)   
-              IF(PMFU(JL,JK).GT.0.) THEN
-                 PUU(JL,JK)=ZMFUU(JL)*(1./PMFU(JL,JK))
-                 PVU(JL,JK)=ZMFUV(JL)*(1./PMFU(JL,JK))
-              END IF
-           END IF
-  460   CONTINUE
-!
-        END IF
-!
-! Compute organized entrainment
-! for use at next level
-!
-      DO 470 jl = 1, klon
-       IF (loflag(jl).AND.ktype(jl).EQ.1) THEN
-! old scheme
-       if(orgen .eq. 1 ) then
-        zbuoyz=g*((ptu(jl,jk)-ptenh(jl,jk))/ptenh(jl,jk)+  &
-              0.608*(pqu(jl,jk)-pqenh(jl,jk))-plu(jl,jk))
-        zbuoyz = MAX(zbuoyz,0.0)
-        zdz = (pgeo(jl,jk-1)-pgeo(jl,jk))*zrg
-        zdrodz = -LOG(pten(jl,jk-1)/pten(jl,jk))/zdz -  &
-                 g/(rd*ptenh(jl,jk))
-        zbuoy(jl) = zbuoy(jl) + zbuoyz*zdz
-        zoentr(jl,jk-1) = zbuoyz*0.5/(1.+zbuoy(jl))+zdrodz
-        zoentr(jl,jk-1) = MIN(zoentr(jl,jk-1),1.E-3)
-        zoentr(jl,jk-1) = MAX(zoentr(jl,jk-1),0.)
-       else if(orgen .eq. 2 ) then
-! Let's define the fscale
-        tt(jl) = ptenh(jl,jk-1)
-        zqsat(jl) = TLUCUA(tt(jl))/paph(jl,jk-1)
-        zqsat(jl) = zqsat(jl)/(1.-VTMPC1*zqsat(jl))
-        ttb(jl) = ptenh(jl,kcbot(jl))
-        zqsatb(jl) = TLUCUA(ttb(jl))/paph(jl,kcbot(jl))
-        zqsatb(jl) = zqsatb(jl)/(1.-VTMPC1*zqsatb(jl))
-        fscale(jl) = (zqsat(jl)/zqsatb(jl))**3
-! end of defining the fscale
-        zoentr(jl,jk-1) = 1.E-3*(1.3-PQEN(jl,jk-1)/PQSEN(jl,jk-1))*fscale(jl)
-        zoentr(jl,jk-1) = MIN(zoentr(jl,jk-1),1.E-3)
-        zoentr(jl,jk-1) = MAX(zoentr(jl,jk-1),0.)
-!        write(6,*) "zoentr=",zoentr(jl,jk-1) 
-       end if
-       END IF
-  470 CONTINUE 
-!
-  480 CONTINUE
-! -----------------------------------------------------------------
-!     5.       DETERMINE CONVECTIVE FLUXES ABOVE NON-BUOYANCY LEVEL
-! -----------------------------------------------------------------
-!                  (NOTE: CLOUD VARIABLES LIKE T,Q AND L ARE NOT
-!                         AFFECTED BY DETRAINMENT AND ARE ALREADY KNOWN
-!                         FROM PREVIOUS CALCULATIONS ABOVE)
-  500 CONTINUE
-      DO 510 JL=1,KLON
-      IF(KCTOP(JL).EQ.KLEVM1) LDCUM(JL)=.FALSE.
-      KCBOT(JL)=MAX(KCBOT(JL),KCTOP(JL))
-  510 CONTINUE
-      IS=0
-      DO 520 JL=1,KLON
-      IF(LDCUM(JL)) THEN
-         IS=IS+1
-      ENDIF
-  520 CONTINUE
-      KCUM=IS
-      IF(IS.EQ.0) GO TO 800
-      DO 530 JL=1,KLON
-      IF(LDCUM(JL)) THEN
-         JK=KCTOP(JL)-1
-         ZZDMF=CMFCTOP
-         ZDMFDE(JL)=(1.-ZZDMF)*PMFU(JL,JK+1)
-         PLUDE(JL,JK)=ZDMFDE(JL)*PLU(JL,JK+1)
-         PMFU(JL,JK)=PMFU(JL,JK+1)-ZDMFDE(JL)
-         PMFUS(JL,JK)=(CPD*PTU(JL,JK)+PGEOH(JL,JK))*PMFU(JL,JK)
-         PMFUQ(JL,JK)=PQU(JL,JK)*PMFU(JL,JK)
-         PMFUL(JL,JK)=PLU(JL,JK)*PMFU(JL,JK)
-         PLUDE(JL,JK-1)=PMFUL(JL,JK)
-         PDMFUP(JL,JK)=0.
-      END IF
-  530 CONTINUE
-        IF(LMFDUDV) THEN
-           DO 540 JL=1,KLON
-           IF(LDCUM(JL)) THEN
-              JK=KCTOP(JL)-1
-              PUU(JL,JK)=PUU(JL,JK+1)
-              PVU(JL,JK)=PVU(JL,JK+1)
-           END IF
-  540      CONTINUE
-        END IF
-  800 CONTINUE
-      RETURN
-      END SUBROUTINE CUASC_NEW
-!
-
-!**********************************************
-!       SUBROUTINE CUDLFS
-!********************************************** 
-      SUBROUTINE CUDLFS &
-         (KLON,     KLEV,     KLEVP1,   PTENH,    PQENH,  &
-          PUEN,     PVEN,     PGEOH,    PAPH,     PTU,    &
-          PQU,      PUU,      PVU,      LDCUM,    KCBOT,  &
-          KCTOP,    PMFUB,    PRFL,     PTD,      PQD,    &
-          PUD,      PVD,      PMFD,     PMFDS,    PMFDQ,  &
-          PDMFDP,   KDTOP,    LDDRAF)
-!      THIS ROUTINE CALCULATES LEVEL OF FREE SINKING FOR
-!      CUMULUS DOWNDRAFTS AND SPECIFIES T,Q,U AND V VALUES
-!      M.TIEDTKE         E.C.M.W.F.    12/86 MODIF.  12/89
-!***PURPOSE.
-!   --------
-!          TO PRODUCE LFS-VALUES FOR CUMULUS DOWNDRAFTS
-!          FOR MASSFLUX CUMULUS PARAMETERIZATION
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!          INPUT ARE ENVIRONMENTAL VALUES OF T,Q,U,V,P,PHI
-!          AND UPDRAFT VALUES T,Q,U AND V AND ALSO
-!          CLOUD BASE MASSFLUX AND CU-PRECIPITATION RATE.
-!          IT RETURNS T,Q,U AND V VALUES AND MASSFLUX AT LFS.
-!***METHOD.
-!  --------
-!          CHECK FOR NEGATIVE BUOYANCY OF AIR OF EQUAL PARTS OF
-!          MOIST ENVIRONMENTAL AIR AND CLOUD AIR.
-!***EXTERNALS
-!   ---------
-!          *CUADJTQ* FOR CALCULATING WET BULB T AND Q AT LFS
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   JL,KE,JK,IS,IK,ICALL
-      REAL      ZTTEST, ZQTEST, ZBUO, ZMFTOP
-      REAL     PTENH(KLON,KLEV),       PQENH(KLON,KLEV),   &
-              PUEN(KLON,KLEV),        PVEN(KLON,KLEV),     &
-              PGEOH(KLON,KLEV),       PAPH(KLON,KLEVP1),   &
-              PTU(KLON,KLEV),         PQU(KLON,KLEV),      &
-              PUU(KLON,KLEV),         PVU(KLON,KLEV),      &
-              PMFUB(KLON),            PRFL(KLON)
-      REAL     PTD(KLON,KLEV),         PQD(KLON,KLEV),     &
-              PUD(KLON,KLEV),         PVD(KLON,KLEV),      &
-              PMFD(KLON,KLEV),        PMFDS(KLON,KLEV),    &
-              PMFDQ(KLON,KLEV),       PDMFDP(KLON,KLEV)    
-      REAL     ZTENWB(KLON,KLEV),      ZQENWB(KLON,KLEV),  &
-              ZCOND(KLON),            ZPH(KLON)
-      INTEGER  KCBOT(KLON),            KCTOP(KLON),        &
-              KDTOP(KLON)
-      LOGICAL  LDCUM(KLON),            LLo2(KLON),         &
-              LDDRAF(KLON)
-!-----------------------------------------------
-!     1.       SET DEFAULT VALUES FOR DOWNDRAFTS
-!-----------------------------------------------
-  100 CONTINUE
-      DO 110 JL=1,KLON
-      LDDRAF(JL)=.FALSE.
-      KDTOP(JL)=KLEVP1
-  110 CONTINUE
-      IF(.NOT.LMFDD) GO TO 300
-!------------------------------------------------------------
-!     2.       DETERMINE LEVEL OF FREE SINKING BY
-!              DOING A SCAN FROM TOP TO BASE OF CUMULUS CLOUDS
-!              FOR EVERY POINT AND PROCEED AS FOLLOWS:
-!                (1) DETEMINE WET BULB ENVIRONMENTAL T AND Q
-!                (2) DO MIXING WITH CUMULUS CLOUD AIR
-!                (3) CHECK FOR NEGATIVE BUOYANCY
-!              THE ASSUMPTION IS THAT AIR OF DOWNDRAFTS IS MIXTURE
-!              OF 50% CLOUD AIR + 50% ENVIRONMENTAL AIR AT WET BULB
-!              TEMPERATURE (I.E. WHICH BECAME SATURATED DUE TO
-!              EVAPORATION OF RAIN AND CLOUD WATER)
-!------------------------------------------------------------------
-  200 CONTINUE
-      KE=KLEV-3
-      DO 290 JK=3,KE
-!   2.1      CALCULATE WET-BULB TEMPERATURE AND MOISTURE
-!            FOR ENVIRONMENTAL AIR IN *CUADJTQ*
-! -----------------------------------------------------
-  210 CONTINUE
-      IS=0
-      DO 212 JL=1,KLON
-      ZTENWB(JL,JK)=PTENH(JL,JK)
-      ZQENWB(JL,JK)=PQENH(JL,JK)
-      ZPH(JL)=PAPH(JL,JK)
-      LLO2(JL)=LDCUM(JL).AND.PRFL(JL).GT.0..AND..NOT.LDDRAF(JL).AND. &
-              (JK.LT.KCBOT(JL).AND.JK.GT.KCTOP(JL))
-      IF(LLO2(JL))THEN
-         IS=IS+1
-      ENDIF
-  212 CONTINUE
-      IF(IS.EQ.0) GO TO 290
-      IK=JK
-      ICALL=2
-      CALL CUADJTQ(KLON,KLEV,IK,ZPH,ZTENWB,ZQENWB,LLO2,ICALL)
-!   2.2      DO MIXING OF CUMULUS AND ENVIRONMENTAL AIR
-!            AND CHECK FOR NEGATIVE BUOYANCY.
-!            THEN SET VALUES FOR DOWNDRAFT AT LFS.
-! -----------------------------------------------------
-  220 CONTINUE
-      DO 222 JL=1,KLON
-      IF(LLO2(JL)) THEN
-         ZTTEST=0.5*(PTU(JL,JK)+ZTENWB(JL,JK))
-         ZQTEST=0.5*(PQU(JL,JK)+ZQENWB(JL,JK))
-         ZBUO=ZTTEST*(1.+VTMPC1*ZQTEST)-  &
-             PTENH(JL,JK)*(1.+VTMPC1*PQENH(JL,JK))
-         ZCOND(JL)=PQENH(JL,JK)-ZQENWB(JL,JK)
-         ZMFTOP=-CMFDEPS*PMFUB(JL)
-         IF(ZBUO.LT.0..AND.PRFL(JL).GT.10.*ZMFTOP*ZCOND(JL)) THEN
-            KDTOP(JL)=JK
-            LDDRAF(JL)=.TRUE.
-            PTD(JL,JK)=ZTTEST
-            PQD(JL,JK)=ZQTEST
-            PMFD(JL,JK)=ZMFTOP
-            PMFDS(JL,JK)=PMFD(JL,JK)*(CPD*PTD(JL,JK)+PGEOH(JL,JK))
-            PMFDQ(JL,JK)=PMFD(JL,JK)*PQD(JL,JK)
-            PDMFDP(JL,JK-1)=-0.5*PMFD(JL,JK)*ZCOND(JL)
-            PRFL(JL)=PRFL(JL)+PDMFDP(JL,JK-1)
-         END IF
-      END IF
-  222 CONTINUE
-         IF(LMFDUDV) THEN
-            DO 224 JL=1,KLON
-            IF(PMFD(JL,JK).LT.0.) THEN
-               PUD(JL,JK)=0.5*(PUU(JL,JK)+PUEN(JL,JK-1))
-               PVD(JL,JK)=0.5*(PVU(JL,JK)+PVEN(JL,JK-1))
-            END IF
-  224       CONTINUE
-         END IF
-  290 CONTINUE
- 300  CONTINUE
-      RETURN
-      END SUBROUTINE CUDLFS
-!
-
-!**********************************************
-!       SUBROUTINE CUDDRAF
-!********************************************** 
-      SUBROUTINE CUDDRAF &
-         (KLON,     KLEV,     KLEVP1,   PTENH,    PQENH, &
-          PUEN,     PVEN,     PGEOH,    PAPH,     PRFL,  &
-          LDDRAF,   PTD,      PQD,      PUD,      PVD,   &
-          PMFD,     PMFDS,    PMFDQ,    PDMFDP)
-!     THIS ROUTINE CALCULATES CUMULUS DOWNDRAFT DESCENT
-!     M.TIEDTKE         E.C.M.W.F.    12/86 MODIF.  12/89
-!***PURPOSE.
-!   --------
-!          TO PRODUCE THE VERTICAL PROFILES FOR CUMULUS DOWNDRAFTS
-!          (I.E. T,Q,U AND V AND FLUXES)
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!          INPUT IS T,Q,P,PHI,U,V AT HALF LEVELS.
-!          IT RETURNS FLUXES OF S,Q AND EVAPORATION RATE
-!          AND U,V AT LEVELS WHERE DOWNDRAFT OCCURS
-!***METHOD.
-!  --------
-!          CALCULATE MOIST DESCENT FOR ENTRAINING/DETRAINING PLUME BY
-!          A) MOVING AIR DRY-ADIABATICALLY TO NEXT LEVEL BELOW AND
-!          B) CORRECTING FOR EVAPORATION TO OBTAIN SATURATED STATE.
-!***EXTERNALS
-!   ---------
-!          *CUADJTQ* FOR ADJUSTING T AND Q DUE TO EVAPORATION IN
-!          SATURATED DESCENT
-!***REFERENCE
-!   ---------
-!          (TIEDTKE,1989)
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   JK,IS,JL,ITOPDE, IK, ICALL
-      REAL      ZENTR,ZSEEN, ZQEEN, ZSDDE, ZQDDE,ZMFDSK, ZMFDQK
-      REAL      ZBUO, ZDMFDP, ZMFDUK, ZMFDVK
-      REAL     PTENH(KLON,KLEV),       PQENH(KLON,KLEV),  &
-              PUEN(KLON,KLEV),        PVEN(KLON,KLEV),    &
-              PGEOH(KLON,KLEV),       PAPH(KLON,KLEVP1) 
-      REAL     PTD(KLON,KLEV),         PQD(KLON,KLEV),    &
-              PUD(KLON,KLEV),         PVD(KLON,KLEV),     &
-              PMFD(KLON,KLEV),        PMFDS(KLON,KLEV),   &
-              PMFDQ(KLON,KLEV),       PDMFDP(KLON,KLEV),  &
-              PRFL(KLON)
-      REAL     ZDMFEN(KLON),           ZDMFDE(KLON),      &
-              ZCOND(KLON),            ZPH(KLON)       
-      LOGICAL  LDDRAF(KLON),           LLO2(KLON)
-!--------------------------------------------------------------
-!     1.       CALCULATE MOIST DESCENT FOR CUMULUS DOWNDRAFT BY
-!                (A) CALCULATING ENTRAINMENT RATES, ASSUMING
-!                     LINEAR DECREASE OF MASSFLUX IN PBL
-!                 (B) DOING MOIST DESCENT - EVAPORATIVE COOLING
-!                     AND MOISTENING IS CALCULATED IN *CUADJTQ*
-!                 (C) CHECKING FOR NEGATIVE BUOYANCY AND
-!                     SPECIFYING FINAL T,Q,U,V AND DOWNWARD FLUXES
-! ----------------------------------------------------------------
-  100 CONTINUE
-      DO 180 JK=3,KLEV
-      IS=0
-      DO 110 JL=1,KLON
-      ZPH(JL)=PAPH(JL,JK)
-      LLO2(JL)=LDDRAF(JL).AND.PMFD(JL,JK-1).LT.0.
-      IF(LLO2(JL)) THEN
-         IS=IS+1
-      ENDIF
-  110 CONTINUE
-      IF(IS.EQ.0) GO TO 180
-      DO 122 JL=1,KLON
-      IF(LLO2(JL)) THEN
-         ZENTR=ENTRDD*PMFD(JL,JK-1)*RD*PTENH(JL,JK-1)/   &
-              (G*PAPH(JL,JK-1))*(PAPH(JL,JK)-PAPH(JL,JK-1))
-         ZDMFEN(JL)=ZENTR
-         ZDMFDE(JL)=ZENTR
-      END IF
-  122 CONTINUE
-      ITOPDE=KLEV-2
-         IF(JK.GT.ITOPDE) THEN
-            DO 124 JL=1,KLON
-            IF(LLO2(JL)) THEN
-               ZDMFEN(JL)=0.
-               ZDMFDE(JL)=PMFD(JL,ITOPDE)*      &
-              (PAPH(JL,JK)-PAPH(JL,JK-1))/     &
-              (PAPH(JL,KLEVP1)-PAPH(JL,ITOPDE))
-            END IF
-  124       CONTINUE
-         END IF
-      DO 126 JL=1,KLON
-         IF(LLO2(JL)) THEN
-            PMFD(JL,JK)=PMFD(JL,JK-1)+ZDMFEN(JL)-ZDMFDE(JL)
-            ZSEEN=(CPD*PTENH(JL,JK-1)+PGEOH(JL,JK-1))*ZDMFEN(JL)
-            ZQEEN=PQENH(JL,JK-1)*ZDMFEN(JL)
-            ZSDDE=(CPD*PTD(JL,JK-1)+PGEOH(JL,JK-1))*ZDMFDE(JL)
-            ZQDDE=PQD(JL,JK-1)*ZDMFDE(JL)
-            ZMFDSK=PMFDS(JL,JK-1)+ZSEEN-ZSDDE
-            ZMFDQK=PMFDQ(JL,JK-1)+ZQEEN-ZQDDE
-            PQD(JL,JK)=ZMFDQK*(1./MIN(-CMFCMIN,PMFD(JL,JK)))
-            PTD(JL,JK)=(ZMFDSK*(1./MIN(-CMFCMIN,PMFD(JL,JK)))- &
-                       PGEOH(JL,JK))*RCPD
-            PTD(JL,JK)=MIN(400.,PTD(JL,JK))
-            PTD(JL,JK)=MAX(100.,PTD(JL,JK))
-            ZCOND(JL)=PQD(JL,JK)
-         END IF
-  126 CONTINUE
-      IK=JK
-      ICALL=2
-      CALL CUADJTQ(KLON,KLEV,IK,ZPH,PTD,PQD,LLO2,ICALL)
-      DO 150 JL=1,KLON
-         IF(LLO2(JL)) THEN
-            ZCOND(JL)=ZCOND(JL)-PQD(JL,JK)
-            ZBUO=PTD(JL,JK)*(1.+VTMPC1*PQD(JL,JK))- &
-           PTENH(JL,JK)*(1.+VTMPC1*PQENH(JL,JK))
-            IF(ZBUO.GE.0..OR.PRFL(JL).LE.(PMFD(JL,JK)*ZCOND(JL))) THEN
-               PMFD(JL,JK)=0.
-            ENDIF
-            PMFDS(JL,JK)=(CPD*PTD(JL,JK)+PGEOH(JL,JK))*PMFD(JL,JK)
-            PMFDQ(JL,JK)=PQD(JL,JK)*PMFD(JL,JK)
-            ZDMFDP=-PMFD(JL,JK)*ZCOND(JL)
-            PDMFDP(JL,JK-1)=ZDMFDP
-            PRFL(JL)=PRFL(JL)+ZDMFDP
-         END IF
-  150 CONTINUE
-        IF(LMFDUDV) THEN
-          DO 160 JL=1,KLON
-             IF(LLO2(JL).AND.PMFD(JL,JK).LT.0.) THEN
-                ZMFDUK=PMFD(JL,JK-1)*PUD(JL,JK-1)+   &
-               ZDMFEN(JL)*PUEN(JL,JK-1)-ZDMFDE(JL)*PUD(JL,JK-1)
-                ZMFDVK=PMFD(JL,JK-1)*PVD(JL,JK-1)+   &
-               ZDMFEN(JL)*PVEN(JL,JK-1)-ZDMFDE(JL)*PVD(JL,JK-1)
-                PUD(JL,JK)=ZMFDUK*(1./MIN(-CMFCMIN,PMFD(JL,JK)))
-                PVD(JL,JK)=ZMFDVK*(1./MIN(-CMFCMIN,PMFD(JL,JK)))
-             END IF
-  160     CONTINUE
-        END IF
-  180 CONTINUE
-      RETURN
-      END SUBROUTINE CUDDRAF
-!
-
-!**********************************************
-!       SUBROUTINE CUFLX
-!********************************************** 
-      SUBROUTINE CUFLX &
-         (KLON,     KLEV,     KLEVP1,   PQEN,    PQSEN,     &
-          PTENH,    PQENH,    PAPH,     PGEOH,   KCBOT,    &
-          KCTOP,    KDTOP,    KTYPE,    LDDRAF,  LDCUM,  &
-          PMFU,     PMFD,     PMFUS,    PMFDS,   PMFUQ,  &
-          PMFDQ,    PMFUL,    PLUDE,    PDMFUP,  PDMFDP, &
-          PRFL,     PRAIN,    PTEN,     PSFL,    PDPMEL, &
-          KTOPM2,   ZTMST,    sig1)
-!      M.TIEDTKE         E.C.M.W.F.     7/86 MODIF.  12/89
-!***PURPOSE
-!   -------
-!          THIS ROUTINE DOES THE FINAL CALCULATION OF CONVECTIVE
-!          FLUXES IN THE CLOUD LAYER AND IN THE SUBCLOUD LAYER
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUMASTR*.
-!***EXTERNALS
-!   ---------
-!          NONE
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   KTOPM2, ITOP, JL, JK, IKB
-      REAL      ZTMST, ZCONS1, ZCONS2, ZCUCOV, ZTMELP2
-      REAL      ZZP, ZFAC, ZSNMLT, ZRFL, CEVAPCU, ZRNEW
-      REAL      ZRMIN, ZRFLN, ZDRFL, ZDPEVAP
-      REAL     PQEN(KLON,KLEV),        PQSEN(KLON,KLEV),  &
-              PTENH(KLON,KLEV),       PQENH(KLON,KLEV),   &
-              PAPH(KLON,KLEVP1),      PGEOH(KLON,KLEV)    
-      REAL     PMFU(KLON,KLEV),        PMFD(KLON,KLEV),   &
-              PMFUS(KLON,KLEV),       PMFDS(KLON,KLEV),   &
-              PMFUQ(KLON,KLEV),       PMFDQ(KLON,KLEV),   &
-              PDMFUP(KLON,KLEV),      PDMFDP(KLON,KLEV),  &
-              PMFUL(KLON,KLEV),       PLUDE(KLON,KLEV),   &
-              PRFL(KLON),             PRAIN(KLON)
-      REAL     PTEN(KLON,KLEV),        PDPMEL(KLON,KLEV), &
-              PSFL(KLON),             ZPSUBCL(KLON)
-#if defined(mpas)
-!MPAS specific (Laura D. Fowler):
-      REAL sig1(KLON,KLEV)
-#else
-      REAL     sig1(KLEV)
-#endif
-      INTEGER  KCBOT(KLON),            KCTOP(KLON),     &
-              KDTOP(KLON),            KTYPE(KLON)
-      LOGICAL  LDDRAF(KLON),           LDCUM(KLON)
-!*       SPECIFY CONSTANTS
-      ZCONS1=CPD/(ALF*G*ZTMST)
-      ZCONS2=1./(G*ZTMST)
-      ZCUCOV=0.05
-      ZTMELP2=TMELT+2.
-!*  1.0      DETERMINE FINAL CONVECTIVE FLUXES
-!---------------------------------------------
-  100 CONTINUE
-      ITOP=KLEV
-      DO 110 JL=1,KLON
-      PRFL(JL)=0.
-      PSFL(JL)=0.
-      PRAIN(JL)=0.
-!     SWITCH OFF SHALLOW CONVECTION
-      IF(.NOT.LMFSCV.AND.KTYPE(JL).EQ.2)THEN
-        LDCUM(JL)=.FALSE.
-        LDDRAF(JL)=.FALSE.
-      ENDIF
-      ITOP=MIN(ITOP,KCTOP(JL))
-      IF(.NOT.LDCUM(JL).OR.KDTOP(JL).LT.KCTOP(JL)) LDDRAF(JL)=.FALSE.
-      IF(.NOT.LDCUM(JL)) KTYPE(JL)=0
-  110 CONTINUE
-      KTOPM2=ITOP-2
-      DO 120 JK=KTOPM2,KLEV
-      DO 115 JL=1,KLON
-      IF(LDCUM(JL).AND.JK.GE.KCTOP(JL)-1) THEN
-         PMFUS(JL,JK)=PMFUS(JL,JK)-PMFU(JL,JK)*  &
-                     (CPD*PTENH(JL,JK)+PGEOH(JL,JK))
-         PMFUQ(JL,JK)=PMFUQ(JL,JK)-PMFU(JL,JK)*PQENH(JL,JK)
-         IF(LDDRAF(JL).AND.JK.GE.KDTOP(JL)) THEN
-            PMFDS(JL,JK)=PMFDS(JL,JK)-PMFD(JL,JK)*  &
-                        (CPD*PTENH(JL,JK)+PGEOH(JL,JK))
-            PMFDQ(JL,JK)=PMFDQ(JL,JK)-PMFD(JL,JK)*PQENH(JL,JK)
-         ELSE
-            PMFD(JL,JK)=0.
-            PMFDS(JL,JK)=0.
-            PMFDQ(JL,JK)=0.
-            PDMFDP(JL,JK-1)=0.
-         END IF
-      ELSE
-         PMFU(JL,JK)=0.
-         PMFD(JL,JK)=0.
-         PMFUS(JL,JK)=0.
-         PMFDS(JL,JK)=0.
-         PMFUQ(JL,JK)=0.
-         PMFDQ(JL,JK)=0.
-         PMFUL(JL,JK)=0.
-         PDMFUP(JL,JK-1)=0.
-         PDMFDP(JL,JK-1)=0.
-         PLUDE(JL,JK-1)=0.
-      END IF
-  115 CONTINUE
-  120 CONTINUE
-      DO 130 JK=KTOPM2,KLEV
-      DO 125 JL=1,KLON
-      IF(LDCUM(JL).AND.JK.GT.KCBOT(JL)) THEN
-         IKB=KCBOT(JL)
-         ZZP=((PAPH(JL,KLEVP1)-PAPH(JL,JK))/  &
-             (PAPH(JL,KLEVP1)-PAPH(JL,IKB)))
-         IF(KTYPE(JL).EQ.3) THEN
-            ZZP=ZZP**2
-         ENDIF
-         PMFU(JL,JK)=PMFU(JL,IKB)*ZZP
-         PMFUS(JL,JK)=PMFUS(JL,IKB)*ZZP
-         PMFUQ(JL,JK)=PMFUQ(JL,IKB)*ZZP
-         PMFUL(JL,JK)=PMFUL(JL,IKB)*ZZP
-      END IF
-!*    2.        CALCULATE RAIN/SNOW FALL RATES
-!*              CALCULATE MELTING OF SNOW
-!*              CALCULATE EVAPORATION OF PRECIP
-!----------------------------------------------
-      IF(LDCUM(JL)) THEN
-         PRAIN(JL)=PRAIN(JL)+PDMFUP(JL,JK)
-         IF(PTEN(JL,JK).GT.TMELT) THEN
-            PRFL(JL)=PRFL(JL)+PDMFUP(JL,JK)+PDMFDP(JL,JK)
-            IF(PSFL(JL).GT.0..AND.PTEN(JL,JK).GT.ZTMELP2) THEN
-               ZFAC=ZCONS1*(PAPH(JL,JK+1)-PAPH(JL,JK))
-               ZSNMLT=MIN(PSFL(JL),ZFAC*(PTEN(JL,JK)-ZTMELP2))
-               PDPMEL(JL,JK)=ZSNMLT
-               PSFL(JL)=PSFL(JL)-ZSNMLT
-               PRFL(JL)=PRFL(JL)+ZSNMLT
-            END IF
-         ELSE
-            PSFL(JL)=PSFL(JL)+PDMFUP(JL,JK)+PDMFDP(JL,JK)
-         END IF
-      END IF
-  125 CONTINUE
-  130 CONTINUE
-      DO 230 JL=1,KLON
-        PRFL(JL)=MAX(PRFL(JL),0.)
-        PSFL(JL)=MAX(PSFL(JL),0.)
-        ZPSUBCL(JL)=PRFL(JL)+PSFL(JL)
-  230 CONTINUE
-      DO 240 JK=KTOPM2,KLEV
-      DO 235 JL=1,KLON
-      IF(LDCUM(JL).AND.JK.GE.KCBOT(JL).AND. &
-             ZPSUBCL(JL).GT.1.E-20) THEN
-          ZRFL=ZPSUBCL(JL)
-#if defined(mpas)
-!MPAS specific (Laura D. Fowler):
-          CEVAPCU=CEVAPCU1*SQRT(CEVAPCU2*SQRT(sig1(JL,JK)))
-#else
-          CEVAPCU=CEVAPCU1*SQRT(CEVAPCU2*SQRT(sig1(JK)))
-#endif
-          ZRNEW=(MAX(0.,SQRT(ZRFL/ZCUCOV)-   &
-                  CEVAPCU*(PAPH(JL,JK+1)-PAPH(JL,JK))* &
-                MAX(0.,PQSEN(JL,JK)-PQEN(JL,JK))))**2*ZCUCOV
-          ZRMIN=ZRFL-ZCUCOV*MAX(0.,0.8*PQSEN(JL,JK)-PQEN(JL,JK)) &
-               *ZCONS2*(PAPH(JL,JK+1)-PAPH(JL,JK))
-          ZRNEW=MAX(ZRNEW,ZRMIN)
-          ZRFLN=MAX(ZRNEW,0.)
-          ZDRFL=MIN(0.,ZRFLN-ZRFL)
-          PDMFUP(JL,JK)=PDMFUP(JL,JK)+ZDRFL
-          ZPSUBCL(JL)=ZRFLN
-      END IF
-  235 CONTINUE
-  240 CONTINUE
-      DO 250 JL=1,KLON
-        ZDPEVAP=ZPSUBCL(JL)-(PRFL(JL)+PSFL(JL))
-        PRFL(JL)=PRFL(JL)+ZDPEVAP*PRFL(JL)*  &
-                  (1./MAX(1.E-20,PRFL(JL)+PSFL(JL)))
-        PSFL(JL)=PSFL(JL)+ZDPEVAP*PSFL(JL)*  &
-                  (1./MAX(1.E-20,PRFL(JL)+PSFL(JL)))
-  250 CONTINUE
-      RETURN
-      END SUBROUTINE CUFLX
-!
-
-!**********************************************
-!       SUBROUTINE CUDTDQ
-!********************************************** 
-      SUBROUTINE CUDTDQ &
-         (KLON,     KLEV,     KLEVP1,   KTOPM2,   PAPH,   &
-          LDCUM,    PTEN,     PTTE,     PQTE,     PMFUS,  &
-          PMFDS,    PMFUQ,    PMFDQ,    PMFUL,    PDMFUP, &
-          PDMFDP,   ZTMST,    PDPMEL,   PRAIN,    PRFL,   &
-          PSFL,     PSRAIN,   PSEVAP,   PSHEAT,   PSMELT, &
-          PRSFC,    PSSFC,    PAPRC,    PAPRSM,   PAPRS,  &
-          PQEN,     PQSEN,    PLUDE,    PCTE)
-!**** *CUDTDQ* - UPDATES T AND Q TENDENCIES, PRECIPITATION RATES
-!                DOES GLOBAL DIAGNOSTICS
-!      M.TIEDTKE         E.C.M.W.F.     7/86 MODIF.  12/89
-!***INTERFACE.
-!   ----------
-!          *CUDTDQ* IS CALLED FROM *CUMASTR*
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   KTOPM2,JL, JK
-      REAL      ZTMST, PSRAIN, PSEVAP, PSHEAT, PSMELT, ZDIAGT, ZDIAGW
-      REAL      ZALV, RHK, RHCOE, PLDFD, ZDTDT, ZDQDT
-      REAL     PTTE(KLON,KLEV),        PQTE(KLON,KLEV),  &
-              PTEN(KLON,KLEV),        PLUDE(KLON,KLEV),  &
-              PGEO(KLON,KLEV),        PAPH(KLON,KLEVP1), &
-              PAPRC(KLON),            PAPRS(KLON),       &
-              PAPRSM(KLON),           PCTE(KLON,KLEV),   &
-              PRSFC(KLON),            PSSFC(KLON)
-      REAL     PMFUS(KLON,KLEV),       PMFDS(KLON,KLEV), &
-              PMFUQ(KLON,KLEV),       PMFDQ(KLON,KLEV), &
-              PMFUL(KLON,KLEV),       PQSEN(KLON,KLEV), &
-              PDMFUP(KLON,KLEV),      PDMFDP(KLON,KLEV),& 
-              PRFL(KLON),             PRAIN(KLON),      &
-              PQEN(KLON,KLEV)
-      REAL     PDPMEL(KLON,KLEV),      PSFL(KLON)
-      REAL     ZSHEAT(KLON),           ZMELT(KLON)
-      LOGICAL  LDCUM(KLON)
-!--------------------------------
-!*    1.0      SPECIFY PARAMETERS
-!--------------------------------
-  100 CONTINUE
-      ZDIAGT=ZTMST
-      ZDIAGW=ZDIAGT/RHOH2O
-!--------------------------------------------------
-!*    2.0      INCREMENTATION OF T AND Q TENDENCIES
-!--------------------------------------------------
-  200 CONTINUE
-      DO 210 JL=1,KLON
-      ZMELT(JL)=0.
-      ZSHEAT(JL)=0.
-  210 CONTINUE
-      DO 250 JK=KTOPM2,KLEV
-      IF(JK.LT.KLEV) THEN
-         DO 220 JL=1,KLON
-         IF(LDCUM(JL)) THEN
-            IF(PTEN(JL,JK).GT.TMELT) THEN
-               ZALV=ALV
-            ELSE
-               ZALV=ALS
-            ENDIF
-            RHK=MIN(1.0,PQEN(JL,JK)/PQSEN(JL,JK))
-            RHCOE=MAX(0.0,(RHK-RHC)/(RHM-RHC))
-            pldfd=MAX(0.0,RHCOE*fdbk*PLUDE(JL,JK))
-            ZDTDT=(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))*RCPD*      &
-              (PMFUS(JL,JK+1)-PMFUS(JL,JK)+                  &
-              PMFDS(JL,JK+1)-PMFDS(JL,JK)-ALF*PDPMEL(JL,JK)  &
-              -ZALV*(PMFUL(JL,JK+1)-PMFUL(JL,JK)-pldfd-      &
-              (PDMFUP(JL,JK)+PDMFDP(JL,JK))))
-            PTTE(JL,JK)=PTTE(JL,JK)+ZDTDT
-            ZDQDT=(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))*& 
-              (PMFUQ(JL,JK+1)-PMFUQ(JL,JK)+       &
-              PMFDQ(JL,JK+1)-PMFDQ(JL,JK)+        &
-              PMFUL(JL,JK+1)-PMFUL(JL,JK)-pldfd-  &
-              (PDMFUP(JL,JK)+PDMFDP(JL,JK)))
-            PQTE(JL,JK)=PQTE(JL,JK)+ZDQDT
-            PCTE(JL,JK)=(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))*pldfd
-            ZSHEAT(JL)=ZSHEAT(JL)+ZALV*(PDMFUP(JL,JK)+PDMFDP(JL,JK))
-            ZMELT(JL)=ZMELT(JL)+PDPMEL(JL,JK)
-         END IF
-  220 CONTINUE
-      ELSE
-         DO 230 JL=1,KLON
-         IF(LDCUM(JL)) THEN
-            IF(PTEN(JL,JK).GT.TMELT) THEN
-               ZALV=ALV
-            ELSE
-               ZALV=ALS
-            ENDIF
-            RHK=MIN(1.0,PQEN(JL,JK)/PQSEN(JL,JK))
-            RHCOE=MAX(0.0,(RHK-RHC)/(RHM-RHC))
-            pldfd=MAX(0.0,RHCOE*fdbk*PLUDE(JL,JK))
-            ZDTDT=-(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))*RCPD*           &
-                (PMFUS(JL,JK)+PMFDS(JL,JK)+ALF*PDPMEL(JL,JK)-ZALV* &
-                (PMFUL(JL,JK)+PDMFUP(JL,JK)+PDMFDP(JL,JK)+pldfd))  
-            PTTE(JL,JK)=PTTE(JL,JK)+ZDTDT
-            ZDQDT=-(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))*                &
-                     (PMFUQ(JL,JK)+PMFDQ(JL,JK)+pldfd+             &
-                     (PMFUL(JL,JK)+PDMFUP(JL,JK)+PDMFDP(JL,JK)))   
-            PQTE(JL,JK)=PQTE(JL,JK)+ZDQDT
-            PCTE(JL,JK)=(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))*pldfd
-            ZSHEAT(JL)=ZSHEAT(JL)+ZALV*(PDMFUP(JL,JK)+PDMFDP(JL,JK))
-            ZMELT(JL)=ZMELT(JL)+PDPMEL(JL,JK)
-         END IF
-  230    CONTINUE
-      END IF
-  250 CONTINUE
-!---------------------------------------------------------
-!      3.      UPDATE SURFACE FIELDS AND DO GLOBAL BUDGETS
-!---------------------------------------------------------
-  300 CONTINUE
-      DO 310 JL=1,KLON
-      PRSFC(JL)=PRFL(JL)
-      PSSFC(JL)=PSFL(JL)
-      PAPRC(JL)=PAPRC(JL)+ZDIAGW*(PRFL(JL)+PSFL(JL))
-      PAPRS(JL)=PAPRSM(JL)+ZDIAGW*PSFL(JL)
-      PSHEAT=PSHEAT+ZSHEAT(JL)
-      PSRAIN=PSRAIN+PRAIN(JL)
-      PSEVAP=PSEVAP-(PRFL(JL)+PSFL(JL))
-      PSMELT=PSMELT+ZMELT(JL)
-  310 CONTINUE
-      PSEVAP=PSEVAP+PSRAIN
-      RETURN
-      END SUBROUTINE CUDTDQ
-
-!
-!**********************************************
-!       SUBROUTINE CUDUDV
-!********************************************** 
-      SUBROUTINE CUDUDV &
-         (KLON,     KLEV,     KLEVP1,   KTOPM2,   KTYPE,  &
-          KCBOT,    PAPH,     LDCUM,    PUEN,     PVEN,   &
-          PVOM,     PVOL,     PUU,      PUD,      PVU,    &
-          PVD,      PMFU,     PMFD,     PSDISS)
-!**** *CUDUDV* - UPDATES U AND V TENDENCIES,
-!                DOES GLOBAL DIAGNOSTIC OF DISSIPATION
-!      M.TIEDTKE         E.C.M.W.F.     7/86 MODIF.  12/89
-!***INTERFACE.
-!   ----------
-!          *CUDUDV* IS CALLED FROM *CUMASTR*
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   KTOPM2, JK, IK, JL, IKB
-      REAL      PSDISS,ZZP, ZDUDT ,ZDVDT, ZSUM
-      REAL     PUEN(KLON,KLEV),        PVEN(KLON,KLEV),   &
-              PVOL(KLON,KLEV),        PVOM(KLON,KLEV),    &
-              PAPH(KLON,KLEVP1)
-      REAL     PUU(KLON,KLEV),         PUD(KLON,KLEV),    &
-              PVU(KLON,KLEV),         PVD(KLON,KLEV),     &
-              PMFU(KLON,KLEV),        PMFD(KLON,KLEV)
-      REAL     ZMFUU(KLON,KLEV),       ZMFDU(KLON,KLEV),  &
-              ZMFUV(KLON,KLEV),       ZMFDV(KLON,KLEV),   &
-              ZDISS(KLON)
-      INTEGER  KTYPE(KLON),            KCBOT(KLON)
-      LOGICAL  LDCUM(KLON)
-!------------------------------------------------------------
-!*    1.0      CALCULATE FLUXES AND UPDATE U AND V TENDENCIES
-! -----------------------------------------------------------
-  100 CONTINUE
-      DO 120 JK=KTOPM2,KLEV
-      IK=JK-1
-      DO 110 JL=1,KLON
-      IF(LDCUM(JL)) THEN
-        ZMFUU(JL,JK)=PMFU(JL,JK)*(PUU(JL,JK)-PUEN(JL,IK))
-        ZMFUV(JL,JK)=PMFU(JL,JK)*(PVU(JL,JK)-PVEN(JL,IK))
-        ZMFDU(JL,JK)=PMFD(JL,JK)*(PUD(JL,JK)-PUEN(JL,IK))
-        ZMFDV(JL,JK)=PMFD(JL,JK)*(PVD(JL,JK)-PVEN(JL,IK))
-      END IF
-  110 CONTINUE
-  120 CONTINUE
-      DO 140 JK=KTOPM2,KLEV
-      DO 130 JL=1,KLON
-      IF(LDCUM(JL).AND.JK.GT.KCBOT(JL)) THEN
-         IKB=KCBOT(JL)
-         ZZP=((PAPH(JL,KLEVP1)-PAPH(JL,JK))/  &
-             (PAPH(JL,KLEVP1)-PAPH(JL,IKB)))
-         IF(KTYPE(JL).EQ.3) THEN
-            ZZP=ZZP**2
-         ENDIF
-         ZMFUU(JL,JK)=ZMFUU(JL,IKB)*ZZP
-         ZMFUV(JL,JK)=ZMFUV(JL,IKB)*ZZP
-         ZMFDU(JL,JK)=ZMFDU(JL,IKB)*ZZP
-         ZMFDV(JL,JK)=ZMFDV(JL,IKB)*ZZP
-      END IF
-  130 CONTINUE
-  140 CONTINUE
-      DO 150 JL=1,KLON
-      ZDISS(JL)=0.
-  150 CONTINUE
-      DO 190 JK=KTOPM2,KLEV
-      IF(JK.LT.KLEV) THEN
-         DO 160 JL=1,KLON
-            IF(LDCUM(JL)) THEN
-               ZDUDT=(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))* &
-                    (ZMFUU(JL,JK+1)-ZMFUU(JL,JK)+     &
-                     ZMFDU(JL,JK+1)-ZMFDU(JL,JK))
-               ZDVDT=(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))* &
-                    (ZMFUV(JL,JK+1)-ZMFUV(JL,JK)+     &
-                     ZMFDV(JL,JK+1)-ZMFDV(JL,JK))
-               ZDISS(JL)=ZDISS(JL)+        &
-                        PUEN(JL,JK)*(ZMFUU(JL,JK+1)-ZMFUU(JL,JK)+   &
-                                     ZMFDU(JL,JK+1)-ZMFDU(JL,JK))+  &
-                        PVEN(JL,JK)*(ZMFUV(JL,JK+1)-ZMFUV(JL,JK)+   &
-                                     ZMFDV(JL,JK+1)-ZMFDV(JL,JK))
-               PVOM(JL,JK)=PVOM(JL,JK)+ZDUDT
-               PVOL(JL,JK)=PVOL(JL,JK)+ZDVDT
-            END IF
-  160    CONTINUE
-      ELSE
-         DO 170 JL=1,KLON
-            IF(LDCUM(JL)) THEN
-               ZDUDT=-(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))* &
-                        (ZMFUU(JL,JK)+ZMFDU(JL,JK))
-               ZDVDT=-(G/(PAPH(JL,JK+1)-PAPH(JL,JK)))* &
-                        (ZMFUV(JL,JK)+ZMFDV(JL,JK))
-               ZDISS(JL)=ZDISS(JL)-        &
-      (PUEN(JL,JK)*(ZMFUU(JL,JK)+ZMFDU(JL,JK))+ &
-      PVEN(JL,JK)*(ZMFUV(JL,JK)+ZMFDV(JL,JK)))
-               PVOM(JL,JK)=PVOM(JL,JK)+ZDUDT
-               PVOL(JL,JK)=PVOL(JL,JK)+ZDVDT
-            END IF
-  170    CONTINUE
-       END IF
-  190 CONTINUE
-      ZSUM=SSUM(KLON,ZDISS(1),1)
-      PSDISS=PSDISS+ZSUM
-      RETURN
-      END SUBROUTINE CUDUDV
-!
-
-!#################################################################
-!
-!                 LEVEL 4 SUBROUTINES
-!
-!#################################################################
-!**************************************************************
-!             SUBROUTINE CUBASMC
-!**************************************************************
-      SUBROUTINE CUBASMC   &
-         (KLON,     KLEV,     KLEVM1,  KK,     PTEN,  &
-          PQEN,     PQSEN,    PUEN,    PVEN,   PVERV, &
-          PGEO,     PGEOH,    LDCUM,   KTYPE,  KLAB,  &
-          PMFU,     PMFUB,    PENTR,   KCBOT,  PTU,   &
-          PQU,      PLU,      PUU,     PVU,    PMFUS, &
-          PMFUQ,    PMFUL,    PDMFUP,  PMFUU,  PMFUV) 
-!      M.TIEDTKE         E.C.M.W.F.     12/89
-!***PURPOSE.
-!   --------
-!          THIS ROUTINE CALCULATES CLOUD BASE VALUES
-!          FOR MIDLEVEL CONVECTION
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUASC*.
-!          INPUT ARE ENVIRONMENTAL VALUES T,Q ETC
-!          IT RETURNS CLOUDBASE VALUES FOR MIDLEVEL CONVECTION
-!***METHOD.
-!   -------
-!          S. TIEDTKE (1989)
-!***EXTERNALS
-!   ---------
-!          NONE
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   KLEVM1,KK, JL
-      REAL      zzzmb
-      REAL     PTEN(KLON,KLEV),        PQEN(KLON,KLEV),  &
-              PUEN(KLON,KLEV),        PVEN(KLON,KLEV),   &
-              PQSEN(KLON,KLEV),       PVERV(KLON,KLEV),  & 
-              PGEO(KLON,KLEV),        PGEOH(KLON,KLEV)
-      REAL     PTU(KLON,KLEV),         PQU(KLON,KLEV),   &
-              PUU(KLON,KLEV),         PVU(KLON,KLEV),    &
-              PLU(KLON,KLEV),         PMFU(KLON,KLEV),   &
-              PMFUB(KLON),            PENTR(KLON),       &
-              PMFUS(KLON,KLEV),       PMFUQ(KLON,KLEV),  &
-              PMFUL(KLON,KLEV),       PDMFUP(KLON,KLEV), &
-              PMFUU(KLON),            PMFUV(KLON)
-      INTEGER  KTYPE(KLON),            KCBOT(KLON),      &
-              KLAB(KLON,KLEV)
-      LOGICAL  LDCUM(KLON)
-!--------------------------------------------------------
-!*    1.      CALCULATE ENTRAINMENT AND DETRAINMENT RATES
-! -------------------------------------------------------
-  100 CONTINUE
-         DO 150 JL=1,KLON
-          IF( .NOT. LDCUM(JL).AND.KLAB(JL,KK+1).EQ.0.0.AND.  &
-             PQEN(JL,KK).GT.0.80*PQSEN(JL,KK)) THEN
-            PTU(JL,KK+1)=(CPD*PTEN(JL,KK)+PGEO(JL,KK)-PGEOH(JL,KK+1)) &
-                               *RCPD
-            PQU(JL,KK+1)=PQEN(JL,KK)
-            PLU(JL,KK+1)=0.
-            ZZZMB=MAX(CMFCMIN,-PVERV(JL,KK)/G)
-            ZZZMB=MIN(ZZZMB,CMFCMAX)
-            PMFUB(JL)=ZZZMB
-            PMFU(JL,KK+1)=PMFUB(JL)
-            PMFUS(JL,KK+1)=PMFUB(JL)*(CPD*PTU(JL,KK+1)+PGEOH(JL,KK+1))
-            PMFUQ(JL,KK+1)=PMFUB(JL)*PQU(JL,KK+1)
-            PMFUL(JL,KK+1)=0.
-            PDMFUP(JL,KK+1)=0.
-            KCBOT(JL)=KK
-            KLAB(JL,KK+1)=1
-            KTYPE(JL)=3
-            PENTR(JL)=ENTRMID
-               IF(LMFDUDV) THEN
-                  PUU(JL,KK+1)=PUEN(JL,KK)
-                  PVU(JL,KK+1)=PVEN(JL,KK)
-                  PMFUU(JL)=PMFUB(JL)*PUU(JL,KK+1)
-                  PMFUV(JL)=PMFUB(JL)*PVU(JL,KK+1)
-               END IF
-         END IF
-  150   CONTINUE
-      RETURN
-      END SUBROUTINE CUBASMC
-
-!
-!**************************************************************
-!             SUBROUTINE CUADJTQ
-!**************************************************************
-      SUBROUTINE CUADJTQ(KLON,KLEV,KK,PP,PT,PQ,LDFLAG,KCALL)
-!      M.TIEDTKE         E.C.M.W.F.     12/89
-!      D.SALMOND         CRAY(UK))      12/8/91
-!***PURPOSE.
-!   --------
-!          TO PRODUCE T,Q AND L VALUES FOR CLOUD ASCENT
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM SUBROUTINES:
-!              *CUBASE*   (T AND Q AT CONDENSTION LEVEL)
-!              *CUASC*    (T AND Q AT CLOUD LEVELS)
-!              *CUINI*    (ENVIRONMENTAL T AND QS VALUES AT HALF LEVELS)
-!          INPUT ARE UNADJUSTED T AND Q VALUES,
-!          IT RETURNS ADJUSTED VALUES OF T AND Q
-!          NOTE: INPUT PARAMETER KCALL DEFINES CALCULATION AS
-!               KCALL=0    ENV. T AND QS IN*CUINI*
-!               KCALL=1  CONDENSATION IN UPDRAFTS  (E.G.  CUBASE, CUASC)
-!               KCALL=2  EVAPORATION IN DOWNDRAFTS (E.G.  CUDLFS,CUDDRAF
-!***EXTERNALS
-!   ---------
-!          3 LOOKUP TABLES ( TLUCUA, TLUCUB, TLUCUC )
-!          FOR CONDENSATION CALCULATIONS.
-!          THE TABLES ARE INITIALISED IN *SETPHYS*.
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV
-      INTEGER   KK, KCALL, ISUM, JL
-      REAL      ZQSAT, ZCOR, ZCOND1, TT
-      REAL     PT(KLON,KLEV),          PQ(KLON,KLEV),  &
-              ZCOND(KLON),            ZQP(KLON),       &
-              PP(KLON)
-      LOGICAL  LDFLAG(KLON)
-!------------------------------------------------------------------
-!     2.      CALCULATE CONDENSATION AND ADJUST T AND Q ACCORDINGLY
-!------------------------------------------------------------------
-  200 CONTINUE
-      IF (KCALL.EQ.1 ) THEN
-         ISUM=0
-         DO 210 JL=1,KLON
-         ZCOND(JL)=0.
-         IF(LDFLAG(JL)) THEN
-            ZQP(JL)=1./PP(JL)
-            TT=PT(JL,KK)
-            ZQSAT=TLUCUA(TT)*ZQP(JL)
-            ZQSAT=MIN(0.5,ZQSAT)
-            ZCOR=1./(1.-VTMPC1*ZQSAT)
-            ZQSAT=ZQSAT*ZCOR
-            ZCOND(JL)=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-            ZCOND(JL)=MAX(ZCOND(JL),0.)
-            PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND(JL)
-            PQ(JL,KK)=PQ(JL,KK)-ZCOND(JL)
-            IF(ZCOND(JL).NE.0.0) ISUM=ISUM+1
-         END IF
-  210    CONTINUE
-         IF(ISUM.EQ.0) GO TO 230
-         DO 220 JL=1,KLON
-         IF(LDFLAG(JL).AND.ZCOND(JL).NE.0.) THEN
-            TT=PT(JL,KK)
-            ZQSAT=TLUCUA(TT)*ZQP(JL)
-            ZQSAT=MIN(0.5,ZQSAT)
-            ZCOR=1./(1.-VTMPC1*ZQSAT)
-            ZQSAT=ZQSAT*ZCOR
-            ZCOND1=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-            PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND1
-            PQ(JL,KK)=PQ(JL,KK)-ZCOND1
-         END IF
-  220    CONTINUE
-  230    CONTINUE
-      END IF
-      IF(KCALL.EQ.2) THEN
-         ISUM=0
-         DO 310 JL=1,KLON
-         ZCOND(JL)=0.
-         IF(LDFLAG(JL)) THEN
-            TT=PT(JL,KK)
-            ZQP(JL)=1./PP(JL)
-            ZQSAT=TLUCUA(TT)*ZQP(JL)
-            ZQSAT=MIN(0.5,ZQSAT)
-            ZCOR=1./(1.-VTMPC1*ZQSAT)
-            ZQSAT=ZQSAT*ZCOR
-            ZCOND(JL)=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-            ZCOND(JL)=MIN(ZCOND(JL),0.)
-            PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND(JL)
-            PQ(JL,KK)=PQ(JL,KK)-ZCOND(JL)
-            IF(ZCOND(JL).NE.0.0) ISUM=ISUM+1
-         END IF
-  310    CONTINUE
-         IF(ISUM.EQ.0) GO TO 330
-         DO 320 JL=1,KLON
-         IF(LDFLAG(JL).AND.ZCOND(JL).NE.0.) THEN
-            TT=PT(JL,KK)
-            ZQSAT=TLUCUA(TT)*ZQP(JL)
-            ZQSAT=MIN(0.5,ZQSAT)
-            ZCOR=1./(1.-VTMPC1*ZQSAT)
-            ZQSAT=ZQSAT*ZCOR
-            ZCOND1=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-            PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND1
-            PQ(JL,KK)=PQ(JL,KK)-ZCOND1
-         END IF
-  320    CONTINUE
-  330    CONTINUE
-      END IF
-      IF(KCALL.EQ.0) THEN
-         ISUM=0
-         DO 410 JL=1,KLON
-           TT=PT(JL,KK)
-           ZQP(JL)=1./PP(JL)
-           ZQSAT=TLUCUA(TT)*ZQP(JL)
-           ZQSAT=MIN(0.5,ZQSAT)
-           ZCOR=1./(1.-VTMPC1*ZQSAT)
-           ZQSAT=ZQSAT*ZCOR
-           ZCOND(JL)=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-           PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND(JL)
-           PQ(JL,KK)=PQ(JL,KK)-ZCOND(JL)
-           IF(ZCOND(JL).NE.0.0) ISUM=ISUM+1
-  410    CONTINUE
-         IF(ISUM.EQ.0) GO TO 430
-         DO 420 JL=1,KLON
-           TT=PT(JL,KK)
-           ZQSAT=TLUCUA(TT)*ZQP(JL)
-           ZQSAT=MIN(0.5,ZQSAT)
-           ZCOR=1./(1.-VTMPC1*ZQSAT)
-           ZQSAT=ZQSAT*ZCOR
-           ZCOND1=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-           PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND1
-           PQ(JL,KK)=PQ(JL,KK)-ZCOND1
-  420    CONTINUE
-  430    CONTINUE
-      END IF
-      IF(KCALL.EQ.4) THEN
-         DO 510 JL=1,KLON
-           TT=PT(JL,KK)
-           ZQP(JL)=1./PP(JL)
-           ZQSAT=TLUCUA(TT)*ZQP(JL)
-           ZQSAT=MIN(0.5,ZQSAT)
-           ZCOR=1./(1.-VTMPC1*ZQSAT)
-           ZQSAT=ZQSAT*ZCOR
-           ZCOND(JL)=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-           PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND(JL)
-           PQ(JL,KK)=PQ(JL,KK)-ZCOND(JL)
-  510    CONTINUE
-         DO 520 JL=1,KLON
-           TT=PT(JL,KK)
-           ZQSAT=TLUCUA(TT)*ZQP(JL)
-           ZQSAT=MIN(0.5,ZQSAT)
-           ZCOR=1./(1.-VTMPC1*ZQSAT)
-           ZQSAT=ZQSAT*ZCOR
-           ZCOND1=(PQ(JL,KK)-ZQSAT)/(1.+ZQSAT*ZCOR*TLUCUB(TT))
-           PT(JL,KK)=PT(JL,KK)+TLUCUC(TT)*ZCOND1
-           PQ(JL,KK)=PQ(JL,KK)-ZCOND1
-  520    CONTINUE
-      END IF
-      RETURN
-      END SUBROUTINE CUADJTQ
-
-!
-!**********************************************************
-!        SUBROUTINE CUENTR_NEW
-!**********************************************************
-      SUBROUTINE CUENTR_NEW                              &   
-         (KLON,     KLEV,     KLEVP1,   KK,       PTENH, &
-          PAPH,     PAP,      PGEOH,    KLWMIN,   LDCUM, &
-          KTYPE,    KCBOT,    KCTOP0,   ZPBASE,   PMFU,  &
-          PENTR,    ZDMFEN,   ZDMFDE,   ZODETR,   KHMIN)
-!      M.TIEDTKE         E.C.M.W.F.     12/89
-!      Y.WANG            IPRC           11/01
-!***PURPOSE.
-!   --------
-!          THIS ROUTINE CALCULATES ENTRAINMENT/DETRAINMENT RATES
-!          FOR UPDRAFTS IN CUMULUS PARAMETERIZATION
-!***INTERFACE
-!   ---------
-!          THIS ROUTINE IS CALLED FROM *CUASC*.
-!          INPUT ARE ENVIRONMENTAL VALUES T,Q ETC
-!          AND UPDRAFT VALUES T,Q ETC
-!          IT RETURNS ENTRAINMENT/DETRAINMENT RATES
-!***METHOD.
-!  --------
-!          S. TIEDTKE (1989), NORDENG(1996)
-!***EXTERNALS
-!   ---------
-!          NONE
-! ----------------------------------------------------------------
-!-------------------------------------------------------------------
-      IMPLICIT NONE
-!-------------------------------------------------------------------
-      INTEGER   KLON, KLEV, KLEVP1
-      INTEGER   KK, JL, IKLWMIN,IKB, IKT, IKH
-      REAL      ZRRHO, ZDPRHO, ZPMID, ZENTR, ZZMZK, ZTMZK, ARG, ZORGDE
-      REAL     PTENH(KLON,KLEV),                           &
-              PAP(KLON,KLEV),         PAPH(KLON,KLEVP1),   &
-              PMFU(KLON,KLEV),        PGEOH(KLON,KLEV),    &
-              PENTR(KLON),            ZPBASE(KLON),        &
-              ZDMFEN(KLON),           ZDMFDE(KLON),        &
-              ZODETR(KLON,KLEV)
-      INTEGER  KLWMIN(KLON),           KTYPE(KLON),        &
-              KCBOT(KLON),            KCTOP0(KLON),        &
-              KHMIN(KLON)
-      LOGICAL  LDCUM(KLON),LLO1,LLO2
-
-      real    tt(klon),ttb(klon)
-      real    zqsat(klon), zqsatb(klon)
-      real    fscale(klon)
-!---------------------------------------------------------
-!*    1.       CALCULATE ENTRAINMENT AND DETRAINMENT RATES
-!---------------------------------------------------------
-!*    1.1      SPECIFY ENTRAINMENT RATES FOR SHALLOW CLOUDS
-!----------------------------------------------------------
-!*    1.2      SPECIFY ENTRAINMENT RATES FOR DEEP CLOUDS
-!-------------------------------------------------------
-      DO jl = 1, klon
-        zpbase(jl) = paph(jl,kcbot(jl))
-        zrrho = (rd*ptenh(jl,kk+1))/paph(jl,kk+1)
-        zdprho = (paph(jl,kk+1)-paph(jl,kk))*zrg
-! old or new choice
-        zpmid = 0.5*(zpbase(jl)+paph(jl,kctop0(jl)))
-        zentr = pentr(jl)*pmfu(jl,kk+1)*zdprho*zrrho
-        llo1 = kk.LT.kcbot(jl).AND.ldcum(jl)
-! old or new choice
-        if(llo1) then
-           if(nturben.eq.1) zdmfde(jl) = zentr
-           if(nturben.eq.2) zdmfde(jl) = zentr*1.2
-        else
-          zdmfde(jl) = 0.0
-        endif
-! old or new choice
-        if(nturben .eq. 1) then
-          fscale(jl) = 1.0
-        elseif (nturben .eq. 2) then
-! defining the facale
-        tt(jl) = ptenh(jl,kk+1)
-        zqsat(jl) = TLUCUA(tt(jl))/paph(jl,kk+1)
-        zqsat(jl) = zqsat(jl)/(1.-VTMPC1*zqsat(jl))
-        ttb(jl) = ptenh(jl,kcbot(jl))
-        zqsatb(jl) = TLUCUA(ttb(jl))/zpbase(jl)
-        zqsatb(jl) = zqsatb(jl)/(1.-VTMPC1*zqsatb(jl))
-        fscale(jl) = 4.0*(zqsat(jl)/zqsatb(jl))**2
-        end if
-! end of defining the fscale
-        llo2 = llo1.AND.ktype(jl).EQ.2.AND.((zpbase(jl)-paph(jl,kk)) &
-             .LT.ZDNOPRC.OR.paph(jl,kk).GT.zpmid)
-        if(llo2) then
-            zdmfen(jl) = zentr*fscale(jl)
-        else
-            zdmfen(jl) = 0.0
-        endif
-        iklwmin = MAX(klwmin(jl),kctop0(jl)+2)
-        llo2 = llo1.AND.ktype(jl).EQ.3.AND.(kk.GE.iklwmin.OR.pap(jl,kk) &
-             .GT.zpmid)
-        IF (llo2) zdmfen(jl) = zentr*fscale(jl)
-        llo2 = llo1.AND.ktype(jl).EQ.1
-! Turbulent entrainment
-        IF (llo2) zdmfen(jl) = zentr*fscale(jl)
-! Organized detrainment, detrainment starts at khmin
-        ikb = kcbot(jl)
-        zodetr(jl,kk) = 0.
-        IF (llo2.AND.kk.LE.khmin(jl).AND.kk.GE.kctop0(jl)) THEN
-          ikt = kctop0(jl)
-          ikh = khmin(jl)
-          IF (ikh.GT.ikt) THEN
-            zzmzk = -(pgeoh(jl,ikh)-pgeoh(jl,kk))*zrg
-            ztmzk = -(pgeoh(jl,ikh)-pgeoh(jl,ikt))*zrg
-            arg = 3.1415*(zzmzk/ztmzk)*0.5
-            zorgde = TAN(arg)*3.1415*0.5/ztmzk
-            zdprho = (paph(jl,kk+1)-paph(jl,kk))*(zrg*zrrho)
-            zodetr(jl,kk) = MIN(zorgde,1.E-3)*pmfu(jl,kk+1)*zdprho
-          END IF
-        END IF
-      ENDDO
-!
-      RETURN
-      END SUBROUTINE CUENTR_NEW
-
-!**********************************************************
-!        FUNCTION SSUM, TLUCUA, TLUCUB, TLUCUC
-!**********************************************************
-      REAL FUNCTION SSUM ( N, X, IX )
-!
-! COMPUTES SSUM = SUM OF [X(I)]
-!     FOR N ELEMENTS OF X WITH SKIP INCREMENT IX FOR VECTOR X
-!
-      IMPLICIT NONE
-      REAL X(*)
-      REAL ZSUM
-      INTEGER N, IX, JX, JL
-!
-      JX = 1
-      ZSUM = 0.0
-      DO JL = 1, N
-        ZSUM = ZSUM + X(JX)
-        JX = JX + IX
+         if(loflag(jl))then
+            is=is+1
+         endif
       enddo
-!
-      SSUM=ZSUM
-!
-      RETURN
-      END FUNCTION SSUM
+      if(is.eq.0) exit
 
-      REAL FUNCTION TLUCUA(TT)
-!
-!  Set up lookup tables for cloud ascent calculations.
-!
-      IMPLICIT NONE
-      REAL ZCVM3,ZCVM4,TT
-!
-      IF(TT-TMELT.GT.0.) THEN
-         ZCVM3=C3LES
-         ZCVM4=C4LES
-      ELSE
-         ZCVM3=C3IES
-         ZCVM4=C4IES
-      END IF
-      TLUCUA=C2ES*EXP(ZCVM3*(TT-TMELT)*(1./(TT-ZCVM4)))
-!
-      RETURN
-      END FUNCTION TLUCUA
-!
-      REAL FUNCTION TLUCUB(TT)
-!
-!  Set up lookup tables for cloud ascent calculations.
-!
-      IMPLICIT NONE
-      REAL Z5ALVCP,Z5ALSCP,ZCVM4,ZCVM5,TT
-!
-      Z5ALVCP=C5LES*ALV/CPD
-      Z5ALSCP=C5IES*ALS/CPD
-      IF(TT-TMELT.GT.0.) THEN
-         ZCVM4=C4LES
-         ZCVM5=Z5ALVCP
-      ELSE
-         ZCVM4=C4IES
-         ZCVM5=Z5ALSCP
-      END IF
-      TLUCUB=ZCVM5*(1./(TT-ZCVM4))**2
-!
-      RETURN
-      END FUNCTION TLUCUB
-!
-      REAL FUNCTION TLUCUC(TT)
-!
-!  Set up lookup tables for cloud ascent calculations.
-!
-      IMPLICIT NONE
-      REAL ZALVDCP,ZALSDCP,TT,ZLDCP
-!
-      ZALVDCP=ALV/CPD
-      ZALSDCP=ALS/CPD
-      IF(TT-TMELT.GT.0.) THEN
-         ZLDCP=ZALVDCP
-      ELSE
-         ZLDCP=ZALSDCP
-      END IF
-      TLUCUC=ZLDCP
-!
-      RETURN
-      END FUNCTION TLUCUC
-!
+! the next levels, we use the variables at the first level as initial values
+      do jl=1,klon
+      if(loflag(jl)) then
+        eta(jl) = 0.55/((pgeoh(jl,jk)-pgeoh(jl,klev+1))*zrg)+1.0e-4
+        dz(jl)  = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
+        coef(jl)= 0.5*eta(jl)*dz(jl)
+        dhen(jl,jk) = pgeoh(jl,jk) + cpd*ptenh(jl,jk)
+        dh(jl,jk) = (coef(jl)*(dhen(jl,jk+1)+dhen(jl,jk))&
+     &              +(1.-coef(jl))*dh(jl,jk+1))/(1.+coef(jl))
+        pqu(jl,jk) =(coef(jl)*(pqenh(jl,jk+1)+pqenh(jl,jk))&
+     &              +(1.-coef(jl))*pqu(jl,jk+1))/(1.+coef(jl))
+        ptu(jl,jk) = (dh(jl,jk)-pgeoh(jl,jk))*rcpd
+        zqold(jl) = pqu(jl,jk)
+        zph(jl)=paph(jl,jk)
+      end if
+      end do
+! check if the parcel is saturated
+      ik=jk
+      icall=1
+      call cuadjtqn(klon,klev,ik,zph,ptu,pqu,loflag,icall)
+      do jl=1,klon
+        if( loflag(jl) ) then
+          zdq = max((zqold(jl) - pqu(jl,jk)),0.)
+          plu(jl,jk) = plu(jl,jk+1) + zdq
+          zlglac=zdq*((1.-foealfa(ptu(jl,jk))) - &
+                      (1.-foealfa(ptu(jl,jk+1))))
+          plu(jl,jk) = min(plu(jl,jk),5.e-3)
+          dh(jl,jk) =  pgeoh(jl,jk) + cpd*(ptu(jl,jk)+ralfdcp*zlglac)
+! compute the updraft speed
+          vptu(jl,jk) = ptu(jl,jk)*(1.+vtmpc1*pqu(jl,jk)-plu(jl,jk))+&
+                        ralfdcp*zlglac
+          vten(jl,jk) = ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
+          zbuo(jl,jk) = (vptu(jl,jk) - vten(jl,jk))/vten(jl,jk)
+          abuoy(jl,jk)=(zbuo(jl,jk)+zbuo(jl,jk+1))*0.5*g
+          atop1 = 1.0 - 2.*coef(jl)
+          atop2 = 2.0*dz(jl)*abuoy(jl,jk)
+          abot =  1.0 + 2.*coef(jl)
+          kup(jl,jk)  = (atop1*kup(jl,jk+1) + atop2) / abot
 
-END MODULE module_cu_tiedtke
+! let's find the exact cloud base
+         if ( plu(jl,jk) > 0. .and. klab(jl,jk+1) == 1 ) then
+              ik = jk + 1
+              zqsu = foeewm(ptu(jl,ik))/paph(jl,ik)
+              zqsu = min(0.5,zqsu)
+              zcor = 1./(1.-vtmpc1*zqsu)
+              zqsu = zqsu*zcor
+              zdq = min(0.,pqu(jl,ik)-zqsu)
+              zalfaw = foealfa(ptu(jl,ik))
+              zfacw = c5les/((ptu(jl,ik)-c4les)**2)
+              zfaci = c5ies/((ptu(jl,ik)-c4ies)**2)
+              zfac = zalfaw*zfacw + (1.-zalfaw)*zfaci
+              zesdp = foeewm(ptu(jl,ik))/paph(jl,ik)
+              zcor = 1./(1.-vtmpc1*zesdp)
+              zdqsdt = zfac*zcor*zqsu
+              zdtdp = rd*ptu(jl,ik)/(cpd*paph(jl,ik))
+              zdp = zdq/(zdqsdt*zdtdp)
+              zcbase(jl) = paph(jl,ik) + zdp
+! chose nearest half level as cloud base (jk or jk+1)
+              zpdifftop = zcbase(jl) - paph(jl,jk)
+              zpdiffbot = paph(jl,jk+1) - zcbase(jl)
+              if ( zpdifftop > zpdiffbot .and. kup(jl,jk+1) > 0. ) then
+                ikb = min(klev-1,jk+1)
+                klab(jl,ikb) = 2
+                klab(jl,jk) = 2
+                kcbot(jl) = ikb
+                plu(jl,jk+1) = 1.0e-8
+              else if ( zpdifftop <= zpdiffbot .and.kup(jl,jk) > 0. ) then
+                klab(jl,jk) = 2
+                kcbot(jl) = jk
+              end if
+          end if
+
+          if(kup(jl,jk) .lt. 0.)then
+            loflag(jl) = .false.
+            if(plu(jl,jk+1) .gt. 0.) then
+              kctop(jl) = jk
+              lldcum(jl) = .true.
+            else
+              lldcum(jl) = .false.
+            end if
+          else if(plu(jl,jk) .gt. 0.)then
+              klab(jl,jk)=2
+          else
+              klab(jl,jk)=1
+          end if
+        end if
+      end do
+
+      end do ! end all the levels
+
+      do jl=1,klon
+        ikb = kcbot(jl)
+        ikt = kctop(jl)
+        if(paph(jl,ikb) - paph(jl,ikt) > zdnoprc) lldcum(jl) = .false.
+        if(lldcum(jl)) then
+            ktype(jl) = 2
+            ldcum(jl) = .true.
+            wbase(jl) = sqrt(max(2.*kup(jl,ikb),0.))
+            cubot(jl) = ikb
+            cutop(jl) = ikt
+            kdpl(jl)  = klev
+        else
+            cutop(jl) = -1
+            cubot(jl) = -1
+            kdpl(jl)  = klev - 1
+            ldcum(jl) = .false.
+            wbase(jl) = 0.
+        end if
+      end do
+
+      do jk=klev,1,-1
+       do jl=1,klon
+           ikt = kctop(jl)
+           if(jk .ge. ikt)then
+             culab(jl,jk) = klab(jl,jk)
+             cutu(jl,jk)  = ptu(jl,jk)
+             cuqu(jl,jk)  = pqu(jl,jk)
+             culu(jl,jk)  = plu(jl,jk)
+           end if
+       end do
+      end do
+      
+      end if ! if activate shallow convection
+
+      if(lmfpen) then
+!-----------------------------------------------------------
+! next, let's check the deep convection
+! the first level is klevm1-1
+! define deltat and deltaq
+!----------------------------------------------------------
+! we check the parcel starting level by level
+! assume the mix-layer is 60hPa
+      deltt = 0.2
+      deltq = 1.0e-4
+      do jl=1,klon
+        deepflag(jl) = .false.
+      end do
+
+      do levels=klevm1-1,p650,-1 ! loop starts
+        do jk=1,klev
+          do jl=1,klon
+             plu(jl,jk)=0.0  ! parcel liquid water
+             ptu(jl,jk)=0.0  ! parcel temperature
+             pqu(jl,jk)=0.0  ! parcel specific humidity
+             dh(jl,jk)=0.0   ! parcel dry static energy
+             dhen(jl,jk)=0.0  ! environment dry static energy
+             kup(jl,jk)=0.0   ! updraught kinetic energy for parcel
+             vptu(jl,jk)=0.0  ! parcel virtual temperature consideringwater-loading
+             vten(jl,jk)=0.0  ! environment virtual temperature
+             abuoy(jl,jk)=0.0
+             zbuo(jl,jk)=0.0
+             klab(jl,jk)=0
+          end do
+        end do
+
+        do jl=1,klon
+           kcbot(jl)    =  levels
+           kctop(jl)    =  levels
+           zqold(jl)    = 0.
+           lldcum(jl)   = .false.
+           resetflag(jl)= .false.
+           loflag(jl)   = .not. deepflag(jl)
+        end do
+
+! start the inner loop to search the deep convection points
+      do jk=levels,2,-1
+        is=0
+        do jl=1,klon
+         if(loflag(jl))then
+            is=is+1
+         endif
+        enddo
+        if(is.eq.0) exit
+
+! define the variables at the departure level 
+        if(jk .eq. levels) then
+          do jl=1,klon
+          if(loflag(jl)) then
+            if((paph(jl,klev+1)-paph(jl,jk)) < 60.e2) then
+              tmix=0.
+              qmix=0.
+              zmix=0.
+              pmix=0.
+              do nk=jk+2,jk,-1
+              if(pmix < 50.e2) then
+                dp = paph(jl,nk) - paph(jl,nk-1)
+                tmix=tmix+dp*ptenh(jl,nk)
+                qmix=qmix+dp*pqenh(jl,nk)
+                zmix=zmix+dp*pgeoh(jl,nk)
+                pmix=pmix+dp
+              end if
+              end do
+              tmix=tmix/pmix
+              qmix=qmix/pmix
+              zmix=zmix/pmix
+            else
+              tmix=ptenh(jl,jk+1)
+              qmix=pqenh(jl,jk+1)
+              zmix=pgeoh(jl,jk+1)
+            end if
+
+            pqu(jl,jk+1) = qmix + deltq
+            dhen(jl,jk+1)= zmix + tmix*cpd
+            dh(jl,jk+1)  = dhen(jl,jk+1) + deltt*cpd
+            ptu(jl,jk+1) = (dh(jl,jk+1)-pgeoh(jl,jk+1))*rcpd
+            kup(jl,jk+1) = 0.5
+            klab(jl,jk+1)= 1
+            vptu(jl,jk+1)=ptu(jl,jk+1)*(1.+vtmpc1*pqu(jl,jk+1))
+            vten(jl,jk+1)=ptenh(jl,jk+1)*(1.+vtmpc1*pqenh(jl,jk+1))
+            zbuo(jl,jk+1)=(vptu(jl,jk+1)-vten(jl,jk+1))/vten(jl,jk+1)
+          end if
+          end do
+        end if
+
+! the next levels, we use the variables at the first level as initial values
+        do jl=1,klon
+           if(loflag(jl)) then
+! define the fscale
+             fscale = min(1.,(pqsen(jl,jk)/pqsen(jl,klev))**3)
+             eta(jl) = 0.8*1.75e-3*fscale
+             dz(jl)  = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
+             coef(jl)= 0.5*eta(jl)*dz(jl)
+             dhen(jl,jk) = pgeoh(jl,jk) + cpd*ptenh(jl,jk)
+             dh(jl,jk) = 0.5*coef(jl)*(dhen(jl,jk+1)+dhen(jl,jk))&
+     &                  +(1.-coef(jl))*dh(jl,jk+1)
+             pqu(jl,jk) =0.5*coef(jl)*(pqenh(jl,jk+1)+pqenh(jl,jk))&
+     &                  +(1.-coef(jl))*pqu(jl,jk+1)
+             ptu(jl,jk) = (dh(jl,jk)-pgeoh(jl,jk))*rcpd
+             zqold(jl) = pqu(jl,jk)
+             zph(jl)=paph(jl,jk)
+           end if
+        end do
+! check if the parcel is saturated
+        ik=jk
+        icall=1
+        call cuadjtqn(klon,klev,ik,zph,ptu,pqu,loflag,icall)
+ 
+      do jl=1,klon
+        if( loflag(jl) ) then
+          zdq = max((zqold(jl) - pqu(jl,jk)),0.)
+          plu(jl,jk) = plu(jl,jk+1) + zdq
+          zlglac=zdq*((1.-foealfa(ptu(jl,jk))) - &
+                      (1.-foealfa(ptu(jl,jk+1))))
+          plu(jl,jk) = 0.5*plu(jl,jk)
+          dh(jl,jk) =  pgeoh(jl,jk) + cpd*(ptu(jl,jk)+ralfdcp*zlglac)
+! compute the updraft speed
+          vptu(jl,jk) = ptu(jl,jk)*(1.+vtmpc1*pqu(jl,jk)-plu(jl,jk))+&
+                        ralfdcp*zlglac
+          vten(jl,jk) = ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
+          zbuo(jl,jk) = (vptu(jl,jk) - vten(jl,jk))/vten(jl,jk)
+          abuoy(jl,jk)=(zbuo(jl,jk)+zbuo(jl,jk+1))*0.5*g
+          atop1 = 1.0 - 2.*coef(jl)
+          atop2 = 2.0*dz(jl)*abuoy(jl,jk)
+          abot =  1.0 + 2.*coef(jl)
+          kup(jl,jk)  = (atop1*kup(jl,jk+1) + atop2) / abot
+! let's find the exact cloud base
+          if ( plu(jl,jk) > 0. .and. klab(jl,jk+1) == 1 ) then
+              ik = jk + 1
+              zqsu = foeewm(ptu(jl,ik))/paph(jl,ik)
+              zqsu = min(0.5,zqsu)
+              zcor = 1./(1.-vtmpc1*zqsu)
+              zqsu = zqsu*zcor
+              zdq = min(0.,pqu(jl,ik)-zqsu)
+              zalfaw = foealfa(ptu(jl,ik))
+              zfacw = c5les/((ptu(jl,ik)-c4les)**2)
+              zfaci = c5ies/((ptu(jl,ik)-c4ies)**2)
+              zfac = zalfaw*zfacw + (1.-zalfaw)*zfaci
+              zesdp = foeewm(ptu(jl,ik))/paph(jl,ik)
+              zcor = 1./(1.-vtmpc1*zesdp)
+              zdqsdt = zfac*zcor*zqsu
+              zdtdp = rd*ptu(jl,ik)/(cpd*paph(jl,ik))
+              zdp = zdq/(zdqsdt*zdtdp)
+              zcbase(jl) = paph(jl,ik) + zdp
+! chose nearest half level as cloud base (jk or jk+1)
+              zpdifftop = zcbase(jl) - paph(jl,jk)
+              zpdiffbot = paph(jl,jk+1) - zcbase(jl)
+              if ( zpdifftop > zpdiffbot .and. kup(jl,jk+1) > 0. ) then
+                ikb = min(klev-1,jk+1)
+                klab(jl,ikb) = 2
+                klab(jl,jk) = 2
+                kcbot(jl) = ikb
+                plu(jl,jk+1) = 1.0e-8
+              else if ( zpdifftop <= zpdiffbot .and.kup(jl,jk) > 0. ) then
+                klab(jl,jk) = 2
+                kcbot(jl) = jk
+              end if
+          end if
+
+          if(kup(jl,jk) .lt. 0.)then
+            loflag(jl) = .false.
+            if(plu(jl,jk+1) .gt. 0.) then
+              kctop(jl) = jk
+              lldcum(jl) = .true.
+            else
+              lldcum(jl) = .false.
+            end if
+          else if(plu(jl,jk) .gt. 0.)then
+              klab(jl,jk)=2
+          else
+              klab(jl,jk)=1
+          end if
+        end if
+      end do
+
+      end do ! end all the levels
+
+      needreset = .false.
+      do jl=1,klon
+        ikb = kcbot(jl)
+        ikt = kctop(jl)
+        if(paph(jl,ikb) - paph(jl,ikt) < zdnoprc) lldcum(jl) = .false.
+        if(lldcum(jl)) then      
+         ktype(jl)    = 1
+         ldcum(jl)    = .true.
+         deepflag(jl) = .true.
+         wbase(jl)    = sqrt(max(2.*kup(jl,ikb),0.))
+         cubot(jl)    = ikb
+         cutop(jl)    = ikt
+         kdpl(jl)     = levels+1
+         needreset    = .true.
+         resetflag(jl)= .true.
+        end if
+      end do
+
+      if(needreset) then
+      do jk=klev,1,-1
+        do jl=1,klon
+          if(resetflag(jl)) then
+            ikt = kctop(jl)
+            ikb = kdpl(jl)
+            if(jk .le. ikb .and. jk .ge. ikt )then
+             culab(jl,jk) = klab(jl,jk)
+             cutu(jl,jk)  = ptu(jl,jk)
+             cuqu(jl,jk)  = pqu(jl,jk)
+             culu(jl,jk)  = plu(jl,jk)
+            else
+             culab(jl,jk) = 1
+             cutu(jl,jk)  = ptenh(jl,jk)
+             cuqu(jl,jk)  = pqenh(jl,jk)
+             culu(jl,jk)  = 0.
+            end if
+            if ( jk .lt. ikt ) culab(jl,jk) = 0
+          end if
+        end do
+      end do
+      end if
+
+      end do ! end all cycles
+
+      end if ! end actiavating deep convection
+      return
+      end subroutine cutypen
+
+!-----------------------------------------------------------------
+!    level 3 subroutines 'cuascn'
+!-----------------------------------------------------------------
+      subroutine cuascn &
+     &    (klon,     klev,     klevp1,   klevm1,   ptenh,&
+     &     pqenh,    puen,     pven,     pten,     pqen,&
+     &     pqsen,    pgeo,     pgeoh,    pap,      paph,&
+     &     pqte,     pverv,    klwmin,   ldcum,    phcbase,&
+     &     ktype,    klab,     ptu,      pqu,      plu,&
+     &     puu,      pvu,      pmfu,     pmfub,    &
+     &     pmfus,    pmfuq,    pmful,    plude,    pdmfup,&
+     &     kcbot,    kctop,    kctop0,   kcum,     ztmst,&
+     &     pqsenh,   plglac,   lndj,     wup,      wbase,   kdpl, pmfude_rate)
+      implicit none
+!     this routine does the calculations for cloud ascents
+!     for cumulus parameterization
+!     m.tiedtke         e.c.m.w.f.     7/86 modif.  12/89
+!     y.wang            iprc           11/01 modif.
+!     c.zhang           iprc           05/12 modif.
+!***purpose.
+!   --------
+!          to produce cloud ascents for cu-parametrization
+!          (vertical profiles of t,q,l,u and v and corresponding
+!           fluxes as well as precipitation rates)
+!***interface
+!   ---------
+!          this routine is called from *cumastr*.
+!***method.
+!  --------
+!          lift surface air dry-adiabatically to cloud base
+!          and then calculate moist ascent for
+!          entraining/detraining plume.
+!          entrainment and detrainment rates differ for
+!          shallow and deep cumulus convection.
+!          in case there is no penetrative or shallow convection
+!          check for possibility of mid level convection
+!          (cloud base values calculated in *cubasmc*)
+!***externals
+!   ---------
+!          *cuadjtqn* adjust t and q due to condensation in ascent
+!          *cuentrn*  calculate entrainment/detrainment rates
+!          *cubasmcn* calculate cloud base values for midlevel convection
+!***reference
+!   ---------
+!          (tiedtke,1989)
+!***input variables:
+!       ptenh [ztenh] - environ temperature on half levels. (cuini)
+!       pqenh [zqenh] - env. specific humidity on half levels. (cuini)
+!       puen - environment wind u-component. (mssflx)
+!       pven - environment wind v-component. (mssflx)
+!       pten - environment temperature. (mssflx)
+!       pqen - environment specific humidity. (mssflx)
+!       pqsen - environment saturation specific humidity. (mssflx)
+!       pgeo - geopotential. (mssflx)
+!       pgeoh [zgeoh] - geopotential on half levels, (mssflx)
+!       pap - pressure in pa.  (mssflx)
+!       paph - pressure of half levels. (mssflx)
+!       pqte - moisture convergence (delta q/delta t). (mssflx)
+!       pverv - large scale vertical velocity (omega). (mssflx)
+!       klwmin [ilwmin] - level of minimum omega. (cuini)
+!       klab [ilab] - level label - 1: sub-cloud layer.
+!                                   2: condensation level (cloud base)
+!       pmfub [zmfub] - updraft mass flux at cloud base. (cumastr)
+!***variables modified by cuasc:
+!       ldcum - logical denoting profiles. (cubase)
+!       ktype - convection type - 1: penetrative  (cumastr)
+!                                 2: stratocumulus (cumastr)
+!                                 3: mid-level  (cuasc)
+!       ptu - cloud temperature.
+!       pqu - cloud specific humidity.
+!       plu - cloud liquid water (moisture condensed out)
+!       puu [zuu] - cloud momentum u-component.
+!       pvu [zvu] - cloud momentum v-component.
+!       pmfu - updraft mass flux.
+!       pmfus [zmfus] - updraft flux of dry static energy. (cubasmc)
+!       pmfuq [zmfuq] - updraft flux of specific humidity.
+!       pmful [zmful] - updraft flux of cloud liquid water.
+!       plude - liquid water returned to environment by detrainment.
+!       pdmfup [zmfup] -
+!       kcbot - cloud base level. (cubase)
+!       kctop - cloud top level
+!       kctop0 [ictop0] - estimate of cloud top. (cumastr)
+!       kcum [icum] - flag to control the call
+
+      integer  klev,klon,klevp1,klevm1
+      real     ptenh(klon,klev),       pqenh(klon,klev), &
+     &         puen(klon,klev),        pven(klon,klev),&
+     &         pten(klon,klev),        pqen(klon,klev),&
+     &         pgeo(klon,klev),        pgeoh(klon,klevp1),&
+     &         pap(klon,klev),         paph(klon,klevp1),&
+     &         pqsen(klon,klev),       pqte(klon,klev),&
+     &         pverv(klon,klev),       pqsenh(klon,klev)
+      real     ptu(klon,klev),         pqu(klon,klev),&
+     &         puu(klon,klev),         pvu(klon,klev),&
+     &         pmfu(klon,klev),        zph(klon),&
+     &         pmfub(klon),            &
+     &         pmfus(klon,klev),       pmfuq(klon,klev),&
+     &         plu(klon,klev),         plude(klon,klev),&
+     &         pmful(klon,klev),       pdmfup(klon,klev)
+      real     zdmfen(klon),           zdmfde(klon),&
+     &         zmfuu(klon),            zmfuv(klon),&
+     &         zpbase(klon),           zqold(klon)              
+      real     phcbase(klon),          zluold(klon)
+      real     zprecip(klon),          zlrain(klon,klev)
+      real     zbuo(klon,klev),        kup(klon,klev)
+      real     wup(klon)
+      real     wbase(klon),            zodetr(klon,klev)
+      real     plglac(klon,klev)
+
+      real     eta(klon),dz(klon)
+
+      integer  klwmin(klon),           ktype(klon),&
+     &         klab(klon,klev),        kcbot(klon),&
+     &         kctop(klon),            kctop0(klon)
+      integer  lndj(klon)
+      logical  ldcum(klon),            loflag(klon)
+      logical  llo2,llo3,              llo1(klon)
+
+      integer  kdpl(klon)
+      real     zoentr(klon),           zdpmean(klon)
+      real     pdmfen(klon,klev),      pmfude_rate(klon,klev)
+! local variables
+      integer  jl,jk
+      integer  ikb,icum,itopm2,ik,icall,is,kcum,jlm,jll
+      integer  jlx(klon)
+      real     ztmst,zcons2,zfacbuo,zprcdgw,z_cwdrag,z_cldmax,z_cwifrac,z_cprc2
+      real     zmftest,zmfmax,zqeen,zseen,zscde,zqude
+      real     zmfusk,zmfuqk,zmfulk
+      real     zbc,zbe,zkedke,zmfun,zwu,zprcon,zdt,zcbf,zzco
+      real     zlcrit,zdfi,zc,zd,zint,zlnew,zvw,zvi,zalfaw,zrold
+      real     zrnew,zz,zdmfeu,zdmfdu,dp
+      real     zfac,zbuoc,zdkbuo,zdken,zvv,zarg,zchange,zxe,zxs,zdshrd
+      real     atop1,atop2,abot
+!--------------------------------
+!*    1.       specify parameters
+!--------------------------------
+      zcons2=3./(g*ztmst)
+      zfacbuo = 0.5/(1.+0.5)
+      zprcdgw = cprcon*zrg
+      z_cldmax = 5.e-3
+      z_cwifrac = 0.5
+      z_cprc2 = 0.5
+      z_cwdrag = (3.0/8.0)*0.506/0.2
+!---------------------------------
+!     2.        set default values
+!---------------------------------
+      llo3 = .false.
+      do jl=1,klon
+        zluold(jl)=0.
+        wup(jl)=0.
+        zdpmean(jl)=0.
+        zoentr(jl)=0.
+        if(.not.ldcum(jl)) then
+          ktype(jl)=0
+          kcbot(jl) = -1
+          pmfub(jl) = 0.
+          pqu(jl,klev) = 0.
+        end if
+      end do
+
+ ! initialize variout quantities     
+      do jk=1,klev
+      do jl=1,klon
+          if(jk.ne.kcbot(jl)) plu(jl,jk)=0.
+          pmfu(jl,jk)=0.
+          pmfus(jl,jk)=0.
+          pmfuq(jl,jk)=0.
+          pmful(jl,jk)=0.
+          plude(jl,jk)=0.
+          plglac(jl,jk)=0.
+          pdmfup(jl,jk)=0.
+          zlrain(jl,jk)=0.
+          zbuo(jl,jk)=0.
+          kup(jl,jk)=0.
+          pdmfen(jl,jk) = 0.
+          pmfude_rate(jl,jk) = 0.
+          if(.not.ldcum(jl).or.ktype(jl).eq.3) klab(jl,jk)=0
+          if(.not.ldcum(jl).and.paph(jl,jk).lt.4.e4) kctop0(jl)=jk
+      end do
+      end do
+
+      do jl = 1,klon
+        if ( ktype(jl) == 3 ) ldcum(jl) = .false.
+      end do
+!------------------------------------------------
+!     3.0      initialize values at cloud base level
+!------------------------------------------------
+      do jl=1,klon
+        kctop(jl)=kcbot(jl)
+        if(ldcum(jl)) then
+          ikb = kcbot(jl)
+          kup(jl,ikb) = 0.5*wbase(jl)**2
+          pmfu(jl,ikb) = pmfub(jl)
+          pmfus(jl,ikb) = pmfub(jl)*(cpd*ptu(jl,ikb)+pgeoh(jl,ikb))
+          pmfuq(jl,ikb) = pmfub(jl)*pqu(jl,ikb)
+          pmful(jl,ikb) = pmfub(jl)*plu(jl,ikb)
+        end if
+      end do
+!
+!-----------------------------------------------------------------
+!     4.       do ascent: subcloud layer (klab=1) ,clouds (klab=2)
+!              by doing first dry-adiabatic ascent and then
+!              by adjusting t,q and l accordingly in *cuadjtqn*,
+!              then check for buoyancy and set flags accordingly
+!-----------------------------------------------------------------
+!
+      do jk=klevm1,3,-1
+!             specify cloud base values for midlevel convection
+!             in *cubasmc* in case there is not already convection
+! ---------------------------------------------------------------------
+      ik=jk
+      call cubasmcn&
+     &    (klon,     klev,     klevm1,   ik,      pten,&
+     &     pqen,     pqsen,    puen,     pven,    pverv,&
+     &     pgeo,     pgeoh,    ldcum,   ktype,   klab,  zlrain,&
+     &     pmfu,     pmfub,    kcbot,   ptu,&
+     &     pqu,      plu,      puu,     pvu,      pmfus,&
+     &     pmfuq,    pmful,    pdmfup)
+      is = 0
+      jlm = 0
+      do jl = 1,klon
+        loflag(jl) = .false.
+        zprecip(jl) = 0.
+        llo1(jl) = .false.
+        is = is + klab(jl,jk+1)
+        if ( klab(jl,jk+1) == 0 ) klab(jl,jk) = 0
+        if ( (ldcum(jl) .and. klab(jl,jk+1) == 2) .or.   &
+             (ktype(jl) == 3 .and. klab(jl,jk+1) == 1) ) then
+          loflag(jl) = .true.
+          jlm = jlm + 1
+          jlx(jlm) = jl
+        end if
+        zph(jl) = paph(jl,jk)
+        if ( ktype(jl) == 3 .and. jk == kcbot(jl) ) then
+          zmfmax = (paph(jl,jk)-paph(jl,jk-1))*zcons2
+          if ( pmfub(jl) > zmfmax ) then
+            zfac = zmfmax/pmfub(jl)
+            pmfu(jl,jk+1) = pmfu(jl,jk+1)*zfac
+            pmfus(jl,jk+1) = pmfus(jl,jk+1)*zfac
+            pmfuq(jl,jk+1) = pmfuq(jl,jk+1)*zfac
+            pmfub(jl) = zmfmax
+          end if
+          pmfub(jl)=min(pmfub(jl),zmfmax)
+        end if
+      end do
+
+      if(is.gt.0) llo3 = .true.
+!
+!*     specify entrainment rates in *cuentr*
+! -------------------------------------
+      ik=jk
+      call cuentrn(klon,klev,ik,kcbot,ldcum,llo3, &
+                  pgeoh,pmfu,zdmfen,zdmfde)
+!
+!      do adiabatic ascent for entraining/detraining plume
+      if(llo3) then
+! -------------------------------------------------------
+!
+        do jl = 1,klon
+          zqold(jl) = 0.
+        end do
+        do jll = 1 , jlm
+          jl = jlx(jll)
+          zdmfde(jl) = min(zdmfde(jl),0.75*pmfu(jl,jk+1))
+          if ( jk == kcbot(jl) ) then
+            zoentr(jl) = -1.75e-3*(min(1.,pqen(jl,jk)/pqsen(jl,jk)) - &
+                         1.)*(pgeoh(jl,jk)-pgeoh(jl,jk+1))*zrg
+            zoentr(jl) = min(0.4,zoentr(jl))*pmfu(jl,jk+1)
+          end if
+          if ( jk < kcbot(jl) ) then
+            zmfmax = (paph(jl,jk)-paph(jl,jk-1))*zcons2
+            zxs = max(pmfu(jl,jk+1)-zmfmax,0.)
+            wup(jl) = wup(jl) + kup(jl,jk+1)*(pap(jl,jk+1)-pap(jl,jk))
+            zdpmean(jl) = zdpmean(jl) + pap(jl,jk+1) - pap(jl,jk)
+            zdmfen(jl) = zoentr(jl)
+            if ( ktype(jl) >= 2 ) then
+              zdmfen(jl) = 2.0*zdmfen(jl)
+              zdmfde(jl) = zdmfen(jl)
+            end if
+            zdmfde(jl) = zdmfde(jl) * &
+                         (1.6-min(1.,pqen(jl,jk)/pqsen(jl,jk)))
+            zmftest = pmfu(jl,jk+1) + zdmfen(jl) - zdmfde(jl)
+            zchange = max(zmftest-zmfmax,0.)
+            zxe = max(zchange-zxs,0.)
+            zdmfen(jl) = zdmfen(jl) - zxe
+            zchange = zchange - zxe
+            zdmfde(jl) = zdmfde(jl) + zchange
+          end if
+          pdmfen(jl,jk) = zdmfen(jl) - zdmfde(jl)
+          pmfu(jl,jk) = pmfu(jl,jk+1) + zdmfen(jl) - zdmfde(jl)
+          zqeen = pqenh(jl,jk+1)*zdmfen(jl)
+          zseen = (cpd*ptenh(jl,jk+1)+pgeoh(jl,jk+1))*zdmfen(jl)
+          zscde = (cpd*ptu(jl,jk+1)+pgeoh(jl,jk+1))*zdmfde(jl)
+          zqude = pqu(jl,jk+1)*zdmfde(jl)
+          plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
+          zmfusk = pmfus(jl,jk+1) + zseen - zscde
+          zmfuqk = pmfuq(jl,jk+1) + zqeen - zqude
+          zmfulk = pmful(jl,jk+1) - plude(jl,jk)
+          plu(jl,jk) = zmfulk*(1./max(cmfcmin,pmfu(jl,jk)))
+          pqu(jl,jk) = zmfuqk*(1./max(cmfcmin,pmfu(jl,jk)))
+          ptu(jl,jk) = (zmfusk * &
+            (1./max(cmfcmin,pmfu(jl,jk)))-pgeoh(jl,jk))*rcpd
+          ptu(jl,jk) = max(100.,ptu(jl,jk))
+          ptu(jl,jk) = min(400.,ptu(jl,jk))
+          zqold(jl) = pqu(jl,jk)
+          zlrain(jl,jk) = zlrain(jl,jk+1)*(pmfu(jl,jk+1)-zdmfde(jl)) * &
+                          (1./max(cmfcmin,pmfu(jl,jk)))
+          zluold(jl) = plu(jl,jk)
+        end do
+! reset to environmental values if below departure level
+        do jl = 1,klon
+          if ( jk > kdpl(jl) ) then
+            ptu(jl,jk) = ptenh(jl,jk)
+            pqu(jl,jk) = pqenh(jl,jk)
+            plu(jl,jk) = 0.
+            zluold(jl) = plu(jl,jk)
+          end if
+        end do
+!*             do corrections for moist ascent
+!*             by adjusting t,q and l in *cuadjtq*
+!------------------------------------------------
+      ik=jk
+      icall=1
+!
+      if ( jlm > 0 ) then
+        call cuadjtqn(klon,klev,ik,zph,ptu,pqu,loflag,icall)
+      end if
+! compute the upfraft speed in cloud layer
+        do jll = 1 , jlm
+          jl = jlx(jll)
+          if ( pqu(jl,jk) /= zqold(jl) ) then
+            plglac(jl,jk) = plu(jl,jk) * &
+                           ((1.-foealfa(ptu(jl,jk)))- &
+                            (1.-foealfa(ptu(jl,jk+1))))
+            ptu(jl,jk) = ptu(jl,jk) + ralfdcp*plglac(jl,jk)
+          end if
+        end do
+        do jll = 1 , jlm
+          jl = jlx(jll)
+          if ( pqu(jl,jk) /= zqold(jl) ) then
+            klab(jl,jk) = 2
+            plu(jl,jk) = plu(jl,jk) + zqold(jl) - pqu(jl,jk)
+            zbc = ptu(jl,jk)*(1.+vtmpc1*pqu(jl,jk)-plu(jl,jk+1) - &
+              zlrain(jl,jk+1))
+            zbe = ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
+            zbuo(jl,jk) = zbc - zbe
+! set flags for the case of midlevel convection
+            if ( ktype(jl) == 3 .and. klab(jl,jk+1) == 1 ) then
+              if ( zbuo(jl,jk) > -0.5 ) then
+                ldcum(jl) = .true.
+                kctop(jl) = jk
+                kup(jl,jk) = 0.5
+              else
+                klab(jl,jk) = 0
+                pmfu(jl,jk) = 0.
+                plude(jl,jk) = 0.
+                plu(jl,jk) = 0.
+              end if
+            end if
+            if ( klab(jl,jk+1) == 2 ) then
+              if ( zbuo(jl,jk) < 0. .and. klab(jl,jk+1) == 2 ) then
+                ptenh(jl,jk) = 0.5*(pten(jl,jk)+pten(jl,jk-1))
+                pqenh(jl,jk) = 0.5*(pqen(jl,jk)+pqen(jl,jk-1))
+                zbuo(jl,jk) = zbc - ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
+              end if
+              zbuoc = (zbuo(jl,jk) / &
+                (ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk)))+zbuo(jl,jk+1) / &
+                (ptenh(jl,jk+1)*(1.+vtmpc1*pqenh(jl,jk+1))))*0.5
+              zdkbuo = (pgeoh(jl,jk)-pgeoh(jl,jk+1))*zfacbuo*zbuoc
+! mixing and "pressure" gradient term in upper troposphere
+              if ( zdmfen(jl) > 0. ) then
+                zdken = min(1.,(1.+z_cwdrag)*zdmfen(jl) / &
+                        max(cmfcmin,pmfu(jl,jk+1)))
+              else
+                zdken = min(1.,(1.+z_cwdrag)*zdmfde(jl) / &
+                        max(cmfcmin,pmfu(jl,jk+1)))
+              end if
+              kup(jl,jk) = (kup(jl,jk+1)*(1.-zdken)+zdkbuo) / &
+                           (1.+zdken)
+              if ( zbuo(jl,jk) < 0. .and. klab(jl,jk+1) == 2 ) then
+                zkedke = kup(jl,jk)/max(1.e-10,kup(jl,jk+1))
+                zkedke = max(0.,min(1.,zkedke))
+                zmfun = sqrt(zkedke)*pmfu(jl,jk+1)
+                zdmfde(jl) = max(zdmfde(jl),pmfu(jl,jk+1)-zmfun)
+                plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
+                pmfu(jl,jk) = pmfu(jl,jk+1) + zdmfen(jl) - zdmfde(jl)
+              end if
+              if ( zbuo(jl,jk) >-0.2 .and. klab(jl,jk+1) == 2 ) then
+                ikb = kcbot(jl)
+                zoentr(jl) = 1.75e-3*(0.3-(min(1.,pqen(jl,jk-1) /    &
+                  pqsen(jl,jk-1))-1.))*(pgeoh(jl,jk-1)-pgeoh(jl,jk)) * &
+                  zrg*min(1.,pqsen(jl,jk)/pqsen(jl,ikb))**3
+                zoentr(jl) = min(0.4,zoentr(jl))*pmfu(jl,jk)
+              else
+                zoentr(jl) = 0.
+              end if
+! erase values if below departure level
+              if ( jk > kdpl(jl) ) then
+                pmfu(jl,jk) = pmfu(jl,jk+1)
+                kup(jl,jk) = 0.5
+              end if
+              if ( kup(jl,jk) > 0. .and. pmfu(jl,jk) > 0. ) then
+                kctop(jl) = jk
+                llo1(jl) = .true.
+              else
+                klab(jl,jk) = 0
+                pmfu(jl,jk) = 0.
+                kup(jl,jk) = 0.
+                zdmfde(jl) = pmfu(jl,jk+1)
+                plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
+              end if
+! save detrainment rates for updraught
+              if ( pmfu(jl,jk+1) > 0. ) pmfude_rate(jl,jk) = zdmfde(jl)
+            end if
+          else if ( ktype(jl) == 2 .and. pqu(jl,jk) == zqold(jl) ) then
+            klab(jl,jk) = 0
+            pmfu(jl,jk) = 0.
+            kup(jl,jk) = 0.
+            zdmfde(jl) = pmfu(jl,jk+1)
+            plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
+            pmfude_rate(jl,jk) = zdmfde(jl)
+          end if
+        end do
+
+        do jl = 1,klon
+          if ( llo1(jl) ) then
+! conversions only proceeds if plu is greater than a threshold liquid water
+! content of 0.3 g/kg over water and 0.5 g/kg over land to prevent precipitation
+! generation from small water contents.
+            if ( lndj(jl).eq.1 ) then
+              zdshrd = 5.e-4
+            else
+              zdshrd = 3.e-4
+            end if
+            ikb=kcbot(jl)
+            if ( plu(jl,jk) > zdshrd .and.(paph(jl,ikb)-paph(jl,jk))>zdnoprc)then
+              zwu = min(15.0,sqrt(2.*max(0.1,kup(jl,jk+1))))
+              zprcon = zprcdgw/(0.75*zwu)
+! PARAMETERS FOR BERGERON-FINDEISEN PROCESS (T < -5C)
+              zdt = min(rtber-rtice,max(rtber-ptu(jl,jk),0.))
+              zcbf = 1. + z_cprc2*sqrt(zdt)
+              zzco = zprcon*zcbf
+              zlcrit = zdshrd/zcbf
+              zdfi = pgeoh(jl,jk) - pgeoh(jl,jk+1)
+              zc = (plu(jl,jk)-zluold(jl))
+              zarg = (plu(jl,jk)/zlcrit)**2
+              if ( zarg < 25.0 ) then
+                zd = zzco*(1.-exp(-zarg))*zdfi
+              else
+                zd = zzco*zdfi
+              end if
+              zint = exp(-zd)
+              zlnew = zluold(jl)*zint + zc/zd*(1.-zint)
+              zlnew = max(0.,min(plu(jl,jk),zlnew))
+              zlnew = min(z_cldmax,zlnew)
+              zprecip(jl) = max(0.,zluold(jl)+zc-zlnew)
+              pdmfup(jl,jk) = zprecip(jl)*pmfu(jl,jk)
+              zlrain(jl,jk) = zlrain(jl,jk) + zprecip(jl)
+              plu(jl,jk) = zlnew
+            end if
+          end if
+        end do
+        do jl = 1, klon
+          if ( llo1(jl) ) then
+            if ( zlrain(jl,jk) > 0. ) then
+              zvw = 21.18*zlrain(jl,jk)**0.2
+              zvi = z_cwifrac*zvw
+              zalfaw = foealfa(ptu(jl,jk))
+              zvv = zalfaw*zvw + (1.-zalfaw)*zvi
+              zrold = zlrain(jl,jk) - zprecip(jl)
+              zc = zprecip(jl)
+              zwu = min(15.0,sqrt(2.*max(0.1,kup(jl,jk))))
+              zd = zvv/zwu
+              zint = exp(-zd)
+              zrnew = zrold*zint + zc/zd*(1.-zint)
+              zrnew = max(0.,min(zlrain(jl,jk),zrnew))
+              zlrain(jl,jk) = zrnew
+            end if
+          end if
+        end do
+        do jll = 1 , jlm
+          jl = jlx(jll)
+          pmful(jl,jk) = plu(jl,jk)*pmfu(jl,jk)
+          pmfus(jl,jk) = (cpd*ptu(jl,jk)+pgeoh(jl,jk))*pmfu(jl,jk)
+          pmfuq(jl,jk) = pqu(jl,jk)*pmfu(jl,jk)
+        end do
+      end if
+    end do
+!----------------------------------------------------------------------
+! 5.       final calculations
+! ------------------
+      do jl = 1,klon
+       if ( kctop(jl) == -1 ) ldcum(jl) = .false.
+        kcbot(jl) = max(kcbot(jl),kctop(jl))
+        if ( ldcum(jl) ) then
+          wup(jl) = max(1.e-2,wup(jl)/max(1.,zdpmean(jl)))
+          wup(jl) = sqrt(2.*wup(jl))
+        end if
+      end do
+
+      return
+      end subroutine cuascn
+!---------------------------------------------------------
+!  level 3 souroutines  
+!--------------------------------------------------------
+      subroutine cudlfsn   &                                                      
+     &    (klon,     klev,  &                       
+     &     kcbot,    kctop,    lndj,   ldcum,   &                               
+     &     ptenh,    pqenh,    puen,     pven,     &                              
+     &     pten,     pqsen,    pgeo,                &                             
+     &     pgeoh,    paph,     ptu,      pqu,      plu,&                          
+     &     puu,      pvu,      pmfub,    prfl,          &                         
+     &     ptd,      pqd,      pud,      pvd,            &                        
+     &     pmfd,     pmfds,    pmfdq,    pdmfdp,          &                       
+     &     kdtop,    lddraf)                                                     
+                                                                                 
+!          this routine calculates level of free sinking for                     
+!          cumulus downdrafts and specifies t,q,u and v values                   
+                                                                                 
+!          m.tiedtke         e.c.m.w.f.    12/86 modif. 12/89                    
+                                                                                 
+!          purpose.                                                              
+!          --------                                                              
+!          to produce lfs-values for cumulus downdrafts                          
+!          for massflux cumulus parameterization                                 
+                                                                                 
+!          interface                                                             
+!          ---------                                                             
+!          this routine is called from *cumastr*.                                
+!          input are environmental values of t,q,u,v,p,phi                       
+!          and updraft values t,q,u and v and also                               
+!          cloud base massflux and cu-precipitation rate.                        
+!          it returns t,q,u and v values and massflux at lfs.                    
+                                                                                 
+!          method.                                                               
+                                                                                 
+!          check for negative buoyancy of air of equal parts of                  
+!          moist environmental air and cloud air.                                
+                                                                                 
+!     parameter     description                                   units          
+!     ---------     -----------                                   -----          
+!     input parameters (integer):                                                
+                                                                                 
+!    *klon*         number of grid points per packet                             
+!    *klev*         number of levels                                             
+!    *kcbot*        cloud base level                                             
+!    *kctop*        cloud top level                                              
+                                                                                 
+!    input parameters (logical):                                                 
+                                                                                 
+!    *lndj*       land sea mask (1 for land)                              
+!    *ldcum*        flag: .true. for convective points                           
+                                                                                 
+!    input parameters (real):                                                    
+                                                                                 
+!    *ptenh*        env. temperature (t+1) on half levels          k             
+!    *pqenh*        env. spec. humidity (t+1) on half levels     kg/kg           
+!    *puen*         provisional environment u-velocity (t+1)      m/s            
+!    *pven*         provisional environment v-velocity (t+1)      m/s            
+!    *pten*         provisional environment temperature (t+1)       k            
+!    *pqsen*        environment spec. saturation humidity (t+1)   kg/kg          
+!    *pgeo*         geopotential                                  m2/s2          
+!    *pgeoh*        geopotential on half levels                  m2/s2           
+!    *paph*         provisional pressure on half levels           pa             
+!    *ptu*          temperature in updrafts                        k             
+!    *pqu*          spec. humidity in updrafts                   kg/kg           
+!    *plu*          liquid water content in updrafts             kg/kg           
+!    *puu*          u-velocity in updrafts                        m/s            
+!    *pvu*          v-velocity in updrafts                        m/s            
+!    *pmfub*        massflux in updrafts at cloud base           kg/(m2*s)       
+                                                                                 
+!    updated parameters (real):                                                  
+                                                                                 
+!    *prfl*         precipitation rate                           kg/(m2*s)       
+                                                                                 
+!    output parameters (real):                                                   
+                                                                                 
+!    *ptd*          temperature in downdrafts                      k             
+!    *pqd*          spec. humidity in downdrafts                 kg/kg           
+!    *pud*          u-velocity in downdrafts                      m/s            
+!    *pvd*          v-velocity in downdrafts                      m/s            
+!    *pmfd*         massflux in downdrafts                       kg/(m2*s)       
+!    *pmfds*        flux of dry static energy in downdrafts       j/(m2*s)       
+!    *pmfdq*        flux of spec. humidity in downdrafts         kg/(m2*s)       
+!    *pdmfdp*       flux difference of precip. in downdrafts     kg/(m2*s)       
+                                                                                 
+!    output parameters (integer):                                                
+                                                                                 
+!    *kdtop*        top level of downdrafts                                      
+                                                                                 
+!    output parameters (logical):                                                
+                                                                                 
+!    *lddraf*       .true. if downdrafts exist                                   
+                                                                                 
+!          externals                                                             
+!          ---------                                                             
+!          *cuadjtq* for calculating wet bulb t and q at lfs                     
+!----------------------------------------------------------------------          
+      implicit none                                                       
+                   
+      integer  klev,klon                                                            
+      real     ptenh(klon,klev),       pqenh(klon,klev), &                        
+     &         puen(klon,klev),        pven(klon,klev),  &                        
+     &         pten(klon,klev),        pqsen(klon,klev),  &                       
+     &         pgeo(klon,klev),                       &                           
+     &         pgeoh(klon,klev+1),     paph(klon,klev+1),&                        
+     &         ptu(klon,klev),         pqu(klon,klev),   &                        
+     &         puu(klon,klev),         pvu(klon,klev),   &                        
+     &         plu(klon,klev),                          &                         
+     &         pmfub(klon),            prfl(klon)                                
+                                                                                 
+      real     ptd(klon,klev),         pqd(klon,klev),   &                        
+     &         pud(klon,klev),         pvd(klon,klev),    &                       
+     &         pmfd(klon,klev),        pmfds(klon,klev),  &                       
+     &         pmfdq(klon,klev),       pdmfdp(klon,klev)                         
+      integer  kcbot(klon),            kctop(klon),       &                       
+     &         kdtop(klon),            ikhsmin(klon)                             
+      logical  ldcum(klon),                              &
+     &         lddraf(klon)   
+      integer  lndj(klon)                                                   
+                                                                                 
+      real     ztenwb(klon,klev),      zqenwb(klon,klev), &                       
+     &         zcond(klon),            zph(klon),         &                       
+     &         zhsmin(klon)                                                      
+      logical  llo2(klon)                                                        
+! local variables
+      integer  jl,jk
+      integer  is,ik,icall,ike
+      real     zhsk,zttest,zqtest,zbuo,zmftop
+                                                                                   
+!----------------------------------------------------------------------          
+                                                                                 
+!     1.           set default values for downdrafts                             
+!                  ---------------------------------                             
+      do jl=1,klon                                                          
+        lddraf(jl)=.false.                                                       
+        kdtop(jl)=klev+1      
+        ikhsmin(jl)=klev+1
+        zhsmin(jl)=1.e8                                                  
+      enddo                                                                      
+!----------------------------------------------------------------------          
+                                                                                 
+!     2.           determine level of free sinking:                              
+!                  downdrafts shall start at model level of minimum              
+!                  of saturation moist static energy or below                    
+!                  respectively                                                  
+                                                                                 
+!                  for every point and proceed as follows:                       
+                                                                                 
+!                    (1) determine level of minimum of hs                        
+!                    (2) determine wet bulb environmental t and q                
+!                    (3) do mixing with cumulus cloud air                        
+!                    (4) check for negative buoyancy                             
+!                    (5) if buoyancy>0 repeat (2) to (4) for next                
+!                        level below                                             
+                                                                                 
+!                  the assumption is that air of downdrafts is mixture           
+!                  of 50% cloud air + 50% environmental air at wet bulb          
+!                  temperature (i.e. which became saturated due to               
+!                  evaporation of rain and cloud water)                          
+!                  ----------------------------------------------------          
+      do jk=3,klev-2
+         do jl=1,klon
+           zhsk=cpd*pten(jl,jk)+pgeo(jl,jk) +  &
+     &         foelhm(pten(jl,jk))*pqsen(jl,jk)
+           if(zhsk .lt. zhsmin(jl)) then
+              zhsmin(jl) = zhsk
+              ikhsmin(jl)= jk
+           end if
+         end do
+      end do
+
+
+      ike=klev-3                                                                 
+      do jk=3,ike                                                                
+                                                                                 
+!     2.1          calculate wet-bulb temperature and moisture                   
+!                  for environmental air in *cuadjtq*                            
+!                  -------------------------------------------                   
+        is=0                                                                     
+        do jl=1,klon                                                        
+          ztenwb(jl,jk)=ptenh(jl,jk)                                             
+          zqenwb(jl,jk)=pqenh(jl,jk)                                             
+          zph(jl)=paph(jl,jk)                                                    
+          llo2(jl)=ldcum(jl).and.prfl(jl).gt.0..and..not.lddraf(jl).and.   &      
+     &     (jk.lt.kcbot(jl).and.jk.gt.kctop(jl)).and. jk.ge.ikhsmin(jl)                            
+          if(llo2(jl))then                                                       
+            is=is+1                                                              
+          endif                                                                  
+        enddo                                                                    
+        if(is.eq.0) cycle                                                        
+                                                                                 
+        ik=jk                                                                    
+        icall=2                                                                  
+        call cuadjtqn                                           &                  
+     &   ( klon, klev, ik, zph, ztenwb, zqenwb, llo2, icall)                        
+                                                                                 
+!     2.2          do mixing of cumulus and environmental air                    
+!                  and check for negative buoyancy.                              
+!                  then set values for downdraft at lfs.                         
+!                  ----------------------------------------                      
+        do jl=1,klon                                                        
+          if(llo2(jl)) then                                                      
+            zttest=0.5*(ptu(jl,jk)+ztenwb(jl,jk))                                
+            zqtest=0.5*(pqu(jl,jk)+zqenwb(jl,jk))                                
+            zbuo=zttest*(1.+vtmpc1  *zqtest)-                    &                  
+     &       ptenh(jl,jk)*(1.+vtmpc1  *pqenh(jl,jk))                               
+            zcond(jl)=pqenh(jl,jk)-zqenwb(jl,jk)                                 
+            zmftop=-cmfdeps*pmfub(jl)                                            
+            if(zbuo.lt.0..and.prfl(jl).gt.10.*zmftop*zcond(jl)) then             
+              kdtop(jl)=jk                                                       
+              lddraf(jl)=.true.                                                  
+              ptd(jl,jk)=zttest                                                  
+              pqd(jl,jk)=zqtest                                                  
+              pmfd(jl,jk)=zmftop                                                 
+              pmfds(jl,jk)=pmfd(jl,jk)*(cpd*ptd(jl,jk)+pgeoh(jl,jk))            
+              pmfdq(jl,jk)=pmfd(jl,jk)*pqd(jl,jk)                                
+              pdmfdp(jl,jk-1)=-0.5*pmfd(jl,jk)*zcond(jl)                         
+              prfl(jl)=prfl(jl)+pdmfdp(jl,jk-1)                                  
+            endif                                                                
+          endif                                                                  
+        enddo                                                                    
+                                                                                 
+      enddo                                                                      
+                                                                                 
+      return                                                                     
+      end subroutine cudlfsn  
+
+!---------------------------------------------------------
+!  level 3 souroutines  
+!--------------------------------------------------------
+!**********************************************
+!       subroutine cuddrafn
+!**********************************************
+       subroutine cuddrafn                                 &                
+     &   ( klon,     klev,    lddraf                      &                                   
+     &   , ptenh,    pqenh,    puen,     pven             &                
+     &   , pgeo,     pgeoh,    paph,     prfl             &                
+     &   , ptd,      pqd,      pud,      pvd,      pmfu   &                
+     &   , pmfd,     pmfds,    pmfdq,    pdmfdp,   pmfdde_rate     )                          
+                                                                          
+!          this routine calculates cumulus downdraft descent              
+                                                                          
+!          m.tiedtke         e.c.m.w.f.    12/86 modif. 12/89             
+                                                                          
+!          purpose.                                                       
+!          --------                                                       
+!          to produce the vertical profiles for cumulus downdrafts        
+!          (i.e. t,q,u and v and fluxes)                                  
+                                                                          
+!          interface                                                      
+!          ---------                                                      
+                                                                          
+!          this routine is called from *cumastr*.                         
+!          input is t,q,p,phi,u,v at half levels.                         
+!          it returns fluxes of s,q and evaporation rate                  
+!          and u,v at levels where downdraft occurs                       
+                                                                          
+!          method.                                                        
+!          --------                                                       
+!          calculate moist descent for entraining/detraining plume by     
+!          a) moving air dry-adiabatically to next level below and        
+!          b) correcting for evaporation to obtain saturated state.       
+                                                                          
+!     parameter     description                                   units   
+!     ---------     -----------                                   -----   
+!     input parameters (integer):                                         
+                                                                          
+!    *klon*         number of grid points per packet                      
+!    *klev*         number of levels                                      
+                                                                          
+!    input parameters (logical):                                          
+                                                                          
+!    *lddraf*       .true. if downdrafts exist                            
+                                                                          
+!    input parameters (real):                                             
+                                                                          
+!    *ptenh*        env. temperature (t+1) on half levels          k      
+!    *pqenh*        env. spec. humidity (t+1) on half levels     kg/kg    
+!    *puen*         provisional environment u-velocity (t+1)      m/s     
+!    *pven*         provisional environment v-velocity (t+1)      m/s     
+!    *pgeo*         geopotential                                  m2/s2   
+!    *pgeoh*        geopotential on half levels                  m2/s2    
+!    *paph*         provisional pressure on half levels           pa      
+!    *pmfu*         massflux updrafts                           kg/(m2*s) 
+                                                                          
+!    updated parameters (real):                                           
+                                                                          
+!    *prfl*         precipitation rate                           kg/(m2*s)
+                                                                          
+!    output parameters (real):                                            
+                                                                          
+!    *ptd*          temperature in downdrafts                      k      
+!    *pqd*          spec. humidity in downdrafts                 kg/kg    
+!    *pud*          u-velocity in downdrafts                      m/s     
+!    *pvd*          v-velocity in downdrafts                      m/s     
+!    *pmfd*         massflux in downdrafts                       kg/(m2*s)
+!    *pmfds*        flux of dry static energy in downdrafts       j/(m2*s)
+!    *pmfdq*        flux of spec. humidity in downdrafts         kg/(m2*s)
+!    *pdmfdp*       flux difference of precip. in downdrafts     kg/(m2*s)
+                                                                          
+!          externals                                                      
+!          ---------                                                      
+!          *cuadjtq* for adjusting t and q due to evaporation in          
+!          saturated descent                                              
+!----------------------------------------------------------------------   
+      implicit none
+      
+      integer  klev,klon                                                             
+      real     ptenh(klon,klev),       pqenh(klon,klev),   &               
+     &         puen(klon,klev),        pven(klon,klev),    &               
+     &         pgeoh(klon,klev+1),     paph(klon,klev+1),  &               
+     &         pgeo(klon,klev),        pmfu(klon,klev)                    
+                                                                          
+      real     ptd(klon,klev),         pqd(klon,klev),     &               
+     &         pud(klon,klev),         pvd(klon,klev),     &               
+     &         pmfd(klon,klev),        pmfds(klon,klev),   &               
+     &         pmfdq(klon,klev),       pdmfdp(klon,klev),  &               
+     &         prfl(klon)     
+      real     pmfdde_rate(klon,klev)                                            
+      logical  lddraf(klon)                                               
+                                                                          
+      real     zdmfen(klon),           zdmfde(klon),       &               
+     &         zcond(klon),            zoentr(klon),       &               
+     &         zbuoy(klon)                                                
+      real     zph(klon)                         
+      logical  llo2(klon)                                   
+      logical  llo1
+! local variables
+      integer  jl,jk
+      integer  is,ik,icall,ike, itopde
+      real     zentr,zdz,zzentr,zseen,zqeen,zsdde,zqdde,zdmfdp
+      real     zmfdsk,zmfdqk,zbuo,zrain,zbuoyz,zmfduk,zmfdvk
+                                                                
+      itopde=p950          
+!----------------------------------------------------------------------   
+!     1.           calculate moist descent for cumulus downdraft by       
+!                     (a) calculating entrainment/detrainment rates,      
+!                         including organized entrainment dependent on    
+!                         negative buoyancy and assuming                  
+!                         linear decrease of massflux in pbl              
+!                     (b) doing moist descent - evaporative cooling       
+!                         and moistening is calculated in *cuadjtq*       
+!                     (c) checking for negative buoyancy and              
+!                         specifying final t,q,u,v and downward fluxes    
+!                    -------------------------------------------------    
+      do jl=1,klon                                                   
+        zoentr(jl)=0.                                                     
+        zbuoy(jl)=0.                                                      
+        zdmfen(jl)=0.                                                     
+        zdmfde(jl)=0.
+      enddo 
+
+      do jk=1,klev
+       do jl=1,klon
+         pmfdde_rate(jl,jk) = 0.
+       end do
+      end do                                                              
+                                                                 
+      do jk=3,klev                                                        
+        is=0                                                              
+        do jl=1,klon                                                 
+          zph(jl)=paph(jl,jk)                                             
+          llo2(jl)=lddraf(jl).and.pmfd(jl,jk-1).lt.0.                     
+          if(llo2(jl)) then                                               
+            is=is+1                                                       
+          endif                                                           
+        enddo                                                             
+        if(is.eq.0) cycle                                                 
+                                                                          
+        do jl=1,klon                                                 
+          if(llo2(jl)) then    
+            zentr = entrdd*pmfd(jl,jk-1)*(pgeoh(jl,jk-1)-pgeoh(jl,jk))*zrg
+            zdmfen(jl)=zentr                                              
+            zdmfde(jl)=zentr                                              
+          endif                                                           
+        enddo 
+                                                            
+        if(jk.gt.itopde) then
+          do jl=1,klon
+            if(llo2(jl)) then
+              zdmfen(jl)=0.
+              zdmfde(jl)=pmfd(jl,itopde)*                    &
+     &         (paph(jl,jk)-paph(jl,jk-1))/                  &
+     &         (paph(jl,klev+1)-paph(jl,itopde))
+            endif
+          enddo
+        endif
+
+        if(jk.le.itopde) then
+          do jl=1,klon
+            if(llo2(jl)) then
+              zdz=-(pgeoh(jl,jk-1)-pgeoh(jl,jk))*zrg
+              zzentr=zoentr(jl)*zdz*pmfd(jl,jk-1)
+              zdmfen(jl)=zdmfen(jl)+zzentr
+              zdmfen(jl)=max(zdmfen(jl),0.3*pmfd(jl,jk-1))
+              zdmfen(jl)=max(zdmfen(jl),-0.75*pmfu(jl,jk)-   &
+     &         (pmfd(jl,jk-1)-zdmfde(jl)))
+              zdmfen(jl)=min(zdmfen(jl),0.)
+            endif
+          enddo
+        endif
+
+        do jl=1,klon                                                 
+          if(llo2(jl)) then                                               
+            pmfd(jl,jk)=pmfd(jl,jk-1)+zdmfen(jl)-zdmfde(jl)
+            zseen=(cpd*ptenh(jl,jk-1)+pgeoh(jl,jk-1))*zdmfen(jl)         
+            zqeen=pqenh(jl,jk-1)*zdmfen(jl)                               
+            zsdde=(cpd*ptd(jl,jk-1)+pgeoh(jl,jk-1))*zdmfde(jl)           
+            zqdde=pqd(jl,jk-1)*zdmfde(jl)                                 
+            zmfdsk=pmfds(jl,jk-1)+zseen-zsdde                             
+            zmfdqk=pmfdq(jl,jk-1)+zqeen-zqdde                             
+            pqd(jl,jk)=zmfdqk*(1./min(-cmfcmin,pmfd(jl,jk)))              
+            ptd(jl,jk)=(zmfdsk*(1./min(-cmfcmin,pmfd(jl,jk)))-&            
+     &                  pgeoh(jl,jk))*rcpd                                
+            ptd(jl,jk)=min(400.,ptd(jl,jk))                               
+            ptd(jl,jk)=max(100.,ptd(jl,jk))                               
+            zcond(jl)=pqd(jl,jk)                                          
+          endif                                                           
+        enddo                                                             
+                                                                          
+        ik=jk                                                             
+        icall=2                                                           
+        call cuadjtqn(klon, klev, ik, zph, ptd, pqd, llo2, icall )                
+                                                                          
+        do jl=1,klon                                                 
+          if(llo2(jl)) then                                               
+            zcond(jl)=zcond(jl)-pqd(jl,jk)
+            zbuo=ptd(jl,jk)*(1.+vtmpc1  *pqd(jl,jk))-          &             
+     &      ptenh(jl,jk)*(1.+vtmpc1  *pqenh(jl,jk))                         
+            if(prfl(jl).gt.0..and.pmfu(jl,jk).gt.0.) then                 
+              zrain=prfl(jl)/pmfu(jl,jk)                                  
+              zbuo=zbuo-ptd(jl,jk)*zrain
+            endif                                                         
+            if(zbuo.ge.0 .or. prfl(jl).le.(pmfd(jl,jk)*zcond(jl))) then    
+              pmfd(jl,jk)=0.
+              zbuo=0.                                              
+            endif
+            pmfds(jl,jk)=(cpd*ptd(jl,jk)+pgeoh(jl,jk))*pmfd(jl,jk)       
+            pmfdq(jl,jk)=pqd(jl,jk)*pmfd(jl,jk)                           
+            zdmfdp=-pmfd(jl,jk)*zcond(jl)                                 
+            pdmfdp(jl,jk-1)=zdmfdp                                        
+            prfl(jl)=prfl(jl)+zdmfdp                                      
+                                                                          
+! compute organized entrainment for use at next level                     
+            zbuoyz=zbuo/ptenh(jl,jk)                                      
+            zbuoyz=min(zbuoyz,0.0)                                        
+            zdz=-(pgeo(jl,jk-1)-pgeo(jl,jk))
+            zbuoy(jl)=zbuoy(jl)+zbuoyz*zdz
+            zoentr(jl)=g*zbuoyz*0.5/(1.+zbuoy(jl)) 
+            pmfdde_rate(jl,jk) = -zdmfde(jl)
+          endif                                                           
+        enddo
+                                                             
+      enddo                                                               
+                                                                          
+      return                                                              
+      end subroutine cuddrafn
+!---------------------------------------------------------
+!  level 3 souroutines  
+!--------------------------------------------------------
+       subroutine cuflxn         &                                                 
+     &  (  klon,     klev,     ztmst &                                                             
+     &  ,  pten,     pqen,     pqsen,    ptenh,    pqenh   &                    
+     &  ,  paph,     pap,      pgeoh,    lndj,   ldcum   &                    
+     &  ,  kcbot,    kctop,    kdtop,    ktopm2            &                    
+     &  ,  ktype,    lddraf                                &                    
+     &  ,  pmfu,     pmfd,     pmfus,    pmfds             &                    
+     &  ,  pmfuq,    pmfdq,    pmful,    plude             &                    
+     &  ,  pdmfup,   pdmfdp,   pdpmel,   plglac            &                    
+     &  ,  prain,    pmfdde_rate, pmflxr, pmflxs )                                         
+                                                                               
+!          m.tiedtke         e.c.m.w.f.     7/86 modif. 12/89                  
+                                                                               
+!          purpose                                                             
+!          -------                                                             
+                                                                               
+!          this routine does the final calculation of convective               
+!          fluxes in the cloud layer and in the subcloud layer                 
+                                                                               
+!          interface                                                           
+!          ---------                                                           
+!          this routine is called from *cumastr*.                              
+                                                                               
+                                                                               
+!     parameter     description                                   units        
+!     ---------     -----------                                   -----        
+!     input parameters (integer):                                              
+                                                                               
+!    *klon*         number of grid points per packet                           
+!    *klev*         number of levels                                           
+!    *kcbot*        cloud base level                                           
+!    *kctop*        cloud top level                                            
+!    *kdtop*        top level of downdrafts                                    
+                                                                               
+!    input parameters (logical):                                               
+                                                                               
+!    *lndj*       land sea mask (1 for land)                            
+!    *ldcum*        flag: .true. for convective points                         
+                                                                               
+!    input parameters (real):                                                  
+                                                                               
+!    *ptsphy*       time step for the physics                       s          
+!    *pten*         provisional environment temperature (t+1)       k          
+!    *pqen*         provisional environment spec. humidity (t+1)  kg/kg        
+!    *pqsen*        environment spec. saturation humidity (t+1)   kg/kg        
+!    *ptenh*        env. temperature (t+1) on half levels           k          
+!    *pqenh*        env. spec. humidity (t+1) on half levels      kg/kg        
+!    *paph*         provisional pressure on half levels            pa          
+!    *pap*          provisional pressure on full levels            pa          
+!    *pgeoh*        geopotential on half levels                   m2/s2        
+                                                                               
+!    updated parameters (integer):                                             
+                                                                               
+!    *ktype*        set to zero if ldcum=.false.                               
+                                                                               
+!    updated parameters (logical):                                             
+                                                                               
+!    *lddraf*       set to .false. if ldcum=.false. or kdtop<kctop             
+                                                                               
+!    updated parameters (real):                                                
+                                                                               
+!    *pmfu*         massflux in updrafts                          kg/(m2*s)    
+!    *pmfd*         massflux in downdrafts                        kg/(m2*s)    
+!    *pmfus*        flux of dry static energy in updrafts          j/(m2*s)    
+!    *pmfds*        flux of dry static energy in downdrafts        j/(m2*s)    
+!    *pmfuq*        flux of spec. humidity in updrafts            kg/(m2*s)    
+!    *pmfdq*        flux of spec. humidity in downdrafts          kg/(m2*s)    
+!    *pmful*        flux of liquid water in updrafts              kg/(m2*s)    
+!    *plude*        detrained liquid water                        kg/(m3*s)    
+!    *pdmfup*       flux difference of precip. in updrafts        kg/(m2*s)    
+!    *pdmfdp*       flux difference of precip. in downdrafts      kg/(m2*s)    
+                                                                               
+!    output parameters (real):                                                 
+                                                                               
+!    *pdpmel*       change in precip.-fluxes due to melting       kg/(m2*s)    
+!    *plglac*       flux of frozen cloud water in updrafts        kg/(m2*s)    
+!    *pmflxr*       convective rain flux                          kg/(m2*s)    
+!    *pmflxs*       convective snow flux                          kg/(m2*s)    
+!    *prain*        total precip. produced in conv. updrafts      kg/(m2*s)    
+!                   (no evaporation in downdrafts)                             
+                                                                               
+!          externals                                                           
+!          ---------                                                           
+!          none                                                                
+!----------------------------------------------------------------------        
+      implicit none                                                     
+
+      integer  klev,klon,ktopm2                                                                         
+      real     pten(klon,klev),        ptenh(klon,klev),          &             
+     &         pqen(klon,klev),        pqsen(klon,klev),          &             
+     &         pqenh(klon,klev),       pap(klon,klev),            &             
+     &         paph(klon,klev+1),      pgeoh(klon,klev+1),        &             
+     &         plglac(klon,klev)                                               
+                                                                               
+      real     pmfu(klon,klev),        pmfd(klon,klev),           &             
+     &         pmfus(klon,klev),       pmfds(klon,klev),          &             
+     &         pmfuq(klon,klev),       pmfdq(klon,klev),          &             
+     &         pdmfup(klon,klev),      pdmfdp(klon,klev),         &             
+     &         pdpmel(klon,klev),      prain(klon),               &             
+     &         pmful(klon,klev),       plude(klon,klev),          &             
+     &         pmflxr(klon,klev+1),    pmflxs(klon,klev+1)  
+      real     pmfdde_rate(klon,klev)               
+      integer  kcbot(klon),            kctop(klon),               &             
+     &         kdtop(klon),            ktype(klon)                             
+      logical  lddraf(klon),                                &
+     &         ldcum(klon)  
+      integer  lndj(klon)
+! local variables
+      integer  jl,jk
+      integer  is,ik,icall,ike,ikb
+      real     ztmst,ztaumel,zcons1a,zcons1,zcons2,zcucov,zcpecons
+      real     zalfaw,zrfl,zdrfl1,zrnew,zrmin,zrfln,zdrfl,zdenom
+      real     zpdr,zpds,zzp,zfac,zsnmlt
+      real     rhevap(klon)
+      integer  idbas(klon)
+      logical  llddraf
+!--------------------------------------------------------------------          
+!*             specify constants  
+
+      ztaumel=18000.
+      zcons1a=cpd/(alf*g*ztaumel)
+      zcons2=3./(g*ztmst)
+      zcucov=0.05
+      zcpecons=5.44e-4/g
+
+!*    1.0          determine final convective fluxes                           
+!                  ---------------------------------                           
+      do jl=1,klon
+        prain(jl)=0.
+        if(.not.ldcum(jl).or.kdtop(jl).lt.kctop(jl)) lddraf(jl)=.false.
+        if(.not.ldcum(jl)) ktype(jl)=0
+        idbas(jl) = klev
+        if(lndj(jl) .eq. 1) then
+          rhevap(jl) = 0.7
+        else
+          rhevap(jl) = 0.9
+        end if
+      enddo
+
+      ktopm2= 2
+      do jk=ktopm2,klev
+        ikb = min(jk+1,klev)
+        do jl=1,klon
+          pmflxr(jl,jk) = 0.
+          pmflxs(jl,jk) = 0.
+          pdpmel(jl,jk) = 0.
+          if(ldcum(jl).and.jk.ge.kctop(jl)) then
+            pmfus(jl,jk)=pmfus(jl,jk)-pmfu(jl,jk)*           &
+     &       (cpd*ptenh(jl,jk)+pgeoh(jl,jk))
+            pmfuq(jl,jk)=pmfuq(jl,jk)-pmfu(jl,jk)*pqenh(jl,jk)
+            plglac(jl,jk)=pmfu(jl,jk)*plglac(jl,jk)
+            llddraf = lddraf(jl) .and. jk >= kdtop(jl)
+            if ( llddraf ) then
+              pmfds(jl,jk) = pmfds(jl,jk)-pmfd(jl,jk) * &
+                           (cpd*ptenh(jl,jk)+pgeoh(jl,jk))
+              pmfdq(jl,jk) = pmfdq(jl,jk)-pmfd(jl,jk)*pqenh(jl,jk)
+            else
+              pmfd(jl,jk) = 0.
+              pmfds(jl,jk) = 0.
+              pmfdq(jl,jk) = 0.
+              pdmfdp(jl,jk-1) = 0.
+            end if
+            if ( llddraf .and. pmfd(jl,jk) < 0. .and. &
+               abs(pmfd(jl,ikb)) < 1.e-20 ) then
+               idbas(jl) = jk
+            end if
+          else
+            pmfu(jl,jk)=0.
+            pmfd(jl,jk)=0.
+            pmfus(jl,jk)=0.
+            pmfds(jl,jk)=0.
+            pmfuq(jl,jk)=0.
+            pmfdq(jl,jk)=0.
+            pmful(jl,jk)=0.
+            plglac(jl,jk)=0.
+            pdmfup(jl,jk-1)=0.
+            pdmfdp(jl,jk-1)=0.
+            plude(jl,jk-1)=0.
+          endif
+        enddo
+      enddo
+
+      do jl=1,klon
+        pmflxr(jl,klev+1) = 0.
+        pmflxs(jl,klev+1) = 0.
+      end do
+      do jl=1,klon
+        if(ldcum(jl)) then
+          ikb=kcbot(jl)
+          ik=ikb+1
+          zzp=((paph(jl,klev+1)-paph(jl,ik))/                  &
+     &     (paph(jl,klev+1)-paph(jl,ikb)))
+          if(ktype(jl).eq.3) then
+            zzp=zzp**2
+          endif
+          pmfu(jl,ik)=pmfu(jl,ikb)*zzp
+          pmfus(jl,ik)=(pmfus(jl,ikb)-                         &
+     &         foelhm(ptenh(jl,ikb))*pmful(jl,ikb))*zzp
+          pmfuq(jl,ik)=(pmfuq(jl,ikb)+pmful(jl,ikb))*zzp
+          pmful(jl,ik)=0.
+        endif
+      enddo
+
+      do jk=ktopm2,klev
+        do jl=1,klon
+          if(ldcum(jl).and.jk.gt.kcbot(jl)+1) then
+            ikb=kcbot(jl)+1
+            zzp=((paph(jl,klev+1)-paph(jl,jk))/                &
+     &       (paph(jl,klev+1)-paph(jl,ikb)))
+            if(ktype(jl).eq.3) then
+              zzp=zzp**2
+            endif
+            pmfu(jl,jk)=pmfu(jl,ikb)*zzp
+            pmfus(jl,jk)=pmfus(jl,ikb)*zzp
+            pmfuq(jl,jk)=pmfuq(jl,ikb)*zzp
+            pmful(jl,jk)=0.
+          endif
+          ik = idbas(jl)
+          llddraf = lddraf(jl) .and. jk > ik .and. ik < klev
+          if ( llddraf .and. ik == kcbot(jl)+1 ) then
+           zzp = ((paph(jl,klev+1)-paph(jl,jk))/(paph(jl,klev+1)-paph(jl,ik)))
+           if ( ktype(jl) == 3 ) zzp = zzp*zzp
+            pmfd(jl,jk) = pmfd(jl,ik)*zzp
+            pmfds(jl,jk) = pmfds(jl,ik)*zzp
+            pmfdq(jl,jk) = pmfdq(jl,ik)*zzp
+            pmfdde_rate(jl,jk) = -(pmfd(jl,jk-1)-pmfd(jl,jk))
+           else if ( llddraf .and. ik /= kcbot(jl)+1 .and. jk == ik+1 ) then
+            pmfdde_rate(jl,jk) = -(pmfd(jl,jk-1)-pmfd(jl,jk))
+           end if
+        enddo
+      enddo
+!*    2.            calculate rain/snow fall rates                             
+!*                  calculate melting of snow                                  
+!*                  calculate evaporation of precip                            
+!                   -------------------------------                            
+
+        do jk=ktopm2,klev
+        do jl=1,klon
+          if(ldcum(jl) .and. jk >=kctop(jl)-1 ) then
+            prain(jl)=prain(jl)+pdmfup(jl,jk)
+            if(pmflxs(jl,jk).gt.0..and.pten(jl,jk).gt.tmelt) then
+              zcons1=zcons1a*(1.+0.5*(pten(jl,jk)-tmelt))
+              zfac=zcons1*(paph(jl,jk+1)-paph(jl,jk))
+              zsnmlt=min(pmflxs(jl,jk),zfac*(pten(jl,jk)-tmelt))
+              pdpmel(jl,jk)=zsnmlt
+              pqsen(jl,jk)=foeewm(pten(jl,jk)-zsnmlt/zfac)/pap(jl,jk)
+            endif
+            zalfaw=foealfa(pten(jl,jk))
+          !
+          ! No liquid precipitation above melting level
+          !
+            if ( pten(jl,jk) < tmelt .and. zalfaw > 0. ) then
+              plglac(jl,jk) = plglac(jl,jk)+zalfaw*(pdmfup(jl,jk)+pdmfdp(jl,jk))
+              zalfaw = 0.
+            end if
+            pmflxr(jl,jk+1)=pmflxr(jl,jk)+zalfaw*               &
+     &       (pdmfup(jl,jk)+pdmfdp(jl,jk))+pdpmel(jl,jk)
+            pmflxs(jl,jk+1)=pmflxs(jl,jk)+(1.-zalfaw)*          &
+     &       (pdmfup(jl,jk)+pdmfdp(jl,jk))-pdpmel(jl,jk)
+            if(pmflxr(jl,jk+1)+pmflxs(jl,jk+1).lt.0.0) then
+              pdmfdp(jl,jk)=-(pmflxr(jl,jk)+pmflxs(jl,jk)+pdmfup(jl,jk))
+              pmflxr(jl,jk+1)=0.0
+              pmflxs(jl,jk+1)=0.0
+              pdpmel(jl,jk)  =0.0
+            else if ( pmflxr(jl,jk+1) < 0. ) then
+              pmflxs(jl,jk+1) = pmflxs(jl,jk+1)+pmflxr(jl,jk+1)
+              pmflxr(jl,jk+1) = 0.
+            else if ( pmflxs(jl,jk+1) < 0. ) then
+              pmflxr(jl,jk+1) = pmflxr(jl,jk+1)+pmflxs(jl,jk+1)
+              pmflxs(jl,jk+1) = 0.
+            end if
+          endif
+        enddo
+      enddo
+      do jk=ktopm2,klev
+        do jl=1,klon
+          if(ldcum(jl).and.jk.ge.kcbot(jl)) then
+            zrfl=pmflxr(jl,jk)+pmflxs(jl,jk)
+            if(zrfl.gt.1.e-20) then
+              zdrfl1=zcpecons*max(0.,pqsen(jl,jk)-pqen(jl,jk))*zcucov* &
+     &         (sqrt(paph(jl,jk)/paph(jl,klev+1))/5.09e-3*             &
+     &         zrfl/zcucov)**0.5777*                                   &
+     &         (paph(jl,jk+1)-paph(jl,jk))
+              zrnew=zrfl-zdrfl1
+              zrmin=zrfl-zcucov*max(0.,rhevap(jl)*pqsen(jl,jk) &
+     &              -pqen(jl,jk)) *zcons2*(paph(jl,jk+1)-paph(jl,jk))
+              zrnew=max(zrnew,zrmin)
+              zrfln=max(zrnew,0.)
+              zdrfl=min(0.,zrfln-zrfl)
+              zdenom=1./max(1.e-20,pmflxr(jl,jk)+pmflxs(jl,jk))
+              zalfaw=foealfa(pten(jl,jk))
+              if ( pten(jl,jk) < tmelt ) zalfaw = 0.
+              zpdr=zalfaw*pdmfdp(jl,jk)
+              zpds=(1.-zalfaw)*pdmfdp(jl,jk)
+              pmflxr(jl,jk+1)=pmflxr(jl,jk)+zpdr         &
+     &         +pdpmel(jl,jk)+zdrfl*pmflxr(jl,jk)*zdenom
+              pmflxs(jl,jk+1)=pmflxs(jl,jk)+zpds         &
+     &         -pdpmel(jl,jk)+zdrfl*pmflxs(jl,jk)*zdenom
+              pdmfup(jl,jk)=pdmfup(jl,jk)+zdrfl
+              if ( pmflxr(jl,jk+1)+pmflxs(jl,jk+1) < 0. ) then
+                pdmfup(jl,jk) = pdmfup(jl,jk)-(pmflxr(jl,jk+1)+pmflxs(jl,jk+1))
+                pmflxr(jl,jk+1) = 0.
+                pmflxs(jl,jk+1) = 0.
+                pdpmel(jl,jk)   = 0.
+              else if ( pmflxr(jl,jk+1) < 0. ) then
+                pmflxs(jl,jk+1) = pmflxs(jl,jk+1)+pmflxr(jl,jk+1)
+                pmflxr(jl,jk+1) = 0.
+              else if ( pmflxs(jl,jk+1) < 0. ) then
+                pmflxr(jl,jk+1) = pmflxr(jl,jk+1)+pmflxs(jl,jk+1)
+                pmflxs(jl,jk+1) = 0.
+              end if
+            else
+              pmflxr(jl,jk+1)=0.0
+              pmflxs(jl,jk+1)=0.0
+              pdmfdp(jl,jk)=0.0
+              pdpmel(jl,jk)=0.0
+            endif
+          endif
+        enddo
+      enddo
+                                      
+      return
+      end subroutine cuflxn 
+!---------------------------------------------------------
+!  level 3 souroutines  
+!--------------------------------------------------------
+     subroutine cudtdqn(klon,klev,ktopm2,kctop,kdtop,ldcum, &
+                     lddraf,ztmst,paph,pgeoh,pgeo,pten,ptenh,pqen,  &
+                     pqenh,pqsen,plglac,plude,pmfu,pmfd,pmfus,pmfds, &
+                     pmfuq,pmfdq,pmful,pdmfup,pdpmel,ptent,ptenq,pcte)
+    implicit none
+    integer  klon,klev,ktopm2
+    integer  kctop(klon),  kdtop(klon)
+    logical  ldcum(klon),  lddraf(klon)
+    real     ztmst
+    real     paph(klon,klev+1), pgeoh(klon,klev+1)
+    real     pgeo(klon,klev),   pten(klon,klev), &
+             pqen(klon,klev),   ptenh(klon,klev),&
+             pqenh(klon,klev),  pqsen(klon,klev),&
+             plglac(klon,klev), plude(klon,klev)
+    real     pmfu(klon,klev),   pmfd(klon,klev),&
+             pmfus(klon,klev),  pmfds(klon,klev),&
+             pmfuq(klon,klev),  pmfdq(klon,klev),&
+             pmful(klon,klev),  pdmfup(klon,klev),&
+             pdpmel(klon,klev)
+    real     ptent(klon,klev),  ptenq(klon,klev)
+    real     pcte(klon,klev)
+
+! local variables
+    integer  jk , ik , jl
+    real     zalv , zzp
+    real     zmfus(klon,klev) , zmfuq(klon,klev) 
+    real     zmfds(klon,klev) , zmfdq(klon,klev)
+    real     zdtdt(klon,klev) , zdqdt(klon,klev) , zdp(klon,klev)
+    !*    1.0          SETUP AND INITIALIZATIONS
+    ! -------------------------
+    do jk = 1 , klev
+      do jl = 1, klon
+        if ( ldcum(jl) ) then
+          zdp(jl,jk) = g/(paph(jl,jk+1)-paph(jl,jk))
+          zmfus(jl,jk) = pmfus(jl,jk)
+          zmfds(jl,jk) = pmfds(jl,jk)
+          zmfuq(jl,jk) = pmfuq(jl,jk)
+          zmfdq(jl,jk) = pmfdq(jl,jk)
+        end if
+      end do
+    end do
+    !-----------------------------------------------------------------------
+    !*    2.0          COMPUTE TENDENCIES
+    ! ------------------
+    do jk = ktopm2 , klev
+      if ( jk < klev ) then
+        do jl = 1,klon
+          if ( ldcum(jl) ) then
+            zalv = foelhm(pten(jl,jk))
+            zdtdt(jl,jk) = zdp(jl,jk)*rcpd * &
+              (zmfus(jl,jk+1)-zmfus(jl,jk)+zmfds(jl,jk+1) - &
+               zmfds(jl,jk)+alf*plglac(jl,jk)-alf*pdpmel(jl,jk) - &
+               zalv*(pmful(jl,jk+1)-pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk)))
+            zdqdt(jl,jk) = zdp(jl,jk)*(zmfuq(jl,jk+1) - &
+              zmfuq(jl,jk)+zmfdq(jl,jk+1)-zmfdq(jl,jk)+pmful(jl,jk+1) - &
+              pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk))
+          end if
+        end do
+      else
+        do jl = 1,klon
+          if ( ldcum(jl) ) then
+            zalv = foelhm(pten(jl,jk))
+            zdtdt(jl,jk) = -zdp(jl,jk)*rcpd * &
+              (zmfus(jl,jk)+zmfds(jl,jk)+alf*pdpmel(jl,jk) - &
+               zalv*(pmful(jl,jk)+pdmfup(jl,jk)))
+            zdqdt(jl,jk) = -zdp(jl,jk)*(zmfuq(jl,jk) + &
+              zmfdq(jl,jk)+(pmful(jl,jk)+pdmfup(jl,jk)))
+          end if
+        end do
+      end if
+    end do
+  !---------------------------------------------------------------
+  !*  3.0          UPDATE TENDENCIES
+  !   -----------------
+    do jk = ktopm2 , klev
+     do jl = 1, klon
+       if ( ldcum(jl) ) then
+         ptent(jl,jk) = ptent(jl,jk) + zdtdt(jl,jk)
+         ptenq(jl,jk) = ptenq(jl,jk) + zdqdt(jl,jk)
+         pcte(jl,jk)  = zdp(jl,jk)*plude(jl,jk) 
+       end if
+     end do
+    end do
+
+    return
+  end subroutine cudtdqn
+!---------------------------------------------------------
+!  level 3 souroutines  
+!--------------------------------------------------------
+    subroutine cududvn(klon,klev,ktopm2,ktype,kcbot,kctop,ldcum,  &
+                    ztmst,paph,puen,pven,pmfu,pmfd,puu,pud,pvu,pvd,ptenu, &
+                    ptenv)
+    implicit none
+    integer  klon,klev,ktopm2
+    integer  ktype(klon), kcbot(klon), kctop(klon)
+    logical  ldcum(klon)
+    real     ztmst
+    real     paph(klon,klev+1)
+    real     puen(klon,klev),  pven(klon,klev),&
+             pmfu(klon,klev),  pmfd(klon,klev),&
+             puu(klon,klev),   pud(klon,klev),&
+             pvu(klon,klev),   pvd(klon,klev)
+    real     ptenu(klon,klev), ptenv(klon,klev)
+
+!local variables
+    real     zuen(klon,klev) , zven(klon,klev) , zmfuu(klon,klev), &
+             zmfdu(klon,klev), zmfuv(klon,klev), zmfdv(klon,klev)
+
+    integer  ik , ikb , jk , jl
+    real     zzp, zdtdt
+   
+    real     zdudt(klon,klev), zdvdt(klon,klev), zdp(klon,klev)
+!
+    do jk = 1 , klev
+      do jl = 1, klon
+        if ( ldcum(jl) ) then
+          zuen(jl,jk) = puen(jl,jk)
+          zven(jl,jk) = pven(jl,jk)
+          zdp(jl,jk) = g/(paph(jl,jk+1)-paph(jl,jk))
+        end if
+      end do
+    end do
+!----------------------------------------------------------------------
+!*    1.0          CALCULATE FLUXES AND UPDATE U AND V TENDENCIES
+! ----------------------------------------------
+    do jk = ktopm2 , klev
+      ik = jk - 1
+      do jl = 1,klon
+        if ( ldcum(jl) ) then
+          zmfuu(jl,jk) = pmfu(jl,jk)*(puu(jl,jk)-zuen(jl,ik))
+          zmfuv(jl,jk) = pmfu(jl,jk)*(pvu(jl,jk)-zven(jl,ik))
+          zmfdu(jl,jk) = pmfd(jl,jk)*(pud(jl,jk)-zuen(jl,ik))
+          zmfdv(jl,jk) = pmfd(jl,jk)*(pvd(jl,jk)-zven(jl,ik))
+        end if
+      end do
+    end do
+    ! linear fluxes below cloud
+      do jk = ktopm2 , klev
+        do jl = 1, klon
+          if ( ldcum(jl) .and. jk > kcbot(jl) ) then
+            ikb = kcbot(jl)
+            zzp = ((paph(jl,klev+1)-paph(jl,jk))/(paph(jl,klev+1)-paph(jl,ikb)))
+            if ( ktype(jl) == 3 ) zzp = zzp*zzp
+            zmfuu(jl,jk) = zmfuu(jl,ikb)*zzp
+            zmfuv(jl,jk) = zmfuv(jl,ikb)*zzp
+            zmfdu(jl,jk) = zmfdu(jl,ikb)*zzp
+            zmfdv(jl,jk) = zmfdv(jl,ikb)*zzp
+          end if
+        end do
+      end do
+!----------------------------------------------------------------------
+!*    2.0          COMPUTE TENDENCIES
+! ------------------
+    do jk = ktopm2 , klev
+      if ( jk < klev ) then
+        ik = jk + 1
+        do jl = 1,klon
+          if ( ldcum(jl) ) then
+            zdudt(jl,jk) = zdp(jl,jk) * &
+                          (zmfuu(jl,ik)-zmfuu(jl,jk)+zmfdu(jl,ik)-zmfdu(jl,jk))
+            zdvdt(jl,jk) = zdp(jl,jk) * &
+                          (zmfuv(jl,ik)-zmfuv(jl,jk)+zmfdv(jl,ik)-zmfdv(jl,jk))
+          end if
+        end do
+      else
+        do jl = 1,klon
+          if ( ldcum(jl) ) then
+            zdudt(jl,jk) = -zdp(jl,jk)*(zmfuu(jl,jk)+zmfdu(jl,jk))
+            zdvdt(jl,jk) = -zdp(jl,jk)*(zmfuv(jl,jk)+zmfdv(jl,jk))
+          end if
+        end do
+      end if
+    end do
+!---------------------------------------------------------------------
+!*  3.0        UPDATE TENDENCIES
+!   -----------------
+    do jk = ktopm2 , klev
+      do jl = 1, klon
+        if ( ldcum(jl) ) then
+          ptenu(jl,jk) = ptenu(jl,jk) + zdudt(jl,jk)
+          ptenv(jl,jk) = ptenv(jl,jk) + zdvdt(jl,jk)
+        end if
+      end do
+    end do
+!----------------------------------------------------------------------
+    return
+    end subroutine cududvn
+!---------------------------------------------------------
+!  level 3 souroutines  
+!--------------------------------------------------------
+      subroutine cuadjtqn                 &                                           
+     &    (klon, klev, kk, psp, pt, pq, ldflag,  kcall)                           
+!          m.tiedtke         e.c.m.w.f.     12/89     
+!          purpose.                                                                 
+!          --------                                                                 
+!          to produce t,q and l values for cloud ascent                             
+                                                                                    
+!          interface                                                                
+!          ---------                                                                
+!          this routine is called from subroutines:                                 
+!              *cond*     (t and q at condensation level)                           
+!              *cubase*   (t and q at condensation level)                           
+!              *cuasc*    (t and q at cloud levels)                                 
+!              *cuini*    (environmental t and qs values at half levels)            
+!          input are unadjusted t and q values,                                     
+!          it returns adjusted values of t and q                                    
+                                                                                    
+!     parameter     description                                   units             
+!     ---------     -----------                                   -----             
+!     input parameters (integer):                                                   
+                                                                                    
+!    *klon*         number of grid points per packet                                
+!    *klev*         number of levels                                                
+!    *kk*           level                                                           
+!    *kcall*        defines calculation as                                          
+!                      kcall=0  env. t and qs in*cuini*                             
+!                      kcall=1  condensation in updrafts  (e.g. cubase, cuasc)      
+!                      kcall=2  evaporation in downdrafts (e.g. cudlfs,cuddraf)     
+!     input parameters (real):                                                      
+                                                                                    
+!    *psp*          pressure                                        pa              
+                                                                                    
+!     updated parameters (real):                                                    
+                                                                                    
+!    *pt*           temperature                                     k               
+!    *pq*           specific humidity                             kg/kg             
+!          externals                                                                
+!          ---------                                                                
+!          for condensation calculations.                                           
+!          the tables are initialised in *suphec*.                                  
+                                                                                    
+!----------------------------------------------------------------------             
+                                                                                    
+      implicit none   
+                 
+      integer  klev,klon                                                                   
+      real     pt(klon,klev),          pq(klon,klev),  &                             
+     &         psp(klon)                                                            
+      logical  ldflag(klon)                                                         
+! local variables
+      integer  jl,jk
+      integer  isum,kcall,kk
+      real     zqmax,zqsat,zcor,zqp,zcond,zcond1,zl,zi,zf
+!----------------------------------------------------------------------             
+!     1.           define constants                                                 
+!                  ----------------                                                 
+      zqmax=0.5  
+                                                                                    
+!     2.           calculate condensation and adjust t and q accordingly            
+!                  -----------------------------------------------------            
+                                                                                    
+      if ( kcall == 1 ) then
+      do jl = 1,klon
+        if ( ldflag(jl) ) then
+          zqp = 1./psp(jl)
+          zl = 1./(pt(jl,kk)-c4les)
+          zi = 1./(pt(jl,kk)-c4ies)
+          zqsat = c2es*(foealfa(pt(jl,kk))*exp(c3les*(pt(jl,kk)-tmelt)*zl) + &
+                (1.-foealfa(pt(jl,kk)))*exp(c3ies*(pt(jl,kk)-tmelt)*zi))
+          zqsat = zqsat*zqp
+          zqsat = min(0.5,zqsat)
+          zcor = 1. - vtmpc1*zqsat
+          zf = foealfa(pt(jl,kk))*r5alvcp*zl**2 + &
+               (1.-foealfa(pt(jl,kk)))*r5alscp*zi**2
+          zcond = (pq(jl,kk)*zcor**2-zqsat*zcor)/(zcor**2+zqsat*zf)
+          if ( zcond > 0. ) then
+            pt(jl,kk) = pt(jl,kk) + foeldcpm(pt(jl,kk))*zcond
+            pq(jl,kk) = pq(jl,kk) - zcond
+            zl = 1./(pt(jl,kk)-c4les)
+            zi = 1./(pt(jl,kk)-c4ies)
+            zqsat = c2es*(foealfa(pt(jl,kk)) * &
+              exp(c3les*(pt(jl,kk)-tmelt)*zl)+(1.-foealfa(pt(jl,kk))) * &
+              exp(c3ies*(pt(jl,kk)-tmelt)*zi))
+            zqsat = zqsat*zqp
+            zqsat = min(0.5,zqsat)
+            zcor = 1. - vtmpc1*zqsat
+            zf = foealfa(pt(jl,kk))*r5alvcp*zl**2 + &
+                 (1.-foealfa(pt(jl,kk)))*r5alscp*zi**2
+            zcond1 = (pq(jl,kk)*zcor**2-zqsat*zcor)/(zcor**2+zqsat*zf)
+            if ( abs(zcond) < 1.e-20 ) zcond1 = 0.
+            pt(jl,kk) = pt(jl,kk) + foeldcpm(pt(jl,kk))*zcond1
+            pq(jl,kk) = pq(jl,kk) - zcond1
+          end if
+        end if
+      end do
+      elseif ( kcall == 2 ) then
+      do jl = 1,klon
+        if ( ldflag(jl) ) then
+          zqp = 1./psp(jl)
+          zqsat = foeewm(pt(jl,kk))*zqp
+          zqsat = min(0.5,zqsat)
+          zcor = 1./(1.-vtmpc1*zqsat)
+          zqsat = zqsat*zcor
+          zcond = (pq(jl,kk)-zqsat)/(1.+zqsat*zcor*foedem(pt(jl,kk)))
+          zcond = min(zcond,0.)
+          pt(jl,kk) = pt(jl,kk) + foeldcpm(pt(jl,kk))*zcond
+          pq(jl,kk) = pq(jl,kk) - zcond
+          zqsat = foeewm(pt(jl,kk))*zqp
+          zqsat = min(0.5,zqsat)
+          zcor = 1./(1.-vtmpc1*zqsat)
+          zqsat = zqsat*zcor
+          zcond1 = (pq(jl,kk)-zqsat)/(1.+zqsat*zcor*foedem(pt(jl,kk)))
+          if ( abs(zcond) < 1.e-20 ) zcond1 = min(zcond1,0.)
+          pt(jl,kk) = pt(jl,kk) + foeldcpm(pt(jl,kk))*zcond1
+          pq(jl,kk) = pq(jl,kk) - zcond1
+        end if
+      end do
+      else if ( kcall == 0 ) then
+      do jl = 1,klon
+        zqp = 1./psp(jl)
+        zqsat = foeewm(pt(jl,kk))*zqp
+        zqsat = min(0.5,zqsat)
+        zcor = 1./(1.-vtmpc1*zqsat)
+        zqsat = zqsat*zcor
+        zcond1 = (pq(jl,kk)-zqsat)/(1.+zqsat*zcor*foedem(pt(jl,kk)))
+        pt(jl,kk) = pt(jl,kk) + foeldcpm(pt(jl,kk))*zcond1
+        pq(jl,kk) = pq(jl,kk) - zcond1
+        zqsat = foeewm(pt(jl,kk))*zqp
+        zqsat = min(0.5,zqsat)
+        zcor = 1./(1.-vtmpc1*zqsat)
+        zqsat = zqsat*zcor
+        zcond1 = (pq(jl,kk)-zqsat)/(1.+zqsat*zcor*foedem(pt(jl,kk)))
+        pt(jl,kk) = pt(jl,kk) + foeldcpm(pt(jl,kk))*zcond1
+        pq(jl,kk) = pq(jl,kk) - zcond1
+      end do
+      end if
+
+      return
+      end subroutine cuadjtqn
+!---------------------------------------------------------
+!  level 4 souroutines  
+!--------------------------------------------------------
+      subroutine cubasmcn &
+     &    (klon,     klev,     klevm1,  kk,     pten,&
+     &     pqen,     pqsen,    puen,    pven,   pverv,&
+     &     pgeo,     pgeoh,    ldcum,   ktype,  klab,  plrain,&
+     &     pmfu,     pmfub,    kcbot,   ptu,&
+     &     pqu,      plu,      puu,     pvu,    pmfus,&
+     &     pmfuq,    pmful,    pdmfup)
+      implicit none
+!      m.tiedtke         e.c.m.w.f.     12/89
+!      c.zhang           iprc           05/2012
+!***purpose.
+!   --------
+!          this routine calculates cloud base values
+!          for midlevel convection
+!***interface
+!   ---------
+!          this routine is called from *cuasc*.
+!          input are environmental values t,q etc
+!          it returns cloudbase values for midlevel convection
+!***method.
+!   -------
+!          s. tiedtke (1989)
+!***externals
+!   ---------
+!          none
+! ----------------------------------------------------------------
+      real     pten(klon,klev),        pqen(klon,klev),&
+     &         puen(klon,klev),        pven(klon,klev),&
+     &         pqsen(klon,klev),       pverv(klon,klev),&
+     &         pgeo(klon,klev),        pgeoh(klon,klev+1)
+      real     ptu(klon,klev),         pqu(klon,klev),&
+     &         puu(klon,klev),         pvu(klon,klev),&
+     &         plu(klon,klev),         pmfu(klon,klev),&
+     &         pmfub(klon),   &         
+     &         pmfus(klon,klev),       pmfuq(klon,klev),&
+     &         pmful(klon,klev),       pdmfup(klon,klev),&
+     &         plrain(klon,klev)
+      integer  ktype(klon),            kcbot(klon),&
+     &         klab(klon,klev)
+      logical  ldcum(klon)
+! local variabels
+      integer  jl,kk,klev,klon,klevp1,klevm1
+      real     zzzmb
+!--------------------------------------------------------
+!*    1.      calculate entrainment and detrainment rates
+! -------------------------------------------------------
+         do jl=1,klon
+          if(.not.ldcum(jl) .and. klab(jl,kk+1).eq.0) then
+            if(lmfmid .and. pqen(jl,kk) .gt. 0.80*pqsen(jl,kk).and. &
+              pgeo(jl,kk)*zrg .gt. 5.0e2  .and.  &
+     &        pgeo(jl,kk)*zrg .lt. 1.0e4 )  then
+            ptu(jl,kk+1)=(cpd*pten(jl,kk)+pgeo(jl,kk)-pgeoh(jl,kk+1))&
+     &                          *rcpd
+            pqu(jl,kk+1)=pqen(jl,kk)
+            plu(jl,kk+1)=0.
+            zzzmb=max(cmfcmin,-pverv(jl,kk)*zrg)
+            zzzmb=min(zzzmb,cmfcmax)
+            pmfub(jl)=zzzmb
+            pmfu(jl,kk+1)=pmfub(jl)
+            pmfus(jl,kk+1)=pmfub(jl)*(cpd*ptu(jl,kk+1)+pgeoh(jl,kk+1))
+            pmfuq(jl,kk+1)=pmfub(jl)*pqu(jl,kk+1)
+            pmful(jl,kk+1)=0.
+            pdmfup(jl,kk+1)=0.
+            kcbot(jl)=kk
+            klab(jl,kk+1)=1
+            plrain(jl,kk+1)=0.0
+            ktype(jl)=3
+          end if
+         end if
+        end do
+      return
+      end subroutine cubasmcn
+!---------------------------------------------------------
+!  level 4 souroutines  
+!---------------------------------------------------------
+      subroutine cuentrn(klon,klev,kk,kcbot,ldcum,ldwork, &
+                    pgeoh,pmfu,pdmfen,pdmfde)
+       implicit none
+       integer  klon,klev,kk
+       integer  kcbot(klon)
+       logical  ldcum(klon)
+       logical  ldwork
+       real  pgeoh(klon,klev+1)
+       real  pmfu(klon,klev) 
+       real  pdmfen(klon) 
+       real  pdmfde(klon) 
+       logical  llo1
+       integer  jl
+       real  zdz , zmf
+       real  zentr(klon)
+    !
+    !* 1. CALCULATE ENTRAINMENT AND DETRAINMENT RATES
+    ! -------------------------------------------
+    if ( ldwork ) then
+      do jl = 1,klon
+        pdmfen(jl) = 0.
+        pdmfde(jl) = 0.
+        zentr(jl) = 0.
+      end do
+      !
+      !*  1.1 SPECIFY ENTRAINMENT RATES
+      !   -------------------------
+      do jl = 1, klon
+        if ( ldcum(jl) ) then
+          zdz = (pgeoh(jl,kk)-pgeoh(jl,kk+1))*zrg
+          zmf = pmfu(jl,kk+1)*zdz
+          llo1 = kk < kcbot(jl)
+          if ( llo1 ) then
+            pdmfen(jl) = zentr(jl)*zmf
+            pdmfde(jl) = 0.75e-4*zmf
+          end if
+        end if
+      end do
+    end if
+    end subroutine cuentrn
+!--------------------------------------------------------
+! external functions
+!------------------------------------------------------
+      real function foealfa(tt)
+!     foealfa is calculated to distinguish the three cases:
+!
+!                       foealfa=1            water phase
+!                       foealfa=0            ice phase
+!                       0 < foealfa < 1      mixed phase
+!
+!               input : tt = temperature
+!
+        implicit none
+        real tt
+         foealfa = min(1.,((max(rtice,min(rtwat,tt))-rtice) &
+     &  /(rtwat-rtice))**2)
+
+        return
+      end function foealfa
+
+      real function foelhm(tt)
+        implicit none
+        real tt
+        foelhm = foealfa(tt)*alv + (1.-foealfa(tt))*als
+      return
+      end function foelhm
+
+      real function foeewm(tt)
+        implicit none
+        real tt
+        foeewm  = c2es * &
+     &     (foealfa(tt)*exp(c3les*(tt-tmelt)/(tt-c4les))+ &
+     &     (1.-foealfa(tt))*exp(c3ies*(tt-tmelt)/(tt-c4ies)))
+      return
+      end function foeewm
+
+      real function foedem(tt)
+        implicit none
+        real tt
+        foedem  = foealfa(tt)*r5alvcp*(1./(tt-c4les)**2)+ &
+     &              (1.-foealfa(tt))*r5alscp*(1./(tt-c4ies)**2)
+      return
+      end function foedem
+
+      real function foeldcpm(tt)
+        implicit none
+        real tt
+        foeldcpm = foealfa(tt)*ralvdcp+ &
+     &        (1.-foealfa(tt))*ralsdcp
+      return
+      end function  foeldcpm
+
+end module module_cu_tiedtke
