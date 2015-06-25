@@ -139,26 +139,26 @@ module seq_flux_mct
   integer :: index_xao_So_ssq  
   integer :: index_xao_So_duu10n 
   integer :: index_xao_So_u10
-  integer :: index_xao_So_fswpen             ! NEW, Bill Large
-  integer :: index_xao_So_warm_diurn         ! NEW, Bill Large
-  integer :: index_xao_So_salt_diurn         ! NEW, Bill Large
-  integer :: index_xao_So_speed_diurn        ! NEW, Bill Large
-  integer :: index_xao_So_regime_diurn       ! NEW, Bill Large
-  integer :: index_xao_So_tskin_diurn        ! NEW, Bill Large
-  integer :: index_xao_So_tskin_day_diurn    ! NEW, Bill Large
-  integer :: index_xao_So_tskin_night_diurn  ! NEW, Bill Large
-  integer :: index_xao_So_cskin_diurn        ! NEW, Bill Large
-  integer :: index_xao_So_cskin_night_diurn  ! NEW, Bill Large
-  integer :: index_xao_So_tbulk_diurn        ! NEW, Bill Large
-  integer :: index_xao_So_warmmax_diurn      ! NEW, Bill Large
-  integer :: index_xao_So_windmax_diurn      ! NEW, Bill Large
-  integer :: index_xao_So_qsolavg_diurn      ! NEW, Bill Large
-  integer :: index_xao_So_windavg_diurn      ! NEW, Bill Large
-  integer :: index_xao_So_warmmaxinc_diurn   ! NEW, Bill Large
-  integer :: index_xao_So_windmaxinc_diurn   ! NEW, Bill Large
-  integer :: index_xao_So_qsolinc_diurn      ! NEW, Bill Large
-  integer :: index_xao_So_windinc_diurn      ! NEW, Bill Large
-  integer :: index_xao_So_ninc_diurn         ! NEW, Bill Large
+  integer :: index_xao_So_fswpen
+  integer :: index_xao_So_warm_diurn
+  integer :: index_xao_So_salt_diurn
+  integer :: index_xao_So_speed_diurn
+  integer :: index_xao_So_regime_diurn
+  integer :: index_xao_So_tskin_diurn
+  integer :: index_xao_So_tskin_day_diurn
+  integer :: index_xao_So_tskin_night_diurn
+  integer :: index_xao_So_cskin_diurn
+  integer :: index_xao_So_cskin_night_diurn
+  integer :: index_xao_So_tbulk_diurn
+  integer :: index_xao_So_warmmax_diurn
+  integer :: index_xao_So_windmax_diurn
+  integer :: index_xao_So_qsolavg_diurn
+  integer :: index_xao_So_windavg_diurn
+  integer :: index_xao_So_warmmaxinc_diurn
+  integer :: index_xao_So_windmaxinc_diurn
+  integer :: index_xao_So_qsolinc_diurn
+  integer :: index_xao_So_windinc_diurn
+  integer :: index_xao_So_ninc_diurn
 
   character(len=16) :: fluxsetting = 'unknown'
   character(len=*),parameter  :: fluxsetting_atmocn = 'atmocn'
@@ -1303,19 +1303,19 @@ contains
                           warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
                           tbulk, tskin, tskin_day, tskin_night, &
                           cskin, cskin_night, tod, dt,          &
+                          duu10n,ustar, re  , ssq)
                           !missval should not be needed if flux calc 
                           !consistent with mrgx2a fraction
                           !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
-                          duu10n,ustar, re  , ssq)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
                           shum , dens , tbot, uocn, vocn , &
                           tocn , emask, sen , lat , lwup , &
                           evap , taux , tauy, tref, qref , &
+                          duu10n,ustar, re  , ssq)
                           !missval should not be needed if flux calc 
                           !consistent with mrgx2a fraction
                           !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
-                          duu10n,ustar, re  , ssq)
     endif
 
     do n = 1,nloc
