@@ -29,7 +29,7 @@ module BGCReactionsCenturyCLMType
   use BGCCenturySubMod   
   use LandunitType          , only : lun
   use ColumnType            , only : col 
-  use GridcellType        , only : grc
+  use GridcellType          , only : grc
   use landunit_varcon       , only : istsoil, istcrop    
 implicit none
 

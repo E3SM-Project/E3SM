@@ -27,7 +27,8 @@ module BGCReactionsCenturyType
   use BGCCenturySubMod
   use BGCCenturySubCoreMod  
   use LandunitType          , only : lun
-  use ColumnType            , only : col 
+  use ColumnType            , only : col
+  use GridcellType          , only : grc  
   use landunit_varcon       , only : istsoil, istcrop    
 implicit none
 
@@ -663,9 +664,14 @@ contains
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j) 
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose   
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
-      call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j))
+      call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j), pscal)
 !      print*,'cjp',c,j,pscal
-      
+      if(pscal<1.e-1_r8)then
+        write(*,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+        write(*,*)'col, lev, pscal=',c, j, pscal
+        write(*,*)'nstep =',get_nstep()
+        call endrun()
+      endif      
       !if(pscal>0._r8)pause
       !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
       !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
@@ -1037,7 +1043,7 @@ contains
   !obtain total oxygen consumption rate
   o2_consump = DOT_PRODUCT(cascade_matrix(centurybgc_vars%lid_o2,1:Extra_inst%nr),reaction_rates(1:Extra_inst%nr))
   if(-o2_consump*dtime > ystate(centurybgc_vars%lid_o2))then
-    o2_limit=ystate(centurybgc_vars%lid_o2)/(o2_consump*dtime)
+    o2_limit=-ystate(centurybgc_vars%lid_o2)/(o2_consump*dtime)
     do lk = 1, Extra_inst%nr 
       if(centurybgc_vars%is_aerobic_reac(lk))then
         reaction_rates(lk) = reaction_rates(lk)*o2_limit
@@ -1171,7 +1177,7 @@ contains
       alpha = smin_no3/(tot_no3_demand_flx*dtime)    
       reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
     
-      smin_no3_to_decomp_plant_flx = smin_no3 * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
+      smin_no3_to_decomp_plant_flx = smin_no3/dtime * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
     endif  
   else
     smin_no3_to_decomp_plant_flx = tot_no3_demand_flx
