@@ -485,7 +485,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),parameter :: Ricr     = 0.30_R8
    real(R8),parameter :: tiny     = 1.0e-12_R8
    real(R8),parameter :: tiny2    = 1.0e-6_R8
-   real(R8),parameter :: pi = 4.0_R8*ATAN(1.0_R8)    ! pi
+   real(R8),parameter :: pi       = SHR_CONST_PI
   
 
    !--- local variables --------------------------------
@@ -1022,7 +1022,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             windMaxInc (n) = spval ! NEW
             qSolInc    (n) = spval ! NEW
             windInc    (n) = spval ! NEW
-            nInc       (n) = 0.0_r8 ! NEW
+            nInc       (n) = 0.0_R8 ! NEW
 
             sen   (n) = spval  ! sensible         heat flux  (W/m^2)
             lat   (n) = spval  ! latent           heat flux  (W/m^2)
