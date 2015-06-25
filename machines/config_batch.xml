@@ -47,7 +47,7 @@
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
     <directives>
-      <directive                       > -n {{ task_count }} </directive>
+      <directive                       > -n {{ totaltasks }} </directive>
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
       <directive                       > -q {{ queue }} </directive>
       <directive                       > -N  </directive>

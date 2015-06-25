@@ -353,6 +353,7 @@ sub setTaskInfo()
 	$self->{'task_count'} = $taskmaker->sumOnly();
 	$self->{'sumtasks'} = $taskmaker->sumTasks();
 	$self->{'num_tasks'} = $taskmaker->sumTasks();
+	$self->{'totaltasks'} = $taskmaker->sumTasks();
 	$self->{'maxthreads'} = $taskmaker->maxThreads();
 	$self->{'taskgeometry'} = $taskmaker->taskGeometry();
 	$self->{'threadgeometry'} = $taskmaker->threadGeometry();
