@@ -297,7 +297,7 @@ module PlantSoilnutrientFluxType
   subroutine calc_nutrient_uptake_potential(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, frootc_patch)
   
   use subgridAveMod       , only : p2c
-  
+  use GridcellType        , only : grc 
   class(plantsoilnutrientflux_type) :: this
   type(bounds_type), intent(in) :: bounds        
   integer,  intent(in) :: num_soilc  
@@ -307,7 +307,7 @@ module PlantSoilnutrientFluxType
   real(r8), intent(in) :: frootc_patch(bounds%begp:bounds%endp)
   
   
-  real(r8) :: Vmax_minn = 1.e-7_r8  ! gN/gC/s
+  real(r8) :: Vmax_minn = 1.e-6_r8  ! gN/gC/s
   integer  :: fp, p, fc, c
   real(r8) :: nscal = 1._r8
   
@@ -325,7 +325,9 @@ module PlantSoilnutrientFluxType
   !new approach
   do fp = 1, num_soilp
     p = filter_soilp(fp)    
-    this%plant_minn_uptake_potential_patch(p) = max(Vmax_minn * frootc_patch(p),Vmax_minn*10._r8)    
+    c = pft%column(p)
+    this%plant_minn_uptake_potential_patch(p) = Vmax_minn*max(frootc_patch(p),10._r8)    
+    if(abs(grc%latdeg(col%gridcell(c)))<20._r8)this%plant_minn_uptake_potential_patch(p) = this%plant_minn_uptake_potential_patch(p) * 1.e3_r8
   enddo
 
   

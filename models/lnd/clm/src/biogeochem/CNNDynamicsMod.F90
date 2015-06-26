@@ -166,7 +166,7 @@ contains
     real(r8) :: t                     ! temporary
     real(r8) :: dayspyr               ! days per year
     real(r8) :: secspyr              ! seconds per yr
-    logical  :: do_et_bnf = .false.
+    logical  :: do_et_bnf = .true.
     !-----------------------------------------------------------------------
 
     associate(& 

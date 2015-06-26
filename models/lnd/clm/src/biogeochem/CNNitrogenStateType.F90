@@ -708,7 +708,7 @@ contains
           this%prod10n_col(c)       = 0._r8
           this%prod100n_col(c)      = 0._r8
           this%totprodn_col(c)      = 0._r8
-          this%plant_nbuffer_col(c) = 0._r8
+          this%plant_nbuffer_col(c) = 1._r8
        end if
     end do
 
