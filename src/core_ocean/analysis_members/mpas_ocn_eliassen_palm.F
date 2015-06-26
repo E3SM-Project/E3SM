@@ -783,10 +783,10 @@ contains
          call mpas_pool_get_array(am_epftPool, 'buoyancyMaskEA', buoyancyMaskEA)
          call mpas_pool_get_array(am_epftPool, 'sigmaEA', sigmaEA)
          call mpas_pool_get_array(am_epftPool, 'heightMidBuoyCoorEA', heightMidBuoyCoorEA)
-         call mpas_pool_get_array(am_epftPool, 'montgPotGradZonalEA', montgPotGradZonalEA)
-         call mpas_pool_get_array(am_epftPool, 'montgPotGradMeridEA', montgPotGradMeridEA)
          call mpas_pool_get_array(am_epftPool, 'heightMidBuoyCoorSqEA', heightMidBuoyCoorSqEA)
          call mpas_pool_get_array(am_epftPool, 'montgPotBuoyCoorEA', montgPotBuoyCoorEA)
+         call mpas_pool_get_array(am_epftPool, 'montgPotGradZonalEA', montgPotGradZonalEA)
+         call mpas_pool_get_array(am_epftPool, 'montgPotGradMeridEA', montgPotGradMeridEA)
          call mpas_pool_get_array(am_epftPool, 'heightMGradZonalEA', HeightMGradZonalEA)
          call mpas_pool_get_array(am_epftPool, 'heightMGradMeridEA', HeightMGradMeridEA)
          call mpas_pool_get_array(am_epftPool, 'usigmaEA', usigmaEA)
@@ -797,6 +797,10 @@ contains
          call mpas_pool_get_array(am_epftPool, 'uvsigmaEA', uvsigmaEA)
          call mpas_pool_get_array(am_epftPool, 'uvarpisigmaEA', uvarpisigmaEA)
          call mpas_pool_get_array(am_epftPool, 'vvarpisigmaEA', vvarpisigmaEA)
+
+         !--------------------------------------------------
+         ! assign pointers for thickness-weighted averaged state
+         !--------------------------------------------------
          call mpas_pool_get_array(am_epftPool, 'uTWA', uTWA)
          call mpas_pool_get_array(am_epftPool, 'vTWA', vTWA)
          call mpas_pool_get_array(am_epftPool, 'varpiTWA', varpiTWA)
@@ -1061,7 +1065,7 @@ contains
             montgPotGradZonal, montgPotGradMerid)
 
          !-------------------------------------------------------------
-         ! Increment first-order running mean fields
+         ! Increment first-order running ensemble average fields
          !-------------------------------------------------------------
          call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, buoyancyMask, buoyancyMaskEA)
          call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, sigma, sigmaEA)
@@ -1071,7 +1075,7 @@ contains
          call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, montgPotGradMerid, montgPotGradMeridEA)
    
          !-------------------------------------------------------------
-         ! Increment second-order running mean fields
+         ! Increment second-order running ensemble average fields
          !-------------------------------------------------------------
          wrk3DBuoyCoor = heightMidBuoyCoor * heightMidBuoyCoor
          call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, heightMidBuoyCoorSqEA)
@@ -1093,9 +1097,8 @@ contains
          !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, varpisigmaEA)
          varpisigmaEA = 0.0
 
-   
          !-------------------------------------------------------------
-         ! Increment third-order running mean fields
+         ! Increment third-order running ensemble average fields
          !-------------------------------------------------------------
          wrk3DBuoyCoor = uMidBuoyCoor * uMidBuoyCoor * sigma
          call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uusigmaEA)
@@ -1147,7 +1150,7 @@ contains
          call calculateDivEPFT(config_eliassen_palm_debug, &
             domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, EPFT, divEPFT)
-          ! decompose the vector into its components for output
+         ! decompose the vector into its components for output
          divEPFT1 = divEPFT(1,:,:)
          divEPFT2 = divEPFT(2,:,:)
          
@@ -1174,22 +1177,21 @@ contains
          divEPFTdrag2 = wrkVector(2,:,:)
          
          !-------------------------------------------------------------
-         ! transform div(EPFT) into a flux of Ertel's PV
+         ! transform div(EPFT) into a flux of Ertel PV
          !-------------------------------------------------------------
-         call calculateErtelPVFlux(nCells, nBuoyancyLayers, &
-            sigmaEA, divEPFT, ErtelPVFlux)
+         call calculateErtelPVFlux(nCells, nBuoyancyLayers, sigmaEA, divEPFT, ErtelPVFlux)
          ErtelPVFlux1 = ErtelPVFlux(1,:,:)
          ErtelPVFlux2 = ErtelPVFlux(2,:,:)
 
          !-------------------------------------------------------------
-         ! compute div(ErtelPVFlux) to obtain tendency of Ertel's PV
+         ! compute Ertel PV tendency from Ertel PV fluxes, div(ErtelPVFlux)
          !-------------------------------------------------------------
          call calculateErtelPVTendencyFromPVFlux(config_eliassen_palm_debug, &
             domain % on_a_sphere, nBuoyancyLayers, nCells, nEdges, &
             meshPool, sigmaEA, ErtelPVFlux, ErtelPVTendency)
 
          !-------------------------------------------------------------
-         ! compute Ertel PV based on EA/TWA fields
+         ! compute Ertel PV based on EA and TWA fields
          !-------------------------------------------------------------
          call computeErtelPV(nCells, nBuoyancyLayers, nEdges, meshPool, &
             fCell, uTWA, vTWA, sigmaEA, ErtelPV)
