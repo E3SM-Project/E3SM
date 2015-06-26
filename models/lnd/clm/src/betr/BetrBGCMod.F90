@@ -213,8 +213,8 @@ contains
       (/do_advection, do_diffusion/), dtime, betrtracer_vars, tracerboundarycond_vars, &
       tracercoeff_vars, waterflux_vars, bgc_reaction, tracerstate_vars, tracerflux_vars, waterstate_vars)
       !do_advection
-!  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
-!     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_gw_transp')
+  call tracer_mass_print(bounds, lbj, ubj, tracerboundarycond_vars%jtops_col, num_soilc, filter_soilc, col%dz(bounds%begc:bounds%endc,1:ubj), &
+     betrtracer_vars, tracerflux_vars, tracerstate_vars,'af_gw_transp')
   !print*,'do solid phase transport'
   !the solid phase tracer only start from the first layer. However, this may be subject to change
   !when snow ice is considered in future. Jinyun Tang, June/24/2014
@@ -317,9 +317,11 @@ contains
     difs_trc_group(:) = 0
     do k = 1, nmem_max
        trcid = tracer_group_memid(j, k)-ngwmobile_tracers
-       if(is_mobile(tracer_group_memid(j, k)))then
-         ntrcs = ntrcs + 1
-         difs_trc_group(ntrcs) = trcid
+       if(trcid>0)then
+         if(is_mobile(tracer_group_memid(j, k)))then
+           ntrcs = ntrcs + 1
+           difs_trc_group(ntrcs) = trcid
+         endif
        endif
     enddo
 
@@ -363,6 +365,9 @@ contains
               
                 if(tracer_conc_solid_passive_col(c,l,trcid)<0._r8)then
                 !write error message and stop
+                  write(iulog,*)'nstep',get_nstep(),'col=',c,'l=',l,trcid
+                  write(iulog,*)'dtime=',dtime_loc(c)
+                  write(iulog,*)tracer_conc_solid_passive_col(c,l,trcid),dtracer(c,l,k)
                   call endrun('stopped for negative tracer '//&
                     trim(betrtracer_vars%tracernames(j))//' '//trim(subname))
                 endif
@@ -533,10 +538,10 @@ contains
 
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
   SHR_ASSERT_ALL((ubound(dz) == (/bounds%endc, ubj/)), errMsg(__FILE__,__LINE__))
-
+  return
   do fc = 1, num_soilc
     c = filter_soilc(fc)
-    if(c== 3399 .and. get_nstep()>=7481) then
+    if(c== 3020) then
       j= betrtracer_vars%id_trc_no3x
       write(iulog,*)get_nstep(),loc_str
       write(iulog,*)(k,tracerstate_vars%tracer_conc_mobile_col(c,k,j),k=jtops(c),ubj)
