@@ -604,7 +604,6 @@
     <var name="nSamplesEA"/> 
     <var name="buoyancyMaskEA"/> 
     <var name="sigmaEA"/> 
-    <var name="potentialDensityMidRef"/> 
     <var name="heightMidBuoyCoorEA"/> 
     <var name="heightMidBuoyCoorSqEA"/> 
     <var name="montgPotBuoyCoorEA"/> 
@@ -614,6 +613,7 @@
     <var name="heightMGradMeridEA"/> 
     <var name="usigmaEA"/> 
     <var name="vsigmaEA"/> 
+    <var name="varpisigmaEA"/> 
     <var name="uusigmaEA"/> 
     <var name="vvsigmaEA"/> 
     <var name="uvsigmaEA"/> 
