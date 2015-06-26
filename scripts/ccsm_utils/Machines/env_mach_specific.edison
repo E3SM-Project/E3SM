@@ -13,6 +13,8 @@ if (-e /opt/modules/default/init/csh) then
   module rm cce
   module rm cray-parallel-netcdf
   module rm cray-parallel-hdf5 
+  module rm cray-hdf5-parallel
+  module rm cray-netcdf-parallel
   module rm pmi
   module rm cray-libsci
   module rm cray-mpich2
