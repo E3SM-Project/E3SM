@@ -1,0 +1,27 @@
+<config_modules>
+    <module_system type="batch">
+      <module_commands>
+        <command>add</command>
+        <command>rm</command>
+        <command>switch</command>
+        <command>display</command>
+        <command>avail</command>
+        <command>use</command>
+        <command>unuse</command>
+        <command>update</command>
+        <command>purge</command>
+        <command>list</command>
+        <command>clear</command>
+      </module_commands>
+    </module_system>
+    <module_system type="soft">
+      <module_commands>
+        <command>add</command>
+        <command>delete</command>
+      </module_commands>
+    </module_system>
+    <module_system type="none">
+      <module_commands>
+      </module_commands>
+    </module_system>
+</config_modules>

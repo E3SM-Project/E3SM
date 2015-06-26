@@ -509,6 +509,28 @@
              <arg name="num_tasks"> -n {{ num_tasks }} </arg>
            </arguments>
          </mpirun>
+         <!-- all commands in the module_system elements will be executed sequentially... -->
+         <module_system type="module">
+           <modules compiler="intel">
+             <load>compiler/intel/14.0.2</load>
+           </modules>
+           <modules compiler="pgi">
+             <load>compiler/pgi/14.10</load>
+           </modules>
+           <modules compiler="nag">
+             <load>compiler/nag/5.3.1-907</load>
+           <modules compiler="gnu">
+             <load>compiler/gnu/4.4.7</load>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="P4_GLOBMEMSIZE">500000000</env>
+           <env name="NETCDF_DIR">NETCDF_PATH</env>
+         </environment_variables>
+         <limits>
+           <limit type="stacksize">unlimited</limit>
+           <limit type="coredumpsize">unlimited</limit>
+         </limits>
 </machine>
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>

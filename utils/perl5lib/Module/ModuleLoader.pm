@@ -57,7 +57,7 @@ sub new
 # eval the env_mach_specific file for this machine, which should give us the new environment, 
 # then insert the new or modified environment variables into %ENV
 #------------------------------------------------------------------------------
-sub loadModules()
+sub loadModulesCshEval()
 {
 	my $self = shift;
 	#my $self = {	
@@ -136,6 +136,17 @@ sub loadModules()
 	}
 	
 	return %newbuildenv;
+
+}
+
+sub moduleInit()
+{
+	my $self = shift;
+	my $envfile = $self->{'modulepath'} . 
+}
+
+sub loadModules()
+{
 
 }
 1;
