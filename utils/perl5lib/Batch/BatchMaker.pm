@@ -205,13 +205,14 @@ sub getBatchDirectives()
           if ($self->{'batch_system'} eq 'none') {
             $self->{'batchdirectives'} = '';
           } else {
+            $self->setTaskInfo();
             $self->setQueue();
             $self->setWallTime();
             $self->setProject();
             $self->setBatchDirectives();
           }
         }
-
+        return $self->{'batchdirectives'};
 }
 #==============================================================================
 # Get a particular field of data from the instance data that gets stored 

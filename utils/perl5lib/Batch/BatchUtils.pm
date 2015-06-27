@@ -152,7 +152,10 @@ sub getJobID()
 		$jobid = $1;
 	}
 	else
-	{
+        {
+                # FIXME(bja, 2015-06) the job is already in the queue
+                # even though we are dying. Should it be killed first?
+                print "processing jobstring to determine job id:\n    \'$jobstring\'\n";
 		die " could not ascertain dependent job id... aborting";
 	}
 	return $jobid;
@@ -256,7 +259,7 @@ sub submitSingleJob()
           # FIXME(bja, 2015-06) should set in getJobID?
           $jobid = undef;
         } else {
-          my $jobline = chomp $output[0];
+          my $jobline = join("",@output);
           $jobid = $self->getJobID($jobline);
         }
 	return $jobid;
