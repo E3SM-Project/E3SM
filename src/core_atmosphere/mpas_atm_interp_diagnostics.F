@@ -439,7 +439,6 @@
  if(allocated(press_interp)) deallocate(press_interp)
  if(allocated(pressureCp1) ) deallocate(pressureCp1 )
  if(allocated(pressure_v)  ) deallocate(pressure_v  )
- if(allocated(tmp) )         deallocate(tmp )
 
    deallocate(field_in)
    deallocate(press_in)
