@@ -396,8 +396,9 @@ endif
 !        edge%receive(iptr:iptr+length-1) = 0.0D0
 !    endif
 
-    edge%buf    (:)=0.0D0
-    edge%receive(:)=0.0D0
+!    dont do this, to improve first touch data placement
+!    edge%buf    (:)=0.0D0
+!    edge%receive(:)=0.0D0
 
 !$OMP END MASTER
 ! MT: This next barrier is also needed - threads cannot start using edge()
