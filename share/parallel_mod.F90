@@ -211,7 +211,7 @@ contains
     ! =======================================================================
     call MPI_Allreduce(nmpi_per_node,tmp,1,MPIinteger_t,MPI_BAND,par%comm,ierr)
     if(tmp .ne. nmpi_per_node) then 
-      write(iulog,*)'initmp:  disagrement accross nodes for nmpi_per_node'
+      if (par%masterproc) write(iulog,*)'initmp:  disagrement accross nodes for nmpi_per_node'
       nmpi_per_node = 1
       PartitionForNodes=.FALSE.
     else
@@ -244,7 +244,7 @@ contains
 
        call MPI_Allreduce(useframes,tmp,1,MPIinteger_t,MPI_BAND,par%comm,ierr)
        if(tmp .ne. useframes) then 
-          write(iulog,*) "initmp:  disagreement accross nodes for useframes"
+          if (par%masterpoc) write(iulog,*) "initmp:  disagreement accross nodes for useframes"
           PartitionForFrames=.FALSE.
        endif
 
