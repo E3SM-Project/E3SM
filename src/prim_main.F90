@@ -244,6 +244,7 @@ program prim_main
   
 
   if(par%masterproc) print *,"Entering main timestepping loop"
+  call t_startf('prim_main_loop')
   do while(tl%nstep < nEndStep)
 #if (defined HORIZ_OPENMP)
      !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
@@ -290,6 +291,8 @@ program prim_main
         call WriteRestart(elem, ithr,1,nelemd,tl)
      endif
   end do
+  call t_stopf('prim_main_loop')
+
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
   call prim_finalize(hybrid)
   if(par%masterproc) print *,"closing history files"
