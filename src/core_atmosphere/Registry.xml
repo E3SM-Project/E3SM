@@ -212,7 +212,7 @@
 			<var name="u10"/>
 			<var name="v10"/>
 			<var name="q2"/>
-			<var name="t2"/>
+			<var name="t2m"/>
 			<var name="precipw"/>
 			<var name="dzs"/>
 			<var name="sh2o"/>
@@ -394,8 +394,8 @@
 			<var name="u10"/>
 			<var name="v10"/>
 			<var name="q2"/>
-			<var name="t2"/>
-			<var name="th2"/>
+			<var name="t2m"/>
+			<var name="th2m"/>
 			<var name="dusfcg"/>
 			<var name="dvsfcg"/>
 			<var name="dtaux3d"/>
@@ -1162,8 +1162,8 @@
                 <!--  q2        :specific humidity at 2m                                                        [kg/kg] -->
                 <!--  u10       :u at 10 m                                                                        [m/s] -->
                 <!--  v10       :v at 10 m                                                                        [m/s] -->
-                <!--  t2        :temperature at 2m                                                                  [K] -->
-                <!--  th2       :potential temperature at 2m                                                        [K] -->
+                <!--  t2m       :temperature at 2m                                                                  [K] -->
+                <!--  th2m      :potential temperature at 2m                                                        [K] -->
 
                 <var name="hfx"           type="real"     dimensions="nCells Time"/>
                 <var name="mavail"        type="real"     dimensions="nCells Time"/>
@@ -1201,8 +1201,8 @@
                 <var name="u10"           type="real"     dimensions="nCells Time"/>
                 <var name="v10"           type="real"     dimensions="nCells Time"/>
                 <var name="q2"            type="real"     dimensions="nCells Time"/>
-                <var name="t2"            type="real"     dimensions="nCells Time"/>
-                <var name="th2"           type="real"     dimensions="nCells Time"/>
+                <var name="t2m"           type="real"     dimensions="nCells Time"/>
+                <var name="th2m"          type="real"     dimensions="nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
