@@ -22,6 +22,7 @@ module mpas_vector_reconstruction
   use mpas_pool_routines
   use mpas_constants
   use mpas_rbf_interpolation
+  use mpas_vector_operations
 
   implicit none
 
@@ -67,6 +68,12 @@ module mpas_vector_reconstruction
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
 
     real (kind=RKIND), dimension(:,:,:), pointer :: coeffs_reconstruct
+    logical, pointer :: is_periodic
+    real(kind=RKIND), pointer :: x_period, y_period
+
+    call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+    call mpas_pool_get_config(meshPool, 'x_period', x_period)
+    call mpas_pool_get_config(meshPool, 'y_period', y_period)
 
     !========================================================
     ! arrays filled and saved during init procedure
@@ -107,9 +114,15 @@ module mpas_vector_reconstruction
 
       do i=1,pointCount
         iEdge = edgesOnCell(i,iCell)
-        edgeOnCellLocations(i,1)  = xEdge(iEdge)
-        edgeOnCellLocations(i,2)  = yEdge(iEdge)
-        edgeOnCellLocations(i,3)  = zEdge(iEdge)
+        if (is_periodic) then
+          edgeOnCellLocations(i,1)  = mpas_fix_periodicity(xEdge(iEdge), cellCenter(1), x_period)
+          edgeOnCellLocations(i,2)  = mpas_fix_periodicity(yEdge(iEdge), cellCenter(2), y_period)
+          edgeOnCellLocations(i,3)  = zEdge(iEdge)
+        else
+          edgeOnCellLocations(i,1)  = xEdge(iEdge)
+          edgeOnCellLocations(i,2)  = yEdge(iEdge)
+          edgeOnCellLocations(i,3)  = zEdge(iEdge)
+        end if
         edgeOnCellNormals(i,:)  = edgeNormalVectors(:, iEdge)
       end do
 

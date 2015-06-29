@@ -74,6 +74,7 @@ module test_core
       use mpas_derived_types
       use mpas_kind_types
       use mpas_timer
+      use mpas_vector_operations
    
       implicit none
    
@@ -85,6 +86,8 @@ module test_core
 
 
       iErr = 0
+
+      call mpas_unit_test_fix_periodicity(iErr)
 
    end function test_core_run!}}}
 
