@@ -279,7 +279,7 @@ contains
       !    call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_interval',config_TEMPLATE_compute_interval)
       !    if (config_TEMPLATE_compute_interval=='dt') config_TEMPLATE_compute_interval='00-00-00_00:00:01'
       !    call mpas_set_timeInterval(alarmTimeStep, timeString=config_TEMPLATE_compute_interval, ierr=err_tmp)
-      !    call MPAS_stream_mgr_get_property(stream_manager, 'TEMPLATEOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+      !    call MPAS_stream_mgr_get_property(stream_manager, 'TemplateOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
       !    call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
       !    call mpas_add_clock_alarm(clock, TEMPLATEAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
       !    call mpas_reset_clock_alarm(clock, TEMPLATEAlarmID, ierr=err_tmp)
@@ -400,7 +400,7 @@ contains
 
 !         ! This line is to write on start-up:
 !         call mpas_timer_start('io_write', .false.)
-!         call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', forceWriteNow=.true., ierr=err_tmp)
+!         call mpas_stream_mgr_write(stream_manager, streamID='TemplateOutput', forceWriteNow=.true., ierr=err_tmp)
 !         call mpas_timer_stop('io_write')
 !         err = ior(err, err_tmp)
 !      endif
@@ -525,7 +525,7 @@ contains
       !    endif
 
       !    ! Compute analysis member just before stream output:
-      !    !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TEMPLATEOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+      !    !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TemplateOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
       !    !   call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
       !    !endif
 
@@ -738,10 +738,10 @@ contains
       ! call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
       ! if (config_use_TEMPLATE) then
       !     call mpas_timer_start('io_write', .false.)
-      !     call mpas_stream_mgr_write(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+      !     call mpas_stream_mgr_write(stream_manager, streamID='TemplateOutput', ierr=err_tmp)
       !     call mpas_timer_stop('io_write')
       !     call mpas_timer_start('io_reset_alarms', .false.)
-      !     call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TEMPLATEOutput', ierr=err_tmp)
+      !     call mpas_stream_mgr_reset_alarms(stream_manager, streamID='TemplateOutput', ierr=err_tmp)
       !     call mpas_timer_stop('io_reset_alarms')
       !    err = ior(err, err_tmp)
       ! endif
