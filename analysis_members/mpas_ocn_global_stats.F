@@ -58,6 +58,7 @@ module ocn_global_stats
    !--------------------------------------------------------------------
 
    type (timer_node), pointer :: amGlobalStatsTimer
+   character (len=StrKIND), pointer :: config_global_stats_directory
 
 !***********************************************************************
 
@@ -162,9 +163,71 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (dm_info), pointer :: dminfo
+      logical, pointer :: config_global_stats_text_file
+      integer :: fileID, i
+
       err = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_global_stats_directory',config_global_stats_directory)
+      call mpas_pool_get_config(domain % configs, 'config_global_stats_text_file', config_global_stats_text_file)
+      if (config_global_stats_text_file) then
+      dminfo => domain % dminfo
+      if (dminfo % my_proc_id == IO_NODE) then
+         fileID = getFreeUnit()
+         open(fileID,file=trim(config_global_stats_directory)//'/stats_readme.txt',STATUS='UNKNOWN', POSITION='rewind')
+
+            write (fileID,'(a)') 'readme file for MPAS-Ocean global statistics'
+            write (fileID,'(/,a)') 'stats_time.txt. contains: timeIndex, timestamp, CFLNumberGlobal'
+            write (fileID,'(/,a)') 'All other stats_*.txt. contain the following columns.  Rows correspond to timestamps in rows of stats_time.txt'
+            write (fileID,'(a)')   "See user's guide for units associated with these variables."
+
+            i=1
+            write (fileID,'(i5,a)') i,'. time, in days, using a 360 day calendar'; i=i+1
+            write (fileID,'(i5,a)') i,'. layerThickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. normalVelocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. tangentialVelocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. layerThicknessEdge'; i=i+1
+            write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
+            write (fileID,'(i5,a)') i,'. enstrophy = relativeVorticity**2'; i=i+1
+            write (fileID,'(i5,a)') i,'. kineticEnergyCell'; i=i+1
+            write (fileID,'(i5,a)') i,'. normalizedAbsoluteVorticity = (relative vorticity + planetary vorticity)/layer thickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. pressure'; i=i+1
+            write (fileID,'(i5,a)') i,'. montgomeryPotential'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertVelocityTop vertical velocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertAleTransportTop vertical transport'; i=i+1
+            write (fileID,'(i5,a)') i,'. lowFreqDivergence'; i=i+1
+            write (fileID,'(i5,a)') i,'. highFreqThickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. Tracers: usually T, S, then others in remaining columns'
+
+            write (fileID,'(/,a)') 'A chain of simple unix commands may be used to access a specific part of the data. For example,'
+            write (fileID,'(a)') 'to view the last three values of column seven in the global average, use:'
+            write (fileID,'(a)') "cat stats_avg.txt | awk '{print $7}' | tail -n3"
+  
+         close (fileID)
+      endif
+
+      endif
+
    end subroutine ocn_init_global_stats!}}}
+
+   integer function getFreeUnit()!{{{
+      implicit none
+
+      integer :: index
+      logical :: isOpened
+
+      getFreeUnit = 0
+      do index = 1,99
+         if((index /= 5) .and. (index /= 6)) then
+            inquire(unit = index, opened = isOpened)
+            if( .not. isOpened) then
+               getFreeUnit = index
+               return
+            end if
+         end if
+      end do
+   end function getFreeUnit!}}}
 
 !***********************************************************************
 !
@@ -245,6 +308,7 @@ contains
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
       logical, pointer :: thicknessFilterActive, amGlobalStatsActive
+      logical, pointer :: config_global_stats_text_file
 
       err = 0
 
@@ -689,6 +753,43 @@ contains
       minGlobalStats(1:nVariables) =  mins(1:nVariables)
       maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
       sumGlobalStats(1:nVariables) =  sums(1:nVariables)
+
+      call mpas_pool_get_config(domain % configs, 'config_global_stats_text_file', config_global_stats_text_file)
+      if (config_global_stats_text_file) then
+
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+
+         ! write out the data to files
+         if (dminfo % my_proc_id == IO_NODE) then
+            fileID = getFreeUnit()
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_min.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, mins(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_max.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, maxes(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, sums(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_rms.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, rms(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') time_days, averages(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_time.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(a)') trim(xtime)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') verticalSumMins(1:nVariables)
+            close (fileID)
+            open(fileID,file=trim(config_global_stats_directory)//'/stats_colmax.txt',STATUS='UNKNOWN', POSITION='append')
+            write (fileID,'(100es24.14)') verticalSumMaxes(1:nVariables)
+            close (fileID)
+         end if
+
+      endif
 
       call mpas_timer_stop("AM_global_stats", amGlobalStatsTimer)
 
