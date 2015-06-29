@@ -432,7 +432,6 @@ module ocn_forward_mode
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
-      write(6,*) 'calling ocn_analysis_compute_startup from forward'
       call ocn_analysis_compute_startup(domain, stream_manager, err) 
 
       if (config_write_output_on_startup) then
@@ -488,10 +487,7 @@ module ocn_forward_mode
             block_ptr => block_ptr % next
          end do
       
-         write(6,*) 'calling ocn_analysis_compute from forward'
          call ocn_analysis_compute(domain, stream_manager, err) 
-
-         write(6,*) 'calling ocn_analysis_write from forward'
          call ocn_analysis_write(stream_manager, err)
 
          call mpas_timer_start('io_write', .false.)
