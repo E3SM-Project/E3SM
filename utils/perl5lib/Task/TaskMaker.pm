@@ -264,14 +264,14 @@ sub _computeValues
 	$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
-		my $taskpernuma = $taskpernode / 2;
+		my $taskpernuma = ceil($taskpernode / 2);
 		$aprun .= " -S $taskpernuma -cc numa_mode ";
 	}
 
 	# add all the calculated numbers as instance data. 
 	$self->{'totaltasks'} = $totaltasks;
 	$self->{'taskpernode'} = $taskpernode;
-    $self->{'taskpernuma'}  = $taskpernode / 2;
+    $self->{'taskpernuma'}  = ceil($taskpernode / 2);
 	$self->{'maxthreads'} = $maxthreads;
 	$self->{'minthreads'} = $minthreads;
 	$self->{'taskgeom'} = $taskgeom;
