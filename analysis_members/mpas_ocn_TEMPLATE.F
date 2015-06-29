@@ -20,14 +20,17 @@
 !>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
 !>  
 !>  2. In those two new files, replace the following text:
-!>     TEMPLATE, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically TEMPLATE uses underscores, like your_new_name
+!>     TEMPLATE, Template, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Typically TEMPLATE uses underscores (subroutine names), like your_new_name
+!>     while Template uses caps (variable names), like YourNewName.
+!>     note: do not replace 'filename_template' in Registry_ocn_your_new_name.xml
 !>  
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>  
 !>  4. In mpas_ocn_analysis_driver.F, add calls for your analysis member
-!>     by copying lines with TEMPLATE.
+!>     by copying lines with TEMPLATE and Template, and replacing those words
+!>     as described in step 2.
 !>  
 !>  5. In src/core_ocean/analysis_members/Makefile, add your
 !>     new analysis member everywhere you see
@@ -74,7 +77,7 @@ module ocn_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: am_TEMPLATETimer
+   type (timer_node), pointer :: amTemplateTimer
 
 !***********************************************************************
 
@@ -124,14 +127,14 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: am_TEMPLATEActive
+      logical, pointer :: amTemplatePkgActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'am_TEMPLATEActive', am_TEMPLATEActive)
+      call mpas_pool_get_package(packagePool, 'amTemplatePkgActive', amTemplatePkgActive)
 
       ! turn on package for this analysis member
-      am_TEMPLATEActive = .true.
+      amTemplatePkgActive = .true.
 
    end subroutine ocn_setup_packages_TEMPLATE!}}}
 
@@ -230,14 +233,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: am_TEMPLATEPool
+      type (mpas_pool_type), pointer :: amTemplatePool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: am_TEMPLATE
+      type (mpas_pool_type), pointer :: amTemplate
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -250,7 +253,7 @@ contains
 
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_TEMPLATE", .false., am_TEMPLATETimer)
+      call mpas_timer_start("compute_TEMPLATE", .false., amTemplateTimer)
 
       block => domain % blocklist
       do while (associated(block))
@@ -258,7 +261,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'am_TEMPLATE', am_TEMPLATEPool)
+         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -300,14 +303,14 @@ contains
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'am_TEMPLATE', am_TEMPLATEPool)
+         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
 
-         ! assignment of final am_TEMPLATE variables could occur here.
+         ! assignment of final amTemplate variables could occur here.
 
          block => block % next
       end do
 
-      call mpas_timer_stop("TEMPLATE", am_TEMPLATETimer)
+      call mpas_timer_stop("TEMPLATE", amTemplateTimer)
 
    end subroutine ocn_compute_TEMPLATE!}}}
 
