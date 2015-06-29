@@ -126,6 +126,7 @@ module seq_flds_mod
    use seq_drydep_mod, only : seq_drydep_init, seq_drydep_read, lnd_drydep
    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
    use shr_megan_mod,  only : shr_megan_readnl, shr_megan_mechcomps_n
+   use shr_fire_emis_mod,  only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
    use shr_carma_mod,  only : shr_carma_readnl
 
    implicit none
@@ -140,6 +141,7 @@ module seq_flds_mod
    integer, parameter, private :: CLL = 1024
    character(len=CXX) :: seq_drydep_fields   ! List of dry-deposition fields
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
+   character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
    integer            :: seq_flds_glc_nec    ! number of glc elevation classes
 
@@ -1741,6 +1743,20 @@ module seq_flds_mod
      if (shr_megan_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(megan_voc_fields))
         call seq_flds_add(x2a_fluxes, trim(megan_voc_fields))
+     endif
+
+     !-----------------------------------------------------------------------------
+     ! Read namelist for Fire Emissions
+     ! if fire emission are specified then setup fields for CLM to CAM communication 
+     ! (emissions fluxes)
+     !-----------------------------------------------------------------------------
+
+     call shr_fire_emis_readnl(nlfilename='drv_flds_in', emis_fields=fire_emis_fields)
+     if (shr_fire_emis_mechcomps_n>0) then
+        call seq_flds_add(l2x_fluxes, trim(fire_emis_fields))
+        call seq_flds_add(x2a_fluxes, trim(fire_emis_fields))
+        call seq_flds_add(l2x_states, trim(shr_fire_emis_ztop_token))
+        call seq_flds_add(x2a_states, trim(shr_fire_emis_ztop_token))
      endif
 
      !-----------------------------------------------------------------------------
