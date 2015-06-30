@@ -2,6 +2,8 @@
 ! expression parser utility -- 
 !   for parsing simple linear mathematical expressions of the form 
 !   X = a*Y + b*Z + ... 
+!
+! does this belong in share/csm_share/ ??
 !=============================================================================
 module shr_expr_parser_mod
   use shr_kind_mod,only : r8 => shr_kind_r8
