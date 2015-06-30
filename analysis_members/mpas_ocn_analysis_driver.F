@@ -338,7 +338,7 @@ contains
       logical, pointer :: config_use_AM_sfc_area_weighted_avg, config_AM_sfc_area_weighted_avg_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
-      logical, pointer :: config_use_test_compute_interval, config_test_compute_interval_compute_startup
+      logical, pointer :: config_use_test_compute_interval, config_test_compute_interval_compute_startup, config_test_compute_interval_write_on_startup 
 !      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
 
       err = 0
@@ -386,8 +386,17 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
       call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_startup', config_test_compute_interval_compute_startup)
+      call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_write_on_startup', config_test_compute_interval_write_on_startup)
       if (config_use_test_compute_interval.and.config_test_compute_interval_compute_startup) then
+         ! This line is to compute on start-up:
          call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+      if (config_use_test_compute_interval.and.config_test_compute_interval_write_on_startup) then
+         ! This line is to write on start-up:
+         call mpas_timer_start('io_write', .false.)
+         call mpas_stream_mgr_write(stream_manager, streamID='testCompIntOutput', forceWriteNow=.true., ierr=err_tmp)
+         call mpas_timer_stop('io_write')
          err = ior(err, err_tmp)
       endif
 
