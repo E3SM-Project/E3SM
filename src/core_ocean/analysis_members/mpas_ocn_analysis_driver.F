@@ -522,9 +522,8 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
       if (config_AM_global_stats_enable) then
          if (mpas_is_alarm_ringing(clock, amGlobalStatsAlarmID, ierr=err_tmp)) then
-            call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
+            call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-write(stderrUnit,'(2a)') ' ocn_compute_global_stats called' !!!!!!11tmp
          endif
       endif
 
