@@ -1,4 +1,4 @@
-	<nml_record name="TEMPLATE" mode="forward;analysis">
+	<nml_record name="AM_TEMPLATE" mode="forward;analysis">
 		<nml_option name="config_use_TEMPLATE" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member TEMPLATE is called."
 			possible_values=".true. or .false."
