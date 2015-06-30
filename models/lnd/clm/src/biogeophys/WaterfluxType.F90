@@ -94,6 +94,13 @@ module WaterfluxType
      real(r8), pointer :: irrig_rate_patch         (:)   ! current irrigation rate [mm/s]
      integer , pointer :: n_irrig_steps_left_patch (:)   ! number of time steps for which we still need to irrigate today (if 0, ignore)
 
+     ! For VSFM
+     real(r8), pointer :: mflx_infl_col_1d         (:)   ! infiltration source in top soil control volume (kg H2O /s)
+     real(r8), pointer :: mflx_dew_col_1d          (:)   ! liquid+snow dew source in top soil control volume (kg H2O /s)
+     real(r8), pointer :: mflx_et_col_1d           (:)   ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
+     real(r8), pointer :: vsfm_sat_col_1d          (:)   ! liquid saturation from VSFM [-]
+     real(r8), pointer :: vsfm_mass_col_1d         (:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
+
    contains
  
      procedure, public  :: Init
@@ -127,7 +134,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use clm_varpar     , only : nlevsno, nlevgrnd, nlevsoi
     !
     ! !ARGUMENTS:
     class(waterflux_type) :: this
@@ -216,6 +223,12 @@ contains
     allocate(this%qflx_irrig_col           (begc:endc))              ; this%qflx_irrig_col           (:)   = nan
     allocate(this%irrig_rate_patch         (begp:endp))              ; this%irrig_rate_patch         (:)   = nan
     allocate(this%n_irrig_steps_left_patch (begp:endp))              ; this%n_irrig_steps_left_patch (:)   = 0
+
+    allocate(this%mflx_infl_col_1d((endc-begc + 1)))                 ; this%mflx_infl_col_1d         (:)   = nan
+    allocate(this%mflx_dew_col_1d((endc-begc + 1)))                  ; this%mflx_dew_col_1d          (:)   = nan
+    allocate(this%mflx_et_col_1d(  (endc-begc + 1)*nlevgrnd))        ; this%mflx_et_col_1d           (:)   = nan
+    allocate(this%vsfm_sat_col_1d( (endc-begc + 1)*nlevgrnd))        ; this%vsfm_sat_col_1d          (:)   = nan
+    allocate(this%vsfm_mass_col_1d((endc-begc + 1)*nlevgrnd))        ; this%vsfm_mass_col_1d         (:)   = nan
 
   end subroutine InitAllocate
 
