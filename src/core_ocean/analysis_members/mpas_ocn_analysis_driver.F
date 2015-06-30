@@ -62,11 +62,9 @@ module ocn_analysis_driver
    !
    !--------------------------------------------------------------------
 
-   character (len=*), parameter :: test_compute_intervalAlarmID = 'test_compute_intervalAlarm'
-
-   ! To use a compute interval using config_TEMPLATE_compute_interval, copy the following.
-   ! Otherwise, compute is only called just before write, as managed by the stream.
-   !character (len=*), parameter :: TEMPLATEAlarmID = 'TEMPLATEAlarm'
+   character (len=*), parameter :: amGlobalStatsAlarmID = 'amGlobalStatsAlarm'
+   character (len=*), parameter :: amTestComputeIntervalAlarmID = 'amTestComputeIntervalAlarm'
+   !character (len=*), parameter :: amTemplateAlarmID = 'amTemplateAlarm'
 
 !***********************************************************************
 
@@ -117,18 +115,18 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_AM_global_stats_enable
       logical, pointer :: config_use_zonal_mean 
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_test_compute_interval
-!      logical, pointer :: config_use_TEMPLATE
+      logical, pointer :: config_AM_test_compute_interval_enable
+!      logical, pointer :: config_AM_TEMPLATE_enable
 
       err = 0
 
 
-      call mpas_pool_get_config(configPool, 'config_use_global_stats', config_use_global_stats)
-      if (config_use_global_stats) then
+      call mpas_pool_get_config(configPool, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+      if (config_AM_global_stats_enable) then
           call ocn_setup_packages_global_stats(configPool, packagePool, err_tmp)
           err = ior(err, err_tmp)
       endif
@@ -151,14 +149,14 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(configPool, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      if (config_use_test_compute_interval) then
+      call mpas_pool_get_config(configPool, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
          call ocn_setup_packages_test_compute_interval(configPool, packagePool, err_tmp)
          err = ior(err, err_tmp)
       endif
 
-!      call mpas_pool_get_config(configPool, 'config_use_TEMPLATE', config_use_TEMPLATE)
-!      if (config_use_TEMPLATE) then
+!      call mpas_pool_get_config(configPool, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+!      if (config_AM_TEMPLATE_enable) then
 !         call ocn_setup_packages_TEMPLATE(configPool, packagePool, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
@@ -210,31 +208,47 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_AM_global_stats_enable
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_test_compute_interval
-!      logical, pointer :: config_use_TEMPLATE
+      logical, pointer :: config_AM_test_compute_interval_enable
+!      logical, pointer :: config_AM_TEMPLATE_enable
 
       type (MPAS_Clock_type), pointer :: clock
-      character  (len=StrKIND) :: referenceTimeString
+      character  (len=StrKIND) :: referenceTimeString, outputIntervalString
       type (MPAS_Time_Type) :: referenceTime 
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
-      character (len=StrKIND), pointer :: config_test_compute_interval_compute_interval
-   ! To use a compute interval using config_TEMPLATE_compute_interval, copy the following.
+      character (len=StrKIND), pointer :: config_AM_global_stats_compute_interval
+      character (len=StrKIND), pointer :: config_AM_test_compute_interval_compute_interval
+   ! To use a compute interval using config_AM_TEMPLATE_compute_interval, copy the following.
    ! Otherwise, compute is only called just before write, as managed by the stream.
-!      character (len=StrKIND), pointer :: config_TEMPLATE_compute_interval
+!      character (len=StrKIND), pointer :: config_AM_TEMPLATE_compute_interval
 
       err = 0
 
       clock => domain % clock
 
-      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
-      if (config_use_global_stats) then
-          call ocn_init_global_stats(domain, err_tmp)
-          err = ior(err, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+      if (config_AM_global_stats_enable) then
+         call ocn_init_global_stats(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_interval',config_AM_global_stats_compute_interval)
+         if (config_AM_global_stats_compute_interval=='dt') then
+            config_AM_global_stats_compute_interval='00-00-00_00:00:01'
+         elseif (config_AM_global_stats_compute_interval=='output_interval') then
+            ! this is not working yet.  Need to set compute interval to stream output interval.
+            !call MPAS_stream_mgr_get_property(stream_manager, 'globalStatsOutput', MPAS_STREAM_PROPERTY_RECORD_INTV, outputIntervalString, err_tmp)
+            !config_AM_global_stats_compute_interval = outputIntervalString
+         endif
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_global_stats_compute_interval, ierr=err_tmp)
+
+         call MPAS_stream_mgr_get_property(stream_manager, 'globalStatsOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+         call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+         call mpas_add_clock_alarm(clock, amGlobalStatsAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+         call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
@@ -255,34 +269,46 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      if (config_use_test_compute_interval) then
+      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
          call ocn_init_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
 
-         call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_interval',config_test_compute_interval_compute_interval)
-         if (config_test_compute_interval_compute_interval=='dt') config_test_compute_interval_compute_interval='00-00-00_00:00:01'
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_test_compute_interval_compute_interval, ierr=err_tmp)
+         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_interval',config_AM_test_compute_interval_compute_interval)
+         if (config_AM_test_compute_interval_compute_interval=='dt') then
+            config_AM_test_compute_interval_compute_interval='00-00-00_00:00:01'
+         elseif (config_AM_test_compute_interval_compute_interval=='output_interval') then
+            ! this is not working yet.  Need to set compute interval to stream output interval.
+            !call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_RECORD_INTV, outputIntervalString, err_tmp)
+            !config_AM_test_compute_interval_compute_interval = outputIntervalString
+         endif
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_test_compute_interval_compute_interval, ierr=err_tmp)
+
          call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
          call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-         call mpas_add_clock_alarm(clock, test_compute_intervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-         call mpas_reset_clock_alarm(clock, test_compute_intervalAlarmID, ierr=err_tmp)
+         call mpas_add_clock_alarm(clock, amTestComputeIntervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+         call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
       endif
 
-      ! call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-      ! if (config_use_TEMPLATE) then
+      ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+      ! if (config_AM_TEMPLATE_enable) then
       !    call ocn_init_TEMPLATE(domain, err_tmp)
       !    err = ior(err, err_tmp)
 
-      !    ! To use a compute interval using config_TEMPLATE_compute_interval, uncomment the following.
-      !    ! Otherwise, compute is only called just before write, as managed by the stream.
-      !    call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_interval',config_TEMPLATE_compute_interval)
-      !    if (config_TEMPLATE_compute_interval=='dt') config_TEMPLATE_compute_interval='00-00-00_00:00:01'
-      !    call mpas_set_timeInterval(alarmTimeStep, timeString=config_TEMPLATE_compute_interval, ierr=err_tmp)
+         ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_interval',config_AM_TEMPLATE_compute_interval)
+         ! if (config_AM_TEMPLATE_compute_interval=='dt') then
+         !    config_AM_TEMPLATE_compute_interval='00-00-00_00:00:01'
+         ! elseif (config_AM_TEMPLATE_compute_interval=='output_interval') then
+         !    ! this is not working yet.  Need to set compute interval to stream output interval.
+         !    !call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_RECORD_INTV, outputIntervalString, err_tmp)
+         !    !config_AM_TEMPLATE_compute_interval = outputIntervalString
+         ! endif
+         ! call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_TEMPLATE_compute_interval, ierr=err_tmp)
+
       !    call MPAS_stream_mgr_get_property(stream_manager, 'TemplateOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
       !    call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-      !    call mpas_add_clock_alarm(clock, TEMPLATEAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-      !    call mpas_reset_clock_alarm(clock, TEMPLATEAlarmID, ierr=err_tmp)
+      !    call mpas_add_clock_alarm(clock, amTemplateAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+      !    call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
 
       ! endif
 
@@ -334,25 +360,35 @@ contains
 
       integer :: timeLevel, err_tmp
 
-      logical, pointer :: config_use_global_stats, config_global_stats_compute_startup
+      logical, pointer :: config_AM_global_stats_enable, config_AM_global_stats_compute_on_startup, config_AM_global_stats_write_on_startup 
       logical, pointer :: config_use_AM_sfc_area_weighted_avg, config_AM_sfc_area_weighted_avg_compute_startup
       logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
       logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
-      logical, pointer :: config_use_test_compute_interval, config_test_compute_interval_compute_startup, config_test_compute_interval_write_on_startup 
-!      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
+      logical, pointer :: config_AM_test_compute_interval_enable, config_AM_test_compute_interval_compute_on_startup, config_AM_test_compute_interval_write_on_startup 
+!      logical, pointer :: config_AM_TEMPLATE_enable, config_AM_TEMPLATE_compute_on_startup, config_AM_TEMPLATE_write_on_startup
 
       err = 0
 
       timeLevel=1
-      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
-      call mpas_pool_get_config(domain % configs, 'config_global_stats_compute_startup', config_global_stats_compute_startup)
-      if (config_use_global_stats.and.config_global_stats_compute_startup) then
-         call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif 
+      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+      if (config_AM_global_stats_enable) then
+         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_on_startup', config_AM_global_stats_compute_on_startup)
+         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_write_on_startup', config_AM_global_stats_write_on_startup)
+         if (config_AM_global_stats_compute_on_startup) then
+            call ocn_compute_global_stats(domain, timeLevel, err_tmp)
+            err = ior(err, err_tmp)
+            if (config_AM_global_stats_write_on_startup) then
+               call mpas_timer_start('io_write', .false.)
+               call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
+               call mpas_timer_stop('io_write')
+               err = ior(err, err_tmp)
+            endif
+         else
+            if (config_AM_global_stats_write_on_startup) then
+               write(stderrUnit,'(A)') "Warning: write_on_startup called without compute_on_startup, so no output written, for analysis member: global_stats"
+            endif
+         endif
+      endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
       call mpas_pool_get_config(domain % configs, 'config_AM_sfc_area_weighted_avg_compute_startup', config_AM_sfc_area_weighted_avg_compute_startup)
@@ -384,35 +420,45 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_compute_startup', config_test_compute_interval_compute_startup)
-      call mpas_pool_get_config(domain % configs, 'config_test_compute_interval_write_on_startup', config_test_compute_interval_write_on_startup)
-      if (config_use_test_compute_interval.and.config_test_compute_interval_compute_startup) then
-         ! This line is to compute on start-up:
-         call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
-         err = ior(err, err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
+         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_on_startup', config_AM_test_compute_interval_compute_on_startup)
+         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_write_on_startup', config_AM_test_compute_interval_write_on_startup)
+         if (config_AM_test_compute_interval_compute_on_startup) then
+            call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
+            err = ior(err, err_tmp)
+            if (config_AM_test_compute_interval_write_on_startup) then
+               call mpas_timer_start('io_write', .false.)
+               call mpas_stream_mgr_write(stream_manager, streamID='testCompIntOutput', forceWriteNow=.true., ierr=err_tmp)
+               call mpas_timer_stop('io_write')
+               err = ior(err, err_tmp)
+            endif
+         else
+            if (config_AM_test_compute_interval_write_on_startup) then
+               write(stderrUnit,'(A)') "Warning: write_on_startup called without compute_on_startup, so no output written, for analysis member: test_compute_interval"
+            endif
+         endif
       endif
-      if (config_use_test_compute_interval.and.config_test_compute_interval_write_on_startup) then
-         ! This line is to write on start-up:
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(stream_manager, streamID='testCompIntOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif
 
-!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-!      call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_startup', config_TEMPLATE_compute_startup)
-!      if (config_use_TEMPLATE.and.config_TEMPLATE_compute_startup) then
-
-!         ! This line is to compute on start-up:
-!         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-
-!         ! This line is to write on start-up:
-!         call mpas_timer_start('io_write', .false.)
-!         call mpas_stream_mgr_write(stream_manager, streamID='TemplateOutput', forceWriteNow=.true., ierr=err_tmp)
-!         call mpas_timer_stop('io_write')
-!         err = ior(err, err_tmp)
-!      endif
+      ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+      ! if (config_AM_TEMPLATE_enable) then
+      !    call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_on_startup', config_AM_TEMPLATE_compute_on_startup)
+      !    call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_write_on_startup', config_AM_TEMPLATE_write_on_startup)
+      !    if (config_AM_TEMPLATE_compute_on_startup) then
+      !       call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+      !       err = ior(err, err_tmp)
+      !       if (config_AM_TEMPLATE_write_on_startup) then
+      !          call mpas_timer_start('io_write', .false.)
+      !          call mpas_stream_mgr_write(stream_manager, streamID='TemplateOutput', forceWriteNow=.true., ierr=err_tmp)
+      !          call mpas_timer_stop('io_write')
+      !          err = ior(err, err_tmp)
+      !       endif
+      !    else
+      !       if (config_AM_TEMPLATE_write_on_startup) then
+      !          write(stderrUnit,'(A)') "Warning: write_on_startup called without compute_on_startup, so no output written, for analysis member: TEMPLATE"
+      !       endif
+      !    endif
+      ! endif
 
    end subroutine ocn_analysis_compute_startup!}}}
 
@@ -461,24 +507,25 @@ contains
       !-----------------------------------------------------------------
 
       integer :: timeLevel, err_tmp
-      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_AM_global_stats_enable
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_test_compute_interval
-!      logical, pointer :: config_use_TEMPLATE
+      logical, pointer :: config_AM_test_compute_interval_enable
+!      logical, pointer :: config_AM_TEMPLATE_enable
       type (MPAS_Clock_type), pointer :: clock
 
       err = 0
       clock => domain % clock
 
       timeLevel=1
-      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
-      if (config_use_global_stats) then
-         ! Compute analysis member just before output:
-         if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+      if (config_AM_global_stats_enable) then
+         if (mpas_is_alarm_ringing(clock, amGlobalStatsAlarmID, ierr=err_tmp)) then
+            call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-         endif 
+write(stderrUnit,'(2a)') ' ocn_compute_global_stats called' !!!!!!11tmp
+         endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
@@ -505,39 +552,20 @@ contains
          endif
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      if (config_use_test_compute_interval) then
-         ! Compute analysis member when called for compute:
-         if (mpas_is_alarm_ringing(clock, test_compute_intervalAlarmID, ierr=err_tmp)) then
-            call mpas_reset_clock_alarm(clock, test_compute_intervalAlarmID, ierr=err_tmp)
+      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
+         if (mpas_is_alarm_ringing(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)) then
+            call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
             call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
          endif
-
-         ! Compute analysis member just before output:
-         !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='testCompIntOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-         !   call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
-         !endif
-
       endif
 
-      ! call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-      ! if (config_use_TEMPLATE) then
-           ! When adding a new analysis member, you may choose when to compute: 
-           ! 1. using config_TEMPLATE_compute_interval
-           ! 2. just before stream output
-           ! or both.  Uncomment these sections accordingly.
-
-      !    ! Compute analysis member when called for compute, using config_TEMPLATE_compute_interval
-      !    if (mpas_is_alarm_ringing(clock, TEMPLATEAlarmID, ierr=err_tmp)) then
-      !       call mpas_reset_clock_alarm(clock, TEMPLATEAlarmID, ierr=err_tmp)
+      ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+      ! if (config_AM_TEMPLATE_enable) then
+      !    if (mpas_is_alarm_ringing(clock, amTemplateAlarmID, ierr=err_tmp)) then
+      !       call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
       !       call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
       !    endif
-
-      !    ! Compute analysis member just before stream output:
-      !    !if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TemplateOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-      !    !   call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-      !    !endif
-
       ! endif
 
    end subroutine ocn_analysis_compute!}}}
@@ -586,17 +614,17 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_AM_global_stats_enable
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_test_compute_interval
-!      logical, pointer :: config_use_TEMPLATE
+      logical, pointer :: config_AM_test_compute_interval_enable
+!      logical, pointer :: config_AM_TEMPLATE_enable
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
-      if (config_use_global_stats) then
+      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+      if (config_AM_global_stats_enable) then
           call ocn_restart_global_stats(domain, err_tmp)
           err = ior(err, err_tmp)
       endif
@@ -619,14 +647,14 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      if (config_use_test_compute_interval) then
+      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
          call ocn_restart_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
-!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-!      if (config_use_TEMPLATE) then
+!      call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+!      if (config_AM_TEMPLATE_enable) then
 !         call ocn_restart_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
@@ -680,17 +708,17 @@ contains
 
       integer :: err_tmp
 
-      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_AM_global_stats_enable
       logical, pointer :: config_use_AM_sfc_area_weighted_avg 
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_test_compute_interval
-!      logical, pointer :: config_use_TEMPLATE
+      logical, pointer :: config_AM_test_compute_interval_enable
+!      logical, pointer :: config_AM_TEMPLATE_enable
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_global_stats', config_use_global_stats)
-      if (config_use_global_stats) then
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+      if (config_AM_global_stats_enable) then
           call mpas_timer_start('io_write', .false.)
           call mpas_stream_mgr_write(stream_manager, streamID='globalStatsOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
@@ -733,8 +761,8 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      if (config_use_test_compute_interval) then
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
           call mpas_timer_start('io_write', .false.)
           call mpas_stream_mgr_write(stream_manager, streamID='testCompIntOutput', ierr=err_tmp)
           call mpas_timer_stop('io_write')
@@ -744,8 +772,8 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      ! call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-      ! if (config_use_TEMPLATE) then
+      ! call mpas_pool_get_config(ocnConfigs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+      ! if (config_AM_TEMPLATE_enable) then
       !     call mpas_timer_start('io_write', .false.)
       !     call mpas_stream_mgr_write(stream_manager, streamID='TemplateOutput', ierr=err_tmp)
       !     call mpas_timer_stop('io_write')
@@ -801,17 +829,17 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_use_global_stats
+      logical, pointer :: config_AM_global_stats_enable
       logical, pointer :: config_use_AM_sfc_area_weighted_avg
       logical, pointer :: config_use_zonal_mean
       logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_test_compute_interval
-!      logical, pointer :: config_use_TEMPLATE
+      logical, pointer :: config_AM_test_compute_interval_enable
+!      logical, pointer :: config_AM_TEMPLATE_enable
 
       err = 0
 
-     call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
-     if (config_use_global_stats) then
+     call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
+     if (config_AM_global_stats_enable) then
         call ocn_finalize_global_stats(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
@@ -834,14 +862,14 @@ contains
          err = ior(err, err_tmp)
       endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_test_compute_interval', config_use_test_compute_interval)
-      if (config_use_test_compute_interval) then
+      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
+      if (config_AM_test_compute_interval_enable) then
          call ocn_finalize_test_compute_interval(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
-!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
-!      if (config_use_TEMPLATE) then
+!      call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+!      if (config_AM_TEMPLATE_enable) then
 !         call ocn_finalize_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
