@@ -293,14 +293,12 @@ contains
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
-          write(*,*) ' ocn_modelio.nml existed.... setting io?'
           call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),stdout_shr)
        endif
     end if
 #else
     inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
     if(exists) then
-       write(*,*) ' ocn_modelio.nml existed.... setting io?'
        call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),stdout_shr)
     endif
 #endif
@@ -310,7 +308,6 @@ contains
     call shr_file_setLogUnit (stdout_shr)
 
     domain_ptr => domain
-    write(*,*) ' stdout unit is: ', stdout_shr
     call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
     ! Setup function pointers for MPAS-O core and domain types
