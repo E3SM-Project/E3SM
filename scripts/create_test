@@ -10,6 +10,7 @@ use Cwd qw( getcwd abs_path chdir);
 use English;
 use Getopt::Long;
 use IO::File;
+use IO::Dir;
 use IO::Handle;
 use File::Basename;
 use File::Copy;
@@ -43,6 +44,7 @@ my $ProgDir = $1;
 my $cwd = getcwd;
 my $cfgdir;
 my $scriptsroot;
+my $cimeroot;
 my $testlistsubdirxml;
 my $testlid; 
 my $suitemode = 0;
@@ -51,6 +53,8 @@ my %progconfig;
 my %opts;
 my $commandline;
 my $project;
+my %xml_testlist_files;
+my %xml_testmod_dirs;
 
 sub usage()
 {
@@ -70,10 +74,11 @@ SYNOPSIS
     Options:
       [-autosubmit        on|off]
       [-baselineroot      path to baslineroot]
-      [-cesmroot          alternate_cesmroot]
+      [-cimeroot          alternate_cimeroot]
       [-clean             on|off]
       [-compiler          compiler]
       [-compset_file      specified_compset_file]
+      [-component         target component testlist (optional)]
       [-debug             on|off]
       [-dryrun            Print the commands that would be executed, but do not 
                           execute them.]
@@ -81,10 +86,8 @@ SYNOPSIS
       [-input_list        list_of_tests (old format for backwards compatibility)
                           ]
       [-mach              machine]
-      [-mach_dir          alternate_Machines_dir]
-      [-model_gen_comp    descriptor of model component history files to compare (i.e. clm2, cism etc.)
-                          (only valid when compare or generate are used)]
-      [-mpilib           name Specify a mpi library for the target machine (optional)]
+      [-mach_dir          alternate_machines_dir]
+      [-mpilib            name Specify a mpi library for the target machine (optional)]
       [-nobatch           no_batch_submission_for_tests]
       [-nobuild           no_test_compilation]
       [-pes_file          specified_pes_file]
@@ -94,10 +97,9 @@ SYNOPSIS
       [-testroot          root_directory_for_testsuite]
       [-testid            unique_identifier_for_tests]
       [-testname          name_of_single_test]
-      [-user_testmods_dir user_testmods_directory]
       [-verbose           verbose]
       [-xml_list          list_of_tests (new xml format), default is 
-                          $scriptsroot/ccsm_utils/Testlistxml/testlist.xml]
+                          $scriptsroot/Testing/Testlistxml/testlist.xml]
       [-xml_mach          target machine for xml list of tests]
       [-xml_compiler      target compiler for xml list of tests]
       [-xml_category      one of the valid test categories (such as prealpha,prebeta,aux_scripts or prerelease)]
@@ -149,7 +151,7 @@ OPTIONS:
                             testing.  If this argument is not supplied, the 
                             default baselineroot will be used from scripts. 
 
-      -cesmroot <dir>       manually specify the root directory of your CESM 
+      -cimeroot <dir>       manually specify the root directory of your CESM 
                             sandbox. 
       
       -clean [on|off]       If tests should be cleaned or not after tests are 
@@ -174,7 +176,7 @@ OPTIONS:
       -input_list <name>   Specify a list of tests to be run.  This is to be 
                            used with the legacy text-based test lists.  This 
                            list can be in the current working directory, in 
-                           \$scriptsroot/ccsm_utils/Testlists, or a full path 
+                           \$scriptsroot/Testing/Testlistxml, or a full path 
                            can be specified.  
 
       -mach  <name>        Specify the name of the machine.  If the machine 
@@ -182,33 +184,23 @@ OPTIONS:
                            this means that the machine and compiler have been 
                            specified
       
-      -model_gen_comp <type>   Descriptor of model component history files to compare 
-                               (i.e. clm2, cism etc.). If you would like the compare 
-                               or generate option to also compare model component 
-                               history files as well as the coupler history files. Requires
-                               that you also use the generate and/or compare option.
-
-                               NOTE: If the tests you run do NOT include the given type
-                                     of component, these will always fail.
-
       -nlcompareonly       Create a suite of Smoke Build Namelist tests, or a 
                            single test.  This is used for internal testing to 
                            compare namelists against a set of baseline namelists
                             generated using a previous tag.  
 
       -xml_list <name>     Specify an xml list of tests to be run. The default 
-                           test list is \$scriptsroot/ccsm_utils/Testlistxml/
+                           test list is \$scriptsroot/Testing/Testlistxml/
                            testlist.xml If desired, an alternate xml-based test
                            list may be specified. 
                            
-
       -xml_mach <name>     Specify an machine name to parse the xml_list with
  
       -xml_compiler <name> Specify a compiler name to parse the xml_list with
 
       -xml_category <name> Specify either prealpha, prebeta, aux_scripts, prerelease, etc. 
 
-      -mach_dir <dir>      Specify an alternate Machines directory.  
+      -mach_dir <dir>      Specify an alternate machines directory.  
 
       -nobatch  [on|off]   Run the tests interactively instead of to the batch 
                            queuing system. 
@@ -247,7 +239,7 @@ OPTIONS:
                                  (S, M, L, XL, 1, etc.)
                            _N* = make a multiple instance test where * is the
                                  instance count. 
-                           _R* = regional/single-point mode (pts mode) where *
+                           _R* = regional\/single-point mode (pts mode) where *
                                  is the pt setting (01, 02, etc).
                            _IOP* = PnetCDF test IO test where * is A(atm), 
                                  C(cpl), G(glc), I(ice), L(clm), O(ocn), or
@@ -261,13 +253,6 @@ OPTIONS:
                            SMS_IOP.ne30_f19_g16_rx1.A.yellowstone_intel
                            SMS.1x1_mexicocityMEX.I1PT.yellowstone_intel
                            ERI_D.1x1_camdenNJ.ICLM45CNTEST.yellowstone_intel
-
-      -user_testmods_dir <dir> Specify a directory containing user namelists and 
-                           possibly the file xmlchange_cmds, 
-                           intended for use with single tests.  For use with 
-                           test suites, see 
-                           \$scriptsroot/ccsm_utils/Testlistxml/testlist.xml 
-                           for examples.   
 
       This script generates single tests or test suites.  It is the result of 
       merging the functionality of the old 'create_test' and 'create_test_suite'
@@ -354,12 +339,14 @@ sub initialize()
       die "** Cannot find scriptsroot directory \"$scriptsroot\" **";
   }
 
-  $testlistsubdirxml = "$scriptsroot/ccsm_utils/Testlistxml/";
+  $testlistsubdirxml = "$scriptsroot/Testing/Testlistxml/";
   $testlid = `date +%y%m%d-%H%M%S`;
   chomp $testlid;
-  my @dirs = ($cfgdir, "$cfgdir/ccsm_utils/Case.template", "$cfgdir/ccsm_utils/Tools", "$cfgdir/ccsm_utils/Tools/perl5lib");
+
+  $cimeroot = abs_path("$cfgdir/../");
+  my @dirs = ("$cfgdir", "$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib");
+
   unshift @INC, @dirs;
-  require XML::Lite;
   require ConfigCase;
   require SetupTools;
   $commandline = "create_test @ARGV";  
@@ -376,34 +363,33 @@ sub initialize()
   %opts = (
            autosubmit           => 'on',
            baselineroot         => undef,
-           cesmroot             => abs_path( "$scriptsroot/.." ),
+           cimeroot             => "$cimeroot",
            clean                => "off",
            compiler             => undef,
            compset_file         => undef,
-           model_gen_comp       => undef,
+           component            => undef,
            debug                => undef,
            dryrun               => undef,
            guessmach            => undef,
            input_list           => undef,
-           xml_list             => abs_path( "$scriptsroot/ccsm_utils/Testlistxml/testlist.xml"),
+           xml_list             => undef,
            xml_mach             => undef,
            xml_compiler         => undef,
            xml_category         => undef,
-           mach_dir             => abs_path( "$scriptsroot/ccsm_utils/Machines"),
+           mach_dir             => "$cimeroot/machines",
            mach                 => undef,
-           mpilib                => undef,
+           mpilib               => undef,
            nlcompareonly        => undef,
            nobatch              => 'off',
            nobuild              => 'off',
            pes_file             => undef,
            project              => undef,
            reruntests           => 'off',
-           testid               => $testlid,
+           testid               => "$testlid",
            testname             => undef,
-           testroot             => $cwd,
+           testroot             => "$cwd",
            scratchroot          => undef,
            sharedlibroot        => undef,
-           user_testmods_dir    => undef,
            verbose              => 0,
            );
 }
@@ -415,9 +401,9 @@ sub options
                "autosubmit=s"        => \$opts{'autosubmit'},
                "baselineroot=s"      => \$opts{'baselineroot'},
                "clean=s"             => \$opts{'clean'},
-               "cesmroot=s"          => \$opts{'cesmroot'},
+               "cimeroot=s"          => \$opts{'cimeroot'},
                "compare=s"           => \$opts{'compare'},
-               "model_gen_comp=s"    => \$opts{'model_gen_comp'},
+               "component=s"         => \$opts{'component'},
                "compiler=s"          => \$opts{'compiler'},
                "compset_file=s"      => \$opts{'compset_file'},
                "debug"               => \$opts{'debug'},  
@@ -426,12 +412,13 @@ sub options
                "h|help"              => \$opts{'help'},  
                "input_list=s"        => \$opts{'input_list'},
                "xml_list=s"          => \$opts{'xml_list'},
+	       "xml_modsdir=s"       => \$opts{'xml_modsdir'},
                "xml_mach=s"          => \$opts{'xml_mach'},
                "xml_compiler=s"      => \$opts{'xml_compiler'},
                "xml_category=s"      => \$opts{'xml_category'},
                "mach_dir=s"          => \$opts{'mach_dir'},
                "mach=s"              => \$opts{'mach'},
-               "mpilib=s"             => \$opts{'mpilib'},
+               "mpilib=s"            => \$opts{'mpilib'},
                "nlcompareonly"       => \$opts{'nlcompareonly'},
                "nobatch=s"           => \$opts{'nobatch'},  
                "nobuild=s"           => \$opts{'nobuild'}, 
@@ -442,10 +429,86 @@ sub options
                "testid=s"            => \$opts{'testid'},
                "testname=s"          => \$opts{'testname'},
                "testroot=s"          => \$opts{'testroot'},
-               "user_testmods_dir=s" => \$opts{'user_testmods_dir'},
                "verbose"             => \$opts{'verbose'},  
               ) or usage();
-  usage() if $opts{'help'};
+    usage() if $opts{'help'};
+
+    # Set the xml_list option to either the $xml_testmod_file if there is no $xml_list specified
+    # as an argument
+
+    if ( $opts{'xml_list'} && $opts{'xml_modsdir'}) {
+
+	# must specify both in this case
+	%xml_testlist_files = (
+	    user => abs_path($opts{'xml_list'})
+	    );
+	%xml_testmod_dirs = (
+	    user => abs_path($opts{'xml_modsdir'})
+	    );
+
+    } else {
+
+	%xml_testlist_files  = (
+	    drv		=> "$cimeroot/driver_cpl/cimetest/testlist_drv.xml",
+	    );
+	
+	%xml_testmod_dirs  = (
+	    drv		=> "$cimeroot/driver_cpl/cimetest/testmods_dirs/",
+	    );
+
+	if (-d "$cimeroot/../components") {
+	    my $d = IO::Dir->new("$cimeroot/../components");
+	    my @dirs = $d->read();
+	    $d->close();
+	    foreach my $comp ( @dirs ) {
+		my $dir = "$cimeroot/../components/$comp/cimetest";
+		if ( -d "$dir" ) {
+		    if ( -f "$dir/testlist_$comp.xml" ) {
+			$xml_testlist_files{$comp} = "$dir/testlist_$comp.xml";
+		    }
+		    if ( -d "$dir/testmods_dirs" ) {
+			$xml_testmod_dirs{$comp}   = "$dir/testmods_dirs";
+		    }
+		}
+	    }
+	}
+
+        # Always include the allactive testlist, which may not be able to be run.
+        my $comp = "allactive";
+        my $dir = "$scriptsroot/Testing/Testlistxml";
+        $xml_testlist_files{$comp} = "$dir/testlist_$comp.xml";
+        $xml_testmod_dirs{$comp}   = "$dir/testmods_dirs/";
+
+	my $component = $opts{'component'};
+	if ($component) {
+            my $found = 0;
+            my @comps = sort( keys(%xml_testlist_files) );
+            foreach my $comp ( @comps ) {
+               if ( $component eq $comp ) {
+                  $found = 1;
+               }
+            }
+	    if ( ! $found ) {
+		die "ERROR: component argument must match one of [@comps]\n";   
+	    }
+	    # now reset the xml_testlist_files and xml_testmod_dirs hash 
+	    my $tempfile = $xml_testlist_files{$component};
+	    my $tempdir  = $xml_testmod_dirs{$component};
+	    %xml_testlist_files = ($component => $tempfile);
+	    %xml_testmod_dirs   = ($component => $tempdir);
+	}	    
+    }    
+
+    # check if target xml file(s) exist
+    foreach my $key (keys %xml_testlist_files) {
+	my $file = $xml_testlist_files{$key};
+	if( ! -e "$file" ) {
+	  warn "The specified xml test file $file was not found\n";
+	} else {
+          $xml_testlist_files{$key} = abs_path( $file );
+        }
+    }
+
 }
 
 # Options checking not specific to either a single test or test suite. 
@@ -497,7 +560,11 @@ sub checkOptions
       print $errmsg;
       exit(1);
       }
-      &Debug("opts xml_list: $opts{'xml_list'}");
+
+      if ( $opts{'xml_list'} && $opts{'xml_modsdir'}) {
+	  &Debug("opts xml_list: $xml_testlist_files{'user'}"); 
+	  &Debug("opts xml_list: $xml_testmod_dirs{'user'}"); 
+      }
       &Debug("opts xml_mach: $opts{'xml_mach'}");
       &Debug("opts xml_compiler: $opts{'xml_compiler'}");
       &Debug("opts xml_category: $opts{'xml_category'}");
@@ -505,16 +572,9 @@ sub checkOptions
       $xmlmode = 1;
   }
 
-  # if an xml_list is defined on the command line and does not exist, exit. 
-  $opts{'xml_list'} = abs_path($opts{'xml_list'});
-  if(defined $opts{'xml_list'} && ! -e $opts{'xml_list'})
-  {
-	die "Sorry, could not find the specified xml test list: $opts{'xml_list'}";
-  }
-
   # If both input_list and testname are given as options, 
   # exit with usage. 
-  if( ! defined $opts{'input_list'} && ! defined $opts{'testname'} && ! defined $opts{'xml_list'})
+  if( defined $opts{'input_list'} && defined $opts{'testname'} )
   {
     &usage();
   }
@@ -566,8 +626,8 @@ sub checkOptions
   {
     if(! -e $opts{'mach_dir'})
     {
-      print "** The Machines directory $opts{'mach_dir'} doesn't exist.\n";
-      print "** Please specify a valid Machines directory. \n";
+      print "** The machines directory $opts{'mach_dir'} doesn't exist.\n";
+      print "** Please specify a valid machines directory. \n";
       exit(1);
     }
   }
@@ -584,20 +644,41 @@ sub checkOptions
         $opts{'compiler'} = $2;
     }
   }
-  elsif(defined $opts{'input_list'} && $opts{'input_list'} =~ /([^\.]+)\./ )
+  # This is a hack to get the machine name out of the text test list 
+  elsif(defined $opts{'input_list'} )
   {
-      $opts{'guessmach'} = $1;
+	  my @testlist = ExpandTestList($opts{'input_list'});
+	  my $firsttest = $testlist[0];
+	  my $testhash = ParseTestName($firsttest);
+	  Debug("first test: ");
+	  Debug( eval { Dumper $testhash });
+	  my $machine = $testhash->{'mach'};
+	  $opts{'guessmach'} = $machine;
+	  Debug("opts{'guessmach'} = $opts{'guessmach'}");
   }
 
 # Read options from config_machines.xml
     my $machine = (defined $opts{mach}) ? $opts{mach} : $opts{xml_mach};
 
-    # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
-    # $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
-    $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine);
+    # If we're running namelist comparison tests, we want to set the machine to Yellowstone, 
+    # otherwise use the supplied machine value. 
+    if( defined $opts{'nlcompareonly'})
+	{
+        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone", 0);
+	}
+	else
+	{
+        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
+	}
 
     if(!defined $opts{'baselineroot'}) {
-        $opts{'baselineroot'} = SetupTools::expand_env_var($cfg_ref->get('CCSM_BASELINE'), $cfg_ref);
+	# TODO (mvertens, 2015-01-31) - check if the following change will be a problem
+	# the issue is that to cann expand_xml_var need to be in $caseroot - but
+	# do not know caseroot yet since are in $scriptsroot - so the only assumption is that
+	# CCSM_BASELINE is fully resolved at this point
+
+       #$opts{'baselineroot'} = SetupTools::expand_xml_var($cfg_ref->get('CCSM_BASELINE'), $cfg_ref);
+        $opts{'baselineroot'} = $cfg_ref->get('CCSM_BASELINE');
     }
     if(! defined $opts{'scratchroot'})
     {
@@ -633,17 +714,14 @@ sub checkOptions
   }
 
   # verify that required directories exist. 
-  foreach my $dir ( qw / cesmroot baselineroot / )
-  {
-    if( defined($opts{$dir}))
-    {
-      if(! -d $opts{$dir})
-      {
-        die "** Directory $dir does NOT exist ($opts{$dir})\n";
-      }
+    die "** Directory cimeroot does NOT exist ($opts{cimeroot})\n"  if(! -d $opts{cimeroot});    
+    if(! -d $opts{baselineroot}){
+	if(! defined $opts{'compare'} && ! defined $opts{'generate'}){
+	    warn "WARNING: Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}else{
+	    die "** Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}
     }
-  }
-
   # The specifed compare directory should exist under the specified 
   # $BASELINEROOT/$compare. Die if it does not. 
   if(defined $opts{'baselineroot'} && defined $opts{'compare'})
@@ -653,28 +731,6 @@ sub checkOptions
     {
       die "** The baseline comparison dir $baselinecompdir doesn't exist, aborting";
     }
-  }
-
-  # likewise the model_gen_comp option needs either generate or compare to be set as well
-  if( defined $opts{'model_gen_comp'} ) {
-     if( ! defined $opts{'compare'} && ! defined $opts{'generate'})
-     {
-       print "$ProgName: to use the 'model_gen_comp' option, either the -generate or -compare options must be set\n";
-       exit(1);
-     }
-     # Check for valid values of model_gen_comp
-     my $valid = 0;
-     my @valid_components = ( "clm2", "cism" );
-     foreach my $valid_comp ( @valid_components ) {
-        if( $opts{'model_gen_comp'} eq $valid_comp ) {
-           $valid = 1;
-        }
-     }
-     if( ! $valid ) {
-         print "$ProgName: the 'model_gen_comp' option currently only works with the following components: @valid_components\n";
-         exit(1);
-     }
-
   }
 }
 
@@ -722,18 +778,6 @@ sub checkSingleTestOptions
         $opts{'compset_file'} = abs_path($opts{'compset_file'});
       }
     }
-    # If user_testmods_dir is defined, we need to tack on 
-    if(defined $opts{'user_testmods_dir'})
-    {
-	my $testmods_path = $opts{'user_testmods_dir'};
-	Debug("testmods path: $testmods_path");
-	my $defaultmodspath = "ccsm_utils/Testlistxml/testmods_dirs/";
-	$testmods_path =~ s/$defaultmodspath//g;
-	$testmods_path = $1 if ($testmods_path =~ /(.*)\/$/);
-	$testmods_path =~ s/\//-/g;
-	Debug("testmods path: $testmods_path");
-	$opts{'testname'} .= ".$testmods_path";
-    }
 		
 }
 
@@ -758,75 +802,68 @@ sub ExpandXmlList
 
   my @actualtests;
 
-  my $xml_comp = XML::Lite->new( $testlistfile );
-  my $root = $xml_comp->root_element();
-  my $name = $root->get_name();
-  $name eq "testlist" or die
-      "file $testlistfile is not an xml testlist file\n";
+  my $parser = XML::LibXML->new( no_blanks => 1);
+  my $file = $testlistfile;
+  my $xml = $parser->parse_file($file);
 
+  my @compset_elems = $xml->findnodes(".//compset");
+  foreach my $compset_elem (@compset_elems) {
+      my $compset_val = $compset_elem->getAttribute('name');
 
-  my @compset_elems = $xml_comp->elements_by_name( "compset" );
-  while ( my $compset_elem = shift @compset_elems ) {
-      my $compset_name = $compset_elem->get_name();
-      my %compset_attr = $compset_elem->get_attributes();
-      my $compset_val  = $compset_attr{'name'};
+      my @grid_elems = $compset_elem->childNodes();
+      foreach my $grid_elem (@grid_elems) {
+	  my $grid_val  = $grid_elem->getAttribute('name');
 
-      my @grid_elems = $compset_elem->get_children();
-      while ( my $grid_elem = shift @grid_elems ) {
-	      my $grid_name = $grid_elem->get_name();
-	      my %grid_attr = $grid_elem->get_attributes();
-	      my $grid_val  = $grid_attr{'name'};
+	  my @test_elems = $grid_elem->childNodes();
+	  foreach my $test_elem (@test_elems) {
+	      my $test_val  = $test_elem->getAttribute('name');
+	      if ($opts{'nlcompareonly'}) {
+		  # Replace the test type with SBN
+		  $test_val = "SBN";
+		  my $optidx = index( $test_val, "_" );
+		  if ( $optidx >= 0 ) {
+		      $test_val .= substr( $test_val, $optidx );
+		  }
+	      }
 
-	  my @test_elems = $grid_elem->get_children();
-	  while ( my $test_elem = shift @test_elems ) {
-	      my $test_name = $test_elem->get_name();
-	      my %test_attr = $test_elem->get_attributes();
+	      my @mach_elems = $test_elem->childNodes();
+	      foreach my $mach_elem (@mach_elems) {
+		  my $machine_val  = $mach_elem->textContent();
+		  my $testtype_val = $mach_elem->getAttribute('testtype');
+		  my $compiler_val = $mach_elem->getAttribute('compiler');
+		  my $testmods_val = $mach_elem->getAttribute('testmods');
+		  $testmods_val =~ s/\//-/g if(defined $testmods_val);
+		  my $testname = "$test_val" . ".$grid_val" . ".$compset_val." ;
 
-	      my $test_val = $test_attr{'name'};
-
-	      my @mach_elems = $test_elem->get_children();
-	      while ( my $mach_elem = shift @mach_elems ) {
-		  my $mach_name = $mach_elem->get_name();
-		  if ($mach_name eq 'machine') 
+		  if ($testcategory eq "all" or $testtype_val =~ /^${testcategory}$/) 
 		  {
-		      my %mach_attr = $mach_elem->get_attributes();
-		      my $testtype_val = $mach_attr{'testtype'};
-		      my $compiler_val = $mach_attr{'compiler'};
-		      my $testmods_val = $mach_attr{'testmods'};
-		      $testmods_val =~ s/\//-/g if(defined $testmods_val);
-
-		      my $machine_val  = $mach_elem->get_text();
-		      my $testname = "$test_val" . ".$grid_val" . ".$compset_val." ;
-		      if ($testcategory eq "all" or $testtype_val =~ /^${testcategory}$/) 
+		      if ($testmach eq "all" or $machine_val eq $testmach )
 		      {
-			  if ($testmach eq "all" or $machine_val eq $testmach )
-			  {
-			      if($testmach eq "all"){
-				  if($opts{'mach'}){
-				      $testname .= $opts{'mach'};
-				  }else{
-				      $testname .="yellowstone";
-				  }
+			  if($testmach eq "all"){
+			      if ($opts{'mach'}){
+				  $testname .= $opts{'mach'};
 			      }else{
-				  $testname .= $machine_val;
+				  $testname .= "yellowstone";
 			      }
-			      if($testcompiler eq "all" or $compiler_val =~ /^${testcompiler}$/)
-			      {
-				  if($testcompiler eq "all"){
-				      if($opts{'compiler'}){
-					  $testname .="_".$opts{'compiler'};
-				      }else{
-					  $testname .="_intel";
-				      }
+			  }else{
+			      $testname .= $machine_val;
+			  }
+			  if ($testcompiler eq "all" or $compiler_val =~ /^${testcompiler}$/)
+			  {
+			      if($testcompiler eq "all"){
+				  if ($opts{'compiler'}){
+				      $testname .="_".$opts{'compiler'};
 				  }else{
-				      $testname .= "_".$compiler_val;
+				      $testname .="_intel";
 				  }
-				  if ($testmods_val) {
-				      $testname = "$testname" . ".$testmods_val";
-				  }
-				  push (@actualtests, $testname);
-				  &Debug("testname is $testname \n");
+			      } else{
+				  $testname .= "_".$compiler_val;
 			      }
+			      if ($testmods_val) {
+				  $testname = "$testname" . ".$testmods_val";
+			      }
+			      push (@actualtests, $testname);
+			      &Debug("testname is $testname \n");
 			  }
 		      }
 		  }
@@ -834,26 +871,8 @@ sub ExpandXmlList
 	  }
       }
   }
+  return @actualtests;
   
-    
-
-  # check for duplicates in the test list...
-  my %seen = ();
-  $seen{$_}++ for @actualtests;
-  my @nodupes = keys %seen;
-  my $testlistsize = @nodupes;
-  Debug("test list size: $testlistsize");
-  if($testlistsize == 0)
-  {
-    print "No tests could be found with the test options given:\n";
-    print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
-    print "aborting\n";
-    exit(1);
-  }
-
-  #exit; #DEBUG
-  # Return the sorted list of tests
-  return sort @nodupes;
 }  
 
 #-----------------------------------------------------------------------------------------------
@@ -1046,11 +1065,6 @@ sub checkTestCase
       $testhash->{'test_argv'} .= " -compare $opts{'compare'}";
     }
     $testhash->{'case'} = "$basecase.$regcode.$testid";
-    if(defined $opts{'model_gen_comp'})
-    {
-      $testhash->{'model_gen_comp'} = $opts{'model_gen_comp'};
-      $testhash->{'test_argv'} .= " -model_gen_comp $opts{'model_gen_comp'}";
-    }
   }
 
   # if a pes file was specified, make sure it exists.  
@@ -1103,7 +1117,6 @@ sub documentTestCase
   print "  compset_file:  $test{'compset_file'} \n" if(defined $test{'compset_file'});
   print "  generate:  $test{'basegen_case'} \n" if(defined $test{'basegen_case'});
   print "  compare:  $test{'basecmp_case'} \n" if(defined $test{'basecmp_case'});
-  print "  model_g_cmp:   $test{'model_gen_comp'} \n" if(defined $test{'model_gen_comp'});
 
 }
 
@@ -1113,7 +1126,8 @@ sub runCreateNewcase
 {
   my %test = %{ shift() };
   my $caseroot = "$opts{'testroot'}/$test{'case'}";
-  my $cn_args = " -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'} -nosavetiming";
+  my $cn_args = " -silent -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'}";
+
   if(defined $test{'confopts'})
   {
     $cn_args .= " -confopts $test{'confopts'}";
@@ -1154,10 +1168,23 @@ sub runCreateNewcase
       $cn_args .= " -project $opts{'project'}";
   }
 
+  if($test{'testmods'}) {
+     my $testmods = $test{'testmods'};
+     $testmods =~ s/-/\//g;
+     my $xml_testmod_dir;
+     if ($testmods =~ /^([^\/]+)\//) {
+         my $comp = $1;
+         if ( exists($xml_testmod_dirs{$comp}) ) {
+	    $xml_testmod_dir = $xml_testmod_dirs{$comp};
+	    $testmods = "$xml_testmod_dir/".$testmods;
+	    $cn_args .= " -user_mods_dir $testmods";
+         } else {
+            die "ERROR: Can NOT find testmod directory for $comp\n";
+         }
+     }
+  }
 
-
-
-  my $createnewcase = "$opts{'cesmroot'}/scripts/create_newcase $cn_args";
+  my $createnewcase = "$opts{'cimeroot'}/scripts/create_newcase $cn_args";
   if($opts{'dryrun'}){
       print "$createnewcase\n";
       return;
@@ -1170,14 +1197,27 @@ sub runCreateNewcase
   my $exitcode = $?;
   if($exitcode != 0)
   {
-    print "invocation of create_newcase failed\n";
-    return;
-  }
+      warn "invocation of create_newcase failed:\n";
+	  # create the testroot if needed. 
+	  mkdir $caseroot if(! -d $caseroot);
+	  my $failteststatus = "$caseroot/TestStatus";
+      my $failcasestatus = "$caseroot/CaseStatus";
+      
+	  open my $TS, ">", $failteststatus or print "cannot open $failteststatus, $?";
+	  print $TS "SFAIL $test{'case'}\n";
+      close $TS;
+	
+	  open my $CS, ">", $failcasestatus or print "cannot open $failcasestatus, $?";
+      print $CS "create_newcase failure \n";
+      close $CS;
 
+	  # Skip to the next test..
+      next;
+  }
   my $readmetmp = new IO::File;
-  $readmetmp->open("> $caseroot/README.case.tmp") or warn "can't open $caseroot/README.case.tmp";
+  $readmetmp->open("> $caseroot/README.case.tmp") or print "can't open $caseroot/README.case.tmp";
   my $casestatustmp = new IO::File;
-  $casestatustmp->open("> $caseroot/CaseStatus.tmp") or warn "can't open $caseroot/CaseStatus.tmp";
+  $casestatustmp->open("> $caseroot/CaseStatus.tmp") or print "can't open $caseroot/CaseStatus.tmp";
   Debug( "writing README.case, CaseStatus\n");
   my $testoptstring = "test created with the following options:\n";
   foreach my $k(sort keys %test)
@@ -1193,8 +1233,8 @@ sub runCreateNewcase
   # the .tmp files. 
   my $readme = new IO::File;
   my $casestatus = new IO::File;
-  $readme->open("< $caseroot/README.case") or warn "can't open $caseroot/README.case, $!";
-  $casestatus->open("< $caseroot/CaseStatus") or warn "can't open $caseroot/CaseStatus, $!";
+  $readme->open("< $caseroot/README.case") or print "can't open $caseroot/README.case, $!";
+  $casestatus->open("< $caseroot/CaseStatus") or print "can't open $caseroot/CaseStatus, $!";
   my $readmetxt = <$readme>;
   my $casestatustxt = <$casestatus>;
   print $readmetmp $readmetxt;
@@ -1209,65 +1249,10 @@ sub runCreateNewcase
   move("$caseroot/README.case.tmp", "$caseroot/README.case");
   move("$caseroot/CaseStatus.tmp", "$caseroot/CaseStatus");
 
-  open my $TESTSTATUS, ">>", "$caseroot/TestStatus" or warn $!;
+  open my $TESTSTATUS, ">>", "$caseroot/TestStatus" or print $!;
   print $TESTSTATUS "SFAIL $test{'case'}\n";
   close $TESTSTATUS;
   
-}
-
-# If user namelist files need to be applied, then copy over the user_namelist files. 
-sub handleUserTestMods
-{
-  my %test = %{ shift() };
-  my $caseroot = "$opts{'testroot'}/$test{'case'}";
-  my @user_nl_files;
-  my @xmlchange_cmnds_file;
-  if( $test{'testmods'} )
-  { 
-      my $testmods = $test{'testmods'};
-      $testmods =~ s/-/\//g;
-      $testmods = "$cfgdir/ccsm_utils/Testlistxml/testmods_dirs/".$testmods;
-      if (! -e $testmods)
-      {
-	  die "ERROR: The specified user testmods directory $testmods does not exist. ";
-      }
-      @user_nl_files = glob("$testmods/user_nl*");
-      @xmlchange_cmnds_file = glob("$testmods/xmlchange_cmnds");
-  } 
-  else 
-  {
-      if(! -e $opts{'user_testmods_dir'})
-      {
-	  die "ERROR: The specified user testmods directory $opts{'user_testmods_dir'} does not exist. ";
-      }
-      @user_nl_files = glob("$opts{'user_testmods_dir'}/user_nl*");
-      @xmlchange_cmnds_file = "$opts{'user_testmods_dir'}/xmlchange_cmnds";
-  }
-
-  if(! @user_nl_files && ! @xmlchange_cmnds_file)
-  {
-    die "ERROR: There are no user_nl files or xmlchange_cmds file";
-  }
-  else
-  {
-    foreach my $file(@user_nl_files)
-    {
-	if (-f "$file") {
-	    copy("$file", "$caseroot");
-	}
-    }
-    foreach my $file(@xmlchange_cmnds_file)
-    {
-	if (-f "$file") {
-	    copy("$file", "$caseroot/.");
-	    chmod 0777, "$caseroot/xmlchange_cmnds";
-	    my $cwd = getcwd(); # current working directory
-	    chdir "$caseroot";
-	    system ("./xmlchange_cmnds");
-	    chdir "$cwd";
-	}
-    }
-  }
 }
 
 
@@ -1284,29 +1269,22 @@ sub writeEnvTestXML
   $cfg_ref->set('TEST_ARGV', $test->{'test_argv'});
   $cfg_ref->set('CASEBASEID', $test->{'casebaseid'});
 
-  ### WARNING : ######################################################################################
-  # The following calls are wrong, but the right calls (just below) causes problems -- see bug 2024
-  #if(defined $opts{'generate'})
-  #{
-    #$cfg_ref->set('BASELINE_NAME_GEN', $opts{'generate'});
-  #}
-  #if(defined $opts{'compare'})
-  #{
-    #$cfg_ref->set('BASELINE_NAME_CMP', $opts{'compare'});
-  #}
-  #if(defined $opts{'basegen_case'})
-  #{
-    #$cfg_ref->set('BASEGEN_CASE', $opts{'basegen_case'});
-  #}
-  #if(defined $opts{'basecmp_case'})
-  #{
-    #$cfg_ref->set('BASECMP_CASE', $opts{'basecmp_case'});
-  #}
-  ### WARNING : ######################################################################################
-  $cfg_ref->set('BASELINE_NAME_GEN', $opts{'generate'});
-  $cfg_ref->set('BASELINE_NAME_CMP', $opts{'compare'});
-  $cfg_ref->set('BASEGEN_CASE', $test->{'basegen_case'});
-  $cfg_ref->set('BASECMP_CASE', $test->{'basecmp_case'});
+  if(defined $opts{'generate'})
+  {
+    $cfg_ref->set('BASELINE_NAME_GEN', $opts{'generate'});
+  }
+  if(defined $opts{'compare'})
+  {
+    $cfg_ref->set('BASELINE_NAME_CMP', $opts{'compare'});
+  }
+  if(defined $test->{'basegen_case'})
+  {
+    $cfg_ref->set('BASEGEN_CASE', $test->{'basegen_case'});
+  }
+  if(defined $test->{'basecmp_case'})
+  {
+    $cfg_ref->set('BASECMP_CASE', $test->{'basecmp_case'});
+  }
   
   if(defined $opts{'cleanup'})
   {
@@ -1337,13 +1315,7 @@ sub writeEnvTestXML
   {
     $cfg_ref->set('COMPARE_BASELINE', "FALSE");
   }
-  if(defined $opts{'model_gen_comp'})
-  {
-    $cfg_ref->set('MODEL_GEN_COMP',    $opts{'model_gen_comp'});
-  }
-  # The following call is wrong, but the right call (just below) causes problems -- see bug 2024
-  #$cfg_ref->write_file("$caseroot/env_test.xml", "xml", $opts{'cesmroot'} );
-  $cfg_ref->write_file("$caseroot/env_test.xml");
+  $cfg_ref->write_file("$caseroot/env_test.xml", "xml", $opts{'cimeroot'} );
   
 }
 
@@ -1352,75 +1324,64 @@ sub writeEnvTestXML
 sub testcaseSetup
 {
   my ($test) = @_;
-  #testcase_setup.csh requires the following env vars be set:
-  # CCSMROOT, CASEROOT, CASE, TESTCASE, 
-  # GENERATE_BASELINE, COMPARE_BASELINE, STOP_OPTION, STOP_N
   my $caseroot = $opts{'testroot'}."/".$test->{'case'};
   my %xmlvars = ();
+  my $sysmod;
+
   SetupTools::getxmlvars($caseroot, \%xmlvars);
   #&Debug("XMLVARS:");
   #&Debug( eval { Dumper \%xmlvars} );
+
+  chdir($caseroot); 
+
+  my $cwd = getcwd();
+  chdir ($caseroot);
   foreach my $attr(keys %xmlvars)
   {
-    $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
+      $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
   }
-  my $sysmod = "env CASEROOT=$caseroot CCSMROOT=$opts{'cesmroot'} CASE=".$test->{'case'};
-  $sysmod = "$sysmod TEST_ARGV=\"".$test->{'test_argv'}."\" TESTCASE=".$test->{'testname'}." TEST_TESTID=$opts{'testid'}";
-  
-  if(defined $opts{'baselineroot'})
-  {
-      $sysmod = " $sysmod BASELINE_ROOT=$opts{'baselineroot'} ";
-  }
-  if(defined $opts{'generate'})
-  {
-      $sysmod .= " GENERATE_BASELINE='' BASELINE_NAME_GEN=$xmlvars{'BASELINE_NAME_GEN'} BASEGEN_CASE=$xmlvars{'BASEGEN_CASE'}";
-  }
-  if(defined $opts{'compare'})
-  {
-      $sysmod .= " COMPARE_BASELINE='' BASELINE_NAME_CMP=$xmlvars{'BASELINE_NAME_CMP'} BASECMP_CASE=$xmlvars{'BASECMP_CASE'} ";
-  }
-  if(defined $xmlvars{'MODEL_GEN_COMP'})
-  {
-      $sysmod .= " MODEL_GEN_COMP=$xmlvars{'MODEL_GEN_COMP'} ";
-  }
-  if(defined $xmlvars{'STOP_OPTION'})
-  {
-      $sysmod .= " STOP_OPTION=$xmlvars{'STOP_OPTION'} ";
-  }
-  if(defined $xmlvars{'STOP_N'})
-  {
-      $sysmod .= " STOP_N=$xmlvars{'STOP_N'} ";
-  }
-  if(defined $opts{'scratchroot'})
-  {
-      $sysmod .= " CESMSCRATCHROOT=$opts{'scratchroot'} ";
-  }
-  $sysmod .= "  $scriptsroot/ccsm_utils/Tools/testcase_setup.csh"; 
+  chdir ($cwd);
 
-  print "Setting up test case..\n";
+  print "Setting up tools for test case..\n";
+
+  my $cimeroot = $xmlvars{'CIMEROOT'};
+  my $testcase = $xmlvars{'TESTCASE'};
+  my $case     = $xmlvars{'CASE'};
+
+  if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
+      $sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ./${case}.test_build";
+      &Debug("sysmod is $sysmod");
+      system($sysmod) == 0 or die "$sysmod failed: $?\n";
+  } else {
+      $sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ./${case}.test_build";
+      &Debug("sysmod is $sysmod");
+      system($sysmod) == 0 or die "$sysmod failed: $?\n";
+  }
+
+  print "Setting up test case \n";
+  $sysmod = "./cesm_setup";
   &Debug("sysmod is $sysmod");
-  system($sysmod);
-  
+  system($sysmod) == 0 or warn "$sysmod failed: $?\n";
+
   if($? != 0)
   {
     $test->{'status'}="SFAIL";
     print "create_test invocation of testcase_setup.csh failed; $!\n";
-    open my $TESTSTATUS, ">", "$caseroot/TestStatus" or warn $!;
+    open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
     print $TESTSTATUS "SFAIL ".$test->{'case'}."\n";
     close $TESTSTATUS;
   }
   else
   {
     $test->{'status'}="GEN";
-    open my $TESTSTATUS, ">", "$caseroot/TestStatus" or warn $!;
+    open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
     print $TESTSTATUS "GEN ".$test->{'case'}."\n";
     close $TESTSTATUS;
   }
-  
 }
 
 # Expand the test list.  Open the testlist either in the current working directory, or
-# ccsm_utils/Testlists/$testlist.  If further test files are found within the test list,
+# Testing/Testlistxml/$testlist.  If further test files are found within the test list,
 # recursively call ExpandTestList, then return the list of tests found.  Finally
 # remove the duplicates from the testlists.
 sub ExpandTestList
@@ -1437,8 +1398,7 @@ sub ExpandTestList
   my @potentialtests = <$fh>;
   chomp @potentialtests;
   close $fh;
-  # use grep to filter out any comments..
-  #@potentialtests = grep (!/^([^#]*)\#.*$/,  @potentialtests);
+  # Filter out comments..
   for my $i (0 .. $#potentialtests)
   {
      if( $potentialtests[$i] =~ /^([^#]*)\#.*$/ )
@@ -1491,6 +1451,7 @@ sub ExpandTestList
   $seen{$_}++ for @actualtests;
   my @nodupes = keys %seen;
 
+  Debug("finished with ExpandTestList");
   # Return the sorted list of tests
   return sort @nodupes;
 }
@@ -1540,7 +1501,7 @@ sub writeTestListXML
 <testlist>
   <testroot>$opts{'testroot'}</testroot>
   <scriptsroot>$scriptsroot</scriptsroot>
-  <ccsmroot>$opts{'cesmroot'}</ccsmroot>
+  <cimeroot>$opts{'cimeroot'}</cimeroot>
   <baselinetag>$baselinetag</baselinetag>
   <compiler>$compiler</compiler>
   <nobatch>$opts{'nobatch'}</nobatch>
@@ -1564,43 +1525,46 @@ TESTXML
     $testxml .= "    <confopts>$$test{'confopts'}</confopts>\n" if defined $$test{'confopts'};
     $testxml .= "    <compiler>$$test{'compiler'}</compiler>\n";
     $testxml .= "    <compset>$$test{'compset'}</compset>\n";
+    $testxml .= "    <casebaseid>$$test{'casebaseid'}</casebaseid>\n";
     $testxml .= "    <baselineroot>$opts{'baselineroot'}</baselineroot>\n" if defined $$test{'baselineroot'};
     $testxml .= "    <basegen_case>$$test{'basegen_case'}</basegen_case>\n" if defined $$test{'basegen_case'};
     $testxml .= "    <basecmp_case>$$test{'basecmp_case'}</basecmp_case>\n" if defined $$test{'basecmp_case'};
-    $testxml .= "    <model_gen_comp>$$test{'model_gen_comp'}</model_gen_comp>\n" if defined $$test{'model_gen_comp'};
     $testxml .= "  </test>\n";
   }
 
   $testxml .= "</testlist>\n";
-
-  open my $TESTSPEC, ">", "$opts{'testroot'}/testspec.$opts{'testid'}.$opts{'mach'}.xml" or die $!;
+  my $filename = "testspec.$opts{'testid'}.$opts{'mach'}.xml";
+  open my $TESTSPEC, ">", "$opts{'testroot'}/$filename" or die $!;
   print $TESTSPEC $testxml;
   close $TESTSPEC;
+  return $filename;
 }
 
-# Build and submit the test suite. Copy cs.status and cs.submit from ccsm_utils/Tools,
+# Build and submit the test suite. Copy cs.status and cs.submit from Tools,
 # give them the name cs.submit.testid.mach, set the permissions. If the namelistcompareonly
 # is set, compare the namelists only, otherwise run cs.submit.
 sub testBuildSubmit
 {
-  
-  my $cssubmit = "cs.submit.$opts{'testid'}.$opts{'mach'}";
-  my $csstatus = "cs.status.$opts{'testid'}.$opts{'mach'}";
-  copy("$scriptsroot/ccsm_utils/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
+    my $testspecfile = shift;
+    my $cssubmit = "cs.submit";
+  my $csstatus = "cs.status";
+  copy("$scriptsroot/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
   chmod 0755, "$opts{'testroot'}/testreporter.pl";
-  copy("$scriptsroot/ccsm_utils/Tools/cs.submit", "$opts{'testroot'}/$cssubmit");
+  copy("$scriptsroot/Tools/cs.submit", "$opts{'testroot'}/$cssubmit");
   chmod 0755, "$opts{'testroot'}/$cssubmit";
-  copy("$scriptsroot/ccsm_utils/Tools/cs.status", "$opts{'testroot'}/$csstatus");
+  copy("$scriptsroot/Tools/cs.status", "$opts{'testroot'}/$csstatus");
   chmod 0755, "$opts{'testroot'}/$csstatus";
   chdir("$opts{'testroot'}");
 
-  exec("./$cssubmit");
+  exec("./$cssubmit --testspec $testspecfile");
 }
 
 # compare baseline namelists against the current test suite's namelists.
 sub namelistCompareSuite
 {
     my @testspec = @_;
+	#print Dumper \@testspec;
+
     print "Now comparing namelists for the suite...\n"if ($opts{'compare'});
     my $currentdir = getcwd();
 # Chdir to the testroot
@@ -1609,10 +1573,14 @@ sub namelistCompareSuite
    # Compare namelists for each test.
    foreach my $testhash (@testspec)
    {
+       if ( ! defined $testhash->{status} ) {
+	   &Debug( eval {  Dumper $testhash} );
+	   die "ERROR: \n testhash status is not defined\n";
+       } 
        if($testhash->{status} eq "GEN"){
 	   namelistCompare($testhash->{case},$testhash->{casebaseid},$testhash->{status});
        }else{
-	   warn "ERROR: Namelist generation failed for test ".$testhash->{case};
+	   print "ERROR: Namelist generation failed for test ".$testhash->{case};
        }
    }
     chdir($currentdir);
@@ -1640,10 +1608,9 @@ sub namelistCompare
     }
 
     chdir($testpath) or die "couldn't change directory to $testpath\n";
-    my $cprnml = "$testpath/Tools/compare_namelists";
-    my $altcpr = "$testpath/Tools/simple_compare";
+    my $cprnml = "$testpath/Tools/compare_namelists.pl";
 
-    my $configtemplate = "$scriptsroot/ccsm_utils/Case.template/config_definition.xml";
+    my $configtemplate = "$scriptsroot/Tools/config_definition.xml";
     &Debug("config template is $configtemplate\n");
     &Debug("test path is  $testpath\n");
 
@@ -1656,82 +1623,89 @@ sub namelistCompare
 	# get the full path to the baseline test. 
 	my $basecase = "$baseroot/$basecmp";
 
+        my $nomatch = undef;
+        # If a SBN testcase doesn't match, try to match other case directories
 	if(! -d $basecase){
 	    my $baselist = $testenv->get('BASELINE_NAME_CMP');
 	    my $path = "$baseroot/$baselist";
-      print "baseline directory path: $path\n";
+            my $subd = basename($basecmp);
+            $subd =~ /([^._]+)(.+)$/;
+            my $testtyp = $1;
+            my $testcfg = $2;
+            print "baseline directory path: $path\n";
 	    opendir(D,$path) or die "Could not open directory $path";
-	    my @matches = grep /^$basecmp/, readdir D;
+	    my @matches = grep /$testcfg/, readdir D;
 	    if($#matches<0){
-		warn "No Baseline directory found for test $testpath";
-		return;
-	    }
-	    $basecase = "$path/".$matches[0];
+		print "WARNING: No Baseline directory found for test $testpath \n";
+                $nomatch = 1;
+	    } else {
+	        $basecase = "$path/".$matches[0];
+            }
 	    closedir(D);	
 	}
-	my $basecmpdir=$basecase;
-        $basecmpdir.="/CaseDocs" if (-d "$basecase/CaseDocs");
-	print "comparing $testpath namelists against $basecmpdir namelists..\n";
-
-	# use the namelists, etc in $test/CaseDocs for the comparison 
-	opendir(D,$buildconfpath)  || die "Could not read directory $buildconfpath";
-	my @nmls = readdir(D);
-	closedir(D);
-
 	my $nlcompoutput;
-	foreach my $nml (@nmls)
-	{   
-	    next if($nml =~ /README/ or $nml =~ /doc$/ or $nml =~ /prescribed$/ 
-		    or $nml =~ /^\./);
-	    if(! -e "$basecmpdir/$nml"){
-		warn "WARNING: no baseline file exists for $nml\n";
-	    }else{
-		my $compare_command = "$cprnml -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
-		my $output = `$compare_command`;
-                if ($output =~ /does not appear to be a namelist file/) {
-                    $compare_command = "$altcpr -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
-                    $output = `$compare_command`;
-                }
-		$nlcompoutput .= $output;
-	    }
-	}
-	#also compare the user_nl_* files
-	# use the namelists, etc in $test/CaseDocs for the comparison 
-	opendir(D,$testpath)  || die "Could not read directory $buildconfpath";
-	@nmls = grep(/user_nl/,readdir(D));
-	closedir(D);
+        if ( ! defined($nomatch) ) {
+	   my $basecmpdir=$basecase;
+           $basecmpdir.="/CaseDocs" if (-d "$basecase/CaseDocs");
+	   print "comparing $testpath namelists against $basecmpdir namelists..\n";
+   
+	   # use the namelists, etc in $test/CaseDocs for the comparison 
+	   opendir(D,$buildconfpath)  || die "Could not read directory $buildconfpath";
+	   my @nmls = readdir(D);
+	   closedir(D);
 
-	foreach my $nml (@nmls)
-	{   
-	    if(! -e "$basecase/$nml"){
-		warn "WARNING: no baseline file exists for $nml\n";
-	    }else{
-		my $compare_command = "$cprnml -c $test $basecase/$nml $testpath/$nml 2>&1";
-		my $output = `$compare_command`;
-                if ($output =~ /does not appear to be a namelist file/) {
-                    $compare_command = "$altcpr -c $test $basecmpdir/$nml $testpath/$nml 2>&1";
-                    $output = `$compare_command`;
-                }
-		$nlcompoutput .= $output;
-	    }
-	}
+	   foreach my $nml (@nmls)
+	   {   
+	       next if($nml =~ /README/ or $nml =~ /doc$/ or $nml =~ /prescribed$/ 
+		       or $nml =~ /^\./);
+	       if(! -e "$basecmpdir/$nml"){
+		   print "WARNING: no baseline file exists for $nml\n";
+	       }else{
+		   my $compare_command = "$cprnml $buildconfpath/$nml $basecmpdir/$nml $test";
+		   my $output = `$compare_command`;
+		   $nlcompoutput .= $output;
+	       }
+	   }
+	   #also compare the user_nl_* files
+	   # use the namelists, etc in $test/CaseDocs for the comparison 
+	   opendir(D,$testpath)  || die "Could not read directory $buildconfpath";
+	   @nmls = grep(/user_nl/,readdir(D));
+	   closedir(D);
 
+	   foreach my $nml (@nmls)
+	   {   
+	       if(! -e "$basecase/$nml"){
+		   print "WARNING: no baseline file exists for $nml\n";
+	       }else{
+		   my $compare_command = "$cprnml $testpath/$nml $basecase/$nml $test";
+		   my $output = `$compare_command`;
+		   $nlcompoutput .= $output;
+	       }
+	   }
+        } else {
+           $nlcompoutput = "BFAIL";
+        }
 
-
-
-	# print the compare_namelist results to TestStatus.out 
-    if(defined $nlcompoutput && length $nlcompoutput > 0) 
+	# print the compare_namelist results to TestStatus.log
+	if(defined $nlcompoutput && length $nlcompoutput > 0) 
 	{
-		open my $STATUSOUT, ">" , "$testpath/TestStatus.out" or die $!;
-		print $STATUSOUT $nlcompoutput ;
-		close $STATUSOUT;
+		open my $STATUSLOG, ">" , "$testpath/TestStatus.log" or die $!;
+		print $STATUSLOG $nlcompoutput ;
+		close $STATUSLOG;
 	   
 		# set the status of the namelist comparison to PASS or FAIL 
 		# if ANY of the namelist comparisons failed.  
 		open my $STATUS, ">>", "$testpath/TestStatus" or die $!;
 		open my $STATUSCOMP, ">", "$testpath/TestStatus.nlcomp" or die $!;
 		my $cprstatus;
-		if($nlcompoutput =~ /FAIL/)
+		if($nlcompoutput =~ /BFAIL/)
+                {
+			$status = "BFAIL";
+			$cprstatus =  "BFAIL $test.nlcomp\n";
+			print $STATUS $cprstatus;
+			print $STATUSCOMP $cprstatus;
+                }
+		elsif($nlcompoutput =~ /FAIL/)
 		{
 			$status = "FAIL" if(defined $status);
 			$cprstatus =  "FAIL $test.nlcomp\n";
@@ -1763,16 +1737,17 @@ sub namelistCompare
 		print $cprstatus;
     }
 	}
-    if($opts{'generate'}){
+    if ($opts{'generate'}) {
 	my $genpath = "$baseroot/".$opts{'generate'}."/$basename";
 	if(-d $genpath){
-	    warn "Baseline directory $genpath already exists";
+	    print "WARNING: Baseline directory is $genpath and already exists - WILL NOT OVERWRITE \n.";
 	}else{
 	    umask 0000;
 	    mkpath $genpath, 1, 0775;
-        }
-        system("cp -rf $buildconfpath $genpath");
-        system("cp -f $buildconfpath/../user_nl* $genpath") ;
+	    system("cp -r $buildconfpath $genpath"); 
+	    system("cp $buildconfpath/../user_nl* $genpath") ;
+	    print "Couldnt create Baseline directory $genpath" unless -d "$genpath/CaseDocs"; 
+	}
     }
 }
 
@@ -1803,16 +1778,13 @@ sub doonetest{
 
     $testhash = ParseTestName($testname);
 
+
     checkTestCase($testhash);
     documentTestCase($testhash);
     runCreateNewcase($testhash);
 
     if(! $opts{'dryrun'}){
 	writeEnvTestXML($testhash, $cfg_ref);
-	if( defined $opts{'user_testmods_dir'} || $testhash->{'testmods'})
-	{
-	    handleUserTestMods($testhash);
-	}
 	testcaseSetup($testhash);
 	&Debug( eval {  Dumper $testhash} );
     }
@@ -1831,7 +1803,7 @@ sub main
     options();
 
     my $config_def_file = "config_definition.xml";
-    my $cfg_ref = ConfigCase->new("$opts{cesmroot}/scripts/ccsm_utils/Case.template/$config_def_file");
+    my $cfg_ref = ConfigCase->new("$opts{cimeroot}/scripts/Tools/$config_def_file");
 
     checkOptions($cfg_ref);
 
@@ -1846,19 +1818,41 @@ sub main
 	my @testspec;
 
 	if($xmlmode){
-	    @testlist = ExpandXmlList( $opts{'xml_list'}, $opts{'xml_mach'}, 
-				      $opts{'xml_category'}, $opts{'xml_compiler'});
+            my @actualtests;
+	    foreach my $key (keys %xml_testlist_files) {
+		my $file = $xml_testlist_files{$key};
+		my @complist; 
+		@complist = ExpandXmlList( $file, $opts{'xml_mach'}, $opts{'xml_category'}, $opts{'xml_compiler'});
+		push (@actualtests, @complist) 
+	    }
+            # check for duplicates in the test list...
+            my %seen = ();
+            $seen{$_}++ for @actualtests;
+            my @nodupes = keys %seen;
+            my $testlistsize = @nodupes;
+            Debug("test list size: $testlistsize");
+            if($testlistsize == 0)
+            {
+               print "No tests could be found with the test options given:\n";
+               print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
+               print "aborting\n";
+               exit(1);
+            }
+            @testlist = @nodupes;
+  
 	}else{
 	    checkTestSuiteOptions();
 	    @testlist = ExpandTestList($opts{'input_list'});
 	}
-	foreach my $testname(@testlist)
+	foreach my $testname (@testlist)
 	{
 	    push(@testspec, doonetest($testname, $cfg_ref));
 	}
-	writeTestListXML(\@testspec, $cfg_ref);
-	namelistCompareSuite(@testspec);
-	testBuildSubmit();
+	my $testspecfilename = writeTestListXML(\@testspec, $cfg_ref);
+	if($opts{'compare'} or $opts{'generate'}){
+	    namelistCompareSuite(@testspec);
+	}
+	testBuildSubmit($testspecfilename);
 	if($opts{'compare'} or $opts{'generate'}){
 	    my $cnt=0;
 	    my $pass=0;
