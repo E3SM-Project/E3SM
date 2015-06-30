@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
+
+<config_compset>
+
+<help>
+=========================================
+GRID naming convention
+=========================================
+The long grid name has the order atm,lnd,ocn/ice,river,mask,glc 
+The following shortname is used
+   a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
+Note that the glc grid specifies the ***internal*** grid used by glimmer/cism
+From the point of view of coupling - the glc grid is assumed to be identical
+to the land
+The notation is 
+   a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
+Each grid is associated with three names
+   longname (a%name_l%name_oi%name_r%name_m%mask_g%name_w%name)
+   shortname (for backwards compatibility)
+   alias (even shorter notation than shortname)
+</help>
+
+<GRID sname="T62_mpas120"   alias="T62_m120" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%null_w%null</GRID>
+
+<!-- ======================================================== -->
+<!-- SECTION GRIDS: maping defaults (overwritten below)       -->
+<!-- ======================================================== -->
+
+<!-- null grid -->
+
+<gridhorz name="null">
+  <nx>0</nx> <ny>0</ny>    
+  <desc>null is no grid: </desc>
+</gridhorz>
+
+<!-- global spectral (eulerian dycore) grids-->
+
+<gridhorz name="T62">                   
+  <nx>192</nx>  <ny>96</ny>  
+  <desc>T62 is Gaussian grid:</desc> 
+</gridhorz>
+
+<!-- MPAS grids -->
+
+<gridhorz name="mpas120">
+  <nx>28574</nx>  <ny>1</ny>  
+  <desc>mpas120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
+</gridhorz>
+
+<!-- ROF (river) grids-->
+
+<gridhorz name="rx1">
+  <nx>360</nx> <ny>180</ny>  
+  <desc>rx1 is 1 degree river routing grid:</desc>
+</gridhorz>
+
+
+<!-- ======================================================== -->
+<!-- SECTION GRIDS: ocean/ice grids                           -->
+<!-- ======================================================== -->
+
+<griddom grid="mpas120" mask="mpas120">
+  <ICE_DOMAIN_FILE>domain.ocn.mpas120.121116.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.mpas120.121116.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<!-- ======================================================== -->
+<!-- SECTION GRIDS: river grids                               -->
+<!-- ======================================================== -->
+
+<!-- ======================================================== -->
+<!-- SECTION GRIDS: default maps                              -->
+<!-- ======================================================== -->
+
+<ATM2OCN_FMAPNAME>idmap</ATM2OCN_FMAPNAME>
+<ATM2OCN_SMAPNAME>idmap</ATM2OCN_SMAPNAME>
+<ATM2OCN_VMAPNAME>idmap</ATM2OCN_VMAPNAME>
+<OCN2ATM_FMAPNAME>idmap</OCN2ATM_FMAPNAME>
+<OCN2ATM_SMAPNAME>idmap</OCN2ATM_SMAPNAME>
+
+<ATM2LND_FMAPNAME>idmap</ATM2LND_FMAPNAME>
+<ATM2LND_SMAPNAME>idmap</ATM2LND_SMAPNAME>
+<LND2ATM_FMAPNAME>idmap</LND2ATM_FMAPNAME>
+<LND2ATM_SMAPNAME>idmap</LND2ATM_SMAPNAME>
+
+<LND2ROF_FMAPNAME>idmap</LND2ROF_FMAPNAME>
+<ROF2LND_FMAPNAME>idmap</ROF2LND_FMAPNAME>
+<ROF2LND_SMAPNAME>idmap</ROF2LND_SMAPNAME>
+<ROF2OCN_FMAPNAME>idmap</ROF2OCN_FMAPNAME>
+<ROF2OCN_RMAPNAME>idmap</ROF2OCN_RMAPNAME>
+
+<ATM2WAV_SMAPNAME>idmap</ATM2WAV_SMAPNAME>
+<OCN2WAV_SMAPNAME>idmap</OCN2WAV_SMAPNAME>
+<ICE2WAV_SMAPNAME>idmap</ICE2WAV_SMAPNAME>
+<WAV2OCN_SMAPNAME>idmap</WAV2OCN_SMAPNAME>
+
+<!-- ===============================================
+     COMMENT OUT for now, in drv, tcraig 3/25/13 
+-->
+
+<ATM2OCN_FMAPTYPE>X</ATM2OCN_FMAPTYPE>
+<ATM2OCN_SMAPTYPE>X</ATM2OCN_SMAPTYPE>
+<ATM2OCN_VMAPTYPE>X</ATM2OCN_VMAPTYPE>
+<OCN2ATM_FMAPTYPE>Y</OCN2ATM_FMAPTYPE>
+<OCN2ATM_SMAPTYPE>Y</OCN2ATM_SMAPTYPE>
+
+<ATM2LND_FMAPTYPE>X</ATM2LND_FMAPTYPE>
+<ATM2LND_SMAPTYPE>X</ATM2LND_SMAPTYPE>
+<LND2ATM_FMAPTYPE>Y</LND2ATM_FMAPTYPE>
+<LND2ATM_SMAPTYPE>Y</LND2ATM_SMAPTYPE>
+
+<LND2ROF_FMAPTYPE>X</LND2ROF_FMAPTYPE>
+<ROF2LND_FMAPTYPE>Y</ROF2LND_FMAPTYPE>
+<ROF2LND_SMAPTYPE>Y</ROF2LND_SMAPTYPE>
+<ROF2OCN_FMAPTYPE>Y</ROF2OCN_FMAPTYPE>
+<ROF2OCN_RMAPTYPE>Y</ROF2OCN_RMAPTYPE>
+
+<ATM2WAV_SMAPTYPE>Y</ATM2WAV_SMAPTYPE>
+<OCN2WAV_SMAPTYPE>Y</OCN2WAV_SMAPTYPE>
+<ICE2WAV_SMAPTYPE>Y</ICE2WAV_SMAPTYPE>
+<WAV2OCN_SMAPTYPE>X</WAV2OCN_SMAPTYPE>
+
+<ATM2OCN_FMAPTYPE BFBFLAG="TRUE">X</ATM2OCN_FMAPTYPE>
+<ATM2OCN_SMAPTYPE BFBFLAG="TRUE">X</ATM2OCN_SMAPTYPE>
+<ATM2OCN_VMAPTYPE BFBFLAG="TRUE">X</ATM2OCN_VMAPTYPE>
+<OCN2ATM_FMAPTYPE BFBFLAG="TRUE">X</OCN2ATM_FMAPTYPE>
+<OCN2ATM_SMAPTYPE BFBFLAG="TRUE">X</OCN2ATM_SMAPTYPE>
+
+<ATM2LND_FMAPTYPE BFBFLAG="TRUE">X</ATM2LND_FMAPTYPE>
+<ATM2LND_SMAPTYPE BFBFLAG="TRUE">X</ATM2LND_SMAPTYPE>
+<LND2ATM_FMAPTYPE BFBFLAG="TRUE">X</LND2ATM_FMAPTYPE>
+<LND2ATM_SMAPTYPE BFBFLAG="TRUE">X</LND2ATM_SMAPTYPE>
+
+<LND2ROF_FMAPTYPE BFBFLAG="TRUE">X</LND2ROF_FMAPTYPE>
+<ROF2LND_FMAPTYPE BFBFLAG="TRUE">X</ROF2LND_FMAPTYPE>
+<ROF2LND_SMAPTYPE BFBFLAG="TRUE">X</ROF2LND_SMAPTYPE>
+<ROF2OCN_FMAPTYPE BFBFLAG="TRUE">X</ROF2OCN_FMAPTYPE>
+<ROF2OCN_RMAPTYPE BFBFLAG="TRUE">X</ROF2OCN_RMAPTYPE>
+
+<ATM2WAV_SMAPTYPE BFBFLAG="TRUE">X</ATM2WAV_SMAPTYPE>
+<OCN2WAV_SMAPTYPE BFBFLAG="TRUE">X</OCN2WAV_SMAPTYPE>
+<ICE2WAV_SMAPTYPE BFBFLAG="TRUE">X</ICE2WAV_SMAPTYPE>
+<WAV2OCN_SMAPTYPE BFBFLAG="TRUE">X</WAV2OCN_SMAPTYPE>
+=============================================== --->
+
+<EPS_AMASK atm_grid=".+"   >1.0e-13</EPS_AMASK>
+
+<EPS_AGRID atm_grid=".+"   >1.0e-12</EPS_AGRID>
+<EPS_AGRID atm_grid="wus12">1.0e-03</EPS_AGRID>
+
+<EPS_AAREA atm_grid=".+"   >9.0e-07</EPS_AAREA>
+<EPS_AAREA atm_grid="wus12">1.0e-03</EPS_AAREA>
+
+<EPS_OMASK ocn_grid=".+">1.0e-06</EPS_OMASK>
+<EPS_OGRID ocn_grid=".+">1.0e-02</EPS_OGRID>
+<EPS_OAREA ocn_grid=".+">1.0e-01</EPS_OAREA>
+
+<EPS_FRAC atm_grid=".+"   >1.0e-02</EPS_FRAC>
+
+<VECT_MAP atm_grid=".+"   >cart3d</VECT_MAP>
+<VECT_MAP atm_grid="wus12">none</VECT_MAP>
+
+<!-- ======================================================== -->
+<!-- SECTION GRIDS: atm/lnd (and ocn/ice if same as atm)       -->
+<!-- ======================================================== -->
+
+<!-- ====================  -->
+<!--  atm eul: T62         -->
+<!-- ====================  -->
+
+<griddom grid="T62" mask="mpas120"> <!--- datm/slnd/drof only -->
+  <ATM_DOMAIN_FILE>domain.lnd.T62_mpas120.121116.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.T62_mpas120.121116.nc</LND_DOMAIN_FILE>
+</griddom>
+
+<!-- ======================================================== -->
+<!--- GRIDS: default maps                                     -->
+<!-- ======================================================== -->
+
+<gridmap atm_grid="T62" ocn_grid="mpas120">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpas120_aave.121116.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpas120_aave.121116.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpas120_aave.121116.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<!-- ======================================================== -->
+<!-- GRIDS: river to ocean mapping                            -->
+<!-- ======================================================== -->
+
+<!--- river to ocn area overlap -->
+<gridmap rof_grid="rx1" ocn_grid="gx1v6" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_gx1v6_e1000r300_090318.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+
+</config_compset >

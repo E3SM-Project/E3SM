@@ -492,6 +492,32 @@
     </files>
   </comp_archive_spec>
 
+  <comp_archive_spec name="mpas-o">
+    <rootdir>ocn</rootdir>
+	<multi_instance>y</multi_instance>
+	<files>
+	  <file_extension suffix=".log\.+">
+	    <subdir>logs</subdir>
+		<dispose>n</dispose>
+		<keepLast>n</keepLast>
+	  </file_extension>
+	  <file_extension suffix="rst.+\.nc">
+	    <subdir>rest</subdir>
+		<dispose>y</dispose>
+		<keepLast>y</keepLast>
+	  </file_extension>
+	  <file_extension suffix="hist.+\.nc">
+	    <subdir>hist</subdir>
+		<dispose>y</dispose>
+		<keepLast>y</keepLast>
+	  </file_extension>
+	  <file_extension suffix="ocn.+\.nc">
+	    <subdir>analysis_members</subdir>
+		<dispose>y</dispose>
+		<keepLast>y</keepLast>
+	  </file_extension>
+	</files>
+  </comp_archive_spec>
 
   <comp_archive_spec name="pop">
     <rootdir>ocn</rootdir>
