@@ -222,8 +222,6 @@ contains
 
       character (len=StrKIND), pointer :: config_AM_global_stats_compute_interval
       character (len=StrKIND), pointer :: config_AM_test_compute_interval_compute_interval
-   ! To use a compute interval using config_AM_TEMPLATE_compute_interval, copy the following.
-   ! Otherwise, compute is only called just before write, as managed by the stream.
 !      character (len=StrKIND), pointer :: config_AM_TEMPLATE_compute_interval
 
       err = 0
@@ -238,17 +236,14 @@ contains
          call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_interval',config_AM_global_stats_compute_interval)
          if (config_AM_global_stats_compute_interval=='dt') then
             config_AM_global_stats_compute_interval='00-00-00_00:00:01'
-         elseif (config_AM_global_stats_compute_interval=='output_interval') then
-            ! this is not working yet.  Need to set compute interval to stream output interval.
-            !call MPAS_stream_mgr_get_property(stream_manager, 'globalStatsOutput', MPAS_STREAM_PROPERTY_RECORD_INTV, outputIntervalString, err_tmp)
-            !config_AM_global_stats_compute_interval = outputIntervalString
          endif
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_global_stats_compute_interval, ierr=err_tmp)
-
-         call MPAS_stream_mgr_get_property(stream_manager, 'globalStatsOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-         call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-         call mpas_add_clock_alarm(clock, amGlobalStatsAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-         call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
+         if (config_AM_global_stats_compute_interval.ne.'output_interval') then
+            call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_global_stats_compute_interval, ierr=err_tmp)
+            call MPAS_stream_mgr_get_property(stream_manager, 'globalStatsOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+            call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+            call mpas_add_clock_alarm(clock, amGlobalStatsAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+            call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
+         endif
       endif
 
       call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
@@ -277,17 +272,14 @@ contains
          call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_interval',config_AM_test_compute_interval_compute_interval)
          if (config_AM_test_compute_interval_compute_interval=='dt') then
             config_AM_test_compute_interval_compute_interval='00-00-00_00:00:01'
-         elseif (config_AM_test_compute_interval_compute_interval=='output_interval') then
-            ! this is not working yet.  Need to set compute interval to stream output interval.
-            !call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_RECORD_INTV, outputIntervalString, err_tmp)
-            !config_AM_test_compute_interval_compute_interval = outputIntervalString
          endif
-         call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_test_compute_interval_compute_interval, ierr=err_tmp)
-
-         call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-         call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-         call mpas_add_clock_alarm(clock, amTestComputeIntervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-         call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
+         if (config_AM_test_compute_interval_compute_interval.ne.'output_interval') then
+            call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_test_compute_interval_compute_interval, ierr=err_tmp)
+            call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+            call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+            call mpas_add_clock_alarm(clock, amTestComputeIntervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+            call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
+         endif
       endif
 
       ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
@@ -295,21 +287,17 @@ contains
       !    call ocn_init_TEMPLATE(domain, err_tmp)
       !    err = ior(err, err_tmp)
 
-         ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_interval',config_AM_TEMPLATE_compute_interval)
-         ! if (config_AM_TEMPLATE_compute_interval=='dt') then
-         !    config_AM_TEMPLATE_compute_interval='00-00-00_00:00:01'
-         ! elseif (config_AM_TEMPLATE_compute_interval=='output_interval') then
-         !    ! this is not working yet.  Need to set compute interval to stream output interval.
-         !    !call MPAS_stream_mgr_get_property(stream_manager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_RECORD_INTV, outputIntervalString, err_tmp)
-         !    !config_AM_TEMPLATE_compute_interval = outputIntervalString
-         ! endif
-         ! call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_TEMPLATE_compute_interval, ierr=err_tmp)
-
-      !    call MPAS_stream_mgr_get_property(stream_manager, 'TemplateOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-      !    call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-      !    call mpas_add_clock_alarm(clock, amTemplateAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-      !    call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
-
+      !    call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_interval',config_AM_TEMPLATE_compute_interval)
+      !    if (config_AM_TEMPLATE_compute_interval=='dt') then
+      !       config_AM_TEMPLATE_compute_interval='00-00-00_00:00:01'
+      !    endif
+      !    if (config_AM_TEMPLATE_compute_interval.ne.'output_interval') then
+      !       call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_TEMPLATE_compute_interval, ierr=err_tmp)
+      !       call MPAS_stream_mgr_get_property(stream_manager, 'TemplateOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+      !       call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+      !       call mpas_add_clock_alarm(clock, amTemplateAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
+      !       call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
+      !    endif
       ! endif
 
    end subroutine ocn_analysis_init!}}}
@@ -513,6 +501,11 @@ contains
       logical, pointer :: config_use_okubo_weiss
       logical, pointer :: config_AM_test_compute_interval_enable
 !      logical, pointer :: config_AM_TEMPLATE_enable
+
+      character (len=StrKIND), pointer :: config_AM_global_stats_compute_interval
+      character (len=StrKIND), pointer :: config_AM_test_compute_interval_compute_interval
+!      character (len=StrKIND), pointer :: config_AM_TEMPLATE_compute_interval
+
       type (MPAS_Clock_type), pointer :: clock
 
       err = 0
@@ -521,7 +514,13 @@ contains
       timeLevel=1
       call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
       if (config_AM_global_stats_enable) then
-         if (mpas_is_alarm_ringing(clock, amGlobalStatsAlarmID, ierr=err_tmp)) then
+         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_interval',config_AM_global_stats_compute_interval)
+         if (config_AM_global_stats_compute_interval.eq.'output_interval') then
+            ! Compute analysis member just before output:
+            if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+               call ocn_compute_global_stats(domain, timeLevel, err_tmp)
+            endif
+         elseif (mpas_is_alarm_ringing(clock, amGlobalStatsAlarmID, ierr=err_tmp)) then
             call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
             call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          endif
@@ -553,19 +552,30 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
       if (config_AM_test_compute_interval_enable) then
-         if (mpas_is_alarm_ringing(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)) then
+         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_interval',config_AM_test_compute_interval_compute_interval)
+         if (config_AM_test_compute_interval_compute_interval.eq.'output_interval') then
+            ! Compute analysis member just before output:
+            if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='testCompIntOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+               call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
+            endif
+         elseif (mpas_is_alarm_ringing(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)) then
             call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
             call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
          endif
       endif
 
-      ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-      ! if (config_AM_TEMPLATE_enable) then
-      !    if (mpas_is_alarm_ringing(clock, amTemplateAlarmID, ierr=err_tmp)) then
-      !       call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
-      !       call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-      !    endif
-      ! endif
+       ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
+       !   call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_interval',config_AM_TEMPLATE_compute_interval)
+       !   if (config_AM_TEMPLATE_compute_interval.eq.'output_interval') then
+       !      ! Compute analysis member just before output:
+       !      if (mpas_stream_mgr_ringing_alarms(stream_manager, streamID='TemplateOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
+       !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+       !      endif
+       !   elseif (mpas_is_alarm_ringing(clock, amTemplateAlarmID, ierr=err_tmp)) then
+       !      call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
+       !      call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
+       !   endif
+       ! endif
 
    end subroutine ocn_analysis_compute!}}}
 
