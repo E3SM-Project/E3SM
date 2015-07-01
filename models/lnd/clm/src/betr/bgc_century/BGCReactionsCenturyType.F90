@@ -1090,6 +1090,7 @@ contains
   real(r8) :: frac_supp_nh4_to_decomp_plant
   real(r8) :: gross_min_nh4_flx  
   real(r8) :: alpha
+  real(r8) :: frac_gross_immob=0.5_r8  
   integer  :: reac
   
   associate(                                                         & !
@@ -1125,7 +1126,7 @@ contains
     
   !in clm-century, nh4 is first competed between decomposer immobilization, plant and nitrification
   reac = lid_nh4_nit_reac
-  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx
+  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx*frac_gross_immob
   
   if(tot_nh4_demand_flx*dtime>smin_nh4)then
     if(CNAllocate_Carbon_only())then
