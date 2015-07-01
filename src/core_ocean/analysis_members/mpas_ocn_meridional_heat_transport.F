@@ -22,7 +22,6 @@ module ocn_meridional_heat_transport
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -46,8 +45,7 @@ module ocn_meridional_heat_transport
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_meridional_heat_transport, &
-             ocn_init_meridional_heat_transport, &
+   public :: ocn_init_meridional_heat_transport, &
              ocn_compute_meridional_heat_transport, &
              ocn_restart_meridional_heat_transport, &
              ocn_finalize_meridional_heat_transport
@@ -59,64 +57,10 @@ module ocn_meridional_heat_transport
    !--------------------------------------------------------------------
 
    integer :: nMerHeatTransBinsUsed
-   type (timer_node), pointer :: MerHeatTransTimer
 
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_meridional_heat_transport
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_meridional_heat_transport(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: MerHeatTransPkgActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'MerHeatTransPkgActive', MerHeatTransPkgActive)
-
-      ! turn on package for this analysis member
-      MerHeatTransPkgActive = .true.
-
-   end subroutine ocn_setup_packages_meridional_heat_transport!}}}
 
 !***********************************************************************
 !
@@ -163,7 +107,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: MerHeatTransPool
+      type (mpas_pool_type), pointer :: meridionalHeatTransportAMPool
       type (mpas_pool_type), pointer :: meshPool
 
       integer ::  iBin
@@ -174,8 +118,8 @@ contains
       real (kind=RKIND), dimension(1) :: minBin, maxBin, minBinDomain, maxBinDomain
       real (kind=RKIND), dimension(:), pointer ::  binBoundaryMerHeatTrans, binVariable
 
-      integer, pointer :: config_number_meridional_heat_transport_bins
-      real (kind=RKIND), pointer :: config_min_meridional_heat_transport_bin, config_max_meridional_heat_transport_bin
+      integer, pointer :: config_AM_meridionalHeatTransport_num_bins
+      real (kind=RKIND), pointer :: config_AM_meridionalHeatTransport_min_bin, config_AM_meridionalHeatTransport_max_bin
 
       logical, pointer :: on_a_sphere
 
@@ -187,15 +131,15 @@ contains
       maxBin = -1.0e34_RKIND
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'MerHeatTrans', MerHeatTransPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'meridionalHeatTransportAM', meridionalHeatTransportAMPool)
 
-      call mpas_pool_get_config(domain % configs, 'config_number_meridional_heat_transport_bins', config_number_meridional_heat_transport_bins)
-      call mpas_pool_get_config(domain % configs, 'config_min_meridional_heat_transport_bin', config_min_meridional_heat_transport_bin)
-      call mpas_pool_get_config(domain % configs, 'config_max_meridional_heat_transport_bin', config_max_meridional_heat_transport_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_meridionalHeatTransport_num_bins', config_AM_meridionalHeatTransport_num_bins)
+      call mpas_pool_get_config(domain % configs, 'config_AM_meridionalHeatTransport_min_bin', config_AM_meridionalHeatTransport_min_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_meridionalHeatTransport_max_bin', config_AM_meridionalHeatTransport_max_bin)
 
-      nMerHeatTransBinsUsed = min( config_number_meridional_heat_transport_bins, nMerHeatTransBins )
+      nMerHeatTransBinsUsed = config_AM_meridionalHeatTransport_num_bins
 
-      call mpas_pool_get_array(MerHeatTransPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
+      call mpas_pool_get_array(meridionalHeatTransportAMPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
 
       ! Find min and max values of binning variable.
       block => domain % blocklist
@@ -223,15 +167,15 @@ contains
       binBoundaryMerHeatTrans = -1.0e34_RKIND
 
       ! Change min and max bin bounds to configuration settings, if applicable.
-      if (config_min_meridional_heat_transport_bin > -1.0e33_RKIND) then
-         minBinDomain(1) = config_min_meridional_heat_transport_bin
+      if (config_AM_meridionalHeatTransport_min_bin > -1.0e33_RKIND) then
+         minBinDomain(1) = config_AM_meridionalHeatTransport_min_bin
       else
          ! use measured min value, but decrease slightly to include least value.
          minBinDomain(1) = minBinDomain(1) - 1.0e-10_RKIND * abs(minBinDomain(1))
       end if
 
-      if (config_max_meridional_heat_transport_bin > -1.0e33_RKIND) then
-         maxBinDomain(1) = config_max_meridional_heat_transport_bin
+      if (config_AM_meridionalHeatTransport_max_bin > -1.0e33_RKIND) then
+         maxBinDomain(1) = config_AM_meridionalHeatTransport_max_bin
       else
          ! use measured max value, but increase slightly to include max value.
          maxBinDomain(1) = maxBinDomain(1) + 1.0e-10_RKIND * abs(maxBinDomain(1))
@@ -294,7 +238,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: MerHeatTransPool
+      type (mpas_pool_type), pointer :: meridionalHeatTransportAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
@@ -320,9 +264,7 @@ contains
       err = 0
       dminfo = domain % dminfo
 
-      call mpas_timer_start("AM_meridional_heat_transport", .false., MerHeatTransTimer)
-
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'MerHeatTrans', MerHeatTransPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'meridionalHeatTransportAM', meridionalHeatTransportAMPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
@@ -331,7 +273,7 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
 
-      call mpas_pool_get_array(MerHeatTransPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
+      call mpas_pool_get_array(meridionalHeatTransportAMPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
 
       allocate(sumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
       allocate(totalSumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
@@ -419,11 +361,11 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
-         call mpas_pool_get_subpool(block % structs, 'MerHeatTrans', MerHeatTransPool)
+         call mpas_pool_get_subpool(block % structs, 'meridionalHeatTransportAM', meridionalHeatTransportAMPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
-         call mpas_pool_get_array(MerHeatTransPool, 'meridionalHeatTransportLat', meridionalHeatTransportLat)
-         call mpas_pool_get_array(MerHeatTransPool, 'meridionalHeatTransportLatZ', meridionalHeatTransportLatZ)
+         call mpas_pool_get_array(meridionalHeatTransportAMPool, 'meridionalHeatTransportLat', meridionalHeatTransportLat)
+         call mpas_pool_get_array(meridionalHeatTransportAMPool, 'meridionalHeatTransportLatZ', meridionalHeatTransportLatZ)
 
          do iBin = 1, nMerHeatTransBinsUsed
             do k = 1, nVertLevels
@@ -459,8 +401,6 @@ contains
       deallocate(sumMerHeatTrans)
       deallocate(totalSumMerHeatTrans)
       deallocate(mht_meridional_integral)
-
-      call mpas_timer_stop("AM_meridional_heat_transport", MerHeatTransTimer)
 
    end subroutine ocn_compute_meridional_heat_transport!}}}
 

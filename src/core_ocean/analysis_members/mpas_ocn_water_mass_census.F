@@ -23,7 +23,6 @@ module ocn_water_mass_census
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -47,8 +46,7 @@ module ocn_water_mass_census
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_water_mass_census, &
-             ocn_init_water_mass_census, &
+   public :: ocn_init_water_mass_census, &
              ocn_compute_water_mass_census, &
              ocn_restart_water_mass_census, &
              ocn_finalize_water_mass_census
@@ -59,67 +57,9 @@ module ocn_water_mass_census
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amWaterMassCensusTimer
-
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_water_mass_census
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Todd Ringler
-!> \date    May 10, 2015
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_water_mass_census(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      logical, pointer :: amWaterMassCensusPkgActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amWaterMassCensusPkgActive', amWaterMassCensusPkgActive)
-
-      ! turn on package for this analysis member
-      amWaterMassCensusPkgActive = .true.
-
-   end subroutine ocn_setup_packages_water_mass_census!}}}
-
 
 !***********************************************************************
 !
@@ -215,7 +155,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: amWaterMassCensusPool
+      type (mpas_pool_type), pointer :: waterMassCensusAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
@@ -248,7 +188,7 @@ contains
       real (kind=RKIND) :: deltaTemperature, deltaSalinity, temperature, salinity, density, zPosition, volume
 
       ! package flag
-      logical, pointer :: amWaterMassCensusPkgActive
+      logical, pointer :: waterMassCensusAMPKGActive
 
       ! buffers data for message passaging
       integer :: kBuffer, kBufferLength
@@ -261,11 +201,8 @@ contains
       err = 0
 
       ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'amWaterMassCensusPkgActive', amWaterMassCensusPkgActive)
-      if ( .not. amWaterMassCensusPkgActive ) return
-
-      ! start timer
-      call mpas_timer_start("AM_water_mass_census", .false., amWaterMassCensusTimer)
+      call mpas_pool_get_package(ocnPackages, 'waterMassCensusAMPKGActive', waterMassCensusAMPKGActive)
+      if ( .not. waterMassCensusAMPKGActive ) return
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -308,18 +245,18 @@ contains
       ! all code above will go away when regionMask is intent(in)
 
       ! get pointers to analysis member arrays
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amWaterMassCensus', amWaterMassCensusPool)
-      call mpas_pool_get_array(amWaterMassCensusPool, 'waterMassCensusTemperatureValues', waterMassCensusTemperatureValues)
-      call mpas_pool_get_array(amWaterMassCensusPool, 'waterMassCensusSalinityValues', waterMassCensusSalinityValues)
-      call mpas_pool_get_array(amWaterMassCensusPool, 'waterMassFractionalDistribution', waterMassFractionalDistribution)
-      call mpas_pool_get_array(amWaterMassCensusPool, 'potentialDensityOfTSDiagram', potentialDensityOfTSDiagram)
-      call mpas_pool_get_array(amWaterMassCensusPool, 'zPositionOfTSDiagram', zPositionOfTSDiagram)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'waterMassCensusAM', waterMassCensusAMPool)
+      call mpas_pool_get_array(waterMassCensusAMPool, 'waterMassCensusTemperatureValues', waterMassCensusTemperatureValues)
+      call mpas_pool_get_array(waterMassCensusAMPool, 'waterMassCensusSalinityValues', waterMassCensusSalinityValues)
+      call mpas_pool_get_array(waterMassCensusAMPool, 'waterMassFractionalDistribution', waterMassFractionalDistribution)
+      call mpas_pool_get_array(waterMassCensusAMPool, 'potentialDensityOfTSDiagram', potentialDensityOfTSDiagram)
+      call mpas_pool_get_array(waterMassCensusAMPool, 'zPositionOfTSDiagram', zPositionOfTSDiagram)
 
       ! get run-time configure variables
-      call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_minTemperature', minTemperature)
-      call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_maxTemperature', maxTemperature)
-      call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_minSalinity', minSalinity)
-      call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_maxSalinity', maxSalinity)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_minTemperature', minTemperature)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_maxTemperature', maxTemperature)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_minSalinity', minSalinity)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_maxSalinity', maxSalinity)
 
       do iRegion=1,nOceanRegionsTmpCensus
         ! compute temperature and salinity domains
@@ -469,9 +406,6 @@ contains
       deallocate(workBufferSumReduced)
       deallocate(regionMask)
       deallocate(workMask)
-
-      ! stop timer
-      call mpas_timer_stop("AM_water_mass_census", amWaterMassCensusTimer)
 
    contains
 
