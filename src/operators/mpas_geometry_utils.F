@@ -25,51 +25,51 @@ module mpas_geometry_utils
    ! Equation numbers w.r.t. http://mathworld.wolfram.com/SphericalTrigonometry.html
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    real (kind=RKIND) function mpas_sphere_angle(ax, ay, az, bx, by, bz, cx, cy, cz)!{{{
-   
+
       implicit none
-   
+
       real (kind=RKIND), intent(in) :: ax, ay, az, bx, by, bz, cx, cy, cz
-   
+
       real (kind=RKIND) :: a, b, c          ! Side lengths of spherical triangle ABC
-   
+
       real (kind=RKIND) :: ABx, ABy, ABz    ! The components of the vector AB
       real (kind=RKIND) :: ACx, ACy, ACz    ! The components of the vector AC
-   
+
       real (kind=RKIND) :: Dx               ! The i-components of the cross product AB x AC
       real (kind=RKIND) :: Dy               ! The j-components of the cross product AB x AC
       real (kind=RKIND) :: Dz               ! The k-components of the cross product AB x AC
-   
+
       real (kind=RKIND) :: s                ! Semiperimeter of the triangle
       real (kind=RKIND) :: sin_angle
-   
+
       a = acos(max(min(bx*cx + by*cy + bz*cz,1.0_RKIND),-1.0_RKIND))      ! Eqn. (3)
       b = acos(max(min(ax*cx + ay*cy + az*cz,1.0_RKIND),-1.0_RKIND))      ! Eqn. (2)
       c = acos(max(min(ax*bx + ay*by + az*bz,1.0_RKIND),-1.0_RKIND))      ! Eqn. (1)
-   
+
       ABx = bx - ax
       ABy = by - ay
       ABz = bz - az
-   
+
       ACx = cx - ax
       ACy = cy - ay
       ACz = cz - az
-   
+
       Dx =   (ABy * ACz) - (ABz * ACy)
       Dy = -((ABx * ACz) - (ABz * ACx))
       Dz =   (ABx * ACy) - (ABy * ACx)
-   
+
       s = 0.5*(a + b + c)
 !      sin_angle = sqrt((sin(s-b)*sin(s-c))/(sin(b)*sin(c)))   ! Eqn. (28)
       sin_angle = sqrt(min(1.0_RKIND,max(0.0_RKIND,(sin(s-b)*sin(s-c))/(sin(b)*sin(c)))))   ! Eqn. (28)
-   
+
       if ((Dx*ax + Dy*ay + Dz*az) >= 0.0) then
          mpas_sphere_angle =  2.0 * asin(max(min(sin_angle,1.0_RKIND),-1.0_RKIND))
       else
          mpas_sphere_angle = -2.0 * asin(max(min(sin_angle,1.0_RKIND),-1.0_RKIND))
       end if
-   
+
    end function mpas_sphere_angle!}}}
-   
+
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FUNCTION MPAS_PLANE_ANGLE
@@ -78,64 +78,64 @@ module mpas_geometry_utils
    !   a vector (u,v,w) normal to the plane.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    real (kind=RKIND) function mpas_plane_angle(ax, ay, az, bx, by, bz, cx, cy, cz, u, v, w)!{{{
-   
+
       implicit none
-   
+
       real (kind=RKIND), intent(in) :: ax, ay, az, bx, by, bz, cx, cy, cz, u, v, w
-   
+
       real (kind=RKIND) :: ABx, ABy, ABz    ! The components of the vector AB
       real (kind=RKIND) :: mAB              ! The magnitude of AB
       real (kind=RKIND) :: ACx, ACy, ACz    ! The components of the vector AC
       real (kind=RKIND) :: mAC              ! The magnitude of AC
-   
+
       real (kind=RKIND) :: Dx               ! The i-components of the cross product AB x AC
       real (kind=RKIND) :: Dy               ! The j-components of the cross product AB x AC
       real (kind=RKIND) :: Dz               ! The k-components of the cross product AB x AC
-   
+
       real (kind=RKIND) :: cos_angle
-   
+
       ABx = bx - ax
       ABy = by - ay
       ABz = bz - az
       mAB = sqrt(ABx**2.0 + ABy**2.0 + ABz**2.0)
-   
+
       ACx = cx - ax
       ACy = cy - ay
       ACz = cz - az
       mAC = sqrt(ACx**2.0 + ACy**2.0 + ACz**2.0)
-   
-   
+
+
       Dx =   (ABy * ACz) - (ABz * ACy)
       Dy = -((ABx * ACz) - (ABz * ACx))
       Dz =   (ABx * ACy) - (ABy * ACx)
-   
+
       cos_angle = (ABx*ACx + ABy*ACy + ABz*ACz) / (mAB * mAC)
-   
+
       if ((Dx*u + Dy*v + Dz*w) >= 0.0) then
          mpas_plane_angle =  acos(max(min(cos_angle,1.0_RKIND),-1.0_RKIND))
       else
          mpas_plane_angle = -acos(max(min(cos_angle,1.0_RKIND),-1.0_RKIND))
       end if
-   
+
    end function mpas_plane_angle!}}}
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FUNCTION MPAS_ARC_LENGTH
    !
-   ! Returns the length of the great circle arc from A=(ax, ay, az) to 
+   ! Returns the length of the great circle arc from A=(ax, ay, az) to
    !    B=(bx, by, bz). It is assumed that both A and B lie on the surface of the
    !    same sphere centered at the origin.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    real (kind=RKIND) function mpas_arc_length(ax, ay, az, bx, by, bz)!{{{
-   
+
       implicit none
-   
+
       real (kind=RKIND), intent(in) :: ax, ay, az, bx, by, bz
-   
+
       real (kind=RKIND) :: r, c
       real (kind=RKIND) :: cx, cy, cz
-   
+
       cx = bx - ax
       cy = by - ay
       cz = bz - az
@@ -151,8 +151,8 @@ module mpas_geometry_utils
       mpas_arc_length = r * 2.0 * asin(c/(2.0*r))
 
    end function mpas_arc_length!}}}
-   
-   
+
+
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! SUBROUTine mpas_arc_bisect
    !
@@ -161,21 +161,21 @@ module mpas_geometry_utils
    !   surface of a sphere centered at the origin.
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine mpas_arc_bisect(ax, ay, az, bx, by, bz, cx, cy, cz)!{{{
-   
+
       implicit none
-   
+
       real (kind=RKIND), intent(in) :: ax, ay, az, bx, by, bz
       real (kind=RKIND), intent(out) :: cx, cy, cz
-   
+
       real (kind=RKIND) :: r           ! Radius of the sphere
-      real (kind=RKIND) :: d           
-   
+      real (kind=RKIND) :: d
+
       r = sqrt(ax*ax + ay*ay + az*az)
-   
+
       cx = 0.5*(ax + bx)
       cy = 0.5*(ay + by)
       cz = 0.5*(az + bz)
-   
+
       if (cx == 0. .and. cy == 0. .and. cz == 0.) then
          write(stderrUnit,*) 'Error: arc_bisect: A and B are diametrically opposite'
       else
@@ -184,7 +184,7 @@ module mpas_geometry_utils
          cy = r * cy / d
          cz = r * cz / d
       end if
-   
+
    end subroutine mpas_arc_bisect!}}}
 
 
@@ -244,9 +244,9 @@ module mpas_geometry_utils
       integer, intent(in) :: m,n,ne
       real (kind=RKIND), dimension(ne,ne), intent(in) :: a_in, weights_in
       real (kind=RKIND), dimension(ne,ne), intent(out) :: b_out
-   
+
       ! local storage
-   
+
       real (kind=RKIND), dimension(m,n)  :: a
       real (kind=RKIND), dimension(n,m)  :: b
       real (kind=RKIND), dimension(m,m)  :: w,wt,h
@@ -255,23 +255,23 @@ module mpas_geometry_utils
       real (kind=RKIND), dimension(n,n)  :: ata, atha, atha_inv
       integer, dimension(n) :: indx
 !      integer :: i,j
-   
+
       if ( (ne < n) .or. (ne < m) ) then
          write(stderrUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
          call mpas_dmpar_global_abort('ERROR: in subroutine poly_fit_2()')
       end if
-   
-!      a(1:m,1:n) = a_in(1:n,1:m) 
+
+!      a(1:m,1:n) = a_in(1:n,1:m)
       a(1:m,1:n) = a_in(1:m,1:n)
-      w(1:m,1:m) = weights_in(1:m,1:m) 
-      b_out(:,:) = 0.   
+      w(1:m,1:m) = weights_in(1:m,1:m)
+      b_out(:,:) = 0.
 
       wt = transpose(w)
       h = matmul(wt,w)
       at = transpose(a)
       ath = matmul(at,h)
       atha = matmul(ath,a)
-      
+
       ata = matmul(at,a)
 
 !      if (m == n) then
@@ -382,12 +382,12 @@ module mpas_geometry_utils
 !>  This routine calculates calculates barycentric weights (coordinates)
 !>  for a set of points provided.  Requires a mesh with a triangular dual mesh.
 !>  The routine will attempt to find which triangle (made of cell centers)
-!>  in which each point lies.  Those cell center indices will be stored in the 
+!>  in which each point lies.  Those cell center indices will be stored in the
 !>  baryCellsOnPoints array.
 !>  The triangle search is limited to a triangle location provided to the routine
 !>  and its surrounding triangles.  The triangle location is identified by a vertex
 !>  id, which is stored in the input array searchVertex.
-!>  If the pointset is vertices, the list of vertices can be passed in.  If the 
+!>  If the pointset is vertices, the list of vertices can be passed in.  If the
 !>  pointset is something else, then the callling routine must
 !>  first determine which vertices each point is closest (or at least close) to.
 !>  If no 'owning' triangle is identified in this routine, then
@@ -659,8 +659,8 @@ module mpas_geometry_utils
       ca = mpas_arc_length(c(1), c(2), c(3), a(1), a(2), a(3))
       semiperim = 0.5 * (ab + bc + ca)
 
-      tanqe = sqrt(tan(0.5_RKIND * semiperim) * tan(0.5_RKIND * (semiperim - ab)) &
-                   * tan(0.5_RKIND * (semiperim - bc)) * tan(0.5_RKIND * (semiperim - ca)) )
+      tanqe = sqrt(max(0.0_RKIND,tan(0.5_RKIND * semiperim) * tan(0.5_RKIND * (semiperim - ab)) &
+                   * tan(0.5_RKIND * (semiperim - bc)) * tan(0.5_RKIND * (semiperim - ca))))
 
       mpas_triangle_signed_area_sphere = 4.0_RKIND * atan(tanqe)
    end function mpas_triangle_signed_area_sphere !}}}
@@ -731,7 +731,7 @@ module mpas_geometry_utils
 !> \brief   Converts a single layer scalar field from cells to specified points using barycentric weights.
 !> \author  Matt Hoffman
 !> \date    14 Jan 2015
-!> \details 
+!> \details
 !>  This routine converts a single layer scalar field from cells to a provided set
 !>  of point locations using barycentric weights.
 !>  The weights should be calculated on init using the
@@ -798,7 +798,6 @@ module mpas_geometry_utils
    end subroutine mpas_cells_to_points_using_baryweights !}}}
 
 
-
 !***********************************************************************
 !
 !  subroutine mpas_unit_test_in_triangle
@@ -806,7 +805,7 @@ module mpas_geometry_utils
 !> \brief   Simple unit test for testing the mpas_point_in_polygon routine.
 !> \author  Matt Hoffman
 !> \date    4 Feb 2015
-!> \details 
+!> \details
 !>  This routine tests the mpas_point_in_polygon routine.
 !-----------------------------------------------------------------------
    subroutine mpas_unit_test_in_triangle(ierr)!{{{
@@ -854,7 +853,6 @@ module mpas_geometry_utils
    end subroutine mpas_unit_test_in_triangle !}}}
 
 
-
 !***********************************************************************
 !
 !  subroutine mpas_unit_test_bary_weights
@@ -862,7 +860,7 @@ module mpas_geometry_utils
 !> \brief   Simple unit test for testing the mpas_calculate_barycentric_weights routine.
 !> \author  Matt Hoffman
 !> \date    4 Feb 2015
-!> \details 
+!> \details
 !>  This routine tests the mpas_calculate_barycentric_weights routine.
 !-----------------------------------------------------------------------
    subroutine mpas_unit_test_bary_weights(meshPool, ierr)!{{{
@@ -916,6 +914,501 @@ module mpas_geometry_utils
 
    end subroutine mpas_unit_test_bary_weights !}}}
 
-!-------------------------------------------------------------
+
+!***********************************************************************
+!
+!  subroutine mpas_get_nearby_cell_index
+!
+!> \brief   Determine nearest cell ID for a particular location
+!> \author  Phillip Wolfram
+!> \date    01/21/2015
+!> \details
+!>  This routine returns the cell index for a particular location based on
+!>  distance to a cell center.  Two approaches are employed: 1) a brute
+!>  force solution where the minimum distance over all cells is
+!>  determined, and 2) a greedy, nearest neighbor algorithm which
+!>  searches over all the neighbors of the lastCell index and finds the
+!>  nearest point.
+!-----------------------------------------------------------------------
+   subroutine mpas_get_nearby_cell_index(nCells, xc,yc,zc , xp,yp,zp, on_a_sphere, lastCell, cellsOnCell, nEdgesOnCell) !{{{
+      implicit none
+
+      integer, intent(in) :: nCells                            ! number of cells
+      integer, dimension(:,:), intent(in) :: cellsOnCell       ! cell connectivity
+      integer, dimension(:), intent(in) :: nEdgesOnCell        ! number of edges bordering cell
+      real (kind=RKIND), dimension(:), intent(in) :: xc,yc,zc  ! center cell locations
+      real (kind=RKIND), intent(in) :: xp,yp,zp                ! point to find cell locations
+      logical, intent(in) :: on_a_sphere                         ! flag designating if we are on a sphere
+
+      real (kind=RKIND) :: pointRadius   ! magnitude of a point radius
+      integer :: iPoint, aPoint, cellGuess, cellID
+      real (kind=RKIND), dimension(3) :: xPoint
+      real (kind=RKIND), dimension(3, nCells) :: xCell
+      real (kind=RKIND) :: dx,dy,dz      ! differences between two points
+      real (kind=RKIND) :: r2Min         ! minimum squared distance found thus far
+      real (kind=RKIND) :: r2            ! squared distance
+
+      integer, intent(inout) :: lastCell                          ! last known cell number
+
+      ! could also be last than 1 for greater use in other cases (used in general since first index is 1)
+      if (lastCell < 1) then
+         ! brute force solution
+         !{{{
+         ! normalize locations to same spherical shell (unit) for direct comparison !{{{
+         if (on_a_sphere) then
+            pointRadius = sqrt(xp*xp + yp*yp + zp*zp)
+            xPoint = (/ xp/pointRadius , yp/pointRadius , zp/pointRadius /)
+            do aPoint = 1, nCells
+               pointRadius = sqrt(xc(aPoint)*xc(aPoint) + yc(aPoint)*yc(aPoint) + zc(aPoint)*zc(aPoint))
+               xCell(:,aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /) / pointRadius
+            end do
+         else
+            xPoint = (/ xp,yp,zp /)
+            do aPoint = 1, nCells
+               xCell(:, aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /)
+            end do
+         end if
+         !}}}
+
+         ! brute force solution
+         cellID = 1
+         dx = xPoint(1) - xCell(1,cellID)
+         dy = xPoint(2) - xCell(2,cellID)
+         dz = xPoint(3) - xCell(3,cellID)
+         r2Min = dx*dx + dy*dy + dz*dz
+
+         ! loop over all the other cells to get minimum
+         do aPoint = 2, nCells
+            ! compute squared distance
+            dx = xPoint(1) - xCell(1,aPoint)
+            dy = xPoint(2) - xCell(2,aPoint)
+            dz = xPoint(3) - xCell(3,aPoint)
+            r2 = dx*dx + dy*dy + dz*dz
+            if ( r2 < r2Min) then
+               ! we have a new closest point
+               cellID = aPoint
+               r2Min = r2
+            end if
+         end do
+         !}}}
+      else
+         ! greedy, nearest neighbor algorithm
+         !{{{
+
+         ! search neighbors via greedy algorithm
+         !write(stderrUnit,*) 'get_cell_id', lastCell
+         cellGuess = lastCell
+         cellID = -1
+         ! loop over closest cells to make this a greedy method
+         do while (cellID /= cellGuess)
+            !write(stderrUnit,*) cellGuess, cellID
+
+            ! we have a known cell
+            cellID = cellGuess
+
+            ! normalize locations to same spherical shell (unit) for direct comparison !{{{
+            if (on_a_sphere) then
+               pointRadius = sqrt(xp*xp + yp*yp + zp*zp)
+               xPoint = (/ xp/pointRadius , yp/pointRadius , zp/pointRadius /)
+               ! for point itself
+               pointRadius = sqrt(xc(cellID)*xc(cellID) + yc(cellID)*yc(cellID) + zc(cellID)*zc(cellID))
+               xCell(:,cellID) = (/ xc(cellID), yc(cellID), zc(cellID) /) / pointRadius
+               ! for point neighbors
+               do iPoint = 1, nEdgesOnCell(cellID)
+                  aPoint = cellsOnCell(iPoint, cellID)
+                  if (aPoint > nCells) cycle
+                  pointRadius = sqrt(xc(aPoint)*xc(aPoint) + yc(aPoint)*yc(aPoint) + zc(aPoint)*zc(aPoint))
+                  xCell(:,aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /) / pointRadius
+               end do
+            else
+               xPoint = (/ xp,yp,zp /)
+               ! for point itself
+               xCell(:, cellID) = (/ xc(cellID), yc(cellID), zc(cellID) /)
+               ! for point neighbors
+               do iPoint = 1, nEdgesOnCell(cellID)
+                  aPoint = cellsOnCell(iPoint, cellID)
+                  if (aPoint > nCells) cycle
+                  xCell(:, aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /)
+               end do
+            end if
+            !}}}
+
+            dx = xPoint(1) - xCell(1,cellID)
+            dy = xPoint(2) - xCell(2,cellID)
+            dz = xPoint(3) - xCell(3,cellID)
+            r2Min = dx*dx + dy*dy + dz*dz
+            !write(stderrUnit,*) 'r2Min_1 =', r2Min, ' cellID = ', cellID
+
+            ! loop over all the other on the existing cell to see if we have found a closer cell
+            do iPoint = 1, nEdgesOnCell(cellGuess)
+               aPoint = cellsOnCell(iPoint, cellID)
+               if (aPoint > nCells) cycle
+               ! compute squared distance
+               dx = xPoint(1) - xCell(1,aPoint)
+               dy = xPoint(2) - xCell(2,aPoint)
+               dz = xPoint(3) - xCell(3,aPoint)
+               r2 = dx*dx + dy*dy + dz*dz
+               if ( r2 < r2Min) then
+                  ! we have a new closest point
+                  cellGuess = aPoint
+                  r2Min = r2
+               end if
+            end do
+            !write(stderrUnit,*) 'r2Min_2 = ' ,r2Min, ' cellguess = ', cellguess
+         end do
+         !}}}
+      end if
+
+      ! return value
+      lastCell = cellID
+
+      ! could also perform a hit-test to make sure we got the right cell just to be sure
+      ! this should be done outside this function for clarity
+
+   end subroutine mpas_get_nearby_cell_index !}}}
+
+
+!***********************************************************************
+!
+!  function mpas_get_vertical_id
+!
+!> \brief Determines vertical level index for a location
+!> \author  Phillip Wolfram
+!> \date    05/13/2014
+!> \details
+!>  This function determines the nearest vertical level to a particular
+!>  location within a column.  If the location is below the bottom
+!>  vertical level this returns -1, if it is above the top level, 0.
+!>  Levels are referenced to vertical cell centers.
+!-----------------------------------------------------------------------
+   function mpas_get_vertical_id(nLevels, zLoc, zMid) !{{{
+
+      implicit none
+      ! in / out variables
+      integer :: mpas_get_vertical_id ! index of vertical level
+      real (kind=RKIND), intent(in) :: zLoc                 ! z-level location of point
+      integer, intent(in) :: nLevels                           ! number of vertical levels
+      real (kind=RKIND), dimension(:), intent(in) :: zMid      ! elevation of cell centers
+
+      ! local variables
+      integer :: aLevel                                        ! particular level returned
+
+      ! cases except for bottom cell, if location is above the surface this yields 0
+      do aLevel = 1, nLevels-1
+         if((zMid(aLevel) <= zLoc .and. zLoc <= zMid(aLevel+1)) .or. (zMid(aLevel+1) <= zLoc .and. zLoc <= zMid(aLevel))) then
+            ! the point is bounded by the levels (store the bottom level)
+            mpas_get_vertical_id = aLevel
+            return
+         end if
+      end do
+
+      if(zLoc < minval(zMid(1:nLevels))) then
+         ! case where location is smallest value
+         mpas_get_vertical_id = -1
+         return
+      else if (zLoc > maxval(zMid(1:nLevels))) then
+         ! case where location is largest value
+         mpas_get_vertical_id = 0
+         return
+      end if
+
+   end function mpas_get_vertical_id !}}}
+
+
+!***********************************************************************
+!
+!  function mpas_wachspress_coordinates
+!
+!> \brief Compute the barycentric Wachspress coordinates for a polygon
+!> \author  Phillip Wolfram
+!> \date    03/13/2014
+!> \details
+!>  Computes the barycentric Wachspress coordinates for a polygon with nVertices
+!>  points in R3 (xv, yv, zv) for a particular point xp, yp, zp in geometry
+!>  with radius R.  Follows Gillette, A., Rand, A., Bajaj, C., 2011.
+!>  Error estimates for generalized barycentric interpolation.
+!>  Advances in computational mathematics 37 (3), 417–439.
+!------------------------------------------------------------------------
+   function mpas_wachspress_coordinates(nVertices, vertCoords, cellCenter, meshPool) !{{{
+      implicit none
+
+      ! input points
+      integer, intent(in) :: nVertices
+      real (kind=RKIND), dimension(3, nVertices), intent(in) :: vertCoords
+      real (kind=RKIND), dimension(3), intent(in) :: cellCenter
+      type (mpas_pool_type), pointer :: meshPool
+      ! output
+      real (kind=RKIND), dimension(nVertices) :: mpas_wachspress_coordinates
+      ! computational intermediates
+      real (kind=RKIND), dimension(nVertices) :: wach       ! The wachpress area-product
+      real (kind=RKIND) :: wach_total                       ! The wachpress total weight
+      integer :: i, j                                       ! Loop indices
+      integer :: im1, i0, ip1                               ! im1 = (i-1), i0 = i, ip1 = (i+1)
+
+      ! triangle areas to compute wachspress coordinate
+      real (kind=RKIND), dimension(nVertices) :: areaA
+      real (kind=RKIND), dimension(nVertices) :: areaB
+
+      logical, pointer :: on_a_sphere
+      integer, pointer :: sphere_radius
+      integer :: radiusLocal
+
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+
+      if ( on_a_sphere ) then
+         radiusLocal = sphere_radius
+      else
+         radiusLocal = 1.0_RKIND
+      end if
+
+      ! compute areas
+      do i = 1, nVertices
+         ! compute first area B_i
+         ! get vertex indices
+         im1 = mod(nVertices + i - 2, nVertices) + 1
+         i0  = mod(nVertices + i - 1, nVertices) + 1
+         ip1 = mod(nVertices + i    , nVertices) + 1
+
+         ! compute A_ij areas
+         ! must be computed each time
+         areaA(i0) = mpas_triangle_signed_area( cellCenter(:) , &
+                     vertCoords(:, i0), vertCoords(:, ip1), meshPool )
+         areaA(i0) = areaA(i0) * radiusLocal * radiusLocal
+
+         ! precompute B_i areas
+         ! always the same because B_i independent of xp,yp,zp
+         ! (COULD CACHE AND USE RESULT FROM ARRAY FOR FURTHER OPTIMIZATION)
+         areaB(i) = mpas_triangle_signed_area(vertCoords(:, im1), vertCoords(:, i0), vertCoords(:, ip1), meshPool)
+         areaB(i) = areaB(i) * radiusLocal * radiusLocal
+      end do
+
+
+      ! for each vertex compute wachpress coordinate
+      do i = 1, nVertices
+         wach(i) = areaB(i)
+         do j = (i + 1), (i + nVertices - 2)
+            i0  = mod(nVertices + j - 1, nVertices) + 1
+            ! accumulate products for A_ij subareas
+            wach(i) = wach(i) * areaA(i0)
+         end do
+      end do
+
+      ! get summed weights for normalization
+      wach_total = 0
+      do i = 1, nVertices
+         wach_total = wach_total + wach(i)
+      end do
+
+      ! compute lambda
+      mpas_wachspress_coordinates = 0.0_RKIND
+      do i = 1, nVertices
+         mpas_wachspress_coordinates(i) = wach(i)/wach_total
+      end do
+
+   end function mpas_wachspress_coordinates!}}}
+
+
+!***********************************************************************
+!
+!  function mpas_wachspress_coordinates_cached
+!
+!> \brief Compute the barycentric Wachspress coordinates for a polygon
+!> \author  Phillip Wolfram
+!> \date    01/26/2015
+!> \details
+!>  Computes the barycentric Wachspress coordinates for a polygon with nVertices
+!>  points in R3 (xv, yv, zv) for a particular point xp, yp, zp in geometry
+!>  with radius R.  Follows Gillette, A., Rand, A., Bajaj, C., 2011.
+!>  Error estimates for generalized barycentric interpolation.
+!>  Advances in computational mathematics 37 (3), 417–439.
+!>  Optimized version of mpas_wachspress_coordinates that uses cached B_i areas
+!------------------------------------------------------------------------
+   function mpas_wachspress_coordinates_cached(nVertices, vertCoords, cellCenter, areaB, meshPool) !{{{
+      implicit none
+
+      ! input points
+      integer, intent(in) :: nVertices
+      real (kind=RKIND), dimension(3, nVertices), intent(in) :: vertCoords
+      real (kind=RKIND), dimension(3), intent(in) :: cellCenter
+      real (kind=RKIND), dimension(:), intent(in) :: areaB
+      type (mpas_pool_type), pointer :: meshPool
+      ! output
+      real (kind=RKIND), dimension(nVertices) :: mpas_wachspress_coordinates_cached
+      ! computational intermediates
+      real (kind=RKIND), dimension(nVertices) :: wach       ! The wachpress area-product
+      real (kind=RKIND) :: wach_total                       ! The wachpress total weight
+      integer :: i, j                                       ! Loop indices
+      integer :: im1, i0, ip1                               ! im1 = (i-1), i0 = i, ip1 = (i+1)
+
+      ! triangle areas to compute wachspress coordinate
+      real (kind=RKIND), dimension(nVertices) :: areaA
+
+      logical, pointer :: on_a_sphere
+      integer, pointer :: sphere_radius
+      integer :: radiusLocal
+
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+      if ( on_a_sphere ) then
+         radiusLocal = sphere_radius
+      else
+         radiusLocal = 1.0_RKIND
+      end if
+
+      ! compute areas
+      do i = 1, nVertices
+         ! compute first area B_i
+         ! get vertex indices
+         im1 = mod(nVertices + i - 2, nVertices) + 1
+         i0  = mod(nVertices + i - 1, nVertices) + 1
+         ip1 = mod(nVertices + i    , nVertices) + 1
+
+         ! compute A_ij areas
+         ! must be computed each time
+         areaA(i0) = mpas_triangle_signed_area( cellCenter, vertCoords(i0,:), vertCoords(ip1,:), meshPool)
+         areaA(i0) = areaA(i0) * radiusLocal * radiusLocal
+
+         ! precomputed B_i areas, cached
+      end do
+
+
+      ! for each vertex compute wachpress coordinate
+      do i = 1, nVertices
+         wach(i) = areaB(i)
+         do j = (i + 1), (i + nVertices - 2)
+            i0  = mod(nVertices + j - 1, nVertices) + 1
+            ! accumulate products for A_ij subareas
+            wach(i) = wach(i) * areaA(i0)
+         end do
+      end do
+
+      ! get summed weights for normalization
+      wach_total = 0
+      do i = 1, nVertices
+         wach_total = wach_total + wach(i)
+      end do
+
+      ! compute lambda
+      mpas_wachspress_coordinates_cached = 0.0_RKIND
+      do i = 1, nVertices
+         mpas_wachspress_coordinates_cached(i) = wach(i)/wach_total
+      end do
+
+   end function mpas_wachspress_coordinates_cached!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_wachspress_interpolate
+!
+!> \brief Interpolate using barycentric Wachspress coordinates
+!> \author  Phillip Wolfram
+!> \date    03/27/2015
+!> \details
+!>  Interpolate using the barycentric Wachspress coordinates for a polygon with nVertices
+!>  having values phi.
+!------------------------------------------------------------------------
+   subroutine mpas_wachspress_interpolate(lambda, phi, phiX) !{{{
+      implicit none
+
+      ! input points
+      real (kind=RKIND), dimension(:), intent(in) :: lambda   !< Input: Wachspress coordinate / weight
+      real (kind=RKIND), dimension(:), intent(in) :: phi      !< Input: values at lambda weights
+
+      ! output for function
+      real (kind=RKIND), intent(out) :: phiX
+
+      phiX = sum(phi * lambda)
+
+   end subroutine mpas_wachspress_interpolate! }}}
+
+
+!***********************************************************************
+!
+!  routine mpas_convert_xyz_velocity_to_latlon
+!
+!> \brief Determine the zonal and meridional velocity field
+!> \author  Phillip Wolfram
+!> \date    09/13/2014
+!> \details
+!>  Returns the zonal and meridional velocity field (Uzon,Umer) from velocity field defined
+!>     in R3: (x,y,z) point with velocity vectors (Ux,Uy,Uz).
+!------------------------------------------------------------------------
+   subroutine mpas_convert_xyz_velocity_to_latlon(Uzon, Umer, x,y,z, Ux,Uy,Uz) !{{{
+      implicit none
+
+      ! input
+      real(kind=RKIND), intent(in) :: x,y,z , Ux,Uy,Uz
+      ! output
+      real(kind=RKIND), intent(out) :: Uzon, Umer
+      ! local
+      real(kind=RKIND) :: Rxy, Rxyz, slon,clon,slat,clat
+
+
+      ! compute geometric coordinate transform coefficients
+      Rxy  = sqrt(x**2.0_RKIND + y**2.0_RKIND)
+      Rxyz = sqrt(x**2.0_RKIND + y**2.0_RKIND + z**2.0_RKIND)
+      slon = y/Rxy
+      clon = x/Rxy
+      slat = sqrt(Rxyz**2.0_RKIND - z**2.0_RKIND)/Rxyz
+      clat = z/Rxyz
+
+      ! compute the zonal and meridional velocity fields
+      Uzon = -slon*Ux + clon*Uy
+      Umer = -slat*(clon*Ux + slon*Uy) + clat*Uz
+
+   end subroutine mpas_convert_xyz_velocity_to_latlon !}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_spherical_linear_interp
+!
+!> \brief Spherical linear interpolation of a point p0 to p1
+!> \author  Phillip Wolfram
+!> \date    04/21/2014
+!> \details
+!>  Returns the point following a spherical linear interpolation from p0 to p1
+!>     with alpha = 0 => p0 and alpha = 1 => p1.  All interpolated points are
+!>     on great circle route between p0 and p1, assuming that p0 and p1 are
+!>     on the same spherical shell.
+!------------------------------------------------------------------------
+   subroutine mpas_spherical_linear_interp(pInterp, p0, p1, alpha) !{{{
+
+     implicit none
+     ! input variables
+     real (kind=RKIND), dimension(3), intent(in) :: p0
+     real (kind=RKIND), dimension(3), intent(in) :: p1
+     real (kind=RKIND), intent(in) :: alpha
+
+     ! function output variable
+     real (kind=RKIND), dimension(3), intent(out) :: pInterp
+
+     ! local variables
+     real (kind=RKIND) :: p0mag, p1mag, omega, dotProd
+     real (kind=RKIND), dimension(size(p0)) :: p0scaled
+     real (kind=RKIND), dimension(size(p1)) :: p1scaled
+     real (kind=RKIND), parameter :: eps = 1e-14_RKIND
+
+     ! compute omega for angle of subtended arc
+     p0mag = sqrt(sum(p0 * p0))
+     p1mag = sqrt(sum(p1 * p1))
+     ! scale for stability
+     p0scaled = p0/p0mag
+     p1scaled = p1/p1mag
+     dotProd = min(1.0_RKIND,max(-1.0_RKIND,sum(p0scaled * p1scaled)))
+     ! may need to potentially handle round-off errors with max?
+     omega = acos(dotProd)
+     ! handle case where p0 \approx p1
+     if(abs(omega) < eps ) then
+        pInterp = p0
+        return
+     end if
+     pInterp = sin( (1.0_RKIND-alpha) * omega) / sin(omega) * p0 &
+             + sin(alpha * omega) / sin(omega) * p1
+
+   end subroutine mpas_spherical_linear_interp !}}}
+
 
 end module mpas_geometry_utils
