@@ -112,16 +112,16 @@ sub read_compiler_xml
 sub set_compiler
 {
     # Parse the config_compiler.xml file into a Macros file for the
-    # given machine and compiler. Search the user's ~/.cesm directory
+    # given machine and compiler. Search the user's ~/.cime directory
     # first, then use the standard compiler file if it is not available.
     my ($os,$compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile, $output_format) = @_;
 
-    my @compiler_settings = read_compiler_xml($os, "$ENV{\"HOME\"}/.cesm/config_compilers.xml", $compiler, $machine, $mpilib, $print, $macrosfile);
+    my @compiler_settings = read_compiler_xml($os, "$ENV{\"HOME\"}/.cime/config_compilers.xml", $compiler, $machine, $mpilib, $print, $macrosfile);
 
     if ($#compiler_settings <= 0) {
       @compiler_settings = read_compiler_xml($os, $compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile);
     } else {
-      print "\nFound UNSUPPORTED compiler settings for $machine\_$compiler in : $ENV{\"HOME\"}/.cesm/config_compilers.xml\n";
+      print "\nFound UNSUPPORTED compiler settings for $machine\_$compiler in : $ENV{\"HOME\"}/.cime/config_compilers.xml\n";
     }
 
     die "set_compiler: unrecognized compiler" unless($#compiler_settings);

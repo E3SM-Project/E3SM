@@ -343,6 +343,14 @@ sub postRun()
         print "Model did not complete, no cesm.log file present\n";
     }
 
+    if(! defined $cpllogfile)
+    {
+        my $msg = "Model did not complete - no cpl.log file corresponding to most recent CESM log: $config{'RUNDIR'}/$cesmlogfile";
+        print("$msg\n");
+        appendCaseStatus($msg);
+        exit(-1);
+    }
+
     if(length($cpllogfile) <= 0)
     {
         print "Model did not complete, see $config{'RUNDIR'}/$cesmlogfile\n";

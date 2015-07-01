@@ -23,6 +23,9 @@
     </directives>
   </batch_system>
 
+  <batch_system type="none">
+  </batch_system>
+
    <batch_system type="cobalt" version="x.y">
      <batch_query>qstat</batch_query>
      <batch_submit>bash</batch_submit>

@@ -1197,7 +1197,7 @@ sub get_machine_xml
 sub set_machine
 {
     # Set the parameters for the specified machine.  Try looking for
-    # the machine in the users ~/.cesm directory. If it is not found
+    # the machine in the users ~/.cime directory. If it is not found
     # then check the standard machines location. The parameters are
     # read from an input file, and if no machine matches are found
     # then issue error message.  This routine uses the configuration
@@ -1205,10 +1205,10 @@ sub set_machine
 
     my ($self, $machine_file, $machine, $print) = @_;
 
-    my ($found, @mach_settings) = $self->get_machine_xml("$ENV{'HOME'}/.cesm/config_machines.xml",
+    my ($found, @mach_settings) = $self->get_machine_xml("$ENV{'HOME'}/.cime/config_machines.xml",
                                                          $machine, $print);
     if ($found) {
-      print "\nFound UNSUPPORTED machine \"$machine\" in file : $ENV{'HOME'}/.cesm/config_machines.xml\n";
+      print "\nFound UNSUPPORTED machine \"$machine\" in file : $ENV{'HOME'}/.cime/config_machines.xml\n";
     }  else {
       ($found, @mach_settings) = $self->get_machine_xml($machine_file, $machine, $print);
     }
@@ -1218,9 +1218,9 @@ sub set_machine
 	print "set_machine: no match for machine $machine :\n";
         print "  - possible SUPPORTED machine values are \n";
 	print_machines( $machine_file );
-        if ( -f "$ENV{'HOME'}/.cesm/config_machines.xml") {
+        if ( -f "$ENV{'HOME'}/.cime/config_machines.xml") {
           print "\n  - possible UNSUPPORTED machine values are \n";
-          print_machines( "$ENV{'HOME'}/.cesm/config_machines.xml" );
+          print_machines( "$ENV{'HOME'}/.cime/config_machines.xml" );
         }
 	die "set_machine: exiting\n"; 
     }
