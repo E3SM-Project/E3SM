@@ -1090,7 +1090,7 @@ contains
   real(r8) :: frac_supp_nh4_to_decomp_plant
   real(r8) :: gross_min_nh4_flx  
   real(r8) :: alpha
-  real(r8) :: frac_gross_immob=0.5_r8  
+  real(r8) :: frac_gross_immob=1.0_r8  
   integer  :: reac
   
   associate(                                                         & !
