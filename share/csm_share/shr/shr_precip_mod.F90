@@ -8,7 +8,8 @@ module shr_precip_mod
   private
   save
 
-  public :: shr_precip_partition_rain_snow_ramp  ! determine a rain-snow partitioning using a ramp method
+  ! determine a rain-snow partitioning using a ramp method based on temperature
+  public :: shr_precip_partition_rain_snow_ramp
 
 contains
 
@@ -16,10 +17,12 @@ contains
   subroutine shr_precip_partition_rain_snow_ramp(temperature, frac_rain)
     !
     ! !DESCRIPTION:
-    ! Determine a rain-snow partitioning using a ramp method.
+    ! Determine a rain-snow partitioning using a ramp method based on temperature.
     !
-    ! Returns fraction of precipitation falling as rain. The rest (1 - frac_rain) falls
-    ! as snow.
+    ! Returns fractional mass of precipitation falling as rain. The rest (1 - frac_rain)
+    ! falls as snow.
+    !
+    ! This is meant to be used for precipitation at the surface, e.g., to force CLM.
     !
     ! !USES:
     use shr_const_mod, only : SHR_CONST_TKFRZ
