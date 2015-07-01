@@ -9,40 +9,46 @@
 !
 !  ocn_TEMPLATE
 !
-!> \brief MPAS ocean analysis core member: TEMPLATE
+!> \brief MPAS ocean analysis mode member: TEMPLATE
 !> \author FILL_IN_AUTHOR
 !> \date   FILL_IN_DATE
 !> \details
-!>  MPAS ocean analysis core member: TEMPLATE
+!>  MPAS ocean analysis mode member: TEMPLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
 !>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
 !>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
-!>     TEMPLATE, Template, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically TEMPLATE uses underscores (subroutine names), like your_new_name
-!>     while Template uses caps (variable names), like YourNewName.
-!>     note: do not replace 'filename_template' in Registry_ocn_your_new_name.xml
+!>     TEMPLATE, TEMP_LATE, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Typically TEMPLATE uses camel case (variable names), like yourNewName,
+!>     while TEMP_LATE uses underscores (subroutine names), like your_new_name.
+!>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
 !>  
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>
-!>  4. In mpas_ocn_analysis_driver.F, add calls for your analysis member
-!>     by copying lines with TEMPLATE and Template, and replacing those words
-!>     as described in step 2.
+!>  4. In mpas_ocn_analysis_driver.F, add a use statement for your new analysis member.
+!>     In addition, add lines for your analysis member, and replace TEMPLATE
+!>     and TEMP_LATE as described in step 2. There should be 5 places that need additions:
+!>      - Adding the analysis member name to the analysis member list
+!>      - Adding an init if test can subroutine call
+!>      - Adding a compute if test can subroutine call
+!>      - Adding a restart if test can subroutine call
+!>      - Adding a finalize if test can subroutine call
 !>  
 !>  5. In src/core_ocean/analysis_members/Makefile, add your
-!>     new analysis member everywhere you see
-!>     mpas_ocn_global_stats.o
-!>  
+!>     new analysis member to the list of members. See another analysis member
+!>     in that file for an example. 
+!>     NOTE: If your analysis member depends on other files, add a dependency
+!>           line for the member and list them there. See okubo weiss for an example.
+!>
 !-----------------------------------------------------------------------
 
 module ocn_TEMPLATE
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -66,8 +72,7 @@ module ocn_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_TEMPLATE, &
-             ocn_init_TEMPLATE, &
+   public :: ocn_init_TEMPLATE, &
              ocn_compute_TEMPLATE, &
              ocn_restart_TEMPLATE, &
              ocn_finalize_TEMPLATE
@@ -78,65 +83,9 @@ module ocn_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amTemplateTimer
-
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_TEMPLATE
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_TEMPLATE(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: amTemplatePkgActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amTemplatePkgActive', amTemplatePkgActive)
-
-      ! turn on package for this analysis member
-      amTemplatePkgActive = .true.
-
-   end subroutine ocn_setup_packages_TEMPLATE!}}}
-
 
 !***********************************************************************
 !
@@ -230,14 +179,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amTemplatePool
+      type (mpas_pool_type), pointer :: TEMPLATEAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: amTemplate
+      type (mpas_pool_type), pointer :: TEMPLATEAM
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -250,15 +199,13 @@ contains
 
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_TEMPLATE", .false., amTemplateTimer)
-
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
+         call mpas_pool_get_subpool(block % structs, 'TEMPLATEAM', TEMPLATEAMPool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -300,14 +247,12 @@ contains
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
+         call mpas_pool_get_subpool(block % structs, 'TEMPLATEAM', TEMPLATEAMPool)
 
-         ! assignment of final amTemplate variables could occur here.
+         ! assignment of final TEMPLATEAM variables could occur here.
 
          block => block % next
       end do
-
-      call mpas_timer_stop("compute_TEMPLATE", amTemplateTimer)
 
    end subroutine ocn_compute_TEMPLATE!}}}
 

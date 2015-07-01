@@ -22,7 +22,6 @@ module ocn_zonal_mean
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -46,8 +45,7 @@ module ocn_zonal_mean
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_zonal_mean, &
-             ocn_init_zonal_mean, &
+   public :: ocn_init_zonal_mean, &
              ocn_compute_zonal_mean, &
              ocn_restart_zonal_mean, &
              ocn_finalize_zonal_mean
@@ -57,9 +55,6 @@ module ocn_zonal_mean
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
-   integer :: nZonalMeanBinsUsed
-   type (timer_node), pointer :: amZonalMeanTimer
 
 !***********************************************************************
 
@@ -107,14 +102,14 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: amZonalMeanActive
+      logical, pointer :: zonalMeanAMActive
 
       err = 0
 
-      call mpas_pool_get_package(packagePool, 'amZonalMeanActive', amZonalMeanActive)
+      call mpas_pool_get_package(packagePool, 'zonalMeanAMActive', zonalMeanAMActive)
 
       ! turn on package for this analysis member
-      amZonalMeanActive = .true.
+      zonalMeanAMActive = .true.
 
    end subroutine ocn_setup_packages_zonal_mean!}}}
 
@@ -163,7 +158,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: amZonalMeanPool
+      type (mpas_pool_type), pointer :: zonalMeanAMPool
       type (mpas_pool_type), pointer :: meshPool
 
       integer ::  iBin
@@ -174,8 +169,7 @@ contains
       real (kind=RKIND), dimension(1) :: minBin, maxBin, minBinDomain, maxBinDomain
       real (kind=RKIND), dimension(:), pointer ::  binCenterZonalMean, binBoundaryZonalMean, binVariable
 
-      integer, pointer :: config_number_zonal_mean_bins
-      real (kind=RKIND), pointer :: config_min_zonal_mean_bin, config_max_zonal_mean_bin
+      real (kind=RKIND), pointer :: config_AM_zonalMean_min_bin, config_AM_zonalMean_max_bin
 
       logical, pointer :: on_a_sphere
 
@@ -187,16 +181,13 @@ contains
       maxBin = -1.0e34_RKIND
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amZonalMean', amZonalMeanPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'zonalMeanAM', zonalMeanAMPool)
 
-      call mpas_pool_get_config(domain % configs, 'config_number_zonal_mean_bins', config_number_zonal_mean_bins)
-      call mpas_pool_get_config(domain % configs, 'config_min_zonal_mean_bin', config_min_zonal_mean_bin)
-      call mpas_pool_get_config(domain % configs, 'config_max_zonal_mean_bin', config_max_zonal_mean_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_zonalMean_min_bin', config_AM_zonalMean_min_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_zonalMean_max_bin', config_AM_zonalMean_max_bin)
 
-      nZonalMeanBinsUsed = min( config_number_zonal_mean_bins, nZonalMeanBins )
-
-      call mpas_pool_get_array(amZonalMeanPool, 'binCenterZonalMean', binCenterZonalMean)
-      call mpas_pool_get_array(amZonalMeanPool, 'binBoundaryZonalMean', binBoundaryZonalMean)
+      call mpas_pool_get_array(zonalMeanAMPool, 'binCenterZonalMean', binCenterZonalMean)
+      call mpas_pool_get_array(zonalMeanAMPool, 'binBoundaryZonalMean', binBoundaryZonalMean)
 
       ! Find min and max values of binning variable.
       block => domain % blocklist
@@ -225,29 +216,29 @@ contains
       binCenterZonalMean = -1.0e34_RKIND
 
       ! Change min and max bin bounds to configuration settings, if applicable.
-      if (config_min_zonal_mean_bin > -1.0e33_RKIND) then
-         minBinDomain(1) = config_min_zonal_mean_bin
+      if (config_AM_zonalMean_min_bin > -1.0e33_RKIND) then
+         minBinDomain(1) = config_AM_zonalMean_min_bin
       else
          ! use measured min value, but decrease slightly to include least value.
          minBinDomain(1) = minBinDomain(1) - 1.0e-10_RKIND * abs(minBinDomain(1))
       end if
 
-      if (config_max_zonal_mean_bin > -1.0e33_RKIND) then
-         maxBinDomain(1) = config_max_zonal_mean_bin
+      if (config_AM_zonalMean_max_bin > -1.0e33_RKIND) then
+         maxBinDomain(1) = config_AM_zonalMean_max_bin
       else
          ! use measured max value, but increase slightly to include max value.
          maxBinDomain(1) = maxBinDomain(1) + 1.0e-10_RKIND * abs(maxBinDomain(1))
       end if
 
       binBoundaryZonalMean(1) = minBinDomain(1)
-      binWidth = (maxBinDomain(1) - minBinDomain(1)) / nZonalMeanBinsUsed
+      binWidth = (maxBinDomain(1) - minBinDomain(1)) / nZonalMeanBins
 
       binCenterZonalMean(1) = minBinDomain(1) + binWidth/2.0_RKIND
-      do iBin = 2, nZonalMeanBinsUsed
+      do iBin = 2, nZonalMeanBins
          binBoundaryZonalMean(iBin) = binBoundaryZonalMean(iBin-1) + binWidth
          binCenterZonalMean(iBin) = binCenterZonalMean(iBin-1) + binWidth
       end do
-      binBoundaryZonalMean(nZonalMeanBinsUsed+1) = binBoundaryZonalMean(nZonalMeanBinsUsed) + binWidth
+      binBoundaryZonalMean(nZonalMeanBins+1) = binBoundaryZonalMean(nZonalMeanBins) + binWidth
 
    end subroutine ocn_init_zonal_mean!}}}
 
@@ -298,7 +289,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: amZonalMeanPool
+      type (mpas_pool_type), pointer :: zonalMeanAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
@@ -321,9 +312,7 @@ contains
       err = 0
       dminfo = domain % dminfo
 
-      call mpas_timer_start("AM_zonal_mean", .false., amZonalMeanTimer)
-
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amZonalMean', amZonalMeanPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'zonalMeanAM', zonalMeanAMPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
@@ -333,10 +322,10 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
 
-      call mpas_pool_get_array(amZonalMeanPool, 'binBoundaryZonalMean', binBoundaryZonalMean)
+      call mpas_pool_get_array(zonalMeanAMPool, 'binBoundaryZonalMean', binBoundaryZonalMean)
 
-      allocate(sumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
-         totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
+      allocate(sumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins), &
+         totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins), &
          normZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins))
 
       sumZonalMean = 0.0_RKIND
@@ -379,7 +368,7 @@ contains
 
             if (binVariable(iCell) .lt. binBoundaryZonalMean(1)) cycle
 
-            do iBin = 1, nZonalMeanBinsUsed
+            do iBin = 1, nZonalMeanBins
                if (binVariable(iCell) .lt. binBoundaryZonalMean(iBin+1) ) then
 
                   do k = 1, kMax
@@ -408,10 +397,10 @@ contains
       end do
 
       ! mpi summation over all processors
-      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nZonalMeanBinsUsed*nZonalMeanVariables, sumZonalMean, totalSumZonalMean)
+      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nZonalMeanBins*nZonalMeanVariables, sumZonalMean, totalSumZonalMean)
 
       ! normalize by area
-      do iBin = 1, nZonalMeanBinsUsed
+      do iBin = 1, nZonalMeanBins
          do k = 1, nVertLevels
             ! Check if there is any area accumulated.  If so, normalize by the area.
             if (totalSumZonalMean(1,k,iBin) > 1.0e-12_RKIND) then
@@ -421,7 +410,7 @@ contains
             end if
          end do
       end do
-      do iBin = nZonalMeanBinsUsed + 1, nZonalMeanBins
+      do iBin = nZonalMeanBins + 1, nZonalMeanBins
          normZonalMean(:,:,iBin) = -1.0e34_RKIND
       end do
 
@@ -433,14 +422,14 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nZonalMeanBins', nZonalMeanBins)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
-         call mpas_pool_get_subpool(block % structs, 'amZonalMean', amZonalMeanPool)
+         call mpas_pool_get_subpool(block % structs, 'zonalMeanAM', zonalMeanAMPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
-         call mpas_pool_get_array(amZonalMeanPool, 'tracersZonalMean', tracersZonalMean)
-         call mpas_pool_get_array(amZonalMeanPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
-         call mpas_pool_get_array(amZonalMeanPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
+         call mpas_pool_get_array(zonalMeanAMPool, 'tracersZonalMean', tracersZonalMean)
+         call mpas_pool_get_array(zonalMeanAMPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
+         call mpas_pool_get_array(zonalMeanAMPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
 
          do iBin = 1, nZonalMeanBins
             do k = 1, nVertLevels
@@ -461,8 +450,6 @@ contains
       end do
 
       deallocate(sumZonalMean,totalSumZonalMean,normZonalMean)
-
-      call mpas_timer_stop("AM_zonal_mean", amZonalMeanTimer)
 
    end subroutine ocn_compute_zonal_mean!}}}
 

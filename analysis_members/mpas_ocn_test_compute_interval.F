@@ -22,7 +22,6 @@ module ocn_test_compute_interval
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -46,8 +45,7 @@ module ocn_test_compute_interval
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_test_compute_interval, &
-             ocn_init_test_compute_interval, &
+   public :: ocn_init_test_compute_interval, &
              ocn_compute_test_compute_interval, &
              ocn_restart_test_compute_interval, &
              ocn_finalize_test_compute_interval
@@ -58,65 +56,9 @@ module ocn_test_compute_interval
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amTestComputeIntervalTimer
-
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_test_compute_interval
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_test_compute_interval(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: amTestComputeIntervalPkgActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amTestComputeIntervalPkgActive', amTestComputeIntervalPkgActive)
-
-      ! turn on package for this analysis member
-      amTestComputeIntervalPkgActive = .true.
-
-   end subroutine ocn_setup_packages_test_compute_interval!}}}
-
 
 !***********************************************************************
 !
@@ -161,7 +103,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amTestComputeIntervalPool
+      type (mpas_pool_type), pointer :: testComputeIntervalAMPool
       type (block_type), pointer :: block
       real (kind=RKIND), pointer :: testComputeIntervalCounter
 
@@ -169,8 +111,8 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'amTestComputeInterval', amTestComputeIntervalPool)
-         call mpas_pool_get_array(amTestComputeIntervalPool, 'testComputeIntervalCounter',testComputeIntervalCounter)
+         call mpas_pool_get_subpool(block % structs, 'testComputeIntervalAM', testComputeIntervalAMPool)
+         call mpas_pool_get_array(testComputeIntervalAMPool, 'testComputeIntervalCounter',testComputeIntervalCounter)
 
          testComputeIntervalCounter = 0
 
@@ -224,14 +166,13 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amTestComputeIntervalPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: amTestComputeInterval
+      type (mpas_pool_type), pointer :: testComputeIntervalAMPool
       character (len=StrKIND), pointer :: xtime
 
       ! Here are some example variables which may be needed for your analysis member
@@ -245,12 +186,10 @@ contains
 
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_test_compute_interval", .false., amTestComputeIntervalTimer)
-
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'amTestComputeInterval', amTestComputeIntervalPool)
-         call mpas_pool_get_array(amTestComputeIntervalPool, 'testComputeIntervalCounter',testComputeIntervalCounter)
+         call mpas_pool_get_subpool(block % structs, 'testComputeIntervalAM', testComputeIntervalAMPool)
+         call mpas_pool_get_array(testComputeIntervalAMPool, 'testComputeIntervalCounter',testComputeIntervalCounter)
 
          testComputeIntervalCounter = testComputeIntervalCounter + 1
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -260,8 +199,6 @@ contains
 
       write(stderrUnit,'(3A,F10.1)') 'in ocn_compute_test_compute_interval, time = ', trim(xtime), &
          ',   testComputeIntervalCounter = ',testComputeIntervalCounter
-
-      call mpas_timer_stop("test_compute_interval", amTestComputeIntervalTimer)
 
    end subroutine ocn_compute_test_compute_interval!}}}
 
