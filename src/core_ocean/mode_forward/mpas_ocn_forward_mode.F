@@ -456,10 +456,7 @@ module ocn_forward_mode
             block_ptr => block_ptr % next
          end do
 
-         write(6,*) 'calling ocn_analysis_compute_w_alarms from forward'
-         call ocn_analysis_compute_w_alarms(domain, err)
-
-         write(6,*) 'calling ocn_analysis_write from forward'
+         call ocn_analysis_compute(domain, err) 
          call ocn_analysis_write(domain % streamManager, err)
 
          call mpas_timer_start('io_write', .false.)
