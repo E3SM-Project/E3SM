@@ -381,9 +381,34 @@ else # USE_PAPI IF
 	PAPI_MESSAGE="Papi libraries are off."
 endif # USE_PAPI IF
 
+ifdef TIMER_LIB
+ifeq "$(TIMER_LIB)" "tau"
+	override TAU=true
+	TIMER_MESSAGE="TAU is being used for the timer interface"
+endif
+
+ifeq "$(TIMER_LIB)" "gptl"
+	override CPPFLAGS += -DMPAS_GPTL_TIMERS
+	override FCINCLUDES += -I${GPTL}/include
+	override LIBS += -L${GPTL}/lib -lgptl
+	TIMER_MESSAGE="GPTL is being used for the timer interface"
+endif
+
+ifeq "$(TIMER_LIB)" ""
+	override CPPFLAGS += -DMPAS_NATIVE_TIMERS
+	TIMER_MESSAGE="The native timer interface is being used"
+endif
+
+else # else ifdef $(TIMER_LIB)
+
+	override CPPFLAGS += -DMPAS_NATIVE_TIMERS
+	TIMER_MESSAGE="The native timer interface is being used"
+
+endif # endif ifdef $(TIMER_LIB)
+
 ifeq "$(TAU)" "true"
 	LINKER=tau_f90.sh
-	CPPINCLUDES += -DMPAS_TAU
+	CPPINCLUDES += -DMPAS_TAU -DMPAS_TAU_TIMERS
 	TAU_MESSAGE="TAU Hooks are on."
 else
 	LINKER=$(FC)
@@ -516,6 +541,7 @@ ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
+	@echo $(TIMER_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
@@ -586,6 +612,10 @@ errmsg:
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
 	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
 	@echo "    GEN_F90=true  - Generates intermediate .f90 files through CPP, and builds with them."
+	@echo "    TIMER_LIB=opt - Selects the timer library interface to be used for profiling the model. Options are:"
+	@echo "                    TIMER_LIB=native - Uses native built-in timers in MPAS"
+	@echo "                    TIMER_LIB=gptl - Uses gptl for the timer interface instead of the native interface"
+	@echo "                    TIMER_LIB=tau - Uses TAU for the timer interface instead of the native interface"
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."

@@ -81,6 +81,8 @@ module mpas_framework
       integer :: pio_num_iotasks
       integer :: pio_stride
 
+      call mpas_timer_init(domain)
+
 #ifdef MPAS_DEBUG
       call mpas_pool_set_error_level(MPAS_POOL_WARN)
       call mpas_pool_set_error_level(MPAS_POOL_FATAL)
