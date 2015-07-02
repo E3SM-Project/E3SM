@@ -621,12 +621,6 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		fortprintf(fd, "      if (dminfo %% my_proc_id == IO_NODE) then\n");
 		fortprintf(fd, "         rewind(unitNumber)\n");
 		fortprintf(fd, "         read(unitNumber, %s, iostat=ierr)\n", nmlrecname);
-		fortprintf(fd, "         if (ierr > 0) then\n");
-		fortprintf(fd, "            write(stderrUnit, *) 'Error while reading namelist record %s.'\n", nmlrecname);
-		fortprintf(fd, "            call mpas_dmpar_abort(dminfo)\n");
-		fortprintf(fd, "         else if (ierr < 0) then\n");
-		fortprintf(fd, "            write(stderrUnit,*) 'Namelist record %s not found; using default values for variables in this namelist'\n", nmlrecname);
-		fortprintf(fd, "         end if\n");
 		fortprintf(fd, "      end if\n");
 
 		// Broadcast ierr, to check if a broadcast should happen for the options (if namelist was read in)
@@ -634,7 +628,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 		fortprintf(fd, "\n");
 		// Define broadcast calls for namelist values.
-		fortprintf(fd, "      if (ierr == 0) then\n");
+		fortprintf(fd, "      if (ierr <= 0) then\n");
 		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 			nmloptname = ezxml_attr(nmlopt_xml, "name");
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
@@ -649,6 +643,25 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "         call mpas_dmpar_bcast_char(dminfo, %s)\n", nmloptname);
 			}
 		}
+		fortprintf(fd, "         if (ierr < 0) then\n");
+		fortprintf(fd, "            write(stderrUnit,*) '*** Encountered an issue while attempting to read namelist record %s'\n", nmlrecname);
+		fortprintf(fd, "            write(stderrUnit,*) '    The following values will be used for variables in this record:'\n");
+		fortprintf(fd, "            write(stderrUnit,*) ' '\n");
+		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
+			nmloptname = ezxml_attr(nmlopt_xml, "name");
+			nmlopttype = ezxml_attr(nmlopt_xml, "type");
+
+			if(strncmp(nmlopttype, "character", 1024) == 0){
+				fortprintf(fd, "            write(stderrUnit,*) '        %s = ', trim(%s)\n", nmloptname, nmloptname);
+			} else {
+				fortprintf(fd, "            write(stderrUnit,*) '        %s = ', %s\n", nmloptname, nmloptname);
+			}
+		}
+		fortprintf(fd, "            write(stderrUnit,*) ' '\n");
+		fortprintf(fd, "         end if\n");
+		fortprintf(fd, "      else if (ierr > 0) then\n");
+		fortprintf(fd, "         write(stderrUnit, *) 'Error while reading namelist record %s.'\n", nmlrecname);
+		fortprintf(fd, "         call mpas_dmpar_abort(dminfo)\n");
 		fortprintf(fd, "      end if\n");
 		fortprintf(fd, "\n");
 
