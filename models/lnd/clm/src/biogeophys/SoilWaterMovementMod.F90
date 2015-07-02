@@ -763,10 +763,12 @@ contains
     integer  :: pi                                           ! pft index
     !
 #ifdef USE_PETSC_LIB
+    PetscInt              :: jwt                             ! index of first unsaturated soil layer
     PetscInt              :: idx                             ! 1D index for (c,j)
     PetscInt              :: soe_auxvar_id                   ! Index of system-of-equation's (SoE's) auxvar
     PetscReal             :: flux_unit_conversion            ! [mm/s] ---> [kg/s]
     PetscReal             :: area                            ! [m^2]
+    PetscReal             :: z_up, z_dn                      ! [m]
     PetscErrorCode        :: ierr                            ! PETSc return error code
 #endif
     !-----------------------------------------------------------------------
@@ -777,6 +779,7 @@ contains
          dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
 
          qcharge           =>    soilhydrology_vars%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)
+         zwt               =>    soilhydrology_vars%zwt_col         , & ! Input:  [real(r8) (:)   ]  water table depth (m)
 
          watsat            =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
@@ -932,14 +935,34 @@ contains
       ! Put the data in CLM's data structure
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
-         do j = 1, nlevgrnd
+
+         ! initialization
+         jwt = -1
+
+         ! Loops in decreasing j so WTD can be computed in the same loop
+         do j = nlevgrnd, 1, -1
             idx = (c-1)*nlevgrnd + j
 
             h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
             smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
+
+            if (jwt == -1) then
+               ! Find the first soil that is unsaturated
+               if (smp_l(c,j) < 0._r8) jwt = j
+            end if
+
          end do
 
          qcharge(c) = 0._r8
+
+         if (jwt == -1 .or. jwt == nlevgrnd) then
+            ! Water table below or in the last layer
+            zwt(c) = zi(c,nlevgrnd)
+         else
+            z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
+            z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
+            zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
+         endif
 
       end do
 
