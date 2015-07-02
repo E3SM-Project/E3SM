@@ -100,6 +100,7 @@ module WaterfluxType
      real(r8), pointer :: mflx_et_col_1d           (:)   ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
      real(r8), pointer :: vsfm_sat_col_1d          (:)   ! liquid saturation from VSFM [-]
      real(r8), pointer :: vsfm_mass_col_1d         (:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
+     real(r8), pointer :: vsfm_smpl_col_1d         (:)   ! 1D soil matrix potential liquid from VSFM [m]
 
    contains
  
@@ -229,6 +230,7 @@ contains
     allocate(this%mflx_et_col_1d(  (endc-begc + 1)*nlevgrnd))        ; this%mflx_et_col_1d           (:)   = nan
     allocate(this%vsfm_sat_col_1d( (endc-begc + 1)*nlevgrnd))        ; this%vsfm_sat_col_1d          (:)   = nan
     allocate(this%vsfm_mass_col_1d((endc-begc + 1)*nlevgrnd))        ; this%vsfm_mass_col_1d         (:)   = nan
+    allocate(this%vsfm_smpl_col_1d((endc-begc + 1)*nlevgrnd))        ; this%vsfm_smpl_col_1d         (:)   = nan
 
   end subroutine InitAllocate
 

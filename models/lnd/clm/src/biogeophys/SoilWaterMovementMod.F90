@@ -733,6 +733,7 @@ contains
     use MultiPhysicsProbConstants, only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants, only : VAR_LIQ_SAT
     use MultiPhysicsProbConstants, only : VAR_MASS
+    use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
     use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants, only : AUXVAR_BC
     use MultiPhysicsProbConstants, only : AUXVAR_SS
@@ -780,6 +781,8 @@ contains
          watsat            =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
          rootr_pft         =>    soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
+         smp_l             =>    soilstate_vars%smp_l_col           , & ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
+         hk_l              =>    soilstate_vars%hk_l_col            , & ! Output: [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
 
          h2osoi_ice        =>    waterstate_vars%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)
          h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
@@ -798,6 +801,7 @@ contains
          t_soil_col_1d     =>    temperature_vars%t_soil_col_1d     , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)
          vsfm_sat_col_1d   =>    waterflux_vars%vsfm_sat_col_1d     , & ! Input:  [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
          vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    , & ! Input:  [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+         vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
 
          t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          )
@@ -908,7 +912,9 @@ contains
       soe_auxvar_id = 3;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_dew_col_1d)
 
-      ! Solve the system.
+      !
+      ! Solve the VSFM.
+      !
       call vsfm_mpp%sysofeqns%StepDT(dtime, ierr); CHKERRQ(ierr)
 
       ! Get Liquid saturation
@@ -919,12 +925,18 @@ contains
       soe_auxvar_id = 1;
       call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_MASS, soe_auxvar_id, vsfm_mass_col_1d)
 
+      ! Get liquid soil matrix potential
+      soe_auxvar_id = 1;
+      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_SOIL_MATRIX_POT, soe_auxvar_id, vsfm_smpl_col_1d)
+
       ! Put the data in CLM's data structure
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
          do j = 1, nlevgrnd
             idx = (c-1)*nlevgrnd + j
+
             h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
+            smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
          end do
 
          qcharge(c) = 0._r8
