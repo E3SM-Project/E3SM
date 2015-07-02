@@ -33,6 +33,7 @@ static PIO_Offset maxusage=0;
 /** @brief Initialize the compute buffer to size PIO_CNBUFFER_LIMIT
  *
  *  This routine initializes the compute buffer pool if the bget memory management is used.
+ * @param ios the iosystem descriptor which will use the new buffer
  */
 
 void compute_buffer_init(iosystem_desc_t ios)
@@ -58,7 +59,11 @@ void compute_buffer_init(iosystem_desc_t ios)
 }
 
 /** @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
- *
+ *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
+ *   @param[in] iodesc: a pointer to the defined iodescriptor for the buffer
+ *   @param[in] vid: the variable id to be written
+ *   @param[in] IOBUF: the buffer to be written from this mpi task
+ *   @param[in] fillvalue: the optional fillvalue to be used for missing data in this buffer
  */
 
 
@@ -311,6 +316,22 @@ void compute_buffer_init(iosystem_desc_t ios)
  *        
  *   This routine is used if aggregation is enabled, data is already on the
  *   io-tasks
+ *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
+ *   @param[in] nvars: the number of variables to be written with this decomposition
+ *   @param[in] vid: an array of the variable ids to be written 
+ *   @param[in] iodesc_ndims: the number of dimensions explicitly in the iodesc
+ *   @param[in] basetype : the basic type of the minimal data unit
+ *   @param[in] gsize : array of the global dimensions of the field to be written
+ *   @param[in] maxregions : max number of blocks to be written from this iotask
+ *   @param[in] firstregion : pointer to the first element of a linked list of region descriptions.
+ *   @param[in] llen : length of the iobuffer on this task for a single field
+ *   @param[in] maxiobuflen : maximum llen participating 
+ *   @param[in] num_aiotasks : actual number of iotasks participating
+ *   @param[in] IOBUF: the buffer to be written from this mpi task
+ *   @param[in] frame : the frame or record dimension for each of the nvars variables in IOBUF  
+ */
+
+
  */
 
 
