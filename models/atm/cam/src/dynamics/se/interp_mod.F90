@@ -173,14 +173,14 @@ contains
              ncols = get_ncols_p(lchnk)
              
              call chunk_to_block_send_pters(lchnk,pcols,pver+1,1,cpter)
-             
+
+             ! buffer has storage for 0:numlev.  We only use 1:nlev
              do i=1,ncols
-                cbuffer(cpter(i,1):cpter(i,1)) = 0.0_r8
+                cbuffer(cpter(i,0):cpter(i,0)) = 0.0_r8
              end do
 
              do icol=1,ncols
-                
-                cbuffer   (cpter(icol,:))     = fld(icol,:,lchnk-begchunk+1)
+                cbuffer   (cpter(icol,1:numlev))     = fld(icol,1:numlev,lchnk-begchunk+1)
              end do
 
           end do
@@ -193,7 +193,7 @@ contains
                 call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pver+1,1,bpter)
                 ncols = elem(ie)%idxp%NumUniquePts
                 do icol=1,ncols
-                   fld_dyn   (icol,:,ie)   = bbuffer(bpter(icol,:))
+                   fld_dyn   (icol,1:numlev,ie)   = bbuffer(bpter(icol,1:numlev))
                 end do
 
              end do
