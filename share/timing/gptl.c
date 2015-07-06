@@ -126,7 +126,6 @@ typedef struct {
 static Settings cpustats =      {GPTLcpu,      "Usr       sys       usr+sys   ", false};
 static Settings wallstats =     {GPTLwall,     "   Wallclock          max          min", true };
 static Settings overheadstats = {GPTLoverhead, "     UTR Overhead "            , true };
-static Settings profileovhd   = {GPTLprofile_ovhd, "", false };
 
 static Hashentry **hashtable;    /* table of entries */
 static long ticks_per_sec;       /* clock ticks per second */
@@ -232,10 +231,6 @@ static float get_clockfreq (void);                /* cycles/sec */
 static int tablesize = 1024;  /* per-thread size of hash table (settable parameter) */
 static char *outdir = 0;      /* dir to write output files to (currently unused) */
 
-static double overhead_utr   = 0.0;                 /* timer cost estimate */
-static double overhead_est   = 0.0;                 /* direct measurement of overhead for thread 0 */
-static double overhead_bound = 0.0;                 /* direct measurement of overhead for thread 0 */
-
 /* VERBOSE is a debugging ifdef local to the rest of this file */
 #undef VERBOSE
 
@@ -284,11 +279,6 @@ int GPTLsetoption (const int option,  /* option */
     overheadstats.enabled = (bool) val; 
     if (verbose)
       printf ("%s: boolean overheadstats = %d\n", thisfunc, val);
-    return 0;
-  case GPTLprofile_ovhd: 
-    profileovhd.enabled = (bool) val; 
-    if (verbose)
-      printf ("%s: boolean profileovhd = %d\n", thisfunc, val);
     return 0;
   case GPTLdepthlimit: 
     depthlimit = val; 
@@ -503,11 +493,6 @@ int GPTLinitialize (void)
     printf ("Underlying wallclock timing routine is %s\n", funclist[funcidx].name);
   }
 
-  /* set global timer overhead estimate */
-  if (wallstats.enabled && profileovhd.enabled){
-    overhead_utr = utr_getoverhead ();
-  }
-
   initialized = true;
   return 0;
 }
@@ -696,19 +681,13 @@ int GPTLstart (const char *name)               /* timer name */
   int t;             /* thread index (of this thread) */
   int numchars;      /* number of characters to copy */
   unsigned int indx; /* hash table index */
-  double tpa = 0.0;  /* time stamp */
-  double tpb = 0.0;  /* time stamp */
   static const char *thisfunc = "GPTLstart";
 
   if (disabled)
     return 0;
 
-  if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
-  }
+  if ( ! initialized)
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
 
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
@@ -721,13 +700,6 @@ int GPTLstart (const char *name)               /* timer name */
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
-  }
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* first caliper timestamp */
-      tpa = (*ptr2wtimefunc) ();
-    }
   }
 
   /* 
@@ -745,17 +717,6 @@ int GPTLstart (const char *name)               /* timer name */
 
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tpa) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-      }
-    }
     return 0;
   }
 
@@ -785,17 +746,6 @@ int GPTLstart (const char *name)               /* timer name */
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
 
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tpa) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-    }
-  }
-
   return (0);
 }
 
@@ -816,19 +766,13 @@ int GPTLstart_handle (const char *name,  /* timer name */
   int t;                                 /* thread index (of this thread) */
   int numchars;                          /* number of characters to copy */
   unsigned int indx = (unsigned int) -1; /* hash table index: init to bad value */
-  double tpa = 0.0;                      /* time stamp */
-  double tpb = 0.0;                      /* time stamp */
   static const char *thisfunc = "GPTLstart_handle";
 
   if (disabled)
     return 0;
 
-  if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
-  }
+  if ( ! initialized)
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, name);
 
   if ((t = get_thread_num ()) < 0)
     return GPTLerror ("%s: bad return from get_thread_num\n", thisfunc);
@@ -841,13 +785,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
-  }
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* first caliper timestamp */
-      tpa = (*ptr2wtimefunc) ();
-    }
   }
 
   /*
@@ -869,18 +806,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
 
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tpa) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
@@ -917,17 +842,6 @@ int GPTLstart_handle (const char *name,  /* timer name */
   if ( ! *handle)
     *handle = (void *) ptr;
 
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tpa) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-    }
-  }
-
   return (0);
 }
 
@@ -948,21 +862,16 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
   int numchars;      /* number of characters to copy */
   unsigned int indx; /* hash table index */
   char strname[MAX_CHARS+1]; /* null terminated version of name */
-  double tpa = 0.0;  /* time stamp */
-  double tpb = 0.0;  /* time stamp */
   static const char *thisfunc = "GPTLstartf";
 
   if (disabled)
     return 0;
 
   if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    numchars = MIN (namelen, MAX_CHARS);
-    //pw    strncpy (strname, name, numchars);
-    //pw    strname[numchars] = '\0';
-    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (strname, name, numchars);
+    strname[numchars] = '\0';
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
   }
 
   if ((t = get_thread_num ()) < 0)
@@ -976,13 +885,6 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
-  }
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* first caliper timestamp */
-      tpa = (*ptr2wtimefunc) ();
-    }
   }
 
   /* 
@@ -1000,18 +902,6 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
 
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tpa) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
@@ -1040,17 +930,6 @@ int GPTLstartf (const char *name, const int namelen)    /* timer name and length
 
   if (update_ptr (ptr, t) != 0)
     return GPTLerror ("%s: update_ptr error\n", thisfunc);
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tpa) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-    }
-  }
 
   return (0);
 }
@@ -1075,22 +954,17 @@ int GPTLstartf_handle (const char *name,  /* timer name */
   int t;                                 /* thread index (of this thread) */
   int numchars;                          /* number of characters to copy */
   unsigned int indx = (unsigned int) -1; /* hash table index: init to bad value */
-  char strname[MAX_CHARS+1];             /* null terminated version of name */
-  double tpa = 0.0;                      /* time stamp */
-  double tpb = 0.0;                      /* time stamp */
+  char strname[MAX_CHARS+1]; /* null terminated version of name */
   static const char *thisfunc = "GPTLstartf_handle";
 
   if (disabled)
     return 0;
 
   if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    numchars = MIN (namelen, MAX_CHARS);
-    //pw    strncpy (strname, name, numchars);
-    //pw    strname[numchars] = '\0';
-    //pw    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
+    numchars = MIN (namelen, MAX_CHARS);
+    strncpy (strname, name, numchars);
+    strname[numchars] = '\0';
+    return GPTLerror ("%s name=%s: GPTLinitialize has not been called\n", thisfunc, strname);
   }
 
   if ((t = get_thread_num ()) < 0)
@@ -1104,13 +978,6 @@ int GPTLstartf_handle (const char *name,  /* timer name */
   if (stackidx[t].val >= depthlimit) {
     ++stackidx[t].val;
     return 0;
-  }
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* first caliper timestamp */
-      tpa = (*ptr2wtimefunc) ();
-    }
   }
 
   /*
@@ -1132,18 +999,6 @@ int GPTLstartf_handle (const char *name,  /* timer name */
 
   if (ptr && ptr->onflg) {
     ++ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tpa) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
@@ -1179,17 +1034,6 @@ int GPTLstartf_handle (const char *name,  /* timer name */
 
   if ( ! *handle)
     *handle = (void *) ptr;
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tpa) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tpa) + 2*overhead_utr);
-    }
-  }
 
   return (0);
 }
@@ -1428,19 +1272,13 @@ int GPTLstop (const char *name)               /* timer name */
   unsigned int indx;         /* index into hash table */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
-  double tpa = 0.0;          /* time stamp */
-  double tpb = 0.0;          /* time stamp */
   static const char *thisfunc = "GPTLstop";
 
   if (disabled)
     return 0;
 
-  if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-  }
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
     
@@ -1464,13 +1302,6 @@ int GPTLstop (const char *name)               /* timer name */
     return 0;
   }
 
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* dummy clock call, to capture earlier tp1 call */
-      tpa = (*ptr2wtimefunc) ();
-    }
-  }
-
   if ( ! (ptr = getentry (hashtable[t], name, &indx)))
     return GPTLerror ("%s thread %d: timer for %s had not been started.\n", thisfunc, t, name);
 
@@ -1488,34 +1319,11 @@ int GPTLstop (const char *name)               /* timer name */
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tp1) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
   if (update_stats (ptr, tp1, usr, sys, t) != 0)
     return GPTLerror ("%s: error from update_stats\n", thisfunc);
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tp1) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-    }
-  }
 
   return 0;
 }
@@ -1539,19 +1347,13 @@ int GPTLstop_handle (const char *name,     /* timer name */
   unsigned int indx;         /* index into hash table */
   long usr = 0;              /* user time (returned from get_cpustamp) */
   long sys = 0;              /* system time (returned from get_cpustamp) */
-  double tpa = 0.0;          /* time stamp */
-  double tpb = 0.0;          /* time stamp */
   static const char *thisfunc = "GPTLstop_handle";
 
   if (disabled)
     return 0;
 
-  if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-  }
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
     
@@ -1573,13 +1375,6 @@ int GPTLstop_handle (const char *name,     /* timer name */
   if (stackidx[t].val > depthlimit) {
     --stackidx[t].val;
     return 0;
-  }
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* dummy clock call, to capture earlier tp1 call */
-      tpa = (*ptr2wtimefunc) ();
-    }
   }
 
   /*
@@ -1608,18 +1403,6 @@ int GPTLstop_handle (const char *name,     /* timer name */
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tp1) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
@@ -1632,17 +1415,6 @@ int GPTLstop_handle (const char *name,     /* timer name */
 
   if ( ! *handle)
     *handle = (void *) ptr;
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tp1) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-    }
-  }
 
   return 0;
 }
@@ -1667,19 +1439,13 @@ int GPTLstopf (const char *name, const int namelen) /* timer name and length */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   int numchars;              /* number of characters to copy */
   char strname[MAX_CHARS+1]; /* null terminated version of name */
-  double tpa = 0.0;          /* time stamp */
-  double tpb = 0.0;          /* time stamp */
   static const char *thisfunc = "GPTLstopf";
 
   if (disabled)
     return 0;
 
-  if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-  }
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
     
@@ -1703,13 +1469,6 @@ int GPTLstopf (const char *name, const int namelen) /* timer name and length */
     return 0;
   }
 
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* dummy clock call, to capture earlier tp1 call */
-      tpa = (*ptr2wtimefunc) ();
-    }
-  }
-
   if ( ! (ptr = getentryf (hashtable[t], name, namelen, &indx))){
     numchars = MIN (namelen, MAX_CHARS);
     strncpy (strname, name, numchars);
@@ -1731,34 +1490,11 @@ int GPTLstopf (const char *name, const int namelen) /* timer name and length */
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tp1) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
   if (update_stats (ptr, tp1, usr, sys, t) != 0)
     return GPTLerror ("%s: error from update_stats\n", thisfunc);
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tp1) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-    }
-  }
 
   return 0;
 }
@@ -1787,19 +1523,13 @@ int GPTLstopf_handle (const char *name,     /* timer name */
   long sys = 0;              /* system time (returned from get_cpustamp) */
   int numchars;              /* number of characters to copy */
   char strname[MAX_CHARS+1]; /* null terminated version of name */
-  double tpa = 0.0;          /* time stamp */
-  double tpb = 0.0;          /* time stamp */
   static const char *thisfunc = "GPTLstopf_handle";
 
   if (disabled)
     return 0;
 
-  if ( ! initialized){
-    //pw++
-    return 0;
-    //pw--
-    //pw    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
-  }
+  if ( ! initialized)
+    return GPTLerror ("%s: GPTLinitialize has not been called\n", thisfunc);
 
   /* Get the timestamp */
     
@@ -1821,13 +1551,6 @@ int GPTLstopf_handle (const char *name,     /* timer name */
   if (stackidx[t].val > depthlimit) {
     --stackidx[t].val;
     return 0;
-  }
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* dummy clock call, to capture earlier tp1 call */
-      tpa = (*ptr2wtimefunc) ();
-    }
   }
 
   /*
@@ -1860,18 +1583,6 @@ int GPTLstopf_handle (const char *name,     /* timer name */
   if (ptr->recurselvl > 0) {
     ++ptr->nrecurse;
     --ptr->recurselvl;
-
-    if (wallstats.enabled && profileovhd.enabled){
-      if (t == 0){
-        /* second caliper timestamp */
-        tpb = (*ptr2wtimefunc) ();
-        /* subtract out additional overhead from caliper timing calls */
-        overhead_est += ((tpb - tp1) - overhead_utr);
-        /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-        overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-      }
-    }
-
     return 0;
   }
 
@@ -1884,17 +1595,6 @@ int GPTLstopf_handle (const char *name,     /* timer name */
 
   if ( ! *handle)
     *handle = (void *) ptr;
-
-  if (wallstats.enabled && profileovhd.enabled){
-    if (t == 0){
-      /* second caliper timestamp */
-      tpb = (*ptr2wtimefunc) ();
-      /* subtract out additional overhead from caliper timing calls */
-      overhead_est += ((tpb - tp1) - overhead_utr);
-      /* add in additional overhead due to caliper timing calls (probaby 2X what necessary) */
-      overhead_bound += ((tpb - tp1) + 2*overhead_utr);
-    }
-  }
 
   return 0;
 }
@@ -2264,12 +1964,7 @@ int GPTLpr_file (const char *outfile) /* output file to write */
 
   utr_overhead = utr_getoverhead ();
   fprintf (fp, "Underlying timing routine was %s.\n", funclist[funcidx].name);
-  if (wallstats.enabled && profileovhd.enabled){
-    fprintf (fp, "Per-call utr overhead est (at init): %g sec.\n", overhead_utr);
-    fprintf (fp, "Per-call utr overhead est (at end): %g sec.\n", utr_overhead);
-  }else{
-    fprintf (fp, "Per-call utr overhead est: %g sec.\n", utr_overhead);
-  }
+  fprintf (fp, "Per-call utr overhead est: %g sec.\n", utr_overhead);
 #ifdef HAVE_PAPI
   if (dousepapi) {
     double t1, t2;
@@ -2363,16 +2058,9 @@ int GPTLpr_file (const char *outfile) /* output file to write */
       sum[t]     += ptr->count * 2 * tot_overhead;
       totcount   += ptr->count;
     }
-    fprintf (fp, "\n");
-    if (wallstats.enabled && overheadstats.enabled){
+    if (wallstats.enabled && overheadstats.enabled)
+      fprintf (fp, "\n");
       fprintf (fp, "Overhead sum = %9.3g wallclock seconds\n", sum[t]);
-    }
-    if (t == 0){
-      if (wallstats.enabled && profileovhd.enabled){
-        fprintf (fp, "Overhead estimate = %9.3g wallclock seconds\n", overhead_est);
-        fprintf (fp, "Overhead bound = %9.3g wallclock seconds\n", overhead_bound);
-      }
-    }
     if (totcount < PRTHRESH)
       fprintf (fp, "Total calls  = %lu\n", totcount);
     else

@@ -1,19 +1,3 @@
-timing_150518: Disabled abort when calling GPTL routines before GPTLinitialize
-               (so can use with Chombo library, for example); changed top 
-               level default from nanotimer to MPI_WTIME. 
-               [Patrick Worley]
-timing_150327: Added option to more accurately measure measurement overhead
-               (incurring additional overhead, so not on by default).
-               [Patrick Worley]
-timing_150217: Added support for enabling/disabling start/stop timers from 
-               perf_mod even when calling GPTL routines directly from C/C++ 
-               libraries; increased maximum timer name length.
-               [Patrick Worley]
-timing_141119: Enabled cmake build of timing library.
-               [Jayesh Krishna]
-timing_140805: Disabled GPTL autoinstrumentation, as this conflicts with the
-               VampirTrace tool. (We do not use the autoinstrumentation 
-               capability.) [Patrick Worley, from B. Jamroz]
 timing_140416: Changed Makefile so that .mods and the static library are copied to 
                LIBROOT
 timing_140317: Modified Makefile to deal with shared mpi-serial builds
