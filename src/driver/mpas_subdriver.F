@@ -48,6 +48,7 @@ module mpas_subdriver
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
       use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
+      use mpas_threading, only : mpas_threading_init
  
       implicit none
 
@@ -301,6 +302,14 @@ module mpas_subdriver
       call mpas_bootstrap_framework_phase2(domain_ptr)
 
       !
+      ! Setup threading
+      !
+      call mpas_threading_init(domain_ptr % blocklist, ierr)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Threading setup failed for core '//trim(domain_ptr % core % coreName))
+      end if
+
+      !
       ! Initialize core
       !
       iErr = domain_ptr % core % core_init(domain_ptr, timeStamp)
@@ -330,6 +339,7 @@ module mpas_subdriver
    subroutine mpas_finalize()
 
       use mpas_stream_manager, only : MPAS_stream_mgr_finalize
+      use mpas_threading, only : mpas_threading_finalize
    
       implicit none
 
@@ -352,6 +362,11 @@ module mpas_subdriver
       ! Finalize infrastructure
       !
       call MPAS_stream_mgr_finalize(domain_ptr % streamManager)
+
+      !
+      ! Finalize threading
+      !
+      call mpas_threading_finalize(domain_ptr % blocklist)
 
       call mpas_framework_finalize(domain_ptr % dminfo, domain_ptr)
 
