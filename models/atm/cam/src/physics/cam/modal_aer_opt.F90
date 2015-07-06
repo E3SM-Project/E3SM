@@ -176,8 +176,8 @@ subroutine modal_aer_opt_init()
    call addfld ('EXTINCT','/m  ',pver,    'A','Aerosol extinction',phys_decomp, flag_xyfill=.true.)
    call addfld ('ABSORB','/m  ',pver,    'A','Aerosol absorption',phys_decomp, flag_xyfill=.true.)
    call addfld ('AODVIS','  ',1,    'A','Aerosol optical depth 550 nm',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODUV','  ',1,    'A','Aerosol optical depth 350 nm',phys_decomp, flag_xyfill=.true.)  !BSINGH - Added for rad diags
-   call addfld ('AODNIR','  ',1,    'A','Aerosol optical depth 850 nm',phys_decomp, flag_xyfill=.true.) !BSINGH - Added for rad diags
+   call addfld ('AODUV','  ',1,    'A','Aerosol optical depth 350 nm',phys_decomp, flag_xyfill=.true.)  
+   call addfld ('AODNIR','  ',1,    'A','Aerosol optical depth 850 nm',phys_decomp, flag_xyfill=.true.) 
    call addfld ('AODABS','  ',1,    'A','Aerosol absorption optical depth 550 nm',phys_decomp, flag_xyfill=.true.)
    call addfld ('AODMODE1','  ',1,    'A','Aerosol optical depth 550 nm mode 1'           ,phys_decomp, flag_xyfill=.true.)
    call addfld ('AODMODE2','  ',1,    'A','Aerosol optical depth 550 nm mode 2'           ,phys_decomp, flag_xyfill=.true.)
@@ -249,7 +249,6 @@ subroutine modal_aer_opt_init()
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
   end if
-  !BSINGH - Added for MAM4 simulations
   if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then
      call addfld ('AODDUST4','  ',1,    'A','Aerosol optical depth 550 nm model 4 from dust',phys_decomp, flag_xyfill=.true.)     
      call addfld ('AODMODE4','  ',1,    'A','Aerosol optical depth 550 nm mode 4',phys_decomp, flag_xyfill=.true.)
@@ -261,7 +260,6 @@ subroutine modal_aer_opt_init()
         call add_default ('BURDEN4' , 1, ' ')
      end if
   end if
-  !BSINGH - Added for MAM4 simulations - ENDS
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then      
       call addfld ('AODDUST5','  ',1,    'A','Aerosol optical depth 550 nm model 5 from dust',phys_decomp, flag_xyfill=.true.)
       call addfld ('AODDUST6','  ',1,    'A','Aerosol optical depth 550 nm model 6 from dust',phys_decomp, flag_xyfill=.true.)

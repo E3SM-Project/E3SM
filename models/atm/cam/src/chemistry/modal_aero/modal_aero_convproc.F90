@@ -208,7 +208,6 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
 
    use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,  only: get_nstep
-   !use phys_buffer,   only: pbuf_size_max, pbuf_fld, pbuf_old_tim_idx, pbuf_get_fld_idx !BSINGH-commented out due to changes in physics_buffer 
    use physics_buffer, only: physics_buffer_desc, pbuf_get_index
    use constituents,  only: pcnst, cnst_name
    use error_messages, only: alloc_err	
@@ -219,7 +218,6 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
    type(physics_ptend), intent(inout) :: ptend          ! indivdual parameterization tendencies
-   !type(pbuf_fld), intent(inout), dimension(pbuf_size_max) :: pbuf  ! physics buffer !BSINGH-commented out due to changes in physics_buffer 
    type(physics_buffer_desc), pointer :: pbuf(:)
    real(r8), intent(in) :: ztodt                          ! 2 delta t (model time increment)
 
@@ -509,7 +507,6 @@ subroutine ma_convproc_dp_intr(                &
 
    use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,   only: get_nstep
-   !use phys_buffer,    only: pbuf_size_max, pbuf_fld, pbuf_old_tim_idx, pbuf_get_fld_idx !BSINGH- commented out due to changes in physics_buffer
    use physics_buffer, only: pbuf_get_index, physics_buffer_desc, pbuf_get_field
    use constituents,   only: pcnst, cnst_get_ind, cnst_name
    use error_messages, only: alloc_err	
@@ -522,7 +519,6 @@ subroutine ma_convproc_dp_intr(                &
  
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
-   !type(pbuf_fld), intent(inout), dimension(pbuf_size_max) :: pbuf  ! physics buffer !BSINGH- commented out due to changes in physics_buffer
    type(physics_buffer_desc), pointer :: pbuf(:)
 
    real(r8), intent(in) :: dt                         ! delta t (model time increment)
@@ -592,9 +588,7 @@ subroutine ma_convproc_dp_intr(                &
 !
 ! Associate pointers with physics buffer fields
 !
-   !ifld = pbuf_get_fld_idx('FRACIS') !BSINGH- commented out due to changes in physics_buffer
    ifld = pbuf_get_index('FRACIS') 
-   !fracis  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,state%lchnk,1:pcnst) !BSINGH- commented out due to changes in physics_buffer
    call pbuf_get_field(pbuf, ifld, fracis)
 
    fracice(:,:) = 0.0_r8
@@ -938,7 +932,6 @@ subroutine ma_convproc_sh_intr(                 &
 
    use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,   only: get_nstep
-   !use physics_buffer,    only: pbuf_size_max, pbuf_fld, pbuf_old_tim_idx, pbuf_get_fld_idx !BSINGH- commented out due to changes in physics_buffer
    use physics_buffer, only: pbuf_get_index, physics_buffer_desc, pbuf_get_field
    use constituents,   only: pcnst, cnst_get_ind, cnst_name
    use error_messages, only: alloc_err	
@@ -951,7 +944,6 @@ subroutine ma_convproc_sh_intr(                 &
  
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
-   !type(pbuf_fld), intent(inout), dimension(pbuf_size_max) :: pbuf  ! physics buffer!BSINGH- commented out due to changes in physics_buffer
    type(physics_buffer_desc), pointer :: pbuf(:)
 
    real(r8), intent(in) :: dt                         ! delta t (model time increment)
@@ -1025,9 +1017,7 @@ subroutine ma_convproc_sh_intr(                 &
 !
 ! Associate pointers with physics buffer fields
 !
-   !ifld = pbuf_get_fld_idx('FRACIS') !BSINGH- commented out due to changes in physics_buffer
    ifld = pbuf_get_index('FRACIS')
-   !fracis  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,state%lchnk,1:pcnst) !BSINGH- commented out due to changes in physics_buffer
    call pbuf_get_field(pbuf, ifld, fracis)
    
    fracice(:,:) = 0.0_r8
@@ -3055,14 +3045,10 @@ end subroutine ma_convproc_tend
 !     real(r8) volume(pmode) ! aerosol volume concentration (m3/m3)
 !     real(r8) sigman(pmode) ! geometric standard deviation of aerosol size distribution
 !     real(r8) hygro(pmode)  ! hygroscopicity of aerosol mode
-   !call activate_modal(                                                    & !BSINGH- in CAM5_1_31, the arg. list of activate_modal has reduced
-   !      wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    & 
-   !      naerosol, ntot_amode, ntot_amode, vaerosol, sigmag_amode, hygro,  &
-   !      fn, fm, fluxn, fluxm, flux_fullact                                )
 
    call activate_modal(                                                    &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
-         naerosol, ntot_amode, vaerosol, hygro,                            &!BSINGH- A repeated 'ntot_amode' and 'sigmag_amode' is deleted from the arg. list
+         naerosol, ntot_amode, vaerosol, hygro,                            &
          fn, fm, fluxn, fluxm, flux_fullact                                )
    
 
@@ -3342,14 +3328,9 @@ end subroutine ma_convproc_tend
 !     real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation
    if (k == kactfirst) then
 ! at cloud base - do primary activation
-      !call activate_modal(                                                 &!BSINGH- in CAM5_1_31, the arg. list of activate_modal has reduced
-      !   wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
-      !   naerosol, ntot_amode, ntot_amode, vaerosol, sigmag_amode, hygro,  &
-      !   fn, fm, fluxn, fluxm, flux_fullact                                )
-
       call activate_modal(                                                 &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
-         naerosol, ntot_amode, vaerosol, hygro,                            &!BSINGH- A repeated 'ntot_amode' and 'sigmag_amode' is deleted from the arg. list
+         naerosol, ntot_amode, vaerosol, hygro,                            &
          fn, fm, fluxn, fluxm, flux_fullact                                )
 
 
@@ -3357,13 +3338,9 @@ end subroutine ma_convproc_tend
 ! above cloud base - do secondary activation with prescribed supersat 
 ! that is constant with height
       smax_prescribed = method2_activate_smaxmax
-      !call activate_modal(                                                 &!BSINGH- in CAM5_1_31, the arg. list of activate_modal has reduced
-      !   wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
-      !   naerosol, ntot_amode, ntot_amode, vaerosol, sigmag_amode, hygro,  &
-      !   fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed               )
       call activate_modal(                                                 &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
-         naerosol, ntot_amode, vaerosol, hygro,                            &!BSINGH- A repeated 'ntot_amode' and 'sigmag_amode' is deleted from the arg. list
+         naerosol, ntot_amode, vaerosol, hygro,                            &
          fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed               )
    end if
 

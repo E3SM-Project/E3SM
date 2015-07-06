@@ -184,7 +184,7 @@ end function chem_is
 
     implicit none
 
-    integer, intent(inout) :: species_class(:) !BSINGH: added this as arg
+    integer, intent(inout) :: species_class(:)
 !-----------------------------------------------------------------------
 ! Local variables
 !-----------------------------------------------------------------------
@@ -390,7 +390,7 @@ end function chem_is
     endif
     
     ! add fields to pbuf needed by aerosol models
-    call aero_model_register(imozart, species_class) !BSINGH(09/17/2014): Send imozart for unified convective transport
+    call aero_model_register(imozart, species_class) 
 
   end subroutine chem_register
 
@@ -866,7 +866,7 @@ end function chem_is_active
 
   end function chem_implements_cnst
 
-  subroutine chem_init(phys_state, pbuf2d, species_class)!BSINGH:  Added species_class argument
+  subroutine chem_init(phys_state, pbuf2d, species_class)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -904,7 +904,7 @@ end function chem_is_active
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
 
-    integer, intent(inout) :: species_class(pcnst)  !BSINGH: added this as an arg
+    integer, intent(inout) :: species_class(pcnst)  
 !-----------------------------------------------------------------------
 ! Local variables
 !-----------------------------------------------------------------------
@@ -918,7 +918,7 @@ end function chem_is_active
                        history_aerosol_out=history_aerosol )
 
     ! Initialize aerosols
-    call aero_model_init( pbuf2d, species_class ) !BSINGH:  Added species_class argument
+    call aero_model_init( pbuf2d, species_class ) 
 
     ! aqueous chem initialization
     call sox_inti()

@@ -26,7 +26,7 @@ use physconst,        only: rair, tmelt
 use constituents,     only: cnst_get_ind, pcnst
 use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
-use phys_control,     only: phys_getopts, cam_chempkg_is !BSINGH(09/29/2014): For Demott ice nucleation scheme
+use phys_control,     only: phys_getopts, cam_chempkg_is 
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_num, rad_cnst_get_mode_props
 use shr_spfn_mod,     only: erf => shr_spfn_erf, &
@@ -74,10 +74,8 @@ integer :: kvh_idx = -1
 integer :: tke_idx = -1
 integer :: wp2_idx = -1
 integer :: ast_idx = -1
-!BSINGH(09/22/2014): Added for liq cld frac bug fix
 integer :: alst_idx = -1
 integer :: aist_idx = -1
-!BSINGH -Ends
 
 integer :: cldo_idx = -1
 integer :: dgnum_idx    = -1
@@ -106,19 +104,16 @@ integer :: mode_coarse_dst_idx = -1  ! index of coarse dust mode
 integer :: mode_coarse_slt_idx = -1  ! index of coarse sea salt mode
 integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
-!BSINGH(09/29/2014): Added for demott ice nucleation scheme
 integer :: mode_fine_dst_idx = -1   ! index of dust in fine dust mode
 integer :: mode_pcarbon_idx  = -1  ! index of dust in accum mode
 integer :: accum_dust_idx    = -1  ! index of dust in accum mode
-logical :: dem_in            = .false.           ! use DeMott IN !BSINGH
-!BSINGH - Ends
-
+logical :: dem_in            = .false.           ! use DeMott IN
 
 integer :: naai_idx, naai_hom_idx, npccn_idx, rndst_idx, nacon_idx
 
 real(r8) :: sigmag_aitken
 logical  :: separate_dust = .false.
-logical  :: liqcf_fix!BSINGH(09/22/2014): Added for liq cld frac bug fix
+logical  :: liqcf_fix
 !===============================================================================
 contains
 !===============================================================================
@@ -166,10 +161,10 @@ subroutine microp_aero_init
    ! Query the PBL eddy scheme
    call phys_getopts(eddy_scheme_out          = eddy_scheme, &
         history_amwg_out = history_amwg, &
-        liqcf_fix_out    = liqcf_fix,    & !BSINGH(09/22/2014): Added for liq cld frac bug fix
-        demott_ice_nuc_out = dem_in      ) !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+        liqcf_fix_out    = liqcf_fix,    & 
+        demott_ice_nuc_out = dem_in      ) 
    
-   if(masterproc)write(iulog,*)'DEMOTT is:', dem_in !BSINGH - For Demott
+   if(masterproc)write(iulog,*)'DEMOTT is:', dem_in 
 
    ! Access the physical properties of the aerosols that are affecting the climate
    ! by using routines from the rad_constituents module.
@@ -198,13 +193,10 @@ subroutine microp_aero_init
    clim_modal_aero = (nmodes > 0)
 
    ast_idx      = pbuf_get_index('AST')
-   !BSINGH(09/22/2014): Added for liq cld frac bug fix
    if(liqcf_fix) then
       alst_idx      = pbuf_get_index('ALST')
       aist_idx      = pbuf_get_index('AIST')
    endif
-   !BSINGh -ENDS
-
 
    if (clim_modal_aero) then
 
@@ -230,12 +222,10 @@ subroutine microp_aero_init
             mode_coarse_dst_idx = m
          case ('coarse_seasalt')
             mode_coarse_slt_idx = m
-            !BSINGH(09/29/2014): Added for demott ice nucleation scheme
          case ('fine_dust')
             mode_fine_dst_idx = m
          case ('primary_carbon')
             mode_pcarbon_idx  = m            
-            !BSINGH - ENDS
          end select
       end do
 
@@ -273,7 +263,6 @@ subroutine microp_aero_init
          end select
       end do
       
-      !BSINGH(09/29/2014): Added for demott ice nucleation scheme
       if(dem_in) then
          call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
          do n = 1, nspec
@@ -284,7 +273,6 @@ subroutine microp_aero_init
             end select
          end do
       endif
-      !BSINGH - ENDS
 
       ! Check that required mode specie types were found
       if ( coarse_dust_idx == -1 .or. coarse_nacl_idx == -1) then
@@ -385,13 +373,13 @@ end subroutine microp_aero_readnl
 !===============================================================================
 
 subroutine microp_aero_run ( &
-   state, ptend, deltatin, pbuf, liqcldfo )!BSINGH(09/22/2014): Added for liq cld frac bug fix
+   state, ptend, deltatin, pbuf, liqcldfo )
 
    ! input arguments
    type(physics_state), target, intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: deltatin     ! time step (s)
-   real(r8),                    intent(in)    :: liqcldfo(pcols,pver)  ! old liquid cloud fraction, added by HW !BSINGH(09/22/2014): Added for liq cld frac bug fix
+   real(r8),                    intent(in)    :: liqcldfo(pcols,pver)  ! old liquid cloud fraction
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
 
@@ -406,14 +394,11 @@ subroutine microp_aero_run ( &
    integer :: ncol
    integer :: nmodes
    integer :: nucboast
-   real(r8):: dst1_num_to_mass !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+   real(r8):: dst1_num_to_mass 
 
    real(r8), pointer :: ast(:,:)        
-   !BSINGH(09/22/2014): Added for liq cld frac bug fix
    real(r8), pointer :: alst(:,:)        
    real(r8), pointer :: aist(:,:)        
-   !BSINGh -Ends
-
 
    real(r8)          :: icecldf(pcols,pver)    ! ice cloud fraction   
    real(r8)          :: liqcldf(pcols,pver)    ! liquid cloud fraction
@@ -443,12 +428,9 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: coarse_dust(:,:) ! mass m.r. of coarse dust
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
 
-   !BSINGH(09/29/2014): Added for demott ice nucleation scheme
    real(r8), pointer :: accum_dust(:,:) ! mass m.r. of accum dust
    real(r8), pointer :: num_fine(:,:)   ! number m.r. of fine dust
    real(r8), pointer :: num_pcarbon(:,:)! number m.r. of primary carbon
-   !BSINGH -ENDS
-
 
    real(r8), pointer :: kvh(:,:)        ! vertical eddy diff coef (m2 s-1)
    real(r8), pointer :: tke(:,:)        ! TKE from the UW PBL scheme (m2 s-2)
@@ -478,7 +460,7 @@ subroutine microp_aero_run ( &
    real(r8) :: so4_num                               ! so4 aerosol number (#/cm^3)
    real(r8) :: soot_num                              ! soot (hydrophilic) aerosol number (#/cm^3)
    real(r8) :: dst1_num,dst2_num,dst3_num,dst4_num   ! dust aerosol number (#/cm^3)
-   real(r8) :: organic_num                           !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+   real(r8) :: organic_num                           
    real(r8) :: dst_num                               ! total dust aerosol number (#/cm^3)
 
    real(r8) :: qs(pcols)            ! liquid-ice weighted sat mixing rat (kg/kg)
@@ -519,7 +501,6 @@ subroutine microp_aero_run ( &
 
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-   !BSINGH(09/22/2014): Added for liq cld frac bug fix
    if(liqcf_fix) then
       call pbuf_get_field(pbuf, alst_idx,     alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
       call pbuf_get_field(pbuf, aist_idx,     aist, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -529,10 +510,9 @@ subroutine microp_aero_run ( &
       liqcldf(:ncol,:pver) = alst(:ncol,:pver) 
       icecldf(:ncol,:pver) = aist(:ncol,:pver)
    else
-      !BSINGH -Ends
       liqcldf(:ncol,:pver) = ast(:ncol,:pver)
       icecldf(:ncol,:pver) = ast(:ncol,:pver)
-   endif!BSINGH(09/22/2014): Added 'endif' for liq cld frac bug fix if condition
+   endif
 
    call pbuf_get_field(pbuf, naai_idx, naai)
    call pbuf_get_field(pbuf, naai_hom_idx, naai_hom)
@@ -581,18 +561,14 @@ subroutine microp_aero_run ( &
       call rad_cnst_get_mode_num(0, mode_accum_idx,  'a', state, pbuf, num_accum)
       call rad_cnst_get_mode_num(0, mode_aitken_idx, 'a', state, pbuf, num_aitken)
       call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
-      !BSINGH(09/29/2014): Added for demott ice nucleation scheme
       if(dem_in)then
          if(mode_fine_dst_idx > 0)call rad_cnst_get_mode_num(0, mode_fine_dst_idx, 'a', state, pbuf, num_fine)
          if(mode_pcarbon_idx  > 0)call rad_cnst_get_mode_num(0, mode_pcarbon_idx, 'a', state, pbuf, num_pcarbon)      
       endif
-      !BSINGH - ENDS
-
-
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
-      if(dem_in)call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_dust_idx, 'a', state, pbuf, accum_dust) !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+      if(dem_in)call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_dust_idx, 'a', state, pbuf, accum_dust) 
 
    else
       ! init number/mass arrays for bulk aerosols
@@ -742,8 +718,6 @@ subroutine microp_aero_run ( &
                   dst_num = 0.0_r8
                end if
 
-               
-               !BSINGH(09/29/2014): Added for demott ice nucleation scheme
                if(dem_in)  then
                   dst3_num = dst_num
                   if(cam_chempkg_is('trop_mam7')) then
@@ -753,14 +727,12 @@ subroutine microp_aero_run ( &
                      dst1_num         = accum_dust(i,k)*rho(i,k)* dst1_num_to_mass*1.0e-6_r8 ! #/cm^3, dust # in accumulation mode
                   endif
                   !BSINGH - If primary carbon mode exists (4mode and 7mode simulation)
-                  if(mode_pcarbon_idx  > 0) then !BSINGH - Ask Hailong or Xiaohong about it
+                  if(mode_pcarbon_idx  > 0) then 
                      organic_num = num_pcarbon(i,k)*rho(i,k)*1.0e-6_r8
                   else
                      organic_num = 0.0
                   endif
                endif
-               !BSINGH - ENDS
-
 
                if (dgnum(i,k,mode_aitken_idx) > 0._r8) then
                   ! only allow so4 with D>0.1 um in ice nucleation
@@ -802,8 +774,8 @@ subroutine microp_aero_run ( &
             call nucleati( &
                wsubi(i,k), t(i,k), relhum(i,k), icldm(i,k), qc(i,k), &
                nfice(i,k), rho(i,k), so4_num, dst_num, soot_num,     &
-               dst1_num,dst2_num,dst3_num,dst4_num,organic_num,pmid(i,k), & !BSINGH(09/29/2014): Added for demott ice nucleation scheme
-               dem_in, clim_modal_aero,                              &      !BSINGH(09/29/2014): Added for demott ice nucleation scheme
+               dst1_num,dst2_num,dst3_num,dst4_num,organic_num,pmid(i,k), & 
+               dem_in, clim_modal_aero,                              &      
                naai(i,k), nihf(i,k), niimm(i,k), nidep(i,k), nimey(i,k))
 
             naai_hom(i,k) = nihf(i,k)
@@ -835,15 +807,13 @@ subroutine microp_aero_run ( &
          do i = 1, ncol
             qcld = qc(i,k) + qi(i,k)
             if (qcld > qsmall) then
-               !BSINGH(09/22/2014): Added for liq cld frac bug fix
-               if(liqcf_fix) then!BSINGH for liq cld fraction fix calc.
+               if(liqcf_fix) then
                   lcldn(i,k)=liqcldf(i,k)
                   lcldo(i,k)=liqcldfo(i,k)
                else
-                  !BSINGH -ENDS
                   lcldn(i,k) = cldn(i,k)*qc(i,k)/qcld
                   lcldo(i,k) = cldo(i,k)*qc(i,k)/qcld
-               endif!BSINGH(09/22/2014): Added 'endif' for liq cld frac bug fix if condition
+               endif
             end if
          end do
       end do

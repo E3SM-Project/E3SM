@@ -158,7 +158,7 @@ subroutine convect_deep_tend( &
      rliq    , &
      ztodt   , &
      state   ,ptend   ,landfrac ,pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath ) !BSINGH - Added 11 new args (mu to lengath) for unified convective transport
+     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath ) 
 
 
 
@@ -188,8 +188,6 @@ subroutine convect_deep_tend( &
    real(r8), intent(out) :: zdu(pcols,pver)    ! detraining mass flux
 
    real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
-   !BSINGH(09/17/2014): Added for unified convective transport
-   !BSINGH -  Following variables are intent out
    real(r8), intent(out):: mu(pcols,pver)
    real(r8), intent(out):: eu(pcols,pver) 
    real(r8), intent(out):: du(pcols,pver) 
@@ -211,8 +209,6 @@ subroutine convect_deep_tend( &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(out) :: lengath
-   !BSINGH- ENDS
-   
 
    real(r8), pointer :: prec(:)   ! total precipitation
    real(r8), pointer :: snow(:)   ! snow from ZM convection 
@@ -283,7 +279,7 @@ subroutine convect_deep_tend( &
           ztodt   , &
           jctop, jcbot , &
           state   ,ptend   ,landfrac, pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)!BSINGH(09/17/2014):Added 11 new args (mu to lengath) for unified convective transport
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
 
 
   end select
@@ -302,7 +298,7 @@ end subroutine convect_deep_tend
 
 
 subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class)!BSINGH(09/17/2014):Added 12 new args (mu to species_class) for unified convective transport
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class)
 
 
    use physics_types, only: physics_state, physics_ptend
@@ -318,9 +314,6 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    type(physics_buffer_desc), pointer :: pbuf(:)
 
    real(r8), intent(in) :: ztodt                          ! 2 delta t (model time increment)
-
-   !BSINGH(09/17/2014):Added for unified convective transport
-   !BSINGH -  Following variables are intent in here
    real(r8), intent(in):: mu(pcols,pver) 
    real(r8), intent(in):: eu(pcols,pver) 
    real(r8), intent(in):: du(pcols,pver) 
@@ -344,11 +337,10 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    integer, intent(in) :: lengath
 
    integer, intent(in) :: species_class(:)
-   !BSINGH - ENDS
 
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
       call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) !BSINGH - Added 12 new args ('mu' to 'species_class') for unified convective transport mods 
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
    end if
 
 

@@ -9,6 +9,7 @@ module physpkg
   ! 2005-10-17  B. Eaton       Add contents of inti.F90 to phys_init().  Add
   !                            initialization of grid info in phys_state.
   ! Nov 2010    A. Gettelman   Put micro/macro physics into separate routines
+  ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
 
@@ -61,10 +62,7 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
-  
-  !BSINGH(09/16/2014): Added for unified convective transport
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
-  !BSINGH -Ends
 
   save
 
@@ -234,7 +232,7 @@ subroutine phys_register
        endif
 
        ! register chemical constituents including aerosols ...
-       call chem_register(species_class)!BSINGH: Added species_class arg
+       call chem_register(species_class)
 
        ! co2 constituents
        call co2_register()
@@ -764,7 +762,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call solar_data_init()
 
     ! Prognostic chemistry.
-    call chem_init(phys_state,pbuf2d, species_class) !BSINGH:  Added species_class argument
+    call chem_init(phys_state,pbuf2d, species_class)
 
     ! Prescribed tracers
     call prescribed_ozone_init()
@@ -1664,7 +1662,7 @@ subroutine tphysbc (ztodt,               &
          physics_ptend_init, physics_ptend_sum, physics_state_check
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld
-    use physconst,       only: cpair, latvap, gravit !BSINGH(09/16/2014): Added gravit for unified convective treatment
+    use physconst,       only: cpair, latvap, gravit
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
@@ -1775,10 +1773,8 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_pcw(:)     ! snow from prognostic cloud scheme
     real(r8),pointer :: prec_sed(:)     ! total precip from cloud sedimentation
     real(r8),pointer :: snow_sed(:)     ! snow from cloud ice sedimentation
+    real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio  
 
-    ! BSINGH(09/16/2014): Added for unified convective treatment
-    real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio  !RCE  
-    !BSINGH -ENDS
 
     ! energy checking variables
     real(r8) :: zero(pcols)                    ! array of zeros
@@ -1802,11 +1798,9 @@ subroutine tphysbc (ztodt,               &
     ! Debug physics_state.
     logical :: state_debug_checks
 
-    !BSINGH(09/17/2014): Added for unified convective transport
+
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
-    ! by aero_model_wetdep subroutine. These variables were declared public for unified convective transport in 
-    ! zm_conv_intr but Lahey Compiler didn't like that (blows up while compiling physpkg.F90 due to 
-    ! insufficient memory)
+    ! by aero_model_wetdep subroutine. 
 
     real(r8):: mu(pcols,pver) 
     real(r8):: eu(pcols,pver)
@@ -1830,9 +1824,8 @@ subroutine tphysbc (ztodt,               &
     ! w holds position of gathered points vs longitude index
     integer :: lengath
 
-    !BSINGH(09/22/2014): Added for liq cld frac bug fix
-    real(r8)  :: lcldo(pcols,pver)              !HW pass old liqclf from macro_driver to micro_driver
-    !BSINGH - ENDS
+    real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
+
 
     
 
@@ -1987,7 +1980,7 @@ subroutine tphysbc (ztodt,               &
          rliq,    &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-         dsubcld, jt, maxg, ideep, lengath) !BSINGH -  Add 11 new args ('mu' to 'lengath') for unified convective transport
+         dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2017,7 +2010,7 @@ subroutine tphysbc (ztodt,               &
 
     call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
          dlf        , dlf2   ,  rliq   , rliq2, & 
-         state      , ptend  ,  pbuf   , sh_e_ed_ratio) !BSINGH(09/22/2014): Added sh_e_ed_ratio for unified convective transport
+         state      , ptend  ,  pbuf   , sh_e_ed_ratio) 
     call t_stopf ('convect_shallow_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2100,7 +2093,7 @@ subroutine tphysbc (ztodt,               &
                dlf, dlf2, & ! detrain
                cmfmc,   cmfmc2, &
                cam_in%ts,      cam_in%sst, zdu,  pbuf, &
-               det_s, det_ice, lcldo ) !BSINGH(09/22/2014): Added lcldo for liq cld frac bug fix
+               det_s, det_ice, lcldo ) 
 
           !  Since we "added" the reserved liquid back in this routine, we need 
 	  !    to account for it in the energy checker
@@ -2150,7 +2143,7 @@ subroutine tphysbc (ztodt,               &
        end if
 
        call t_startf('microp_aero_run')
-       call microp_aero_run(state, ptend_aero, ztodt, pbuf, lcldo )!BSINGH(09/22/2014): Added lcldo for liq cld frac bug fix
+       call microp_aero_run(state, ptend_aero, ztodt, pbuf, lcldo )
        call t_stopf('microp_aero_run')
 
        call t_startf('microp_tend')
@@ -2234,7 +2227,7 @@ subroutine tphysbc (ztodt,               &
 
        call t_startf ('convect_deep_tend2')
        call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  !BSINGH(09/17/2014): Add 12 new args ('mu' to 'species_class') for unified convective transport;
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
        call t_stopf ('convect_deep_tend2')
 
        call physics_update(state, ptend, ztodt, tend)

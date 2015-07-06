@@ -8,6 +8,7 @@ module zm_conv_intr
 !
 ! Author: D.B. Coleman
 ! January 2010 modified by J. Kay to add COSP simulator fields to physics buffer
+! July 2015 B. Singh Added code for unified convective trasport
 !---------------------------------------------------------------------------------
    use shr_kind_mod, only: r8=>shr_kind_r8
    use physconst,    only: cpair                              
@@ -30,31 +31,6 @@ module zm_conv_intr
       zm_conv_tend_2               ! return tendencies
 
    ! Private module data
-   ! BSINGH(09/18/2014) -  Following is commented out as these data are now declared in tphysbc subroutine
-   ! in physpkg.F90. These data are moved from this module as  Lahey didn't like this 
-   ! (blows up while compiling physpkg.F90 due to insufficient memory when we make these data 
-   ! public for unified convective transport mods). Please note that these data are being used in aerosol_wet_intr 
-   ! subroutine also and therefore they were made public for unified convective transport mods which was causing 
-   ! problems with Lahey compiler
-   !real(r8), allocatable, dimension(:,:,:) :: mu  !(pcols,pver,begchunk:endchunk)
-   !real(r8), allocatable, dimension(:,:,:) :: eu  !(pcols,pver,begchunk:endchunk)
-   !real(r8), allocatable, dimension(:,:,:) :: du  !(pcols,pver,begchunk:endchunk)
-   !real(r8), allocatable, dimension(:,:,:) :: md  !(pcols,pver,begchunk:endchunk)
-   !real(r8), allocatable, dimension(:,:,:) :: ed  !(pcols,pver,begchunk:endchunk)
-   !real(r8), allocatable, dimension(:,:,:) :: dp  !(pcols,pver,begchunk:endchunk) 
-	! wg layer thickness in mbs (between upper/lower interface).
-   !real(r8), allocatable, dimension(:,:)   :: dsubcld  !(pcols,begchunk:endchunk)
-	! wg layer thickness in mbs between lcl and maxi.
-
-   !integer, allocatable, dimension(:,:) :: jt   !(pcols,begchunk:endchunk)
-        ! wg top  level index of deep cumulus convection.
-   !integer, allocatable, dimension(:,:) :: maxg !(pcols,begchunk:endchunk)
-        ! wg gathered values of maxi.
-   !integer, allocatable, dimension(:,:) :: ideep !(pcols,begchunk:endchunk)               
-	! w holds position of gathered points vs longitude index
-
-   !integer, allocatable, dimension(:) :: lengath !(begchunk:endchunk)
-   !BSINGH - ENDS
    integer ::& ! indices for fields in the physics buffer
       dp_flxprc_idx, &
       dp_flxsnw_idx, &
@@ -69,11 +45,9 @@ module zm_conv_intr
    integer  ::    rprddp_idx       = 0    
    integer  ::    fracis_idx       = 0   
    integer  ::    nevapr_dpcu_idx  = 0    
-   !BSINGH(09/18/2014): For unified convective  transport
    logical  ::    convproc_do_aer 
    logical  ::    convproc_do_gas 
    logical  ::    clim_modal_aero
-   !BSINGH-Ends
 
 !=========================================================================================
 contains
@@ -121,7 +95,7 @@ subroutine zm_conv_init(pref_edge)
   use error_messages, only: alloc_err	
   use phys_control,   only: phys_deepconv_pbl, phys_getopts, cam_physpkg_is
   use physics_buffer, only: pbuf_get_index
-  use rad_constituents, only: rad_cnst_get_info !BSINGH - For unified convective treatment
+  use rad_constituents, only: rad_cnst_get_info 
 
   implicit none
 
@@ -135,48 +109,7 @@ subroutine zm_conv_init(pref_edge)
                             ! temperature, water vapor, cloud ice and cloud
                             ! liquid budgets.
   integer :: history_budget_histfile_num ! output history file number for budget fields
-  integer :: nmodes !BSINGH -  Added to know if it is a modal aero simulation
-
-!
-! Allocate space for arrays private to this module
-!
-  !BSINGH(09/18/2014) -  Following allocation is not necessary now as these data are moved to tphysbc (physpkg.F90)
-  ! Please see comment above regaring unified convective transport mods
-
-  !allocate( mu(pcols,pver,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'mu', &
-  !                    pcols*pver*((endchunk-begchunk)+1) )
-  !   allocate( eu(pcols,pver,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'eu', &
-  !                    pcols*pver*((endchunk-begchunk)+1) )
-  !   allocate( du(pcols,pver,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'du', &
-  !                    pcols*pver*((endchunk-begchunk)+1) )
-  !   allocate( md(pcols,pver,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'md', &
-  !                    pcols*pver*((endchunk-begchunk)+1) )
-  !   allocate( ed(pcols,pver,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'ed', &
-  !                    pcols*pver*((endchunk-begchunk)+1) )
-  !   allocate( dp(pcols,pver,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'dp', &
-  !                    pcols*pver*((endchunk-begchunk)+1) )
-  !   allocate( dsubcld(pcols,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'dsubcld', &
-  !                    pcols*((endchunk-begchunk)+1) )
-  !   allocate( jt(pcols,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'jt', &
-  !                    pcols*((endchunk-begchunk)+1) )
-  !   allocate( maxg(pcols,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'maxg', &
-  !                    pcols*((endchunk-begchunk)+1) )
-  !   allocate( ideep(pcols,begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'ideep', &
-  !                    pcols*((endchunk-begchunk)+1) )
-  !   allocate( lengath(begchunk:endchunk), stat=istat )
-  !    call alloc_err( istat, 'zm_conv_tend', 'lengath', &
-  !                    ((endchunk-begchunk)+1) )
-
+  integer :: nmodes 
 
 ! 
 ! Register fields with the output buffer
@@ -227,14 +160,11 @@ subroutine zm_conv_init(pref_edge)
     
     call phys_getopts( history_budget_out = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
-                       convproc_do_aer_out = convproc_do_aer, & !BSINGH(09/18/2014)
-                       convproc_do_gas_out = convproc_do_gas)   !BSINGH(09/18/2014)
-    !BSINGH - For unified convective treatment
+                       convproc_do_aer_out = convproc_do_aer, & 
+                       convproc_do_gas_out = convproc_do_gas)   
     ! Determine whether its a 'modal' aerosol simulation  or not
     call rad_cnst_get_info(0, nmodes=nmodes)
     clim_modal_aero = (nmodes > 0)
-    !BSINGH - Ends
-
 
     if ( history_budget ) then
        call add_default('EVAPTZM  ', history_budget_histfile_num, ' ')
@@ -292,7 +222,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      ztodt   , &
      jctop   ,jcbot , &
      state   ,ptend_all   ,landfrac,  pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) !BSINGH - Added 11 new args ('mu' to 'lengath') for unified convective transport mods  
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) 
 
    use cam_history,   only: outfld
    use physics_types, only: physics_state, physics_ptend
@@ -326,9 +256,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), intent(out) :: zdu(pcols,pver)    ! detraining mass flux
 
    real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
-
-   !BSINGH(09/18/2014) - For unified convective transport mods
-   !BSINGH - The following variables are intent-out for this subroutine
    real(r8), intent(out):: mu(pcols,pver) 
    real(r8), intent(out):: eu(pcols,pver) 
    real(r8), intent(out):: du(pcols,pver) 
@@ -350,8 +277,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(out)  :: lengath
-   !BSINGH - ENDS
-
 
    ! Local variables
 
@@ -481,7 +406,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       end do
    end do
 
-   if(convproc_do_aer .or. convproc_do_gas) then !BSINGH - Added for unified convective transport  mods
+   if(convproc_do_aer .or. convproc_do_gas) then 
       call outfld('ZMMU', mu_out,      pcols, lchnk)
       call outfld('ZMMD', md_out,      pcols, lchnk)
    else
@@ -656,14 +581,14 @@ end subroutine zm_conv_tend
 
 
 subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) !BSINGH - Added 12 new args ('mu' to 'species_class') for unified convective transport mods
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
 
    use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,  only: get_nstep
    use physics_buffer, only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
    use error_messages, only: alloc_err
-   use physconst,      only: spec_class_aerosol, spec_class_gas   !BSINGH: For unified convective transport
+   use physconst,      only: spec_class_aerosol, spec_class_gas 
  
 ! Arguments
    type(physics_state), intent(in )   :: state          ! Physics state variables
@@ -672,9 +597,6 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
    type(physics_buffer_desc), pointer :: pbuf(:)
 
    real(r8), intent(in) :: ztodt                          ! 2 delta t (model time increment)
-
-   !BSINGH - For unified convective transport mods
-   !BSINGH - The following variables are intent-in for this subroutine
    real(r8), intent(in):: mu(pcols,pver) 
    real(r8), intent(in):: eu(pcols,pver) 
    real(r8), intent(in):: du(pcols,pver) 
@@ -698,12 +620,9 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
    integer, intent(in)  :: lengath
 
    integer, intent(in) :: species_class(:)
-   !BSINGH - ENDS
-
-
 
 ! Local variables
-   integer :: i, lchnk, istat, m !BSINGH- 'm' added for unified convective transport mods
+   integer :: i, lchnk, istat, m 
    integer :: nstep
    real(r8), dimension(pcols,pver) :: dpdry
 
@@ -732,8 +651,6 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
   lchnk = state%lchnk
 
    nstep = get_nstep()
-   !BSINGH - Added for unified convective transport mods
-   
    if((convproc_do_aer .or. convproc_do_gas) .and. clim_modal_aero) then
       do m = 1, pcnst
          if ( (species_class(m) == spec_class_aerosol .and. convproc_do_aer) .or. &
@@ -760,7 +677,6 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
                      nstep,   fracis,  ptend%q, dpdry)
       call t_stopf ('convtran2')
    end if
-   !BSINGH - For unified convective transport mods
 
    if((convproc_do_aer .or. convproc_do_gas) .and. clim_modal_aero) then
       do m = 1, pcnst
