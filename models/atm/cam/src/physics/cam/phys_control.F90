@@ -77,8 +77,6 @@ logical           :: regen_fix            = .false.    ! aerosol regeneration bu
 logical           :: demott_ice_nuc       = .false.    ! use DeMott ice nucleation treatment in microphysics 
 !BSINGH -ENDS
 
-logical           :: apply_mg1_bugfix     = .false.    ! apply bugfix for micro_mg_cam.F90 (MG1) 
-
 integer           :: history_budget_histfile_num = 1   ! output history file number for budget fields
 logical           :: history_waccm        = .true.     ! output variables of interest for WACCM runs
 logical           :: do_clubb_sgs
@@ -148,7 +146,6 @@ subroutine phys_ctl_readnl(nlfile)
       use_gw_oro, use_gw_front, use_gw_convect, fix_g1_err_ndrop, &
       ssalt_tuning, resus_fix, convproc_do_aer, convproc_do_gas, convproc_method_activate, & !BSINGH(09/16/2014):Added ssalt_tuning,resus_fix,convproc_do_aer,convproc_do_gas
       liqcf_fix, regen_fix, demott_ice_nuc, &                                                !BSINGH(09/16/2014):liqcf_fix,regen_fix,demott_ice_nuc
-      apply_mg1_bugfix, & ! KZHANG bugfix for MG1
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad
    !-----------------------------------------------------------------------------
@@ -205,7 +202,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(liqcf_fix,                       1 , mpilog,  0, mpicom)!BSINGH - liq cld fraction fix calc.
    call mpibcast(regen_fix,                       1 , mpilog,  0, mpicom)!BSINGH - aerosol regeneration bug fix for ndrop.F90   
    call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)!BSINGH - use DeMott ice nucleation treatment in microphysics  
-   call mpibcast(apply_mg1_bugfix,                1 , mpilog,  0, mpicom)!KZHANG - bugfix for MG1
    call mpibcast(l_tracer_aero,                   1 , mpilog,  0, mpicom)
    call mpibcast(l_vdiff,                         1 , mpilog,  0, mpicom)
    call mpibcast(l_rayleigh,                      1 , mpilog,  0, mpicom)
@@ -331,7 +327,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  & !BSINGH added ssalt_tuning,resus_fix,convproc_do_aer
                         convproc_do_gas_out, convproc_method_activate_out,   & !BSINGH added convproc_do_gas,convproc_method_activate_out
                         liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      & !BSINGH added cliqcf_fix,regen_fix,demott_ice_nuc
-                       ,apply_mg1_bugfix_out & !KZHANG added bugfix option
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
                         )
@@ -375,7 +370,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: liqcf_fix_out       !BSINGH - liq cld fraction fix calc.
    logical,           intent(out), optional :: regen_fix_out       !BSINGH - aerosol regeneration bug fix for ndrop.F90 
    logical,           intent(out), optional :: demott_ice_nuc_out  !BSINGH - use DeMott ice nucleation treatment in microphysics   
-   logical,           intent(out), optional :: apply_mg1_bugfix_out !KZHANG - bugfix for micro_mg_cam.F90 
 
 
    logical,           intent(out), optional :: l_tracer_aero_out
@@ -421,7 +415,6 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      !BSINGH - liq cld fraction fix calc.
    if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      !BSINGH -  aerosol regeneration bug fix for ndrop.F90 
    if ( present(demott_ice_nuc_out      ) ) demott_ice_nuc_out       = demott_ice_nuc !BSINGH - use DeMott ice nucleation treatment in microphysics  
-   if ( present(apply_mg1_bugfix_out    ) ) apply_mg1_bugfix_out     = apply_mg1_bugfix !KZHANG bugfix for micro_mg_cam.F90
    if ( present(l_tracer_aero_out       ) ) l_tracer_aero_out     = l_tracer_aero
    if ( present(l_vdiff_out             ) ) l_vdiff_out           = l_vdiff
    if ( present(l_rayleigh_out          ) ) l_rayleigh_out        = l_rayleigh

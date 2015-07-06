@@ -233,12 +233,8 @@ subroutine micro_mg_cam_register
   logical :: prog_modal_aero
   logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
   logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
-  logical :: apply_mg1_bugfix   ! If true, then apply bugfix for MG1
 
   call phys_getopts(use_subcol_microp_out = use_subcol_microp, &
-!!== KZ_MG1_BUGFIX 
-                    apply_mg1_bugfix_out  = apply_mg1_bugfix, & 
-!!== KZ_MG1_BUGFIX 
                     prog_modal_aero_out   = prog_modal_aero )
 
   ! Register microphysics constituents and save indices.
@@ -250,17 +246,10 @@ subroutine micro_mg_cam_register
   ! The next statements should have "is_convtran1=.true.", but this would change
   ! answers.
 !!== KZ_MG1_BUGFIX 
-  if(apply_mg1_bugfix) then 
-     call cnst_add(cnst_names(3), mwdry, cpair, 0._r8, ixnumliq, &
-          longname='Grid box averaged cloud liquid number', is_convtran1=.true.)
-     call cnst_add(cnst_names(4), mwdry, cpair, 0._r8, ixnumice, &
-          longname='Grid box averaged cloud ice number', is_convtran1=.true.)
-  else
-     call cnst_add(cnst_names(3), mwdry, cpair, 0._r8, ixnumliq, &
-          longname='Grid box averaged cloud liquid number', is_convtran1=.false.)
-     call cnst_add(cnst_names(4), mwdry, cpair, 0._r8, ixnumice, &
-          longname='Grid box averaged cloud ice number', is_convtran1=.false.)
-  end if 
+  call cnst_add(cnst_names(3), mwdry, cpair, 0._r8, ixnumliq, &
+       longname='Grid box averaged cloud liquid number', is_convtran1=.true.)
+  call cnst_add(cnst_names(4), mwdry, cpair, 0._r8, ixnumice, &
+       longname='Grid box averaged cloud ice number', is_convtran1=.true.)
 !!== KZ_MG1_BUGFIX 
 
   ! Request physics buffer space for fields that persist across timesteps.

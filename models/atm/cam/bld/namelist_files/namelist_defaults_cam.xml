@@ -826,9 +826,6 @@
 <!-- BSINGH - ice nucleation option by PNNL -->
 <demott_ice_nuc>.false.</demott_ice_nuc>
 
-<!-- KZHANG - bugfix for MG1 -->
-<apply_mg1_bugfix>.false.</apply_mg1_bugfix>
-
 
 <!-- sub-column switches for physics packages -->
 <use_subcol_microp>.false.</use_subcol_microp>
