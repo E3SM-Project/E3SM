@@ -23,6 +23,7 @@ module cesm_comp_mod
    use shr_kind_mod,      only: r8 => SHR_KIND_R8 
    use shr_kind_mod,      only: cs => SHR_KIND_CS
    use shr_kind_mod,      only: cl => SHR_KIND_CL
+   use shr_kind_mod,      only: shr_kind_i8
    use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
    use shr_const_mod,     only: shr_const_cday
    use shr_file_mod,      only: shr_file_setLogLevel, shr_file_setLogUnit
@@ -732,7 +733,7 @@ subroutine cesm_pre_init2()
    use pio, only : file_desc_t, pio_closefile, pio_file_is_open
    implicit none
    type(file_desc_t) :: pioid
-   integer :: maxthreads
+!   integer :: maxthreads
    !----------------------------------------------------------
    ! Print Model heading and copyright message
    !----------------------------------------------------------
@@ -742,12 +743,15 @@ subroutine cesm_pre_init2()
    !----------------------------------------------------------
    !| Timer initialization (has to be after mpi init)
    !----------------------------------------------------------
-   maxthreads = max(nthreads_GLOID,nthreads_CPLID,nthreads_ATMID, &
-        nthreads_LNDID,nthreads_ICEID,nthreads_OCNID,nthreads_GLCID, &
-        nthreads_ROFID, nthreads_WAVID, pethreads_GLOID )
+   ! ACME's version of perf_mod doesn't support this maxthreads construct. -JNJ
+!   maxthreads = max(nthreads_GLOID,nthreads_CPLID,nthreads_ATMID, &
+!        nthreads_LNDID,nthreads_ICEID,nthreads_OCNID,nthreads_GLCID, &
+!        nthreads_ROFID, nthreads_WAVID, pethreads_GLOID )
 
+!   call t_initf(NLFileName, LogPrint=.false., mpicom=mpicom_GLOID, &
+!        MasterTask=iamroot_GLOID,MaxThreads=maxthreads)
    call t_initf(NLFileName, LogPrint=.false., mpicom=mpicom_GLOID, &
-        MasterTask=iamroot_GLOID,MaxThreads=maxthreads)
+        MasterTask=iamroot_GLOID)
 
    if (iamin_CPLID) then
       call seq_io_cpl_init()
@@ -1835,7 +1839,7 @@ end subroutine cesm_init
    implicit none
    ! gptl timer lookup variables
    integer, parameter :: hashcnt=7
-   integer :: hashint(hashcnt)
+   integer(shr_kind_i8) :: hashint(hashcnt)
 
 101 format( A, 2i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, 2i8, A, 8L3 )
