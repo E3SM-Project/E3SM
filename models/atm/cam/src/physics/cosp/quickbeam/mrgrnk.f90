@@ -1,3 +1,5 @@
+! $Revision: 23 $, $Date: 2011-03-31 07:41:37 -0600 (Thu, 31 Mar 2011) $
+! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/quickbeam/mrgrnk.f90 $
 Module m_mrgrnk
 Integer, Parameter :: kdp = selected_real_kind(15)
 public :: mrgrnk
