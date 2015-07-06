@@ -1,7 +1,8 @@
 module t_drv_timers_mod
 
   use perf_mod
-  integer, private :: cpl_run_hash=0, cpl_comm_hash=0, cpl_budget_hash=0
+  use shr_kind_mod, only: shr_kind_i8
+  integer(shr_kind_i8), private :: cpl_run_hash=0, cpl_comm_hash=0, cpl_budget_hash=0
   character(len=*),parameter :: strcpl = 'CPL:RUN'
   character(len=*),parameter :: strcom = 'CPL:COMM'
   character(len=*),parameter :: strbud = 'CPL:BUDGET'
@@ -19,7 +20,7 @@ contains
     logical,intent(in),optional :: cplcom
     logical,intent(in),optional :: budget
     integer,intent(in),optional :: barrier
-    integer,intent(inout), optional :: hashint
+    integer(shr_kind_i8),intent(inout), optional :: hashint
 
     character(len=128) :: strbar
  
@@ -70,7 +71,7 @@ contains
     logical,intent(in),optional :: cplrun
     logical,intent(in),optional :: cplcom
     logical,intent(in),optional :: budget
-    integer, intent(in), optional :: hashint
+    integer(shr_kind_i8), intent(in), optional :: hashint
     character(len=128) :: strbar
     logical :: lcplrun,lcplcom,lbudget
 
