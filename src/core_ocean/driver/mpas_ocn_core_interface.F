@@ -285,15 +285,7 @@ module ocn_core_interface
       call mpas_pool_get_config(configs, 'config_ocean_run_mode', config_ocean_run_mode)
 
       if ( trim(config_ocean_run_mode) == 'forward' .or. trim(config_ocean_run_mode) == 'analysis' ) then
-         call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
-
-         if (.not. associated(config_do_restart)) then
-            ierr = 1
-         else if (config_do_restart) then
-            write(stream,'(a)') 'restart'
-         else
-            write(stream,'(a)') 'input'
-         end if
+         write(stream,'(a)') 'mesh'
       end if
 
    end function ocn_get_mesh_stream!}}}
