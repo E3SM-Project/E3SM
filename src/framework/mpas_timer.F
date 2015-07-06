@@ -25,6 +25,14 @@
         use mpas_io_units
         use mpas_dmpar
 
+#ifdef MPAS_PERF_MOD_TIMERS
+        use perf_mod
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+        use gptl
+#endif
+
         implicit none
         save
 
@@ -67,14 +75,23 @@
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
-          integer :: clock, hz, usecs, nlen
+          integer :: clock, hz, usecs, nlen, iErr
           trimed_name = trim(timer_name)
           nlen = len(trimed_name)
 
-#ifdef MPAS_TAU 
+#ifdef MPAS_TAU_TIMERS
           call tau_start(trimed_name)
 #endif
 
+#ifdef MPAS_PERF_MOD_TIMERS
+          call t_startf(trimed_name)
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlstart(trimed_name)
+#endif
+
+#ifdef MPAS_NATIVE_TIMERS
           timer_added = .false.
           timer_found = .false.
 
@@ -182,6 +199,7 @@
           if(present(timer_ptr)) then
               timer_ptr => current
           endif
+#endif
           
         end subroutine mpas_timer_start!}}}
        
@@ -207,14 +225,23 @@
           
           real (kind=R8KIND) :: time_temp
           logical :: timer_found, string_equal, check_flag
-          integer :: clock, hz, usecs, nlen
+          integer :: clock, hz, usecs, nlen, iErr
           trimed_name = trim(timer_name)
           nlen = len(trimed_name)
 
-#ifdef MPAS_TAU 
+#ifdef MPAS_TAU_TIMERS
           call tau_stop(trimed_name)
 #endif
+
+#ifdef MPAS_PERF_MOD_TIMERS
+          call t_startf(trimed_name)
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlstop(trimed_name)
+#endif
  
+#ifdef MPAS_NATIVE_TIMERS
           timer_found = .false.
  
           if(present(timer_ptr)) then
@@ -266,6 +293,7 @@
 
             current%calls = current%calls + 1
           endif
+#endif
 
         end subroutine mpas_timer_stop!}}}
 
@@ -290,8 +318,16 @@
           logical :: total_found, string_equals
           type (timer_node), pointer :: current, total
           real (kind=RKIND) :: percent
-          integer :: i, nlen
+          integer :: i, nlen, iErr
 
+#ifdef MPAS_GPTL_TIMERS
+          if ( domain_info % my_proc_id == IO_NODE ) then
+             iErr = gptlpr(domain_info % my_proc_id)
+          end if
+#endif
+
+
+#ifdef MPAS_NATIVE_TIMERS
           total_found = .false.
 
 #ifdef MPAS_SYNC_TIMERS
@@ -359,6 +395,7 @@
               current => current%next
             endif
           end do print_timers
+#endif
 
         end subroutine mpas_timer_write!}}}
 
@@ -376,11 +413,21 @@
         subroutine mpas_timer_init(domain)!{{{
           type (domain_type), intent(in), optional :: domain !< Input - Optional: Domain structure
 
+          integer :: iErr
+
           if( present(domain) ) then
               domain_info => domain % dminfo
           endif
 
           synced = 0
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlsetoption(gptloverhead, 0)
+          iErr = gptlsetoption(gptlpercent, 0)
+          iErr = gptlsetoption(gptlsync_mpi, 1)
+
+          iErr = gptlinitialize()
+#endif
 
         end subroutine mpas_timer_init!}}}
 

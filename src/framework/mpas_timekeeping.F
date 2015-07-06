@@ -440,6 +440,11 @@ module mpas_timekeeping
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
+      if ( len_trim(alarmID) > ShortStrKIND ) then
+         write(stderrUnit, *) 'ERROR: Length of alarmID ''' // trim(alarmID) // ''' is ', len_trim(alarmID), ' which is longer than the allowable length of ', ShortStrKIND
+         call mpas_dmpar_global_abort('ERROR: alarmID length is too long')
+      end if
+
       ! Add a new entry to the linked list of alarms for this clock
       if (.not. associated(clock % alarmListHead)) then
          allocate(clock % alarmListHead)

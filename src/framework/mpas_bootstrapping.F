@@ -86,8 +86,8 @@ module mpas_bootstrapping
       integer :: ierr
       type (MPAS_IO_Handle_type) :: inputHandle
 
-      character (len=StrKIND) :: c_on_a_sphere
-      real (kind=RKIND) :: r_sphere_radius
+      character (len=StrKIND) :: c_on_a_sphere, c_is_periodic
+      real (kind=RKIND) :: r_sphere_radius, r_x_period, r_y_period
 
       type (field1dInteger), pointer :: indexToCellIDField
       type (field1dInteger), pointer :: indexToEdgeIDField
@@ -277,6 +277,45 @@ module mpas_bootstrapping
          domain % sphere_radius = 1.0
       else
          domain % sphere_radius = r_sphere_radius
+      end if
+
+      !
+      ! Get attributes based on planar mesh
+      !
+      if ( .not. domain % on_a_sphere ) then
+         call MPAS_io_get_att(inputHandle, 'is_periodic', c_is_periodic, ierr=ierr)
+         if ( ierr /= MPAS_IO_NOERR ) then
+            write(stderrUnit, *) 'Warning: is_periodic attribute not found in '//trim(mesh_filename)
+            write(stderrUnit, *) '   Setting is_periodic to .false.'
+            domain % is_periodic = .false.
+         else
+            if (index(c_is_periodic, 'YES') /= 0) then
+               domain % is_periodic = .true.
+            else
+               domain % is_periodic = .false.
+            end if
+         end if
+      else
+        domain % is_periodic = .false.
+      end if
+
+      if ( domain % is_periodic ) then
+         call MPAS_io_get_att(inputHandle, 'x_period', r_x_period, ierr=ierr)
+         if ( ierr /= MPAS_IO_NOERR ) then
+            call mpas_dmpar_global_abort('ERROR: Required attribute ''x_period'' missing from periodic input mesh. Exiting...')
+         else
+            domain % x_period = r_x_period
+         end if
+
+         call MPAS_io_get_att(inputHandle, 'y_period', r_y_period, ierr=ierr)
+         if ( ierr /= MPAS_IO_NOERR ) then
+            call mpas_dmpar_global_abort('ERROR: Required attribute ''y_period'' missing from periodic input mesh. Exiting...')
+         else
+            domain % y_period = r_y_period
+         end if
+      else
+         domain % x_period = 0
+         domain % y_period = 0
       end if
 
 
