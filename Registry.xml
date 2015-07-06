@@ -833,8 +833,9 @@
 
 	<streams>
 		<stream name="mesh" 
-				type="none"
-				filename_template="mesh_variables.nc"
+				type="input"
+				filename_template="mesh.nc"
+				input_interval="initial_only"
 				immutable="true"
 				mode="forward;analysis">
 
@@ -880,6 +881,10 @@
 			<var name="bottomDepth"/>
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth"/>
+			<var name="restingThickness"/>
+			<var name="temperatureRestore"/>
+			<var name="salinityRestore"/>
+			<var name="surfaceWindStress"/>
 		</stream>
 		<stream name="input" 
 				type="input"
@@ -894,10 +899,6 @@
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
-			<var name="temperatureRestore"/>
-			<var name="salinityRestore"/>
-			<var name="restingThickness"/>
-			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
 		<stream name="restart"
@@ -919,11 +920,7 @@
 			<var name="lowFreqDivergence"/>
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
-			<var name="temperatureRestore"/>
-			<var name="salinityRestore"/>
-			<var name="restingThickness"/>
 			<var name="xtime"/>
-			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
 			<var name="boundaryLayerDepth"/>
 			<var_array name="tracersSurfaceValue"/>
@@ -1057,6 +1054,7 @@
 			<var name="velocityX"/>
 			<var name="velocityY"/>
 		</stream>
+
 		<stream name="forcing"
 				type="none"
 				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"

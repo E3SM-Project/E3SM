@@ -139,15 +139,14 @@ module ocn_forward_mode
       !
       ! Read input data for model
       !
+      call mpas_timer_start('io_read', .false.)
+      call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
       if ( config_do_restart ) then
-         call mpas_timer_start('io_read', .false.)
          call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
-         call mpas_timer_stop('io_read')
       else
-         call mpas_timer_start('io_read', .false.)
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
-         call mpas_timer_stop('io_read')
       end if
+      call mpas_timer_stop('io_read')
       call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
