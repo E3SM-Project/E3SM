@@ -174,8 +174,13 @@
     if(l_radtsw) then
        time_lev = 1
        call allocate_radiation_sw(xtime_s)
-       call driver_radiation_sw(itimestep,block%configs,mesh,state,time_lev,diag_physics, &
-                                atm_input,sfc_input,tend_physics,xtime_s)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_radiation_sw(itimestep,block%configs,mesh,state,time_lev,diag_physics, &
+                                   atm_input,sfc_input,tend_physics,xtime_s, &
+                                   block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
     endif
 
     !call to long wave radiation scheme:
