@@ -208,10 +208,6 @@ contains
       ! assume no error
       err = 0
 
-      ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'layerVolumeWeightedAverageAMPKGActive', layerVolumeWeightedAverageAMPKGActive)
-      if ( .not. layerVolumeWeightedAverageAMPKGActive ) return
-
       ! set highest level pointer
       dminfo = domain % dminfo
 

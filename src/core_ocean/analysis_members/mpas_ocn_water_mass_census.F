@@ -200,10 +200,6 @@ contains
       ! assume no error
       err = 0
 
-      ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'waterMassCensusAMPKGActive', waterMassCensusAMPKGActive)
-      if ( .not. waterMassCensusAMPKGActive ) return
-
       ! set highest level pointer
       dminfo = domain % dminfo
 
