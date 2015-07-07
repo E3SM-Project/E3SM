@@ -93,6 +93,11 @@ module li_core
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
       logical, pointer :: config_do_restart
+      real (kind=RKIND), pointer :: deltat_output
+      real (kind=RKIND) :: dtSeconds
+      type (MPAS_Pool_type), pointer :: meshPool
+      type (MPAS_TimeInterval_type) :: timeStepInterval
+      character (len=StrKIND), pointer :: xtime
 
 
       err = 0
@@ -105,13 +110,6 @@ module li_core
       ! Initialize config option settings as needed
       !
       call li_setup_config_options( domain, err_tmp )
-      err = ior(err, err_tmp)
-
-      !
-      ! Set startTimeStamp based on the start time of the simulation clock
-      !
-      startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
-      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
       err = ior(err, err_tmp)
 
       if (config_do_restart) then
@@ -127,6 +125,34 @@ module li_core
       err = ior(err, err_tmp)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
+
+      ! ===
+      ! Initialize some time stuff on each block
+      ! ===
+      ! Set startTimeStamp based on the start time of the simulation clock
+      startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp) ! Get the start time as a time stamp
+      err = ior(err, err_tmp)
+
+      timeStepInterval = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)  ! get timestep interval object
+      err = ior(err,err_tmp)
+      call mpas_get_timeInterval(timeStepInterval, StartTimeIn=startTime, dt=dtSeconds, ierr=err_tmp)  ! Get config dt in seconds
+      err = ior(err,err_tmp)
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         ! Assign initial time stamp
+         call mpas_pool_get_array(meshPool, 'xtime', xtime)
+         xtime = startTimeStamp
+
+         ! Initialize dt in seconds
+         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
+         deltat_output = dtSeconds
+
+         block => block % next
+      end do
 
 
       ! ===
@@ -147,7 +173,7 @@ module li_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call landice_init_block(block, startTimeStamp, domain % dminfo)
+         call landice_init_block(block, domain % dminfo)
 
          block => block % next
       end do
@@ -516,7 +542,7 @@ module li_core
 !>  This routine initializes blocks for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine landice_init_block(block, startTimeStamp, dminfo)
+   subroutine landice_init_block(block, dminfo)
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -534,7 +560,6 @@ module li_core
       !
       !-----------------------------------------------------------------
       type (dm_info), intent(in) :: dminfo             !< Input: Domain info
-      character(len=*), intent(in) :: startTimeStamp   !< Input: time stamp at start 
 
       !-----------------------------------------------------------------
       !
@@ -557,7 +582,6 @@ module li_core
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: geometryPool
       integer, dimension(:), pointer :: vertexMask
-      character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_adaptive_timestep_include_DCFL
@@ -609,10 +633,6 @@ module li_core
          call mpas_rbf_interp_initialize(meshPool)
          call mpas_init_reconstruct(meshPool)
       endif
-
-      ! Assign initial time stamp
-      call mpas_pool_get_array(meshPool, 'xtime', xtime)
-      xtime = startTimeStamp
 
       ! Mask init identifies initial ice extent
       call li_calculate_mask_init(geometryPool, err=err_tmp)
