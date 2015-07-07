@@ -727,6 +727,7 @@ contains
     use WaterStateType       , only : waterstate_type
     use PatchType            , only : pft
     use ColumnType           , only : col
+    use clm_varcon           , only : watmin
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_BC_SS_CONDITION
@@ -761,6 +762,7 @@ contains
     real(r8) :: dtime                                        ! land model time step (sec)
     real(r8) :: temp(bounds%begc:bounds%endc)                ! accumulator for rootr weighting
     integer  :: pi                                           ! pft index
+    real(r8) :: dzsum                                        ! summation of dzmm of layers below water table (mm)
     !
 #ifdef USE_PETSC_LIB
     PetscInt              :: jwt                             ! index of first unsaturated soil layer
@@ -769,7 +771,14 @@ contains
     PetscReal             :: flux_unit_conversion            ! [mm/s] ---> [kg/s]
     PetscReal             :: area                            ! [m^2]
     PetscReal             :: z_up, z_dn                      ! [m]
+    PetscReal             :: qflx_drain_layer                ! Drainage flux from a soil layer (mm H2O/s)
+    PetscReal             :: qflx_drain_tot                  ! Cummulative drainage flux from soil layers within a column (mm H2O/s)
     PetscErrorCode        :: ierr                            ! PETSc return error code
+#if VSFM_DEBUG
+    PetscReal             :: mass_beg
+    PetscReal             :: mass_end
+    PetscReal             :: total_mass_flux
+#endif
 #endif
     !-----------------------------------------------------------------------
 
@@ -798,13 +807,19 @@ contains
          qflx_dew_snow     =>    waterflux_vars%qflx_dew_snow_col   , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
          qflx_dew_grnd     =>    waterflux_vars%qflx_dew_grnd_col   , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
 
+         qflx_drain         =>    waterflux_vars%qflx_drain_col         , & ! Input: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)
+         qflx_drain_perched =>    waterflux_vars%qflx_drain_perched_col , & ! Input: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)
+
          mflx_infl_col_1d  =>    waterflux_vars%mflx_infl_col_1d    , & ! Input:  [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
          mflx_dew_col_1d   =>    waterflux_vars%mflx_dew_col_1d     , & ! Input:  [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
          mflx_et_col_1d    =>    waterflux_vars%mflx_et_col_1d      , & ! Input:  [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
-         t_soil_col_1d     =>    temperature_vars%t_soil_col_1d     , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)
-         vsfm_sat_col_1d   =>    waterflux_vars%vsfm_sat_col_1d     , & ! Input:  [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
-         vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    , & ! Input:  [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+         mflx_drain_col_1d =>    waterflux_vars%mflx_drain_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
+
+         vsfm_sat_col_1d   =>    waterflux_vars%vsfm_sat_col_1d     , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
+         vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
          vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+
+         t_soil_col_1d     =>    temperature_vars%t_soil_col_1d     , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)
 
          t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          )
@@ -870,7 +885,8 @@ contains
       mflx_et_col_1d(:)      = 0.d0
       mflx_infl_col_1d(:)    = 0.d0
       mflx_dew_col_1d(:)     = 0.d0
-      t_soil_col_1d(:)       = 274.d0
+      mflx_drain_col_1d(:)   = 0.d0
+      t_soil_col_1d(:)       = 298.15d0
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
@@ -897,7 +913,66 @@ contains
          ! Dew source term
          mflx_dew_col_1d(idx) = (qflx_dew_snow(c) + qflx_dew_grnd(c))*flux_unit_conversion
 
+         if (qflx_drain(c) > 0.d0) then
+
+            ! Find soil layer just above water table
+            jwt = nlevgrnd
+            ! allow jwt to equal zero when zwt is in top layer
+            do j = 1,nlevgrnd
+               if (zwt(c) <= zi(c,j)) then
+                  jwt = j-1
+                  exit
+               end if
+            enddo
+
+            dzsum = 0.d0
+            do j = jwt, nlevgrnd
+               dzsum = dzsum + dz(c,j)
+            end do
+
+            qflx_drain_tot = 0.d0
+            do j = jwt, nlevgrnd
+               qflx_drain_layer = qflx_drain(c) * dz(c,j)/dzsum
+
+               ! if the amount of water being drained from a given layer
+               ! exceeds the allowable water, limit the drainage
+               if (qflx_drain_layer*dtime > (h2osoi_liq(c,j)-watmin)) then
+                  qflx_drain_layer = (h2osoi_liq(c,j)-watmin)/dtime
+               endif
+               qflx_drain_tot = qflx_drain_tot + qflx_drain_layer
+
+               idx = (c-1)*nlevgrnd + j
+               mflx_drain_col_1d(idx) = -qflx_drain_layer*flux_unit_conversion
+
+           end do
+           qflx_drain(c) = qflx_drain_tot
+
+         endif
+
       end do
+
+#ifdef VSFM_DEBUG
+      mass_beg        = 0.d0
+      mass_end        = 0.d0
+      total_mass_flux = 0.d0
+
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+
+         do j = 1, nlevgrnd
+
+            idx = (c-1)*nlevgrnd + j
+            total_mass_flux = total_mass_flux + mflx_et_col_1d(idx)
+            total_mass_flux = total_mass_flux + mflx_drain_col_1d(idx)
+
+            mass_beg = mass_beg + h2osoi_liq(c,j)
+         end do
+
+         idx = c
+         total_mass_flux = total_mass_flux + mflx_dew_col_1d(idx)
+         total_mass_flux = total_mass_flux + mflx_infl_col_1d(idx)
+       end do
+#endif
 
       ! Set temperature
       soe_auxvar_id = 1;
@@ -914,6 +989,10 @@ contains
       ! Set Dew
       soe_auxvar_id = 3;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_dew_col_1d)
+
+      ! Set Drainage sink
+      soe_auxvar_id = 4;
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_drain_col_1d)
 
       !
       ! Solve the VSFM.
@@ -965,6 +1044,19 @@ contains
          endif
 
       end do
+
+#if VSFM_DEBUG
+      do fc = 1,num_hydrologyc
+         c = filter_hydrologyc(fc)
+         do j = 1, nlevgrnd
+            mass_end = mass_end + h2osoi_liq(c,j)
+         end do
+      end do
+      write(*,*)'VSFM-DEBUG: change in mass between dt  = ',-(mass_beg - mass_end)
+      write(*,*)'VSFM-DEBUG: change in mass due to flux = ',total_mass_flux*dtime
+      write(*,*)'VSFM-DEBUG: Error in mass conservation = ',mass_beg - mass_end + total_mass_flux*dtime
+      write(*,*)''
+#endif
 
 #endif
 

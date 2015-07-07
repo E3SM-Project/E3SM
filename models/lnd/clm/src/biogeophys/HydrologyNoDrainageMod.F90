@@ -69,6 +69,8 @@ contains
     use SoilHydrologyMod     , only : CLMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+    use clm_varctl           , only : use_vsfm
+    use SoilHydrologyMod     , only : DrainageVSFM
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -178,6 +180,13 @@ contains
       call Infiltration(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc,&
            energyflux_vars, soilhydrology_vars, soilstate_vars, temperature_vars, &
            waterflux_vars, waterstate_vars)
+
+      if (use_vsfm) then
+         call DrainageVSFM(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_urbanc, filter_urbanc,&
+              temperature_vars, soilhydrology_vars, soilstate_vars, &
+              waterstate_vars, waterflux_vars)
+      endif
 
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &

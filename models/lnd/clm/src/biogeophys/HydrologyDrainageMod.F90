@@ -49,6 +49,7 @@ contains
     use clm_varpar       , only : nlevgrnd, nlevurb
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
+    use clm_varctl       , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -122,10 +123,12 @@ contains
               soilhydrology_vars, waterstate_vars)
       endif
 
-      call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
-           num_urbanc, filter_urbanc,&
-           temperature_vars, soilhydrology_vars, soilstate_vars, &
-           waterstate_vars, waterflux_vars)
+      if (.not. use_vsfm) then
+         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_urbanc, filter_urbanc,&
+              temperature_vars, soilhydrology_vars, soilstate_vars, &
+              waterstate_vars, waterflux_vars)
+      endif
 
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec
