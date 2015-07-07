@@ -154,7 +154,7 @@ module ocn_analysis_mode
       integer :: err_tmp
       character (len=StrKIND), pointer :: config_start_time, config_stop_time
       character (len=StrKIND), pointer :: config_run_duration
-      character (len=StrKIND), pointer :: config_stats_interval, config_dt, config_restart_timestamp_name
+      character (len=StrKIND), pointer :: config_dt, config_restart_timestamp_name
 
       ierr = 0
 
@@ -162,7 +162,6 @@ module ocn_analysis_mode
       call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_run_duration', config_run_duration)
-      call mpas_pool_get_config(configs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       if ( trim(config_start_time) == "file" ) then

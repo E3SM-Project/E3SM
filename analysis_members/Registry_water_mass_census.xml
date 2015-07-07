@@ -56,24 +56,6 @@
 	<packages>
 		<package name="waterMassCensusAMPKG" description="This package includes variables required for the water mass census."/>
 	</packages>
-	<streams>
-		<stream name="waterMassCensusOutput"
-				type="output"
-				filename_template="analysis_members/waterMassCensus.$Y-$M-$D_$h.$m.$s.nc"
-				output_interval="00-00-05_00:00:00"
-				filename_interval="01-00-00_00:00:00"
-				packages="waterMassCensusAMPKG"
-				clobber_mode="truncate"
-				runtime_format="single_file">
-
-				<var name="xtime"/>
-				<var_array name="waterMassCensusTemperatureValues"/>
-				<var_array name="waterMassCensusSalinityValues"/>
-				<var_array name="waterMassFractionalDistribution"/>
-				<var_array name="potentialDensityOfTSDiagram"/>
-				<var_array name="zPositionOfTSDiagram"/>
-		</stream>
-	</streams>
 	<var_struct name="waterMassCensusAM" time_levs="1" packages="waterMassCensusAMPKG">
 		<var name="waterMassCensusTemperatureValues"
 			 type="real"
@@ -106,3 +88,22 @@
 			 description="volume-weighted vertical position of each (T,S) bin"
 		/>
 	</var_struct>
+	<streams>
+		<stream name="waterMassCensusOutput"
+				type="output"
+				filename_template="analysis_members/waterMassCensus.$Y-$M-$D_$h.$m.$s.nc"
+				output_interval="00-00-05_00:00:00"
+				filename_interval="01-00-00_00:00:00"
+				packages="waterMassCensusAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+				<var name="xtime"/>
+				<var_array name="waterMassCensusTemperatureValues"/>
+				<var_array name="waterMassCensusSalinityValues"/>
+				<var_array name="waterMassFractionalDistribution"/>
+				<var_array name="potentialDensityOfTSDiagram"/>
+				<var_array name="zPositionOfTSDiagram"/>
+		</stream>
+	</streams>
+
