@@ -177,7 +177,12 @@
     !call to cloud scheme:
     if(l_radtlw .or. l_radtsw) then
        call allocate_cloudiness
-       call driver_cloudiness(diag_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_cloudiness(diag_physics, &
+                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
     endif
 
     !call to short wave radiation scheme:
