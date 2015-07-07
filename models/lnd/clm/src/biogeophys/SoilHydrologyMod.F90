@@ -1193,7 +1193,6 @@ contains
              end if
 
              if (use_vsfm) rsub_top(c) = 0._r8
-             rsub_top(c) = 0._r8
 
              ! use analytical expression for aquifer specific yield
              rous = watsat(c,nlevsoi) &
@@ -1316,7 +1315,6 @@ contains
           endif
 
           if (use_vsfm) qflx_rsub_sat(c) = 0._r8
-          qflx_rsub_sat(c) = 0._r8
 
           ! add in ice check
           xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
