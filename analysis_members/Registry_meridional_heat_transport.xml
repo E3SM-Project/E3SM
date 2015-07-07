@@ -45,7 +45,7 @@
 	</packages>
 	<streams>
 		<stream name="meridionalHeatTransportOutput" type="output"
-				filename_template="analysis_members/meridional_heat_transport.$Y-$M-$D_$h.$m.$s.nc"
+				filename_template="analysis_members/meridionalHeatTransport.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0001_00:00:00"
 				filename_interval="01-00-00_00:00:00"
 				reference_time="0000-01-01_00:00:00"

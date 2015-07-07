@@ -26,7 +26,7 @@
 	<streams>
 		<stream name="testComputeIntervalOutput" type="output"
 				mode="forward;analysis"
-				filename_template="analysis_members/test_compute_interval.$Y-$M-$D.nc"
+				filename_template="analysis_members/testComputeInterval.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
 				packages="testComputeIntervalAMPKG"
