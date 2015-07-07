@@ -214,8 +214,6 @@ module atm_core
       use mpas_atmphys_manager
 #endif
 
-      use omp_lib
-   
       implicit none
    
       type (dm_info), intent(in) :: dminfo
@@ -236,10 +234,8 @@ module atm_core
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
-      integer :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
-      integer :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
-      integer, pointer :: nCells, nEdges, nVertices, nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve
-      integer :: nthreads, threadid
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels, nEdgesSolve
+      integer :: thread
       character(len=StrKIND), pointer :: mminlu
 
       logical, pointer :: config_do_restart, config_do_DAcycling
@@ -266,40 +262,28 @@ module atm_core
       call mpas_pool_get_dimension(state, 'nEdges', nEdges)
       call mpas_pool_get_dimension(state, 'nVertices', nVertices)
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(state, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(state, 'nEdgesSolve', nEdgesSolve)
-      call mpas_pool_get_dimension(state, 'nVerticesSolve', nVerticesSolve)
 
       allocate(ke_vertex(nVertLevels,nVertices))   ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
       allocate(ke_edge(nVertLevels,nEdges))   ! ke_edge is a module variable defined in mpas_atm_time_integration.F
 
-!$OMP PARALLEL PRIVATE(cellStart,cellEnd,vertexStart,vertexEnd,edgeStart,edgeEnd,nthreads,threadid)
-      nthreads = OMP_get_num_threads()
-      threadid = OMP_get_thread_num()
+!$OMP PARALLEL DO
+      do thread=1,block % nThreads
+         if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
+            call atm_init_coupled_diagnostics(state, 1, diag, mesh, block % configs, &
+                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                          block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
+                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
+                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
+                                          block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
+                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+         end if
 
-      cellStart = (threadid * nCells / nthreads) + 1
-      cellEnd = ((threadid+1) * nCells / nthreads)
-      edgeStart = (threadid * nEdges / nthreads) + 1
-      edgeEnd = ((threadid+1) * nEdges / nthreads)
-      vertexStart = (threadid * nVertices / nthreads) + 1
-      vertexEnd = ((threadid+1) * nVertices / nthreads)
-
-      cellSolveStart = (threadid * nCellsSolve / nthreads) + 1
-      cellSolveEnd = ((threadid+1) * nCellsSolve / nthreads)
-      edgeSolveStart = (threadid * nEdgesSolve / nthreads) + 1
-      edgeSolveEnd = ((threadid+1) * nEdgesSolve / nthreads)
-      vertexSolveStart = (threadid * nVerticesSolve / nthreads) + 1
-      vertexSolveEnd = ((threadid+1) * nVerticesSolve / nthreads)
-
-      if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
-         call atm_init_coupled_diagnostics(state, 1, diag, mesh, block % configs, &
-                                       cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
-                                       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
-      end if
-
-      call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
-                                         cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
-!$OMP END PARALLEL
+         call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
+                                            block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                            block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
+                                            block % edgeThreadStart(thread), block % edgeThreadEnd(thread))
+      end do
+!$OMP END PARALLEL DO
 
       deallocate(ke_vertex)
       deallocate(ke_edge)
