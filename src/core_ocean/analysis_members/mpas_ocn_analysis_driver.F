@@ -34,7 +34,7 @@ module ocn_analysis_driver
    use ocn_water_mass_census
    use ocn_meridional_heat_transport
    use ocn_test_compute_interval
-!   use ocn_TEMPLATE
+!   use ocn_TEM_PLATE
 
    implicit none
    private
@@ -66,9 +66,15 @@ module ocn_analysis_driver
    !
    !--------------------------------------------------------------------
 
-   character (len=*), parameter :: amGlobalStatsAlarmID = 'amGlobalStatsAlarm'
-   character (len=*), parameter :: amTestComputeIntervalAlarmID = 'amTestComputeIntervalAlarm'
-   !character (len=*), parameter :: amTemplateAlarmID = 'amTemplateAlarm'
+
+   character (len=*), parameter :: initTimerPrefix = 'init_'
+   character (len=*), parameter :: computeTimerPrefix = 'compute_'
+   character (len=*), parameter :: writeTimerPrefix = 'write_'
+   character (len=*), parameter :: alarmTimerPrefix = 'reset_alarm_'
+   character (len=*), parameter :: restartTimerPrefix = 'restart_'
+   character (len=*), parameter :: finalizeTimerPrefix = 'finalize_'
+   character (len=*), parameter :: computeAlarmSuffix = 'CMPALRM'
+   type (mpas_pool_type), pointer :: analysisMemberList
 
 !***********************************************************************
 
@@ -119,71 +125,41 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_AM_global_stats_enable
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_AM_water_mass_census
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg
-      logical, pointer :: config_use_meridional_heat_transport
-      logical, pointer :: config_AM_test_compute_interval_enable
-!      logical, pointer :: config_use_TEMPLATE
+
+      character (len=StrKIND) :: configName, packageName
+      logical, pointer :: config_AM_enable
+      logical, pointer :: AMPackageActive
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
 
       err = 0
 
-      call mpas_pool_get_config(configPool, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-      if (config_AM_global_stats_enable) then
-          call ocn_setup_packages_global_stats(configPool, packagePool, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+      call mpas_pool_create_pool(analysisMemberList)
+      call mpas_pool_add_config(analysisMemberList, 'globalStats', 1)
+      call mpas_pool_add_config(analysisMemberList, 'testComputeInterval', 1)
+      call mpas_pool_add_config(analysisMemberList, 'layerVolumeWeightedAverage', 1)
+      call mpas_pool_add_config(analysisMemberList, 'meridionalHeatTransport', 1)
+      call mpas_pool_add_config(analysisMemberList, 'okuboWeiss', 1)
+      call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
+      call mpas_pool_add_config(analysisMemberList, 'waterMassCensus', 1)
+      call mpas_pool_add_config(analysisMemberList, 'zonalMean', 1)
+!     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
-      call mpas_pool_get_config(configPool, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      if (config_use_AM_sfc_area_weighted_avg) then
-          call ocn_setup_packages_surface_area_weighted_averages(configPool, packagePool, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+      ! DON'T EDIT BELOW HERE
 
-      call mpas_pool_get_config(configPool, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-      if (config_use_AM_layer_volume_weighted_avg) then
-          call ocn_setup_packages_layer_volume_weighted_averages(configPool, packagePool, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+      ! Iterate over all analysis members to setup packages
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(configPool, configName, config_AM_enable)
 
-      call mpas_pool_get_config(configPool, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         call ocn_setup_packages_zonal_mean(configPool, packagePool, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(configPool, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         call ocn_setup_packages_okubo_weiss(configPool, packagePool, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-       call mpas_pool_get_config(configPool, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-       if (config_use_AM_water_mass_census) then
-          call ocn_setup_packages_water_mass_census(configPool, packagePool, err_tmp)
-          err = ior(err, err_tmp)
-       endif
-
-      call mpas_pool_get_config(configPool, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      if (config_use_meridional_heat_transport) then
-         call ocn_setup_packages_meridional_heat_transport(configPool, packagePool, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(configPool, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-         call ocn_setup_packages_test_compute_interval(configPool, packagePool, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-!      call mpas_pool_get_config(configPool, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-!      if (config_AM_TEMPLATE_enable) then
-!         call ocn_setup_packages_TEMPLATE(configPool, packagePool, err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
+         if ( config_AM_enable ) then
+            packageName = poolItr % memberName(1:nameLength) // 'AMPKGActive'
+            call mpas_pool_get_package(packagePool, packageName, AMPackageActive)
+            AMPackageActive = .true.
+         end if
+      end do
 
    end subroutine ocn_analysis_setup_packages!}}}
 
@@ -231,118 +207,75 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_AM_global_stats_enable
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_AM_water_mass_census
-      logical, pointer :: config_use_meridional_heat_transport
-      logical, pointer :: config_AM_test_compute_interval_enable
-!      logical, pointer :: config_AM_TEMPLATE_enable
 
-      type (MPAS_Clock_type), pointer :: clock
+      character (len=StrKIND) :: configName, alarmName, streamName, timerName
+      logical, pointer :: config_AM_enable
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_stream_name
+      integer :: nameLength
+      type (mpas_pool_iterator_type) :: poolItr
+
+      logical :: streamFound
       character  (len=StrKIND) :: referenceTimeString, outputIntervalString
       type (MPAS_Time_Type) :: referenceTime 
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
-      character (len=StrKIND), pointer :: config_AM_global_stats_compute_interval
-      character (len=StrKIND), pointer :: config_AM_test_compute_interval_compute_interval
-!      character (len=StrKIND), pointer :: config_AM_TEMPLATE_compute_interval
-
       err = 0
 
-      clock => domain % clock
+      call mpas_timer_start('analysis_init', .false.)
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-      if (config_AM_global_stats_enable) then
-         call ocn_init_global_stats(domain, err_tmp)
-         err = ior(err, err_tmp)
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
-         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_interval',config_AM_global_stats_compute_interval)
-         if (config_AM_global_stats_compute_interval=='dt') then
-            config_AM_global_stats_compute_interval='00-00-00_00:00:01'
-         endif
-         if (config_AM_global_stats_compute_interval.ne.'output_interval') then
-            call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_global_stats_compute_interval, ierr=err_tmp)
-            call MPAS_stream_mgr_get_property(domain % streamManager, 'globalStatsOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-            call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-            call mpas_add_clock_alarm(clock, amGlobalStatsAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-            call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
-         endif
-      endif
+         if ( config_AM_enable ) then
+            timerName = trim(initTimerPrefix) // poolItr % memberName(1:nameLength)
+            call mpas_timer_start(timerName, .false.)
+            call ocn_init_analysis_members(domain, poolItr % memberName, err_tmp)
+            err = ior(err, err_tmp)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      if (config_use_AM_sfc_area_weighted_avg) then
-          call ocn_init_surface_area_weighted_averages(domain, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-      if (config_use_AM_layer_volume_weighted_avg) then
-          call ocn_init_layer_volume_weighted_averages(domain, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         call ocn_init_zonal_mean(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
+            if ( config_AM_compute_interval == 'dt' ) then
+               alarmTimeStep = mpas_get_clock_timestep(domain % clock, err_tmp)
+               call mpas_get_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
+            end if
 
-      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         call ocn_init_okubo_weiss(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
+            ! Verify stream exists before trying to use output_interval
+            if ( config_AM_stream_name /= 'none' ) then
+               streamFound = .false.
+   
+               call mpas_stream_mgr_begin_iteration(domain % streamManager)
+               do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamName) )
+                  if ( trim(streamName) == trim(config_AM_stream_name) ) then
+                     streamFound = .true.
+                  end if
+               end do
+   
+               if ( .not. streamFound ) then
+                  call mpas_dmpar_global_abort('ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
+               end if
+            end if
+            
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-      if (config_use_AM_water_mass_census) then
-         call ocn_init_water_mass_census(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
+            if ( config_AM_compute_interval /= 'output_interval' .and. config_AM_stream_name /= 'none') then
+               alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
+               call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
+               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_stream_name, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+               call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+               call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
+               call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
+            end if
+            call mpas_timer_stop(timerName)
+         end if
+      end do
 
-      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      if (config_use_meridional_heat_transport) then
-         call ocn_init_meridional_heat_transport(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-         call ocn_init_test_compute_interval(domain, err_tmp)
-         err = ior(err, err_tmp)
-
-         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_interval',config_AM_test_compute_interval_compute_interval)
-         if (config_AM_test_compute_interval_compute_interval=='dt') then
-            config_AM_test_compute_interval_compute_interval='00-00-00_00:00:01'
-         endif
-         if (config_AM_test_compute_interval_compute_interval.ne.'output_interval') then
-            call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_test_compute_interval_compute_interval, ierr=err_tmp)
-            call MPAS_stream_mgr_get_property(domain % streamManager, 'testCompIntOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-            call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-            call mpas_add_clock_alarm(clock, amTestComputeIntervalAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-            call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
-         endif
-      endif
-
-      ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-      ! if (config_AM_TEMPLATE_enable) then
-      !    call ocn_init_TEMPLATE(domain, err_tmp)
-      !    err = ior(err, err_tmp)
-
-      !    call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_interval',config_AM_TEMPLATE_compute_interval)
-      !    if (config_AM_TEMPLATE_compute_interval=='dt') then
-      !       config_AM_TEMPLATE_compute_interval='00-00-00_00:00:01'
-      !    endif
-      !    if (config_AM_TEMPLATE_compute_interval.ne.'output_interval') then
-      !       call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_TEMPLATE_compute_interval, ierr=err_tmp)
-      !       call MPAS_stream_mgr_get_property(domain % streamManager, 'TemplateOutput', MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-      !       call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
-      !       call mpas_add_clock_alarm(clock, amTemplateAlarmID, referenceTime, alarmTimeStep, ierr=err_tmp)
-      !       call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
-      !    endif
-      ! endif
+      call mpas_timer_stop('analysis_init')
 
    end subroutine ocn_analysis_init!}}}
 
@@ -391,138 +324,54 @@ contains
 
       integer :: timeLevel, err_tmp
 
-      logical, pointer :: config_AM_global_stats_enable, config_AM_global_stats_compute_on_startup, config_AM_global_stats_write_on_startup 
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg, config_AM_sfc_area_weighted_avg_compute_startup
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg, config_AM_layer_volume_weighted_avg_compute_startup
-      logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
-      logical, pointer :: config_use_okubo_weiss, config_okubo_weiss_compute_startup
-      logical, pointer :: config_use_AM_water_mass_census, config_AM_water_mass_census_compute_startup
-      logical, pointer :: config_use_meridional_heat_transport, config_meridional_heat_transport_compute_startup
-      logical, pointer :: config_AM_test_compute_interval_enable, config_AM_test_compute_interval_compute_on_startup, config_AM_test_compute_interval_write_on_startup 
-!      logical, pointer :: config_AM_TEMPLATE_enable, config_AM_TEMPLATE_compute_on_startup, config_AM_TEMPLATE_write_on_startup
+      character (len=StrKIND) :: configName, timerName
+      character (len=StrKIND), pointer :: config_AM_stream_name
+      logical, pointer :: config_AM_enable, config_AM_write_on_startup, config_AM_compute_on_startup
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
 
       err = 0
 
+      call mpas_timer_start('analysis_compute', .false.)
+
       timeLevel=1
-      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-      if (config_AM_global_stats_enable) then
-         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_on_startup', config_AM_global_stats_compute_on_startup)
-         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_write_on_startup', config_AM_global_stats_write_on_startup)
-         if (config_AM_global_stats_compute_on_startup) then
-            call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-            err = ior(err, err_tmp)
-            if (config_AM_global_stats_write_on_startup) then
-               call mpas_timer_start('io_write', .false.)
-               call mpas_stream_mgr_write(domain % streamManager, streamID='globalStatsOutput', forceWriteNow=.true., ierr=err_tmp)
-               call mpas_timer_stop('io_write')
+
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
+
+         if ( config_AM_enable ) then
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_on_startup'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_compute_on_startup)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_write_on_startup'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_write_on_startup)
+
+            if ( config_AM_compute_on_startup ) then
+               timerName = trim(computeTimerPrefix) // poolItr % memberName(1:nameLength)
+               call mpas_timer_start(timerName, .false.)
+               call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call mpas_timer_stop(timerName)
                err = ior(err, err_tmp)
-            endif
-         else
-            if (config_AM_global_stats_write_on_startup) then
-               write(stderrUnit,'(A)') "Warning: write_on_startup called without compute_on_startup, so no output written, for analysis member: global_stats"
-            endif
-         endif
-      endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      call mpas_pool_get_config(domain % configs, 'config_AM_sfc_area_weighted_avg_compute_startup', config_AM_sfc_area_weighted_avg_compute_startup)
-      if (config_use_AM_sfc_area_weighted_avg.and.config_AM_sfc_area_weighted_avg_compute_startup) then
-         call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(domain % streamManager, streamID='sfcAreaOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif
+               if ( config_AM_write_on_startup ) then
+                  configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
+                  call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+                  if ( config_AM_stream_name /= 'none' ) then
+                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, forceWriteNow=.true., ierr=err_tmp)
+                  end if
+               end if
+            else
+               if ( config_AM_write_on_startup ) then
+                  write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
+                                        // poolItr % memberName(1:nameLength) // '. Skipping output...'
+               end if
+            end if
+         end if
+      end do
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-      call mpas_pool_get_config(domain % configs, 'config_AM_layer_volume_weighted_avg_compute_startup', config_AM_layer_volume_weighted_avg_compute_startup)
-      if (config_use_AM_layer_volume_weighted_avg.and.config_AM_layer_volume_weighted_avg_compute_startup) then
-         call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(domain % streamManager, streamID='layerVolOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
-      call mpas_pool_get_config(domain % configs, 'config_zonal_mean_compute_startup', config_zonal_mean_compute_startup)
-      if (config_use_zonal_mean.and.config_zonal_mean_compute_startup) then
-         call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(domain % streamManager, streamID='zonalMeanOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      call mpas_pool_get_config(domain % configs, 'config_okubo_weiss_compute_startup', config_okubo_weiss_compute_startup)
-      if (config_use_okubo_weiss.and.config_okubo_weiss_compute_startup) then
-         call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(domain % streamManager, streamID='okuboWeissOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif
-
-       call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-       call mpas_pool_get_config(domain % configs, 'config_AM_water_mass_census_compute_startup', config_AM_water_mass_census_compute_startup)
-       if (config_use_AM_water_mass_census.and.config_AM_water_mass_census_compute_startup) then
-          call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(domain % streamManager, streamID='waterMassOutput', forceWriteNow=.true., ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          err = ior(err, err_tmp)
-       endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      call mpas_pool_get_config(domain % configs, 'config_meridional_heat_transport_compute_startup', config_meridional_heat_transport_compute_startup)
-      if (config_use_meridional_heat_transport.and.config_meridional_heat_transport_compute_startup) then
-         call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(domain % streamManager, streamID='MerHeatTransOutput', forceWriteNow=.true., ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_on_startup', config_AM_test_compute_interval_compute_on_startup)
-         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_write_on_startup', config_AM_test_compute_interval_write_on_startup)
-         if (config_AM_test_compute_interval_compute_on_startup) then
-            call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
-            err = ior(err, err_tmp)
-            if (config_AM_test_compute_interval_write_on_startup) then
-               call mpas_timer_start('io_write', .false.)
-               call mpas_stream_mgr_write(domain % streamManager, streamID='testCompIntOutput', forceWriteNow=.true., ierr=err_tmp)
-               call mpas_timer_stop('io_write')
-               err = ior(err, err_tmp)
-            endif
-         else
-            if (config_AM_test_compute_interval_write_on_startup) then
-               write(stderrUnit,'(A)') "Warning: write_on_startup called without compute_on_startup, so no output written, for analysis member: test_compute_interval"
-            endif
-         endif
-      endif
-
-      ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-      ! if (config_AM_TEMPLATE_enable) then
-      !    call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_on_startup', config_AM_TEMPLATE_compute_on_startup)
-      !    call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_write_on_startup', config_AM_TEMPLATE_write_on_startup)
-      !    if (config_AM_TEMPLATE_compute_on_startup) then
-      !       call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-      !       err = ior(err, err_tmp)
-      !       if (config_AM_TEMPLATE_write_on_startup) then
-      !          call mpas_timer_start('io_write', .false.)
-      !          call mpas_stream_mgr_write(domain % streamManager, streamID='TemplateOutput', forceWriteNow=.true., ierr=err_tmp)
-      !          call mpas_timer_stop('io_write')
-      !          err = ior(err, err_tmp)
-      !       endif
-      !    else
-      !       if (config_AM_TEMPLATE_write_on_startup) then
-      !          write(stderrUnit,'(A)') "Warning: write_on_startup called without compute_on_startup, so no output written, for analysis member: TEMPLATE"
-      !       endif
-      !    endif
-      ! endif
+      call mpas_timer_stop('analysis_compute')
 
    end subroutine ocn_analysis_compute_startup!}}}
 
@@ -570,111 +419,52 @@ contains
       !-----------------------------------------------------------------
 
       integer :: timeLevel, err_tmp
-      logical, pointer :: config_AM_global_stats_enable
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_AM_water_mass_census
-      logical, pointer :: config_use_meridional_heat_transport
-      logical, pointer :: config_AM_test_compute_interval_enable
-!      logical, pointer :: config_AM_TEMPLATE_enable
 
-      character (len=StrKIND), pointer :: config_AM_global_stats_compute_interval
-      character (len=StrKIND), pointer :: config_AM_test_compute_interval_compute_interval
-!      character (len=StrKIND), pointer :: config_AM_TEMPLATE_compute_interval
-
-      type (MPAS_Clock_type), pointer :: clock
+      character (len=StrKIND) :: configName, alarmName, timerName
+      character (len=StrKIND), pointer :: config_AM_stream_name, config_AM_compute_interval
+      logical, pointer :: config_AM_enable
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
 
       err = 0
-      clock => domain % clock
+
+      call mpas_timer_start('analysis_compute', .false.)
 
       timeLevel=1
-      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-      if (config_AM_global_stats_enable) then
-         call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_compute_interval',config_AM_global_stats_compute_interval)
-         if (config_AM_global_stats_compute_interval.eq.'output_interval') then
-            ! Compute analysis member just before output:
-            if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='globalStatsOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-               call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-            endif
-         elseif (mpas_is_alarm_ringing(clock, amGlobalStatsAlarmID, ierr=err_tmp)) then
-            call mpas_reset_clock_alarm(clock, amGlobalStatsAlarmID, ierr=err_tmp)
-            call ocn_compute_global_stats(domain, timeLevel, err_tmp)
-         endif
-      endif
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      if (config_use_AM_sfc_area_weighted_avg) then
-         ! Compute analysis member just before output:
-         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='sfcAreaOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-            call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
-         endif
-      endif
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-      if (config_use_AM_layer_volume_weighted_avg) then
-         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='layerVolOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-            call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
-         endif
-      endif
+         if ( config_AM_enable ) then
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         ! Compute analysis member just before output:
-         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='zonalMeanOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-            call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
-         endif
-      endif
+            ! Build name of alarm for analysis member
+            alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
+            timerName = trim(computeTimerPrefix) // poolItr % memberName(1:nameLength)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         ! Compute analysis member just before output:
-         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='okuboWeissOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-            call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
-         endif
-      endif
+            ! Compute analysis member just before output
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_stream_name /= 'none') then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_stream_name, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+                  call mpas_timer_start(timerName, .false.)
+                  call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+                  call mpas_timer_stop(timerName)
+               end if
+            else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
+               call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
+               call mpas_timer_start(timerName, .false.)
+               call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call mpas_timer_stop(timerName)
+            end if
+         end if
+      end do
 
-       call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-       if (config_use_AM_water_mass_census) then
-         if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='waterMassOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-             call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
-          endif
-       endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      if (config_use_meridional_heat_transport) then
-        if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='MerHeatTransOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-            call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
-         endif
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-         call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_compute_interval',config_AM_test_compute_interval_compute_interval)
-         if (config_AM_test_compute_interval_compute_interval.eq.'output_interval') then
-            ! Compute analysis member just before output:
-            if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='testCompIntOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-               call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
-            endif
-         elseif (mpas_is_alarm_ringing(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)) then
-            call mpas_reset_clock_alarm(clock, amTestComputeIntervalAlarmID, ierr=err_tmp)
-            call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
-         endif
-      endif
-
-       ! call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-       !   call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_compute_interval',config_AM_TEMPLATE_compute_interval)
-       !   if (config_AM_TEMPLATE_compute_interval.eq.'output_interval') then
-       !      ! Compute analysis member just before output:
-       !      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='TemplateOutput', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)) then
-       !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-       !      endif
-       !   elseif (mpas_is_alarm_ringing(clock, amTemplateAlarmID, ierr=err_tmp)) then
-       !      call mpas_reset_clock_alarm(clock, amTemplateAlarmID, ierr=err_tmp)
-       !      call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
-       !   endif
-       ! endif
+      call mpas_timer_stop('analysis_compute')
 
    end subroutine ocn_analysis_compute!}}}
 
@@ -722,71 +512,32 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_AM_global_stats_enable
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_AM_water_mass_census
-      logical, pointer :: config_use_meridional_heat_transport
-      logical, pointer :: config_AM_test_compute_interval_enable
-!      logical, pointer :: config_AM_TEMPLATE_enable
+
+      character (len=StrKIND) :: configName, timerName
+      type (mpas_pool_iterator_type) :: poolItr
+      logical, pointer :: config_AM_enable
+      integer :: nameLength
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-      if (config_AM_global_stats_enable) then
-          call ocn_restart_global_stats(domain, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+      call mpas_timer_start('analysis_restart', .false.)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      if (config_use_AM_sfc_area_weighted_avg) then
-          call ocn_restart_surface_area_weighted_averages(domain, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-      if (config_use_AM_layer_volume_weighted_avg) then
-          call ocn_restart_layer_volume_weighted_averages(domain, err_tmp)
-          err = ior(err, err_tmp)
-      endif
+         if ( config_AM_enable ) then
+            timerName = trim(restartTimerPrefix) // poolItr % memberName(1:nameLength)
+            call mpas_timer_start(timerName, .false.)
+            call ocn_restart_analysis_members(domain, poolItr % memberName, err_tmp)
+            err = ior(err, err_tmp)
+            call mpas_timer_stop(timerName)
+         end if
+      end do
 
-      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         call ocn_restart_zonal_mean(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         call ocn_restart_okubo_weiss(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-       call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-       if (config_use_AM_water_mass_census) then
-          call ocn_restart_water_mass_census(domain, err_tmp)
-          err = ior(err, err_tmp)
-       endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      if (config_use_meridional_heat_transport) then
-         call ocn_restart_meridional_heat_transport(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-         call ocn_restart_test_compute_interval(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-!      call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-!      if (config_AM_TEMPLATE_enable) then
-!         call ocn_restart_TEMPLATE(domain, err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
+      call mpas_timer_stop('analysis_restart')
 
    end subroutine ocn_analysis_restart!}}}
 
@@ -805,7 +556,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_write(streamManager, err)!{{{
+   subroutine ocn_analysis_write(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -813,7 +564,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (MPAS_streamManager_type), intent(inout) :: streamManager
+      type (domain_type), intent(in) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -837,116 +588,39 @@ contains
 
       integer :: err_tmp
 
-      logical, pointer :: config_AM_global_stats_enable
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_AM_water_mass_census
-      logical, pointer :: config_use_meridional_heat_transport
-      logical, pointer :: config_AM_test_compute_interval_enable
-!      logical, pointer :: config_AM_TEMPLATE_enable
+      character (len=StrKIND) :: configName, timerName
+      character (len=StrKIND), pointer :: config_AM_stream_name
+      logical, pointer :: config_AM_enable
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-      if (config_AM_global_stats_enable) then
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(streamManager, streamID='globalStatsOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(streamManager, streamID='globalStatsOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_reset_alarms')
-          err = ior(err, err_tmp)
-      endif
+      call mpas_timer_start('analysis_write', .false.)
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-      if (config_use_AM_sfc_area_weighted_avg) then
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(streamManager, streamID='sfcAreaOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(streamManager, streamID='sfcAreaOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_reset_alarms')
-          err = ior(err, err_tmp)
-      endif
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-      if (config_use_AM_layer_volume_weighted_avg) then
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(streamManager, streamID='layerVolOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(streamManager, streamID='layerVolOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_reset_alarms')
-          err = ior(err, err_tmp)
-      endif
+         if ( config_AM_enable ) then
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+            if ( config_AM_stream_name /= 'none' ) then
+               timerName = trim(writeTimerPrefix) // poolItr % memberName(1:nameLength)
+               call mpas_timer_start(timerName, .false.)
+               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, ierr=err_tmp)
+               call mpas_timer_stop(timerName)
+               timerName = trim(alarmTimerPrefix) // poolItr % memberName(1:nameLength)
+               call mpas_timer_start(timerName, .false.)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_stream_name, ierr=err_tmp)
+               call mpas_timer_stop(timerName)
+            end if
+         end if
+      end do
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(streamManager, streamID='zonalMeanOutput', ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         call mpas_timer_start('io_reset_alarms', .false.)
-         call mpas_stream_mgr_reset_alarms(streamManager, streamID='zonalMeanOutput', ierr=err_tmp)
-         call mpas_timer_stop('io_reset_alarms')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         call mpas_timer_start('io_write', .false.)
-         call mpas_stream_mgr_write(streamManager, streamID='okuboWeissOutput', ierr=err_tmp)
-         call mpas_timer_stop('io_write')
-         call mpas_timer_start('io_reset_alarms', .false.)
-         call mpas_stream_mgr_reset_alarms(streamManager, streamID='okuboWeissOutput', ierr=err_tmp)
-         call mpas_timer_stop('io_reset_alarms')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-      if (config_use_AM_water_mass_census) then
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(streamManager, streamID='waterMassOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(streamManager, streamID='waterMassOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_reset_alarms')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      if (config_use_meridional_heat_transport) then
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(streamManager, streamID='MerHeatTransOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(streamManager, streamID='MerHeatTransOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_reset_alarms')
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-          call mpas_timer_start('io_write', .false.)
-          call mpas_stream_mgr_write(streamManager, streamID='testCompIntOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_write')
-          call mpas_timer_start('io_reset_alarms', .false.)
-          call mpas_stream_mgr_reset_alarms(streamManager, streamID='testCompIntOutput', ierr=err_tmp)
-          call mpas_timer_stop('io_reset_alarms')
-         err = ior(err, err_tmp)
-      endif
-
-      ! call mpas_pool_get_config(ocnConfigs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-      ! if (config_AM_TEMPLATE_enable) then
-      !     call mpas_timer_start('io_write', .false.)
-      !     call mpas_stream_mgr_write(streamManager, streamID='TemplateOutput', ierr=err_tmp)
-      !     call mpas_timer_stop('io_write')
-      !     call mpas_timer_start('io_reset_alarms', .false.)
-      !     call mpas_stream_mgr_reset_alarms(streamManager, streamID='TemplateOutput', ierr=err_tmp)
-      !     call mpas_timer_stop('io_reset_alarms')
-      !    err = ior(err, err_tmp)
-      ! endif
+      call mpas_timer_stop('analysis_write')
 
    end subroutine ocn_analysis_write!}}}
 
@@ -994,73 +668,220 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      logical, pointer :: config_AM_global_stats_enable
-      logical, pointer :: config_use_AM_sfc_area_weighted_avg
-      logical, pointer :: config_use_AM_layer_volume_weighted_avg
-      logical, pointer :: config_use_zonal_mean
-      logical, pointer :: config_use_okubo_weiss
-      logical, pointer :: config_use_AM_water_mass_census
-      logical, pointer :: config_use_meridional_heat_transport
-      logical, pointer :: config_AM_test_compute_interval_enable
-!      logical, pointer :: config_AM_TEMPLATE_enable
+
+      character (len=StrKIND) :: configName, timerName
+      logical, pointer :: config_AM_enable
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
 
       err = 0
 
-     call mpas_pool_get_config(domain % configs, 'config_AM_global_stats_enable', config_AM_global_stats_enable)
-     if (config_AM_global_stats_enable) then
-        call ocn_finalize_global_stats(domain, err_tmp)
-        err = ior(err, err_tmp)
-     endif
+      call mpas_timer_start('analysis_finalize', .false.)
 
-     call mpas_pool_get_config(domain % configs, 'config_use_AM_sfc_area_weighted_avg', config_use_AM_sfc_area_weighted_avg)
-     if (config_use_AM_sfc_area_weighted_avg) then
-        call ocn_finalize_surface_area_weighted_averages(domain, err_tmp)
-        err = ior(err, err_tmp)
-     endif
+      call mpas_pool_begin_iteration(analysisMemberList)
 
-     call mpas_pool_get_config(domain % configs, 'config_use_AM_layer_volume_weighted_avg', config_use_AM_layer_volume_weighted_avg)
-     if (config_use_AM_layer_volume_weighted_avg) then
-        call ocn_finalize_layer_volume_weighted_averages(domain, err_tmp)
-        err = ior(err, err_tmp)
-     endif
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
-      if (config_use_zonal_mean) then
-         call ocn_finalize_zonal_mean(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
+         if ( config_AM_enable ) then
+            timerName = trim(finalizeTimerPrefix) // poolItr % memberName(1:nameLength)
+            call mpas_timer_start(timerName, .false.)
+            call ocn_finalize_analysis_members(domain, poolItr % memberName, err_tmp)
+            err = ior(err, err_tmp)
+            call mpas_timer_stop(timerName)
+         end if
+      end do
 
-      call mpas_pool_get_config(domain % configs, 'config_use_okubo_weiss', config_use_okubo_weiss)
-      if (config_use_okubo_weiss) then
-         call ocn_finalize_okubo_weiss(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_AM_water_mass_census', config_use_AM_water_mass_census)
-      if (config_use_AM_water_mass_census) then
-         call ocn_finalize_water_mass_census(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_use_meridional_heat_transport', config_use_meridional_heat_transport)
-      if (config_use_meridional_heat_transport) then
-         call ocn_finalize_meridional_heat_transport(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_test_compute_interval_enable', config_AM_test_compute_interval_enable)
-      if (config_AM_test_compute_interval_enable) then
-         call ocn_finalize_test_compute_interval(domain, err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-!      call mpas_pool_get_config(domain % configs, 'config_AM_TEMPLATE_enable', config_AM_TEMPLATE_enable)
-!      if (config_AM_TEMPLATE_enable) then
-!         call ocn_finalize_TEMPLATE(domain, err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
+      call mpas_timer_stop('analysis_finalize')
 
    end subroutine ocn_analysis_finalize!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_analysis_members
+!
+!> \brief Analysis member initialization driver
+!> \author Doug Jacobsen
+!> \date 07/01/2015
+!> \details
+!>  This private routine calls the correct init routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_init_analysis_members(domain, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+
+      nameLength = len_trim(analysisMemberName)
+
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+         call ocn_init_global_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_init_test_compute_interval(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
+         call ocn_init_layer_volume_weighted_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
+         call ocn_init_meridional_heat_transport(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'okuboWeiss' ) then
+         call ocn_init_okubo_weiss(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+         call ocn_init_surface_area_weighted_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'waterMassCensus' ) then
+         call ocn_init_water_mass_census(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
+         call ocn_init_zonal_mean(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
+!        call ocn_init_TEM_PLATE(domain, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine ocn_init_analysis_members!}}}
+
+!***********************************************************************
+!
+!  routine ocn_compute_analysis_members
+!
+!> \brief Analysis member compute driver
+!> \author Doug Jacobsen
+!> \date 07/01/2015
+!> \details
+!>  This private routine calls the correct compute routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_compute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+
+      nameLength = len_trim(analysisMemberName)
+
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+         call ocn_compute_global_stats(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_compute_test_compute_interval(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
+         call ocn_compute_layer_volume_weighted_averages(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
+         call ocn_compute_meridional_heat_transport(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'okuboWeiss' ) then
+         call ocn_compute_okubo_weiss(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+         call ocn_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'waterMassCensus' ) then
+         call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
+         call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
+!        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine ocn_compute_analysis_members!}}}
+
+!***********************************************************************
+!
+!  routine ocn_restart_analysis_members
+!
+!> \brief Analysis member restart driver
+!> \author Doug Jacobsen
+!> \date 07/01/2015
+!> \details
+!>  This private routine calls the correct restart routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_restart_analysis_members(domain, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+
+      nameLength = len_trim(analysisMemberName)
+
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+         call ocn_restart_global_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_restart_test_compute_interval(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
+         call ocn_restart_layer_volume_weighted_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
+         call ocn_restart_meridional_heat_transport(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'okuboWeiss' ) then
+         call ocn_restart_okubo_weiss(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+         call ocn_restart_surface_area_weighted_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'waterMassCensus' ) then
+         call ocn_restart_water_mass_census(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
+         call ocn_restart_zonal_mean(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
+!        call ocn_restart_TEM_PLATE(domain, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine ocn_restart_analysis_members!}}}
+
+!***********************************************************************
+!
+!  routine ocn_finalize_analysis_members
+!
+!> \brief Analysis member finalize driver
+!> \author Doug Jacobsen
+!> \date 07/01/2015
+!> \details
+!>  This private routine calls the correct finalize routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_finalize_analysis_members(domain, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+
+      nameLength = len_trim(analysisMemberName)
+
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+         call ocn_finalize_global_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+         call ocn_finalize_test_compute_interval(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'layerVolumeWeightedAverage' ) then
+         call ocn_finalize_layer_volume_weighted_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'meridionalHeatTransport' ) then
+         call ocn_finalize_meridional_heat_transport(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'okuboWeiss' ) then
+         call ocn_finalize_okubo_weiss(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+         call ocn_finalize_surface_area_weighted_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'waterMassCensus' ) then
+         call ocn_finalize_water_mass_census(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
+         call ocn_finalize_zonal_mean(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
+!        call ocn_finalize_TEM_PLATE(domain, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine ocn_finalize_analysis_members!}}}
 
 end module ocn_analysis_driver
 

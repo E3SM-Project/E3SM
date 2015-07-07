@@ -457,7 +457,7 @@ module ocn_forward_mode
          end do
 
          call ocn_analysis_compute(domain, err) 
-         call ocn_analysis_write(domain % streamManager, err)
+         call ocn_analysis_write(domain, err)
 
          call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)

@@ -21,7 +21,6 @@ module ocn_layer_volume_weighted_averages
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -45,8 +44,7 @@ module ocn_layer_volume_weighted_averages
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_layer_volume_weighted_averages, &
-             ocn_init_layer_volume_weighted_averages, &
+   public :: ocn_init_layer_volume_weighted_averages, &
              ocn_compute_layer_volume_weighted_averages, &
              ocn_restart_layer_volume_weighted_averages, &
              ocn_finalize_layer_volume_weighted_averages
@@ -57,67 +55,9 @@ module ocn_layer_volume_weighted_averages
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amLayerVolWeightedAvgTimer
-
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_layer_volume_weighted_averages
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Todd Ringler
-!> \date    April 24, 2015
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_layer_volume_weighted_averages(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      logical, pointer :: amLayerVolWeightedAvgPkgActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amLayerVolWeightedAvgPkgActive', amLayerVolWeightedAvgPkgActive)
-
-      ! turn on package for this analysis member
-      amLayerVolWeightedAvgPkgActive = .true.
-
-   end subroutine ocn_setup_packages_layer_volume_weighted_averages!}}}
-
 
 !***********************************************************************
 !
@@ -213,7 +153,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: amLayerVolWeightedAvgPool
+      type (mpas_pool_type), pointer :: layerVolumeWeightedAverageAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
@@ -257,7 +197,7 @@ contains
       integer :: iCell, iLevel, iRegion, iTracer, err_tmp
 
       ! package flag
-      logical, pointer :: amLayerVolWeightedAvgPkgActive
+      logical, pointer :: layerVolumeWeightedAverageAMPKGActive
 
       ! buffers data for message passaging
       integer :: kBuffer, kBufferLength
@@ -267,13 +207,6 @@ contains
 
       ! assume no error
       err = 0
-
-      ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'amLayerVolWeightedAvgPkgActive', amLayerVolWeightedAvgPkgActive)
-      if ( .not. amLayerVolWeightedAvgPkgActive ) return
-
-      ! start timer
-      call mpas_timer_start("AM_layer_volume_weighted_averages", .false., amLayerVolWeightedAvgTimer)
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -300,13 +233,13 @@ contains
       workBufferMaxReduced=0.0_RKIND
 
       ! get pointers to analysis member arrays
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amLayerVolWeightedAvg', amLayerVolWeightedAvgPool)
-      call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'minValueWithinOceanLayerRegion', minValueWithinOceanLayerRegion)
-      call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'maxValueWithinOceanLayerRegion', maxValueWithinOceanLayerRegion)
-      call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'avgValueWithinOceanLayerRegion', avgValueWithinOceanLayerRegion)
-      call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'minValueWithinOceanVolumeRegion', minValueWithinOceanVolumeRegion)
-      call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'maxValueWithinOceanVolumeRegion', maxValueWithinOceanVolumeRegion)
-      call mpas_pool_get_array(amLayerVolWeightedAvgPool, 'avgValueWithinOceanVolumeRegion', avgValueWithinOceanVolumeRegion)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'layerVolumeWeightedAverageAM', layerVolumeWeightedAverageAMPool)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanLayerRegion', minValueWithinOceanLayerRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanLayerRegion', maxValueWithinOceanLayerRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanLayerRegion', avgValueWithinOceanLayerRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanVolumeRegion', minValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanVolumeRegion', maxValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanVolumeRegion', avgValueWithinOceanVolumeRegion)
 
       ! loop over blocks
       ! NOTE: code is not valid for multiple blocks !
@@ -314,7 +247,7 @@ contains
       do while (associated(block))
 
          ! get pointers to scratch variables
-         call mpas_pool_get_subpool(block % structs, 'layerVolWeightedAvgScratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'layerVolumeWeightedAverageAMScratch', scratchPool)
          call mpas_pool_get_field(scratchPool, 'workArrayLayerVolume', workArrayField)
          call mpas_pool_get_field(scratchPool, 'workMaskLayerVolume', workMaskField)
          call mpas_pool_get_field(scratchPool, 'workMinLayerVolume', workMinField)
@@ -492,9 +425,6 @@ contains
       deallocate(workBufferSumReduced)
       deallocate(workBufferMinReduced)
       deallocate(workBufferMaxReduced)
-
-      ! stop timer
-      call mpas_timer_stop("AM_layer_volume_weighted_averages", amLayerVolWeightedAvgTimer)
 
    contains
 

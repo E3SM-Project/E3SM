@@ -21,7 +21,6 @@ module ocn_surface_area_weighted_averages
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -45,8 +44,7 @@ module ocn_surface_area_weighted_averages
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_surface_area_weighted_averages, &
-             ocn_init_surface_area_weighted_averages, &
+   public :: ocn_init_surface_area_weighted_averages, &
              ocn_compute_surface_area_weighted_averages, &
              ocn_restart_surface_area_weighted_averages, &
              ocn_finalize_surface_area_weighted_averages
@@ -57,66 +55,9 @@ module ocn_surface_area_weighted_averages
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amSfcAreaWeighedAvgTimer
-
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_surface_area_weighted_averages
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Todd Ringler
-!> \date    April 24, 2015
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_surface_area_weighted_averages(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      logical, pointer :: amSfcAreaWeightedAvgPkgActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amSfcAreaWeightedAvgPkgActive', amSfcAreaWeightedAvgPkgActive)
-
-      ! turn on package for this analysis member
-      amSfcAreaWeightedAvgPkgActive = .true.
-
-   end subroutine ocn_setup_packages_surface_area_weighted_averages!}}}
 
 
 !***********************************************************************
@@ -213,7 +154,7 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: amSfcAreaWeightedAvgPool
+      type (mpas_pool_type), pointer :: surfaceAreaWeightedAveragesAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
@@ -271,7 +212,7 @@ contains
       integer :: iCell, iRegion, iTracer, err_tmp
 
       ! package flag
-      logical, pointer :: amSfcAreaWeightedAvgPkgActive
+      logical, pointer :: surfaceAreaWeightedAveragesAMPKGActive
       logical, pointer :: bulkForcingPkgActive
       logical, pointer :: frazilIcePkgActive
 
@@ -284,16 +225,9 @@ contains
       ! assume no error
       err = 0
 
-      ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'amSfcAreaWeightedAvgPkgActive', amSfcAreaWeightedAvgPkgActive)
-      if ( .not. amSfcAreaWeightedAvgPkgActive ) return
-
       ! get status of other packages
       call mpas_pool_get_package(ocnPackages, 'bulkForcingActive', bulkForcingPkgActive)
       call mpas_pool_get_package(ocnPackages, 'frazilIceActive', frazilIcePkgActive)
-
-      ! start timer
-      call mpas_timer_start("AM_surface_area_weighted_averages", .false., amSfcAreaWeighedAvgTimer)
 
       ! set highest level pointer
       dminfo = domain % dminfo
@@ -324,13 +258,13 @@ contains
       do iRegion=1,nOceanRegions
 
       ! get pointers to analysis member arrays
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'amSfcAreaWeightedAvg', amSfcAreaWeightedAvgPool)
-      call mpas_pool_get_array(amSfcAreaWeightedAvgPool, 'minValueWithinOceanRegion', minValueWithinOceanRegion)
-      call mpas_pool_get_array(amSfcAreaWeightedAvgPool, 'maxValueWithinOceanRegion', maxValueWithinOceanRegion)
-      call mpas_pool_get_array(amSfcAreaWeightedAvgPool, 'avgValueWithinOceanRegion', avgValueWithinOceanRegion)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceAreaWeightedAveragesAM', surfaceAreaWeightedAveragesAMPool)
+      call mpas_pool_get_array(surfaceAreaWeightedAveragesAMPool, 'minValueWithinOceanRegion', minValueWithinOceanRegion)
+      call mpas_pool_get_array(surfaceAreaWeightedAveragesAMPool, 'maxValueWithinOceanRegion', maxValueWithinOceanRegion)
+      call mpas_pool_get_array(surfaceAreaWeightedAveragesAMPool, 'avgValueWithinOceanRegion', avgValueWithinOceanRegion)
 
       ! get pointers to scratch variables
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'sfcAreaWeightedAvgScratch', scratchPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceAreaWeightedAveragesAMScratch', scratchPool)
       call mpas_pool_get_field(scratchPool, 'workArray', workArrayField)
       call mpas_pool_get_field(scratchPool, 'workMask', workMaskField)
       call mpas_pool_get_field(scratchPool, 'workMin', workMinField)
@@ -509,9 +443,6 @@ contains
       deallocate(workBufferSumReduced)
       deallocate(workBufferMinReduced)
       deallocate(workBufferMaxReduced)
-
-      ! stop timer
-      call mpas_timer_stop("AM_surface_area_weighted_averages", amSfcAreaWeighedAvgTimer)
 
    contains
 

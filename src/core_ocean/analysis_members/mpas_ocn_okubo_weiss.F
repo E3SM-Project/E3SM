@@ -56,8 +56,7 @@ module ocn_okubo_weiss
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_okubo_weiss, &
-             ocn_init_okubo_weiss, &
+   public :: ocn_init_okubo_weiss, &
              ocn_compute_okubo_weiss, &
              ocn_write_okubo_weiss, &
              ocn_restart_okubo_weiss, &
@@ -97,71 +96,16 @@ module ocn_okubo_weiss
       end subroutine compute_ev_3!}}}
    end interface
 
-   type (timer_node), pointer :: amOkuboWeissTimer
    type (timer_node), pointer :: amOWCCTimer, &
       CCLocalTimer, CCComLoopTimer, CCStatsTimer, CCStatsPerProcT, &
       CCAggregateStatsT, CCAggGatherT, CCAggSortT, CCOutputT
    integer :: nCellsGlobal
    integer :: nTotalCellsGlobal
-   character (len=StrKIND), pointer :: config_okubo_weiss_directory
+   character (len=StrKIND), pointer :: config_AM_okuboWeiss_directory
 
 !***********************************************************************
 
 contains
-
-!***********************************************************************
-!
-!  routine ocn_setup_packages_okubo_weiss
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_okubo_weiss(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: amOkuboWeissActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amOkuboWeissActive', amOkuboWeissActive)
-
-      ! turn on package for this analysis member
-      amOkuboWeissActive = .true.
-
-   end subroutine ocn_setup_packages_okubo_weiss!}}}
-
 
 !***********************************************************************
 !
@@ -224,7 +168,7 @@ contains
 
       cells = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_directory',config_okubo_weiss_directory)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_directory',config_AM_okuboWeiss_directory)
 
       dminfo = domain % dminfo
       block => domain % blocklist
@@ -573,7 +517,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amOkuboWeissPool
+      type (mpas_pool_type), pointer :: okuboWeissAMPool
 
       integer, dimension(:), pointer :: nEdgesOnCell, indexToCellID
       integer, dimension(:,:), pointer :: cellsOnCell
@@ -589,11 +533,11 @@ contains
 
       call mpas_timer_start("CC local", .false., CCLocalTimer)
 
-      call mpas_pool_get_subpool(block % structs, 'amOkuboWeiss', amOkuboWeissPool)
+      call mpas_pool_get_subpool(block % structs, 'okuboWeissAM', okuboWeissAMPool)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-      call mpas_pool_get_field(amOkuboWeissPool, 'eddyID', OW_cc_id_field)
+      call mpas_pool_get_field(okuboWeissAMPool, 'eddyID', OW_cc_id_field)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -890,8 +834,8 @@ contains
       call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_use_lat_lon_coords', use_lat_lon_coords)
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_eddy_min_cells', min_cells)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_use_lat_lon_coords', use_lat_lon_coords)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_eddy_min_cells', min_cells)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -1295,7 +1239,7 @@ contains
       fileID = mpas_get_free_unit()
 
       ! Create output file.
-      open(fileID, file=trim(config_okubo_weiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
+      open(fileID, file=trim(config_AM_okuboWeiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
 
       if (use_lat_lon_coords) then
          write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'
@@ -1504,14 +1448,13 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amOkuboWeissPool
+      type (mpas_pool_type), pointer :: okuboWeissAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: amOkuboWeiss
 
       integer, pointer :: nVertLevels, nCells, nEdges
       integer, dimension(:), pointer :: maxLevelCell
@@ -1532,17 +1475,16 @@ contains
       real (kind=RKIND), dimension(:,:,:,:), pointer :: velocityGradient
       integer, dimension(:,:), pointer :: OW_thresh
 
-      logical, pointer :: config_compute_OW_eddy_census
+      logical, pointer :: config_AM_okuboWeiss_compute_eddy_census
       real (kind=RKIND), pointer :: OW_normalization, Lam2_normalization, threshold
 
-      call mpas_timer_start("AM_okubo_weiss", .false., amOkuboWeissTimer)
       err = 0
       dminfo = domain % dminfo
 
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_normalization', OW_normalization)
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_lambda2_normalization', Lam2_normalization)
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_compute_eddy_census', config_compute_OW_eddy_census)
-      call mpas_pool_get_config(ocnConfigs, 'config_okubo_weiss_threshold_value', threshold)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_normalization', OW_normalization)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_lambda2_normalization', Lam2_normalization)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_compute_eddy_census', config_AM_okuboWeiss_compute_eddy_census)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_threshold_value', threshold)
 
       block => domain % blocklist
       do while (associated(block))
@@ -1550,7 +1492,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'okuboWeissScratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'amOkuboWeiss', amOkuboWeissPool)
+         call mpas_pool_get_subpool(block % structs, 'okuboWeissAM', okuboWeissAMPool)
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -1563,9 +1505,9 @@ contains
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
 
-         call mpas_pool_get_array(amOkuboWeissPool, 'okuboWeiss', OW)
-         call mpas_pool_get_array(amOkuboWeissPool, 'eddyID', OW_cc_id)
-         call mpas_pool_get_array(amOkuboWeissPool, 'vorticity', om)
+         call mpas_pool_get_array(okuboWeissAMPool, 'okuboWeiss', OW)
+         call mpas_pool_get_array(okuboWeissAMPool, 'eddyID', OW_cc_id)
+         call mpas_pool_get_array(okuboWeissAMPool, 'vorticity', om)
 
          call mpas_pool_get_field(scratchPool, 'velocityGradient', velocityGradientField)
          call mpas_pool_get_field(scratchPool, 'thresholdedOkuboWeiss', OW_threshField)
@@ -1601,7 +1543,7 @@ contains
          call ocn_threshold_OW(nVertLevels, nCells, threshold, OW, OW_thresh)
 
          ! Compute connected components of thresholded field
-         if (config_compute_OW_eddy_census) then
+         if (config_AM_okuboWeiss_compute_eddy_census) then
             call mpas_timer_start("OW connected components", .false., amOWCCTimer)
             call ocn_compute_OW_component_IDs(dminfo, block, meshPool, dminfo % my_proc_id, nVertLevels, &
                                               nCells, OW_thresh, OW_cc_id)
@@ -1617,8 +1559,6 @@ contains
 
          block => block % next
       end do
-
-      call mpas_timer_stop("AM_okubo_weiss", amOkuboWeissTimer)
 
    end subroutine ocn_compute_okubo_weiss!}}}
 
