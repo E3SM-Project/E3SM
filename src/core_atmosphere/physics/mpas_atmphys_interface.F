@@ -410,13 +410,14 @@
  end subroutine MPAS_to_physics
 
 !==================================================================================================
- subroutine microphysics_from_MPAS(mesh,state,time_lev,diag)
+ subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,its,ite)
 !==================================================================================================
 
 !input variables:
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
  integer:: time_lev
 
@@ -510,13 +511,14 @@
  end subroutine microphysics_from_MPAS
 
 !==================================================================================================
- subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,tend,itimestep)
+ subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,tend,itimestep,its,ite)
 !==================================================================================================
 
 !input variables:
  integer,intent(in):: itimestep
  integer,intent(in):: time_lev
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !output variables:
  type(mpas_pool_type),intent(inout):: state

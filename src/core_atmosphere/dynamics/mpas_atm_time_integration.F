@@ -865,8 +865,14 @@ module atm_time_integration
 
          !call microphysics schemes:
          if (config_microp_scheme .ne. 'off')  &
-            call microphysics_driver ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep )
-
+            call mpas_timer_start('microphysics')
+!$OMP PARALLEL DO
+            do thread=1,block % nThreads
+               call microphysics_driver ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep, &
+                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+            end do
+!$OMP END PARALLEL DO
+            call mpas_timer_stop('microphysics')
          block => block % next
       end do
 #endif
