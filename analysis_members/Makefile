@@ -9,6 +9,7 @@ MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_water_mass_census.o \
           mpas_ocn_meridional_heat_transport.o \
           mpas_ocn_test_compute_interval.o \
+          mpas_ocn_high_frequency_output.o \
           mpas_ocn_zonal_mean.o
 
 all: $(OBJS)
