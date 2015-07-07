@@ -1060,8 +1060,12 @@ contains
     use clm_varctl             , only : use_vsfm
     use filterMod              , only : filter
     use decompMod              , only : get_proc_clumps
+    use clm_varpar             , only : nlevgrnd
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM   , only : vsfm_mpp
+    use MultiPhysicsProbConstants, only : VAR_MASS
+    use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
+    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
 #endif
     !
     ! !ARGUMENTS
@@ -1072,14 +1076,34 @@ contains
 #endif
     !
     ! !LOCAL VARIABLES:
-    integer               :: nclumps      ! number of clumps on this processor
-    integer               :: nc           ! clump index
+    integer               :: nclumps               ! number of clumps on this processor
+    integer               :: nc                    ! clump index
+    integer               :: c,fc,j                ! do loop indices
+    PetscInt              :: jwt                   ! index of first unsaturated soil layer
+    PetscInt              :: idx                   ! 1D index for (c,j)
     type(bounds_type)     :: bounds_proc
+    real(r8)              :: z_up, z_dn            ! [m]
+
+    real(r8), pointer     :: zi(:,:)               ! interface level below a "z" level (m)
+    real(r8), pointer     :: h2osoi_liq(:,:)       ! liquid water (kg/m2)
+    real(r8), pointer     :: smp_l(:,:)            ! soil matrix potential [mm]
+    real(r8), pointer     :: zwt(:)                ! water table depth (m)
+    real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
+    real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr
+    PetscInt              :: soe_auxvar_id                   ! Index of system-of-equation's (SoE's) auxvar
 #endif
     character(len=32)     :: subname = 'initialize3'
     !----------------------------------------------------------------------
+
+    zi                =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+
+    h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+    smp_l             =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
+    zwt               =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
+    vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+    vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
 
     call t_startf('clm_init3')
 
@@ -1105,13 +1129,59 @@ contains
     nc = 1
 
     ! Allocate memory and setup data structure for VSFM-MPP
-    call vsfm_mpp%Setup(bounds_proc%begc, &
-                        bounds_proc%endc, &
-                        filter(nc)%num_hydrologyc, &
-                        filter(nc)%hydrologyc, &
-                        soilstate_vars, &
-                        waterstate_vars, &
+    call vsfm_mpp%Setup(bounds_proc%begc,            &
+                        bounds_proc%endc,            &
+                        filter(nc)%num_hydrologyc,   &
+                        filter(nc)%hydrologyc,       &
+                        soilstate_vars,              &
+                        waterstate_vars,             &
                         soilhydrology_vars)
+
+    ! Get total mass
+    soe_auxvar_id = 1;
+    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
+                                          VAR_MASS,          &
+                                          soe_auxvar_id,     &
+                                          vsfm_mass_col_1d)
+
+    ! Get liquid soil matrix potential
+    soe_auxvar_id = 1;
+    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,       &
+                                          VAR_SOIL_MATRIX_POT,   &
+                                          soe_auxvar_id,         &
+                                          vsfm_smpl_col_1d)
+
+    ! Put the data in CLM's data structure
+    do fc = 1,filter(nc)%num_hydrologyc
+       c = filter(nc)%hydrologyc(fc)
+
+       ! initialization
+       jwt = -1
+
+       ! Loops in decreasing j so WTD can be computed in the same loop
+       do j = nlevgrnd, 1, -1
+          idx = (c-1)*nlevgrnd + j
+
+          h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
+          smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
+
+          if (jwt == -1) then
+             ! Find the first soil that is unsaturated
+             if (smp_l(c,j) < 0._r8) jwt = j
+          end if
+
+       end do
+
+       if (jwt == -1 .or. jwt == nlevgrnd) then
+          ! Water table below or in the last layer
+          zwt(c) = zi(c,nlevgrnd)
+       else
+          z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
+          z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
+          zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - &
+                   smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
+        endif
+    end do
 
 #else
 
