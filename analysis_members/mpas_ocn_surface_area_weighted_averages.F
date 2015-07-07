@@ -225,10 +225,6 @@ contains
       ! assume no error
       err = 0
 
-      ! check to see if package is on
-      call mpas_pool_get_package(ocnPackages, 'surfaceAreaWeightedAveragesAMPKGActive', surfaceAreaWeightedAveragesAMPKGActive)
-      if ( .not. surfaceAreaWeightedAveragesAMPKGActive ) return
-
       ! get status of other packages
       call mpas_pool_get_package(ocnPackages, 'bulkForcingActive', bulkForcingPkgActive)
       call mpas_pool_get_package(ocnPackages, 'frazilIceActive', frazilIcePkgActive)
