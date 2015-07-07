@@ -31,26 +31,6 @@
 	<packages>
 		<package name="layerVolumeWeightedAverageAMPKG" description="This package includes variables required for the areal-averaging of 3D variables that are defined."/>
 	</packages>
-	<streams>
-		<stream name="layerVolumeWeightedAverageOutput"
-				type="output"
-				filename_template="analysis_members/layerVolumeWeightedAverage.$Y-$M-$D_$h.$m.$s.nc"
-				output_interval="00-00-05_00:00:00"
-				filename_interval="01-00-00_00:00:00"
-				packages="layerVolumeWeightedAverageAMPKG"
-				clobber_mode="truncate"
-				runtime_format="single_file">
-
-				<var name="xtime"/>
-				<var_array name="minValueWithinOceanLayerRegion"/>
-				<var_array name="maxValueWithinOceanLayerRegion"/>
-				<var_array name="avgValueWithinOceanLayerRegion"/>
-				<var_array name="minValueWithinOceanVolumeRegion"/>
-				<var_array name="maxValueWithinOceanVolumeRegion"/>
-				<var_array name="avgValueWithinOceanVolumeRegion"/>
-		</stream>
-	</streams>
-
 	<var_struct name="layerVolumeWeightedAverageAM" time_levs="1" packages="layerVolumeWeightedAverageAMPKG">
 		<var_array name="minValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
 			<var name="minLayerMaskValue" array_group="layerMins" units="none"
@@ -372,3 +352,22 @@
 			 description="temporary array to hold sum of values"
 		/>
 	</var_struct>
+	<streams>
+		<stream name="layerVolumeWeightedAverageOutput"
+				type="output"
+				filename_template="analysis_members/layerVolumeWeightedAverage.$Y-$M-$D_$h.$m.$s.nc"
+				output_interval="00-00-05_00:00:00"
+				filename_interval="01-00-00_00:00:00"
+				packages="layerVolumeWeightedAverageAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+
+				<var name="xtime"/>
+				<var_array name="minValueWithinOceanLayerRegion"/>
+				<var_array name="maxValueWithinOceanLayerRegion"/>
+				<var_array name="avgValueWithinOceanLayerRegion"/>
+				<var_array name="minValueWithinOceanVolumeRegion"/>
+				<var_array name="maxValueWithinOceanVolumeRegion"/>
+				<var_array name="avgValueWithinOceanVolumeRegion"/>
+		</stream>
+	</streams>

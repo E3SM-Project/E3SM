@@ -43,6 +43,17 @@
 	<packages>
 		<package name="meridionalHeatTransportAMPKG" description="This package includes variables required for the meridional heat transport analysis member."/>
 	</packages>
+	<var_struct name="meridionalHeatTransportAM" time_levs="1" packages="meridionalHeatTransportAMPKG">
+		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
+			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
+		/>
+		<var name="meridionalHeatTransportLatZ" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 Time" units="petawatts"
+			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates, by vertical level."
+		/>
+		<var name="meridionalHeatTransportLat" type="real" dimensions="nMerHeatTransBinsP1 Time" units="petawatts"
+			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates."
+		/>
+	</var_struct>
 	<streams>
 		<stream name="meridionalHeatTransportOutput" type="output"
 				filename_template="analysis_members/meridionalHeatTransport.$Y-$M-$D_$h.$m.$s.nc"
@@ -61,14 +72,4 @@
 			<var name="refBottomDepth"/>
 		</stream>
 	</streams>
-	<var_struct name="meridionalHeatTransportAM" time_levs="1" packages="meridionalHeatTransportAMPKG">
-		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
-			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
-		/>
-		<var name="meridionalHeatTransportLatZ" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 Time" units="petawatts"
-			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates, by vertical level."
-		/>
-		<var name="meridionalHeatTransportLat" type="real" dimensions="nMerHeatTransBinsP1 Time" units="petawatts"
-			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates."
-		/>
-	</var_struct>
+
