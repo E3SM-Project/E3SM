@@ -239,6 +239,7 @@ contains
       integer :: iCell, iEdge, iLevel
       real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
       real (kind=RKIND), parameter :: smallNumber = 1.0e-36
+      logical :: divideSingularityFound
 
       ! Note: This routine could be broken into 2: one to calculate diffusivity
       ! and another to get the diffusive CFL timestep.  In that case, the first (and possibly the second)
@@ -285,17 +286,26 @@ contains
                             slopeReconstructXField % array, slopeReconstructYField % array, slopeReconstructZField % array, &
                             slopeCellAxis1, slopeCellAxis2)
 
+
       ! Approximate flux at cell centers
+      divideSingularityFound = .false.
       do iCell = 1, nCells
          slopeCellMagnitude = sqrt(slopeCellAxis1(iCell)**2 + slopeCellAxis2(iCell)**2) + smallNumber
 
-         fluxDownslope = 0.0_RKIND
-         do iLevel = 1, nVertLevels
-            fluxVeloAxis1 = (uReconstructAxis1(iLevel, iCell) + uReconstructAxis1(iLevel+1, iCell)) * 0.5_RKIND
-            fluxVeloAxis2 = (uReconstructAxis2(iLevel, iCell) + uReconstructAxis2(iLevel+1, iCell)) * 0.5_RKIND
-            fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellAxis1(iCell) * fluxVeloAxis1 - slopeCellAxis2(iCell) * fluxVeloAxis2) * layerThickness(iLevel, iCell) / slopeCellMagnitude
-         enddo
-         apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
+         if ( (slopeCellMagnitude < 1.0e-4_RKIND) .and. &
+              (max(maxval(uReconstructAxis1(:,iCell)), maxval(uReconstructAxis2(:,iCell))) < 3.18e-8_RKIND) ) then  ! 3.18e-8=1 m/yr in m/s
+            ! Ignore diffusivity near 'divide-singularities'
+            apparentDiffusivity(iCell) = 0.0_RKIND
+            divideSingularityFound = .true.
+         else
+            fluxDownslope = 0.0_RKIND
+            do iLevel = 1, nVertLevels
+               fluxVeloAxis1 = (uReconstructAxis1(iLevel, iCell) + uReconstructAxis1(iLevel+1, iCell)) * 0.5_RKIND
+               fluxVeloAxis2 = (uReconstructAxis2(iLevel, iCell) + uReconstructAxis2(iLevel+1, iCell)) * 0.5_RKIND
+               fluxDownslope = fluxDownslope + (-1.0_RKIND * slopeCellAxis1(iCell) * fluxVeloAxis1 - slopeCellAxis2(iCell) * fluxVeloAxis2) * layerThickness(iLevel, iCell) / slopeCellMagnitude
+            enddo
+            apparentDiffusivity(iCell) = abs(fluxDownslope) / slopeCellMagnitude
+         endif
 
          ! Calculate allowable timestep based on DCFL
          if ( li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
@@ -307,6 +317,10 @@ contains
          endif
          allowableDiffDt = min(allowableDiffDt, allowableDtHere)
       enddo
+
+      if (divideSingularityFound) then
+         write (stderrUnit,*) 'Notice: In calculating apparentDiffusivity, one or more cells have been ignored due to flat slope and low velocity (assumed to be a divide where diffusivity is undefined).'
+      endif
 
       call mpas_deallocate_scratch_field(slopeReconstructXField, .true.)
       call mpas_deallocate_scratch_field(slopeReconstructYField, .true.)

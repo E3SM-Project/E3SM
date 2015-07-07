@@ -585,6 +585,12 @@ is the value of that variable from the *previous* time level!
 		<var name="deltat" type="real" time_levs="1" dimensions="Time" units="s"
 		     description="time step length, in seconds.  Value on a given time is the value used between the previous time level and the current time level."
 		/>
+		<var name="allowableDtACFL" type="real" time_levs="1" dimensions="Time" units="s"
+		     description="The maximum allowable time step based on the advective CFL condition.  Value on a given time is the value appropriate for  between the previous time level and the current time level."
+		/>
+		<var name="allowableDtDCFL" type="real" time_levs="1" dimensions="Time" units="s"
+		     description="The maximum allowable time step based on the diffusive CFL condition.  Value on a given time is the value appropriate for  between the previous time level and the current time level."
+		/>
 	</var_struct>
 
 <!-- ================ -->

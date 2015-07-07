@@ -561,6 +561,7 @@ module li_core
       character (len=StrKIND), pointer :: xtime
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
+      logical, pointer :: config_adaptive_timestep_include_DCFL
       integer :: err, err_tmp
 
       err = 0
@@ -571,7 +572,7 @@ module li_core
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(liConfigs, 'config_do_velocity_reconstruction_for_external_dycore', config_do_velocity_reconstruction_for_external_dycore)
-
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       ! Copy data from first time level into all other time levels
       call mpas_pool_initialize_time_levels(geometryPool)
@@ -583,7 +584,7 @@ module li_core
       ! ===
       ! === Call init routines ===
       ! ===
-      call li_setup_vertical_grid(meshPool, err_tmp)
+      call li_setup_vertical_grid(meshPool, geometryPool, err_tmp)
       err = ior(err, err_tmp)
 
       call li_setup_sign_and_index_fields(meshPool)
@@ -604,7 +605,8 @@ module li_core
 
       ! Init for reconstruction of velocity
       if ( (trim(config_velocity_solver) == 'sia') .or.    &
-            config_do_velocity_reconstruction_for_external_dycore ) then
+            config_do_velocity_reconstruction_for_external_dycore .or.   &
+            config_adaptive_timestep_include_DCFL) then
          call mpas_rbf_interp_initialize(meshPool)
          call mpas_init_reconstruct(meshPool)
       endif
