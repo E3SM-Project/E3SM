@@ -161,13 +161,14 @@
  end subroutine deallocate_forall_physics
 
 !==================================================================================================
- subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics)
+ subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics,its,ite)
 !==================================================================================================
 
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
+ integer,intent(in):: its,ite
 
  integer,intent(in):: time_lev
 

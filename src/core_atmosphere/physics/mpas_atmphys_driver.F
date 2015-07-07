@@ -23,6 +23,7 @@
  use mpas_atmphys_interface
  use mpas_atmphys_update
  use mpas_atmphys_vars, only: l_camlw,l_conv,l_radtlw,l_radtsw
+ use mpas_timer
 
  implicit none
  private
@@ -126,8 +127,11 @@
  type(block_type),pointer:: block
 
  integer:: time_lev
+ integer:: thread
 
 !==================================================================================================
+
+ call mpas_timer_start('physics driver')
 
  call mpas_pool_get_config(domain%configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(domain%configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
@@ -162,7 +166,13 @@
 
     !physics prep step:
     time_lev = 1
-    call MPAS_to_physics(mesh,state,time_lev,diag,diag_physics)
+
+!$OMP PARALLEL DO
+    do thread=1,block % nThreads
+       call MPAS_to_physics(mesh,state,time_lev,diag,diag_physics, &
+                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+    end do
+!$OMP END PARALLEL DO
 
     !call to cloud scheme:
     if(l_radtlw .or. l_radtsw) then
@@ -254,6 +264,8 @@
 ! write(0,*)
 ! write(0,*) '--- end physics_driver:'
 ! write(0,*)
+
+ call mpas_timer_stop('physics driver')
 
  end subroutine physics_driver
 
