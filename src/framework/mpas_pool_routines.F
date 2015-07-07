@@ -4790,7 +4790,7 @@ module mpas_pool_routines
 
       allocate(newmem % data)
       newmem % data % contentsType = MPAS_POOL_INTEGER
-      newmem % data % contentsDims = size(dims)
+      newmem % data % contentsDims = 1
       newmem % data % contentsTimeLevs = 0
       allocate(newmem % data % simple_int_arr(newmem % data % contentsDims))
       newmem % data % simple_int_arr(:) = dims(:)
