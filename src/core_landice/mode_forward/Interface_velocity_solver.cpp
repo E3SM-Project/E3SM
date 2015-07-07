@@ -36,15 +36,17 @@ double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, 
 std::vector<double> xCellProjected, yCellProjected, zCellProjected;
 const double unit_length = 1000;
 const double T0 = 273.15;
+const double secondsInAYear = 3.15569e7;
 const double minThick = 1e-3; //1m
 const double minBeta = 1e-5;
+const double rho_ice = 910.0;
 //void *phgGrid = 0;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
     verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge;
 std::vector<int> indexToVertexID, vertexToFCell, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, smb_F, thicknessOnCells;
+    elevationData, thicknessData, betaData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 ;
 int numBoundaryEdges;
@@ -284,9 +286,9 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 }
 
 void velocity_solver_solve_fo(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
-    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
+    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
 
   std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
 
@@ -328,7 +330,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
 
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
+    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F, minThick);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -336,10 +338,13 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
     importP0Temperature(temperature_F);
 
+    std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
+
+    double dt = (*deltat)/secondsInAYear;
     velocity_solver_solve_fo__(nLayers, nGlobalVertices, nGlobalTriangles,
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
-        betaData, temperatureOnTetra, velocityOnVertices);
+        betaData, smbData, temperatureOnTetra, velocityOnVertices, dt);
 
     std::vector<int> mpasIndexToVertexID(nVertices);
     for (int i = 0; i < nVertices; i++) {
@@ -1246,11 +1251,13 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 }
 
 void import2DFields(double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double eps) {
+    double const * beta_F, double const * smb_F, double eps) {
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+  if (smb_F != 0)
+    smbData.assign(nVertices, 1e10);
 
   std::map<int, int> bdExtensionMap;
 
@@ -1261,6 +1268,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     elevationData[index] = (lowerSurface_F[iCell] / unit_length) + thicknessData[index];
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
+    if (smb_F != 0)
+      smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
   }
 
   //extend thickness elevation and basal friction data to the border for floating vertices
@@ -1306,6 +1315,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     elevationData[iv] = thicknessData[iv] + lowerSurface_F[ic] / unit_length;
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
+    if (smb_F != 0)
+      smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
   }
 
 }
