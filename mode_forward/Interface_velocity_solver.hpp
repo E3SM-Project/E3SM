@@ -93,10 +93,10 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
 
 void velocity_solver_solve_fo(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0,
-    double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
+    double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0);
 
 
 void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
@@ -155,8 +155,10 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& elevationData,
     const std::vector<double>& thicknessData,
     const std::vector<double>& betaData,
+    const std::vector<double>& smbData,
     const std::vector<double>& temperatureOnTetra,
-    std::vector<double>& velocityOnVertices);
+    std::vector<double>& velocityOnVertices,
+    const double& deltat = 0.0);
 
 
 #ifdef LIFEV
@@ -224,7 +226,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void import2DFields(double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double eps = 0);
+    double const* beta_F = 0, double const* smb_F = 0, double eps = 0);
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 

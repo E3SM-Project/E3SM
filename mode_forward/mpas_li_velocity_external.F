@@ -372,11 +372,12 @@ contains
       !-----------------------------------------------------------------
       integer, pointer :: index_temperature
       real (kind=RKIND), dimension(:), pointer :: &
-         thickness, lowerSurface, upperSurface, layerThicknessFractions, beta
+         thickness, lowerSurface, upperSurface, layerThicknessFractions, beta, sfcMassBal
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          tracers
+      real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
@@ -395,6 +396,7 @@ contains
 
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
       ! Geometry variables
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -402,6 +404,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'tracers', tracers)
@@ -474,9 +477,9 @@ contains
       case ('FO') ! ===============================================
 #ifdef USE_EXTERNAL_FIRSTORDER
           call mpas_timer_start("velocity_solver_solve_FO")
-          call velocity_solver_solve_FO(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
+          call velocity_solver_solve_FO(lowerSurface, thickness, beta, sfcMassBal, tracers(index_temperature,:,:), &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
-                normalVelocity, uReconstructX, uReconstructY)  ! return values
+                normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
 
           if (config_output_external_velocity_solver_data) then
