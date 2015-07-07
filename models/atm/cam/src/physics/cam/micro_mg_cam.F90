@@ -245,12 +245,11 @@ subroutine micro_mg_cam_register
        longname='Grid box averaged cloud ice amount', is_convtran1=.true.)
   ! The next statements should have "is_convtran1=.true.", but this would change
   ! answers.
-!!== KZ_MG1_BUGFIX 
+  !Is_convtran1 is turned .true. (it was .false. originally) - Bugfix reported by NCAR in cam5_3_91
   call cnst_add(cnst_names(3), mwdry, cpair, 0._r8, ixnumliq, &
        longname='Grid box averaged cloud liquid number', is_convtran1=.true.)
   call cnst_add(cnst_names(4), mwdry, cpair, 0._r8, ixnumice, &
        longname='Grid box averaged cloud ice number', is_convtran1=.true.)
-!!== KZ_MG1_BUGFIX 
 
   ! Request physics buffer space for fields that persist across timesteps.
 
