@@ -984,11 +984,13 @@ module namelist_mod
 
 
 
-    if (mesh_file /= "none" .AND. ne /=0) then
-      write (*,*) "namelist_mod: mesh_file:",mesh_file, &
+    if (ne /=0) then
+    if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then
+      write (*,*) "namelist_mod: mesh_file:",trim(mesh_file), &
                   " and ne:",ne," are both sepcified in the input file."
       write (*,*) "Specify one or the other, but not both."
       call abortmp("Do not specify ne if using a mesh file input.")
+    end if
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
