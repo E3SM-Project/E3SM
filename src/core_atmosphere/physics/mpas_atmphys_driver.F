@@ -254,7 +254,12 @@
     !call to pbl schemes:
     if(config_pbl_scheme .ne. 'off' .and. config_sfclayer_scheme .ne. 'off') then
        call allocate_pbl
-       call driver_pbl(sfc_input,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_pbl(sfc_input,diag_physics,tend_physics, &
+                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_pbl
     endif
 
