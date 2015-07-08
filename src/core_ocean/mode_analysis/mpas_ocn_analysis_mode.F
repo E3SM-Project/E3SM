@@ -92,6 +92,7 @@ module ocn_analysis_mode
       ! Read input data for model
       !
       call mpas_timer_start('io_read', .false.)
+      call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
       call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_timer_stop('io_read')
       call mpas_timer_start('io_reset_alarms', .false.)
