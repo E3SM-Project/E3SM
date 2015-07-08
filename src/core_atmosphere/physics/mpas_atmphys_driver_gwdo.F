@@ -113,7 +113,7 @@
  end subroutine deallocate_gwdo
 
 !==================================================================================================
- subroutine gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics)
+ subroutine gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !==================================================================================================
 
 !input arguments:
@@ -121,6 +121,7 @@
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: tend_physics
+ integer,intent(in):: its,ite
 
 !local variables:
  integer:: i,k,j
@@ -191,8 +192,11 @@
  end subroutine gwdo_from_MPAS
  
 !==================================================================================================
- subroutine gwdo_to_MPAS(diag_physics,tend_physics)
+ subroutine gwdo_to_MPAS(diag_physics,tend_physics,its,ite)
 !==================================================================================================
+
+!input arguments:
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -239,13 +243,14 @@
  end subroutine gwdo_to_MPAS
  
 !==================================================================================================
- subroutine driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+ subroutine driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  integer,intent(in):: itimestep
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -260,7 +265,7 @@
 ! write(0,*) '--- enter subroutine driver_gwdo: dt_pbl=',dt_pbl
 
 !copy MPAS arrays to local arrays:
- call gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics)
+ call gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
  gwdo_select: select case (trim(gwdo_scheme))
 
@@ -288,7 +293,7 @@
  end select gwdo_select
 
 !copy local arrays to MPAS grid:
- call gwdo_to_MPAS(diag_physics,tend_physics)
+ call gwdo_to_MPAS(diag_physics,tend_physics,its,ite)
 ! write(0,*) '--- end subroutine driver_gwdo'
 
  end subroutine driver_gwdo

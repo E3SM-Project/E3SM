@@ -266,7 +266,12 @@
     !call to gravity wave drag over orography scheme:
     if(config_gwdo_scheme .ne. 'off') then
        call allocate_gwdo
-       call driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics, &
+                           block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_gwdo
     endif
 
