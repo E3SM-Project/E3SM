@@ -168,7 +168,7 @@ sub doPreRunChecks()
 	$ENV{'LID'} = $LID;
 	$ENV{'sdate'} = $sdate;
 	
-	open my $CS, ">", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
+	open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
 	print $CS "run started $sdate\n";
 	close $CS;
 	
