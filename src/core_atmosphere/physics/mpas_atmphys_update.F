@@ -73,12 +73,13 @@
  end subroutine physics_update
 
 !==================================================================================================
- subroutine update_radiation_diagnostics(configs,mesh,diag_physics)
+ subroutine update_radiation_diagnostics(configs,mesh,diag_physics,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -160,7 +161,7 @@
  call mpas_pool_get_array(diag_physics,'lwupt'     , lwupt     )
  call mpas_pool_get_array(diag_physics,'lwuptc'    , lwuptc    )
 
- do iCell = 1, nCellsSolve
+ do iCell = its, ite
     !short-wave radiation:
     acswdnb(iCell)  = acswdnb (iCell) + swdnb (iCell)*dt_dyn
     acswdnbc(iCell) = acswdnbc(iCell) + swdnbc(iCell)*dt_dyn
@@ -183,7 +184,7 @@
 
  if(l_acradt .and. bucket_radt.gt.0._RKIND) then
 
-    do iCell = 1, nCellsSolve
+    do iCell = its, ite
        !short-wave radiation:
        if(acswdnb(iCell) .gt. bucket_radt) then
           i_acswdnb(iCell) = i_acswdnb(iCell) + 1
