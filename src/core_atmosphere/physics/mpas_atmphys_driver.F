@@ -230,7 +230,12 @@
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then
        call allocate_sfclayer
-       call driver_sfclayer(mesh,diag_physics,sfc_input)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_sfclayer(mesh,diag_physics,sfc_input, &
+                               block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_sfclayer
     endif
 
