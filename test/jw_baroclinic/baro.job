@@ -35,8 +35,8 @@ set bld = $wdir/bld                      # cmake/build directory
 
 #set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
-set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
-#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+#set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
+set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 setenv CRAY_CUDA_PROXY 1
 
 
@@ -61,8 +61,8 @@ endif
 
 
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
-#set mpirun = "mpirun -np $NCPU"
-set mpirun = "mpirun -loadbalance -np $NCPU"
+set mpirun = "mpirun -np $NCPU"
+#set mpirun = "mpirun -loadbalance -np $NCPU"
 #set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
 
 
@@ -128,6 +128,16 @@ endif
 #
 set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
 set run = $wdir/$name
+set mesh_file = /dev/null
+set hypervis_scaling = 0
+
+if ( $ne == 0 ) then
+    # CAM defaults
+    set mesh_file="$HOME/work/notes/squadgen/multiscale/wpacific_v2.g"
+    set tstep=75
+    set hypervis_scaling = 3.2  
+    set nu = 8.0e-8
+endif
 
 if ( $ne == 4 ) then
    set tstep=1800
@@ -202,8 +212,10 @@ sed s/nu_p=.\*/nu_p=$nu/ | \
 sed s/nu_q=.\*/nu_q=$nu/ | \
 sed s/NThreads.\*/NThreads=$OMP_NUM_THREADS/ | \
 sed s/statefreq.\*/statefreq=$sfreq/ |\
+sed s/hypervis_scaling.\*/hypervis_scaling=$hypervis_scaling/ |\
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/   |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/  |\
+sed s:mesh_file.\*:mesh_file="'$mesh_file'": | \
 sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
 sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
 sed s/qsize.\*/"qsize = $qsize"/  > input.nl
