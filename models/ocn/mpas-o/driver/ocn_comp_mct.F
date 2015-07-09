@@ -569,14 +569,11 @@ contains
 
     ! Setup clock for initial runs
     if ( runtype == 'initial' ) then
-       ! Check to see if cpl_seq_option is either tight option ('CESM1_ORIG_TIGHT' or 'CESM1_MOD_TIGHT')
-       if ( trim (cpl_seq_option) == 'CESM1_ORIG' .or. trim(cpl_seq_option) == 'CESM1_MOD' .or. &
-            trim (cpl_seq_option) == 'RASM_OPTION1' .or. trim(cpl_seq_option) == 'RASM_OPTION2') then
-          do while (.not. mpas_is_alarm_ringing(domain_ptr % clock, coupleAlarmID, ierr=ierr))
-             itimestep = itimestep + 1
-             call mpas_advance_clock(domain_ptr % clock)
-          end do
-       end if
+       ! Advance clock one coupling interval to be in sync with the coupler clock.
+       do while (.not. mpas_is_alarm_ringing(domain_ptr % clock, coupleAlarmID, ierr=ierr))
+          itimestep = itimestep + 1
+          call mpas_advance_clock(domain_ptr % clock)
+       end do
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
