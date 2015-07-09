@@ -672,6 +672,8 @@ module ocn_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
       end do
 
+      err = iErr
+
    end function ocn_core_run!}}}
    
    subroutine mpas_timestep(domain, itimestep, dt, timeStamp)!{{{
@@ -724,7 +726,6 @@ module ocn_core
 
       use mpas_derived_types
       use mpas_pool_routines
-      use mpas_configure
 
       implicit none
 

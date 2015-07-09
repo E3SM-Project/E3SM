@@ -23,7 +23,6 @@ module li_time_integration
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_configure
    use mpas_constants
    use mpas_dmpar
    use mpas_timekeeping
@@ -153,7 +152,7 @@ module li_time_integration
          call li_time_integrator_forwardeuler(domain, dtSeconds, err_tmp)
       case ('rk4')
          write(stderrUnit,*) trim(config_time_integration), ' is not currently supported.'
-         call mpas_dmpar_global_abort(domain % dminfo)
+         call mpas_dmpar_abort(domain % dminfo)
          err_tmp = 1
       case default
          write(stderrUnit,*) trim(config_time_integration), ' is not a valid land ice time integration option.'

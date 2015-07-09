@@ -10,6 +10,7 @@ module mpas_timekeeping
    use mpas_kind_types
    use mpas_derived_types
    use mpas_io_units
+   use mpas_dmpar
 
    use ESMF
    use ESMF_BaseMod
@@ -2110,6 +2111,8 @@ end module mpas_timekeeping
 
 
 subroutine wrf_error_fatal(msg)
+
+   use mpas_dmpar
 
    implicit none
 

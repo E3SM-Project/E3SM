@@ -169,14 +169,17 @@ module li_core_interface
    !>  are available.
    !
    !-----------------------------------------------------------------------
-   function li_get_mesh_stream(configs) result(stream)
+   function li_get_mesh_stream(configs, stream) result(ierr)
 
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
-      character(len=StrKIND) :: stream
+      character(len=StrKIND), intent(out) :: stream
+      integer :: ierr
 
       logical, pointer :: config_do_restart
+
+      ierr = 0
 
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 

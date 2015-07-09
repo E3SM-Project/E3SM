@@ -69,6 +69,9 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * Moved the variable relhum from the diag_physics to the diag pool. Changed the argument
+!>      list for the subroutine compute_relhum accordingly.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-04-22.
 
 
  contains
@@ -298,7 +301,7 @@
 
     ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
     ! over ice otherwise.
-    call compute_relhum(mesh,diag_physics)
+    call compute_relhum(mesh,diag)
 
  end if
 
@@ -560,14 +563,14 @@
  end subroutine compute_radar_reflectivity
 
 !==================================================================================================
- subroutine compute_relhum(mesh,diag_physics)
+ subroutine compute_relhum(mesh,diag)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
 
 !inout arguments:
- type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag
 
 !local pointers:
  integer,pointer:: nCellsSolve,nVertLevels
@@ -584,7 +587,7 @@
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
- call mpas_pool_get_array(diag_physics,'relhum',relhum)
+ call mpas_pool_get_array(diag,'relhum',relhum)
 
  relhum(1:nVertLevels,1:nCellsSolve) = 0._RKIND
 

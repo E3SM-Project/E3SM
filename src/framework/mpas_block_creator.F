@@ -30,7 +30,6 @@ module mpas_block_creator
    use mpas_domain_routines
    use mpas_field_routines
    use mpas_pool_routines
-   use mpas_configure
 
    contains
 

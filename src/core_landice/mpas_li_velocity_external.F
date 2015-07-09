@@ -17,7 +17,7 @@
 module li_velocity_external
 
    use mpas_derived_types
-   use mpas_configure
+   use mpas_pool_routines
    use mpas_dmpar
    use mpas_timer
    use li_setup
