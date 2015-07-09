@@ -1466,6 +1466,7 @@ DOCN%COPY => docn copy mode
 
 <CPL_ALBAV compset=".+"        >false</CPL_ALBAV>
 <CPL_ALBAV compset="DATM.*_POP2"> true</CPL_ALBAV>
+<CPL_ALBAV compset="DATM.*_MPASO"> true</CPL_ALBAV>
 
 <CPL_EPBAL compset=".+"        >off</CPL_EPBAL>
 <CPL_EPBAL compset="DATM.*_POP2">ocn</CPL_EPBAL>
@@ -1534,10 +1535,11 @@ DOCN%COPY => docn copy mode
 <CPL_SEQ_OPTION compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</CPL_SEQ_OPTION>
 <CPL_SEQ_OPTION compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</CPL_SEQ_OPTION>
 <CPL_SEQ_OPTION compset="_SOCN"                     >CESM1_MOD</CPL_SEQ_OPTION>
-<CPL_SEQ_OPTION compset="_MPASO"                    >CESM1_MOD</CPL_SEQ_OPTION>
+<CPL_SEQ_OPTION compset="_MPASO"                    >CESM1_MOD_TIGHT</CPL_SEQ_OPTION>
 
 <ROF_NCPL compset=".+"  >8</ROF_NCPL> 
 <ROF_NCPL compset="_DATM.*_POP2"            >$ATM_NCPL</ROF_NCPL>
+<ROF_NCPL compset="_DATM.*_MPASO"           >$ATM_NCPL</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_DOCN%SOM"        >$ATM_NCPL</ROF_NCPL>
 <ROF_NCPL compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</ROF_NCPL>
 <ROF_NCPL compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</ROF_NCPL>
