@@ -4829,17 +4829,20 @@ module mpas_stream_manager
         integer, intent(out), optional :: clobberProperty                          !< Output: Interger describing the clobber mode of the stream
 
 
-        if ( associated(manager % currentStream) .and. .not. associated(manager % currentStream % next) ) then
-            validStream = .false.
-            return
-        end if
-
-        if ( .not. associated(manager % currentStream) ) then
+        if ( associated(manager % currentStream) ) then
+            if (.not. associated(manager % currentStream % next) ) then
+                validStream = .false.
+                return
+            else
+                validStream = .true.
+                manager % currentStream => manager % currentStream % next
+            end if
+        else if ( associated(manager % streams % head) ) then
            validStream = .true.
            manager % currentStream => manager % streams % head
         else
-           validStream = .true.
-           manager % currentStream => manager % currentStream % next
+           validStream = .false.
+           return
         end if
 
         if ( present(streamID) ) then
