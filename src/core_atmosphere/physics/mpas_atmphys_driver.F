@@ -276,14 +276,29 @@
     endif
 
     !call to convection scheme:
-    call update_convection_step1(mesh,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+    do thread=1,block % nThreads
+       call update_convection_step1(mesh,diag_physics,tend_physics, &
+                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+    end do
+!$OMP END PARALLEL DO
     if(l_conv) then
        call allocate_convection
-       call driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics, &
+                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
        call deallocate_convection
     endif
     !update diagnostics:
-    call update_convection_step2(block%configs,mesh,diag_physics)
+!$OMP PARALLEL DO
+    do thread=1,block % nThreads
+       call update_convection_step2(block%configs,mesh,diag_physics, &
+                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+    end do
+!$OMP END PARALLEL DO
 
     !deallocate arrays shared by all physics parameterizations:
     call deallocate_forall_physics
