@@ -27,7 +27,6 @@ module li_diagnostic_vars
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timer
-   use mpas_configure
    use li_velocity
    use li_mask
 
