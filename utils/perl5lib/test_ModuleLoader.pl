@@ -8,7 +8,8 @@ use warnings;
 use diagnostics;
 
 use Test::More;
-Begin {
+use Getopt::Long;
+BEGIN {
 	
 	use Cwd qw(getcwd abs_path);
     
@@ -24,13 +25,16 @@ Begin {
 	use_ok("Test::Class"); 
 	use_ok("Test::Exception"); 
 }
+ 
+my $machine;
+GetOptions("machine=s" => \$machine);
 
-require Task::TaskMaker;
+require Module::ModuleLoader;
 require Module::ModuleLoader;
 
 use Test::Class;
 use Test::Exception;
 
-use Test::Class::Load "./t/test_TaskMaker.pm";
+use Test::Class::Load "./t/test_ModuleLoader.pm";
 
 Test::Class->runtests;
