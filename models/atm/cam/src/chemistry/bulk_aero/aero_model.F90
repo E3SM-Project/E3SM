@@ -529,7 +529,11 @@ contains
 
   !=============================================================================
   !=============================================================================
-  subroutine aero_model_wetdep( state, dt, dlf, cam_out, ptend, pbuf)
+  subroutine aero_model_wetdep( dt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,    & !Intent-ins
+       mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
+       cam_out,                                                                 & !Intent-inout
+       pbuf,                                                                    & !Pointer
+       ptend                                                                    ) !Intent-out
 
     use wetdep,        only : wetdepa_v1, wetdep_inputs_set, wetdep_inputs_t
     use dust_model,    only : dust_names
@@ -540,9 +544,30 @@ contains
     type(physics_state), intent(in)    :: state       ! Physics state variables
     real(r8),            intent(in)    :: dt          ! time step
     real(r8),            intent(in)    :: dlf(:,:)    ! shallow+deep convective detrainment [kg/kg/s]
+    real(r8),            intent(in)    :: dlf2(:,:)   ! Shal conv cldwtr detrainment (kg/kg/s - grid avg)
+    real(r8),            intent(in)    :: cmfmc2(pcols,pverp) ! Shal conv mass flux (kg/m2/s)
+    real(r8),            intent(in)    :: sh_e_ed_ratio(pcols,pver)  ! shallow conv [ent/(ent+det)] ratio
+                                                ! mu, md, ..., ideep, lengath are all deep conv variables
+                                                ! *** AND ARE GATHERED ***
+    real(r8),            intent(in)    :: mu(pcols,pver)   ! Updraft mass flux (positive)
+    real(r8),            intent(in)    :: md(pcols,pver)   ! Downdraft mass flux (negative)
+    real(r8),            intent(in)    :: du(pcols,pver)   ! Mass detrain rate from updraft
+    real(r8),            intent(in)    :: eu(pcols,pver)   ! Mass entrain rate into updraft
+    real(r8),            intent(in)    :: ed(pcols,pver)   ! Mass entrain rate into downdraft
+    ! eu, ed, du are "d(massflux)/dp" and are all positive
+    real(r8),            intent(in)    :: dp(pcols,pver)   ! Delta pressure between interfaces
+    real(r8),            intent(in)    :: dsubcld(pcols)   ! Delta pressure from cloud base to sfc
+
+    integer,             intent(in)    :: jt(pcols)         ! Index of cloud top for each column
+    integer,             intent(in)    :: maxg(pcols)       ! Index of cloud top for each column
+    integer,             intent(in)    :: ideep(pcols)      ! Gathering array
+    integer,             intent(in)    :: lengath           ! Gathered min lon indices over which to operate
+    integer,             intent(in)    :: species_class(:)
+
     type(cam_out_t),     intent(inout) :: cam_out     ! export state
-    type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
     type(physics_buffer_desc), pointer :: pbuf(:)
+
+    type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
 
     ! local vars
 

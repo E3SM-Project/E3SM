@@ -22,6 +22,14 @@ module physconst
    public  :: physconst_readnl
    public  :: physconst_update
    save
+   
+   ! Constantants for MAM spciesi classes
+   integer, public, parameter :: spec_class_undefined  = 0
+   integer, public, parameter :: spec_class_cldphysics = 1
+   integer, public, parameter :: spec_class_aerosol    = 2
+   integer, public, parameter :: spec_class_gas        = 3
+   integer, public, parameter :: spec_class_other      = 4
+
    ! Constants based off share code or defined in physconst
 
    real(r8), public, parameter :: avogad      = shr_const_avogad     ! Avogadro's number (molecules/kmole)

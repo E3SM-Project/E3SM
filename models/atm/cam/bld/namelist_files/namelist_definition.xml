@@ -2299,7 +2299,7 @@ diffusion solver routine.
 Default: set by build-namelist
 </entry>
 
-<!-- BSINGH  - Added flags for regeneration and liq cld fraction bug fixes-->
+<!-- Added flags for regeneration and liq cld fraction bug fixes-->
 <entry id="regen_fix" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="" >
 This is part of PNNL bug fixes under Polar project.It fixes the
@@ -2313,8 +2313,6 @@ This is part of PNNL bug fixes under Polar project.It fixes the
 liq cloud fraction bug in macro and micro physics
 Default: .false.
 </entry>
-<!-- BSINGH - Ends -->
-
 
 <!-- CARMA Sectional Microphysics -->
 
@@ -2984,7 +2982,7 @@ Default: 'HB'
 </entry>
 
 
-<!-- BSINGH - Flags for implementing code modifications under polar project -->
+<!-- Flags for implementing code modifications under polar project -->
 
 <!-- Scavenging mods-->
 
@@ -3017,8 +3015,6 @@ ice nucleation scheme by Demott
 Default: .false.
 </entry>
 
-
-<!-- BSINGH - Ends-->
 
 
 <!-- Diagnostics -->
@@ -3508,13 +3504,12 @@ Default: set by build-namelist.
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
-<!-- BSINGH - Flags for implementing code modifications under polar project -->
+<!-- Flags for implementing code modifications under polar project -->
 <entry id="sscav_tuning" type="logical"  category="cam_chem"
        group="aerosol_nl" valid_values="" >
 Flag for wet scavenging tuning 
 Default: .false.
 </entry>
-<!-- BSINGH - ENDS-->
 
 <entry id="seasalt_emis_scale" type="real" category="cam_chem"
        group="aerosol_nl" valid_values="" >
@@ -3562,13 +3557,12 @@ Tuning parameter for dust emissions.
 Default: set by build-namelist.
 </entry>
 
-<!-- BSINGH - sea salt tuning flag for polar project -->
+<!-- sea salt tuning flag for polar project -->
 <entry id="ssalt_tuning"  type="logical" category="cam_chem"
        group="phys_ctl_nl" valid_values="" >
 Tuning flag for seasalt introduced to accompany unified convective transport scheme by PNNL
 Default: .false.
 </entry>
-<!-- BSINGH - Ends -->
 
 <entry id="efield_hflux_file" type="char*256" input_pathname="abs" category="waccm_phys"
        group="iondrag_nl" valid_values="" >

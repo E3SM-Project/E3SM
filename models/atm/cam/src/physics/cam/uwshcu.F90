@@ -253,7 +253,7 @@ end subroutine uwshcu_readnl
                                  cufrc_inv, qcu_inv    , qlu_inv       , qiu_inv   ,             &   
                                  cbmf     , qc_inv     , rliq          ,                         &
                                  cnt_inv  , cnb_inv    , lchnk         , dpdry0_inv,             &
-                                 fer_out  , fdr_out                                              )  !RCE!BSINGH(09/22/2014): Added fer_out and fdr_out for unified convective transport
+                                 fer_out  , fdr_out                                              )  
 
     implicit none
     integer , intent(in)    :: lchnk     
@@ -311,12 +311,8 @@ end subroutine uwshcu_readnl
     real(r8), intent(out)   :: cbmf(mix)                !  Cumulus base mass flux [ kg/m2/s ]
     real(r8), intent(out)   :: cnt_inv(mix)             !  Cumulus top  interface index, cnt = kpen [ no ]
     real(r8), intent(out)   :: cnb_inv(mix)             !  Cumulus base interface index, cnb = krel - 1 [ no ]
-
-    !BSINGH(09/22/2014): Added for unified convective transport
     real(r8), intent(out)   :: fer_out(mix,mkx)         !  Fractional lateral entrainment rate [ 1/Pa ]  !RCE
     real(r8), intent(out)   :: fdr_out(mix,mkx)         !  Fractional lateral detrainment rate [ 1/Pa ]  !RCE
-    !BSINGH -Ends
-
 
     real(r8)                :: ps0(mix,0:mkx)           !  Environmental pressure at the interfaces [ Pa ]
     real(r8)                :: zs0(mix,0:mkx)           !  Environmental height at the interfaces   [ m ]
@@ -407,7 +403,7 @@ end subroutine uwshcu_readnl
                          cufrc, qcu    , qlu       , qiu   ,        &
                          cbmf , qc     , rliq      ,                &
                          cnt  , cnb    , lchnk     , dpdry0,        &
-                         fer_out, fdr_out                           )  !RCE !BSINGH(09/22/2014): Added fer_out, fdr_out for unified convective transport
+                         fer_out, fdr_out                           )  
 
     ! Reverse cloud top/base interface indices
 
@@ -460,7 +456,7 @@ end subroutine uwshcu_readnl
                              cufrc_out, qcu_out   , qlu_out      , qiu_out  ,             &
                              cbmf_out , qc_out    , rliq_out     ,                        &
                              cnt_out  , cnb_out   , lchnk        , dpdry0_in ,            &
-                             fer_out  , fdr_out                                           )  !RCE !BSINGH(09/22/2014): Added fer_out  , fdr_out for unified convective transport
+                             fer_out  , fdr_out                                           )  
 
     ! ------------------------------------------------------------ !
     !                                                              !  
@@ -547,10 +543,8 @@ end subroutine uwshcu_readnl
     real(r8), intent(out)   :: rliq_out(mix)                  !  Vertical integral of qc_out [ m/s ]
     real(r8), intent(out)   :: cnt_out(mix)                   !  Cumulus top  interface index, cnt = kpen [ no ]
     real(r8), intent(out)   :: cnb_out(mix)                   !  Cumulus base interface index, cnb = krel - 1 [ no ] 
-    !BSINGH(09/22/2014): Moved from local variables to argument intent outs for unified convective transport
     real(r8), intent(out)   :: fer_out(mix,mkx)               !  Fractional lateral entrainment rate [ 1/Pa ] 
     real(r8), intent(out)   :: fdr_out(mix,mkx)               !  Fractional lateral detrainment rate [ 1/Pa ]
-    !BSINGH - Ends
 
     !
     ! Internal Output Variables
