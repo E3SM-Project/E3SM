@@ -12,6 +12,7 @@ NAMELIST_FAIL_STATUS     = "NLFAIL"
 BUILD_FAIL_STATUS        = "CFAIL"
 SLEEP_INTERVAL_SEC       = 1
 THROUGHPUT_TEST_STR      = ".tputcomp."
+MEMORY_TEST_STR         = ".memcomp."
 NAMELIST_TEST_STR        = ".nlcomp"
 SIGNAL_RECEIVED          = False
 ACME_MAIN_CDASH          = "ACME_Climate"
@@ -251,7 +252,7 @@ def reduce_stati(stati):
     return rv
 
 ###############################################################################
-def parse_test_status_file(file_contents, status_file_path, check_throughput=False, ignore_namelists=False):
+def parse_test_status_file(file_contents, status_file_path, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     r"""
     >>> parse_test_status_file('PASS testname', '')
@@ -289,6 +290,7 @@ def parse_test_status_file(file_contents, status_file_path, check_throughput=Fal
             # aren't checking throughput
             if (status != TEST_PASSED_STATUS and not
                 (not check_throughput and THROUGHPUT_TEST_STR in test_name or
+                 not check_memory and MEMORY_TEST_STR in test_name or
                  ignore_namelists and NAMELIST_TEST_STR in test_name)):
                 if (NAMELIST_TEST_STR in test_name):
                     stati.append(NAMELIST_FAIL_STATUS)
@@ -305,7 +307,7 @@ def parse_test_status_file(file_contents, status_file_path, check_throughput=Fal
     return real_test_name, reduce_stati(stati)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
+def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -317,7 +319,7 @@ def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_name, test_status = parse_test_status_file(test_status_contents, test_status_filepath, check_throughput, ignore_namelists)
+            test_name, test_status = parse_test_status_file(test_status_contents, test_status_filepath, check_throughput, check_memory, ignore_namelists)
 
             if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
@@ -336,12 +338,12 @@ def wait_for_test(test_path, results, wait, check_throughput, ignore_namelists):
                 break
 
 ###############################################################################
-def get_test_results(test_paths, no_wait=False, check_throughput=False, ignore_namelists=False):
+def get_test_results(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, ignore_namelists))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists))
         t.daemon = True
         t.start()
 
@@ -373,6 +375,7 @@ def get_test_results(test_paths, no_wait=False, check_throughput=False, ignore_n
 def wait_for_tests(test_paths,
                    no_wait=False,
                    check_throughput=False,
+                   check_memory=False,
                    ignore_namelists=False,
                    cdash_build_name=None,
                    cdash_project=ACME_MAIN_CDASH):
@@ -381,7 +384,7 @@ def wait_for_tests(test_paths,
     # is terminated
     set_up_signal_handlers()
 
-    test_results = get_test_results(test_paths, no_wait, check_throughput, ignore_namelists)
+    test_results = get_test_results(test_paths, no_wait, check_throughput, check_memory, ignore_namelists)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):
