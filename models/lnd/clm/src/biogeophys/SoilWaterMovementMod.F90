@@ -834,6 +834,7 @@ contains
          mflx_snowlyr_col_1d =>  waterflux_vars%mflx_snowlyr_col_1d , & ! Input:  [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
          mflx_sub_snow_col_1d => waterflux_vars%mflx_sub_snow_col_1d, & ! Output: [real(r8) (:)   ]  mass flux from top soil layer due to sublimation of snow (kg H2O /s)
          mflx_drain_col_1d =>    waterflux_vars%mflx_drain_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
+         mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
 
          vsfm_sat_col_1d   =>    waterflux_vars%vsfm_sat_col_1d     , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
          vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
@@ -1011,6 +1012,7 @@ contains
 
       ! Set Drainage sink
       soe_auxvar_id = 4;
+      mflx_drain_col_1d(:) = mflx_drain_col_1d(:) + mflx_drain_perched_col_1d(:)
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_drain_col_1d)
 
       ! Set mass flux associated with disappearance of snow layer from last time step

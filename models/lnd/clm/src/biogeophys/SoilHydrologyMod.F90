@@ -1479,6 +1479,7 @@ contains
      real(r8) :: frac                     ! temporary variable for ARNO subsurface runoff calculation
      real(r8) :: rel_moist                ! relative moisture, temporary variable
      real(r8) :: wtsub_vic                ! summation of hk*dzmm for layers in the third VIC layer
+     integer  :: idx                      ! 1D index for VSFM
      !-----------------------------------------------------------------------
 
      associate(                                                            &
@@ -1526,6 +1527,8 @@ contains
           qflx_rsub_sat      =>    waterflux_vars%qflx_rsub_sat_col      , & ! Output: [real(r8) (:)   ] soil saturation excess [mm h2o/s]
           qflx_drain_perched =>    waterflux_vars%qflx_drain_perched_col , & ! Output: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)
 
+          mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
+
           h2osoi_liq         =>    waterstate_vars%h2osoi_liq_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
           h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col          & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
           )
@@ -1558,6 +1561,8 @@ contains
           qflx_qrgwl(c)          = 0._r8
           qflx_drain_perched(c)  = 0._r8
        end do
+
+       mflx_drain_perched_col_1d(:) = 0._r8
 
        ! The layer index of the first unsaturated layer, i.e., the layer right above
        ! the water table
@@ -1612,8 +1617,6 @@ contains
           if (zwt(c) < frost_table(c) .and. t_soisno(c,k_frz) <= tfrz &
                .and. origflag == 0) then
 
-             call endrun(msg="water table is above frost table. Verify code."//errmsg(__FILE__, __LINE__))
-
              ! compute drainage from perched saturated region
              wtsub = 0._r8
              q_perch = 0._r8
@@ -1634,7 +1637,9 @@ contains
                 rsub_top_layer=min(rsub_top_layer,0._r8)
                 rsub_top_tot = rsub_top_tot - rsub_top_layer
 
-                h2osoi_liq(c,k) = h2osoi_liq(c,k) + rsub_top_layer
+                ! save the flux for VSFM
+                idx = (c-1)*nlevgrnd + k
+                mflx_drain_perched_col_1d(idx) = rsub_top_layer/dtime
 
                 if (rsub_top_tot >= 0.) then
                    zwt(c) = zwt(c) - rsub_top_layer/eff_porosity(c,k)/1000._r8
@@ -1681,8 +1686,6 @@ contains
              ! if perched water table exists
              if (k_frz > k_perch) then
 
-                call endrun(msg="perched water table exists. Verify code."//errmsg(__FILE__, __LINE__))
-
                 ! interpolate between k_perch and k_perch+1 to find perched water table height
                 s1 = (h2osoi_liq(c,k_perch)/(dz(c,k_perch)*denh2o) &
                      + h2osoi_ice(c,k_perch)/(dz(c,k_perch)*denice))/watsat(c,k_perch)
@@ -1716,7 +1719,9 @@ contains
                    rsub_top_layer=min(rsub_top_layer,0._r8)
                    rsub_top_tot = rsub_top_tot - rsub_top_layer
 
-                   h2osoi_liq(c,k) = h2osoi_liq(c,k) + rsub_top_layer
+                   ! save the flux for VSFM
+                   idx = (c-1)*nlevgrnd + k
+                   mflx_drain_perched_col_1d(idx) = rsub_top_layer/dtime
 
                    if (rsub_top_tot >= 0.) then
                       zwt_perched(c) = zwt_perched(c) - rsub_top_layer/eff_porosity(c,k)/1000._r8

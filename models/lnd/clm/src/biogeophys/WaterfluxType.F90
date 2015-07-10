@@ -98,7 +98,8 @@ module WaterfluxType
      real(r8), pointer :: mflx_infl_col_1d         (:)   ! infiltration source in top soil control volume (kg H2O /s)
      real(r8), pointer :: mflx_dew_col_1d          (:)   ! liquid+snow dew source in top soil control volume (kg H2O /s)
      real(r8), pointer :: mflx_et_col_1d           (:)   ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
-     real(r8), pointer :: mflx_drain_col_1d        (:)   ! drainage from groundwater and perched water table (kg H2O /s)
+     real(r8), pointer :: mflx_drain_col_1d        (:)   ! drainage from groundwater table (kg H2O /s)
+     real(r8), pointer :: mflx_drain_perched_col_1d(:)   ! drainage from perched water table (kg H2O /s)
      real(r8), pointer :: mflx_snowlyr_col_1d      (:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
      real(r8), pointer :: mflx_sub_snow_col_1d     (:)   ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
      real(r8), pointer :: vsfm_sat_col_1d          (:)   ! liquid saturation from VSFM [-]
@@ -148,6 +149,7 @@ contains
     integer :: begp, endp
     integer :: begc, endc
     integer :: begg, endg
+    integer :: ncells
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -228,16 +230,19 @@ contains
     allocate(this%irrig_rate_patch         (begp:endp))              ; this%irrig_rate_patch         (:)   = nan
     allocate(this%n_irrig_steps_left_patch (begp:endp))              ; this%n_irrig_steps_left_patch (:)   = 0
 
-    allocate(this%mflx_infl_col_1d(          (endc-begc + 1)))       ; this%mflx_infl_col_1d         (:)   = nan
-    allocate(this%mflx_dew_col_1d(           (endc-begc + 1)))       ; this%mflx_dew_col_1d          (:)   = nan
-    allocate(this%mflx_snowlyr_col_1d(       (endc-begc + 1)))       ; this% mflx_snowlyr_col_1d     (:)   = nan
-    allocate(this%mflx_sub_snow_col_1d(      (endc-begc + 1)))       ; this% mflx_sub_snow_col_1d    (:)   = nan
+    ncells = endc - begc + 1
+    allocate(this%mflx_infl_col_1d(            ncells))              ; this%mflx_infl_col_1d         (:)   = nan
+    allocate(this%mflx_dew_col_1d(             ncells))              ; this%mflx_dew_col_1d          (:)   = nan
+    allocate(this%mflx_snowlyr_col_1d(         ncells))              ; this% mflx_snowlyr_col_1d     (:)   = nan
+    allocate(this%mflx_sub_snow_col_1d(        ncells))              ; this% mflx_sub_snow_col_1d    (:)   = nan
 
-    allocate(this%mflx_et_col_1d(  (endc-begc + 1)*nlevgrnd))        ; this%mflx_et_col_1d           (:)   = nan
-    allocate(this%mflx_drain_col_1d((endc-begc + 1)*nlevgrnd))       ; this%mflx_drain_col_1d        (:)   = nan
-    allocate(this%vsfm_sat_col_1d( (endc-begc + 1)*nlevgrnd))        ; this%vsfm_sat_col_1d          (:)   = nan
-    allocate(this%vsfm_mass_col_1d((endc-begc + 1)*nlevgrnd))        ; this%vsfm_mass_col_1d         (:)   = nan
-    allocate(this%vsfm_smpl_col_1d((endc-begc + 1)*nlevgrnd))        ; this%vsfm_smpl_col_1d         (:)   = nan
+    ncells = (endc - begc + 1)*nlevgrnd
+    allocate(this%mflx_et_col_1d(              ncells))              ; this%mflx_et_col_1d           (:)   = nan
+    allocate(this%mflx_drain_col_1d(           ncells))              ; this%mflx_drain_col_1d        (:)   = nan
+    allocate(this%mflx_drain_perched_col_1d(   ncells))              ; this%mflx_drain_perched_col_1d(:)  = nan
+    allocate(this%vsfm_sat_col_1d(             ncells))              ; this%vsfm_sat_col_1d          (:)   = nan
+    allocate(this%vsfm_mass_col_1d(            ncells))              ; this%vsfm_mass_col_1d         (:)   = nan
+    allocate(this%vsfm_smpl_col_1d(            ncells))              ; this%vsfm_smpl_col_1d         (:)   = nan
 
   end subroutine InitAllocate
 
