@@ -54,6 +54,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
                         help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
 
+    parser.add_argument("-m", "--check-memory", action="store_true", dest="check_memory", default=False,
+                        help="Consider a commit to be broken if memory check fails (fail if tests footprint grows)")
+
     parser.add_argument("--no-batch", action="store_true", dest="no_batch", default=False,
                         help="Do not submit job to queue, run locally. Will default to whatever is standard on your machine")
 
@@ -61,10 +64,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.testname, args.testroot, args.project, args.compare, args.check_namelists, args.check_throughput, args.no_batch
+    return args.testname, args.testroot, args.project, args.compare, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
 
 ###############################################################################
-def acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_batch):
+def acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, check_memory, no_batch):
 ###############################################################################
     expect(os.path.exists("scripts/acme/create_test"), "Please run from root of repository")
 
@@ -102,6 +105,7 @@ def acme_bisect(testname, testroot, project, compare, check_namelists, check_thr
     return wait_for_tests.wait_for_tests([os.path.join(testarea, "TestStatus")],
                                          no_wait=no_batch, # wait if using batch
                                          check_throughput=check_throughput,
+                                         check_memory=check_memory,
                                          ignore_namelists=not check_namelists, # inverse due to opposite defaults
                                          cdash_build_name=None # don't do cdash stuff
                                          )
@@ -115,11 +119,11 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    testname, testroot, project, compare, check_namelists, check_throughput, no_batch = \
+    testname, testroot, project, compare, check_namelists, check_throughput, check_memory, no_batch = \
         parse_command_line(sys.argv, description)
 
     try:
-        rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, no_batch)
+        rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, check_memory, no_batch)
     except:
         print >> sys.stderr, "Exception in script, aborting bisect entirely:"
         e = sys.exc_info()[1]
