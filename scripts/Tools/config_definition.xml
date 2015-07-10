@@ -1959,7 +1959,7 @@
 
   <entry id="DOCN_MODE" 
 	 type="char"
-	 valid_values="prescribed,som,copyall,null" 
+	 valid_values="prescribed,som,copyall,interannual,null" 
 	 value="prescribed"
 	 group="run_component_docn"
 	 sdesc="DOCN mode"
