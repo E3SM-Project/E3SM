@@ -145,6 +145,8 @@ contains
          wf                 => waterstate_vars%wf_col                 , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.05 m 
          wf2                => waterstate_vars%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
 
+         mflx_snowlyr_col_1d=> waterflux_vars%mflx_snowlyr_col_1d     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+
          watsat             => soilstate_vars%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          sucsat             => soilstate_vars%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
          bsw                => soilstate_vars%bsw_col                 , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"              
@@ -205,9 +207,33 @@ contains
       call SnowCompaction(bounds, num_snowc, filter_snowc, &
            temperature_vars, waterstate_vars)
 
+      if (use_vsfm) then
+         ! Before the call to CombineSnowLayers(), save the liquid mass of soil water
+         ! of the top soil layer
+         mflx_snowlyr_col_1d(:) = 0._r8
+         j = 1
+         do fc = 1, num_snowc
+            c = filter_snowc(fc)
+            mflx_snowlyr_col_1d(c) = h2osoi_liq(c,j)
+         end do
+      end if
+
       ! Combine thin snow elements
       call CombineSnowLayers(bounds, num_snowc, filter_snowc, &
            aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
+
+      if (use_vsfm) then
+         ! Determine the change in liquid mass of top soil layer over dtime.
+         ! The increase in liquid mass of top soil layer is due to disapperance of
+         ! the last snow layer, when snow depth falls below a threshold.
+         ! This increase in mass of liquid water is send to VSFM solver
+         ! at the next time step.
+         j = 1
+         do fc = 1, num_snowc
+            c = filter_snowc(fc)
+            mflx_snowlyr_col_1d(c) = (h2osoi_liq(c,j) - mflx_snowlyr_col_1d(c))/dtime
+         end do
+      end if
 
       ! Divide thick snow elements
       call DivideSnowLayers(bounds, num_snowc, filter_snowc, &

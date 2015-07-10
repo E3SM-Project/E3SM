@@ -1086,10 +1086,12 @@ contains
 
     real(r8), pointer     :: zi(:,:)               ! interface level below a "z" level (m)
     real(r8), pointer     :: h2osoi_liq(:,:)       ! liquid water (kg/m2)
+    real(r8), pointer     :: h2osoi_ice(:,:)       ! ice water (kg/m2)
     real(r8), pointer     :: smp_l(:,:)            ! soil matrix potential [mm]
     real(r8), pointer     :: zwt(:)                ! water table depth (m)
     real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
     real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
+    real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr
     PetscInt              :: soe_auxvar_id                   ! Index of system-of-equation's (SoE's) auxvar
@@ -1100,10 +1102,12 @@ contains
     zi                =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
 
     h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+    h2osoi_ice        =>    waterstate_vars%h2osoi_ice_col     ! Output: [real(r8) (:,:) ]  ice water (kg/m2)
     smp_l             =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
     zwt               =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
     vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
     vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+    mflx_snowlyr_col_1d  => waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
     call t_startf('clm_init3')
 
@@ -1163,6 +1167,7 @@ contains
           idx = (c-1)*nlevgrnd + j
 
           h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
+          h2osoi_ice(c,j) = 0.d0
           smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
 
           if (jwt == -1) then
@@ -1182,6 +1187,8 @@ contains
                    smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
         endif
     end do
+
+    mflx_snowlyr_col_1d(:) = 0._r8
 
 #else
 

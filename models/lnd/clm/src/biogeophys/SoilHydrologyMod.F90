@@ -779,14 +779,14 @@ contains
 
              ! make consistent with how evap_grnd removed in infiltration
              if (.not.use_vsfm) then
-               h2osoi_liq(c,1) = h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
-               h2osoi_ice(c,1) = h2osoi_ice(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime
-             endif
-             if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
-                qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime
-                h2osoi_ice(c,1) = 0._r8
-             else
-                h2osoi_ice(c,1) = h2osoi_ice(c,1) - (1._r8 - frac_h2osfc(c)) * qflx_sub_snow(c) * dtime
+                h2osoi_liq(c,1) = h2osoi_liq(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_grnd(c) * dtime
+                h2osoi_ice(c,1) = h2osoi_ice(c,1) + (1._r8 - frac_h2osfc(c))*qflx_dew_snow(c) * dtime
+                if (qflx_sub_snow(c)*dtime > h2osoi_ice(c,1)) then
+                   qflx_sub_snow(c) = h2osoi_ice(c,1)/dtime
+                   h2osoi_ice(c,1) = 0._r8
+                else
+                   h2osoi_ice(c,1) = h2osoi_ice(c,1) - (1._r8 - frac_h2osfc(c)) * qflx_sub_snow(c) * dtime
+                end if
              end if
           end if
        end do
