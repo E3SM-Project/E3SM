@@ -13,17 +13,17 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $ATM_GRID		= `./xmlquery  ATM_GRID		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
-my $CAM_CONFIG_OPTS	= `./xmlquery  CAM_CONFIG_OPTS	-value`;
-my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
 my $GRID		= `./xmlquery  GRID		-value`;
+my $ATM_GRID		= `./xmlquery  ATM_GRID		-value`;
 my $LND_GRID		= `./xmlquery  LND_GRID		-value`;
 my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
 my $ROF_GRID		= `./xmlquery  ROF_GRID		-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
 my $WAV_GRID		= `./xmlquery  WAV_GRID		-value`;
+my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
+my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
+my $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
+my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
+my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
 
 if (! -d "$CASEBUILD/cplconf" ) {
     $sysmod = "mkdir $CASEBUILD/cplconf";
@@ -36,7 +36,8 @@ chdir "$CASEBUILD/cplconf";
 # -----------------------------------------------------
 
 my $infile_text = "";
-if ($CAM_CONFIG_OPTS) {
+if ($COMP_ATM eq 'cam') {
+    my $CAM_CONFIG_OPTS = `./xmlquery  CAM_CONFIG_OPTS -value`;
     if ( "$CAM_CONFIG_OPTS" =~ /.*adiabatic.*/ ) {
 	$infile_text .= "atm_adiabatic = .true.";
     }
