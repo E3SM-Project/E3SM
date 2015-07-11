@@ -21,6 +21,7 @@ use IO::Handle;
 # Set the directory that contains this script.
 
 my $eol = "\n";
+my $banner = '-' x 80;
 
 #-----------------------------------------------------------------------------------------------
 
@@ -96,6 +97,9 @@ my $compare_baseline	=  `./xmlquery COMPARE_BASELINE		-value`;
 my $generate_baseline	=  `./xmlquery GENERATE_BASELINE	-value`;
 my $cleanup             =  `./xmlquery CLEANUP	                -value`;
 my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
+my $casetools           =  `./xmlquery CASETOOLS            -value`;
+my $compiler            =  `./xmlquery COMPILER             -value`;
+my $mpilib              =  `./xmlquery MPILIB               -value`;
 
 # generate baseline test flag
 my $basegen_dir;
@@ -125,20 +129,41 @@ if (! $baselineroot) {
 
 chdir($caseroot); 
 
+push(@INC, $casetools);
+my $perl5libdir = "$cimeroot/utils/perl5lib/";
+push(@INC, $perl5libdir);
+require Batch::BatchMaker;
+require Task::TaskMaker;
+require ConfigCase; 
 # ------------------ testcase_begin ------------------------------------------
+# -- Make batch script using the BatchMaker module --- 
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, ccsmroot => $cimeroot,
+                                                     case     => $case,     mpilib => $mpilib,
+                                                     scriptsroot => $scriptsroot, machroot => $ccsm_machdir,
+                                                     machine     => $mach,        compiler => $compiler);
+
+my $batchdirectives = $batchmaker->getBatchDirectives();
+                                                     
 
 # create batch header for testing script
-my $batchfile = "$ENV{'HOME'}/.cesm/mkbatch.${mach}";
-if ( ! -e $batchfile ) {
-    $batchfile = "${ccsm_machdir}/mkbatch.${mach}";
-}
-my $sysmod = "env PHASE=set_batch env TESTMODE=test $batchfile";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};
-
-# create test file
+#my $batchfile = "$ENV{'HOME'}/.cesm/mkbatch.${mach}";
+#if ( ! -e $batchfile ) {
+#    $batchfile = "${ccsm_machdir}/mkbatch.${mach}";
+#}
+#my $sysmod = "env PHASE=set_batch env TESTMODE=test $batchfile";
+#system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};
+#exit(1);
+#
+## create test file
+my $sysmod;
 my $testfile = "$caseroot/${case}.test";
 my $testfh = new IO::File;
 $testfh->open(">>$testfile") or die "can't open file: $testfile $eol";
+print $testfh "#!/bin/csh -f $eol";
+print $testfh "#$banner$eol";
+print $testfh "# This is a CESM test-specific job script$eol";
+print $testfh "#$banner$eol";
+print $testfh $batchdirectives . $eol;
 
 # cleanup option
 if ( "$cleanup" eq "TRUE" ) {

@@ -52,3 +52,6 @@ if ( $HOSTNAME =~ {*login*} ) then
   setenv MP_HOSTFILE $CASEROOT/hostfile
   setenv MP_PROCS 1
 endif
+if ( $?PERL ) then
+  printenv
+endif

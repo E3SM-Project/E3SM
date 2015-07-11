@@ -205,6 +205,30 @@ int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
   return(MPI_SUCCESS);
 }    
 
+/* Intercomm_create
+ * 
+ */
+
+FC_FUNC(mpi_intercomm_create, MPI_INTERCOMM_CREATE)(
+                          int * local_comm, int * local_leader,
+                          int * peer_comm,  int * remote_leader,
+                          int * tag, int * newintercomm, int* ierr)
+{
+  *ierr = MPI_Intercomm_create(*local_comm, *local_leader, *peer_comm,
+                               *remote_leader, *tag, newintercomm);
+}
+
+int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader,
+                          MPI_Comm peer_comm, int remote_leader,
+                          int tag, MPI_Comm *newintercomm) 
+{
+  if (local_comm==MPI_COMM_NULL && peer_comm==MPI_COMM_NULL)
+    *newintercomm = MPI_COMM_NULL;
+  else
+    MPI_Comm_dup(MPI_COMM_WORLD, newintercomm);
+
+  return MPI_SUCCESS;
+}
 
 
 /*********/
@@ -221,7 +245,3 @@ MPI_Fint MPI_Comm_c2f(MPI_Comm comm)
 {
   return(comm);
 }
-
-
-
-

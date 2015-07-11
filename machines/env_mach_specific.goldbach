@@ -30,3 +30,6 @@ if ( $COMPILER == "gnu" ) then
     module load compiler/gnu/4.4.7
 endif
 setenv NETCDF_DIR $NETCDF_PATH
+if ( $?PERL ) then
+  printenv
+endif
