@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="MACH"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>Machine name</desc>
+  </entry>
+
+  <entry id="MACHINES_FILE">
+    <type>char</type>
+    <value></value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of file specifying supported machines location</desc>
+  </entry>
+
+  <entry id="MACHDIR">
+    <type>char</type>
+    <value></value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>Machines directory location</desc>
+  </entry>
+
+  <entry id="RUNDIR"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_desc</group>
+    <file>env_case.xml</file>
+    <desc>
+      The directory where the executable will be run. 
+      By default this is set to EXEROOT/../run. 
+      RUNDIR allows you to keep the run directory separate from the build directory
+    </desc>
+  </entry>
+
+  <entry id="DIN_LOC_ROOT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      The root directory of all CIME and component input data for the selected machine.
+      This is usually a shared disk area.
+      Default values for the target machine are in the
+      $CIMEROOT/machines/config_machines.xml
+    </desc>
+  </entry> 
+
+  <entry id="DIN_LOC_ROOT_CLMFORC"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>CLM-specific root directory for CLM type input forcing data
+    This directory will only be used for I (CLM/DATM) compsets and only
+    for datm forcing data that is NOT checked into the svn repository
+    (datasets other than the Qian or single-point forcing).
+    This is usually a shared disk area.
+    Default values for the target machine are in the
+    $CIMEROOT/machines/config_machines.xml</desc>
+  </entry> 
+
+  <entry id="DOUT_S_ROOT"> 
+    <type>char</type> 
+    <value>UNSET</value>
+    <group>run_dout</group>
+    <file>env_run.xml</file>
+    <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc> 
+  </entry> 
+
+  <entry id="DOUT_L_MSROOT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_dout</group>
+    <file>env_run.xml</file>
+    <desc>Root directory on long term archiving store system for long-term data archives.</desc>
+  </entry> 
+
+  <entry id="PROJECT"> 
+    <type>char</type>
+    <value>PROJECT_UNSET</value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>project for project-sensitive build and run paths, and job scripts</desc>
+  </entry> 
+
+  <entry id="PROJECT_REQUIRED">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>whether the PROJECT value is required on this machine</desc>
+  </entry>
+
+  <entry id="BATCHQUERY"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_mach</group>
+    <file>env_run.xml</file>
+    <desc>command used to query batch system</desc>
+  </entry>
+
+  <entry id="BATCHSUBMIT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_mach</group>
+    <file>env_run.xml</file>
+    <desc>command used to submit to batch system</desc>
+  </entry>
+
+  <entry id="OS"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>operating system for target machine</desc>
+  </entry>
+
+  <entry id="MPI_RUN_COMMAND"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_mpi</group>
+    <file>env_run.xml</file>
+    <desc>mpi run command</desc>
+  </entry>
+
+  <entry id="COST_PES"> 
+    <type>integer</type>
+    <value>0</value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+  </entry>
+
+</definitions_variables>
+

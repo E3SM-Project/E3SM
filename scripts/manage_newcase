@@ -1,0 +1,205 @@
+#!/usr/bin/env perl 
+
+#-----------------------------------------------------------------------------------------------
+#
+# manage_compsets
+#
+# This utility allows the users to manage and query model component sets  
+#
+#-----------------------------------------------------------------------------------------------
+
+use XML::LibXML;
+use IO::File;
+use Data::Dumper;
+use Getopt::Long;
+use POSIX qw(strftime);
+use Cwd qw(getcwd abs_path chdir);
+use File::Basename;
+use strict;
+
+# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
+# If not found, print a warning message then exit. 
+eval {
+    require XML::LibXML;
+    XML::LibXML->import();
+};
+if($@)
+{
+    my $warning = <<END;
+WARNING:
+    The perl module XML::LibXML is needed for XML parsing in the CESM script system.  
+	Please contact your local systems administrators or IT staff and have them install it for 
+	you, or install the module locally.  
+
+END
+    print "$warning\n";
+    exit(1);
+}
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = abs_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+# Set $cimeroot and $srcroot
+my $cimeroot = abs_path("$cfgdir/../");
+(-d "$cimeroot")  or  die <<"EOF";
+** Cannot find cimeroot directory \"$cimeroot\" **
+EOF
+
+#TODO - these need to be generalized - machroot needs to be read in from the definitions_files.xml
+my $srcroot  = abs_path("$cimeroot/../");
+my $definitions_file = "$cimeroot/scripts/cimeconfig/files_specification.xml";
+
+#-----------------------------------------------------------------------------------------------
+if ($#ARGV == -1) {
+    usage();
+}
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+
+SYNOPSIS
+  manage_newcase -list  [options]
+
+OPTIONS
+  User supplied values are denoted in angle brackets (<>).  Any value that contains
+  white-space must be quoted.  Long option names may be supplied with either single
+  or double leading dashes.  A consequence of this is that single letter options may
+  NOT be bundled.
+
+  -list grids
+  -list compsets    -primary_component [cam, clm, cice, cism, pop, allactive] (if model is CESM)
+  -list definitions -component         [cam, clm, cice, cism, pop, datm, dlnd, dice, dglc, docn] (if model is CESM)
+  -list grids          
+  -list machines
+
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Save commandline
+my $commandline = "create_newcase @ARGV";
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = ( );
+GetOptions(
+    "h|help"                    => \$opts{'help'},
+    "list=s"                    => \$opts{'list'},
+    "primary_component=s"       => \$opts{'primary_component'},
+    "component=s"               => \$opts{'component'},
+    "v|verbose"                 => \$opts{'verbose'},
+    )  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+#-----------------------------------------------------------------------------------------------
+# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
+my @dirs = ("$cimeroot/scripts/Tools");
+unshift @INC, @dirs;
+require ConfigCompsetGrid;
+
+my $parser = XML::LibXML->new( no_blanks => 1);
+my $xml = $parser->parse_file("$definitions_file");
+
+my $primary_component;
+if ($opts{'list'} eq 'definitions') {
+    if (! $opts{'component'}) {
+	die "ERROR: must also specify an input argument,  -component <ANY component name> \n";
+    } else {
+	$primary_component = $opts{'component'};
+    }
+}
+if ($opts{'list'} eq "compsets") {
+    if (! $opts{'primary_component'}) {
+	die "ERROR: must also specify an input argument,  -primary_component <primary component name>\n";
+    }
+}
+
+my $list_option = $opts{'list'};
+if ($list_option eq "compsets") 
+{
+    $primary_component = $opts{'primary_component'};
+    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@primary_component=\"$primary_component\"]");
+    if (! @files) {
+	die " ERROR: no compsets file found for primary component $primary_component \n";
+    }
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$SRCROOT/$srcroot/;
+    (-f "$file")  or  die "*** Cannot find compsets specification file $file ***\n";
+    ConfigCompsetGrid::listCompsets($file);
+} 
+elsif ($list_option eq "definitions") 
+{
+    my $xml = $parser->parse_file($definitions_file);
+    my @files = $xml->findnodes(".//entry[\@id[contains(.,\"CIMECONFIG\")]]/values/value[\@comp=\"$primary_component\"]");
+    if (! @files) {
+	die " ERROR: no component definition files found for component $primary_component \n";
+    }
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$SRCROOT/$srcroot/;
+    (-f $file) or die "ERROR: component definition file $file is not present"; 
+    ConfigCompsetGrid::listComponentDefinitions($file);
+} 
+elsif ($list_option eq "grids") 
+{
+    my @nodes = $xml->findnodes(".//entry[\@id=\"GRIDS_DIR\"]/default_value");
+    if (! @nodes) {
+	die " ERROR: in parsing $definitions_file for the GRID_DIR node \n";
+    }
+    my $grids_dir = $nodes[0]->textContent();
+    $grids_dir =~ s/\$CIMEROOT/$cimeroot/;
+    $grids_dir =~ s/\$SRCROOT/$srcroot/;
+    (-d "$grids_dir")  or  die "** Cannot find grids dir $grids_dir ***\n";
+    my $grids_file         = "$grids_dir" . '/' . "grids.xml";
+    my $grids_domains_file = "$grids_dir" . '/' . "grids_domains.xml";
+    ConfigCompsetGrid::listGrids($grids_file, $grids_domains_file);
+} 
+elsif ($list_option eq "machines") 
+{
+    my @nodes = $xml->findnodes(".//entry[\@id=\"MACHINES_FILE\"]/default_value");
+    if (! @nodes) {
+	die " ERROR: in parsing $definitions_file for the MACHINES_FILE node \n";
+    }
+    my $file = $nodes[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$SRCROOT/$srcroot/;
+    (-f $file) or die "ERROR: machines specification file $file is not present"; 
+    ConfigMachine::listMachines($file);
+} 
+else 
+{
+    print "** Bad argument to the list option: $list_option \n";
+    print "** Valid options: compsets, grids or machines ** \n";
+    die;
+}
+print "finished listing valid values, now exiting \n";
+exit 0;

@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables> 
+
+  <entry id="CESMSCRATCHROOT">
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>UNSET</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>Scratch root directory for each machine. For now, primarily used for shared library builds
+      The CESM scratchroot root directory.  Base diretory for build and run directories.</desc>
+  </entry>
+
+  <entry id="EXEROOT"> 
+    <type>char</type>
+    <valid_values></valid_values>  
+    <value>UNSET</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>Case executable root directory. 
+    (executable is $EXEROOT/cesm.exe, component libraries are in $EXEROOT/bld)
+    This is where the model builds its executable and by default runs the executable.  
+    Note that EXEROOT needs to have enough disk space for the experimental configuration
+    requirements. As an example, a CESM run can produce more than a terabyte of
+    data during a 100-year run, so you should set EXEROOT to scratch or
+    tmp space and frequently back up the data to a long term archiving storage device
+    For a supported machine, EXEROOT is set in $CIMEROOT/machines/config_machines.xml.
+    For a userdefined machine, EXEROOT must explicitly be set it in env_build.xml.</desc>
+  </entry> 
+
+  <entry id="OS"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>USERDEFINED_required_macros</value>
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</desc>
+  </entry>
+
+  <entry id="COMPILERS"> 
+    <type>char</type>
+    <valid_values></valid_values>  
+    <value></value> 
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
+    Machine compiler (must match one the supported compilers) - ignored once Macros has been created.</desc>
+  </entry> 
+
+  <entry id="COMPILER"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value></value>
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>Machine compiler (must match one the supported compilers)
+    Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
+    Must be explicitly set in env_build.xml for userdefined machine.</desc>
+  </entry> 
+
+  <entry id="MPILIBS"> 
+    <type>char</type>
+    <valid_values></valid_values>  
+    <value></value> 
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>Supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT)
+      Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
+      Must be explicitly set in env_build.xml for userdefined machine.</desc>
+  </entry> 
+
+  <entry id="SUPPORTED_BY"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value></value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>email address of person (or group) that supports the build and port for this machine (do not edit)></desc>
+  </entry> 
+
+  <entry id="MPILIB"> 
+    <type>char</type>
+    <valid_values></valid_values>  
+    <value>USERDEFINED_required_macros</value>
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>mpi library (must match one of the supported libraries) - 
+    ignored once Macros has been created
+    Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
+    Must be explicitly set in env_build.xml for userdefined machine.</desc>
+  </entry> 
+
+  <entry id="CALENDAR"> 
+    <type>char</type>
+    <valid_values>NO_LEAP,GREGORIAN</valid_values>
+    <value>NO_LEAP</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>calendar type></desc>
+  </entry>
+
+  <entry id="COMP_INTERFACE"> 
+    <type>char</type>
+    <valid_values>MCT,ESMF</valid_values>
+    <value>MCT</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>use MCT or ESMF component interfaces</desc>
+  </entry>
+
+  <entry id="USE_ESMF_LIB"> 
+    <type>char</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies using the ESMF library specified by ESMF_LIBDIR or ESMFMKFILE</desc>
+  </entry>
+
+  <entry id="DEBUG"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values> 
+    <value>FALSE</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies turning on run and compile time debugging
+      Flag to turn on debugging for run time and compile time. 
+      If TRUE, compile-time debugging flags are activated that you can use to verify 
+      software robustness, such as bounds checking.
+      Important:: On IBM machines, floating point trapping is not activated for production 
+      runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
+  </entry> 
+
+  <entry id="BUILD_THREADED"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies always build model for openmp capability
+      If FALSE, component libraries are built with OpenMP capability only if 
+      the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+      If TRUE, the component libraries are always built with OpenMP capability.</desc>
+  </entry> 
+
+  <entry id="USE_TRILINOS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies linking to the trilinos library - set automatically by XXX_USE_TRILINOS options (do not edit)
+      Flag to turn on linking to the trilinos library. Currently this is
+      used by CISM. Note that trilinos is a C++ library, so setting this
+      variable to TRUE will involve the inclusion of C++ code in the CESM
+      executable. This is currently only supported for certain machines.</desc>
+  </entry>
+
+  <entry id="GMAKE"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>gmake</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>GNU make command</desc>
+  </entry>
+
+  <entry id="GMAKE_J"> 
+    <type>integer</type>
+    <valid_values></valid_values> 
+    <value>1</value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>Number of processors for gmake</desc>
+  </entry>
+
+  <entry id="BUILD_COMPLETE"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>build_status</group>
+    <file>env_build.xml</file>
+    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)></desc>
+  </entry> 
+
+  <entry id="SMP_BUILD"> 
+    <type>char</type>
+    <valid_values></valid_values>  
+    <value>0</value>
+    <group>build_status</group>
+    <file>env_build.xml</file>
+    <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)></desc>
+  </entry> 
+
+  <entry id="SMP_VALUE"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>0</value>
+    <group>build_status</group>
+    <file>env_build.xml</file>
+    <desc>Status: smp status of current case, coded string (DO NOT EDIT)></desc>
+  </entry> 
+
+  <entry id="NINST_BUILD"> 
+    <type>char</type>
+    <valid_values></valid_values>  
+    <value>0</value>
+    <group>build_status</group>
+    <file>env_build.xml</file>
+    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)></desc>
+  </entry> 
+
+  <entry id="NINST_VALUE"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>0</value>
+    <group>build_status</group>
+    <file>env_build.xml</file>
+    <desc>Status: ninst status of current case, coded string (DO NOT EDIT)></desc>
+  </entry> 
+
+  <entry id="BUILD_STATUS"> 
+    <type>integer</type>
+    <valid_values></valid_values>  
+    <value>0</value>
+    <group>build_status</group>
+    <file>env_build.xml</file>
+    <desc>Status: of prior build. (DO NOT EDIT)></desc>
+  </entry> 
+
+  <entry id="OBJROOT"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>$EXEROOT</value>
+    <group>build_derived</group>
+    <file>env_build.xml</file>
+    <desc>case build directory (set automatically to $EXEROOT, - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="LIBROOT"> 
+    <type>char</type>
+    <valid_values></valid_values> 
+    <value>$EXEROOT/lib</value>
+    <group>build_derived</group>
+    <file>env_build.xml</file>
+    <desc>case lib directory (set automatically to $EXEROOT/lib - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="INCROOT"> 
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>$EXEROOT/lib/include</value>
+    <group>build_derived</group>
+    <file>env_build.xml</file>
+    <desc>case lib include directory (set automatically to $EXEROOT/lib/include - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="SHAREDLIBROOT">
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>$EXEROOT</value>
+    <group>build_derived</group>
+    <file>env_build.xml</file>
+    <desc>Shared library root, (set automatically to $EXEROOT - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="SHAREDLIBROOTDIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <value>$EXEROOT</value>
+    <group>build_derived</group>
+    <file>env_build.xml</file>
+    <desc>Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)</desc>
+  </entry>
+
+</definitions_variables> 
+

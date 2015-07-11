@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables> 
+
+  <entry id="COMP_GLC"> 
+    <type>char</type>
+    <valid_values>cism</valid_values>
+    <default_value>cism</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land ice-sheet component</desc>
+  </entry>
+
+  <entry id="CISM_USE_TRILINOS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_cism</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies CISM is built with support for the trilinos library
+      When using the higher-order dynamical cores in CISM, one option is to
+      use the trilinos solver library for sparse matrix solves. In order to
+      exercise that option, you need to build CISM with trilinos support, and
+      link to the trilinos libraries when building the CESM executable. Setting
+      this variable to TRUE accomplishes these things. Note that you can set
+      this to TRUE and still choose not to use the trilinos solvers for the
+      sparse matrix solves. Also, note that trilinos is only available on a
+      limited set of machines; this must remain FALSE to run CISM on a
+      machine that does not have trilinos, or for which the CESM scripts are
+      not aware of the existence of trilinos.</desc>
+  </entry>
+
+  <entry id="CISM_PHYS">
+    <type>char</type>
+    <valid_values>cism1,cism2</valid_values>
+    <default_value>cism1</default_value>
+    <values>
+      <value compset="CISM1">cism1</value>
+      <value compset="CISM2">cism2</value>
+    </values>
+    <group>run_component_cism</group>
+    <file>env_run.xml</file>
+    <desc>Version of CISM physics/dynamics to use</desc>
+  </entry>
+
+  <entry id="CISM_OBSERVED_IC">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_component_cism</group>
+    <file>env_run.xml</file>
+    <desc>For hybrid runs, whether CISM should use observed initial conditions 
+      instead of restart file.
+      For hybrid runs, a value of FALSE (default) implies that CISM should
+      use the restart file from the reference case; a value of TRUE implies
+      that CISM should instead use the observed initial conditions that are
+      generally used for startup runs. This variable is ignored for startup
+      runs; for branch runs, it MUST BE FALSE.</desc>
+  </entry>
+
+  <entry id="GLC_SMB"> 
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>run_component_cism</group>
+    <file>env_run.xml</file>
+    <desc>true => do surface mass balance, false => PDD, nec_glc is set to 1</desc>
+  </entry>
+
+</definitions_variables> 

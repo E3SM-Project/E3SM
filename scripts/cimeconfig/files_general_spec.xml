@@ -1,0 +1,256 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables> 
+
+  <!-- =========================================== -->
+  <!-- CASEROOT associated variables -->
+  <!-- =========================================== -->
+
+  <entry id="CASEROOT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of case</desc>
+  </entry> 
+
+  <entry id="LOGDIR"> 
+    <type>char</type>
+    <value>$CASEROOT/logs</value>
+    <group>run_desc</group>
+    <file>env_run.xml</file>
+    <desc>Extra copies of the component log files will be saved here.</desc>
+  </entry> 
+
+  <entry id="CASETOOLS"> 
+    <type>char</type>
+    <value>$CASEROOT/Tools</value>
+    <group>case_der</group>
+    <file>env_case.xml</file>
+    <desc>Case Tools directory location (derived variable, not in namelists</desc>
+  </entry>
+
+  <entry id="CASEBUILD"> 
+    <type>char</type>
+    <value>$CASEROOT/Buildconf</value>
+    <group>case_der</group>
+    <file>env_case.xml</file>
+    <desc>Buildconf directory location (derived variable not in namelist)</desc>
+  </entry>
+
+  <entry id="CASEFILE_DESCRIPTIONS"> 
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/casefiles.xml</value>
+    <group>case_der</group>
+    <file>env_case.xml</file>
+    <desc>contains both header and group information for all the case env_*.xml files </desc>
+  </entry>
+
+  <!-- =========================================== -->
+  <!-- SRCROOT associated variables -->
+  <!-- =========================================== -->
+
+  <entry id="SRCROOT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of source root directory</desc>
+  </entry> 
+
+  <entry id="CCSMROOT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of source root directory (currently equal to SRCROOT for backwards compatibility)</desc>
+  </entry> 
+
+  <!-- =========================================== -->
+  <!-- CIMEROOT associated variables -->
+  <!-- =========================================== -->
+
+  <entry id="CIMEROOT"> 
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of CIME source root directory</desc>
+  </entry> 
+
+  <entry id="SCRIPTSROOT"> 
+    <type>char</type>
+    <value>$CIMEROOT/scripts</value>
+    <group>case_der</group>
+    <file>env_case.xml</file>
+    <desc>CESM source scripts directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="UTILROOT"> 
+    <type>char</type>
+    <value>$CIMEROOT/scripts/Tools</value>
+    <group>case_der</group>
+    <file>env_case.xml</file>
+    <desc>CESM source scripts utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)</desc>
+  </entry>
+
+  <!-- =========================================== -->
+  <!-- Grids specifications -->
+  <!-- =========================================== -->
+
+  <entry id="GRIDS_SPEC_FILE"> 
+    <type>char</type>
+    <value>grids.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of all supported model grids (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="GRIDS_DIR" >
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>directory containing grids domain and mapping specification files (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="GRIDS_DOMAINS_FILE" >
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of file containing specification of all grid domains (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="GRIDS_MAPPINGS_FILE" >
+    <type>char</type>
+    <value>UNSET</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>full pathname file containing specification of all grid domains (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <!-- =========================================== -->
+  <!-- Machine specific files --> 
+  <!-- =========================================== -->
+
+  <entry id="MACHINES_SPEC_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/machines/config_machines.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="PIO_SPEC_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/machines/config_pio.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of machine specific pio settings(for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <!-- =========================================== -->
+  <!-- Files containing all case configuration -->
+  <!-- variables -->
+  <!-- =========================================== -->
+
+  <entry id="DEFINITIONS_ARCHIVE_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_archive.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_BUILD_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_build.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_CASE_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_case.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_COST_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_cost.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_GRID_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_grid.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_MACHINES_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_machines.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_PERFORMANCE_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_performance.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_PES_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_pes.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_PIO_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_pio.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_POSTPROC_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_postproc.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_RUNTIMES_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_runtimes.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="DEFINITIONS_TESTING_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_testing.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+</definitions_variables>

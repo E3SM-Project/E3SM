@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="compsets_cism.xsl" ?>
+
+<compsets>
+
+  <compset_definitions>
+
+    <!---TG compsets -->
+    <COMPSET grid="gland">
+      <alias>TG</alias>
+      <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TG1850"</alias>
+      <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+      </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TGHIST"</alias>     
+      <lname>HIST_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TGRCP85"</alias>    
+      <lname>RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TGIS2"</alias>      
+      <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TG1850IS2"</alias>  
+      <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TGHISTIS2"</alias>  
+      <lname>HIST_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="gland">
+      <alias>TGRCP85IS2"</alias> 
+      <lname>RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+    </COMPSET>
+
+  </compset_definitions>
+
+  <!-- ===============================================================================  -->
+
+  <compset_variables>
+
+    <RUN_STARTDATE compset="2000.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</RUN_STARTDATE>
+    <RUN_STARTDATE compset="1850.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</RUN_STARTDATE>
+    <RUN_STARTDATE compset="HIST.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1850-01-01</RUN_STARTDATE>
+    <RUN_STARTDATE compset="RCP8.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2006-01-01</RUN_STARTDATE>
+    <STOP_OPTION   compset="_DLND.*_CISM">nyears</STOP_OPTION>
+    <STOP_N        compset="_DLND.*_CISM">5</STOP_N>
+
+  </compset_variables>
+
+</compsets>

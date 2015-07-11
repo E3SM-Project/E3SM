@@ -1,0 +1,743 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables> 
+
+  <entry id="ATM_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>atmosphere grid - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ATM_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of atmosphere cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ATM_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of atmosphere cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="LND_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>land grid - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="LND_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of land cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="LND_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of land cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="OCN_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>ocn grid - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="OCN_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of ocn cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="OCN_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of ocn cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ICE_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>ice grid (must equal ocn grid) - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ICE_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of ice cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ICE_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of ice cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ROF_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>river runoff (rof) grid</desc>
+  </entry>
+
+  <entry id="ROF_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of rof cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="ROF_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of rof cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="GLC_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>(glc) grid for the coupler</desc>
+  </entry>
+
+  <entry id="GLC_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of glc cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="GLC_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of glc cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="CISM_GRID">
+    <type>char</type>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,null</valid_values>
+    <value>gland5UM</value>
+    <group>run_component_cism</group>
+    <file>env_run.xml</file>
+    <desc>
+      The glacier model (glc) grid for coupling is assumed to be identical to the land grid. 
+      CISM_GRID determines the specific local internal grid that CISM will use for 
+      internal calculations. 
+      The default is gland5UM (5km grid).
+    </desc>
+  </entry> 
+
+  <entry id="WAV_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>wave model (wav) grid</desc>
+  </entry>
+
+  <entry id="WAV_NX">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of wav cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="WAV_NY">
+    <type>integer</type>
+    <value>0</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of wav cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="MASK_GRID">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>grid mask - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <!-- ======================================================================= -->
+  <!--  DOMAIN FILES (drv)                                          -->
+  <!-- ======================================================================= -->
+
+  <entry id="ATM_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm domain file</desc>
+  </entry>
+
+  <entry id="ATM_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of atm domain file</desc>
+  </entry>
+
+  <entry id="LND_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd domain file</desc>
+  </entry>
+
+  <entry id="LND_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of lnd domain file</desc>
+  </entry>
+
+  <entry id="ROF_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof domain file</desc>
+  </entry>
+
+  <entry id="ROF_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of rof domain file</desc>
+  </entry>
+
+  <entry id="WAV_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav domain file</desc>
+  </entry>
+
+  <entry id="WAV_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of wav domain file</desc>
+  </entry>
+
+  <entry id="ICE_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ice domain file</desc>
+  </entry>
+
+  <entry id="ICE_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of ice domain file</desc>
+  </entry>
+
+  <entry id="OCN_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn domain file</desc>
+  </entry>
+
+  <entry id="OCN_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of ocn domain file</desc>
+  </entry>
+
+  <entry id="GLC_DOMAIN_FILE">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc domain file</desc>
+  </entry>
+
+  <entry id="GLC_DOMAIN_PATH">
+    <type>char</type>
+    <value>$DIN_LOC_ROOT/share/domains</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of glc domain file</desc>
+  </entry>
+
+  <!--- map files -->
+  <!--- comment out map type for now, tcraig 3/25/13 -->
+
+  <entry id="ATM2OCN_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn flux mapping file</desc>
+  </entry>
+
+  <!-- 
+       <entry id="ATM2OCN_FMAPTYPE">
+       <type>char</type>
+       <valid_values>X,Y</valid_values>
+       <value>X</value>
+       <group>run_domain</group>
+       <file>env_run.xml</file>
+       <desc>atm2ocn flux mapping file decomp type</desc>
+       </entry>
+  -->
+
+  <entry id="ATM2OCN_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn state mapping file</desc>
+  </entry>
+
+  <!-- 
+       <entry id="ATM2OCN_SMAPTYPE">
+       <type>char</type>
+       <valid_values>X,Y</valid_values>
+       <value>X</value>
+       <group>run_domain</group>
+       <file>env_run.xml</file>
+       <desc>atm2ocn state mapping file decomp type</desc>
+       </entry>
+  -->
+
+  <entry id="ATM2OCN_VMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn vector mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ATM2OCN_VMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>X</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>atm2ocn vector mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="OCN2ATM_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2atm flux mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="OCN2ATM_FMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>ocn2atm flux mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="OCN2ATM_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2atm state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="OCN2ATM_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>ocn2atm state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ATM2LND_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2lnd flux mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ATM2LND_FMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>X</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>atm2lnd flux mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ATM2LND_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2lnd state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ATM2LND_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>X</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>atm2lnd state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="LND2ATM_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2atm flux mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="LND2ATM_FMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>lnd2atm flux mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="LND2ATM_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2atm state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="LND2ATM_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>lnd2atm state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ROF2LND_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2lnd flux mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ROF2LND_FMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>rof2lnd flux mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="LND2ROF_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2rof flux mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="LND2ROF_FMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>X</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>lnd2rof flux mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ROF2OCN_FMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn flux mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ROF2OCN_FMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>rof2ocn flux mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ROF2OCN_RMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ROF2OCN_RMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>rof2ocn runoff mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="GLC2OCN_RMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn runoff mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="GLC2OCN_RMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>glc2ocn runoff mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="GLC2ICE_RMAPNAME"> 
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice runoff mapping file</desc>
+  </entry>
+
+  <!--- 
+      <variable name>GLC2ICE_RMAPTYPE"></<variable name>
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>glc2ice runoff mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ATM2WAV_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2wav state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ATM2WAV_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>atm2wav state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="OCN2WAV_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2wav state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="OCN2WAV_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>ocn2wav state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="ICE2WAV_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ice2wav state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="ICE2WAV_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>Y</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>ice2wav state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="WAV2OCN_SMAPNAME">
+    <type>char</type>
+    <value>idmap</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>wav2ocn state mapping file</desc>
+  </entry>
+
+  <!--- 
+      <entry id="WAV2OCN_SMAPTYPE">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <value>X</value>
+      <group>run_domain</group>
+      <file>env_run.xml</file>
+      <desc>wav2ocn state mapping file decomp type</desc>
+      </entry>
+  -->
+
+  <entry id="VECT_MAP">
+    <type>char</type>
+    <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
+    <value>cart3d</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>vector mapping option</desc>
+  </entry>
+
+  <entry id="EPS_FRAC">
+    <type>char</type>
+    <value>1.0e-02</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in fractions in domain checking</desc>
+  </entry>
+
+  <entry id="EPS_AAREA">
+    <type>real</type>
+    <value>1.0e-07</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in atm/land areas in domain checking</desc>
+  </entry>
+
+  <entry id="EPS_AMASK">
+    <type>real</type>
+    <value>1.0e-13</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in atm/land masks in domain checking</desc>
+  </entry>
+
+  <entry id="EPS_AGRID">
+    <type>real</type>
+    <value>1.0e-12</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in atm/land lat/lon in domain checking</desc>
+  </entry>
+
+  <entry id="EPS_OAREA">
+    <type>real</type>
+    <value>1.0e-01</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
+  </entry>
+
+  <entry id="EPS_OMASK">
+    <type>real</type>
+    <value>1.0e-06</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
+  </entry>
+
+  <entry id="EPS_OGRID">   
+    <type>real</type>
+    <value>1.0e-02</value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
+  </entry>
+
+</definitions_variables> 
+

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="compsets.xsl" ?>
+
+<config_cice>
+
+  <!-- ===============================================================================  -->
+
+  <compset_definitions>
+
+    <!-- D compsets -->
+
+    <COMPSET>
+      <alias>D</alias>    support_level="Requires additional user-supplied datasets" 
+      <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>DIAF</alias> support_level="Requires additional user-supplied datasets" 
+      <lname>2000_DATM%IAF_SLND_CICE_DOCN%SOM_DROF%IAF_SGLC_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>DTEST</alias>
+      <lname>2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST </lname>
+    </COMPSET>
+
+  </compset_definitions>
+
+</config_cice>

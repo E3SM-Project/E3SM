@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_WAV"> 
+    <type>char</type>
+    <valid_values>ww3</valid_values>
+    <default_value>ww3</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of land component</desc>
+  </entry>
+
+  <description>
+    <desc compset="_WW3" >WW3:</desc>
+  </description>
+
+  <help>
+    =========================================
+    WW3 naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>
+

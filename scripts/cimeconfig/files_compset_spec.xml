@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables> 
+
+  <!-- ============================================================ -->
+  <!-- Filenames for determining compsets and tests file            -->
+  <!-- Depends on component attribute value   -->
+  <!-- ============================================================ -->
+
+  <entry id="COMPSETS_SPEC_FILE">
+    <type>char</type>
+    <values>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/compsets.xml</value>
+      <value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/cimeconfig/compsets.xml</value>
+      <value component="cam"      >$CIMEROOT/scripts/cimeconfig/components/cam/cimeconfig/compsets.xml</value>
+      <value component="cism"     >$CIMEROOT/scripts/cimeconfig/components/cism/cimeconfig/compsets.xml</value>
+      <value component="clm"      >$CIMEROOT/scripts/cimeconfig/components/clm/cimeconfig/compsets.xml</value>
+      <value component="cice"     >$CIMEROOT/scripts/cimeconfig/components/cice/cimeconfig/compsets.xml</value>
+      <value component="pop"      >$CIMEROOT/scripts/cimeconfig/components/pop/cimeconfig/compsets.xml</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="TESTS_SPEC_FILE">
+    <type>char</type>
+    <values>
+      <value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/cimeconfig/testlist_allactive.xml</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cimetest/testlist_drv.xml</value>
+      <value component="cam"      >$SRCROOT/components/cam/cimetest/testlist_cam.xml</value>
+      <value component="cism"     >$SRCROOT/components/cism/cimetest/testlist_cism.xml</value>
+      <value component="clm"      >$SRCROOT/components/clm/cimetest/testlist_clm.xml</value>
+      <value component="cice"     >$SRCROOT/components/cice/cimetest/testlist_cice.xml</value>
+      <value component="pop"      >$SRCROOT/components/pop/cimetest/testlist_pop.xml</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of all system tests for primary component (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="TESTS_MODS_DIR">
+    <type>char</type>
+    <values>
+      <value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/cimeconfig/testmods_dirs</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cimetest/testmods_dirs</value>
+      <value component="cam"      >$SRCROOT/components/cam/cimetest/testmods_dirs</value>
+      <value component="cism"     >$SRCROOT/components/cism/cimetest/testmods_dirs/cism</value>
+      <value component="clm"      >$SRCROOT/components/clm/cimetest/testmods_dirs</value>
+      <value component="cice"     >$SRCROOT/components/cice/cimetest/testmods_dirs</value>
+      <value component="pop"      >$SRCROOT/components/pop/cimetest/testmods_dirs</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of all system tests for primary component (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+</definitions_variables>

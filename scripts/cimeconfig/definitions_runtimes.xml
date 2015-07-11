@@ -1,0 +1,248 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="RUN_TYPE"> 
+    <type>char</type>
+    <valid_values>startup,hybrid,branch</valid_values>
+    <value>startup</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Determines the model run initialization type.  
+      This setting is only important for the initial run of a production run when the 
+      CONTINUE_RUN variable is set to FALSE.  After the initial run, the CONTINUE_RUN
+      variable is set to TRUE, and the model restarts exactly using input
+      files in a case, date, and bit-for-bit continuous fashion.
+      Default: startup.
+      -- In a startup run (the default), all components are initialized
+      using baseline states.  These baseline states are set independently by
+      each component and can include the use of restart files, initial
+      files, external observed data files, or internal initialization (i.e.,
+      a cold start). In a startup run, the coupler sends the start date to
+      the components at initialization. In addition, the coupler does not
+      need an input data file.  In a startup initialization, the ocean model
+      does not start until the second ocean coupling (normally the second
+      day).
+      -- In a branch run, all components are initialized using a consistent
+      set of restart files from a previous run (determined by the
+      RUN_REFCASE and RUN_REFDATE variables in env_run.xml).  The case name
+      is generally changed for a branch run, although it does not have to
+      be. In a branch run, setting RUN_STARTDATE is ignored because the
+      model components obtain the start date from their restart datasets.
+      Therefore, the start date cannot be changed for a branch run. This is
+      the same mechanism that is used for performing a restart run (where
+      CONTINUE_RUN is set to TRUE in the env_run.xml) Branch runs are
+      typically used when sensitivity or parameter studies are required, or
+      when settings for history file output streams need to be modified
+      while still maintaining bit-for-bit reproducibility. Under this
+      scenario, the new case is able to produce an exact bit-for-bit restart
+      in the same manner as a continuation run IF no source code or
+      component namelist inputs are modified. All models use restart files
+      to perform this type of run.  RUN_REFCASE and RUN_REFDATE are required
+      for branch runs.
+      To set up a branch run, locate the restart tar file or restart
+      directory for RUN_REFCASE and RUN_REFDATE from a previous run, then
+      place those files in the RUNDIR directory.
+      --- In a hybrid run the model is initialized as a startup, BUT uses  
+      initialization datasets FROM A PREVIOUS case.  This
+      is somewhat analogous to a branch run with relaxed restart
+      constraints.  A hybrid run allows users to bring together combinations
+      of initial/restart files from a previous case (specified by
+      RUN_REFCASE) at a given model output date (specified by
+      RUN_REFDATE). Unlike a branch run, the starting date of a hybrid run
+      (specified by RUN_STARTDATE) can be modified relative to the reference
+      case. In a hybrid run, the model does not continue in a bit-for-bit
+      fashion with respect to the reference case. The resulting climate,
+      however, should be continuous provided that no model source code or
+      namelists are changed in the hybrid run.  In a hybrid initialization,
+      the ocean model does not start until the second ocean coupling
+      (normally the second day), and the coupler does a cold start without
+      a restart file.
+    </desc>
+  </entry>
+
+  <entry id="RUN_REFDIR"> 
+    <type>char*256</type>
+    <value>ccsm4_init</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Reference directory containing RUN_REFCASE data - used for hybrid or branch runs
+    </desc>
+  </entry>
+
+  <entry id="RUN_REFCASE"> 
+    <type>char*256</type>
+    <value>case.std</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Reference case for hybrid or branch runs
+    </desc>
+  </entry>
+
+  <entry id="RUN_REFDATE"> 
+    <type>char*10</type>
+    <value>0001-01-01</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Reference date for hybrid or branch runs (yyyy-mm-dd)
+    </desc>
+  </entry>
+
+  <entry id="RUN_REFTOD"> 
+    <type>char</type>
+    <value>00000</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Reference time of day (seconds) for hybrid or branch runs (sssss)
+    </desc>
+  </entry>
+
+  <entry id="BRNCH_RETAIN_CASENAME"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Allow same branch casename as reference casename. Only used for branch runs.
+    </desc>
+  </entry> 
+
+  <entry id="GET_REFCASE"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Flag for automatically prestaging the refcase restart dataset. 
+      If TRUE, then the refcase data is prestaged into the executable directory
+    </desc>
+  </entry> 
+
+  <entry id="RUN_STARTDATE"> 
+    <type>char</type>
+    <value>0001-01-01</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Run start date (yyyy-mm-dd). Only used for startup or hybrid runs.
+    </desc>
+  </entry>
+
+  <entry id="START_TOD"> 
+    <type>integer</type>
+    <value>0</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Run start time-of-day
+    </desc>
+  </entry>
+
+  <entry id="STOP_OPTION"> 
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <value>ndays</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Sets the run length along with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly).
+    </desc>
+  </entry>
+
+  <entry id="STOP_N"> 
+    <type>integer</type>
+    <value>5</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Provides a numerical count for $STOP_OPTION.
+    </desc>
+  </entry>
+
+  <entry id="STOP_DATE"> 
+    <type>integer</type>
+    <value>-999</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Alternative date yyyymmdd date option, sets the run length with STOP_OPTION and STOP_N
+      negative value implies off
+    </desc>
+  </entry>
+
+  <entry id="REST_OPTION"> 
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <value>$STOP_OPTION</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets)
+      (must be nyear(s) for _GLC compsets)
+    </desc>
+  </entry>
+
+  <entry id="REST_N"> 
+    <type>char</type>
+    <value>$STOP_N</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc> 
+      sets model restart writes with REST_OPTION and REST_DATE
+    </desc>
+  </entry>
+
+  <entry id="REST_DATE"> 
+    <type>char</type>
+    <value>$STOP_DATE</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Alternative date in yyyymmdd format
+      sets model restart write date with REST_OPTION and REST_N
+    </desc>
+  </entry>
+
+  <entry id="CONTINUE_RUN"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <value>FALSE</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      A setting of TRUE implies a continuation run    
+      When you first begin a branch, hybrid or startup run, CONTINUE_RUN
+      must be set to FALSE. When you successfully run and get a restart
+      file, you will need to change CONTINUE_RUN to TRUE for the remainder
+      of your run. This variable determines if the run is a restart run.   
+      Set to FALSE when initializing a startup, branch or hybrid case.
+      Set to TRUE when continuing a run.
+    </desc>
+  </entry>
+
+  <entry id="RESUBMIT"> 
+    <type>integer</type>
+    <value>0</value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>If RESUBMIT is greater than 0, then case will automatically resubmit
+    Enables the model to automatically resubmit a new run.  To get
+    multiple runs, set RESUBMIT greater than 0, then RESUBMIT will be
+    decremented and the case will be resubmitted.  The case will stop automatically
+    resubmitting when the RESUBMIT value reaches 0. 
+    Long runs can easily outstrip supercomputer queue time limits. For
+    this reason, a case is usually run as a series of jobs, each
+    restarting where the previous finished.
+    </desc>
+  </entry>
+
+</definitions_variables>

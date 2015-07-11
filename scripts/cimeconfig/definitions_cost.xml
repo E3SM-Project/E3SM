@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="CCSM_PCOST">
+    <type>integer</type>
+    <value>0</value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>cost relative to 64 pes (DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="CCSM_TCOST"> 
+    <type>integer</type>
+    <value>0</value> 
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>relative cost of test where ERS is 1 (DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="CCSM_ESTCOST"> 
+    <type>integer</type>
+    <value>0</value> 
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>relative total cost of case (DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="COST_PES"> 
+    <type>integer</type>
+    <value>0</value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+  </entry>
+
+</definitions_variables>
