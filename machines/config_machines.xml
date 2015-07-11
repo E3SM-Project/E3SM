@@ -278,6 +278,7 @@
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
+
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
          <COMPILERS>pgi,intel</COMPILERS>
@@ -321,8 +322,6 @@
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
 
-
-
 <machine MACH="hera">
          <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Moab</DESC>
          <COMPILERS>pgi</COMPILERS>
@@ -345,50 +344,6 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
 
-<machine MACH="hopper">
-         <DESC>NERSC XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi,intel,gnu,cray,pathscale</COMPILERS>
-	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
-         <OS>CNL</OS>
-         <BATCHQUERY>qstat -f</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-</machine>
-
-<machine MACH="janus">
-         <DESC>CU Linux Cluster (intel), 2 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>intel,pgi</COMPILERS>
-	 <MPILIBS>openmpi,mpi-serial</MPILIBS>
-         <OS>LINUX</OS>
-         <RUNDIR>/lustre/janus_scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/lustre/janus_scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/lustre/janus_scratch/$USER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/lustre/janus_scratch/cesm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/lustre/janus_scratch/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lustre/janus_scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lustre/janus_scratch/cesm/baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/lustre/janus_scratch/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
-         <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>12</GMAKE_J>
-         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
-</machine>
-
-
 <machine MACH="juqueen">
          <DESC>FZJ IBM BG/Q, os is CNK, 16 pes/node, batch system is LoadLeveler</DESC>
          <COMPILERS>ibm</COMPILERS>
@@ -409,7 +364,6 @@
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
 </machine>
-
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
@@ -432,8 +386,6 @@
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 </machine>
-
-
 
 <machine MACH="olympus">
          <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>

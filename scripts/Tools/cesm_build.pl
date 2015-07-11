@@ -96,10 +96,6 @@ sub main {
     $DEBUG		= `./xmlquery  DEBUG		-value `;
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
-    $CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
-    $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
-    $CAM_CONFIG_OPTS    = `./xmlquery  CAM_CONFIG_OPTS   -value`;
-
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
     my $OS	        = `./xmlquery  OS		-value `;
@@ -129,24 +125,33 @@ sub main {
     $ENV{COMP_GLC}		= $COMP_GLC		;	
     $ENV{COMP_WAV}		= $COMP_WAV		;	
     $ENV{COMP_ROF}		= $COMP_ROF		;	
-    $ENV{CLM_CONFIG_OPTS}       = $CLM_CONFIG_OPTS      ;
-    $ENV{CAM_CONFIG_OPTS}       = $CAM_CONFIG_OPTS      ;
     
     $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
     $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
     $ENV{LID}  =  "`date +%y%m%d-%H%M%S`";
+
+    if ($COMP_ATM eq 'cam') {
+	$CAM_CONFIG_OPTS = `./xmlquery  CAM_CONFIG_OPTS   -value`;
+	$ENV{CAM_CONFIG_OPTS} = $CAM_CONFIG_OPTS      ;
+    }
+    if ($COMP_LND eq 'clm') {
+	$CLM_CONFIG_OPTS = `./xmlquery  CLM_CONFIG_OPTS   -value`;
+	$ENV{CLM_CONFIG_OPTS} = $CLM_CONFIG_OPTS      ;
+    }
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the 
     # XXX_USE_TRILINOS variables are TRUE. 
     # For now, there is just the one CISM_USE_TRILINOS variable, but in
     # the future there may be others -- so USE_TRILINOS will be true if
     # ANY of those are true.
-
     my $use_trilinos = 'FALSE';
-    if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
-    $ENV{USE_TRILINOS} = ${use_trilinos};
-    $ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
+    if ($COMP_GLC eq 'cam') {
+	$CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
+	if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
+	my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
+	$ENV{USE_TRILINOS} = ${use_trilinos};
+	$ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
+    }
 
     print "    .... checking namelists (calling ./preview_namelists) \n";
     $sysmod = "./preview_namelists > /dev/null";
@@ -325,7 +330,11 @@ sub buildChecks()
     # so USE_TRILINOS should be  true if ANY of those are true.
 
     $ENV{'use_trilinos'} = 'FALSE';
-    if ( (defined $CISM_USE_TRILINOS) && ($CISM_USE_TRILINOS eq 'TRUE')) {$ENV{'use_trilinos'} = "TRUE";}
+    if ($CISM_USE_TRILINOS) {
+	if ($CISM_USE_TRILINOS eq 'TRUE') {
+	    $ENV{'use_trilinos'} = "TRUE";
+	}
+    }
 
     $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val $ENV{'use_trilinos'}";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";

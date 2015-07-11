@@ -74,7 +74,7 @@ if (! -e "$caseroot/xmlquery" ) {
 #-----------------------------------------------------------------------------------------------
 
 my $mach		=  `./xmlquery MACH			-value`;
-my $ccsm_machdir	=  `./xmlquery CCSM_MACHDIR		-value`;
+my $machdir	        =  `./xmlquery MACHDIR		        -value`;
 my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
@@ -130,7 +130,7 @@ chdir($caseroot);
 # create batch header for testing script
 my $batchfile = "$ENV{'HOME'}/.cesm/mkbatch.${mach}";
 if ( ! -e $batchfile ) {
-    $batchfile = "${ccsm_machdir}/mkbatch.${mach}";
+    $batchfile = "${machdir}/mkbatch.${mach}";
 }
 my $sysmod = "env PHASE=set_batch env TESTMODE=test $batchfile";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};

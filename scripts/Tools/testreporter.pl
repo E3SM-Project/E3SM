@@ -233,12 +233,14 @@ sub getTestSuiteInfo
     my @dirs = ( $testpath, $testpath . "/Tools");
     unshift @INC, @dirs;
     require ConfigCase;
-    my $caseenv = ConfigCase->new("$testpath/Tools/config_definition.xml", "$testpath/env_case.xml");
-    my $runenv = ConfigCase->new("$testpath/Tools/config_definition.xml", "$testpath/env_run.xml");
-    my $buildenv = ConfigCase->new("$testpath/Tools/config_definition.xml", "$testpath/env_build.xml");
-    $caseinfo{'mach'} = $caseenv->get('MACH');
+
+    my $caseenv  = ConfigCase->new("./cime_config/definition.xml", "$testpath/env_case.xml");
+    my $runenv   = ConfigCase->new("./cime_config/definition.xml", "$testpath/env_run.xml");
+    my $buildenv = ConfigCase->new("./cime_config/definition.xml", "$testpath/env_build.xml");
+
+    $caseinfo{'mach'}     = $caseenv->get('MACH');
     $caseinfo{'compiler'} = $buildenv->get('COMPILER');
-    $caseinfo{'mpilib'} = $buildenv->get('MPILIB');
+    $caseinfo{'mpilib'}   = $buildenv->get('MPILIB');
 
     $testspecfile = "$testroot/testspec.$testid.$caseinfo{'mach'}.xml";
     Debug( "testspecfile: $testspecfile\n");

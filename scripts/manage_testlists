@@ -12,47 +12,51 @@ use strict;
 # Globals
 #==========================================================================
 my %opts;
+
+# *** paths and definitions file ***
 my $scriptdir = dirname(abs_path(__FILE__));
 my $cimeroot  = abs_path("$scriptdir/../");
+my $srcroot   = abs_path("$cimeroot/../");
+my $definitions_file = "$cimeroot/scripts/cimeconfig/files_specifications.xml";
+
 my $testlist;
 my $component;
-
 my $banner = "==========================================================================";
 
 {
-	#==========================================================================
-	# Simple attribute class to facilitate easier test parsing..
-        #
-        # NOTE(wjs, 2014-11-12): it would be great if we could make more use of
-        # this intermediate CESMTests representation, doing more processing of
-        # lists of CESMTests, and less of the xml representation (e.g., via
-        # convertXMLToCESMTests, then processing that list, then converting back
-        # to xml via addXMLTests).
-        # ==========================================================================
-	package CESMTest;
-
-	sub new 
-	{
-	    my ($class, %params) = @_;
+    #==========================================================================
+    # Simple attribute class to facilitate easier test parsing..
+    #
+    # NOTE(wjs, 2014-11-12): it would be great if we could make more use of
+    # this intermediate CESMTests representation, doing more processing of
+    # lists of CESMTests, and less of the xml representation (e.g., via
+    # convertXMLToCESMTests, then processing that list, then converting back
+    # to xml via addXMLTests).
+    # ==========================================================================
+    package CESMTest;
+    
+    sub new 
+    {
+	my ($class, %params) = @_;
+	
+	my $self = {
+	    # The following are always defined
+	    compset  => $params{'compset'}  || undef, 	
+	    grid     => $params{'grid'}	|| undef, 	
+	    testname => $params{'testname'} || undef, 	
+	    machine  => $params{'machine'}  || undef, 	
+	    compiler => $params{'compiler'} || undef, 	
 	    
-	    my $self = {
-		# The following are always defined
-		compset  => $params{'compset'}  || undef, 	
-		grid     => $params{'grid'}	|| undef, 	
-		testname => $params{'testname'} || undef, 	
-		machine  => $params{'machine'}  || undef, 	
-		compiler => $params{'compiler'} || undef, 	
-		
-		# The following are optional for each test
-		testmods => $params{'testmods'} || undef, 	
-		comment  => $params{'comment'}  || undef, 	
-		
-		# The following will only be defined in certain use cases
-		testtype  => $params{'testtype'} || undef, 	
-	    };
-	    bless $self, $class;
-	    return $self;
-	}
+	    # The following are optional for each test
+	    testmods => $params{'testmods'} || undef, 	
+	    comment  => $params{'comment'}  || undef, 	
+	    
+	    # The following will only be defined in certain use cases
+	    testtype  => $params{'testtype'} || undef, 	
+	};
+	bless $self, $class;
+	return $self;
+    }
 }
 
 #==========================================================================
@@ -813,9 +817,9 @@ sub list
 	if($listopt =~ /tests/)
 	{
 	    print "$banner\nAvailable Tests\n$banner\n";
-	    my $testconfig = XML::LibXML->new()->parse_file("./Testcases/config_tests.xml");
+	    my $testconfig = XML::LibXML->new()->parse_file("./Testing/Testcases/config_tests.xml");
 	    my $testroot = $testconfig->getDocumentElement();
-	    foreach my $elem($testroot->findnodes('//ccsmtest'))
+	    foreach my $elem($testroot->findnodes('//test'))
 	    {
 		my $name = $elem->getAttribute('NAME');
 		my $desc = $elem->getAttribute('DESC');
@@ -870,75 +874,61 @@ sub queryXMLTests
     # if anything doesn't match the compset, grid, testname...
 	my $root = $testxml->getDocumentElement();
 	
-	foreach my $compsetnode($testxml->findnodes('/testlist/compset'))
-	{
-		my $xcompsetname = $compsetnode->getAttribute('name');
-		if(defined $$compset && $$compset ne $xcompsetname)
-		{
-			$root->removeChild($compsetnode);
-			next;
-		}
-		foreach my $gridnode($compsetnode->findnodes('./grid'))
-		{
-			my $xgridname = $gridnode->getAttribute('name');
-			if(defined $$grid && $$grid ne $xgridname)
-			{
-				$compsetnode->removeChild($gridnode);
-				next;
-			}
-			foreach my $testnode($gridnode->findnodes('./test'))
-			{
-				my $xtestname = $testnode->getAttribute('name');
-				if(defined $$test && $$test ne $xtestname)
-				{
-					$gridnode->removeChild($testnode);
-					next;	
-				}
-				foreach my $machnode($testnode->findnodes('./machine'))
-				{
-					my $xmachinename = $machnode->textContent();
-					my $xcompilername = $machnode->getAttribute('compiler');
-					my $xtesttypename = $machnode->getAttribute('testtype');
-					my $xtestmodsname = $machnode->getAttribute('testmods');
-				
-					if(defined $$machine && $$machine ne $xmachinename)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-					if(defined $$compiler && $$compiler ne $xcompilername)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-					if(defined $$testtype && $$testtype ne $xtesttypename)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-					if(defined $$testmods && $$testmods ne $xtestmodsname)
-					{
-						$testnode->removeChild($machnode);
-						next;
-					}
-				}
-				if(! $testnode->nonBlankChildNodes())
-				{
-					$gridnode->removeChild($testnode);
-				}
-			}
-			if(! $gridnode->nonBlankChildNodes())
-			{
-				$compsetnode->removeChild($gridnode);
-			}
-		}
-		if(! $compsetnode->nonBlankChildNodes())
-		{
-			$root->removeChild($compsetnode);
-		}
-		
+    foreach my $compsetnode($testxml->findnodes('/testlist/compset'))	{
+	my $xcompsetname = $compsetnode->getAttribute('name');
+	if(defined $$compset && $$compset ne $xcompsetname)		{
+	    $root->removeChild($compsetnode);
+	    next;
 	}
-	return $testxml;
+	foreach my $gridnode($compsetnode->findnodes('./grid'))		{
+	    my $xgridname = $gridnode->getAttribute('name');
+	    if(defined $$grid && $$grid ne $xgridname)			{
+		$compsetnode->removeChild($gridnode);
+		next;
+	    }
+	    foreach my $testnode($gridnode->findnodes('./test'))			{
+		my $xtestname = $testnode->getAttribute('name');
+		if(defined $$test && $$test ne $xtestname)				{
+		    $gridnode->removeChild($testnode);
+		    next;	
+		}
+		foreach my $machnode($testnode->findnodes('./machine'))				{
+		    my $xmachinename = $machnode->textContent();
+		    my $xcompilername = $machnode->getAttribute('compiler');
+		    my $xtesttypename = $machnode->getAttribute('testtype');
+		    my $xtestmodsname = $machnode->getAttribute('testmods');
+		    
+		    if(defined $$machine && $$machine ne $xmachinename)					{
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		    if(defined $$compiler && $$compiler ne $xcompilername)				{
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		    if(defined $$testtype && $$testtype ne $xtesttypename)					{
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		    if(defined $$testmods && $$testmods ne $xtestmodsname)					{
+			$testnode->removeChild($machnode);
+			next;
+		    }
+		}
+		if(! $testnode->nonBlankChildNodes())				{
+		    $gridnode->removeChild($testnode);
+		}
+	    }
+	    if(! $gridnode->nonBlankChildNodes())			{
+		$compsetnode->removeChild($gridnode);
+	    }
+	}
+	if(! $compsetnode->nonBlankChildNodes())		{
+	    $root->removeChild($compsetnode);
+	}
+	
+    }
+    return $testxml;
 }
 
 #==========================================================================
@@ -1069,15 +1059,30 @@ sub textOutput {
 sub formattedOutput {
    my $testxml = shift;
    my @output;
-   my $header =  sprintf("   %-60s %-25s %-20s %-20s  %-20s %-30s %-20s",
+   my $header =  sprintf("   %-80s %-25s %-20s %-20s  %-20s %-30s %-20s",
                          "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "TestMods (optional)", "Comment(Optional)");
 
    my %configcompsets;
-   my $compsetxml = XML::LibXML->new()->parse_file("$scriptdir/Tools/config_compsets.xml");
-   foreach my $cfgcompset ($compsetxml->findnodes('//COMPSET')) {
-      my $alias = $cfgcompset->getAttribute('alias');
-      my $sname = $cfgcompset->getAttribute('sname');
-      $configcompsets{$alias} = $sname;
+   my $file_xml = XML::LibXML->new()->parse_file($definitions_file);
+   my @file_nodes= $file_xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/*");
+   foreach my $file_node (@file_nodes) {
+       my $primary_component = $file_node->getAttribute('primary_component');
+       my $file = $file_node->textContent();
+       $file =~ s/\$CIMEROOT/$cimeroot/;
+       $file =~ s/\$SRCROOT/$srcroot/;
+       my $compset_xml = XML::LibXML->new()->parse_file($file);
+       my @compset_nodes = $compset_xml->findnodes(".//COMPSET");
+       foreach my $compset_node (@compset_nodes) {
+	   my @name_nodes = $compset_node->childNodes();
+	   my $alias;
+	   my $lname;
+	   foreach my $name_node (@name_nodes) {
+	       my $name = $name_node->nodeName();
+	       if ($name eq 'alias') {$alias = $name_node->textContent();}
+	       if ($name eq 'lname') {$lname = $name_node->textContent();}
+	   }	       
+	   $configcompsets{$alias} = $lname;
+       }
    }
 
    my $tests = convertXMLToCESMTests($testxml);
@@ -1094,7 +1099,7 @@ sub formattedOutput {
       my $comment = $test->{comment};
 
       #next if($line =~ /^$/);
-      my $line = sprintf("   %-60s %-25s %-20s %-20s  %-20s %-30s %-20s",
+      my $line = sprintf("   %-80s %-25s %-20s %-20s  %-20s %-30s %-20s",
                       $fcompset, $testname, $grid, $machine_compiler, $testtype, $testmods, $comment);
       push(@output, $line);
    }

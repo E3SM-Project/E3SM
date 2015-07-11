@@ -10,17 +10,16 @@ my $pkg_nm = 'ProjectTools';
 # find_project()
 #   Tries to find a project / account number to use
 
-# check_project_required_but_unset(project, cfg_ref)
+# check_project_required_but_unset(project)
 #   Checks if PROJECT is required for this machine, but has not been set
 
-# set_project(project, cfg_ref)
-#   Sets the PROJECT xml variable in cfg_ref
+# set_project(project)
+#   Boolean to determine if the PROJECT xml variable needs to be set
 
 # Note that entities prefixed with an underscore (_) should be treated as
 # private to this module, and are not meant to be accessed by other code.
 
 use strict;
-require ConfigCase;
 
 # Note that this is variable should only be used internally to this module.
 # External code that wants to check whether the PROJECT xml variable has been
@@ -68,12 +67,12 @@ sub check_project_required_but_unset
 {
    # Checks if PROJECT is required for this machine, but has not been set
 
-   my ($project, $cfg_ref) = @_;
+   my ($project) = @_;
 
-   if (($project eq _PROJECT_UNSET) && ($cfg_ref->get('PROJECT_REQUIRED') eq "TRUE")) {
+   if ($project eq _PROJECT_UNSET) {
       die <<"EOF";
 ** ERROR **
-   A project must be specified for this machine, in order to set paths and/or an
+   A project must be specified for this machine, in order to set paths and\/or an
    account number in job submission scripts.
 
    You can specify a project number in one of the following ways:
@@ -88,15 +87,17 @@ EOF
 
 sub set_project
 {
-   # Sets the PROJECT xml variable in cfg_ref. However, if $project hasn't been
-   # set, then this does NOT set the xml variable, instead keeping it at its
-   # default value.
+   # Boolean to determine if the PROJECT xml variable should be set.
+   # However, if $project hasn't been set, then this will be false, 
+   # keeping $project it at its default value.
 
-   my ($project, $cfg_ref) = @_;
+   my ($project) = @_;
 
+   my $set_project = 0;
    if ($project ne _PROJECT_UNSET) {
-      $cfg_ref->set('PROJECT', "$project");
+       $set_project = 1;
    }
+   return $set_project;
 }
 
 # ------------------------------------------------------------------------

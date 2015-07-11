@@ -55,7 +55,7 @@ OPTIONS
 
      -cimeroot            Specify the toplevel cime directory.
                           default: use CIMEROOT environment variable
-     -mach <name>         Specify a CCSM machine (required).
+     -mach <name>         Specify a machine (required).
      -compiler <name>     Specify a compiler for the target machine (optional)
                           default: default compiler for the target machine
      -mpilib <name>       Specify a mpi librar for the target machine (optional)
@@ -266,8 +266,7 @@ if($mach =~ /generic_(.*)/){
 }else{
   $cfg_ref->set_machine("$machdir/$machine_file", $mach, $print);
 }
-
-$cfg_ref->set('CCSM_MACHDIR', "$machdir");
+$cfg_ref->set('MACHDIR', "$machdir");
 
 if ($mach =~ "generic") {
     my $scratchroot  = "$opts{'scratchroot'}";
