@@ -83,7 +83,7 @@ sub setMachineValues
     if (@nodes) {
 	print "Found machine \"$machine\" in $machines_file \n";
     } else {
-	print "ERROR ConfigMachine::setMachineFile: no match for machine $machine :\n";
+	print "ERROR ConfigMachine::setMachineValues: no match for machine $machine :\n";
 	print "  - possible machine values are \n";
 	listMachines( "$machines_file" );
 	die "Exiting \n";
@@ -160,7 +160,7 @@ sub _set_machine_values
     } 
     else 
     {
-	print "ERROR: ConfigMachine.pm set_machine_values: no specifications contained for machine $machine :\n";
+	print "ERROR: ConfigMachine::_set_machine_values: no specifications contained for machine $machine :\n";
 	die "exiting\n"; 
     }
 }
