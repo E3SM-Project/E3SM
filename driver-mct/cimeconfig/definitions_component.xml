@@ -84,10 +84,14 @@
     <type>char</type>
     <default_value>48</default_value>
     <values>
+      <value compset="_CAM[45]"             >48</value>  
       <value compset="_CAM[45]%WCBC"        >144</value>
       <value compset="_CAM4%WCMX"           >288</value>
       <value compset="_CAM4%WCXI"           >288</value>
+      <value compset="_CAM%ADIAB"           >48</value>  
+      <value compset="_CAM%IDEAL"           >48</value>  
       <value compset="_DATM%COPYALL_NPS"    >72</value> 
+      <value compset="_DATM.*_CLM"          >48</value>  
       <value compset="_DATM.*_DICE.*_POP2"  >4</value>
       <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
       <value compset="_DATM.*_CICE.*_POP2"  >24</value>
@@ -123,7 +127,6 @@
 
   <entry id="ICE_NCPL"> 
     <type>char</type>
-
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
