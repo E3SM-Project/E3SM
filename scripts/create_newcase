@@ -9,7 +9,6 @@
 #-----------------------------------------------------------------------------------------------
 
 use strict;
-use Cwd;
 use English;
 use Getopt::Long;
 use Cwd qw( getcwd abs_path chdir);
@@ -805,14 +804,15 @@ sub _create_caseroot_tools
 	      "$scriptsroot/Tools/st_archive", 
 	      "$scriptsroot/Tools/getTiming", 
 	      "$scriptsroot/Tools/SetupTools.pm",
+	      "$scriptsroot/Tools/ProjectTools.pm",
 	      "$scriptsroot/Tools/ConfigCase.pm",
 	      "$scriptsroot/Tools/compare_namelists.pl",
 	      "$machines_dir/ccsm_getenv", 
 	      "$machines_dir/taskmaker.pl", 
 	      "$machines_dir/Makefile",
 	      "$machines_dir/mkSrcfiles", 
-	      "$machines_dir/mkDepends", 
-	      "$mkbatch");
+	      "$machines_dir/mkDepends"); 
+	      #"$mkbatch");
     
     foreach my $file (@files) {
 	$sysmod = "cp -p $file $caseroot/Tools/. "; 
@@ -857,8 +857,8 @@ sub _create_caseroot_files
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     # Create $case.l_archive
-    $sysmod = "env CCSMUSER=$username CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch_file";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #$sysmod = "env CCSMUSER=$username CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch_file";
+    #system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     # Create $caseroot preview_namelist file
     my $file = "${caseroot}/preview_namelists"; 

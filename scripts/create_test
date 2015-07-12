@@ -746,21 +746,43 @@ sub checkOptions
 	exit(1);
     }
 
-    # verify that required directories exist. 
-    foreach my $dir ( qw / cimeroot baselineroot / )
-    {
-	if( defined($opts{$dir}))
-	{
-	    if(! -d $opts{$dir})
-	    {
-		die "** Directory $dir does NOT exist ($opts{$dir})\n";
-	    }
+  # If the nlcompareonly option was invoked, we only want to generate a test suite, compare the namelist
+  # et al to a set of namelist baselines. 
+  if( defined $opts{'nlcompareonly'}   && (  defined $opts{'compare'} ||  defined $opts{'generate'}) )
+  {
+    print "----------------------------------------------------------------------------\n";
+    print "Offline namelist comparision option invoked\n";
+    print "Setting autosubmit and reruntests to off!\n";
+    print "And nobatch and nobuild to on!\n";
+    print "----------------------------------------------------------------------------\n";
+
+    $opts{'autosubmit'} = 'off';
+    $opts{'nobatch'} = 'on';
+    $opts{'nobuild'} = 'on';
+    $opts{'reruntests'} = 'off';
+  }
+  elsif( defined $opts{'nlcompareonly'} && ! defined $opts{'compare'} && ! defined $opts{'generate'})
+  {
+    print "$ProgName: to use the 'nlcompareonly' option, either the -generate or -compare options must be set\n";
+    exit(1);
+  }
+
+  # verify that required directories exist. 
+    die "** Directory cimeroot does NOT exist ($opts{cimeroot})\n"  if(! -d $opts{cimeroot});    
+    if(! -d $opts{baselineroot}){
+	if(! defined $opts{'compare'} && ! defined $opts{'generate'}){
+	    warn "WARNING: Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}else{
+	    die "** Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
 	}
     }
 
-    # The specifed compare directory should exist under the specified 
-    # $BASELINEROOT/$compare. Die if it does not. 
-    if(defined $opts{'baselineroot'} && defined $opts{'compare'})
+  # The specifed compare directory should exist under the specified 
+  # $BASELINEROOT/$compare. Die if it does not. 
+  if(defined $opts{'baselineroot'} && defined $opts{'compare'})
+  {
+    my $baselinecompdir = "$opts{'baselineroot'}/$opts{'compare'}";
+    if( ! -d $baselinecompdir)
     {
 	my $baselinecompdir = "$opts{'baselineroot'}/$opts{'compare'}";
 	if( ! -d $baselinecompdir)
@@ -1548,8 +1570,6 @@ sub writeTestListXML
       $machine = $opts{'mach'};
   }
 
-  
-  
   my $testxml = <<TESTXML;
 <?xml version="1.0"?>
 <!-- ========================================================================== -->
@@ -1592,10 +1612,11 @@ TESTXML
   }
 
   $testxml .= "</testlist>\n";
-
-  open my $TESTSPEC, ">", "$opts{'testroot'}/testspec.$opts{'testid'}.$opts{'mach'}.xml" or die $!;
+  my $filename = "testspec.$opts{'testid'}.$opts{'mach'}.xml";
+  open my $TESTSPEC, ">", "$opts{'testroot'}/$filename" or die $!;
   print $TESTSPEC $testxml;
   close $TESTSPEC;
+  return $filename;
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1605,7 +1626,7 @@ TESTXML
 #-----------------------------------------------------------------------------------------------
 sub testBuildSubmit
 {
-  
+    my $testspecfile = shift;
     my $cssubmit = "cs.submit";
     my $csstatus = "cs.status";
     copy("$scriptsroot/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
@@ -1616,7 +1637,7 @@ sub testBuildSubmit
     chmod 0755, "$opts{'testroot'}/$csstatus";
     chdir("$opts{'testroot'}");
 
-    exec("./$cssubmit");
+  exec("./$cssubmit --testspec $testspecfile");
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1927,11 +1948,11 @@ sub main
 	{
 	    push(@testspec, doonetest($testname));
 	}
-	writeTestListXML(\@testspec);
+	my $testspecfilename = writeTestListXML(\@testspec); 
 	if($opts{'compare'} or $opts{'generate'}){
 	    namelistCompareSuite(@testspec);
 	}
-	testBuildSubmit();
+	testBuildSubmit($testspecfilename);
 	if($opts{'compare'} or $opts{'generate'}){
 	    my $cnt=0;
 	    my $pass=0;

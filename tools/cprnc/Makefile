@@ -26,132 +26,26 @@
 # VPATH -------- GNU make path. (Defaults to current directory)
 #
 #------------------------------------------------------------------------
-
+include Macros
 # Set up special characters
 null  :=
 
 EXENAME = cprnc
 RM = rm
 
-ifeq ($(NETCDF),$(null))
-NETCDF := /contrib/netcdf/4.1.3_seq
-endif
-
 # Default for the netcdf library and include directories 
-LIB_NETCDF := $(NETCDF)/lib
-INC_NETCDF := $(NETCDF)/include
+LIB_NETCDF := $(NETCDF_PATH)/lib
+INC_NETCDF := $(NETCDF_PATH)/include
 
 # Determine platform 
 UNAMES := $(shell uname -s)
 SNAME := $(shell uname -n | cut -c1-2)
 
-GENF90 = ../../genf90/genf90.pl
+GENF90 = ../../externals/genf90/genf90.pl
 
-# Architecture-specific flags and rules
-#------------------------------------------------------------------------
-# SGI
-#------------------------------------------------------------------------
-
-ifeq ($(UNAMES),IRIX64)
-FC      = f90
-FFLAGS  = -64 -c -r8 -i4 -I$(INC_NETCDF) -O2
-LDFLAGS = -64 -L$(LIB_NETCDF) -lnetcdff -lnetcdf 
-endif
-
-#------------------------------------------------------------------------
-# AIX
-#------------------------------------------------------------------------
-
-ifeq ($(UNAMES),AIX)
-FC      = xlf90
-FFLAGS  = -c -g -I$(INC_NETCDF) -q64 -qsuffix=f=f90:cpp=F90 -O2 -qmaxmem=-1
-LDFLAGS = -L$(LIB_NETCDF) -q64 -lnetcdff -lnetcdf 
-endif
-
-#------------------------------------------------------------------------
-# Darwin
-#------------------------------------------------------------------------
-
-ifeq ($(UNAMES),Darwin)
-FC      = xlf90
-FFLAGS  = -c -I$(INC_NETCDF) -qsuffix=f=f90 -O2 -qmaxmem=-1
-LDFLAGS = -L$(LIB_NETCDF) -lnetcdff -lnetcdf
-endif
-
-#------------------------------------------------------------------------
-# OSF1
-#------------------------------------------------------------------------
-
-ifeq ($(UNAMES),OSF1)
-FC      = f90
-FFLAGS  = -c -I$(INC_NETCDF)
-LDFLAGS = -L$(LIB_NETCDF) -lnetcdff -lnetcdf
-endif
-
-#-----------------------------------------------------------------------
-# SUN
-#-----------------------------------------------------------------------
-
-ifeq ($(UNAMES),SunOS)
-FC      = f90
-FFLAGS  = -c -I$(INC_NETCDF) -stackvar
-LDFLAGS = -L$(LIB_NETCDF) -L$(HOME)/lib -lnetcdff -lnetcdf
-endif
-
-#------------------------------------------------------------------------
-# Linux
-#------------------------------------------------------------------------
-
-ifeq ($(UNAMES),Linux)
-  ifeq ($(USER_FC),$(null))
-    FC := pgf90
-  else
-    FC := $(USER_FC)
-  endif
-
-  ifeq ($(FC),pgf90)
-    ifeq ($(DEBUG),TRUE)
-      FFLAGS = -c -I$(INC_NETCDF) -g -Ktrap=fp -Mbounds
-    else
-      FFLAGS = -c -I$(INC_NETCDF) -fast
-    endif
-  endif
-
-  ifeq ($(FC),lf95)
-    ifeq ($(DEBUG),TRUE)
-# currently lf95 debug will fail due to netcdf padding characters
-      FFLAGS =  -c -I$(INC_NETCDF) -g --chk a,e,s,u
-    else
-      FFLAGS =  -c -I$(INC_NETCDF) -O
-    endif
-
-  endif
-
-  ifeq ($(FC),ifort)
-    FFLAGS =  -c -I$(INC_NETCDF) -132 -ftz -g -m64
-    ifeq ($(DEBUG),TRUE)
-      FFLAGS +=  -CB
-    else
-      FFLAGS +=  -O2
-    endif
-  endif
-
-  ifeq ($(FC),gfortran)
-    FFLAGS = -c -I$(INC_NETCDF) -O -ffree-form -ffree-line-length-none
-  endif
-
-  LDFLAGS = -L$(LIB_NETCDF) -lnetcdff -lnetcdf
-
-  ifeq ($(FC),ifort)
-    LDFLAGS += -Wl,-rpath,$(LIB_NETCDF)
-  endif
-  ifeq ($(FC),pgf90)
-    LDFLAGS += -Wl,-R$(LIB_NETCDF)
-  endif
-
-
-endif
-
+FC := $(SFC)
+FFLAGS += -I$(INC_NETCDF) -I.
+LDFLAGS=$(SLIBS)
 #------------------------------------------------------------------------
 # Default rules and macros
 #------------------------------------------------------------------------
@@ -172,10 +66,10 @@ endif
 .SUFFIXES: .F90 .f90 .o .in
 
 .F90.o:
-	$(FC) $(FFLAGS) $<
+	$(FC) -c $(FFLAGS) $<
 
 .f90.o:
-	$(FC) $(FFLAGS) $<
+	$(FC) -c $(FFLAGS) $<
 
 $(EXEDIR)/$(EXENAME): $(OBJS)
 	$(FC) -o $@ $(OBJS) $(LDFLAGS)

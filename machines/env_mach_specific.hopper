@@ -94,3 +94,6 @@ limit stacksize unlimited
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.  
 setenv OMP_STACKSIZE 64M
+if ( $?PERL ) then
+  printenv
+endif
