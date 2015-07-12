@@ -33,7 +33,7 @@ implicit none
 private
 save
 
-public ndrop_init, dropmixnuc, activate_modal !BSINGH(09/17/2014): Makeing activate_modal public for unified convective trasport
+public ndrop_init, dropmixnuc, activate_modal
 
 real(r8), allocatable :: alogsig(:)     ! natl log of geometric standard dev of aerosol
 real(r8), allocatable :: exp45logsig(:)
@@ -91,7 +91,7 @@ logical :: lq(pcnst) = .false. ! set flags true for constituents with non-zero t
 
 !BSINGH -  Bugfix flags (Must be removed once the bug fix is accepted for master merge)
 logical :: fix_g1_err_ndrop = .false. !BSINGH - default is false
-logical :: regen_fix !BSINGH(09/17/2014): For  aerosol  regeneration fix
+logical :: regen_fix 
 
 !===============================================================================
 contains
@@ -199,8 +199,8 @@ subroutine ndrop_init
    call phys_getopts(history_amwg_out = history_amwg, &
                      history_aerosol_out = history_aerosol, &
                      prog_modal_aero_out=prog_modal_aero, & 
-                     fix_g1_err_ndrop_out = fix_g1_err_ndrop, &!BSINGH - Flag to fix repeated g1 equation bug in maxsat subroutine
-                     regen_fix_out=regen_fix                )!BSINGH(09/17/2014): For  aerosol regeneration fix
+                     fix_g1_err_ndrop_out = fix_g1_err_ndrop, &
+                     regen_fix_out=regen_fix                )
 
 
    do m = 1, ntot_amode
@@ -320,7 +320,7 @@ subroutine dropmixnuc( &
 
    integer  :: lchnk               ! chunk identifier
    integer  :: ncol                ! number of columns
-   integer  :: loop_up_bnd         !BSINGH(09/17/2014):For  aerosol regenaration fix
+   integer  :: loop_up_bnd         
    real(r8), pointer :: ncldwtr(:,:) ! droplet number concentration (#/kg)
    real(r8), pointer :: temp(:,:)    ! temperature (K)
    real(r8), pointer :: omega(:,:)   ! vertical velocity (Pa/s)
@@ -575,7 +575,7 @@ subroutine dropmixnuc( &
          !    and also dissipate the portion of the cloud that will be regenerated
          cldo_tmp = cldo(i,k)
 
-         if(regen_fix) then  !BSINGH(09/17/2014):For  aerosol  regenaration fix
+         if(regen_fix) then 
             cldn_tmp = cldn(i,k) !* exp( -dtmicro/tau_cld_regenerate )!HW: there is a bug here; turn off regeneration,01/10/2012
          else
             cldn_tmp = cldn(i,k) * exp( -dtmicro/tau_cld_regenerate )
@@ -610,7 +610,7 @@ subroutine dropmixnuc( &
          ! growing cloud ......................................................
          !    treat the increase of cloud fraction from when cldn(i,k) > cldo(i,k)
          !    and also regenerate part of the cloud 
-         if(regen_fix) then !BSINGH(09/17/2014):For  aerosol  regenaration fix
+         if(regen_fix) then 
             cldo_tmp = cldo(i,k)! HW turned off the regeneration growing 
          else
             cldo_tmp = cldn_tmp
@@ -677,7 +677,7 @@ subroutine dropmixnuc( &
       !       so they are incorrectly depleted with no replacement
 
       ! old_cloud_main_k_loop
-      if(regen_fix) then   !BSINGH(09/17/2014):For  aerosol  regenaration fix
+      if(regen_fix) then   
          loop_up_bnd = pver - 1
       else
          loop_up_bnd = pver
@@ -737,7 +737,7 @@ subroutine dropmixnuc( &
                if (k < pver) then
                   dumc = cldn(i,k) - cldn(i,kp1)
                else
-                  if(regen_fix) then !BSINGH(09/17/2014):For  aerosol regenaration fix
+                  if(regen_fix) then 
                      dumc=0._r8
                   else
                      dumc = cldn(i,k)
@@ -809,7 +809,7 @@ subroutine dropmixnuc( &
 
             endif  ! (cldn(i,k) - cldn(i,kp1) > 0.01 .or. k == pver)
 
-         else!BSINGH(09/17/2014): - HW, if cldn<0.01 
+         else
 
             ! no cloud
 
@@ -1181,7 +1181,7 @@ end subroutine explmix
 
 subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    na, nmode, volume, hygro, &
-   fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed ) !BSINGH(09/17/2014): added smax_prescribed for unified convective transport
+   fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed ) 
 
    !      calculates number, surface, and mass fraction of aerosols activated as CCN
    !      calculates flux of cloud droplets, surface area, and aerosol mass into cloud
@@ -1221,7 +1221,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    !       that is activated
   
    !      optional
-   real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation !BSINGH(09/17/2014): added smax_prescribed for unified convective transport
+   real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation 
 
    !      local
 
@@ -1293,7 +1293,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    if(sigw.le.1.e-5_r8.and.wbar.le.0._r8)return
 
    
-   if ( present( smax_prescribed ) ) then !BSINGH(09/17/2014): - for unified convective transport
+   if ( present( smax_prescribed ) ) then 
       if (smax_prescribed <= 0.0_r8) return
    end if
 
@@ -1386,7 +1386,6 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
             zeta(m)=twothird*sqrtalw*aten/sqrtg(m)
          enddo
 
-         !BSINGH(09/17/2014):For unified convective transport (use smax_prescribed if it is present; otherwise get smax from subr maxsat)
          if ( present( smax_prescribed ) ) then
             smax = smax_prescribed
          else
@@ -1544,7 +1543,6 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
             eta(m)=etafactor1*etafactor2(m)
             zeta(m)=twothird*sqrtalw*aten/sqrtg(m)
          enddo
-         !BSINGH(09/17/2014):For unified convective transport 
          ! use smax_prescribed if it is present; otherwise get smax from subr maxsat
          if ( present( smax_prescribed ) ) then
             smax = smax_prescribed

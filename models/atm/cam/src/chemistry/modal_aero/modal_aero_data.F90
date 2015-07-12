@@ -174,37 +174,14 @@
           specmw_dust_amode,    specdens_dust_amode,      &
           specmw_seasalt_amode, specdens_seasalt_amode
 
-	integer species_class(pcnst)	! indicates species class (
 				!     cldphysics, aerosol, gas )
 
-	integer     spec_class_undefined
-	parameter ( spec_class_undefined = 0 )
-	integer     spec_class_cldphysics
-	parameter ( spec_class_cldphysics = 1 )
-	integer     spec_class_aerosol
-	parameter ( spec_class_aerosol = 2 )
-	integer     spec_class_gas
-	parameter ( spec_class_gas = 3 )
-	integer     spec_class_other
-	parameter ( spec_class_other = 4 )
 
 
 !   threshold for reporting negatives from subr qneg3
       real(r8) :: qneg3_worst_thresh_amode(pcnst)
 
       integer, private :: qqcw(pcnst)=-1 ! Remaps modal_aero indices into pbuf
-      
-!BSINGH(09/15/2014): Added for unified convection scheme
-!   the following variables control determine whether 
-!   convective cloud transport and wet removal are done 
-!   in the standard routines or in modal_aero_convproc routines
-!   (eventually should be variables set by namelist)
-      integer, parameter :: convproc_do_aqch = 0
-      
-!   this variable controls history output of additonal deep-convection wet deposition fields 
-!   (in addition to the normal fields for total-convection wet deposition)
-      logical, parameter :: deepconv_wetdep_history = .true.
-!BSINGH -ENDS
       contains
 
         subroutine qqcw_set_ptr(index, iptr)
