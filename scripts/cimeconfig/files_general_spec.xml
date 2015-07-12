@@ -165,6 +165,14 @@
     <desc>definition and defaults (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
+  <entry id="DEFINITIONS_BATCH_FILE">
+    <type>char</type>
+    <value>$CIMEROOT/scripts/cimeconfig/definitions_batch.xml</value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>xml variables for setting up batch system (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
   <entry id="DEFINITIONS_BUILD_FILE">
     <type>char</type>
     <value>$CIMEROOT/scripts/cimeconfig/definitions_build.xml</value>
