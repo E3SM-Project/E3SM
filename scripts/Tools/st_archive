@@ -155,12 +155,12 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
       </comp_archive_spec>
     </components>
 
-    <entry id="[string]" value="[string]"  />
+    <variable id="[string]" value="[string]"  />
     </config_definition>
 				   
 ADDITIONAL XML / ENVIRONMENT VARIABLES USED BY THE SHORT TERM ARCHIVER THAT ARE INCLUDED IN THE ENV_RUN.XML FILE
 
-    The following xml <entry> markup tag variables are used to control the behavior of the short term archiver. 
+    The following xml <variable> markup tag variables are used to control the behavior of the short term archiver. 
     They can be queried using the xmlquery script and modified using the xmlchange script. 
 
     DOUT_S                                  [boolean] - Checked in \$CASE.run script. If TRUE (default), then st_archive script called at the 

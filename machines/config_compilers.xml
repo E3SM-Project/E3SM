@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config_compilers>
 
-<!--
-===========================
+<!-- 
+========================================================================
 This file defines compiler flags for building CESM.  General flags are listed first
 followed by flags specific to particular operating systems, followed by particular machines.
 
@@ -18,21 +18,21 @@ which are then  used in the Makefile.   For example the NETCDF_PATH on many mach
 Do not use variables CPPDEFS and SLIBS here, instead use ADD_CPPDEFS and ADD_SLIBS 
 
 ========================================================================
- Serial/MPI compiler specification
+Serial/MPI compiler specification
 ========================================================================
 
 SCC   and  SFC specifies the serial compiler
 MPICC and  MPICC specifies the mpi compiler
 
 if $MPILIB is set to mpi-serial then
-   CC = $SCC   
-   FC = $SFC  
-   MPICC = $SCC
-   MPIFC = $SFC
-   INC_MPI = $(CIMEROOT)/externals/mct/mpi-serial
+CC = $SCC   
+FC = $SFC  
+MPICC = $SCC
+MPIFC = $SFC
+INC_MPI = $(CIMEROOT)/externals/mct/mpi-serial
 
 ========================================================================
- Options for including C++ code in the build
+Options for including C++ code in the build
 ========================================================================
 
 SUPPORTS_CXX (TRUE/FALSE): Whether we have defined all the necessary

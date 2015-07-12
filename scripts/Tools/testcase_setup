@@ -75,7 +75,7 @@ if (! -e "$caseroot/xmlquery" ) {
 #-----------------------------------------------------------------------------------------------
 
 my $mach		=  `./xmlquery MACH			-value`;
-my $ccsm_machdir	=  `./xmlquery CCSM_MACHDIR		-value`;
+my $machdir	        =  `./xmlquery MACHDIR		        -value`;
 my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
@@ -137,10 +137,14 @@ require Task::TaskMaker;
 require ConfigCase; 
 # ------------------ testcase_begin ------------------------------------------
 # -- Make batch script using the BatchMaker module --- 
-my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, ccsmroot => $cimeroot,
-                                                     case     => $case,     mpilib => $mpilib,
-                                                     scriptsroot => $scriptsroot, machroot => $ccsm_machdir,
-                                                     machine     => $mach,        compiler => $compiler);
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot    => $caseroot, 
+						     ccsmroot    => $cimeroot,
+                                                     case        => $case,     
+						     mpilib      => $mpilib,
+                                                     scriptsroot => $scriptsroot, 
+						     machroot    => $ccsm_machdir,
+                                                     machine     => $mach,        
+						     compiler    => $compiler);
 
 my $batchdirectives = $batchmaker->getBatchDirectives();
                                                      
@@ -295,7 +299,7 @@ my $testcase_iop = <<'END_IOP';
     # Reset all previous settings: obtain copy of original env_run.xml file
     if ( -e env_run.orig )  then
 	cp env_run.orig env_run.xml
-	else
+    else
 	cp env_run.xml env_run.orig
     endif
     # ********turn on IOP case***************

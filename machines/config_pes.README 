@@ -1,0 +1,67 @@
+==============================================================
+Parsing this file
+==============================================================
+
+Note: if element value is "atm" then at that point set the
+real element value to whatever the atm is at that time
+
+default machine / default grid => always a match
+forced settings 
+
+(1) target machine / target grid  (if match apply forced settings and stop)
+(2) target grid / default machine (if match apply forced settings and stop)
+(3) target machine / default grid (if match apply forced settings and stop)
+
+set default settings for target machine if there is no grid match
+4) overwrite with forced settings if match
+
+where is match on os?
+
+machines currently included: (13)
+babbage
+bluewaters
+edison
+eos
+hera      *
+janus
+mira
+pleides   *
+pronghorn
+sierra    *
+stampede
+titan
+yellowstone
+
+==============================================================
+Notes about the interpretation of attributes in this file (by
+ConfigCase.pm : set_pes)
+==============================================================
+
+GRID: the value of the attribute can match either the beginning or
+end of the grid specification
+
+CCSM_LCOMPSET: the value of the attribute can match ANYWHERE in the
+long compset name (similar to GEN_COMPSET_MATCH in
+config_compsets.xml). Note, though, that this uses regular
+expressions, so you can match B compsets using CCSM_LCOMPSET="^B". 
+
+TEST: Matches on testname + test options (PET_PT_D) 
+The test name can be either specified as a text string, or with
+a regular expression.  If one wants to allow a specific test, 
+input the test name as a string. 
+If one wants to DISALLOW the pe layout for a specific test use 
+the following regex, which will be passed along to 
+ConfigCase->set_pes: TEST="^(?:(?!PATTERN).)*$", and replace
+PATTERN with the desired test name. 
+
+All other attributes: the value of the attribute must match the
+beginning of the variable.
+
+==============================================================
+Matching compsets
+==============================================================
+
+Compsets should be matched using their long name (using
+CCSM_LCOMPSET), NOT their short name. This allows for the use of
+compsets that do not have a short name.
+

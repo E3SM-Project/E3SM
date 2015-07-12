@@ -513,6 +513,7 @@
            </arguments>
          </mpirun>
 </machine>
+
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
          <COMPILERS>pgi,intel</COMPILERS>
@@ -593,8 +594,6 @@
            <executable></executable>
          </mpirun>
 </machine>
-
-
 
 <machine MACH="hera">
          <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Moab</DESC>
@@ -710,7 +709,6 @@
        </arguments>
      </mpirun>
 </machine>
-
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>

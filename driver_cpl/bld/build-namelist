@@ -153,8 +153,9 @@ print $fh  <<"EOF";
 </config_definition>
 EOF
 $fh->close;
+
 if ($print>=2) { print "Wrote file $config_cache $eol"; }
-(-f "config_cache.xml")  or  die <<"EOF";
+(-f "$CASEROOT/Buildconf/cplconf/config_cache.xml")  or  die <<"EOF";
 ** $ProgName - Cannot find configuration cache file: config_cache.xml\" **
 EOF
     
@@ -231,7 +232,7 @@ require Build::Namelist;
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DRV config_cache.xml file-  created by 
 # pop2.cpl7.template in $CASEROOT/Buildconf/cplconf
-my $cfg = Build::Config->new('config_cache.xml');
+my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
@@ -317,7 +318,7 @@ require SetupTools;
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -395,8 +396,17 @@ add_default($nl, 'run_barriers', 'COMP_RUN_BARRIERS'=>"$xmlvars{'COMP_RUN_BARRIE
 add_default($nl, 'bfbflag', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'do_budgets','BUDGETS'=>"$xmlvars{'BUDGETS'}");
 
-add_default($nl, 'flux_albav');
-add_default($nl, 'flux_epbal');
+if (defined $xmlvars{'CPL_ALBAV'}) {
+    add_default($nl, 'flux_albav', 'val'=>".$xmlvars{'CPL_ALBAV'}.");
+} else {
+    add_default($nl, 'flux_albav', 'val'=>".false.");
+}
+if (defined $xmlvars{'CPL_EPBAL'}) {
+    add_default($nl, 'flux_epbal', 'val'=>"$xmlvars{'CPL_EPBAL'}");
+} else {
+    add_default($nl, 'flux_epbal', 'val'=>"off");
+}
+
 add_default($nl, 'info_debug');
 add_default($nl, 'cpl_decomp');
 add_default($nl, 'wall_time_limit');

@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<!-- ======================================================================= -->
+<!-- config_machines.xml - variables for batch configuration in              -->
+<!-- config_machines                                                         -->
+<!--========================================================================  -->
+
+<definitions_variables> 
+
+  <entry id="PERL5LIB">
+    <type>char</type>
+    <value></value>
+    <group>build_derived</group>
+    <file>env_build.xml</file>
+    <desc>Perl 5 library directory</desc>
+  </entry>
+
+  <entry id="batch_system">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The batch system type for this particular machine</desc>
+  </entry>
+
+  <entry id="mpirun">
+    <type>char</type>
+    valid_values=""
+    <value>UNSET</value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The mpi run command associated with the machine configured batch system</desc>
+  </entry>
+
+  <entry id="module_system">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The module system type defined for this machine</desc>
+  </entry>
+
+  <entry id="module_init_path">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The module initialization path for module system defined for this machine</desc>
+  </entry>
+
+  <entry id="module_cmd_path">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>config_batch</group>
+    <file>env_case.xml</file>
+    <desc>The module command path for module system defined for this machine</desc>
+  </entry>
+
+  <entry id="BATCHREDIRECT">
+    <type>char</type>
+    <value>UNSET</value>
+    <group>run_mach</group>
+    <file>env_case.xml</file>
+    <desc>Batch redirect character</desc>
+  </entry>
+  
+</definitions_variables>

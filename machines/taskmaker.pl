@@ -7,7 +7,6 @@ use XML::LibXML;
 
 #-------------------------------------------------------------------------------
 # This script derives task and thread batch settings
-# based on environment variable values set in the env_configure.xml file
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------

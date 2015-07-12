@@ -295,8 +295,12 @@
       <lname>HIST_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
     <COMPSET grid="gland">
-      <alias>IG1850CN</alias>       grid="gland"
+      <alias>IG1850CN</alias>
       <lname>1850_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
+    </COMPSET>
+    <COMPSET grid="gland">
+      <alias>IG1850CLM50</alias>
+      <lname>1850_DATM%QIA_CLM50%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
     <COMPSET grid="gland">
       <alias>IGCN</alias>       
@@ -310,32 +314,26 @@
       <alias>IGHISTCN</alias>   
       <lname>HIST_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-
     <COMPSET grid="gland">
       <alias>IGRCP85CN</alias>
       <lname>RCP8_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-
     <COMPSET grid="gland">
       <alias>IGRCP60CN</alias>
       <lname>RCP6_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-
     <COMPSET grid="gland">
       <alias>IGRCP45CN</alias>
       <lname>RCP4_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-
     <COMPSET grid="gland">
       <alias>IGRCP26CN</alias>
       <lname>RCP2_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-
     <COMPSET grid="gland">
       <alias>IGRCP85CLM45CN</alias>
       <lname>RCP8_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-
     <COMPSET grid="gland">
       <alias>IGRCP45CLM45CN</alias>
       <lname>RCP4_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
