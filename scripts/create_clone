@@ -305,7 +305,7 @@ foreach my $attr (keys %xmlvars) {
 my $compset     = $xmlvars{COMPSET};
 my $cimeroot    = $xmlvars{CIMEROOT};
 my $scriptsroot = $xmlvars{SCRIPTSROOT};
-my $machdir     = $xmlvars{CCSM_MACHDIR};
+my $machdir     = $xmlvars{MACHDIR};
 my $mach        = $xmlvars{MACH};
 $project        = $xmlvars{PROJECT};
 my $perl5lib    = "$cimeroot/utils/perl5lib";
@@ -337,11 +337,11 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( cimeroot    => $cimeroot,
 						     case        => $xmlvars{'CASE'},
 						     mpilib      => $xmlvars{'MPILIB'},
 						     scriptsroot => $xmlvars{'SCRIPTSROOT'},
-						     machroot    => $xmlvars{'CCSM_MACHDIR'},
+						     machroot    => $xmlvars{'MACHDIR'},
 						     machine     => $xmlvars{'MACH'},
 						     compiler    => $xmlvars{'COMPILER'});
 
- my $inputbatchscript  = "$xmlvars{'CCSM_MACHDIR'}/template.ltarchive";
+ my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.ltarchive";
  my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.lt_archive";
  $batchmaker->overrideNodeCount(1);
  $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);

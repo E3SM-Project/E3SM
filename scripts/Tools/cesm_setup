@@ -233,19 +233,22 @@ if (! $clean ) {
 							     case        => $xmlvars{'CASE'},
 							     mpilib      => $xmlvars{'MPILIB'},
 							     scriptsroot => $xmlvars{'SCRIPTSROOT'},
-							     machroot    => $xmlvars{'CCSM_MACHDIR'},
+							     machroot    => $xmlvars{'MACHDIR'},
 							     machine     => $xmlvars{'MACH'},
 							     compiler    => $xmlvars{'COMPILER'});
 	
-	my $inputbatchscript  = "$xmlvars{'CCSM_MACHDIR'}/template.cesmrun";
+	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.cesmrun";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
+
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
 	print "Creating batch script $case.st_archive\n";
 	$batchmaker->overrideNodeCount(1);
-	$batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
+
+	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
 	print "Creating batch script $case.lt_archive\n";
 	$batchmaker->overrideNodeCount(1);
-	$batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
+
+	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
 	
 	# Make a copy of env_mach_pes.xml in order to be able 
 	# to check that it does not change once cesm_setup is invoked

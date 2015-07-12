@@ -67,15 +67,15 @@ main(@ARGV) unless caller();
 
 sub getOptions()
 {
-	%opts = (
-			 debug => undef,
-             #sta_ok => undef,
-			);
-	
-	GetOptions(
-			  "debug" => \$opts{'debug'},
-			  #"sta_ok" => \$opts{'sta_ok'},
-			  );
+    %opts = (
+	debug => undef,
+	#sta_ok => undef,
+	);
+    
+    GetOptions(
+	"debug" => \$opts{'debug'},
+	#"sta_ok" => \$opts{'sta_ok'},
+	);
 }
 
 # -------------------------------------------------------------------------
@@ -84,40 +84,40 @@ sub getOptions()
 sub doPreRunChecks()
 {
 	
-	# First, get the configuration from every xml file. 
-	my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
-	%config = ConfigCase->getAllResolved();
+    # First, get the configuration from every xml file. 
+    my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
+    %config = ConfigCase->getAllResolved();
     $case = $config{'CASE'};
     $caseroot            = $config{'CASEROOT'};
     $cimeroot            = $config{'CIMEROOT'};
     $compiler            = $config{'COMPILER'};
     $machine             = $config{'MACH'};
-    $machroot            = $config{'CCSM_MACHDIR'};
+    $machroot            = $config{'MACHDIR'};
     $mpilib              = $config{'MPILIB'};
     $scriptsroot         = $config{'SCRIPTSROOT'};
     if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
-	{
-		print "You are not calling the CESM run script via the CESM submit script. \n";
-		print "As a result, short-term archiving will not be called automatically. \n";
-		print "Please submit your CESM run by running the submit script like so:   \n";
-		print "./$case.submit\n";
-		exit(1);
-	}
-	
-	# Change to the case root
-	chdir($config{'CASEROOT'});
-	
-	# Now, check for locked files. 
-	Run::RunChecks->checkLockedFiles();
-	
-	# Now, load the module environment... 
-	# ModuleLoader for module-based systems.  
-	
-	my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
-	                                    mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'}, 
-	                                    scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
-	$moduleloader->loadModules();
-	
+    {
+	print "You are not calling the CESM run script via the CESM submit script. \n";
+	print "As a result, short-term archiving will not be called automatically. \n";
+	print "Please submit your CESM run by running the submit script like so:   \n";
+	print "./$case.submit\n";
+	exit(1);
+    }
+    
+    # Change to the case root
+    chdir($config{'CASEROOT'});
+    
+    # Now, check for locked files. 
+    Run::RunChecks->checkLockedFiles();
+    
+    # Now, load the module environment... 
+    # ModuleLoader for module-based systems.  
+    
+    my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
+						mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'}, 
+						scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
+    $moduleloader->loadModules();
+    
     my $mpilib = $buildenv->getresolved('MPILIB');
     if($mpilib =~ /mpi-serial/)
     {
@@ -127,71 +127,71 @@ sub doPreRunChecks()
     {
         $ENV{'MP_MPILIB'} = $buildenv->getresolved('MPILIB');
     }
-	$config{'MPILIB'} = $buildenv->getresolved('MPILIB');
-	
-	print "build complete? $config{'BUILD_COMPLETE'}\n";
-	if($config{'BUILD_COMPLETE'} ne 'TRUE')
-	{
-		print "BUILD_COMPLETE is not true\n";
-		print "Please rebuild the model interactively\n";
-		exit(-2);
-	}
-	
-	$ENV{'LBQUERY'} = "TRUE";
-	if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
-	{
-		$ENV{'LBQUERY'} = "FALSE";
-		$ENV{'BATCHQUERY'} = "undefined";
-	}
-	
-	elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
-	{
-		$ENV{'LBSUBMIT'} = "FALSE";
-		$ENV{'BATCHSUBMIT'} = "undefined";
-	}
-	
-	## Create the timing directories, optionally cleaning them if needed. 
-	if(! -d $config{'RUNDIR'})
-	{
-		mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
-	}
-	if(-d "$config{'RUNDIR'}/timing")
-	{
-		rmtree("$config{'RUNDIR'}/timing");
-	}
-	# Now make the timing and timing/checkpoints directories..
-	mkpath("$config{'RUNDIR'}/timing/checkpoints");
-	
-	# Now set up the LID and sdate? strings
-	$LID = strftime("%y%m%d-%H%M%S", localtime);
-	my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
-	$ENV{'LID'} = $LID;
-	$ENV{'sdate'} = $sdate;
-	
-	open my $CS, ">", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
-	print $CS "run started $sdate\n";
-	close $CS;
-	
-	print "-------------------------------------------------------------------------\n";
-	print " CESM BUILDNML SCRIPT STARTING\n";
-	print " - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}\n";
-	
-	# Run preview namelists.. should turn this into a module at some point..
-	my @previewoutput = qx("./preview_namelists");
-	map { print $_ } @previewoutput;
-	
-	if($?)
-	{
-		print "ERROR from preview namelist - EXITING\n";
-		exit(-1);
-	}
-	
-	print " CESM BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY\n";
-	print "-------------------------------------------------------------------------\n\n";
-	print "-------------------------------------------------------------------------\n";
-	print " CESM PRESTAGE SCRIPT STARTING\n";
-	print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
-	print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
+    $config{'MPILIB'} = $buildenv->getresolved('MPILIB');
+    
+    print "build complete? $config{'BUILD_COMPLETE'}\n";
+    if($config{'BUILD_COMPLETE'} ne 'TRUE')
+    {
+	print "BUILD_COMPLETE is not true\n";
+	print "Please rebuild the model interactively\n";
+	exit(-2);
+    }
+    
+    $ENV{'LBQUERY'} = "TRUE";
+    if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
+    {
+	$ENV{'LBQUERY'} = "FALSE";
+	$ENV{'BATCHQUERY'} = "undefined";
+    }
+    
+    elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
+    {
+	$ENV{'LBSUBMIT'} = "FALSE";
+	$ENV{'BATCHSUBMIT'} = "undefined";
+    }
+    
+    ## Create the timing directories, optionally cleaning them if needed. 
+    if(! -d $config{'RUNDIR'})
+    {
+	mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
+    }
+    if(-d "$config{'RUNDIR'}/timing")
+    {
+	rmtree("$config{'RUNDIR'}/timing");
+    }
+    # Now make the timing and timing/checkpoints directories..
+    mkpath("$config{'RUNDIR'}/timing/checkpoints");
+    
+    # Now set up the LID and sdate? strings
+    $LID = strftime("%y%m%d-%H%M%S", localtime);
+    my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
+    $ENV{'LID'} = $LID;
+    $ENV{'sdate'} = $sdate;
+    
+    open my $CS, ">", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
+    print $CS "run started $sdate\n";
+    close $CS;
+    
+    print "-------------------------------------------------------------------------\n";
+    print " CESM BUILDNML SCRIPT STARTING\n";
+    print " - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}\n";
+    
+    # Run preview namelists.. should turn this into a module at some point..
+    my @previewoutput = qx("./preview_namelists");
+    map { print $_ } @previewoutput;
+    
+    if($?)
+    {
+	print "ERROR from preview namelist - EXITING\n";
+	exit(-1);
+    }
+    
+    print " CESM BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY\n";
+    print "-------------------------------------------------------------------------\n\n";
+    print "-------------------------------------------------------------------------\n";
+    print " CESM PRESTAGE SCRIPT STARTING\n";
+    print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
+    print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
 }
 
 # -------------------------------------------------------------------------
@@ -199,54 +199,54 @@ sub doPreRunChecks()
 # -------------------------------------------------------------------------
 sub checkInputData()
 {
-	chdir($config{'CASEROOT'}) or die "cannot change directory to $config{'CASEROOT'}, $!";
-	if(! -d $config{'DIN_LOC_ROOT'})
-	{
-		print "ERROR, the input data directory $config{'DIN_LOC_ROOT'} cannot be found!\n";
-		exit(-20);
-	}
-	
-	my @inputdatacheck = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
-	my @unknown = grep { /unknown/ } @inputdatacheck;
-	my @missing = grep { /missing/ } @inputdatacheck;
-	
-	if(@unknown)
-	{
-		#my $unknownmsg = <<MSG;
+    chdir($config{'CASEROOT'}) or die "cannot change directory to $config{'CASEROOT'}, $!";
+    if(! -d $config{'DIN_LOC_ROOT'})
+    {
+	print "ERROR, the input data directory $config{'DIN_LOC_ROOT'} cannot be found!\n";
+	exit(-20);
+    }
+    
+    my @inputdatacheck = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+    my @unknown = grep { /unknown/ } @inputdatacheck;
+    my @missing = grep { /missing/ } @inputdatacheck;
+    
+    if(@unknown)
+    {
+	#my $unknownmsg = <<MSG;
         print "Any files with \"status unknown\" below were not found in the\n";
         print "expected location, and are not from the input data repository.\n";
         print "This is informational only.\n";
 	
-		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
-	}
-	
-	if(@missing)
-	{
-		print "Attempting to download missing data:\n";
-		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export);
-	}
-	
+	qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
+    }
+    
+    if(@missing)
+    {
+	print "Attempting to download missing data:\n";
+	qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export);
+    }
+    
     my @potmissing  = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
-	@missing = grep { /missing/ } @potmissing;
-	if(@missing)
-	{
-		my @notfound = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
-		
-		print "The following files were not found, they are required\n";
-		map { print $_ } @notfound;
-		print "Invoke the following command to obtain them:\n";
-		print" ./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export ";
-		print "\n";
-		exit(-30);
-	}
+    @missing = grep { /missing/ } @potmissing;
+    if(@missing)
+    {
+	my @notfound = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
 	
-	# Prestage our reference case if required..
-	if( ($config{'GET_REFCASE'} eq 'TRUE') && ($config{'RUN_TYPE'} ne 'startup') && ($config{'CONTINUE_RUN'} eq 'FALSE'))
+	print "The following files were not found, they are required\n";
+	map { print $_ } @notfound;
+	print "Invoke the following command to obtain them:\n";
+	print" ./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export ";
+	print "\n";
+	exit(-30);
+    }
+    
+    # Prestage our reference case if required..
+    if( ($config{'GET_REFCASE'} eq 'TRUE') && ($config{'RUN_TYPE'} ne 'startup') && ($config{'CONTINUE_RUN'} eq 'FALSE'))
+    {
+	my $refdir = "$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
+	my $fullrefdirpath = "$config{'DIN_LOC_ROOT'}/ccsm4_init/$refdir";
+	if(! -d $fullrefdirpath)
 	{
-		my $refdir = "$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
-		my $fullrefdirpath = "$config{'DIN_LOC_ROOT'}/ccsm4_init/$refdir";
-		if(! -d $fullrefdirpath)
-		{
             print "$banner\n";
             print "ccsm_prestage ERROR: $refdir is not on local disk!\n";
             print "Obtain this data from the svn input data repository\n";
@@ -257,47 +257,47 @@ sub checkInputData()
             print "or set GET_REFCASE to FALSE in env_run.xml\n";
             print "and prestage the restart data to $config{'RUNDIR'} manually\n";
             print "$banner\n";
-		    exit(-1);
-		}
-		
-		print " - Prestaging REFCASE ($refdir) to $config{'RUNDIR'}\n";
-		
-		# prestage the reference case's files.  
-		mkpath $config{'RUNDIR'} if (! -d $config{'RUNDIR'});
-		my @refcasefiles = glob("$fullrefdirpath/*$config{'RUN_REFCASE'}*");
-		foreach my $rcfile(@refcasefiles)
-		{
-			my $rcbasename = basename($rcfile);
-			if(! -f "$config{'RUNDIR'}/$rcbasename")
-			{
-				symlink($rcfile, "$config{'RUNDIR'}/$rcbasename") or warn "could not symlink $rcfile to $config{'RUNDIR'}/$rcbasename, $!";
-			}
-		}
-
-		# find the *rpointer* files, copy them to the rundir. 
-		my @rpointerfiles = glob("$fullrefdirpath/*rpointer*");
-		foreach my $rpointerfile(@rpointerfiles)
-		{
-			copy($rpointerfile, $config{'RUNDIR'});
-		}
-		
-		chdir($config{'RUNDIR'});
-		
-		my @cam2_list = glob("*.cam2.*");
-		foreach my $cam2file(@cam2_list)
-		{
-			my $camfile = $cam2file;
-			$camfile =~ s/cam2/cam/g;
-			symlink($cam2file, $camfile);
-		}
-		
-		my @allrundirfiles = glob("$config{'RUNDIR'}/*");
-		foreach my $runfile(@allrundirfiles)
-		{
-			chmod 0755, $runfile;
-		}
-		print "CESM prestaging has finished successfully!\n";
+	    exit(-1);
 	}
+	
+	print " - Prestaging REFCASE ($refdir) to $config{'RUNDIR'}\n";
+	
+	# prestage the reference case's files.  
+	mkpath $config{'RUNDIR'} if (! -d $config{'RUNDIR'});
+	my @refcasefiles = glob("$fullrefdirpath/*$config{'RUN_REFCASE'}*");
+	foreach my $rcfile(@refcasefiles)
+	{
+	    my $rcbasename = basename($rcfile);
+	    if(! -f "$config{'RUNDIR'}/$rcbasename")
+	    {
+		symlink($rcfile, "$config{'RUNDIR'}/$rcbasename") or warn "could not symlink $rcfile to $config{'RUNDIR'}/$rcbasename, $!";
+	    }
+	}
+
+	# find the *rpointer* files, copy them to the rundir. 
+	my @rpointerfiles = glob("$fullrefdirpath/*rpointer*");
+	foreach my $rpointerfile(@rpointerfiles)
+	{
+	    copy($rpointerfile, $config{'RUNDIR'});
+	}
+	
+	chdir($config{'RUNDIR'});
+	
+	my @cam2_list = glob("*.cam2.*");
+	foreach my $cam2file(@cam2_list)
+	{
+	    my $camfile = $cam2file;
+	    $camfile =~ s/cam2/cam/g;
+	    symlink($cam2file, $camfile);
+	}
+	
+	my @allrundirfiles = glob("$config{'RUNDIR'}/*");
+	foreach my $runfile(@allrundirfiles)
+	{
+	    chmod 0755, $runfile;
+	}
+	print "CESM prestaging has finished successfully!\n";
+    }
 }
 
 # -------------------------------------------------------------------------
@@ -305,15 +305,15 @@ sub checkInputData()
 # -------------------------------------------------------------------------
 sub runCESM()
 {
-	chdir $config{'RUNDIR'};
-	
-	system("sleep 10");
-	my $localtime = localtime;
-	print "$localtime CESM EXECUTION BEGINS HERE\n";
-	# Run the model
-	{{ mpirun }}
-	$localtime = localtime;
-	print "$localtime CESM EXECUTION HAS FINISHED\n";
+    chdir $config{'RUNDIR'};
+    
+    system("sleep 10");
+    my $localtime = localtime;
+    print "$localtime CESM EXECUTION BEGINS HERE\n";
+    # Run the model
+    {{ mpirun }}
+    $localtime = localtime;
+    print "$localtime CESM EXECUTION HAS FINISHED\n";
 }
 
 
@@ -325,7 +325,7 @@ sub runCESM()
 # of the variables  
 sub postRun()
 {
-	chdir $config{'CASEROOT'};
+    chdir $config{'CASEROOT'};
     %config = ConfigCase->getAllResolved();
 
     my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
@@ -350,7 +350,7 @@ sub postRun()
         print $CS "Run FAILED $sdate\n";
         exit(-1);
     }
-	elsif( -e "$config{'RUNDIR'}/$cpllogfile")
+    elsif( -e "$config{'RUNDIR'}/$cpllogfile")
     {
         open my $CPLLOG, "<", "$config{'RUNDIR'}/$cpllogfile" or warn "could not open $config{'RUNDIR'}/$cpllogfile, $!";
         my @cpllines = <$CPLLOG>;
@@ -376,8 +376,8 @@ sub postRun()
         }
     }
 
-	
-	qx(gzip *.$LID);
+    
+    qx(gzip *.$LID);
     if($?)
     {
         warn "Cannot gzip log post-run, $!";
@@ -404,8 +404,8 @@ sub postRun()
     }
 
     # Run the getTiming script if desired
-	my $owd = getcwd();
-	chdir $config{'CASEROOT'};
+    my $owd = getcwd();
+    chdir $config{'CASEROOT'};
     if($config{'CHECK_TIMING'} eq 'TRUE')
     {
         my $timingDir = $config{'CASEROOT'} . "/timing";
@@ -415,7 +415,7 @@ sub postRun()
         print "gzipping timing stats..\n";
         qx( gzip timing/cesm_timing_stats.$LID );
     }
-	chdir $owd;
+    chdir $owd;
 
     # Save the timing files if desired
     if($config{'SAVE_TIMING'} eq 'TRUE')
@@ -423,6 +423,7 @@ sub postRun()
         move( "$config{'RUNDIR'}/timing",  "$config{'RUNDIR'}/timing.$LID");
     }
 }
+
 sub appendCaseStatus
 {
     my $msg = shift;
@@ -442,19 +443,25 @@ sub resubmitCheck()
         $islastjob = 'TRUE';
     }
 
-    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
-                                                              ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
-                                                              machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	  => $config{'CASE'}, 
+							      caseconfig  => \%config, 
+							      caseroot    => $config{'CASEROOT'},
+                                                              ccsmroot    => $config{'CIMEROOT'}, 
+							      compiler    => $config{'COMPILER'}, 
+							      machine	  => $config{'MACH'},
+                                                              machroot    => $config{'MACHDIR'}, 
+							      mpilib      => $config{'MPILIB'},
                                                               scriptsroot => $config{'SCRIPTSROOT'} );
     $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
+
 sub Debug
 {
-	my $debugmsg = shift;
-	chomp $debugmsg; 
-	if($opts{'debug'})
-	{
-		print "DEBUG: $debugmsg\n";
-	}
+    my $debugmsg = shift;
+    chomp $debugmsg; 
+    if($opts{'debug'})
+    {
+	print "DEBUG: $debugmsg\n";
+    }
 }
 
