@@ -493,8 +493,10 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    integer(IN) :: i       ! iteration loop index
    integer(IN) :: lsecs   ! local seconds elapsed
    integer(IN) :: lonsecs ! incrememnt due to lon offset
+#if (1 == 0) 
    integer(IN) :: nstp
    real(R8)    :: stp
+#endif
    real(R8)    :: vmag    ! surface wind magnitude   (m/s)
    real(R8)    :: thvbot  ! virtual temperature      (K)
    real(R8)    :: ssq     ! sea surface humidity     (kg/kg)
@@ -538,7 +540,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
    real(R8)    :: Qsol   ! solar heat flux (W/m2)             
    real(R8)    :: Qnsol  ! non-solar heat flux (W/m2) 
-   real(R8)    :: hour   !              
    real(R8)    :: fsine  !              
 
    real(R8)    :: SSS  ! sea surface salinity              
@@ -669,7 +670,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          tSkin_day  (:) = ts(:)
          tSkin_night(:) = ts(:)
          cSkin_night(:) = 0.0_R8
-         hour  = 0.0_R8
       endif
    end if
 
@@ -712,6 +712,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
             lonsecs   = ceiling(long(n)/360.0_R8*86400.0)
             lsecs     = mod(secs + lonsecs,86400)
+#if (1 == 0)
             stp       = lsecs/dt
             nstp      = nint(stp)
 !note: these are hardcoded for 1/2 hour coupling frequency between atm and ocn
@@ -722,7 +723,14 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             lnoon    = (nstp == 24)
             nsum = nint(nInc(n))
             lfullday = (nsum == 47)
-            hour = nstp/2.
+#else
+            lmidnight = (lsecs >= 0     .and. lsecs < dt)        ! 0 = midnight
+            ltwopm    = (lsecs >= 48600 .and. lsecs < 48600+dt)  ! 48600 = 1:30pm
+            ltwoam    = (lsecs >= 5400  .and. lsecs < 5400 +dt)  ! 5400 = 1:30am
+            lnoon     = (lsecs >= 43200 .and. lsecs < 43200+dt)  ! 43200 = noon
+            lfullday  = (lsecs > 86400-dt .and. lsecs <= 86400)
+            nsum = nint(nInc(n))
+#endif
             if ( lmidnight ) then
                Regime(n)  = 1.0_R8               !  RESET DIURNAL 
                warm(n)    = 0.0_R8
@@ -992,7 +1000,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             nInc(n) = real(nsum,R8) ! set nInc to incremented or reset nsum
 
 !            if (n.eq.5) then
-!              write(s_logunit,*)"n= ",n,"hour= ",hour,"lat= ",lat(n),"lon= ",long(n),"vmag= ",vmag,"rhocn= ",rhocn,"rbot= ",rbot(n),"ustar= ",ustar,"Qsol= ",Qsol,"Rid= ",Rid,"FofRi= ",FofRi,"Regime= ",regime(n),"FTnet= ",Hd,"Kdiff= ",Kdiff,"warm= ",warm(n),"DTiter= ",Dtiter,"Kvisc= ",Kvisc,"speed= ",speed(n),"DViter = ",DViter,"Smult= ",Smult,"Sfact= ",Sfact,"dt= ",dt,"cSkin= ",cSkin(n),"Dcool= ",Dcool,"Qdel= ",Qdel,"rcpocn= ",rcpocn,"ustarw= ",ustarw,"warmmax= ",warmmax(n),"qsolavg= ",qsolavg(n),"windavg= ",windavg(n),"tskin_night= ",tskin_night(n),"tskin_day= ",tskin_day(n),"ninc= ",ninc(n)
+!              write(s_logunit,*)"n= ",n,"sec= ",lsec,"lat= ",lat(n),"lon= ",long(n),"vmag= ",vmag,"rhocn= ",rhocn,"rbot= ",rbot(n),"ustar= ",ustar,"Qsol= ",Qsol,"Rid= ",Rid,"FofRi= ",FofRi,"Regime= ",regime(n),"FTnet= ",Hd,"Kdiff= ",Kdiff,"warm= ",warm(n),"DTiter= ",Dtiter,"Kvisc= ",Kvisc,"speed= ",speed(n),"DViter = ",DViter,"Smult= ",Smult,"Sfact= ",Sfact,"dt= ",dt,"cSkin= ",cSkin(n),"Dcool= ",Dcool,"Qdel= ",Qdel,"rcpocn= ",rcpocn,"ustarw= ",ustarw,"warmmax= ",warmmax(n),"qsolavg= ",qsolavg(n),"windavg= ",windavg(n),"tskin_night= ",tskin_night(n),"tskin_day= ",tskin_day(n),"ninc= ",ninc(n)
 !            endif
 
             if (present(ustar_sv)) ustar_sv(n) = ustar
