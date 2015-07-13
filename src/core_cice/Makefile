@@ -1,7 +1,7 @@
 .SUFFIXES: .F .o
-.PHONY: forward_model
+.PHONY: forward_model analysis_members
 
-all: column_package forward_model core_cice
+all: column_package forward_model analysis_members core_cice
 
 core_cice:
 	ar -ru libdycore.a column/*.o
@@ -25,13 +25,17 @@ post_build:
 column_package:
 	(cd column; $(MAKE))
 
-forward_model:
+forward_model: column_package
 	(cd forward_model; $(MAKE))
+
+analysis_members: column_package forward_model
+	(cd analysis_members; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
 	(cd column; $(MAKE) clean)
 	(cd forward_model; $(MAKE) clean)
+	(cd analysis_members; $(MAKE) clean)
 	$(RM) Registry_processed.xml
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
