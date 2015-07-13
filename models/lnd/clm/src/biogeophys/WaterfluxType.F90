@@ -102,9 +102,13 @@ module WaterfluxType
      real(r8), pointer :: mflx_drain_perched_col_1d(:)   ! drainage from perched water table (kg H2O /s)
      real(r8), pointer :: mflx_snowlyr_col_1d      (:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
      real(r8), pointer :: mflx_sub_snow_col_1d     (:)   ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+     real(r8), pointer :: mflx_snowlyr_col         (:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+                                                         ! This is for restart
+
      real(r8), pointer :: vsfm_sat_col_1d          (:)   ! liquid saturation from VSFM [-]
      real(r8), pointer :: vsfm_mass_col_1d         (:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
      real(r8), pointer :: vsfm_smpl_col_1d         (:)   ! 1D soil matrix potential liquid from VSFM [m]
+     real(r8), pointer :: vsfm_soilp_col_1d        (:)   ! 1D soil liquid pressure from VSFM [Pa]
 
    contains
  
@@ -233,16 +237,19 @@ contains
     ncells = endc - begc + 1
     allocate(this%mflx_infl_col_1d(            ncells))              ; this%mflx_infl_col_1d         (:)   = nan
     allocate(this%mflx_dew_col_1d(             ncells))              ; this%mflx_dew_col_1d          (:)   = nan
-    allocate(this%mflx_snowlyr_col_1d(         ncells))              ; this% mflx_snowlyr_col_1d     (:)   = nan
-    allocate(this%mflx_sub_snow_col_1d(        ncells))              ; this% mflx_sub_snow_col_1d    (:)   = nan
+    allocate(this%mflx_snowlyr_col_1d(         ncells))              ; this%mflx_snowlyr_col_1d      (:)   = nan
+    allocate(this%mflx_sub_snow_col_1d(        ncells))              ; this%mflx_sub_snow_col_1d     (:)   = nan
+    allocate(this%mflx_snowlyr_col(         begc:endc))              ; this%mflx_snowlyr_col         (:)   = nan
 
     ncells = (endc - begc + 1)*nlevgrnd
     allocate(this%mflx_et_col_1d(              ncells))              ; this%mflx_et_col_1d           (:)   = nan
     allocate(this%mflx_drain_col_1d(           ncells))              ; this%mflx_drain_col_1d        (:)   = nan
     allocate(this%mflx_drain_perched_col_1d(   ncells))              ; this%mflx_drain_perched_col_1d(:)  = nan
+
     allocate(this%vsfm_sat_col_1d(             ncells))              ; this%vsfm_sat_col_1d          (:)   = nan
     allocate(this%vsfm_mass_col_1d(            ncells))              ; this%vsfm_mass_col_1d         (:)   = nan
     allocate(this%vsfm_smpl_col_1d(            ncells))              ; this%vsfm_smpl_col_1d         (:)   = nan
+    allocate(this%vsfm_soilp_col_1d(           ncells))              ; this%vsfm_soilp_col_1d        (:)   = nan
 
   end subroutine InitAllocate
 
@@ -618,6 +625,11 @@ contains
        end if
     end if
 
-  end subroutine Restart
+    call restartvar(ncid=ncid, flag=flag, varname='MFLX_SNOW_LYR', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='mass flux due to disapperance of last snow layer', units='kg/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%mflx_snowlyr_col)
+
+end subroutine Restart
 
 end module WaterfluxType

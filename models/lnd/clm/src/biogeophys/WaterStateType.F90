@@ -40,6 +40,7 @@ module WaterstateType
      real(r8), pointer :: h2osoi_liqice_10cm_col (:)   ! col liquid water + ice lens in top 10cm of soil (kg/m2)
      real(r8), pointer :: h2osoi_vol_col         (:,:) ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)  
      real(r8), pointer :: h2osoi_liqvol_col      (:,:) ! col volumetric liquid water content (v/v)
+     real(r8), pointer :: soilp_col              (:,:) ! col soil pressure (Pa)
      real(r8), pointer :: h2ocan_patch           (:)   ! patch canopy water (mm H2O)
      real(r8), pointer :: h2ocan_col             (:)   ! col canopy water (mm H2O)
      real(r8), pointer :: h2osfc_col             (:)   ! col surface water (mm H2O)
@@ -168,6 +169,7 @@ contains
     allocate(this%h2osoi_liqvol_col      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol_col      (:,:) = nan
     allocate(this%h2osoi_ice_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col         (:,:) = nan
     allocate(this%h2osoi_liq_col         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col         (:,:) = nan
+    allocate(this%soilp_col              (begc:endc,1:nlevgrnd))          ; this%soilp_col              (:,:) = nan
     allocate(this%h2ocan_patch           (begp:endp))                     ; this%h2ocan_patch           (:)   = nan  
     allocate(this%h2ocan_col             (begc:endc))                     ; this%h2ocan_col             (:)   = nan  
     allocate(this%h2osfc_col             (begc:endc))                     ; this%h2osfc_col             (:)   = nan   
@@ -796,6 +798,11 @@ contains
          dim1name='pft', &
          long_name='canopy water', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2ocan_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='soil pressure ', units='Pa', &
+         interpinic_flag='interp', readvar=readvar, data=this%soilp_col)
 
     ! Determine volumetric soil water (for read only)
     if (flag == 'read' ) then

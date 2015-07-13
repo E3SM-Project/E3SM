@@ -1061,10 +1061,12 @@ contains
     use filterMod              , only : filter
     use decompMod              , only : get_proc_clumps
     use clm_varpar             , only : nlevgrnd
+    use clm_varctl             , only : finidat
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM   , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
+    use MultiPhysicsProbConstants, only : VAR_PRESSURE
     use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
 #endif
     !
@@ -1092,6 +1094,9 @@ contains
     real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
     real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
     real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    real(r8), pointer     :: soilp_col(:,:)
+    real(r8), pointer     :: vsfm_soilp_col_1d(:)
+    logical               :: restart_vsfm
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr
     PetscInt              :: soe_auxvar_id                   ! Index of system-of-equation's (SoE's) auxvar
@@ -1108,6 +1113,8 @@ contains
     vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
     vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
     mflx_snowlyr_col_1d  => waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    vsfm_soilp_col_1d => waterflux_vars%vsfm_soilp_col_1d
+    soilp_col         =>     waterstate_vars%soilp_col
 
     call t_startf('clm_init3')
 
@@ -1141,6 +1148,48 @@ contains
                         waterstate_vars,             &
                         soilhydrology_vars)
 
+    restart_vsfm = .false.
+
+    if (nsrest == nsrStartup) then
+
+       if (finidat == ' ') then
+       else
+          restart_vsfm = .true.
+       end if
+
+    else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
+       restart_vsfm = .true.
+    end if
+
+    if (restart_vsfm) then
+
+       if (masterproc) then
+          write(iulog,*)'Setting initial conditions for VSFM'
+       end if
+
+       ! Save data in 1D array for VSFM
+       do c = bounds_proc%begc, bounds_proc%endc
+          do j = 1, nlevgrnd
+             idx = (c-1)*nlevgrnd + j
+             vsfm_soilp_col_1d(idx) = soilp_col(c,j)
+          end do
+       end do
+
+       ! Set the initial conditions
+       call vsfm_mpp%Restart(vsfm_soilp_col_1d)
+
+       ! PreSolve: Allows saturation value to be computed based on ICs and stored
+       !           in GE auxvar
+       call vsfm_mpp%sysofeqns%SetDtime(1.d0)
+       call vsfm_mpp%sysofeqns%PreSolve()
+
+       ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
+       !            SoE auxvar
+       call vsfm_mpp%sysofeqns%PostSolve()
+
+    end if
+
+
     ! Get total mass
     soe_auxvar_id = 1;
     call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
@@ -1166,8 +1215,11 @@ contains
        do j = nlevgrnd, 1, -1
           idx = (c-1)*nlevgrnd + j
 
-          h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
-          h2osoi_ice(c,j) = 0.d0
+          if (.not. restart_vsfm) then
+             h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
+             h2osoi_ice(c,j) = 0.d0
+          end if
+
           smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
 
           if (jwt == -1) then

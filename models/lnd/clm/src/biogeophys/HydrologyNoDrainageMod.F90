@@ -146,6 +146,7 @@ contains
          wf2                => waterstate_vars%wf2_col                , & ! Output: [real(r8) (:)   ]  soil water as frac. of whc for top 0.17 m 
 
          mflx_snowlyr_col_1d=> waterflux_vars%mflx_snowlyr_col_1d     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+         mflx_snowlyr_col   => waterflux_vars%mflx_snowlyr_col        , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
          watsat             => soilstate_vars%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          sucsat             => soilstate_vars%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
@@ -233,6 +234,7 @@ contains
             c = filter_snowc(fc)
             mflx_snowlyr_col_1d(c) = (h2osoi_liq(c,j) - mflx_snowlyr_col_1d(c))/dtime
          end do
+         mflx_snowlyr_col(:) = mflx_snowlyr_col_1d(:)
       end if
 
       ! Divide thick snow elements

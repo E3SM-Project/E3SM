@@ -734,6 +734,7 @@ contains
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_BC_SS_CONDITION
     use MultiPhysicsProbConstants, only : VAR_TEMPERATURE
+    use MultiPhysicsProbConstants, only : VAR_PRESSURE
     use MultiPhysicsProbConstants, only : VAR_LIQ_SAT
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
@@ -839,6 +840,8 @@ contains
          vsfm_sat_col_1d   =>    waterflux_vars%vsfm_sat_col_1d     , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
          vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
          vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+         vsfm_soilp_col_1d =>    waterflux_vars%vsfm_soilp_col_1d   , & ! Output: [real(r8) (:)   ]  1D soil water pressure from VSFM [Pa]
+         soilp_col         =>    waterstate_vars%soilp_col          , & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
 
          t_soil_col_1d     =>    temperature_vars%t_soil_col_1d     , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)
 
@@ -1101,6 +1104,11 @@ contains
       soe_auxvar_id = 1;
       call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_SOIL_MATRIX_POT, soe_auxvar_id, vsfm_smpl_col_1d)
 
+      ! Get soil liquid pressure. This is the prognostic state of VSFM and is required
+      ! for restart netcdf.
+      soe_auxvar_id = 1;
+      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_PRESSURE, soe_auxvar_id, vsfm_soilp_col_1d)
+
       ! Put the data in CLM's data structure
       mass_end        = 0.d0
       do fc = 1,num_hydrologyc
@@ -1140,6 +1148,15 @@ contains
             zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
          endif
 
+      end do
+
+      ! Save soil liquid pressure from VSFM for all (active+nonactive) cells.
+      ! soilp_col is used for restarting VSFM.
+      do c = bounds%begc, bounds%endc
+         do j = 1, nlevgrnd
+            idx = (c-1)*nlevgrnd + j
+            soilp_col(c,j) = vsfm_soilp_col_1d(idx)
+         end do
       end do
 
 #if VSFM_DEBUG
