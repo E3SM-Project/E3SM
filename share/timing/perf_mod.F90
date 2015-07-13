@@ -24,7 +24,7 @@ module perf_mod
    use shr_file_mod,      only: shr_file_getUnit, shr_file_freeUnit
    use namelist_utils,    only: find_group_name
 #endif
-   use gptl
+
 !-----------------------------------------------------------------------
 !- module boilerplate --------------------------------------------------
 !-----------------------------------------------------------------------
@@ -63,7 +63,7 @@ module perf_mod
 !-----------------------------------------------------------------------
 !- include statements --------------------------------------------------
 !-----------------------------------------------------------------------
-!#include "gptl.inc"
+#include "gptl.inc"
 
 !-----------------------------------------------------------------------
 ! Private data ---------------------------------------------------------
@@ -98,15 +98,7 @@ module perf_mod
    integer, parameter :: def_timing_detail_limit = 1           ! default
    integer, private   :: timing_detail_limit = def_timing_detail_limit
                          ! integer indicating maximum detail level to
-                         ! profile. The meaning is dependent on how it
-                         ! it is used in the calling program. In the CESM
-                         ! 2: profile all timing events
-                         ! 1: disable profiling for events in the 
-                         !    initialization that also occur during the 
-                         !    timestepping (approximate)
-                         ! 0: same as '1', but also disable some timers
-                         !    in the atmosphere model physics and timers
-                         !    in data models
+                         ! profile
 
    integer, parameter :: init_timing_disable_depth = 0         ! init
    integer, private   :: timing_disable_depth = init_timing_disable_depth
@@ -123,24 +115,16 @@ module perf_mod
                          ! (per component communicator) or to a 
                          ! separate file for each process
 
-   integer, parameter :: def_perf_outpe_num = 1                 ! default
+   integer, parameter :: def_perf_outpe_num = 0                ! default
    integer, private   :: perf_outpe_num = def_perf_outpe_num
                          ! maximum number of processes writing out 
                          ! timing data (for this component communicator)
-                         ! >0: number of processes writing out data is
-                         !     min(perf_outpe_num,
-                         !         npes/perf_outpe_stride)
-                         ! =0: no processes write out timing data
-                         ! <0: all processes write out timing data
 
    integer, parameter :: def_perf_outpe_stride = 1             ! default
    integer, private   :: perf_outpe_stride = def_perf_outpe_stride
                          ! separation between process ids for processes
-                         ! that are writing out timing data, starting
-                         ! with process 0
+                         ! that are writing out timing data 
                          ! (for this component communicator)
-                         ! >1: actual stride
-                         ! <1: stride is 1
 
    logical, parameter :: def_perf_global_stats = .true.        ! default
    logical, private   :: perf_global_stats = def_perf_global_stats
@@ -630,7 +614,7 @@ contains
 !---------------------------Input/Output arguments----------------------
 !
    ! GPTL event handle
-   integer,  optional :: handle
+   integer(shr_kind_i8), optional :: handle
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -668,7 +652,7 @@ contains
 !---------------------------Input/Output arguments----------------------
 !
    ! GPTL event handle
-   integer, optional :: handle
+   integer(shr_kind_i8), optional :: handle
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -912,7 +896,7 @@ contains
 !
    if (.not. timing_initialized) return
 
-!   call t_startf("t_prf")
+   call t_startf("t_prf")
 !$OMP MASTER
    call mpi_comm_rank(MPI_COMM_WORLD, gme, ierr)
    if ( present(mpicom) ) then
@@ -935,12 +919,12 @@ contains
    unitn = shr_file_getUnit()
 
    ! determine what the current output mode is (append or write)
-!   if (GPTLpr_query_write() == 1) then
-!     pr_write = .true.
-!     ierr = GPTLpr_set_append()
-!   else 
-!     pr_write=.false.
-!   endif
+   if (GPTLpr_query_write() == 1) then
+     pr_write = .true.
+     ierr = GPTLpr_set_append()
+   else 
+     pr_write=.false.
+   endif
 
    ! Determine whether to write all data to a single fie
    if (present(single_file)) then
@@ -1014,11 +998,8 @@ contains
             write( unitn, 100) npes
  100        format(/,"***** GLOBAL STATISTICS (",I6," MPI TASKS) *****",/)
             close( unitn )
-#ifdef HAVE_MPI
+
             ierr = GPTLpr_summary_file(mpicom2, trim(fname))
-#else
-            ierr = GPTLpr_summary_file(trim(fname))
-#endif
          endif
 
          if (write_data) then
@@ -1038,11 +1019,7 @@ contains
       else
 
          if (glb_stats) then
-#ifdef HAVE_MPI
             ierr = GPTLpr_summary_file(mpicom2, trim(fname))
-#else
-            ierr = GPTLpr_summary_file(trim(fname))
-#endif
          endif
 
          call mpi_recv (signal, 1, mpi_integer, me-1, me-1, mpicom2, status, ierr)
@@ -1081,11 +1058,8 @@ contains
             write( unitn, 100) npes
             close( unitn )
          endif
-#ifdef HAVE_MPI
+
          ierr = GPTLpr_summary_file(mpicom2, trim(fname))
-#else
-         ierr = GPTLpr_summary_file(trim(fname))
-#endif
          fname(str_length+1:str_length+6) = '      '
       endif
 
@@ -1132,19 +1106,19 @@ contains
    call shr_file_freeUnit( unitn )
 
    ! reset GPTL output mode
-!   if (pr_write) then
-!     ierr = GPTLpr_set_write()
-!   endif
+   if (pr_write) then
+     ierr = GPTLpr_set_write()
+   endif
 
 !$OMP END MASTER
-!   call t_stopf("t_prf")
+   call t_stopf("t_prf")
 
    return
    end subroutine t_prf
 !
 !========================================================================
 !
-   subroutine t_initf(NLFilename, LogPrint, LogUnit, mpicom, MasterTask, MaxThreads)
+   subroutine t_initf(NLFilename, LogPrint, LogUnit, mpicom, MasterTask)
 !----------------------------------------------------------------------- 
 ! Purpose:  Set default values of runtime timing options 
 !           before namelists prof_inparm and papi_inparm are read,
@@ -1159,7 +1133,6 @@ contains
    integer, optional,  intent(IN) :: LogUnit         ! Unit number for log output
    integer, optional,  intent(IN) :: mpicom          ! MPI communicator
    logical, optional,  intent(IN) :: MasterTask      ! If MPI master task
-   integer, optional, intent(IN) :: MaxThreads
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -1346,13 +1319,13 @@ contains
               (papi_ctr2_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr3_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr4_str(1:11) .eq. "PAPI_NO_CTR")) then
-              papi_ctr1_str = "PAPI_TOT_CYC"
-              papi_ctr2_str = "PAPI_TOT_INS"
-              papi_ctr3_str = "PAPI_FP_OPS"
-              papi_ctr4_str = "PAPI_FP_INS"
-!              papi_ctr1_str = "PAPI_FP_OPS"
+!pw              papi_ctr1_str = "PAPI_TOT_CYC"
+!pw              papi_ctr2_str = "PAPI_TOT_INS"
+!pw              papi_ctr3_str = "PAPI_FP_OPS"
+!pw              papi_ctr4_str = "PAPI_FP_INS"
+              papi_ctr1_str = "PAPI_FP_OPS"
           endif
-#ifdef HAVE_PAPI
+
           if (papi_ctr1_str(1:11) /= "PAPI_NO_CTR") then
              ierr = gptlevent_name_to_code(trim(papi_ctr1_str), papi_ctr1_id)
           endif
@@ -1365,7 +1338,7 @@ contains
           if (papi_ctr4_str(1:11) /= "PAPI_NO_CTR") then
              ierr = gptlevent_name_to_code(trim(papi_ctr4_str), papi_ctr4_id)
           endif
-#endif
+
        endif
        ! This logic assumes that there will be only one MasterTask
        ! per communicator, and that this MasterTask is process 0.
@@ -1399,12 +1372,6 @@ contains
    ! Turn off CPU timing (expensive)
    !
    if (gptlsetoption (gptlcpu, 0) < 0) call shr_sys_abort (subname//':: gptlsetoption')
-   !
-   !
-   !
-   if(present(MaxThreads)) then
-      if (gptlsetoption (gptlmaxthreads, MaxThreads) < 0) call shr_sys_abort (subname//':: gptlsetoption')
-   endif
    !
    ! Set max timer depth
    !
