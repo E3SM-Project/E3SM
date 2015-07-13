@@ -23,7 +23,8 @@ my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
 my $perl5lib = "$cimeroot/utils/perl5lib";
 push(@INC, $perl5lib);
-require ConfigCase;
+
+require SetupTools;
 require Run::RunChecks;
 require Depends::Checks;
 require Module::ModuleLoader;
@@ -55,16 +56,19 @@ my $LID;
 # -------------------------------------------------------------------------
 sub main
 {
-	getOptions();
-	doPreRunChecks();
-	checkInputData();
-	runCESM();
-	postRun();
-	resubmitCheck();
-	exit(0);
+    getOptions();
+    doPreRunChecks();
+    checkInputData();
+    runModel();
+    postRun();
+    resubmitCheck();
+    exit(0);
 }
 main(@ARGV) unless caller();
 
+# -------------------------------------------------------------------------
+# Get options
+# -------------------------------------------------------------------------
 sub getOptions()
 {
     %opts = (
@@ -85,21 +89,20 @@ sub doPreRunChecks()
 {
 	
     # First, get the configuration from every xml file. 
-    my $buildenv = ConfigCase->new("./Tools/config_definition.xml", "./env_build.xml");
-    %config = ConfigCase->getAllResolved();
-    $case = $config{'CASE'};
-    $caseroot            = $config{'CASEROOT'};
-    $cimeroot            = $config{'CIMEROOT'};
-    $compiler            = $config{'COMPILER'};
-    $machine             = $config{'MACH'};
-    $machroot            = $config{'MACHDIR'};
-    $mpilib              = $config{'MPILIB'};
-    $scriptsroot         = $config{'SCRIPTSROOT'};
+    %config = SetupTools::getAllResolved();
+    $case        = $config{'CASE'};
+    $caseroot    = $config{'CASEROOT'};
+    $cimeroot    = $config{'CIMEROOT'};
+    $compiler    = $config{'COMPILER'};
+    $machine     = $config{'MACH'};
+    $machroot    = $config{'MACHDIR'};
+    $mpilib      = $config{'MPILIB'};
+    $scriptsroot = $config{'SCRIPTSROOT'};
     if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
     {
-	print "You are not calling the CESM run script via the CESM submit script. \n";
+	print "You are not calling the run script via the submit script. \n";
 	print "As a result, short-term archiving will not be called automatically. \n";
-	print "Please submit your CESM run by running the submit script like so:   \n";
+	print "Please submit your run by running the submit script like so:   \n";
 	print "./$case.submit\n";
 	exit(1);
     }
@@ -173,7 +176,7 @@ sub doPreRunChecks()
     close $CS;
     
     print "-------------------------------------------------------------------------\n";
-    print " CESM BUILDNML SCRIPT STARTING\n";
+    print " BUILDNML SCRIPT STARTING\n";
     print " - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}\n";
     
     # Run preview namelists.. should turn this into a module at some point..
@@ -186,10 +189,10 @@ sub doPreRunChecks()
 	exit(-1);
     }
     
-    print " CESM BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY\n";
+    print " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY\n";
     print "-------------------------------------------------------------------------\n\n";
     print "-------------------------------------------------------------------------\n";
-    print " CESM PRESTAGE SCRIPT STARTING\n";
+    print " PRESTAGE SCRIPT STARTING\n";
     print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
     print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
 }
@@ -296,56 +299,55 @@ sub checkInputData()
 	{
 	    chmod 0755, $runfile;
 	}
-	print "CESM prestaging has finished successfully!\n";
+	print "prestaging has finished successfully!\n";
     }
 }
 
 # -------------------------------------------------------------------------
-# Run CESM..
+# Run the model system
 # -------------------------------------------------------------------------
-sub runCESM()
+sub runModel()
 {
     chdir $config{'RUNDIR'};
     
     system("sleep 10");
     my $localtime = localtime;
-    print "$localtime CESM EXECUTION BEGINS HERE\n";
+    print "$localtime MODEL EXECUTION BEGINS HERE\n";
     # Run the model
     {{ mpirun }}
     $localtime = localtime;
-    print "$localtime CESM EXECUTION HAS FINISHED\n";
+    print "$localtime MODEL EXECUTION HAS FINISHED\n";
 }
 
 
 # -------------------------------------------------------------------------
 # Post-processing
 # -------------------------------------------------------------------------
-
-# Go back to the caseroot, pull in the CESM configuration in case a user changed 
-# of the variables  
 sub postRun()
 {
+    # Go back to the caseroot, pull in the configuration in case a user changed 
+    # of the variables  
     chdir $config{'CASEROOT'};
-    %config = ConfigCase->getAllResolved();
+    %config = SetupTools::getAllResolved();
 
     my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
     chdir $config{'RUNDIR'};
     my $workingdir = getcwd;
 
     # find the last cesm.log and cpl.log
-    my @cesmlogs = glob q(cesm.log.*);
-    my $cesmlogfile = $cesmlogs[$#cesmlogs];
+    my @logs = glob q(cesm.log.*);
+    my $logfile = $logs[$#logs];
     my @cpllogs = glob q(cpl.log.*);
     my $cpllogfile = $cpllogs[$#cpllogs];
 
-    if(length($cesmlogfile) <= 0)
+    if(length($logfile) <= 0)
     {
         print "Model did not complete, no cesm.log file present\n";
     }
 
     if(length($cpllogfile) <= 0)
     {
-        print "Model did not complete, see $config{'RUNDIR'}/$cesmlogfile\n";
+        print "Model did not complete, see $config{'RUNDIR'}/$logfile\n";
         open (my $CS, ">>", "$config{'CASEROOT'}/CaseStatus") or warn "cannot open $config{'CASEROOT'}/CaseStatus, error was $!";
         print $CS "Run FAILED $sdate\n";
         exit(-1);
@@ -364,14 +366,14 @@ sub postRun()
             }
             else
             {
-                appendCaseStatus("Model did not complete - see $config{'RUNDIR'}/$cesmlogfile");
+                appendCaseStatus("Model did not complete - see $config{'RUNDIR'}/$logfile");
                 exit(-1);
             }
 
         }
         else
         {
-            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent CESM log: $config{'RUNDIR'}/$cesmlogfile");
+            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent cesm.log: $config{'RUNDIR'}/$logfile");
             exit(-1);
         }
     }

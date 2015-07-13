@@ -20,10 +20,10 @@ use File::Find;
 use File::stat;
 use File::Glob;
 
-# the st_archive is run in the CASEROOT and needs to look in the CASEROOT/Tools for ConfigCase.pm
+# the st_archive is run in the CASEROOT and needs to look in the CASEROOT/Tools for SetupTools.pm
 my $includedirs = "./Tools";
 unshift(@INC, $includedirs);
-require ConfigCase;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
@@ -36,7 +36,7 @@ require ConfigCase;
 my %opts = ();
 
 # the global config hash holds all valid XML variables necessary for the short term st_archive to function
-my %config = ConfigCase->getAllResolved();
+my %config = SetupTools::getAllResolved();
 
 #-----------------------------------------------------------------------------------------------
 # print out the command line usage

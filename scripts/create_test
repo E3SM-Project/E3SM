@@ -746,28 +746,7 @@ sub checkOptions
 	exit(1);
     }
 
-  # If the nlcompareonly option was invoked, we only want to generate a test suite, compare the namelist
-  # et al to a set of namelist baselines. 
-  if( defined $opts{'nlcompareonly'}   && (  defined $opts{'compare'} ||  defined $opts{'generate'}) )
-  {
-    print "----------------------------------------------------------------------------\n";
-    print "Offline namelist comparision option invoked\n";
-    print "Setting autosubmit and reruntests to off!\n";
-    print "And nobatch and nobuild to on!\n";
-    print "----------------------------------------------------------------------------\n";
-
-    $opts{'autosubmit'} = 'off';
-    $opts{'nobatch'} = 'on';
-    $opts{'nobuild'} = 'on';
-    $opts{'reruntests'} = 'off';
-  }
-  elsif( defined $opts{'nlcompareonly'} && ! defined $opts{'compare'} && ! defined $opts{'generate'})
-  {
-    print "$ProgName: to use the 'nlcompareonly' option, either the -generate or -compare options must be set\n";
-    exit(1);
-  }
-
-  # verify that required directories exist. 
+    # verify that required directories exist. 
     die "** Directory cimeroot does NOT exist ($opts{cimeroot})\n"  if(! -d $opts{cimeroot});    
     if(! -d $opts{baselineroot}){
 	if(! defined $opts{'compare'} && ! defined $opts{'generate'}){
@@ -776,18 +755,19 @@ sub checkOptions
 	    die "** Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
 	}
     }
-
-  # The specifed compare directory should exist under the specified 
-  # $BASELINEROOT/$compare. Die if it does not. 
-  if(defined $opts{'baselineroot'} && defined $opts{'compare'})
-  {
-    my $baselinecompdir = "$opts{'baselineroot'}/$opts{'compare'}";
-    if( ! -d $baselinecompdir)
+    
+    # The specifed compare directory should exist under the specified 
+    # $BASELINEROOT/$compare. Die if it does not. 
+    if(defined $opts{'baselineroot'} && defined $opts{'compare'})
     {
 	my $baselinecompdir = "$opts{'baselineroot'}/$opts{'compare'}";
 	if( ! -d $baselinecompdir)
 	{
-	    die "** The baseline comparison dir $baselinecompdir doesn't exist, aborting";
+	    my $baselinecompdir = "$opts{'baselineroot'}/$opts{'compare'}";
+	    if( ! -d $baselinecompdir)
+	    {
+		die "** The baseline comparison dir $baselinecompdir doesn't exist, aborting";
+	    }
 	}
     }
 }

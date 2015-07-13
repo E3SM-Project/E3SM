@@ -257,7 +257,7 @@ foreach my $file (values (%id_file))
     print $fh "<config_definition> \n";
     print $fh "\n";
     print $fh "<header>";
-    print $fh "$header_text \n";
+    print $fh "$header_text";
     print $fh "</header> ";
 
     # Write out the groups contained in the file

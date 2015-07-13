@@ -358,47 +358,6 @@ sub get_valid_values
     return( @values );
 }
 
-
-#-----------------------------------------------------------------------------------------------
-sub getAllResolved #TODO - move this out of here \n";
-{
-    # Parse all the xml files, and resolve every variable. 
-    my $self = shift;
-
-    # hash for all the parsers, and a hash for  all the config variables. 
-    my %parsers;
-    my %masterconfig;
-    
-    # Get all the env*.xml files into an array...
-    my @xmlfiles = qw( env_build.xml env_case.xml env_mach_pes.xml env_run.xml);
-    push(@xmlfiles, "env_test.xml") if(-e "./env_test.xml");
-    push(@xmlfiles, "env_archive.xml") if(-e "./env_archive.xml");
-    
-    # Set up a new XML::LibXML parser for each xml file. 
-    foreach my $basefile(@xmlfiles)
-    {
-	my $xml = XML::LibXML->new()->parse_file($basefile);
-	$parsers{$basefile} = $xml;
-    }
-    
-    # find all the variable nodes. 
-    foreach my $basefile(@xmlfiles)
-    {
-	my $parser = $parsers{$basefile};	
-	my @nodes = $parser->findnodes("//entry");
-	foreach my $node(@nodes)
-	{
-	    my $id = $node->getAttribute('id');
-	    my $value = $node->getAttribute('value');
-	    # if the variable value has an unresolved variable, 
-	    # we need to find it in whatever file it might be in. 
-	    $value = _resolveValues($value, \%parsers);
-	    $masterconfig{$id} = $value;
-	}
-    }
-    return %masterconfig;
-}
-
 #-----------------------------------------------------------------------------------------------
 sub is_valid_name
 {
@@ -739,69 +698,6 @@ sub _get_typedesc
     return( %datatype );
 }
 
-#-----------------------------------------------------------------------------------------------
-sub _resolveValues
-{
-    # Recursively resolve the unresolved vars in an variable value.  
-    # Check the value passed in, and if it still has an unresolved var, keep calling the function
-    # until all pieces of the variable are resolved.  
-
-    my $value = shift;
-    my $parsers = shift;
-
-    #print "in _resolveValues: value: $value\n";
-    # We want to resolve $values from either tthe other xml files, or 
-    # the value can come from the 
-    if($value =~ /(\$[\w_]+)/)
-    {
-	#print "in _resolveValues: value: $value\n";
-	my $unresolved = $1;
-	
-	#print "need to resolve: $unresolved\n";
-	my $needed = $unresolved;
-	$needed =~ s/\$//g;
-	
-	my $found = 0;
-	foreach my $parser(values %$parsers)
-	{
-	    my @resolveplease = $parser->findnodes("//entry[\@id=\'$needed\']");
-	    if(@resolveplease)
-	    {
-		$found = 1;
-		foreach my $r(@resolveplease)
-		{
-		    my $rid = $r->getAttribute('id');
-		    my $rvalue = $r->getAttribute('value');
-		    $value =~ s/\$$needed/$rvalue/g;
-		    #print "value after substitution: $value\n";
-		}
-	    }
-	}
-	# Check the environment if not found in the xml files. 
-	if(!$found)
-	{
-	    if(exists $ENV{$needed})
-	    {
-		$found = 1;
-		my $rvalue = $ENV{$needed};
-		$value =~ s/\$$needed/$rvalue/g;
-	    }
-	}
-	#if the value is not found in any of the xml files or in the environment, then
-	# return undefined. 
-	if(!$found)
-	{
-	    return undef;
-	}
-	_resolveValues($value, $parsers);
-    }
-    else
-    {
-	#print "returning $value\n";
-	return $value;
-    }
-}
-
 #-------------------------------------------------------------------------------
 sub _get_group_names
 {
@@ -829,9 +725,10 @@ sub _print_file_header
     my @nodes = $xml->findnodes(".//file[\@name=\"$outputfile\"]/header");
     if (! @nodes) {die " ERROR: no header nodes found for file $outputfile \n";}
     my $text = $nodes[0]->textContent();
-    print $fh "<header>";
-    print $fh "$text \n";
-    print $fh "</header> ";
+    chomp($text);
+    print $fh "<header>\n";
+    print $fh "$text";
+    print $fh "</header>\n";
 }
 
 

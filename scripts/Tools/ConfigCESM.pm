@@ -6,7 +6,7 @@ use English;
 use IO::File;
 use XML::LibXML;
 use Data::Dumper;
-use ConfigCase;
+use ConfigCase; # needed for cfg_ref reference below
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
 # If not found, print a warning message then exit.

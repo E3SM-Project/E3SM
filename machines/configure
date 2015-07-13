@@ -3,7 +3,7 @@
 #
 # configure
 #
-# This utility allows the CCSM utilities user to specify configuration
+# This utility allows the CIME utilities user to specify configuration
 # options via a commandline interface.
 #
 #-----------------------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ use IO::Handle;
 *STDOUT->autoflush();                  
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CCSM configuration scripts.  If the create_newcase command was
+# Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 

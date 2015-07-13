@@ -211,8 +211,8 @@ sub getTestDirs
 }
 
 #-------------------------------------------------------------------------------
-# Get the suite info from config_definition, send it back.  Also get the expectedfails file, 
-# found in $CIMEROOT/scripts/Testing/Testlistxml.  
+# Get the suite info and send it back.  
+# Also get the expectedfails file
 #-------------------------------------------------------------------------------
 sub getTestSuiteInfo
 {
@@ -232,15 +232,12 @@ sub getTestSuiteInfo
     &Debug("test path:  $testpath\n");
     my @dirs = ( $testpath, $testpath . "/Tools");
     unshift @INC, @dirs;
-    require ConfigCase;
+    require SetupTools;
 
-    my $caseenv  = ConfigCase->new("./cime_config/definition.xml", "$testpath/env_case.xml");
-    my $runenv   = ConfigCase->new("./cime_config/definition.xml", "$testpath/env_run.xml");
-    my $buildenv = ConfigCase->new("./cime_config/definition.xml", "$testpath/env_build.xml");
-
-    $caseinfo{'mach'}     = $caseenv->get('MACH');
-    $caseinfo{'compiler'} = $buildenv->get('COMPILER');
-    $caseinfo{'mpilib'}   = $buildenv->get('MPILIB');
+    my %config = SetupTools::getAllResolved();
+    $caseinfo{'mach'}     = $config{'MACH'};
+    $caseinfo{'compiler'} = $config{'COMPILER'};
+    $caseinfo{'mpilib'}   = $config{'MPILIB'};
 
     $testspecfile = "$testroot/testspec.$testid.$caseinfo{'mach'}.xml";
     Debug( "testspecfile: $testspecfile\n");

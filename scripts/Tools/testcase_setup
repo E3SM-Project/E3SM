@@ -134,7 +134,7 @@ my $perl5libdir = "$cimeroot/utils/perl5lib/";
 push(@INC, $perl5libdir);
 require Batch::BatchMaker;
 require Task::TaskMaker;
-require ConfigCase; 
+
 # ------------------ testcase_begin ------------------------------------------
 # -- Make batch script using the BatchMaker module --- 
 my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot    => $caseroot, 
@@ -142,7 +142,7 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot    => $caseroot,
                                                      case        => $case,     
 						     mpilib      => $mpilib,
                                                      scriptsroot => $scriptsroot, 
-						     machroot    => $ccsm_machdir,
+						     machroot    => $machdir,
                                                      machine     => $mach,        
 						     compiler    => $compiler);
 
