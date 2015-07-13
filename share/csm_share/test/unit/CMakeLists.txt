@@ -13,3 +13,7 @@ add_subdirectory(shr_log_test)
 add_subdirectory(dynamic_vector)
 
 add_subdirectory(shr_vmath_test)
+
+add_subdirectory(shr_wv_sat_test)
+
+add_subdirectory(shr_precip_test)

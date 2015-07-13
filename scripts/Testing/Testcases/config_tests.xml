@@ -174,7 +174,7 @@
           STOP_OPTION="ndays"
           RUN_TYPE="startup"
           STOP_N="4"
-          DOUT_S="TRUE" />
+          DOUT_S="FALSE" />
 
 <ccsmtest NAME="STA"
 	  DESC="Short-term archiving restart test"

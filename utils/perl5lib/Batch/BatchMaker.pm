@@ -353,6 +353,7 @@ sub setTaskInfo()
 	$self->{'task_count'} = $taskmaker->sumOnly();
 	$self->{'sumtasks'} = $taskmaker->sumTasks();
 	$self->{'num_tasks'} = $taskmaker->sumTasks();
+	$self->{'totaltasks'} = $taskmaker->sumTasks();
 	$self->{'maxthreads'} = $taskmaker->maxThreads();
 	$self->{'taskgeometry'} = $taskmaker->taskGeometry();
 	$self->{'threadgeometry'} = $taskmaker->threadGeometry();
@@ -755,19 +756,20 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-    my $config = $taskmaker->{'config'};
-    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
-    $self->{'mppsize'} = $self->{'mppsum'};
+	#print "in Batch::BatchMaker_cray setTaskInfo\n";
+    #my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    #my $config = $taskmaker->{'config'};
+    #my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+    #$self->{'mppsize'} = $self->{'mppsum'};
 
 
-    if($self->{'mppsize'} % $maxTasksPerNode > 0)
-    {
-        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
-        $mppnodes += 1;
-        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
-    }
-	$self->{'mppwidth'} = $self->{'mppsize'};
+    #if($self->{'mppsize'} % $maxTasksPerNode > 0)
+    #{
+    #    my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+    #    $mppnodes += 1;
+    #    $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
+    #}
+	#$self->{'mppwidth'} = $self->{'mppsize'};
 
     $self->SUPER::setTaskInfo();
 }
@@ -784,10 +786,50 @@ sub _test()
 sub setTaskInfo()
 {
 	my $self = shift;
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-	$self->{'mppsum'} = $taskmaker->sumTasks();
     $self->SUPER::setTaskInfo();
+	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+
+	$self->{'mppsize'}  = $taskmaker->sumTasks();
+    if($self->{'mppsize'} % $maxTasksPerNode > 0)
+    {
+        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+        $mppnodes += 1;
+        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
+    }
+	$self->{'mppsum'} = $taskmaker->sumPES();
+
+    if($self->{'mppsum'} > 1)
+    {
+        $self->{'mppwidth'} = $self->{'mppsum'} / 2;
+    }
+    else
+    {
+        $self->{'mppwidth'} = 1;
+    }
+
 }
+
+sub setCESMRun()
+{
+	my $self = shift;
+	
+	# For the aprun command we only want -S tasks_per_numa
+    # and -cc numa_node to be set if the tasks per node is > 1
+	if($self->{'tasks_per_node'} > 1)
+	{
+		$self->{'numa_node'} = 'numa_node';
+	}
+	else
+	{
+		$self->{'tasks_per_numa'} = undef;
+		$self->{'numa_node'} = undef;
+	}
+	$self->SUPER::setCESMRun();
+
+
+}
+	
 
 #==============================================================================
 #==============================================================================

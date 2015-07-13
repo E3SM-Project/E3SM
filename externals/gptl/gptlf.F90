@@ -53,6 +53,9 @@ module gptl
 
 ! Function prototypes
 
+  integer, parameter :: r8 = selected_real_kind(12) ! 8 byte real
+  integer, parameter :: i8 = selected_int_kind (13) ! 8 byte integer
+
   interface
      subroutine gptlprocess_namelist (filename, unitno, outret)
        character(len=*) :: filename
@@ -104,7 +107,8 @@ module gptl
      end function gptlreset
 
      integer function gptlstamp (wall, usr, sys)
-       real(8) :: wall, usr, sys
+       import
+       real(r8) :: wall, usr, sys
      end function gptlstamp
 
      integer function gptlstart (name)
@@ -146,31 +150,35 @@ module gptl
 
      integer function gptlquery (name, t, count, onflg, wallclock, &
                                  usr, sys, papicounters_out, maxcounters)
+       import
        character(len=*) :: name
        integer :: t, count
        integer :: onflg
-       real(8) :: wallclock, usr, sys
-       integer(8) :: papicounters_out
+       real(r8) :: wallclock, usr, sys
+       integer(i8) :: papicounters_out
        integer :: maxcounters
      end function gptlquery
 
      integer function gptlquerycounters (name, t, papicounters_out)
+       import
        character(len=*) :: name
        integer :: t
-       integer(8) :: papicounters_out
+       integer(i8) :: papicounters_out
      end function gptlquerycounters
 
      integer function gptlget_wallclock (name, t, value)
+       import
        character(len=*) :: name
        integer :: t
-       real(8) :: value
+       real(r8) :: value
      end function gptlget_wallclock
 
      integer function gptlget_eventvalue (timername, eventname, t, value)
+       import
        character(len=*) :: timername
        character(len=*) :: eventname
        integer :: t
-       real(8) :: value
+       real(r8) :: value
      end function gptlget_eventvalue
 
      integer function gptlget_nregions (t, nregions)
