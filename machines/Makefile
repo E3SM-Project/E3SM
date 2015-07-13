@@ -295,7 +295,7 @@ else
        # get the base path to the compiler without any 
        # acrobatics.
        CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf53
+       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
     endif
   endif
 endif

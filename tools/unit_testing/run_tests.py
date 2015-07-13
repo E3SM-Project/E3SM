@@ -146,11 +146,6 @@ This is only necessary if using a CESM build type, if the user wants to
 override the command provided by Machines."""
     )
 parser.add_option(
-    "--use-mpi", dest="use_mpi", action="store_true",
-    default=False,
-    help="""Turn on MPI support for tests."""
-    )
-parser.add_option(
     "--use-openmp", dest="use_openmp", action="store_true",
     default=False,
     help="""Turn on OPENMP support for tests."""

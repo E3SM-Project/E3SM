@@ -10,9 +10,6 @@ add_definitions(
   -DNUM_COMP_INST_ROF=1
   )
 
-# The following definitions are needed when building with the mpi-serial library
-add_definitions(-DNO_MPI2 -DNO_MPIMOD)
-
 # Add source directories from stubs. This should be done first, so that in the
 # case of name collisions, the drv versions take precedence (when there are two
 # files with the same name, the one added later wins).
@@ -31,11 +28,12 @@ add_subdirectory(utils drv_unit_test_utils)
 # Note that we are including the stub pio in the csm_share library for simplicity.
 add_library(csm_share ${share_sources} ${share_mct_sources} ${share_pio_sources}
   ${pio_sources})
-message("SOURCES: ${share_genf90_sources}")
 declare_generated_dependencies(csm_share "${share_genf90_sources}")
 add_dependencies(csm_share mct_project)
+
 add_library(esmf_wrf_timemgr ${esmf_wrf_timemgr_sources})
 add_dependencies(esmf_wrf_timemgr csm_share)
+
 add_library(drv ${drv_sources})
 add_dependencies(drv csm_share esmf_wrf_timemgr)
 

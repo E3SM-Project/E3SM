@@ -47,7 +47,7 @@
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
     <directives>
-      <directive                       > -n {{ task_count }} </directive>
+      <directive                       > -n {{ totaltasks }} </directive>
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
       <directive                       > -q {{ queue }} </directive>
       <directive                       > -N  </directive>
@@ -72,7 +72,8 @@
       <directive> -q {{ queue }}</directive>
       <directive> -l walltime={{ wall_time }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
-      <directive> -j oe {{ output_error_path }} </directive>
+      <!-- <directive> -j oe {{ output_error_path }} </directive> -->
+      <directive> -j oe </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive default="/bin/bash" > -S {{ shell }} -V </directive>
     </directives>
@@ -188,6 +189,12 @@
    </batch_system>
    
   <batch_system MACH="goldbach" version="x.y">
+    <directives>
+      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+    </directives>
+  </batch_system>
+
+  <batch_system MACH="hobart" version="x.y">
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
     </directives>

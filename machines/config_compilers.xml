@@ -389,7 +389,7 @@ for mct, etc.
   <!-- interfaces from certain argument checks. Should not be necessary in   -->
   <!-- libraries that only use the F90 module interface. mpibcast and        -->
   <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
-  <FFLAGS      > -Wp,-macro=no_com -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>
+  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
@@ -814,6 +814,42 @@ for mct, etc.
  <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
  <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
  <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
+</compiler>
+
+<compiler MACH="hobart">
+ <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+ <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
+ <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
+ <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+<GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="hobart">
+ <ADD_LDFLAGS> -lquadmath </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(NETCDF_PATH)/lib </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/lib/intel64 </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/mkl/lib/intel64 </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(MPI_PATH)/lib</ADD_LDFLAGS>
+ <ADD_SLIBS MPILIB="mvapich2"> -mkl=cluster </ADD_SLIBS>
+ <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="hobart">
+ <ADD_CFLAGS DEBUG="FALSE"> -O0 </ADD_CFLAGS>
+ <ADD_FFLAGS DEBUG="FALSE"> -O0 </ADD_FFLAGS>
+ <ADD_LDFLAGS> -lgomp </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="nag" MACH="hobart">
+ <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
+ <!-- needed for nag pio build.. -->
+ <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
+ <ADD_LDFLAGS> -lpthread</ADD_LDFLAGS>
+ <!-- Experimental wrapper for OpenMP. -->
+ <!-- <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,rpath=/home/santos/lib/fake_omp  -->
 </compiler>
 
 <compiler MACH="logan">
