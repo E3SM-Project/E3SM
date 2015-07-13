@@ -6,7 +6,6 @@ module test_avect_wrapper
   use avect_wrapper_mod
   use mct_mod
   use mct_wrapper_mod, only : mct_init, mct_clean
-  use mpi_wrapper_mod, only : mpi_init_wrapper, mpi_finalize_wrapper
   use shr_kind_mod, only : r8 => shr_kind_r8
 
   implicit none
@@ -24,7 +23,6 @@ contains
   subroutine setUp(this)
     class(TestCreateAvect), intent(inout) :: this
 
-    call mpi_init_wrapper()
     call mct_init()
   end subroutine setUp
 
@@ -33,11 +31,10 @@ contains
     
     call mct_aVect_clean(this%av)
     call mct_clean()
-    call mpi_finalize_wrapper()
   end subroutine tearDown
 
   @Test
-  subroutine test_createAVectWithoutData_withOneField_hasCorrectField(this)
+  subroutine createAVectWithoutData_1Field_checkField(this)
     class(TestCreateAvect), intent(inout) :: this
     character(len=*), parameter :: attr_tag = 'foo'
     integer, parameter :: lsize = 5 ! not important for this test
@@ -47,14 +44,14 @@ contains
 
     actual_rlist = mct_aVect_exportRList2c(this%av)
     @assertEqual('foo', trim(actual_rlist))
-  end subroutine test_createAVectWithoutData_withOneField_hasCorrectField
+  end subroutine createAVectWithoutData_1Field_checkField
 
   @Test
-  subroutine test_createAVectWithoutData_withThreeFields_hasCorrectFields(this)
+  subroutine createAVectWithoutData_3Field_checkFields(this)
     class(TestCreateAvect), intent(inout) :: this
     character(len=*), parameter :: attr_tag1 = 'foo1'
     character(len=*), parameter :: attr_tag2 = 'foo2'
-    character(len=*), parameter :: attr_tag3 = 'bar'
+    character(len=*), parameter :: attr_tag3 = 'bar '
     character(len=*), parameter :: expected_rlist = 'foo1:foo2:bar'
     integer, parameter :: lsize = 5 ! not important for this test
     character(len=64) :: actual_rlist
@@ -63,10 +60,10 @@ contains
 
     actual_rlist = mct_aVect_exportRList2c(this%av)
     @assertEqual(expected_rlist, actual_rlist)
-  end subroutine test_createAVectWithoutData_withThreeFields_hasCorrectFields
+  end subroutine createAVectWithoutData_3Field_checkFields
 
   @Test
-  subroutine test_createAvectWithData_withTwoFields_hasCorrectData(this)
+  subroutine createAvectWithData_2Fields_checkData(this)
     class(TestCreateAvect), intent(inout) :: this
     integer, parameter :: lsize = 3
     character(len=*), parameter :: attr_tag1 = 'foo'
@@ -84,6 +81,6 @@ contains
     actual_data2 = aVect_exportRattr(this%av, attr_tag2)
     @assertEqual(data2, actual_data2)
 
-  end subroutine test_createAvectWithData_withTwoFields_hasCorrectData
+  end subroutine createAvectWithData_2Fields_checkData
 
 end module test_avect_wrapper
