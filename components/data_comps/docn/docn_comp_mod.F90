@@ -279,6 +279,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     if (force_prognostic_true) then
        ocn_present    = .true.
        ocn_prognostic = .true.
+       ocnrof_prognostic = .true.
     endif
 
     !----------------------------------------------------------------------------
@@ -298,6 +299,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     if (trim(ocn_mode) == 'NULL' .or. &
         trim(ocn_mode) == 'SSTDATA' .or. &
         trim(ocn_mode) == 'COPYALL' .or. &
+        trim(ocn_mode) == 'IAF' .or. &
         trim(ocn_mode) == 'SOM') then
       if (my_task == master_task) &
          write(logunit,F00) ' ocn mode = ',trim(ocn_mode)
@@ -331,6 +333,11 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
                       calendar=calendar)
        endif
+    endif
+
+    if (trim(ocn_mode) == 'IAF') then
+       ocn_prognostic = .true.
+       ocnrof_prognostic = .true.
     endif
 
     if (trim(ocn_mode) == 'SOM') then
@@ -640,6 +647,19 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       ! do nothing extra
 
    case('SSTDATA')
+      lsize = mct_avect_lsize(o2x)
+      do n = 1,lsize
+         o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+         o2x%rAttr(ks   ,n) = ocnsalt
+         o2x%rAttr(ku   ,n) = 0.0_R8
+         o2x%rAttr(kv   ,n) = 0.0_R8
+         o2x%rAttr(kdhdx,n) = 0.0_R8
+         o2x%rAttr(kdhdy,n) = 0.0_R8
+         o2x%rAttr(kq   ,n) = 0.0_R8
+         o2x%rAttr(kswp ,n) = swp
+      enddo
+
+   case('IAF')
       lsize = mct_avect_lsize(o2x)
       do n = 1,lsize
          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
