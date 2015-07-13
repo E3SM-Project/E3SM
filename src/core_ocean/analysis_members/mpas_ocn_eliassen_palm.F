@@ -433,11 +433,15 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: uTWA
       real(KIND=RKIND), dimension(:,:), pointer :: vTWA
       real(KIND=RKIND), dimension(:,:), pointer :: varpiTWA
+      real(KIND=RKIND), dimension(:,:), pointer :: duTWAdz
+      real(KIND=RKIND), dimension(:,:), pointer :: dvTWAdz
       
       !-----------------------------------------------------------------
       ! define Ertel's potential vorticity and related fields
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:,:), pointer :: ErtelPV
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradZonal
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradMerid
       real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVTendency
       real(KIND=RKIND), dimension(:,:,:), pointer :: ErtelPVFlux
       real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVFlux1
@@ -479,6 +483,10 @@ contains
       type(field2DReal), pointer :: wrk3DnVertLevelsP1Field
       type(field2DReal), pointer :: wrk3DnVertLevelsField
       type(field2DReal), pointer :: wrk3DBuoyCoorField
+      type(field2DReal), pointer :: ErtelPVNormalGradOnEdgeField
+      type(field2DReal), pointer :: ErtelPVGradXField
+      type(field2DReal), pointer :: ErtelPVGradYField
+      type(field2DReal), pointer :: ErtelPVGradZField
       type(field3DReal), pointer :: wrkVectorField
       type(field4DReal), pointer :: wrkTensorField
 
@@ -519,6 +527,10 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevelsP1
       real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevels
       real(KIND=RKIND), dimension(:,:), pointer :: wrk3DBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVNormalGradOnEdge
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradX
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradY
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradZ
       real(KIND=RKIND), dimension(:,:,:), pointer :: wrkVector
       real(KIND=RKIND), dimension(:,:,:,:), pointer :: wrkTensor
 
@@ -654,6 +666,10 @@ contains
          call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevelsP1', wrk3DnVertLevelsP1Field)
          call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevels', wrk3DnVertLevelsField)
          call mpas_pool_get_field(scratchPool, 'wrk3DBuoyCoor', wrk3DBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVNormalGradOnEdge', ErtelPVNormalGradOnEdgeField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVGradX', ErtelPVGradXField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVGradY', ErtelPVGradYField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVGradZ', ErtelPVGradZField)
          call mpas_pool_get_field(scratchPool, 'wrkVector', wrkVectorField)
          call mpas_pool_get_field(scratchPool, 'wrkTensor', wrkTensorField)
          
@@ -694,6 +710,10 @@ contains
          call mpas_allocate_scratch_field(wrk3DnVertLevelsP1Field, .true.)
          call mpas_allocate_scratch_field(wrk3DnVertLevelsField, .true.)
          call mpas_allocate_scratch_field(wrk3DBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVNormalGradOnEdgeField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVGradXField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVGradYField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVGradZField, .true.)
          call mpas_allocate_scratch_field(wrkVectorField, .true.)
          call mpas_allocate_scratch_field(wrkTensorField, .true.)
 
@@ -734,6 +754,10 @@ contains
          wrk3DnVertLevelsP1      => wrk3DnVertLevelsP1Field % array
          wrk3DnVertLevels        => wrk3DnVertLevelsField % array
          wrk3DBuoyCoor           => wrk3DBuoyCoorField % array
+         ErtelPVNormalGradOnEdge => ErtelPVNormalGradOnEdgeField % array
+         ErtelPVGradX            => ErtelPVGradXField % array
+         ErtelPVGradY            => ErtelPVGradYField % array
+         ErtelPVGradZ            => ErtelPVGradZField % array
          wrkVector               => wrkVectorField % array
          wrkTensor               => wrkTensorField % array
          
@@ -804,6 +828,8 @@ contains
          call mpas_pool_get_array(am_epftPool, 'uTWA', uTWA)
          call mpas_pool_get_array(am_epftPool, 'vTWA', vTWA)
          call mpas_pool_get_array(am_epftPool, 'varpiTWA', varpiTWA)
+         call mpas_pool_get_array(am_epftPool, 'duTWAdz', duTWAdz)
+         call mpas_pool_get_array(am_epftPool, 'dvTWAdz', dvTWAdz)
 
          !--------------------------------------------------
          ! Eliassen-Palm Flux Tensor and related products
@@ -821,6 +847,8 @@ contains
          call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux2', ErtelPVFlux2)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVTendency', ErtelPVTendency)
          call mpas_pool_get_array(am_epftPool, 'ErtelPV', ErtelPV)
+         call mpas_pool_get_array(am_epftPool, 'ErtelPVGradZonal', ErtelPVGradZonal)
+         call mpas_pool_get_array(am_epftPool, 'ErtelPVGradMerid', ErtelPVGradMerid)
          
          !--------------------------------------------------
          ! Get variables associated to diabatic processes
@@ -1197,6 +1225,30 @@ contains
             fCell, uTWA, vTWA, sigmaEA, ErtelPV)
 
          !-------------------------------------------------------------
+         ! compute the normal derivative of EPV at cell edges
+         !-------------------------------------------------------------
+         call computeNormalGradientOnEdge(nBuoyancyLayers, nCells, nEdges, &
+            meshPool, ErtelPV, ErtelPVNormalGradOnEdge)
+
+         !-------------------------------------------------------------
+         ! reconstruct full gradient vector at cell centers
+         !-------------------------------------------------------------
+         call mpas_reconstruct(meshPool, ErtelPVNormalGradOnEdge, &
+            ErtelPVGradX, ErtelPVGradY, ErtelPVGradZ, ErtelPVGradZonal, ErtelPVGradMerid)
+
+         !-------------------------------------------------------------
+         ! compute the vertical derivative of uTWA
+         !-------------------------------------------------------------
+         call computeVerticalDerivative(nCells, nBuoyancyLayers, &
+           firstLayerBuoyCoor, lastLayerBuoyCoor, heightMidBuoyCoor, uTWA, duTWAdz)
+
+         !-------------------------------------------------------------
+         ! compute the vertical derivative of vTWA
+         !-------------------------------------------------------------
+         call computeVerticalDerivative(nCells, nBuoyancyLayers, &
+           firstLayerBuoyCoor, lastLayerBuoyCoor, heightMidBuoyCoor, vTWA, dvTWAdz)
+
+         !-------------------------------------------------------------
          ! Compute the geometric decomposition in terms of angles and 
          ! eccentricities using the entries of EPFT.
          ! (not yet implemented)
@@ -1261,33 +1313,41 @@ contains
          !-------------------------------------------------------------
          call mpas_deallocate_scratch_field(firstLayerBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(lastLayerBuoyCoorField, .true.)
-         call mpas_deallocate_scratch_field(buoyancyMaskField, .true.)
-         call mpas_deallocate_scratch_field(sigmaField, .true.)
          call mpas_deallocate_scratch_field(heightMidBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(heightTopBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(heightInterfaceBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(sigmaField, .true.)
+         call mpas_deallocate_scratch_field(montgPotBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(montgPotNormalGradOnEdgeField, .true.)
          call mpas_deallocate_scratch_field(uMidBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(vMidBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(densityMidBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(densityTopBuoyCoorField, .true.)
-         call mpas_deallocate_scratch_field(montgPotBuoyCoorField, .true.)
-         call mpas_deallocate_scratch_field(montgPotNormalGradOnEdgeField, .true.)
+         call mpas_deallocate_scratch_field(buoyancyMaskField, .true.)
          call mpas_deallocate_scratch_field(montgPotGradXField, .true.)
          call mpas_deallocate_scratch_field(montgPotGradYField, .true.)
          call mpas_deallocate_scratch_field(montgPotGradZField, .true.)
          call mpas_deallocate_scratch_field(montgPotGradZonalField, .true.)
          call mpas_deallocate_scratch_field(montgPotGradMeridField, .true.)
+         call mpas_deallocate_scratch_field(wrk3DnVertLevelsP1Field, .true.)
          call mpas_deallocate_scratch_field(wrk3DnVertLevelsField, .true.)
          call mpas_deallocate_scratch_field(wrk3DBuoyCoorField, .true.)
-         
+         call mpas_deallocate_scratch_field(ErtelPVNormalGradOnEdgeField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVGradXField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVGradYField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVGradZField, .true.)
+         call mpas_deallocate_scratch_field(wrkVectorField, .true.)
+         call mpas_deallocate_scratch_field(wrkTensorField, .true.)
+
          call mpas_deallocate_scratch_field(array1_3DField, .true.)
          call mpas_deallocate_scratch_field(array2_3DField, .true.)
          call mpas_deallocate_scratch_field(array3_3DField, .true.)
          call mpas_deallocate_scratch_field(array1_3DbuoyField, .true.)
          call mpas_deallocate_scratch_field(array2_3DbuoyField, .true.)
-
          call mpas_deallocate_scratch_field(PVMidBuoyCoorField, .true.)
          call mpas_deallocate_scratch_field(PVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(uMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(vMidBuoyCoorEAField, .true.)
          call mpas_deallocate_scratch_field(uPVMidBuoyCoorEAField, .true.)
          call mpas_deallocate_scratch_field(vPVMidBuoyCoorEAField, .true.)
          call mpas_deallocate_scratch_field(PVFluxTestField, .true.)
@@ -2303,14 +2363,17 @@ contains
 
                scalarWrk1(kLayer,iCell) = scalarWrk1(kLayer,iCell) + wrk
 
-            end do  ! do iCell=1,nCells
+            end do ! kLayer = 1,nLayers
 
-         end do  ! do q=1,3
+         end do ! iCell = 1,nCells
 
          vectorCellOut(q,:,:) = scalarWrk1
 
-      end do
+      end do !do q=1,3
 
+      if (debugFlag) then
+        deallocate(divExact)
+      end if
       deallocate(scalarWrk1)
       deallocate(vectorCellWrk1)
       deallocate(vectorCellWrk2)
@@ -2488,6 +2551,9 @@ contains
          end do
       end if
 
+      if (debugFlag) then
+        deallocate(divExact)
+      end if
       deallocate(vectorCellWrk1)
       deallocate(vectorCellWrk2)
       deallocate(vectorEdgeWrk1)
@@ -2571,6 +2637,62 @@ contains
 
 
    end subroutine computeErtelPV
+
+
+!***********************************************************************
+!
+!  subroutine computeVerticalDerivative
+!
+!> \brief   Calculate the the vertical derivative, in depth coordinates, of a scalar
+!> \author  Juan A. Saenz
+!> \date    July, 2015
+!> \details
+!>  This subroutine calculates the vertical derivative, in depth coordinates, of a scalar.
+!>  The scalar is assumed to exist in the middle of a cell layer.
+!>  The vertical derivative in the middle of the cell layer is returned.
+!
+!-----------------------------------------------------------------------
+
+   subroutine computeVerticalDerivative(nCells, nLayers, &
+       firstLayer, lastLayer, heightMid, field, derivativeField)!{{{
+      integer, intent(in) :: nCells, nLayers
+      integer, dimension(nCells), intent(in)  :: firstLayer, lastLayer
+      real (kind=RKIND), dimension(:,:), intent(in) :: heightMid
+      real (kind=RKIND), dimension(:,:), intent(in) :: field
+      real (kind=RKIND), dimension(:,:), intent(out) :: derivativeField
+
+      ! local variables
+      integer :: iCell, kLayer
+      real (kind=RKIND) :: wrkAbove, wrkBelow, dz
+
+      derivativeField(nLayers, 1:nCells) = 0.0
+
+      do iCell = 1,nCells
+
+         wrkAbove = field(firstLayer(iCell),iCell)
+         wrkBelow = field(firstLayer(iCell)+1,iCell)
+         dz = heightMid(firstLayer(iCell),iCell)-heightMid(firstLayer(iCell)+1,iCell)
+
+         derivativeField(firstLayer(iCell), iCell) = (wrkAbove - wrkBelow) / dz
+
+         do kLayer = firstLayer(iCell)+1, lastLayer(iCell)-1
+
+            wrkAbove = field(kLayer-1,iCell)
+            wrkBelow = field(kLayer+1,iCell)
+            dz = heightMid(kLayer-1,iCell)-heightMid(kLayer+1,iCell)
+
+            derivativeField(kLayer, iCell) = (wrkAbove - wrkBelow) / dz
+
+         end do ! kLayer = firstLayer(iCell)+1, lastLayer(iCell)-1
+
+         wrkAbove = field(lastLayer(iCell)-1,iCell)
+         wrkBelow = field(lastLayer(iCell),iCell)
+         dz = heightMid(lastLayer(iCell)-1,iCell)-heightMid(lastLayer(iCell),iCell)
+
+         derivativeField(lastLayer(iCell), iCell) = (wrkAbove - wrkBelow) / dz
+
+      end do ! iCell = 1,nCells
+   end subroutine computeVerticalDerivative!}}}
 
 
 !***********************************************************************
