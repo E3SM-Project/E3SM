@@ -589,10 +589,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    cdn(Umps)  =   0.0027_R8 / Umps + 0.000142_R8 + 0.0000764_R8 * Umps
    psimhu(xd) = log((1.0_R8+xd*(2.0_R8+xd))*(1.0_R8+xd*xd)/8.0_R8) - 2.0_R8*atan(xd) + 1.571_R8
    psixhu(xd) = 2.0_R8 * log((1.0_R8 + xd*xd)/2.0_R8)
-
-!   molvisc(Tk)  = 1.8e-6_R8 * exp((-1.0_R8*(Tk-273.15_R8))/35.0_R8)
-!   molPr(Tk)    = 11.8_R8 * exp((-1.0_R8*(Tk-273.15_R8))/40.0_R8)
-
    molvisc(Tk)  = 1.623e-6_R8 * exp((-1.0_R8*(Tk-273.15_R8))/45.2_R8)
    molPr(Tk)    = 11.64_R8 * exp((-1.0_R8*(Tk-273.15_R8))/40.7_R8)
 
@@ -626,11 +622,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
       call shr_sys_abort(subName//"flux diurnal must be true")
    endif
  
-!   if (present(missval)) then
-!      spval = missval
-!   else
-      spval = shr_const_spval
-!   endif
+   spval = shr_const_spval
 
    al2 = log(zref/ztref)
 
@@ -717,7 +709,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
             nstp      = nint(stp)
 !note: these are hardcoded for 1/2 hour coupling frequency between atm and ocn
             lmidnight = (nstp == 0)
-!            ltwopm    = (nstp == 28)
             ltwopm    = (nstp == 27) ! change to 130 pm to match obs
             ltwoam    = (nstp == 3) ! use 130 am to match obs
             lnoon    = (nstp == 24)
