@@ -837,10 +837,10 @@ contains
          mflx_drain_col_1d =>    waterflux_vars%mflx_drain_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
          mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
 
-         vsfm_sat_col_1d   =>    waterflux_vars%vsfm_sat_col_1d     , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
-         vsfm_mass_col_1d  =>    waterflux_vars%vsfm_mass_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
-         vsfm_smpl_col_1d  =>    waterflux_vars%vsfm_smpl_col_1d    , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
-         vsfm_soilp_col_1d =>    waterflux_vars%vsfm_soilp_col_1d   , & ! Output: [real(r8) (:)   ]  1D soil water pressure from VSFM [Pa]
+         vsfm_sat_col_1d   =>    waterstate_vars%vsfm_sat_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
+         vsfm_mass_col_1d  =>    waterstate_vars%vsfm_mass_col_1d   , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+         vsfm_smpl_col_1d  =>    waterstate_vars%vsfm_smpl_col_1d   , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+         vsfm_soilp_col_1d =>    waterstate_vars%vsfm_soilp_col_1d  , & ! Output: [real(r8) (:)   ]  1D soil water pressure from VSFM [Pa]
          soilp_col         =>    waterstate_vars%soilp_col          , & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
 
          t_soil_col_1d     =>    temperature_vars%t_soil_col_1d     , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)

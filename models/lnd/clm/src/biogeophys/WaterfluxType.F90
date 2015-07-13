@@ -104,12 +104,6 @@ module WaterfluxType
      real(r8), pointer :: mflx_sub_snow_col_1d     (:)   ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
      real(r8), pointer :: mflx_snowlyr_col         (:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
                                                          ! This is for restart
-
-     real(r8), pointer :: vsfm_sat_col_1d          (:)   ! liquid saturation from VSFM [-]
-     real(r8), pointer :: vsfm_mass_col_1d         (:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
-     real(r8), pointer :: vsfm_smpl_col_1d         (:)   ! 1D soil matrix potential liquid from VSFM [m]
-     real(r8), pointer :: vsfm_soilp_col_1d        (:)   ! 1D soil liquid pressure from VSFM [Pa]
-
    contains
  
      procedure, public  :: Init
@@ -245,11 +239,6 @@ contains
     allocate(this%mflx_et_col_1d(              ncells))              ; this%mflx_et_col_1d           (:)   = nan
     allocate(this%mflx_drain_col_1d(           ncells))              ; this%mflx_drain_col_1d        (:)   = nan
     allocate(this%mflx_drain_perched_col_1d(   ncells))              ; this%mflx_drain_perched_col_1d(:)  = nan
-
-    allocate(this%vsfm_sat_col_1d(             ncells))              ; this%vsfm_sat_col_1d          (:)   = nan
-    allocate(this%vsfm_mass_col_1d(            ncells))              ; this%vsfm_mass_col_1d         (:)   = nan
-    allocate(this%vsfm_smpl_col_1d(            ncells))              ; this%vsfm_smpl_col_1d         (:)   = nan
-    allocate(this%vsfm_soilp_col_1d(           ncells))              ; this%vsfm_soilp_col_1d        (:)   = nan
 
   end subroutine InitAllocate
 
