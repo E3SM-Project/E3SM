@@ -126,12 +126,14 @@
   />
   <var name="montgPotBuoyCoor" 
     type="real" 
-		dimensions="nBuoyancyLayers nCells Time" units="m^2 s^{-2}"
+    dimensions="nBuoyancyLayers nCells Time"
+    units="m^2 s^{-2}"
 		description="Montgomery potential in buoyancy coordinates"
 	/>
   <var name="montgPotNormalGradOnEdge" 
     type="real" 
-		dimensions="nBuoyancyLayers nEdges Time" units="m s^{-2}"
+    dimensions="nBuoyancyLayers nEdges Time"
+    units="m s^{-2}"
 		description="Normal gradient of the montgomery potential in buoyancy coordinates"
 	/>
   <var name="uMidBuoyCoor" 
@@ -178,7 +180,8 @@
 		/>
 	<var name="montgPotGradZ" 
     type="real" 
-		dimensions="nBuoyancyLayers nCells Time" units="m s^{-2}"
+    dimensions="nBuoyancyLayers nCells Time"
+    units="m s^{-2}"
 		description="z component of gradient of montgomery potential at cell center in buoyancy coordinates"
 	/>
   <var name="montgPotGradZonal" 
@@ -211,15 +214,39 @@
     units="unitless" 
     description="work array"
 	/>
-  <var name="wrkVector" 
-    type="real" 
-    dimensions="R3 nBuoyancyLayers nCells" 
+  <var name="ErtelPVNormalGradOnEdge"
+    type="real"
+    dimensions="nBuoyancyLayers nEdges"
+    units="s^{-4}"
+    description="Normal gradient of EPV in buoyancy coordinates"
+	/>
+  <var name="ErtelPVGradX"
+    type="real"
+    dimensions="nBuoyancyLayers nCells"
+    units="s^{-4}"
+    description="X component of gradient of EPV in buoyancy coordinates"
+	/>
+  <var name="ErtelPVGradY"
+    type="real"
+    dimensions="nBuoyancyLayers nCells"
+    units="s^{-4}"
+    description="Y component of gradient of EPV in buoyancy coordinates"
+	/>
+  <var name="ErtelPVGradZ"
+    type="real"
+    dimensions="nBuoyancyLayers nCells"
+    units="s^{-4}"
+    description="Z component of gradient of EPV in buoyancy coordinates"
+	/>
+  <var name="wrkVector"
+    type="real"
+    dimensions="R3 nBuoyancyLayers nCells"
     units="unitless"
     description="Work vector array"
   />
-  <var name="wrkTensor" 
-    type="real" 
-    dimensions="R3 R3 nBuoyancyLayers nCells" 
+  <var name="wrkTensor"
+    type="real"
+    dimensions="R3 R3 nBuoyancyLayers nCells"
     units="unitless"
     description="Work tensor array"
   />
