@@ -24,6 +24,8 @@ OPTIONS
      -prestage <prestage>   Prestage data from inputdata to prestage
      -datalistdir <dir>     Directory which will be searched for .input_data_list files
                             Default is $CASEBUILD.  Optional.
+     -svnloc <svnloc>       Location of the svn inputdata repository from which to export
+                            missing data. Optional.
      -verbose [or -v]       Print extra information. Optional.
      -help [or -h]          Print usage to STDOUT.  Optional.
 SUMMARY
@@ -45,6 +47,7 @@ my %opts = ( inputdata      => undef,
 	     export         => 0,
 	     prestage       => 0,
 	     datalistdir    => undef,
+	     svnloc         => undef,
 	     verbose        => 0,
 	     help           => 0
 	    );
@@ -55,6 +58,7 @@ GetOptions(
     "export"                    => \$opts{'export'},
     "prestage=s"                => \$opts{'prestage'},
     "datalistdir=s"             => \$opts{'datalistdir'},
+    "svnloc=s"                  => \$opts{'svnloc'},
     "v|verbose"                 => \$opts{'verbose'},
     "h|help"                    => \$opts{'help'},
 )  or usage();
@@ -136,7 +140,14 @@ if ($prestageopt) {
 }    
 
 # Subversion repository location.
-my $svn_loc = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
+my $svn_loc = undef;
+if (defined($opts{'svnloc'})) {
+    $svn_loc = "$opts{'svnloc'}/";
+}
+else {
+    $svn_loc = 'https://acme-svn2.ornl.gov/acme-repo/acme/inputdata/';
+}
+my $svn_loc_backup = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
 
 # If export option is set, test for svn install, and server
 if ($exportopt) {
@@ -145,12 +156,6 @@ if ($exportopt) {
     die "Error: the subversion client svn was not found.\n";
   }
   my $error = `svn list $svn_loc > /dev/null`;
-#  my @error = `svn list $svn_loc 2>&1`;
-#  @found=grep(/atm\//g,@error);
-#  chomp(@found);
-#  if (length($found[0]) == 0){
-#    die ("@error \n");
-#  } 
 }
 
 $inputdata_rootdir .= "/";
@@ -227,10 +232,22 @@ EOF
               }
            }
 	   if (($isinput) && ($exportopt) && (!-e $fileneed)) {
-	      my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
-  	      my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
-	      isinrepository($fileloc) ? dataexport($fileneed, $fileloc) : 
-		 print "File was not found in svn repo: $fileloc \n";
+         my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
+  	     my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
+         if (isinrepository($fileloc)) {
+             dataexport($fileneed, $fileloc);
+         }
+         else {
+             print "File was not found in svn repo: $fileloc, trying backup... \n";
+             $fileloc = $svn_loc_backup.$filend;     # Location in subversion repository.
+             $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
+             if (isinrepository($fileloc)) {
+                 dataexport($fileneed, $fileloc);
+             }
+             else {
+                 print "File was not found in backup svn repo: $fileloc\n";
+             }
+         }
 	   }
 	   if (($isinput) && ($prestageopt)) {
 	      my $filecopy = $prestage_rootdir.$filend;
