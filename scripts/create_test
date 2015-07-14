@@ -464,7 +464,7 @@ sub options
     } else {
 
 	# Set the definitions file for the general xml variables that will be needed
-	my $definitions_file = "$cimeroot/scripts/cimeconfig/files_compset_spec.xml";
+	my $definitions_file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
 
 	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($definitions_file);
 	my @nodes = $xml->findnodes(".//entry[\@id=\"TESTS_SPEC_FILE\"]/values/*");
@@ -686,7 +686,7 @@ sub checkOptions
     # otherwise use the supplied machine value. 
     
     my $machines_file;
-    my $file = "$cimeroot/scripts/cimeconfig/files_general_spec.xml";
+    my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
     if( defined $opts{'nlcompareonly'})
     {
 	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, 'yellowstone', $file);
@@ -1308,16 +1308,9 @@ sub writeEnvTestXML
     my ($test) = @_;
     my $caseroot = "$opts{'testroot'}/$test->{'case'}";
 
-    my $definitions_file = "$cimeroot/scripts/cimeconfig/files_general_spec.xml";
-
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($definitions_file);
-
-    my @nodes = $xml->findnodes(".//entry[\@id=\"DEFINITIONS_TESTING_FILE\"]/value");
-    if (! @nodes) {die " ERROR: no testing definition file node DEFINITIONS_TESTING_FILE \n";}
-    my $file = $nodes[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    $file =~ s/\$SRCROOT/$srcroot/;
-    (-f $file) or die "ERROR writeEnvTestXML: file $file does not exist \n";
+    my $file = "$cimeroot/scripts/cimeconfig/definitions_config.xml";
+    (-f $file) or die "ERROR create_test: definitions_file $file does not exist \n";
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 
     my $cfg_ref = ConfigCase->new("");
     $cfg_ref->add_config_variables($file);
@@ -1363,14 +1356,8 @@ sub writeEnvTestXML
 	$cfg_ref->set('CCSM_CPRNC', $opts{'cprnc'});
     }
 
-    @nodes = $xml->findnodes(".//entry[\@id=\"CASEFILE_DESCRIPTIONS\"]/value");
-    if (! @nodes) {die " ERROR: no testing definition file node CASEFILE_DESCRIPTIONS \n";}
-    $file = $nodes[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    $file =~ s/\$SRCROOT/$srcroot/;
-    (-f $file) or die "ERROR writeEnvTestXML: file $file does not exist \n";
-
-    $cfg_ref->write_file("${caseroot}/env_test.xml", $file, $caseroot, $cimeroot );
+    my $caseheaders = "";
+    $cfg_ref->write_file("${caseroot}/env_test.xml", $caseheaders, $caseroot, $cimeroot );
 }
 
 #-----------------------------------------------------------------------------------------------

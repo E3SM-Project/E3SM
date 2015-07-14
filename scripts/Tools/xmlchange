@@ -207,8 +207,14 @@ foreach my $id ( keys(%idlist) )
 	    }
 
 	    # Determine if requested change is a value
+	    # Only do this if the variable does not start with $
+	    # TODO - must generalize this check - so you substitute first then check
+	    # for valid values even if the value starts with $
 	    # Will die in is_valid_values if the check fails
-	    ConfigCase::is_valid_value($idlist{$id}, $value, $valid_values, $is_list_value);
+	    if ($value !~ m/^$/) {
+		my $newvalue = $idlist{$id};
+		ConfigCase::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
+	    }
 
 	    # If append mode is on - check that variable is of the character type
 	    if ($opts{'append'}) {

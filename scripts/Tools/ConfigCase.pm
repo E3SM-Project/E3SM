@@ -518,7 +518,9 @@ sub write_file
     print $fh "<config_definition> \n";
     print $fh "\n";
 
-    _print_file_header($fh, $caseheaders, $output_xml_file); 
+    if ($caseheaders) {
+	_print_file_header($fh, $caseheaders, $output_xml_file); 
+    }
 
     if ($output_xml_file =~ /env_archive.xml/) {
 

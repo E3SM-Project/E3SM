@@ -475,9 +475,7 @@ if (ProjectTools::set_project($project)) {
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
-print "DEBUG: i am here1 \n";
 ConfigPes::setPes($pecount, $compset_longname, $machine, $cimeroot, $primary_component, \%opts, $cfg_ref);
-print "DEBUG: i am here2 \n";
 
 #------------------------------------------------------------------------------------------
 # *** Set the mpi library and the repotag

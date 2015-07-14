@@ -87,7 +87,7 @@ sub _setPesSetupFile
 	$pes_file = "$cimeroot/driver_cpl/cimeconfig/pelayouts.xml";
     } else {
 	# TODO - this will need to be changed to be $cimeroot/../components when this is checked in
-	$pes_file = "$cimeroot/scripts/cimeconfig/components/$primary_component/cimeconfig/pelayouts.xml"; 
+	$pes_file = "$cimeroot/scripts/cimeconfig/components/$primary_component/pelayouts.xml"; 
     }
     (-f $pes_file) or  die "** Cannot find pes layout file $pes_file file \n";
 

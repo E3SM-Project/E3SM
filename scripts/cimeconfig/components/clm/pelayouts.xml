@@ -26,6 +26,7 @@
       </mach>
     </grid>
   </pes_override>
+
   <pes_layout group="clm">
     <grid name="any">
       <mach name="any">
@@ -71,6 +72,8 @@
 	  </ninst>
 	</pes>
       </mach>
+    <grid name="any">
+    </grid>
       <mach name="yellowstone|pronghorn">
 	<pes pesize="any" compset="any" comment="none">
 	  <ntasks>
@@ -296,6 +299,8 @@
 	  </rootpe>
 	</pes>
       </mach>
+    </grid>
+    <grid name="l%4x5">
       <mach name="yellowstone|pronghorn">
 	<pes pesize="any" compset="any" comment="none">
 	  <ntasks>
@@ -366,6 +371,8 @@
 	  </rootpe>
 	</pes>
       </mach>
+    </grid>
+    <grid name="l%1.9x2.5">
       <mach name="yellowstone|pronghorn|pleiades-ivy">
 	<pes pesize="any" compset="any" comment="none">
 	  <ntasks>
@@ -436,6 +443,8 @@
 	  </rootpe>
 	</pes>
       </mach>
+    </grid>
+    <grid name="l%0.9x1.25">
       <mach name="yellowstone|pronghorn">
 	<pes pesize="any" compset="any" comment="none">
 	  <ntasks>
@@ -578,6 +587,8 @@
 	  </rootpe>
 	</pes>
       </mach>
+    </grid>
+    <grid name="l%ne30np4" >
       <mach name="yellowstone|pronghorn">
 	<pes pesize="any" compset="any" comment="none">
 	  <ntasks>
@@ -649,7 +660,6 @@
 	</pes>
       </mach>
     </grid>
-
     <grid name="l%ne240np4">
       <mach name="any">
 	<pes pesize="any" compset="any" comment="none">

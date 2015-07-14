@@ -121,16 +121,17 @@ sub doPreRunChecks()
 						scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
     $moduleloader->loadModules();
     
-    my $mpilib = $buildenv->getresolved('MPILIB');
+    my $mpilib = `./xmlquery -value MPILIB`;
+
     if($mpilib =~ /mpi-serial/)
     {
         delete $ENV{'MP_MPILIB'};
     }
     else
     {
-        $ENV{'MP_MPILIB'} = $buildenv->getresolved('MPILIB');
+        $ENV{'MP_MPILIB'} = $mpilib;
     }
-    $config{'MPILIB'} = $buildenv->getresolved('MPILIB');
+    $config{'MPILIB'} = $mpilib;
     
     print "build complete? $config{'BUILD_COMPLETE'}\n";
     if($config{'BUILD_COMPLETE'} ne 'TRUE')
