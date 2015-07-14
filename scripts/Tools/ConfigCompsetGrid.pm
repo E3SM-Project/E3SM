@@ -44,12 +44,8 @@ sub setCompsetGrid {
     my $compset_longname   = $cfg_ref->get('COMPSET');		
     my $grid_longname      = $cfg_ref->get('GRID');			
     my $grids_file         = $cfg_ref->get('GRIDS_SPEC_FILE');		
-    my $grids_domains_file = $cfg_ref->get('GRIDS_DOMAINS_FILE');
-    my $grids_maps_file    = $cfg_ref->get('GRIDS_MAPPINGS_FILE');
     
-    (-f "$grids_file")          or  die "Cannot find supported model grids file $grids_file ";
-    (-f "$grids_domains_file")  or  die "Cannot find grids domains file $grids_domains_file ";
-    (-f "$grids_maps_file")     or  die "Cannot find grids mappings file $grids_maps_file ";
+    (-f "$grids_file") or  die "Cannot find supported model grids file $grids_file ";
 
     # Note that DRV must be first in the list below
     my @setup_comp_files;
@@ -87,13 +83,13 @@ sub setCompsetGrid {
     # set grid component domains and related variables
     # ========================================================
 
-    _setGridDomain($grids_domains_file, \%compgrid, $cfg_ref);
+    _setGridDomain($grids_file, \%compgrid, $cfg_ref);
 
     # ====================================================================
     # set grid mapping variables
     # ====================================================================
 
-    _setGridMaps($grids_maps_file, \%compgrid, $cfg_ref);
+    _setGridMaps($grids_file, \%compgrid, $cfg_ref);
 
     # ====================================================================
     # Determine compset component configurations 
@@ -130,7 +126,7 @@ sub setCompsetGrid {
     # Print compset/grid info
     # ========================================================
 
-    _printGridCompsetInfo($grids_domains_file, $desc_comp, \%newxml, $print_flag, $cfg_ref );
+    _printGridCompsetInfo($grids_file, $desc_comp, \%newxml, $print_flag, $cfg_ref );
 
     if ($print_flag >= 2) { 
 	my $compset = $cfg_ref->get('COMPSET');
@@ -306,9 +302,7 @@ sub getCompsetLongname
 	    print "  create_newcase -list compsets \n";
 	    die "setCompset: exiting\n"; 
 	}
-	#***TODO - take out sname***
 	my @lname_nodes = $nodes[0]->findnodes("./lname");
-	my @sname_nodes = $nodes[0]->findnodes("./sname");
 	my @alias_nodes = $nodes[0]->findnodes("./alias");
 	my @support_nodes = $nodes[0]->findnodes("./support_level");
 
@@ -369,10 +363,10 @@ sub getGridLongname
 #-----------------------------------------------------------------------------------------------
 sub _setGridDomain
 {
-    my ($grids_domains_file, $compgrid_ref, $cfg_ref) = @_;
+    my ($grids_file, $compgrid_ref, $cfg_ref) = @_;
     
     my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml_grids_domains = $parser->parse_file($grids_domains_file);
+    my $xml = $parser->parse_file($grids_file);
   
     # set the component grid names
     foreach my $key (keys %$compgrid_ref) {
@@ -381,17 +375,17 @@ sub _setGridDomain
 	my $mask = $$compgrid_ref{'mask'};
 	
 	if ($cfg_ref->is_valid_name("${comp}_GRID")) {
-	    my @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]");
+	    my @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]");
 	    if (@nodes) {$cfg_ref->set("${comp}_GRID", $nodes[0]->getAttribute('name'));}
 	}	
 	
 	if ($cfg_ref->is_valid_name("${comp}_NX")) {
-	    my @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]/nx");
+	    my @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/nx");
 	    if (@nodes) {$cfg_ref->set("${comp}_NX", $nodes[0]->textContent());}
 	}
 	
 	if ($cfg_ref->is_valid_name("${comp}_NY")) {
-	    my @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]/ny");
+	    my @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/ny");
 	    if (@nodes) { $cfg_ref->set("${comp}_NY", $nodes[0]->textContent());}
 	}
 	
@@ -401,18 +395,18 @@ sub _setGridDomain
 	    my $var = "$comp" . "_DOMAIN_FILE";
 	    if ($cfg_ref->is_valid_name($var)) {
 		if ($comp eq 'ATM' || $comp eq 'LND') {	    
-		    @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]/file[\@lnd_mask=\"$mask\"]");
+		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/file[\@lnd_mask=\"$mask\"]");
 		} else {
-		    @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]/file[\@ocn_mask=\"$mask\"]");
+		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/file[\@ocn_mask=\"$mask\"]");
 		}
 		if (@nodes) {$cfg_ref->set($var,$nodes[0]->textContent());}
 	    }
 	    my $var = "$comp" . "_DOMAIN_PATH";
 	    if ($cfg_ref->is_valid_name($var)) {
 		if ($comp eq 'ATM' || $comp eq 'LND') {	    
-		    @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]/path[\@lnd_mask=\"$mask\"]");
+		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/path[\@lnd_mask=\"$mask\"]");
 		} else {
-		    @nodes = $xml_grids_domains->findnodes(".//domain[\@name=\"$grid\"]/path[\@ocn_mask=\"$mask\"]");
+		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/path[\@ocn_mask=\"$mask\"]");
 		}
 		if (@nodes) {$cfg_ref->set($var,$nodes[0]->textContent());}
 	    }
@@ -429,13 +423,13 @@ sub _setGridDomain
 sub _setGridMaps
 {
     # set grid mapping variables
-    my ($grids_maps_file, $compgrid_ref, $cfg_ref) = @_;
+    my ($grids_file, $compgrid_ref, $cfg_ref) = @_;
     
     my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml_grids_maps = $parser->parse_file($grids_maps_file);
+    my $xml = $parser->parse_file($grids_file);
 
     # first set defaults
-    my @nodes = $xml_grids_maps->findnodes(".//defaults/*");
+    my @nodes = $xml->findnodes(".//grid_mappings/defaults/*");
     foreach my $node (@nodes) {
 	my $name  = $node->nodeName();
 	my $value = $node->textContent();
@@ -451,47 +445,46 @@ sub _setGridMaps
     my $glc_grid = $$compgrid_ref{'glc'};
     my $wav_grid = $$compgrid_ref{'wav'};
 
-
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/ATM2OCN_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/ATM2OCN_FMAPNAME");
     if (@nodes) {$cfg_ref->set('ATM2OCN_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/ATM2OCN_SMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/ATM2OCN_SMAPNAME");
     if (@nodes) {$cfg_ref->set('ATM2OCN_SMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/ATM2OCN_VMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/ATM2OCN_VMAPNAME");
     if (@nodes) {$cfg_ref->set('ATM2OCN_VMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/OCN2ATM_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/OCN2ATM_FMAPNAME");
     if (@nodes) {$cfg_ref->set('OCN2ATM_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/OCN2ATM_SMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@ocn_grid=\"$ocn_grid\"]/OCN2ATM_SMAPNAME");
     if (@nodes) {$cfg_ref->set('OCN2ATM_SMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/ATM2LND_SMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/ATM2LND_SMAPNAME");
     if (@nodes) {$cfg_ref->set('ATM2LND_SMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/ATM2LND_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/ATM2LND_FMAPNAME");
     if (@nodes) {$cfg_ref->set('ATM2LND_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/LND2ATM_SMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/LND2ATM_SMAPNAME");
     if (@nodes) {$cfg_ref->set('ATM2LND_SMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/LND2ATM_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@lnd_grid=\"$lnd_grid\"]/LND2ATM_FMAPNAME");
     if (@nodes) {$cfg_ref->set('LND2ATM_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@lnd_grid=\"$lnd_grid\" and \@rof_grid=\"$rof_grid\"]/LND2ROF_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@lnd_grid=\"$lnd_grid\" and \@rof_grid=\"$rof_grid\"]/LND2ROF_FMAPNAME");
     if (@nodes) {$cfg_ref->set('LND2ROF_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@lnd_grid=\"$lnd_grid\" and \@rof_grid=\"$rof_grid\"]/ROF2LND_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@lnd_grid=\"$lnd_grid\" and \@rof_grid=\"$rof_grid\"]/ROF2LND_FMAPNAME");
     if (@nodes) {$cfg_ref->set('ROF2LND_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@rof_grid=\"$rof_grid\"]/ROF2OCN_FMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@rof_grid=\"$rof_grid\"]/ROF2OCN_FMAPNAME");
     if (@nodes) {$cfg_ref->set('ROF2OCN_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@rof_grid=\"$rof_grid\"]/ROF2OCN_RMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@rof_grid=\"$rof_grid\"]/ROF2OCN_RMAPNAME");
     if (@nodes) {$cfg_ref->set('ROF2OCN_RMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml_grids_maps->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@rof_grid=\"$rof_grid\" and \@lnd_grid=\"$lnd_grid\"]/XROF_FLOOD_MODE");
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@rof_grid=\"$rof_grid\" and \@lnd_grid=\"$lnd_grid\"]/XROF_FLOOD_MODE");
     if (@nodes) {$cfg_ref->set('XROF_FLOOD_MODE',$nodes[0]->textContent())}
 }
 
@@ -740,7 +733,7 @@ sub _setComponentMergeNewVal
 #-------------------------------------------------------------------------------
 sub _printGridCompsetInfo 
 {
-    my ($grids_domains_file, $desc_comp, $newxml, $print_flag, $cfg_ref) = @_;
+    my ($grids_file, $desc_comp, $newxml, $print_flag, $cfg_ref) = @_;
 
     my $caseroot	   = $cfg_ref->get('CASEROOT');
     my $grid_longname	   = $cfg_ref->get('GRID');
@@ -791,7 +784,7 @@ sub _printGridCompsetInfo
     push (@grids, $mask_grid);
 
     my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml_domain = $parser->parse_file($grids_domains_file);
+    my $xml_domain = $parser->parse_file($grids_file);
 
     my $support_level; 
     foreach my $grid (@grids)

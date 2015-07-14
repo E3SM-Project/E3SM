@@ -41,26 +41,11 @@ my $pkg_nm = 'ConfigCase';
 #       Returns true if the specified parameter name is contained in
 #       the configuration definition file.
 #
-# is_ignore_name() 
-#       Returns true if the specified parameter name is a name to ignore.
-#
-# is_valid_value() 
-#       Returns true if the specified parameter name is contained in
-#       the configuration definition file, and either 1) the specified value is
-#       listed as a valid_value in the definition file, or 2) the definition file
-#       doesn't specify the valid values.
-#
-# is_char() 
-#       Returns true is the specified parameter name is of character type.
-#
 # get() Return the value of the specified configuration parameter.  Triggers
 #       an exception if the parameter name is not valid.
 #       ***NOTE*** If you don't want to trap exceptions, then use the query
 #                  functions before calling this routine.
 #
-# reset_setup() 
-#       Reset with all of the values from the xml files in the $caseroot directory
-# 
 # set() 
 #       Sets values of the configuration parameters.  It takes the
 #       parameter name and its value as arguments.  An invalid parameter
@@ -268,6 +253,7 @@ sub set
     # true/false return before calling the set method.
 
     my ($self, $id, $value) = @_;
+    require SetupTools;
 
     # Check that the parameter name is in the configuration definition
     unless ($self->is_valid_name($id)) { 
@@ -277,14 +263,14 @@ sub set
     # Get the type description hash for the variable and check that the type is valid
     # This method throws an exception when an error is encountered.
     my %type_ref = $self->_get_typedesc($id);
-    validate_variable_value($id, $value, \%type_ref);
+    SetupTools::validate_variable_value($id, $value, \%type_ref);
 
     # Check that the value is valid
     my $valid_values = $self->{$id}->{'valid_values'};
     if ( defined $valid_values && $valid_values ne "" ) {
 	my $value = _clean($value);
 	my $is_list_value = $self->{$id}->{'list'};
-	is_valid_value($id, $value, $valid_values, $is_list_value) or die
+	SetupTools::is_valid_value($id, $value, $valid_values, $is_list_value) or die
 	    "ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n";
     }
     # Add the new value to the object's internal data structure.
@@ -302,38 +288,6 @@ sub get
     defined($self->{$name}) or die "ERROR ConfigCase.pm::get: unknown parameter name: $name\n";
 
     return $self->{$name}->{'value'};
-}
-
-#-----------------------------------------------------------------------------------------------
-sub getresolved
-{
-    # returns the value set in name with all embeded parameters resolved.
-    my($self,$name) = @_;
-
-    my $val = $self->get($name);
-    
-    my @vars = grep(/\$([\w_]+)/,$val);
-    my $v1 = $val;
-
-    while($v1 =~ /\$([\w_]+)(.*)$/){
-	print "v1: $v1\n";
-	my $newvar=$1;
-	$v1 = $2;
-	if(self->is_valid_name($newvar)){
-	    my $v2=$self->getresolved($newvar);
-	    $val =~ s/\$$newvar/$v2/;
-	}
-    }
-    return $val;
-}
-
-#-----------------------------------------------------------------------------------------------
-sub get_var_type
-{
-    # Return 'type' attribute for requested variable
-    my ($self, $name) = @_;
-
-    return $self->{$name}->{'type'};
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -365,143 +319,6 @@ sub is_valid_name
 
     my ($self, $name) = @_;
     return defined($self->{$name}) ? 1 : 0;
-}
-
-#-----------------------------------------------------------------------------------------------
-sub is_char
-{
-    # Return true if the requested name is of character type
-    my ($self, $name) = @_;
-
-    if ( $self->_get_type($name) eq "char" ) {
-        return( 1 );
-    } else {
-        return( 0 );
-    }
-}
-
-#-----------------------------------------------------------------------------------------------
-sub is_valid_value
-{
-    # Check if the input value is a valid value
-    my ($id, $value, $valid_values, $is_list_value) = @_;
-
-    # Check that a list value is not supplied when parameter takes a scalar value.
-    unless ($is_list_value) {  # this conditional is satisfied when the list attribute is false, i.e., for scalars
-	if ($value =~ /.*,.*/) {    
-	    # the pattern matches when $value contains a comma, i.e., is a list
- 	    die "Errorr is_valid_value; variable $id is a scalar but has a list value $value \n";
-	}
-   }
-
-    # Check that the value is valid
-    # if no valid values are specified, then $value is automatically valid
-    if ( $valid_values ne "" ) {  
-	if ($is_list_value) {
-	    unless (list_value_ok($value, $valid_values)) { 
-		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
-	    }
-	} else {
-	    unless (value_ok($value, $valid_values)) { 
-		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
-	    }
-	}
-
-    }
-    return 1;
-}
-
-#-----------------------------------------------------------------------------------------------
-sub validate_variable_value
-{
-    # Validate that a given value matches the expected input type definition
-    # Expected description of keys for the input type hash is:
-    #      type           type description (char, logical, integer, or real)       (string)
-    #      strlen         Length of string (if type char)                          (integer)
-    #      validValues    Reference to array of valid values                       (string)
-    #
-    my ($var, $value, $type_ref) = @_;
-    my $nm = "validate_variable_value";
-
-    # Perl regular expressions to match Fortran namelist tokens.
-    # Variable names.
-    # % for derived types, () for arrays
-    my $varmatch = "[A-Za-z_]{1,31}[A-Za-z0-9_]{0,30}[(0-9)%a-zA-Z_]*";
-
-    # Integer data.
-    my $valint = "[+-]?[0-9]+";
-    my $valint_repeat = "${valint}\\*$valint";
-
-    # Logical data.
-    my $vallogical1 = "[Tt][Rr][Uu][Ee]";
-    my $vallogical2 = "[Ff][Aa][Ll][Ss][Ee]";
-    my $vallogical = "$vallogical1|$vallogical2";
-    my $vallogical_repeat = "${valint}\\*$vallogical1|${valint}\\*$vallogical2";
-
-    # Real data.
-    # "_" are for f90 precision specification
-    my $valreal1 = "[+-]?[0-9]*\\.[0-9]+[EedDqQ]?[0-9+-]*";
-    my $valreal2 = "[+-]?[0-9]+\\.?[EedDqQ]?[0-9+-]*";
-    my $valreal = "$valreal1|$valreal2";
-    my $valreal_repeat = "${valint}\\*$valreal1|${valint}\\*$valreal2";
-
-    # Match for all valid data-types: integer, real or logical
-    # note: valreal MUST come before valint in this string to prevent integer portion of real 
-    #       being separated from decimal portion
-    my $valall = "$vallogical|$valreal|$valint";
-
-    # Match for all valid data-types with repeater: integer, real, logical, or string data
-    # note: valrepeat MUST come before valall in this string to prevent integer repeat specifier 
-    #       being accepted alone as a value
-    my $valrepeat = "$vallogical_repeat|$valreal_repeat|$valint_repeat";
-
-    # Match for all valid data-types with or without numberic repeater at the lead
-    my $valmatch = "$valrepeat|$valall";
-
-    # Same as above when a match isn't required
-    my $nrvalmatch = $valmatch. "||";
-
-    # Ensure type hash has required variables
-    if ( ref($type_ref) !~ /HASH/ ) {
-	die "ERROR: in $nm : Input type is not a HASH reference.\n";
-    }
-    foreach my $item ( "type", "validValues", "strlen" ) {
-	if ( ! exists($$type_ref{$item}) ) {
-	    die "ERROR: in $nm: Variable name $item not defined in input type hash.\n";
-	}
-    }
-    # If string check that less than defined string length
-    my $str_len = 0;
-    if ( $$type_ref{'type'} eq "char" ) {
-	$str_len = $$type_ref{'strlen'};
-	if ( length($value) > $str_len ) {
-	    die "ERROR: in $nm Variable name $var " .
-		"has a string element that is too long: $value\n";
-	}
-    }
-    # If not string -- check that array size is smaller than definition
-    my @values;
-    if ( $str_len == 0 ) {
-	@values = split( /,/, $value );
-	# Now check that values are correct for the given type
-	foreach my $i ( @values ) {
-	    my $compare;
-	    if (      $$type_ref{'type'} eq "logical" ) {
-		$compare = $vallogical;
-	    } elsif ( $$type_ref{'type'} eq "integer" ) {
-		$compare = $valint;
-	    } elsif ( $$type_ref{'type'} eq "real" ) {
-		$compare = $valreal;
-	    } else {
-		die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
-		    "not a valid FORTRAN type (logical, integer, real, or char).\n";
-	    }
-	    if ( $i !~ /^\s*(${compare})$/ ) {
-		die "ERROR: in $nm (package $pkg_nm): Variable name $var " .
-		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} . "\n";
-	    }
-	}
-    }
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -575,57 +392,6 @@ sub write_file
     print $fh "\n";
     print $fh "</config_definition> \n";
 }
-
-#-----------------------------------------------------------------------------------------------
-sub list_value_ok
-{
-    # Check that all input values ($values_in may be a comma separated list)
-    # are contained in the comma separated list of valid values ($valid_values).
-    # Return 1 (true) if all input values are valid, Otherwise return 0 (false).
-    my ($values_in, $valid_values) = @_;
-
-    my @values = split /,/, $values_in;
-    my $num_vals = scalar(@values);
-    my $values_ok = 0;
-
-    foreach my $value (@values) {
-	if (value_ok($value, $valid_values)) { ++$values_ok; }
-    }
-    ($num_vals == $values_ok) ? return 1 : return 0;
-}
-
-#-----------------------------------------------------------------------------------------------
-sub value_ok
-{
-    # Check that the input value is contained in the comma separated list of
-    # valid values ($valid_values).  Return 1 (true) if input value is valid,
-    # Otherwise return 0 (false).
-    my ($value, $valid_values) = @_;
-
-    # If the valid value list is null, all values are valid.
-    unless ($valid_values) { return 1; }
-
-    my @expect = split /,/, $valid_values;
-
-    $value =~ s/^\s+//;
-    $value =~ s/\s+$//;
-    foreach my $expect (@expect) {
-	if ($value =~ /^$expect$/) { return 1; }
-    }
-    return 0;
-}
-
-#-----------------------------------------------------------------------------------------------
-sub get_str_len
-{
-# Return 'str_len' attribute for requested variable
-
-    my ($self, $name) = @_;
-    my $lc_name = lc $name;
-
-    return $self->{$lc_name}->{'str_len'};
-}
-
 
 #-----------------------------------------------------------------------------------------------
 sub write_xml_entry

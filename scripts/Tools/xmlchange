@@ -80,7 +80,7 @@ if ($#ARGV == -1) {
 
 my $cwd = getcwd();   # current working directory
 unshift @INC, "$cwd/Tools";
-require ConfigCase;
+require SetupTools;
 
 # Parse command-line options.
 my @saved_argv = @ARGV;
@@ -213,7 +213,7 @@ foreach my $id ( keys(%idlist) )
 	    # Will die in is_valid_values if the check fails
 	    if ($value !~ m/^$/) {
 		my $newvalue = $idlist{$id};
-		ConfigCase::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
+		SetupTools::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
 	    }
 
 	    # If append mode is on - check that variable is of the character type

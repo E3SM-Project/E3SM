@@ -26,14 +26,6 @@
       <desc>contains both header and group information for all the case env_*.xml files </desc>
     </entry>
 
-    <entry id="GRIDS_SPEC_FILE"> 
-      <type>char</type>
-      <value>grids.xml</value>
-      <group>case_last</group>
-      <file>env_case.xml</file>
-      <desc>file containing specification of all supported model grids (for documentation only - DO NOT EDIT)</desc>
-    </entry>
-
     <entry id="GRIDS_DIR" >
       <type>char</type>
       <value>$CIMEROOT/scripts/cimeconfig</value>
@@ -42,20 +34,12 @@
       <desc>directory containing grids domain and mapping specification files (for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="GRIDS_DOMAINS_FILE" >
+    <entry id="GRIDS_SPEC_FILE"> 
       <type>char</type>
-      <value>UNSET</value>
+      <value>grids.xml</value>
       <group>case_last</group>
       <file>env_case.xml</file>
-      <desc>full pathname of file containing specification of all grid domains (for documentation only - DO NOT EDIT)</desc>
-    </entry>
-
-    <entry id="GRIDS_MAPPINGS_FILE" >
-      <type>char</type>
-      <value>UNSET</value>
-      <group>case_last</group>
-      <file>env_case.xml</file>
-      <desc>full pathname file containing specification of all grid domains (for documentation only - DO NOT EDIT)</desc>
+      <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
     </entry>
 
     <entry id="MACHINES_SPEC_FILE">

@@ -300,10 +300,6 @@ if (defined $opts{'user_grid_dir'}){
 }    
 my $file = "$grids_dir" . '/' . "grids.xml";
 $cfg_ref->set('GRIDS_SPEC_FILE', "$file");
-my $file = "$grids_dir" . '/' . "grids_domains.xml";
-$cfg_ref->set('GRIDS_DOMAINS_FILE', "$file");
-my $file = "$grids_dir" . '/' . "grids_maps.xml";
-$cfg_ref->set('GRIDS_MAPPINGS_FILE', "$file");
 
 #------------------------------------------------------------------------------------------
 # *** Options for listing (exit after listing) 
