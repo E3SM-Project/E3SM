@@ -3,10 +3,10 @@ module MathfuncMod
 
 !Module contains mathematical functions for some elementary manipulations
 !Created by Jinyun Tang
-   use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_kind_mod    , only : r8 => shr_kind_r8
    use clm_varctl      , only : iulog
-   use abortutils,   only: endrun   
-   use shr_log_mod ,   only: errMsg => shr_log_errMsg
+   use abortutils      , only : endrun   
+   use shr_log_mod     , only : errMsg => shr_log_errMsg
    !contains subroutines for array manipulation
    !and some useful functions
 implicit none
@@ -22,6 +22,8 @@ implicit none
    public :: addone
    public :: asc_sort_vec
    public :: is_bounded
+   public :: minp
+   public :: pd_decomp
    interface cumsum
      module procedure cumsum_v, cumsum_m
    end interface cumsum
@@ -285,5 +287,58 @@ contains
   else
     ans = .false.
   endif
-  end function is_bounded  
+  end function is_bounded
+  
+!--------------------------------------------------------------------------------
+  function minp(p,v)result(ans)
+  !find the minimum of the nonzero p entries, with the entry determined by
+  !nonzero values of v
+  
+  implicit none
+  real(r8), dimension(:), intent(in) :: p
+  real(r8), dimension(:), intent(in) :: v
+  
+  integer  :: j, sz
+  real(r8) :: ans      !(<=1._r8)
+  
+  SHR_ASSERT_ALL((size(p)           == size(v)), errMsg(__FILE__,__LINE__)) 
+  
+  sz = size(p)
+  ans = 1._r8
+  do j = 1, sz
+     if(v(j)/=0._r8)then
+        ans = min(ans, p(j))
+     endif
+  enddo
+  end function minp
+  
+!--------------------------------------------------------------------------------
+  subroutine pd_decomp(m, n, A, AP, AD)
+  !
+  !separate a input matrix A into AP and AD with positive
+  !and negative entries respectively.
+  
+  implicit none
+  integer, intent(in)  :: n, m
+  real(r8), intent(in) :: A(1: ,  1: )
+  real(r8), intent(out):: AP(1: , 1: )
+  real(r8), intent(out):: AD(1: , 1: )
+  integer :: i, j
+  
+  
+  SHR_ASSERT_ALL((ubound(A)           == (/m,n/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(AP)          == (/m,n/)), errMsg(__FILE__,__LINE__))
+  SHR_ASSERT_ALL((ubound(AD)          == (/m,n/)), errMsg(__FILE__,__LINE__))
+  
+  AP(:,:) = 0._r8
+  AD(:,:) = 0._r8
+
+  where(A>0._r8)
+    AP=A
+  elsewhere
+    AD=A
+  endwhere  
+  end subroutine pd_decomp
+
+  
 end module MathfuncMod
