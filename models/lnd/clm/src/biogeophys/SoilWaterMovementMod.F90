@@ -1110,7 +1110,9 @@ contains
       call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_PRESSURE, soe_auxvar_id, vsfm_soilp_col_1d)
 
       ! Put the data in CLM's data structure
+#if VSFM_DEBUG
       mass_end        = 0.d0
+#endif
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
 
@@ -1125,7 +1127,9 @@ contains
             h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)
 
 
+#if VSFM_DEBUG
             mass_end = mass_end + vsfm_mass_col_1d(idx)
+#endif
             vsfm_dmass_col(c) = vsfm_dmass_col(c) + (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
 
             smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]

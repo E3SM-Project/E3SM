@@ -1081,8 +1081,6 @@ contains
     integer               :: nclumps               ! number of clumps on this processor
     integer               :: nc                    ! clump index
     integer               :: c,fc,j                ! do loop indices
-    PetscInt              :: jwt                   ! index of first unsaturated soil layer
-    PetscInt              :: idx                   ! 1D index for (c,j)
     type(bounds_type)     :: bounds_proc
     real(r8)              :: z_up, z_dn            ! [m]
 
@@ -1098,8 +1096,10 @@ contains
     real(r8), pointer     :: vsfm_soilp_col_1d(:)
     logical               :: restart_vsfm
 #ifdef USE_PETSC_LIB
+    PetscInt              :: jwt                   ! index of first unsaturated soil layer
+    PetscInt              :: idx                   ! 1D index for (c,j)
+    PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
     PetscErrorCode        :: ierr
-    PetscInt              :: soe_auxvar_id                   ! Index of system-of-equation's (SoE's) auxvar
 #endif
     character(len=32)     :: subname = 'initialize3'
     !----------------------------------------------------------------------
