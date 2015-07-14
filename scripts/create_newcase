@@ -254,7 +254,7 @@ my $cfg_ref = ConfigCase->new("");
 #------------------------------------------------------------------------------------------
 # The following file determines all non-component specific file and directory variables
 # that will be added to $cfg_ref
-my $file = "$cimeroot/scripts/cimeconfig/files_general_spec.xml";
+my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
 
 # Read the general specification file and add to $cfg_ref each variable in that file
 my $srcroot  = "$cimeroot/../"; #TODO - this needs to be generalized
@@ -320,7 +320,7 @@ if ($opts{'testlist'}) {
 # The following file now replaces what used to be config_compsets.xml
 # Each primary component is responsible for defining the compsets that turn of the
 # appropriate feedbacks for development of that component
-my $file = "$cimeroot/scripts/cimeconfig/files_compset_spec.xml";
+my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
 
 # First determine primary component (for now this is only CESM specific)
 my $primary_component;
@@ -380,7 +380,7 @@ foreach my $element (@elements) {
 # Finally, given the compset components, determine the full pathname of each compset
 # component xml variable definition file (all have the generic name definitions_component.xml) 
 # and the directories each component's buildlib and buildnml files
-my $file = "$cimeroot/scripts/cimeconfig/files_component_spec.xml";
+my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
 foreach my $component (@compset_components) {
     $cfg_ref->add_file_component_spec_variables($file, $cimeroot, $srcroot, $component);
 }
@@ -475,7 +475,9 @@ if (ProjectTools::set_project($project)) {
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
+print "DEBUG: i am here1 \n";
 ConfigPes::setPes($pecount, $compset_longname, $machine, $cimeroot, $primary_component, \%opts, $cfg_ref);
+print "DEBUG: i am here2 \n";
 
 #------------------------------------------------------------------------------------------
 # *** Set the mpi library and the repotag
@@ -886,7 +888,7 @@ sub _create_caseroot_files
     }
 
     # Create env_case.xml
-    my  $caseheaders_file = $cfg_ref->get('CASEFILE_DESCRIPTIONS');
+    my  $caseheaders_file = $cfg_ref->get('CASEFILE_HEADERS');
     (-f $caseheaders_file) or die "ERROR: case header file $caseheaders_file does not exist \n";
 
     $cfg_ref->write_file("$caseroot/env_case.xml", "$caseheaders_file", $caseroot, $cimeroot );

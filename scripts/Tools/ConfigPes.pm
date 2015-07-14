@@ -201,10 +201,8 @@ sub _setPIOsettings
     # Read xml file
     my $parser = XML::LibXML->new( no_blanks => 1);
     my $cimeroot = $cfg_ref->get('CIMEROOT');
-    my $file = $cfg_ref->get('DEFINITIONS_PIO_FILE');
+    my $file = $cfg_ref->get('DEFINITIONS_CONFIG_FILE');
     $file =~ s/\$CIMEROOT/$cimeroot/;
-
-    my $grid = $cfg_ref->get('GRID');
     my $xmlparser = $parser->parse_file("$file");
 
     # Set pio settings to the default values
@@ -219,6 +217,7 @@ sub _setPIOsettings
     }
     
     # Overwrite default pio settings with supported machine settings
+    my $grid = $cfg_ref->get('GRID');
     my @pio_nodes = $xmlparser->findnodes(".//pio/mach[\@name=\"$mach\"]");
     foreach my $pio_node (@pio_nodes) {
 	my @children = $pio_node->childNodes();

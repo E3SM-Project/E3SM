@@ -383,11 +383,11 @@ sub _build_usernl_files {
 
 
     my $model = uc($model);
-    my $bld_dir = `xmlquery BLD_${model}_DIR -value`;
+    my $bld_dir = `./xmlquery BLD_${model}_DIR -value`;
     (-d $bld_dir) or die "ERROR _build_user_nl_files: cannot find bld directory $bld_dir for component $comp\n"; 
 
     if ($comp eq 'cpl') {
-	my $bld_dir = `xmlquery BLD_DRV_DIR -value`;
+	my $bld_dir = `./xmlquery BLD_DRV_DIR -value`;
 	if ( ! -f "$caseroot/user_nl_cpl" ) {
 	    my $sysmod = "cp $bld_dir/user_nl_cpl $caseroot/user_nl_cpl";
 	    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";

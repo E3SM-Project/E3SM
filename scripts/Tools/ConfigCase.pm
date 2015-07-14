@@ -129,7 +129,7 @@ sub add_file_general_spec_variables
     my ($self, $file, $cimeroot, $srcroot, $caseroot) = @_;
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    my @nodes = $xml->findnodes(".//entry");
+    my @nodes = $xml->findnodes(".//files_case/entry");
     if (! @nodes) {
 	die "ERROR add_config_variables: no variable elements in file $file \n"; 
     }
@@ -156,7 +156,7 @@ sub add_file_compset_spec_variables
     my ($self, $file, $cimeroot, $srcroot, $primary_component) = @_;
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    my @nodes = $xml->findnodes(".//entry");
+    my @nodes = $xml->findnodes(".//files_compsets/entry");
     if (! @nodes) {
 	die "ERROR add_config_variables: no variable elements in file $file \n"; 
     }
@@ -193,7 +193,7 @@ sub add_file_component_spec_variables
     my ($self, $file, $cimeroot, $srcroot, $input_component) = @_;
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    my @nodes = $xml->findnodes(".//entry");
+    my @nodes = $xml->findnodes(".//files_components/entry");
     if (! @nodes) {
 	die "ERROR add_config_variables: no variable elements in file $file \n"; 
     }
