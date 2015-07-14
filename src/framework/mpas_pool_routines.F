@@ -4792,7 +4792,7 @@ module mpas_pool_routines
       newmem % data % contentsType = MPAS_POOL_INTEGER
       newmem % data % contentsDims = 1
       newmem % data % contentsTimeLevs = 0
-      allocate(newmem % data % simple_int_arr(newmem % data % contentsDims))
+      allocate(newmem % data % simple_int_arr(size(dims)))
       newmem % data % simple_int_arr(:) = dims(:)
    
       if (.not. pool_add_member(inPool, key, newmem)) then
