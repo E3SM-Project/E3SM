@@ -5,6 +5,8 @@ project(cime_tests Fortran C)
 
 list(APPEND CMAKE_MODULE_PATH ${CESM_CMAKE_MODULE_DIRECTORY})
 include(CESM_utils)
+find_package(NETCDF)
+include_directories(${NETCDF_INCLUDE_DIRS})
 
 set(CIME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -20,11 +22,10 @@ ExternalProject_add(mct_project
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}
   SOURCE_DIR ${MCT_ROOT}
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/mct
-  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-mpiserial --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR}
+  CONFIGURE_COMMAND ${MCT_ROOT}/configure --enable-debugging --prefix=${CMAKE_CURRENT_BINARY_DIR}
   BUILD_COMMAND make SRCDIR=${MCT_ROOT}
-  # Leave things in <BINARY_DIR> rather than "installing", because mpi-serial
-  # just doesn't install properly in the out-of-source build, and we have no
-  # need to move things around inside of the CMake binary directory anyway.
+  # Leave things in <BINARY_DIR> rather than "installing", because we have
+  # no need to move things around inside of the CMake binary directory.
   INSTALL_COMMAND :
   )
 # This copy_makefiles step is needed because mct currently doesn't support an
@@ -38,19 +39,13 @@ ExternalProject_add_step(mct_project copy_makefiles
   COMMAND cp -p <SOURCE_DIR>/mct/Makefile mct/
   COMMAND mkdir -p mpeu
   COMMAND cp -p <SOURCE_DIR>/mpeu/Makefile mpeu/
-  COMMAND mkdir -p mpi-serial
-  COMMAND cp -p <SOURCE_DIR>/mpi-serial/Makefile mpi-serial/
-  COMMAND cp <SOURCE_DIR>/mpi-serial/mpif.h mpi-serial/
-  COMMAND cp <SOURCE_DIR>/mpi-serial/mpi.h mpi-serial/
   )
 
 # Tell cmake to look for libraries & mod files here, because this is where we built libraries
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mct)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mct)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpeu)
-link_directories(${CMAKE_CURRENT_BINARY_DIR}/mct/mpi-serial)
 
 # ------------------------------------------------------------------------
 # Done MCT build

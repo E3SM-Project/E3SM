@@ -4,8 +4,8 @@
 
     Model Coupling Toolkit (MCT)
 
-    Jay Larson
     Robert Jacob
+    Jay Larson
     Everest Ong
     Ray Loy
 	
@@ -15,7 +15,7 @@
 
 ######################################################################
 
-  This is version 2.8 of the Model Coupling Toolkit (MCT).
+  This is version 2.9 of the Model Coupling Toolkit (MCT).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
@@ -52,13 +52,14 @@ Optional Contents available
 
   babel/   -- multi language interface for MCT using BABEL.
               See babel/README for more information.
+	      NO LONGER SUPPORTED
 
 ######################################################################
   REQUIREMENTS:
 
   Building MCT requires a Fortran90 compiler.
 
-  An MPI library is now optional.  To compile without MPI, add
+  A full MPI library is now optional.  To compile without MPI, add
   --enable-mpiserial to the configure command below.  Note that
   not all the examples will work without MPI.  See mpi-serial/README
   for more information.
@@ -78,7 +79,7 @@ Optional Contents available
   NEC
   Fujitsu
 
-  Running some of the examples requires a parallel platform.
+  Running some of the examples requires a full MPI installation with mpirun
   Memory requirements are modest.
 
 ######################################################################
@@ -112,12 +113,8 @@ Optional Contents available
   configure command)
 
   PLATFORM NOTES:
-  On a BlueGene/P, use:
+  On a BlueGene, use:
   >  ./configure FC=bgxlf90_r CC=mpixlc_r MPIFC=mpixlf90_r (can also use versions without _r)
-  At ALCF, one can just type "./configure".
-
-  On the Cray X* (e.g. jaguar) use:
-  > ./configure --host=Linux FC=ftn MPIFC=ftn 
 
 ######################################################################
   INSTALLATION INSTRUCTIONS:
@@ -146,12 +143,8 @@ Optional Contents available
   Both MCT and MPEU source code are self-documenting.  All modules 
   and routines contain prologues that can be extracted and processed 
   into LaTeX source code by the public-domain tool ProTeX.  ProTeX is
-  available by anonymous ftp from:
-
-     Software:
-      ftp://dao.gsfc.nasa.gov/pub/papers/sawyer/protex1.4.tar.Z 
-     Documentation:
-      ftp://dao.gsfc.nasa.gov/pub/office_notes/on9711r0.ps.Z 
+  included in the MCT source and available from:
+  http://gmao.gsfc.nasa.gov/software/protex/
 
   You can build the documentation with protex and latex by following
   the directions in the doc directory.
@@ -202,7 +195,4 @@ Optional Contents available
   05 Jul, 2012 -- version 2.8.1 (not released)
   12 Sep, 2012 -- version 2.8.2 (not released)
   16 Dec, 2012 -- version 2.8.3
-
-Tag $Name$
-$Id$
-
+  19 Jun, 2015 -- version 2.9.0

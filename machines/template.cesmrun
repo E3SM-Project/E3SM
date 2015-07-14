@@ -3,6 +3,8 @@
 # Batch system directives
 #------------------------------------------------------------------------------
 {{ batchdirectives }}
+use strict;
+use warnings;
 use POSIX qw(strftime);
 use File::Path;
 use File::Copy;
@@ -15,6 +17,7 @@ use Getopt::Long;
 my $scriptname = $0;
 my $caseroot = "{{ caseroot }}";
 my $cimeroot = "{{ cimeroot }}";
+my %opts;
 chdir $caseroot;
 my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
@@ -40,8 +43,6 @@ $ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
 my $banner = "*" x 65;
 my %config;
 my $case;
-my $caseroot;
-my $cimeroot; 
 my $compiler;
 my $machine; 
 my $machroot;
@@ -68,10 +69,12 @@ sub getOptions()
 {
 	%opts = (
 			 debug => undef,
+             #sta_ok => undef,
 			);
 	
 	GetOptions(
 			  "debug" => \$opts{'debug'},
+			  #"sta_ok" => \$opts{'sta_ok'},
 			  );
 }
 
@@ -92,6 +95,14 @@ sub doPreRunChecks()
     $machroot            = $config{'CCSM_MACHDIR'};
     $mpilib              = $config{'MPILIB'};
     $scriptsroot         = $config{'SCRIPTSROOT'};
+    if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
+	{
+		print "You are not calling the CESM run script via the CESM submit script. \n";
+		print "As a result, short-term archiving will not be called automatically. \n";
+		print "Please submit your CESM run by running the submit script like so:   \n";
+		print "./$case.submit\n";
+		exit(1);
+	}
 	
 	# Change to the case root
 	chdir($config{'CASEROOT'});
@@ -107,7 +118,15 @@ sub doPreRunChecks()
 	                                    scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
 	$moduleloader->loadModules();
 	
-	$ENV{'MP_MPILIB'} = $buildenv->getresolved('MPILIB');
+    my $mpilib = $buildenv->getresolved('MPILIB');
+    if($mpilib =~ /mpi-serial/)
+    {
+        delete $ENV{'MP_MPILIB'};
+    }
+    else
+    {
+        $ENV{'MP_MPILIB'} = $buildenv->getresolved('MPILIB');
+    }
 	$config{'MPILIB'} = $buildenv->getresolved('MPILIB');
 	
 	print "build complete? $config{'BUILD_COMPLETE'}\n";
@@ -125,7 +144,7 @@ sub doPreRunChecks()
 		$ENV{'BATCHQUERY'} = "undefined";
 	}
 	
-	elsif ( $config{'BATCHSUBMIT'} == 'UNSET')
+	elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
 	{
 		$ENV{'LBSUBMIT'} = "FALSE";
 		$ENV{'BATCHSUBMIT'} = "undefined";
@@ -149,7 +168,7 @@ sub doPreRunChecks()
 	$ENV{'LID'} = $LID;
 	$ENV{'sdate'} = $sdate;
 	
-	open my $CS, ">", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
+	open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
 	print $CS "run started $sdate\n";
 	close $CS;
 	
@@ -198,7 +217,7 @@ sub checkInputData()
         print "expected location, and are not from the input data repository.\n";
         print "This is informational only.\n";
 	
-		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'});
+		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
 	}
 	
 	if(@missing)
@@ -207,7 +226,8 @@ sub checkInputData()
 		qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export);
 	}
 	
-	@missing = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+    my @potmissing  = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+	@missing = grep { /missing/ } @potmissing;
 	if(@missing)
 	{
 		my @notfound = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
@@ -223,9 +243,9 @@ sub checkInputData()
 	# Prestage our reference case if required..
 	if( ($config{'GET_REFCASE'} eq 'TRUE') && ($config{'RUN_TYPE'} ne 'startup') && ($config{'CONTINUE_RUN'} eq 'FALSE'))
 	{
-		#my $refdir = "$config{'DIN_LOC_ROOT'}/$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
 		my $refdir = "$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
-		if(! -d $config{'DIN_LOC_ROOT'}/$refdir)
+		my $fullrefdirpath = "$config{'DIN_LOC_ROOT'}/ccsm4_init/$refdir";
+		if(! -d $fullrefdirpath)
 		{
             print "$banner\n";
             print "ccsm_prestage ERROR: $refdir is not on local disk!\n";
@@ -244,18 +264,18 @@ sub checkInputData()
 		
 		# prestage the reference case's files.  
 		mkpath $config{'RUNDIR'} if (! -d $config{'RUNDIR'});
-		my @refcasefiles = glob("$config{'DIN_LOC_ROOT'}/$refdir/*$config{'RUN_REFCASE'}*");
+		my @refcasefiles = glob("$fullrefdirpath/*$config{'RUN_REFCASE'}*");
 		foreach my $rcfile(@refcasefiles)
 		{
 			my $rcbasename = basename($rcfile);
 			if(! -f "$config{'RUNDIR'}/$rcbasename")
 			{
-				symlink($rcfile, $config{'RUNDIR'}) or warn "could not symlink $rcfile to $config{'RUNDIR'}, $!";
+				symlink($rcfile, "$config{'RUNDIR'}/$rcbasename") or warn "could not symlink $rcfile to $config{'RUNDIR'}/$rcbasename, $!";
 			}
 		}
 
 		# find the *rpointer* files, copy them to the rundir. 
-		my @rpointerfiles = glob("$config{'DIN_LOC_ROOT'}/$refdir/*rpointer*");
+		my @rpointerfiles = glob("$fullrefdirpath/*rpointer*");
 		foreach my $rpointerfile(@rpointerfiles)
 		{
 			copy($rpointerfile, $config{'RUNDIR'});
@@ -382,6 +402,26 @@ sub postRun()
             copy($logfile, $config{'LOGDIR'});
         }
     }
+
+    # Run the getTiming script if desired
+	my $owd = getcwd();
+	chdir $config{'CASEROOT'};
+    if($config{'CHECK_TIMING'} eq 'TRUE')
+    {
+        my $timingDir = $config{'CASEROOT'} . "/timing";
+        mkpath $timingDir if(! -e $timingDir);
+        print "running timing script..\n";
+        qx( $config{'CASETOOLS'}/getTiming -lid $LID );
+        print "gzipping timing stats..\n";
+        qx( gzip timing/cesm_timing_stats.$LID );
+    }
+	chdir $owd;
+
+    # Save the timing files if desired
+    if($config{'SAVE_TIMING'} eq 'TRUE')
+    {
+        move( "$config{'RUNDIR'}/timing",  "$config{'RUNDIR'}/timing.$LID");
+    }
 }
 sub appendCaseStatus
 {
@@ -394,13 +434,6 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    #if($config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
-    #{
-    #    my $batchutils = new Batch::BatchUtils(machine => $config{'MACH'}, machroot => $config{'CCSM_MACHDIR'},
-    #                                    caseroot => $config{'CASEROOT'}, caseconfig => \%config);
-    #    $batchutils->doResubmit();
-    #}
-
     my $islastjob = 'FALSE';
     my $resubmit = $config{'RESUBMIT'};
 
@@ -408,19 +441,12 @@ sub resubmitCheck()
     {
         $islastjob = 'TRUE';
     }
-    #if($config{'CONTINUE_RUN'} eq 'TRUE' && $config{'RESUBMIT'} > 0 && defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
-    #{
-    #    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
-    #                                                              ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
-    #                                                              machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
-    #                                                              scriptsroot => $config{'SCRIPTSROOT'} );
-    #    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname);
-    #}
+
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
                                                               ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
                                                               machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
                                                               scriptsroot => $config{'SCRIPTSROOT'} );
-    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname);
+    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
 sub Debug
 {

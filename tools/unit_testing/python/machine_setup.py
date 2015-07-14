@@ -100,7 +100,7 @@ class MachineCompilerSettings(object):
             "OS": platform.system(),
             "compile_threaded": "true" if use_openmp else "false",
             }
-        if(mpilib):
+        if mpilib:
             self.machine_dict["MPILIB"] = mpilib
         else:
             self.machine_dict["MPILIB"] = 'mpi-serial'

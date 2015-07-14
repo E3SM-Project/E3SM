@@ -31,7 +31,12 @@ sub main
 	{
 		print "$_";
 	}
-	wait;
+    close $CHECKCASE;
+    if($?)
+    {
+        print "check_case failed\n";
+        exit(-1);
+    }
 	
 	my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
                                             mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'},
@@ -43,8 +48,8 @@ sub main
                                             ccsmroot => $cimeroot, compiler => $compiler, machine => $machine, 
                                             machroot => $machroot, mpilib => $mpilib, scriptsroot => $scriptsroot );
 	
-	$batchutils->dependencyCheck();
-	$batchutils->submitJobs();
+	$batchutils->dependencyCheck("sta_ok");
+	$batchutils->submitJobs("sta_ok");
 }
 
 main(@ARGV) unless caller();

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use Cwd;
-use POSIX qw(ceil);
+use POSIX qw(ceil floor);
 use Exporter qw(import);
 
 #==============================================================================
@@ -264,14 +264,14 @@ sub _computeValues
 	$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
-		my $taskpernuma = $taskpernode / 2;
+		my $taskpernuma = ceil($taskpernode / 2);
 		$aprun .= " -S $taskpernuma -cc numa_mode ";
 	}
 
 	# add all the calculated numbers as instance data. 
 	$self->{'totaltasks'} = $totaltasks;
 	$self->{'taskpernode'} = $taskpernode;
-    $self->{'taskpernuma'}  = $taskpernode / 2;
+    $self->{'taskpernuma'}  = ceil($taskpernode / 2);
 	$self->{'maxthreads'} = $maxthreads;
 	$self->{'minthreads'} = $minthreads;
 	$self->{'taskgeom'} = $taskgeom;
@@ -285,11 +285,11 @@ sub _computeValues
 	$self->{'nodecount'} = ceil($self->{'nodecount'}) if ( $taskcount % $taskpernode != 0);
 	$self->{'pbsrs'} = $pbsrs . "$self->{nodecount}:ncpus=$self->{'MAX_TASKS_PER_NODE'}:mpiprocs=${taskpernode}:ompthreads=${threadcount}:model=";
 
-	# Finally, calculate ptile..  
+	# calculate ptile..  
 	my $ptile = $self->{'MAX_TASKS_PER_NODE'} / 2;
 	if($self->{'maxthreads'} > 1)
 	{
-		$ptile = $self->{'MAX_TASKS_PER_NODE'} / $self->{'maxthreads'};
+		$ptile = floor($self->{'MAX_TASKS_PER_NODE'} / $self->{'maxthreads'});
 	}
 	$self->{'ptile'} = $ptile;
 
