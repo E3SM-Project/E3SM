@@ -20,8 +20,6 @@
           deallocate_cloudiness, &
           driver_cloudiness
 
- integer,private:: i,j,k
-
 
 !>\brief MPAS driver for parameterization of the diagnostic cloud fraction.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -73,6 +71,9 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
 
+!local variables:
+ integer:: i,j,k
+
 !--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
@@ -94,6 +95,9 @@
 
 !local pointers:
  real(kind=RKIND),dimension(:,:),pointer:: cldfrac
+
+!local variables:
+ integer:: i,j,k
 
 !--------------------------------------------------------------------------------------------------
 
@@ -162,6 +166,7 @@
 
 !local variables:
  real(kind=RKIND),parameter:: thresh = 1.e-06
+ integer:: i,j,k
 
 !--------------------------------------------------------------------------------------------------
 
@@ -220,6 +225,7 @@
 
  real(kind=RKIND):: esi,esw,qvsi,qvsw
  real(kind=RKIND):: arg,denom,qcld,qvs,rhum,subsat,weight
+ integer:: i,j,k
 
 !--------------------------------------------------------------------------------------------------
 

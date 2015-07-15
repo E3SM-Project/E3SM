@@ -30,8 +30,6 @@
  integer,parameter,private:: scm_force_flux = 0  !SCM surface forcing by surface fluxes.
                                                  !0=no 1=yes (WRF single column model option only).
 
- integer,private:: i,j
-
 
 !>\brief MPAS driver for parameterization of the surface layer.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -180,6 +178,9 @@
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
 
+!local variables:
+ integer:: i,j
+
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: skintemp,xland
  real(kind=RKIND),dimension(:),pointer:: dcEdge_m,hpbl,mavail
@@ -276,6 +277,9 @@
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
+
+!local variables:
+ integer:: i,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,fh,fm,flhc,flqc,gz1oz0,hfx,    &

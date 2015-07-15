@@ -23,8 +23,6 @@
           deallocate_pbl, &
           driver_pbl
 
- integer,private:: i,j,k
-
 
 !>\brief MPAS driver for parameterization of Planetary Boundary Layer (PBL) processes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -144,6 +142,9 @@
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: sfc_input
 
+!local variables:
+ integer:: i,k,j
+
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: xland
  real(kind=RKIND),dimension(:),pointer:: br,gz1oz0,hfx,hpbl,fm,fh,qfx,regime,u10,ust,v10,wspd,znt
@@ -217,6 +218,9 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+!local variables:
+ integer:: i,k,j
 
 !local pointers:
  integer,dimension(:),pointer:: kpbl

@@ -34,8 +34,6 @@
 !urban physics: MPAS does not plan to run the urban physics option.
  integer,parameter:: sf_urban_physics = 0 !activate urban canopy model (=0: no urban canopy) 
 
- integer,private:: i,j,k,n
-
 !>\brief MPAS driver for parameterization of land surface processes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
 !>\date 2013-05-01.
@@ -239,6 +237,7 @@
 !local variables and arrays:
  logical:: do_fill
  integer:: ip,iEdg
+ integer:: i,j,n
 
 !--------------------------------------------------------------------------------------------------
 
@@ -400,6 +399,7 @@
 
 !local variables and arrays:
  integer:: ip,iEdg
+ integer:: i,j,n
 
 !--------------------------------------------------------------------------------------------------
 

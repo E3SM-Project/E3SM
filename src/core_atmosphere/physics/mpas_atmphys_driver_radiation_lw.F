@@ -32,8 +32,6 @@
           init_radiation_lw,       &
           radiation_camlw_to_MPAS
 
- integer,private:: i,j,k,kk,n
-
 
 !>\brief MPAS driver for parameterization of longwave radiation codes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -272,6 +270,7 @@
 
 !local variables and arrays:
  integer:: ncols,nlevs
+ integer:: i,j,k,n
  real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
 
 !--------------------------------------------------------------------------------------------------
@@ -526,6 +525,7 @@
 
 !local variables and arrays:
  integer:: nlay,pcols
+ integer:: i,j,k
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
 
 !--------------------------------------------------------------------------------------------------
@@ -574,6 +574,9 @@
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
+
+!local variables:
+ integer:: i,j,k,n
 
 !local pointers:
  real(kind=RKIND),dimension(:,:),pointer  :: emstot

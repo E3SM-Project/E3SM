@@ -28,8 +28,6 @@
           update_convection_step1, &
           update_convection_step2
 
- integer, private:: i,k,j
-
 
 !>\brief MPAS driver for parameterization of convection.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -81,6 +79,9 @@
 !==================================================================================================
  subroutine allocate_convection
 !==================================================================================================
+
+!local variables:
+ integer:: i,k,j
 
  if(.not.allocated(cu_act_flag)) allocate(cu_act_flag(ims:ime,jms:jme)       )
  if(.not.allocated(rthcuten_p) ) allocate(rthcuten_p(ims:ime,kms:kme,jms:jme))
@@ -279,6 +280,7 @@
  logical:: log_convection
  integer:: icount
  real(kind=RKIND):: dx
+ integer:: i,j
 
 !variables specific to Kain_Fritsch parameterization:
  logical:: warm_rain,adapt_step_flag
@@ -408,6 +410,9 @@
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten 
  real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten 
 
+!local variables:
+ integer:: i,k,j
+
 !--------------------------------------------------------------------------------------------------
 ! write(0,*)
 ! write(0,*) '--- enter subroutine convection_from_MPAS:'
@@ -508,6 +513,9 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+!local variables:
+ integer:: i,k,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv

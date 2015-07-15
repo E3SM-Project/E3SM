@@ -23,8 +23,6 @@
           deallocate_gwdo, &
           driver_gwdo
 
- integer,private:: i,j,k
-
 
 !>\brief MPAS driver for parameterization of gravity wave drag over orography.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -124,6 +122,9 @@
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: tend_physics
 
+!local variables:
+ integer:: i,k,j
+
 !local pointers:
  integer,dimension(:),pointer:: kpbl
  real(kind=RKIND),dimension(:),pointer  :: oa1,oa2,oa3,oa4,ol1,ol2,ol3,ol4,con,var2d
@@ -196,6 +197,9 @@
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+!local variables:
+ integer:: i,k,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: dusfcg,dvsfcg

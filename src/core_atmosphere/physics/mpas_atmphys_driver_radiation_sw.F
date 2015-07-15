@@ -30,8 +30,6 @@
           init_radiation_sw,       &
           radconst
 
- integer,private:: i,j,k,kk,n
-
 !>\brief MPAS driver for parameterization of shortwave radiation codes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
 !>\date 2013-05-01.
@@ -275,6 +273,9 @@
  integer,intent(in):: time_lev
  real(kind=RKIND),intent(in):: xtime_s
 
+!local variables:
+ integer:: i,j,k,n
+
 !local pointers:
  logical,pointer:: config_o3climatology
 
@@ -501,6 +502,9 @@
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
+
+!local variables:
+ integer:: i,j,k,n
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer  :: coszr,gsw,swcf,swdnb,swdnbc,swdnt,swdntc, &

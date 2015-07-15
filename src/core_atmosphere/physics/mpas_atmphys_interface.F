@@ -22,8 +22,6 @@
           microphysics_from_MPAS,    &
           microphysics_to_MPAS
 
- integer:: i,j,k
-
 !>\brief interface for conversion between variables used in the MPAS dynamical core and variables
 !> needed in the physics parameterizations.  
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
