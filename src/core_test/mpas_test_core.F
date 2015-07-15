@@ -74,6 +74,7 @@ module test_core
       use mpas_derived_types
       use mpas_kind_types
       use mpas_timer
+      use mpas_geometry_utils
    
       implicit none
    
@@ -85,6 +86,8 @@ module test_core
 
 
       iErr = 0
+
+      call mpas_unit_test_velocity_conversion(iErr)
 
    end function test_core_run!}}}
 

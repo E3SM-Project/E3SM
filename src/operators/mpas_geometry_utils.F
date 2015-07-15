@@ -1332,33 +1332,141 @@ module mpas_geometry_utils
 !> \author  Phillip Wolfram
 !> \date    09/13/2014
 !> \details
-!>  Returns the zonal and meridional velocity field (Uzon,Umer) from velocity field defined
-!>     in R3: (x,y,z) point with velocity vectors (Ux,Uy,Uz).
+!>  Returns the zonal and meridional velocity field (Uzon,Umer) from 
+!>  velocity field defined in R3: (x,y,z) point with velocity 
+!>  vectors (Ux,Uy,Uz).
 !------------------------------------------------------------------------
-   subroutine mpas_convert_xyz_velocity_to_latlon(Uzon, Umer, x,y,z, Ux,Uy,Uz) !{{{
+   subroutine mpas_convert_xyz_velocity_to_latlon(Uzon, Umer, xyzPoint, xyzVel) !{{{
       implicit none
 
       ! input
-      real(kind=RKIND), intent(in) :: x,y,z , Ux,Uy,Uz
+      real(kind=RKIND), dimension(3), intent(in) :: xyzPoint, xyzVel
       ! output
       real(kind=RKIND), intent(out) :: Uzon, Umer
       ! local
       real(kind=RKIND) :: Rxy, Rxyz, slon,clon,slat,clat
 
+      ! test for singularities at the poles
+      if(xyzPoint(1) == 0.0_RKIND .and. xyzPoint(2) == 0.0_RKIND) then 
+#ifdef MPAS_DEBUG
+        write(stderrUnit,*) 'Point is located at a pole, cannot convert accurately to lat/lon velocity!'
+#endif
+        ! velocity is undefined but return 0s for testing purposes
+        Uzon = 0.0_RKIND
+        Umer = 0.0_RKIND
+        return
+      end if
 
       ! compute geometric coordinate transform coefficients
-      Rxy  = sqrt(x**2.0_RKIND + y**2.0_RKIND)
-      Rxyz = sqrt(x**2.0_RKIND + y**2.0_RKIND + z**2.0_RKIND)
-      slon = y/Rxy
-      clon = x/Rxy
-      slat = sqrt(Rxyz**2.0_RKIND - z**2.0_RKIND)/Rxyz
-      clat = z/Rxyz
+      Rxy  = sqrt(xyzPoint(1)**2.0_RKIND + xyzPoint(2)**2.0_RKIND)
+      Rxyz = sqrt(xyzPoint(1)**2.0_RKIND + xyzPoint(2)**2.0_RKIND + xyzPoint(3)**2.0_RKIND)
+      slon = xyzPoint(2)/Rxy
+      clon = xyzPoint(1)/Rxy
+      slat = xyzPoint(3)/Rxyz
+      clat = Rxy/Rxyz
+
 
       ! compute the zonal and meridional velocity fields
-      Uzon = -slon*Ux + clon*Uy
-      Umer = -slat*(clon*Ux + slon*Uy) + clat*Uz
+      Uzon = -slon*xyzVel(1) + clon*xyzVel(2)
+      Umer = -slat*(clon*xyzVel(1) + slon*xyzVel(2)) + clat*xyzVel(3)
 
    end subroutine mpas_convert_xyz_velocity_to_latlon !}}}
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_velocity_conversion
+!
+!> \brief   Simple unit test for testing the mpas_convert_xyz_velocity_to_latlon routine.
+!> \author  Phillip J. Wolfram
+!> \date    07/15/2015
+!> \details
+!>  This routine tests the mpas_convert_xyz_velocity_to_latlon routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_velocity_conversion(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(3) :: sphereLocation
+      real (kind=RKIND), dimension(3) :: velocity
+      real (kind=RKIND) :: zonalVel, meridVel
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+
+      ierr = 0
+
+      ! equator case (merid vel)
+      sphereLocation = (/ 1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      velocity = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
+      call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
+      if (abs(zonalVel - 0.0_RKIND ) > eps .or. &
+          abs(meridVel - 1.0_RKIND ) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test1 - FAILED.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test1 - SUCCESS'
+      end if
+      
+      ! equator case (merid vel)
+      sphereLocation = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
+      velocity = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
+      call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
+      if (abs(zonalVel - 0.0_RKIND ) > eps .or. &
+          abs(meridVel - 1.0_RKIND ) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test2 - FAILED.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test2 - SUCCESS'
+      end if
+     
+      ! pole case
+      sphereLocation = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
+      velocity = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
+      call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
+      if (abs(zonalVel - 0.0_RKIND ) > eps .or. &
+          abs(meridVel - 0.0_RKIND ) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test3 - FAILED.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
+      end if
+      
+      ! equator case (zonal vel)
+      sphereLocation = (/ 1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      velocity = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
+      call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
+      if (abs(zonalVel - 1.0_RKIND ) > eps .or. &
+          abs(meridVel - 0.0_RKIND ) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test3 - FAILED.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
+      end if
+      
+      ! equator case (zonal vel)
+      sphereLocation = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
+      velocity = (/ -1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      call mpas_convert_xyz_velocity_to_latlon(zonalVel, meridVel, sphereLocation, velocity)
+      if (abs(zonalVel - 1.0_RKIND ) > eps .or. &
+          abs(meridVel - 0.0_RKIND ) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test4 - FAILED.'
+         ierr = 1
+      else
+         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test4 - SUCCESS'
+      end if
+
+   end subroutine mpas_unit_test_velocity_conversion!}}}
 
 
 !***********************************************************************
