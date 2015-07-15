@@ -56,10 +56,6 @@ if ( $COMPILER == "intel") then
 endif
 if ( $COMPILER == "pgi" ) then
   module load pgi/15.1
-  module load netcdf/4.3.0
-if ( $MPILIB != "mpi-serial") then
-  module load pnetcdf/1.4.1
-endif
 endif
 if ( $COMPILER == "gnu" ) then
   module load gnu/5.1.0
