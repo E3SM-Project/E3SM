@@ -484,13 +484,13 @@
     type="real"
     dimensions="nBuoyancyLayers nCells Time"
     units="s^{-1}"
-    description="Derivative of thickness weighted zonal velocity with respect to z."
+    description="Derivative of thickness weighted zonal velocity with respect to z (vertical coordinate)."
   />
   <var name="dvTWAdz"
     type="real"
     dimensions="nBuoyancyLayers nCells Time"
     units="s^{-1}"
-    description="Derivative of thickness weighted meridional velocity with respect to z."
+    description="Derivative of thickness weighted meridional velocity with respect to z (vertical coordinate)."
   />
 
 
@@ -500,6 +500,42 @@
     dimensions="R3 R3 nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
     description="Eliassen-Palm flux tensor"
+  />
+  <var name="uppuppTWA"
+    type="real"
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m^2 s^{-2}"
+    description="Thickness-weighted averaged eddy u-u correlation."
+  />
+  <var name="vppvppTWA"
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m^2 s^{-2}"
+    description="Thickness-weighted averaged eddy v-v correlation."
+  />
+  <var name="uppvppTWA"
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m^2 s^{-2}"
+    description="Thickness-weighted averaged eddy u-v correlation."
+  />
+  <var name="epeTWA"
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m^2 s^{-2}"
+    description="Thickness-weighted averaged eddy potential energy."
+  />
+  <var name="eddyFormDragZonal" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m^2 s^{-2}"
+    description="Thickness-weighted averaged eddy form drag in x"
+  />
+  <var name="eddyFormDragMerid" 
+    type="real" 
+    dimensions="nBuoyancyLayers nCells Time" 
+    units="m^2 s^{-2}"
+    description="Thickness-weighted averaged eddy form drag in y"
   />
   
   <var name="divEPFT" 
