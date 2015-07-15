@@ -11353,7 +11353,9 @@ use mcica_subcol_gen_lw, only: mcica_subcol_lw
     !
     save retab
     ! For buffer layer adjustment.  Steven Cavallo, Dec 2010.
+#if !defined(mpas)
     integer , save    :: nlayers    
+#endif
     real, PARAMETER :: deltap = 4.  ! Pressure interval for buffer layer in mb
     
 CONTAINS
@@ -11540,6 +11542,8 @@ CONTAINS
 !local variables:
  real,dimension(1:noznlevels):: o3clim1d
 !end MPAS specific.
+
+ integer:: nlayers
 
 #else
 
