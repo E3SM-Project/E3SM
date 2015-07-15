@@ -7,9 +7,9 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_epft
+!  ocn_eliassen_palm
 !
-!> \brief MPAS ocean analysis core member: epft
+!> \brief MPAS ocean analysis core member: Eliassen-Palm Flux Tensor
 !> \author Juan A. Saenz, Todd Ringler
 !> \date   May 2015
 !> \details
@@ -458,6 +458,12 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: divEPFTshear2
       real(KIND=RKIND), dimension(:,:), pointer :: divEPFTdrag1
       real(KIND=RKIND), dimension(:,:), pointer :: divEPFTdrag2
+      real(KIND=RKIND), dimension(:,:), pointer :: uuTWACorr
+      real(KIND=RKIND), dimension(:,:), pointer :: vvTWACorr
+      real(KIND=RKIND), dimension(:,:), pointer :: uvTWACorr
+      real(KIND=RKIND), dimension(:,:), pointer :: epeTWA
+      real(KIND=RKIND), dimension(:,:), pointer :: eddyFormDragZonal
+      real(KIND=RKIND), dimension(:,:), pointer :: eddyFormDragMerid
 
       !-----------------------------------------------------------------
       ! define scratch fields used as work variables and for testing
@@ -842,6 +848,13 @@ contains
          call mpas_pool_get_array(am_epftPool, 'divEPFTshear2', divEPFTshear2)
          call mpas_pool_get_array(am_epftPool, 'divEPFTdrag1', divEPFTdrag1)
          call mpas_pool_get_array(am_epftPool, 'divEPFTdrag2', divEPFTdrag2)
+         call mpas_pool_get_array(am_epftPool, 'uuTWACorr', uuTWACorr)
+         call mpas_pool_get_array(am_epftPool, 'vvTWACorr', vvTWACorr)
+         call mpas_pool_get_array(am_epftPool, 'uvTWACorr', uvTWACorr)
+         call mpas_pool_get_array(am_epftPool, 'epeTWA', epeTWA)
+         call mpas_pool_get_array(am_epftPool, 'eddyFormDragZonal', eddyFormDragZonal)
+         call mpas_pool_get_array(am_epftPool, 'eddyFormDragMerid', eddyFormDragMerid)
+
          call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux' , ErtelPVFlux)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux1', ErtelPVFlux1)
          call mpas_pool_get_array(am_epftPool, 'ErtelPVFlux2', ErtelPVFlux2)
@@ -1171,6 +1184,22 @@ contains
             heightMidBuoyCoorSqEA, montgPotGradZonalEA, montgPotGradMeridEA, &
             heightMGradZonalEA, heightMGradMeridEA, uTWA, vTWA, varpiTWA, &
             uusigmaEA, vvsigmaEA, uvsigmaEA, uvarpisigmaEA, vvarpisigmaEA, EPFT)
+         
+         !-------------------------------------------------------------
+         ! Calculate eddy correlations
+         !-------------------------------------------------------------
+         call calculateCorrelationfromTWA(nBuoyancyLayers, nCells, &
+            sigmaEA, uTWA, uTWA, uuSigmaEA, uuTWACorr)
+         call calculateCorrelationfromTWA(nBuoyancyLayers, nCells, &
+            sigmaEA, vTWA, vTWA, vvSigmaEA, vvTWACorr)
+         call calculateCorrelationfromTWA(nBuoyancyLayers, nCells, &
+            sigmaEA, uTWA, vTWA, uvSigmaEA, uvTWACorr)
+         call calculateEPEfromTWA(nBuoyancyLayers, nCells, &
+            sigmaEA, heightMidBuoyCoorEA, heightMidBuoyCoorSqEA, epeTWA)
+         call calculateEddyFormDragFromTWA(nBuoyancyLayers, nCells, sigmaEA, &
+            heightMidBuoyCoorEA, montgPotGradZonalEA, heightMGradZonalEA, eddyFormDragZonal)
+         call calculateEddyFormDragFromTWA(nBuoyancyLayers, nCells, sigmaEA, &
+            heightMidBuoyCoorEA, montgPotGradMeridEA, heightMGradMeridEA, eddyFormDragMerid)
 
          !-------------------------------------------------------------
          ! compute the total force from the EPFT: div(EPFT)
@@ -2172,6 +2201,129 @@ contains
       enddo
    
    end subroutine calculateEPFTfromTWA!}}}
+
+
+!***********************************************************************
+!
+!  subroutine calculateCorrelationfromTWA
+!
+!> \brief   Calculate the eddy correlation from TWAs
+!> \author  Juan A. Saenz
+!> \date    July 2015
+!> \details 
+!>  This subroutine calculates the eddy kinetic energy from thickness 
+!>  weighted averages.
+!-----------------------------------------------------------------------
+
+   subroutine calculateCorrelationfromTWA(nLayers, nCells, &
+         sigmaEA, uTWA, vTWA, uvSigmaEA, uvCorr)!{{{
+      implicit none
+      integer, intent(in) :: nLayers, nCells
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: sigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uTWA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: vTWA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: uvSigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(out) :: uvCorr
+   
+      ! local variables
+      integer :: iCell, kLayer
+      real (kind=RKIND) :: sigma
+      real (kind=RKIND) :: uppupp, vppvpp
+      
+      uvCorr = 0.0 ! jas issue: assign a mask value instead
+
+      do iCell = 1, nCells
+         do kLayer = 1,nLayers
+            sigma = max(sigmaEA(kLayer,iCell), epsilonEPFT)
+            uvCorr(kLayer, iCell) = uvSigmaEA(kLayer,iCell) / sigma - uTWA(kLayer,iCell)*vTWA(kLayer,iCell)
+         enddo
+      enddo
+   
+   end subroutine calculateCorrelationfromTWA!}}}
+
+
+!***********************************************************************
+!
+!  subroutine calculateEPEfromTWA
+!
+!> \brief   Calculate the eddy potential energy from TWAs
+!> \author  Juan A. Saenz
+!> \date    July 2015
+!> \details 
+!>  This subroutine calculates the eddy potential energy from thickness 
+!>  weighted averages.
+!-----------------------------------------------------------------------
+
+   subroutine calculateEPEfromTWA(nLayers, nCells, &
+         sigmaEA, heightEA, heightSqEA, epe)!{{{
+      implicit none
+      integer, intent(in) :: nLayers, nCells
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: sigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightSqEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(out) :: epe
+   
+      ! local variables
+      integer :: iCell, kLayer
+      real (kind=RKIND) :: sigma
+      real (kind=RKIND) :: HpHp
+      
+      epe = 0.0
+
+      do iCell = 1, nCells
+         do kLayer = 1,nLayers
+            
+            sigma = max(sigmaEA(kLayer,iCell), epsilonEPFT)
+            HpHp   = heightSqEA(kLayer,iCell) - heightEA(kLayer,iCell)*heightEA(kLayer,iCell)
+
+            epe(kLayer,iCell) = 0.5 * HpHp / sigma
+            
+         enddo
+      enddo
+   
+   end subroutine calculateEPEfromTWA!}}}
+
+
+!***********************************************************************
+!
+!  subroutine calculateEddyFormDragfromTWA
+!
+!> \brief   Calculate the eddy form drag from TWAs
+!> \author  Juan A. Saenz
+!> \date    July 2015
+!> \details 
+!>  This subroutine calculates the eddy form drag from thickness 
+!>  weighted averages.
+!-----------------------------------------------------------------------
+
+   subroutine calculateEddyFormDragfromTWA(nLayers, nCells, &
+         sigmaEA, heightEA, MxEA, HMxEA, formDragX)!{{{
+      implicit none
+      integer, intent(in) :: nLayers, nCells
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: sigmaEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: heightEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: MxEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(in) :: HMxEA
+      real (kind=RKIND), dimension(nLayers, nCells), intent(out) :: formDragX
+   
+      ! local variables
+      integer :: iCell, kLayer
+      real (kind=RKIND) :: sigma
+      real (kind=RKIND) :: HpMxp
+      
+       formDragX = 0.0
+
+      do iCell = 1, nCells
+         do kLayer = 1,nLayers
+            
+            sigma = max(sigmaEA(kLayer,iCell), epsilonEPFT)
+            HpMxp  = HMxEA(kLayer,iCell) - heightEA(kLayer,iCell) * MxEA(kLayer,iCell)
+
+            formDragX(kLayer,iCell) = HpMxp / sigma
+         enddo
+      enddo
+   
+   end subroutine calculateEddyFormDragfromTWA!}}}
 
 
 !***********************************************************************
