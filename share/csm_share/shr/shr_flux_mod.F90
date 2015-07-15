@@ -976,9 +976,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
             nInc(n) = real(nsum,R8) ! set nInc to incremented or reset nsum
 
-!            if (n.eq.5) then
-!              write(s_logunit,*)"n= ",n,"sec= ",lsec,"lat= ",lat(n),"lon= ",long(n),"vmag= ",vmag,"rhocn= ",rhocn,"rbot= ",rbot(n),"ustar= ",ustar,"Qsol= ",Qsol,"Rid= ",Rid,"FofRi= ",FofRi,"Regime= ",regime(n),"FTnet= ",Hd,"Kdiff= ",Kdiff,"warm= ",warm(n),"DTiter= ",Dtiter,"Kvisc= ",Kvisc,"speed= ",speed(n),"DViter = ",DViter,"Smult= ",Smult,"Sfact= ",Sfact,"dt= ",dt,"cSkin= ",cSkin(n),"Dcool= ",Dcool,"Qdel= ",Qdel,"rcpocn= ",rcpocn,"ustarw= ",ustarw,"warmmax= ",warmmax(n),"qsolavg= ",qsolavg(n),"windavg= ",windavg(n),"tskin_night= ",tskin_night(n),"tskin_day= ",tskin_day(n),"ninc= ",ninc(n)
-!            endif
 
             if (present(ustar_sv)) ustar_sv(n) = ustar
             if (present(re_sv   )) re_sv   (n) = re
