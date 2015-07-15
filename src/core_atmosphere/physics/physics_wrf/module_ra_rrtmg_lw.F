@@ -11520,7 +11520,7 @@ CONTAINS
 !function of the grid-point. This is needed because the MPAS vertical coordi-
 !nate system is a height coordinate system, and model-tops vary between grid-
 !points:
- integer,dimension(ims:ime,jms:jme):: mpas_nlay
+ integer,dimension(its:ite,jts:jte):: mpas_nlay
  real,dimension(:),allocatable:: o3mmr,varint
  real,dimension(:,:),allocatable:: &
     plev,tlev,play,tlay,h2ovmr,o3vmr,co2vmr,o2vmr,ch4vmr,n2ovmr,cfc11vmr,  &

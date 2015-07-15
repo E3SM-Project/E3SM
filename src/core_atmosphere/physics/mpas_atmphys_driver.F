@@ -182,8 +182,13 @@
     if(l_radtlw) then
        time_lev = 1
        call allocate_radiation_lw(xtime_s)
-       call driver_radiation_lw(xtime_s,block%configs,mesh,state,time_lev,diag_physics, &
-                                atm_input,sfc_input,tend_physics)
+!$OMP PARALLEL DO
+       do thread=1,block % nThreads
+          call driver_radiation_lw(xtime_s,block%configs,mesh,state,time_lev,diag_physics, &
+                                   atm_input,sfc_input,tend_physics, &
+                                   block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
+!$OMP END PARALLEL DO
     endif
 
     !call to accumulate long- and short-wave diagnostics if needed:
