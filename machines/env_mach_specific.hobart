@@ -39,8 +39,9 @@ endif
 if ( $COMPILER == "nag" ) then
     module load compiler/nag/6.0
     if( $MPILIB == "mvapich2" ) then
-      module rm mpi
-      module load mpi/nag/mvapich2-2.1
+      ./xmlchange MPILIB=openmpi
+#      module rm mpi
+#      module load mpi/nag/mvapich2-2.1
    endif
 endif
 
