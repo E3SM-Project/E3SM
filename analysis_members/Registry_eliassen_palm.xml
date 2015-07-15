@@ -501,19 +501,19 @@
     units="m^2 s^{-2}"
     description="Eliassen-Palm flux tensor"
   />
-  <var name="uppuppTWA"
+  <var name="uuTWACorr"
     type="real"
     dimensions="nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
     description="Thickness-weighted averaged eddy u-u correlation."
   />
-  <var name="vppvppTWA"
+  <var name="vvTWACorr"
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
     description="Thickness-weighted averaged eddy v-v correlation."
   />
-  <var name="uppvppTWA"
+  <var name="uvTWACorr"
     type="real" 
     dimensions="nBuoyancyLayers nCells Time" 
     units="m^2 s^{-2}"
