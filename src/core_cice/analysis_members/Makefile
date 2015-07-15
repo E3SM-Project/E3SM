@@ -2,13 +2,11 @@
 
 OBJS = mpas_cice_analysis_driver.o
 
-MEMBERS = 
+MEMBERS = mpas_cice_high_frequency_output.o
 
 all: $(OBJS)
 
 mpas_cice_analysis_driver.o: $(MEMBERS)
-
-#mpas_cice_TEMPLATE.o:
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
@@ -17,10 +15,10 @@ clean:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES)  -I../../framework -I../../operators -I../../external/esmf_time_f90 -I../column
+	$(FC) $(FFLAGS) -c $*.f90 -I../../framework -I../../operators -I../forward_model -I../column $(FCINCLUDES) 
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES)  -I../../framework -I../../operators -I../../external/esmf_time_f90 -I../column
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F -I../../framework -I../../operators -I../forward_model -I../column $(CPPINCLUDES) $(FCINCLUDES) 
 endif
 
 .c.o:
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(CINCLUDES) -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(CINCLUDES) -I../../framework -I../../operators -I../forward_model -I../column -c $<

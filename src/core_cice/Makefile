@@ -6,6 +6,7 @@ all: column_package forward_model analysis_members core_cice
 core_cice:
 	ar -ru libdycore.a column/*.o
 	ar -ru libdycore.a forward_model/*.o
+	ar -ru libdycore.a analysis_members/*.o
 
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml

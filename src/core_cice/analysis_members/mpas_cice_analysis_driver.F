@@ -9,11 +9,11 @@
 !
 !  cice_analysis_driver
 !
-!> \brief Driver for MPAS ocean analysis core
-!> \author Mark Petersen
+!> \brief Driver for MPAS sea ice analysis core
+!> \author MPAS-Ocean/CICE development team
 !> \date   November 2013
 !> \details
-!>  This is the driver for the MPAS ocean core.
+!>  This is the driver for the MPAS sea-ice core.
 !
 !-----------------------------------------------------------------------
 
@@ -25,7 +25,9 @@ module cice_analysis_driver
    use mpas_timer
    use mpas_stream_manager
 
-!   use cice_TEM_PLATE
+   use cice_constants
+   use cice_high_frequency_output
+!   use cice_TEMP_LATE
 
    implicit none
    private
@@ -75,12 +77,12 @@ contains
 !
 !  routine cice_analysis_setup_packages
 !
-!> \brief   Setup packages for MPAS-Ocean analysis driver
-!> \author  Mark Petersen
+!> \brief   Setup packages for MPAS-CICE analysis driver
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine is intended to configure the packages for all
-!>   ocean analysis members.
+!>   sea-ice analysis members.
 !
 !-----------------------------------------------------------------------
 
@@ -126,7 +128,9 @@ contains
       err = 0
 
       call mpas_pool_create_pool(analysisMemberList)
-!     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
+      call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
+   !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
+!     call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -150,12 +154,12 @@ contains
 !
 !  routine cice_analysis_init
 !
-!> \brief   Initialize MPAS-Ocean analysis driver
-!> \author  Mark Petersen
+!> \brief   Initialize MPAS-CICE analysis driver
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all initializations required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-CICE analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -266,12 +270,12 @@ contains
 !
 !  routine cice_analysis_compute_startup
 !
-!> \brief   Driver for MPAS-Ocean analysis computations
-!> \author  Mark Petersen
+!> \brief   Driver for MPAS-CICE analysis computations
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all computation subroutines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-CICE analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -362,12 +366,12 @@ contains
 !
 !  routine cice_analysis_compute
 !
-!> \brief   Driver for MPAS-Ocean analysis computations
-!> \author  Mark Petersen
+!> \brief   Driver for MPAS-CICE analysis computations
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all computation subroutines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-CICE analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -455,12 +459,12 @@ contains
 !
 !  routine cice_analysis_restart
 !
-!> \brief   Save restart for MPAS-Ocean analysis driver
-!> \author  Mark Petersen
+!> \brief   Save restart for MPAS-CICE analysis driver
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all subroutines required to prepare to save
-!>  the restart state for the MPAS-Ocean analysis driver.
+!>  the restart state for the MPAS-CICE analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -528,12 +532,12 @@ contains
 !
 !  routine cice_analysis_write
 !
-!> \brief   Driver for MPAS-Ocean analysis output
-!> \author  Mark Petersen
+!> \brief   Driver for MPAS-CICE analysis output
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all output writing subroutines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-CICE analysis driver.
 !>  At this time this is just a stub, and all analysis output is written
 !>  to the output file specified by config_output_name.
 !
@@ -611,12 +615,12 @@ contains
 !
 !  routine cice_analysis_finalize
 !
-!> \brief   Finalize MPAS-Ocean analysis driver
-!> \author  Mark Petersen
+!> \brief   Finalize MPAS-CICE analysis driver
+!> \author  MPAS-Ocean/CICE development team
 !> \date    November 2013
 !> \details
 !>  This routine calls all finalize routines required for the
-!>  MPAS-Ocean analysis driver.
+!>  MPAS-CICE analysis driver.
 !
 !-----------------------------------------------------------------------
 
@@ -703,9 +707,13 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call cice_init_TEM_PLATE(domain, err_tmp)
-!      end if
+      if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call cice_init_test_compute_interval(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+!        call cice_init_surface_area_weighted_averages(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
+!        call cice_init_TEMP_LATE(domain, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -734,9 +742,13 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call cice_compute_TEM_PLATE(domain, timeLevel, err_tmp)
-!      end if
+      if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call cice_compute_test_compute_interval(domain, timeLevel, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+!        call cice_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
+!        call cice_compute_TEMP_LATE(domain, timeLevel, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -764,9 +776,13 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call cice_restart_TEM_PLATE(domain, err_tmp)
-!      end if
+      if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call cice_restart_test_compute_interval(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+!        call cice_restart_surface_area_weighted_averages(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
+!        call cice_restart_TEMP_LATE(domain, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -794,9 +810,13 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call cice_finalize_TEM_PLATE(domain, err_tmp)
-!      end if
+      if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call cice_finalize_test_compute_interval(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+!        call cice_finalize_surface_area_weighted_averages(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
+!        call cice_finalize_TEMP_LATE(domain, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
