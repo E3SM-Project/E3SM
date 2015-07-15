@@ -16,6 +16,7 @@ module ocn_core_interface
 
    use ocn_forward_mode
    use ocn_analysis_mode
+   use ocn_init_mode
 
    private
 
@@ -102,7 +103,7 @@ module ocn_core_interface
 
       integer :: err_tmp
 
-      logical, pointer :: forwardModeActive, analysisModeActive
+      logical, pointer :: forwardModeActive, analysisModeActive, initModeActive
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: surfaceRestoringActive
@@ -118,6 +119,7 @@ module ocn_core_interface
       ! Get Packages
       call mpas_pool_get_package(packagePool, 'forwardModeActive', forwardModeActive)
       call mpas_pool_get_package(packagePool, 'analysisModeActive', analysisModeActive)
+      call mpas_pool_get_package(packagePool, 'initModeActive', initModeActive)
       call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
       call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
@@ -166,8 +168,12 @@ module ocn_core_interface
          ierr = ior(ierr, err_tmp)
       else if (trim(config_ocean_run_mode) == 'analysis' ) then
          analysisModeActive = .true.
-         call ocn_analysis_setup_packages(configPool, packagePool, ierr)
+      else if (trim(config_ocean_run_mode) == 'init' ) then
+         initModeActive = .true.
       end if
+
+      call ocn_analysis_setup_packages(configPool, packagePool, ierr)
+      call ocn_init_mode_validate_configuration(configPool, packagePool, ierr)
 
    end function ocn_setup_packages!}}}
 
@@ -246,6 +252,8 @@ module ocn_core_interface
          ierr = ocn_forward_mode_setup_clock(core_clock, configs)
       else if ( trim(config_ocean_run_mode) == 'analysis' ) then
          ierr = ocn_analysis_mode_setup_clock(core_clock, configs)
+      else if ( trim(config_ocean_run_mode) == 'init' ) then
+         ierr = ocn_init_mode_setup_clock(core_clock, configs)
       end if
 
 
@@ -286,6 +294,8 @@ module ocn_core_interface
 
       if ( trim(config_ocean_run_mode) == 'forward' .or. trim(config_ocean_run_mode) == 'analysis' ) then
          write(stream,'(a)') 'mesh'
+      else if ( trim(config_ocean_run_mode) == 'init' ) then
+         write(stream,'(a)') 'input_init'
       end if
 
    end function ocn_get_mesh_stream!}}}
