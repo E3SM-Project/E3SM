@@ -820,8 +820,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                DTiter = (warm(n)  +(Smult*Hd))               /(1.+ Sfact*Kdiff) 
                DSiter = (salt(n)  -(Smult*Fd))               /(1.+ Sfact*Kdiff)
                DViter = (speed(n) +(Smult*ustarw*ustarw))    /(1.+ Sfact*Kvisc)
-               DTiter = MAX( 0.0, DTiter)
-               DViter = MAX( 0.0, DViter)  
+               DTiter = MAX( 0.0_R8, DTiter)
+               DViter = MAX( 0.0_R8, DViter)  
 
                Rid =(shr_const_g*(alphaT*DTiter-betaS*DSiter)*pwr*shr_const_zsrflyr)  / &
                     (pwr*MAX(tiny,DViter))**2
