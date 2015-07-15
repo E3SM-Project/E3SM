@@ -90,6 +90,7 @@
 	</var_struct>
 	<streams>
 		<stream name="waterMassCensusOutput"
+				mode="forward;analysis"
 				type="output"
 				filename_template="analysis_members/waterMassCensus.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="00-00-05_00:00:00"

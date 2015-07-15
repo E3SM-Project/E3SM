@@ -31,6 +31,7 @@ module ocn_core
 
    use ocn_forward_mode
    use ocn_analysis_mode
+   use ocn_init_mode
 
    implicit none
    private
@@ -68,6 +69,8 @@ module ocn_core
          ierr = ocn_forward_mode_init(domain, startTimeStamp)
       else if ( trim(config_ocean_run_mode) == 'analysis' ) then
          ierr = ocn_analysis_mode_init(domain, startTimeStamp)
+      else if ( trim(config_ocean_run_mode) == 'init' ) then
+         ierr = ocn_init_mode_init(domain, startTimeStamp)
       end if
 
    end function ocn_core_init!}}}
@@ -101,6 +104,8 @@ module ocn_core
          ierr = ocn_forward_mode_run(domain)
       else if ( trim(config_ocean_run_mode) == 'analysis' ) then
          ierr = ocn_analysis_mode_run(domain)
+      else if ( trim(config_ocean_run_mode) == 'init' ) then
+         ierr = ocn_init_mode_run(domain)
       end if
 
    end function ocn_core_run!}}}
@@ -132,6 +137,8 @@ module ocn_core
          ierr = ocn_forward_mode_finalize(domain)
       else if (trim(config_ocean_run_mode) == 'analysis' ) then
          ierr = ocn_analysis_mode_finalize(domain)
+      else if (trim(config_ocean_run_mode) == 'init' ) then
+         ierr = ocn_init_mode_finalize(domain)
       end if
 
    end function ocn_core_finalize!}}}

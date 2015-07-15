@@ -56,6 +56,7 @@
 	</var_struct>
 	<streams>
 		<stream name="meridionalHeatTransportOutput" type="output"
+				mode="forward;analysis"
 				filename_template="analysis_members/meridionalHeatTransport.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="0001_00:00:00"
 				filename_interval="01-00-00_00:00:00"

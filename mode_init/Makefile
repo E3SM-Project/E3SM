@@ -1,0 +1,59 @@
+.SUFFIXES: .F .o
+
+OBJS = mpas_ocn_init_mode.o
+
+UTILS = mpas_ocn_init_spherical_utils.o \
+        mpas_ocn_init_vertical_grids.o \
+        mpas_ocn_init_cell_markers.o
+
+TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
+             mpas_ocn_init_lock_exchange.o \
+             mpas_ocn_init_internal_waves.o \
+             mpas_ocn_init_overflow.o \
+             mpas_ocn_init_cvmix_convection_unit_test.o \
+             mpas_ocn_init_cvmix_shear_unit_test.o \
+             mpas_ocn_init_cvmix_WSwSBF.o \
+             mpas_ocn_init_global_realistic.o
+             #mpas_ocn_init_TEMPLATE.o
+
+all: init_mode
+
+init_mode: $(UTILS) $(TEST_CASES) $(OBJS)
+
+mpas_ocn_init_mode.o: $(UTILS) $(TEST_CASES)
+
+mpas_ocn_init_cell_markers.o:
+
+mpas_ocn_init_spherical_utils.o:
+
+mpas_ocn_init_vertical_grids.o:
+
+mpas_ocn_init_baroclinic_channel.o: $(UTILS)
+
+mpas_ocn_init_lock_exchange.o: $(UTILS)
+
+mpas_ocn_init_internal_waves.o: $(UTILS)
+
+mpas_ocn_init_overflow.o: $(UTILS)
+
+mpas_ocn_init_cvmix_convection_unit_test.o: $(UTILS)
+
+mpas_ocn_init_cvmix_shear_unit_test.o: $(UTILS)
+
+mpas_ocn_init_global_realistic.o: $(UTILS)
+
+mpas_ocn_init_cvmix_WSwSBF.o: $(UTILS)
+
+#mpas_ocn_init_TEMPLATE.o: $(UTILS)
+
+clean:
+	$(RM) *.o *.mod *.f90
+
+.F.o:
+	$(RM) $@ $*.mod
+ifeq "$(GEN_F90)" "true"
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES)
+else
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES)
+endif

@@ -157,6 +157,7 @@
 	</var_struct>
 	<streams>
 		<stream name="okuboWeissOutput"
+				mode="forward;analysis"
 				type="output"
 				filename_template="analysis_members/okuboWeiss.$Y-$M-$D_$h.$m.$s.nc"
 				output_interval="00-00-05_00:00:00"
