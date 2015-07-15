@@ -46,7 +46,7 @@ if ( $COMPILER == "nag" ) then
 endif
 
 if ( $COMPILER == "gnu" ) then
-    module load compiler/gnu/4.4.7
+    module load compiler/gnu/4.8.3
 endif
 
 
