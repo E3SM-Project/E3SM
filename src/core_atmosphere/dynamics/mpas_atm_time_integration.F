@@ -449,9 +449,9 @@ module atm_time_integration
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
 ! Would be more efficient to allocate these outside the acoustic loop...
-                  allocate(ts(nVertLevels,nCells))
-                  allocate(rs(nVertLevels,nCells))
-                  allocate(drthetadz(nVertLevels,nCells))
+                  allocate(ts(nVertLevels,nCells+1))
+                  allocate(rs(nVertLevels,nCells+1))
+                  allocate(drthetadz(nVertLevels,nCells+1))
 
 !$OMP PARALLEL DO
                   do thread=1,block % nThreads
@@ -554,13 +554,13 @@ module atm_time_integration
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                   call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-                  allocate(scalar_old(nVertLevels,nCells))
-                  allocate(scalar_new(nVertLevels,nCells))
-                  allocate(s_max(nVertLevels,nCells))
-                  allocate(s_min(nVertLevels,nCells))
-                  allocate(scale_arr(2,nVertLevels,nCells))
-                  allocate(flux_arr(nVertLevels,nEdges))
-                  allocate(wdtn(nVertLevels+1,nCells))
+                  allocate(scalar_old(nVertLevels,nCells+1))
+                  allocate(scalar_new(nVertLevels,nCells+1))
+                  allocate(s_max(nVertLevels,nCells+1))
+                  allocate(s_min(nVertLevels,nCells+1))
+                  allocate(scale_arr(2,nVertLevels,nCells+1))
+                  allocate(flux_arr(nVertLevels,nEdges+1))
+                  allocate(wdtn(nVertLevels+1,nCells+1))
 
                   !
                   ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
@@ -622,8 +622,8 @@ module atm_time_integration
                call mpas_pool_get_dimension(state, 'nVertices', nVertices)
                call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
-               allocate(ke_vertex(nVertLevels,nVertices))
-               allocate(ke_edge(nVertLevels,nEdges))
+               allocate(ke_vertex(nVertLevels,nVertices+1))
+               allocate(ke_edge(nVertLevels,nEdges+1))
    
 !$OMP PARALLEL DO
                do thread=1,block % nThreads
@@ -735,15 +735,15 @@ module atm_time_integration
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-               allocate(scalar_old(nVertLevels,nCells))
-               allocate(scalar_new(nVertLevels,nCells))
-               allocate(s_max(nVertLevels,nCells))
-               allocate(s_min(nVertLevels,nCells))
-               allocate(scale_arr(2,nVertLevels,nCells))
-               allocate(flux_arr(nVertLevels,nEdges))
-               allocate(wdtn(nVertLevels+1,nCells))
-               allocate(rho_zz_int(nVertLevels,nCells))
-               allocate(scalar_tend_save(num_scalars,nVertLevels,nCells))
+               allocate(scalar_old(nVertLevels,nCells+1))
+               allocate(scalar_new(nVertLevels,nCells+1))
+               allocate(s_max(nVertLevels,nCells+1))
+               allocate(s_min(nVertLevels,nCells+1))
+               allocate(scale_arr(2,nVertLevels,nCells+1))
+               allocate(flux_arr(nVertLevels,nEdges+1))
+               allocate(wdtn(nVertLevels+1,nCells+1))
+               allocate(rho_zz_int(nVertLevels,nCells+1))
+               allocate(scalar_tend_save(num_scalars,nVertLevels,nCells+1))
 
                !
                ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
