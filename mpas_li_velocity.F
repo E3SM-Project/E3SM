@@ -399,7 +399,10 @@ contains
                   if ( (li_mask_is_dynamic_ice(cellMask(cell3))) .and.     &
                        (li_mask_is_dynamic_ice(cellMask(cell4))) ) then
                      if (config_print_velocity_cleanup_details) then
-                        write (stderrUnit,*) "Notice: External velocity solver returned a nonzero normalVelocity on a non-dynamic edge, but this is ok because the location is in a non-dynamic 'inlet'.  normalVelocity has been set to 0 at this location.  Location is edge index:", indexToEdgeID(iEdge)
+                        write (stderrUnit,*) "Notice: External velocity solver returned a nonzero normalVelocity on a non-dynamic " &
+                                             // "edge, but this is ok because the location is in a non-dynamic 'inlet'.  " &
+                                             // "normalVelocity has been set to 0 at this location.  Location is edge " &
+                                             // "index:", indexToEdgeID(iEdge)
                      endif
                      normalVelocity(:,iEdge) = 0.0_RKIND
                      inletEdgesFixed = inletEdgesFixed + 1
@@ -448,10 +451,14 @@ contains
       end do
 
       if (inletEdgesFixed > 0) then
-          write (stderrUnit,*) "Notice: External velocity solver returned a nonzero normalVelocity on non-dynamic edge(s), but this is ok because the location is in a non-dynamic 'inlet'.  normalVelocity has been set to 0 at these location(s).  Number of edges affected on this processor:", inletEdgesFixed
+          write (stderrUnit,*) "Notice: External velocity solver returned a nonzero normalVelocity on non-dynamic edge(s), but " &
+                            // "this is ok because the location is in a non-dynamic 'inlet'.  normalVelocity has been set to 0 " &
+                            // "at these location(s).  Number of edges affected on this processor:", inletEdgesFixed
       endif
       if (uphillMarginEdgesFixed > 0) then
-          write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on 'uphill' margin edge(s).  normalVelocity has been set to 0 at these location(s).  Number of edges affected on this processor:", uphillMarginEdgesFixed
+          write (stderrUnit,*) "Notice: Nonzero velocity has been calculated on 'uphill' margin edge(s).  normalVelocity has " &
+                            // "been set to 0 at these location(s).  Number of edges affected on this processor:", &
+                            uphillMarginEdgesFixed
       endif
 
       ! ---
