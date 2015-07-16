@@ -216,7 +216,7 @@ contains
         config_eliassen_palm_rhomin_buoycoor)
       
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
-
+      
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'amEliassenPalm', amEPFTPool)

@@ -112,6 +112,7 @@ module ocn_forward_mode
       type (MPAS_Time_Type) :: startTime
       type (MPAS_TimeInterval_type) :: timeStep
 
+      logical, pointer :: config_eliassen_palm_do_restart
       logical, pointer :: config_do_restart, config_filter_btr_mode, config_conduct_tests
       logical, pointer :: config_write_stats_on_startup
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
@@ -137,6 +138,7 @@ module ocn_forward_mode
       dminfo = domain % dminfo
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_do_restart', config_eliassen_palm_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
       call mpas_pool_get_config(domain % configs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
@@ -147,6 +149,13 @@ module ocn_forward_mode
       !
       ! Read input data for model
       !
+      
+      ! Read in a restart file for the eliassen_palm analysis member
+      if ( config_eliassen_palm_do_restart ) then
+         call mpas_timer_start('io_read', .false.)
+         call MPAS_stream_mgr_read(stream_manager, streamID='eliassenPalmRestart', ierr=err)
+         call mpas_timer_stop('io_read')
+      end if
       if ( config_do_restart ) then
          call mpas_timer_start('io_read', .false.)
          call MPAS_stream_mgr_read(stream_manager, streamID='restart', ierr=err)
