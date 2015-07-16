@@ -376,7 +376,7 @@ sub initialize()
            xml_mach             => undef,
            xml_compiler         => undef,
            xml_category         => undef,
-           mach_dir             => "$cimeroot/machines",
+           mach_dir             => "$cimeroot/machines-acme",
            mach                 => undef,
            mpilib               => undef,
            nlcompareonly        => undef,

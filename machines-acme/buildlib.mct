@@ -1,0 +1,100 @@
+#! /bin/csh -fx
+
+#==============================================================================
+# Purpose: Build the mct library
+#==============================================================================
+
+cd $CASEROOT
+
+set CIMEROOT	= `./xmlquery  CIMEROOT	 -value `
+set CASETOOLS	= `./xmlquery  CASETOOLS -value `
+set GMAKE	= `./xmlquery  GMAKE	 -value ` 
+set GMAKE_J	= `./xmlquery  GMAKE_J	 -value ` 
+set MACH	= `./xmlquery  MACH	 -value ` 
+set MPILIB	= `./xmlquery  MPILIB	 -value ` 
+set OS		= `./xmlquery  OS	 -value ` 
+
+setenv LIBDIR     $1
+setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
+setenv MCT_LIBDIR $LIBDIR/mct
+
+echo "MCT_LIBDIR   $MCT_LIBDIR"
+
+  cd $MCT_LIBDIR
+  echo "Copying source to EXEROOT..."
+#  cp -r -p $MCT_DIR/* .
+  cp $MCT_DIR/Makefile .
+  mkdir mct
+  cp $MCT_DIR/mct/Makefile mct
+  mkdir mpeu
+  cp $MCT_DIR/mpeu/Makefile mpeu
+  mkdir mpi-serial
+  cp $MCT_DIR/mpi-serial/Makefile mpi-serial
+  cp $MCT_DIR/mpi-serial/*.h mpi-serial
+
+  set runconf = 0
+  set runclean = 0
+
+# It would be harmless to just run "configure" each time but it
+# takes time so use file "mct_conf" to determine if configure must
+# be run.  There are three possibilities:
+# 1. brand new build -- run configure
+# 2. already built but platform has changed (this can happen
+#    when a filesystem is mounted on multiple platforms) -- run configure
+# 3. already built, same platform -- don't run configure
+#
+  #if(-e mct_conf) then
+  #  echo "MCT already built. Checking machine type"
+  #  cp -f mct_conf mct_conf.old
+  #  echo ${OS} > mct_conf
+  #  set diffwc = 1
+  #  set diffwc = `diff mct_conf.old mct_conf | wc -m`
+  #  if ($diffwc != 0) then
+  #    echo "Different machine. Rerun configure"
+  #    rm Makefile.conf.old
+  #    rm -f $LIBROOT/libmct.a
+  #    rm -f $LIBROOT/libmpeu.a
+
+  #    set runconf = 1
+  #    set runclean = 1
+  #  else
+  #    echo "Same machine."
+  #    cp -p Makefile.conf.old Makefile.conf
+  #  endif
+  #else
+  #  echo "New build of MCT"
+  #  echo ${OS} > mct_conf
+  #  set runconf = 1
+  #endif
+
+# run configure with correct arguments if necessary
+  #if ($runconf == 1) then
+    echo "Running configure..."
+    echo "for OS=$OS MACH=$MACH"
+    $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
+    #if($? != 0) then
+    #  rm mct_conf*
+    #endif 
+  #endif
+
+  if ($runclean == 1) then
+    $GMAKE clean
+  endif
+
+  cp -p Makefile.conf Makefile.conf.old
+
+  $GMAKE  SRCDIR=$MCT_DIR   || exit 1
+
+
+  cp -p mct/lib*.a $LIBDIR/lib
+  cp -p mpeu/lib*.a $LIBDIR/lib
+  if ( "$MPILIB" == "mpi-serial" ) then
+    cp -p mpi-serial/lib*.a $LIBDIR/lib
+    cp -p mpi-serial/*.h $LIBDIR/include
+    cp -p mpi-serial/*.mod $LIBDIR/include
+  endif
+  cp -p mct/*.mod $LIBDIR/include/
+  cp -p mpeu/*.mod $LIBDIR/include/
+
+exit 0
+

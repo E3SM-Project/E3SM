@@ -71,7 +71,7 @@ EOF
 if ($#ARGV == -1) {
     usage();
 }
-my $machdir="$cimeroot/machines";
+my $machdir="$cimeroot/machines-acme";
 
 #-----------------------------------------------------------------------------------------------
 
