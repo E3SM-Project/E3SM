@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#define NEWEULER_B4B 1
+#undef NEWEULER_B4B
 #define OVERLAP 1
 
       module EXTRAE_MODULE
@@ -2355,11 +2355,14 @@ end subroutine ALE_parametric_coords
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q)
+!$omp parallel do private(k)
 #endif
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k)
       enddo
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k)
+#endif
       do q = 1 , qsize
         do k=1,nlev
           Qtens_biharmonic(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k)
@@ -2390,10 +2393,10 @@ end subroutine ALE_parametric_coords
       ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
       if ( nu_p > 0 ) then
         do ie = nets , nete
-#if (defined COLUMN_OPENMP)
-          !$omp parallel do private(k, q, dp0, dpdiss)
-#endif
 #ifdef NEWEULER_B4B
+#if (defined COLUMN_OPENMP)
+       !$omp parallel do private(k, q, dpdiss)
+#endif
           do k = 1 , nlev
             dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
             do q = 1 , qsize
@@ -2402,9 +2405,15 @@ end subroutine ALE_parametric_coords
             enddo
           enddo
 #else
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(k)
+#endif
           do k = 1 , nlev
             dpdissk(:,:,k) = elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
           enddo
+#if (defined COLUMN_OPENMP)
+        !$omp parallel do private(q,k)
+#endif
           do q = 1 , qsize
             do k = 1 , nlev
               ! NOTE: divide by dp0 since we multiply by dp0 below
@@ -2428,7 +2437,7 @@ end subroutine ALE_parametric_coords
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k, q, dp0)
+!$omp parallel do private(k, q, dp0)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev    !  Loop inversion (AAM)
@@ -2447,7 +2456,7 @@ end subroutine ALE_parametric_coords
 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k, q, dp0)
+!$omp parallel do private(k, q)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev    !  Loop inversion (AAM)
@@ -2476,7 +2485,7 @@ end subroutine ALE_parametric_coords
 
     ! Compute velocity used to advance Qdp
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+    !$omp parallel do private(k)
 #endif
     do k = 1 , nlev    !  Loop index added (AAM)
       ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
@@ -2487,6 +2496,9 @@ end subroutine ALE_parametric_coords
     enddo
     if ( limiter_option == 8) then
         ! Note that the term dpdissk is independent of Q
+#if (defined COLUMN_OPENMP)
+    !$omp parallel do private(q,k,dpdiss)
+#endif
         do k = 1 , nlev  ! Loop index added (AAM)
           ! UN-DSS'ed dp at timelevel n0+1:
           dpdissk(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
@@ -2508,7 +2520,7 @@ end subroutine ALE_parametric_coords
 
     ! advance Qdp
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,gradQ,dp_star,qtens,dpdiss)
+ !$omp parallel do private(q,k,gradQ,dp_star,qtens,kptr)
 #endif
     do q = 1 , qsize
       do k = 1 , nlev  !  dp_star used as temporary instead of divdp (AAM)
@@ -2561,9 +2573,9 @@ end subroutine ALE_parametric_coords
       call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , kptr , ie )
     enddo
       ! also DSS extra field
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
+!JMD#if (defined COLUMN_OPENMP)
+!JMD !$omp parallel do private(k)
+!JMD#endif
       do k = 1 , nlev
         DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
       enddo
@@ -2578,12 +2590,15 @@ end subroutine ALE_parametric_coords
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
+#if (defined COLUMN_OPENMP)
+ !$omp parallel do private(k)
+#endif
     do k = 1 , nlev
       DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
     enddo
 
 #if (defined COLUMN_OPENMP)
-      !$omp parallel do private(q,k,kptr)
+!$omp parallel do private(q,k,kptr)
 #endif
     do q = 1 , qsize
       kptr = nlev*(q-1)
