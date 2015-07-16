@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#undef NEWEULER_B4B
+#define NEWEULER_B4B 1
 #define OVERLAP 1
 
       module EXTRAE_MODULE
