@@ -864,7 +864,7 @@ module atm_time_integration
             scalars_2(:,:,:) = 0.0
 
          !call microphysics schemes:
-         if (config_microp_scheme .ne. 'off')  &
+         if (trim(config_microp_scheme) /= 'off')  then
             call mpas_timer_start('microphysics')
 !$OMP PARALLEL DO
             do thread=1,block % nThreads
@@ -873,6 +873,7 @@ module atm_time_integration
             end do
 !$OMP END PARALLEL DO
             call mpas_timer_stop('microphysics')
+         end if
          block => block % next
       end do
 #endif
