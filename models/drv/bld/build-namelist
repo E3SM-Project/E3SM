@@ -669,6 +669,18 @@ add_default($nl, 'profile_single_file');
 add_default($nl, 'profile_detail_limit');
 # add_default($nl, 'profile_outpe_stride',  'val'=>"16");
 add_default($nl, 'profile_barrier');
+add_default($nl, 'profile_outpe_num');
+add_default($nl, 'profile_papi_enable');
+
+#############################################
+# namelist group: papi_inparm               #
+#   in utils/timing/perf_mod.F90            #
+#############################################
+
+add_default($nl, 'papi_ctr1_str');
+add_default($nl, 'papi_ctr2_str');
+add_default($nl, 'papi_ctr3_str');
+add_default($nl, 'papi_ctr4_str');
 
 #############################################
 # namelist group: pio_default_inparm        #
@@ -703,6 +715,7 @@ my @groups = qw(seq_cplflds_inparm
 		seq_timemgr_inparm
  		ccsm_pes
 		prof_inparm
+		papi_inparm
                 pio_default_inparm);
 
 my $outfile = "./drv_in";
