@@ -179,7 +179,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: buoyancyMidRef
       real (kind=RKIND), dimension(:), pointer :: buoyancyInterfaceRef
 
-      logical, pointer :: amEPFTActive, config_eliassen_palm_do_restart, config_eliassen_palm_reset
+      logical, pointer :: amEPFTActive, config_eliassen_palm_do_restart
       integer, pointer :: config_eliassen_palm_nBuoyancyLayers
       real (kind=RKIND), pointer :: config_eliassen_palm_rhomax_buoycoor
       real (kind=RKIND), pointer :: config_eliassen_palm_rhomin_buoycoor
@@ -208,8 +208,6 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_do_restart', &
         config_eliassen_palm_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_reset', &
-        config_eliassen_palm_reset)
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_nBuoyancyLayers', &
         config_eliassen_palm_nBuoyancyLayers)
       call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomax_buoycoor', &
@@ -264,9 +262,9 @@ contains
          buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          
          !-----------------------------------------------------------------
-         ! initialize ensemble averages when it is not a restart or when a reset requested
+         ! initialize ensemble averages when it is not a restart
          !-----------------------------------------------------------------
-         if (.not. config_eliassen_palm_do_restart .or. config_eliassen_palm_reset) then
+         if (.not. config_eliassen_palm_do_restart) then
             call mpas_pool_get_array(amEPFTPool, 'nSamplesEA', nSamplesEA)
             call mpas_pool_get_array(amEPFTPool, 'buoyancyMaskEA', buoyancyMaskEA)
             call mpas_pool_get_array(amEPFTPool, 'sigmaEA', sigmaEA)

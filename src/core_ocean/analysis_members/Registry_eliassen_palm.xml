@@ -13,13 +13,6 @@
 		description="If true, all EPfT fields are initialized using a restart file"
 		possible_values=".true. or .false."
 		/>
-  <nml_option name="config_eliassen_palm_reset" 
-    type="logical" 
-    default_value=".false." 
-    units="unitless"
-		description="If true, all EPfT fields in the restart file are re-initialized to zero"
-		possible_values=".true. or .false."
-		/>
   <nml_option name="config_eliassen_palm_compute_interval" 
       type="character" 
       default_value="same_as_output" 
