@@ -835,7 +835,7 @@
          <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
+         <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc.frontend/cprnc.titan</CCSM_CPRNC>
          <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
