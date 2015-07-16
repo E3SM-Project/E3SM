@@ -39,6 +39,9 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: ts, rs
    real (kind=RKIND), allocatable, dimension(:,:) :: drthetadz
 
+   ! Used in atm_advance_scalars
+   real (kind=RKIND), dimension(:,:,:), pointer :: horiz_flux_arr
+
    ! Used in atm_advance_scalars_mono
    real (kind=RKIND), dimension(:,:), pointer :: scalar_old, scalar_new
    real (kind=RKIND), dimension(:,:), pointer :: s_max, s_min
@@ -46,7 +49,7 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:), pointer :: flux_arr
    real (kind=RKIND), dimension(:,:), pointer :: wdtn
    real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
-   real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend_save
+   real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
 
    ! Used in compute_solve_diagnostics
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
@@ -566,6 +569,9 @@ module atm_time_integration
                   allocate(scale_arr(2,nVertLevels,nCells+1))
                   allocate(flux_arr(nVertLevels,nEdges+1))
                   allocate(wdtn(nVertLevels+1,nCells+1))
+                  if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                     allocate(horiz_flux_arr(num_scalars,nVertLevels,nEdges+1))
+                  end if
 
                   !
                   ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
@@ -605,6 +611,9 @@ module atm_time_integration
                   deallocate(scale_arr)
                   deallocate(flux_arr)
                   deallocate(wdtn)
+                  if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                     deallocate(horiz_flux_arr)
+                  end if
 
                   block => block % next
                end do
@@ -748,7 +757,10 @@ module atm_time_integration
                allocate(flux_arr(nVertLevels,nEdges+1))
                allocate(wdtn(nVertLevels+1,nCells+1))
                allocate(rho_zz_int(nVertLevels,nCells+1))
-               allocate(scalar_tend_save(num_scalars,nVertLevels,nCells+1))
+               allocate(scalar_tend(num_scalars,nVertLevels,nCells+1))
+               if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                  allocate(horiz_flux_arr(num_scalars,nVertLevels,nEdges+1))
+               end if
 
                !
                ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
@@ -789,7 +801,10 @@ module atm_time_integration
                deallocate(flux_arr)
                deallocate(wdtn)
                deallocate(rho_zz_int)
-               deallocate(scalar_tend_save)
+               deallocate(scalar_tend)
+               if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
+                  deallocate(horiz_flux_arr)
+               end if
 
                block => block % next
             end do
@@ -1932,7 +1947,7 @@ module atm_time_integration
 
       real (kind=RKIND) :: scalar_weight
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend_save
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, zgrid, kdiff
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
@@ -1941,7 +1956,6 @@ module atm_time_integration
       integer, dimension(:,:), pointer :: advCellsForEdge, edgesOnCell
       integer, dimension(:), pointer :: nAdvCellsForEdge, nEdgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd, edgesOnCell_sign
-      real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
 
       real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
       integer, pointer :: nCellsSolve, nEdges
@@ -1990,7 +2004,7 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
+      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend_save)
 
       call mpas_pool_get_array(mesh, 'fzm', fnm)
       call mpas_pool_get_array(mesh, 'fzp', fnp)
@@ -2011,83 +2025,93 @@ module atm_time_integration
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
 
 
-
-!$OMP BARRIER
-
       !
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
       !
       !  horizontal flux divergence, accumulate in scalar_tend
 
-      if (local_advance_density) then
-         do iCell=cellStart,cellEnd
-            rho_zz_int(:,iCell) = 0.0
-            scalar_tend_save(:,:,iCell) = scalar_tend(:,:,iCell)
-         end do
-!$OMP BARRIER
-      else
-         rho_zz_int => rho_zz_new
-      end if
 
-      do iCell=cellSolveStart,cellSolveEnd
-#ifndef DO_PHYSICS
-         scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
-#endif
-         do i=1,nEdgesOnCell(iCell)
-            iEdge = edgesOnCell(i,iCell)
-
-            !  flux_arr stores the value of the scalar at the edge.
-            !  a better name perhaps would be scalarEdge
-
-            flux_arr(:,:) = 0.0
-            do j=1,nAdvCellsForEdge(iEdge)
-               iAdvCell = advCellsForEdge(j,iEdge)
-               do k=1,nVertLevels
-                  scalar_weight = adv_coefs(j,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
-                  do iScalar=1,num_scalars
-                     flux_arr(iScalar,k) = flux_arr(iScalar,k) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
-                  end do
+      !  horiz_flux_arr stores the value of the scalar at the edge.
+      !  a better name perhaps would be scalarEdge
+      do iEdge=edgeStart,edgeEnd
+         horiz_flux_arr(:,:,iEdge) = 0.0
+         do j=1,nAdvCellsForEdge(iEdge)
+            iAdvCell = advCellsForEdge(j,iEdge)
+            do k=1,nVertLevels
+               scalar_weight = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)   ! Assume coef_3rd_order always >= 0
+               do iScalar=1,num_scalars
+                  horiz_flux_arr(iScalar,k,iEdge) = horiz_flux_arr(iScalar,k,iEdge) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
                end do
             end do
-
-            ! here we add the horizontal flux divergence into the scalar tendency.
-            ! note that the scalar tendency is modified.
-
-            do k=1,nVertLevels
-            do iScalar=1,num_scalars
-                  scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
-                         - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(iCell)
-            end do
-            if (local_advance_density) then
-               rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(iCell)
-            end if
-            end do
-            
          end do
       end do
 
+!$OMP BARRIER
+
+      if (local_advance_density) then
+
+         do iCell=cellSolveStart,cellSolveEnd
+            scalar_tend(:,:,iCell) = scalar_tend_save(:,:,iCell)
+#ifndef DO_PHYSICS
+            scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
+#endif
+
+            rho_zz_int(:,iCell) = 0.0
+
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+   
+               ! here we add the horizontal flux divergence into the scalar tendency.
+               ! note that the scalar tendency is modified.
+               do k=1,nVertLevels
+                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(iCell)
+                  do iScalar=1,num_scalars
+                        scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
+                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)/areaCell(iCell)
+                  end do
+               end do
+               
+            end do
+
+            do k=1,nVertLevels
+               rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
+            end do
+         end do
+
+      else
+
+         scalar_tend => scalar_tend_save
+         rho_zz_int => rho_zz_new
+
+         do iCell=cellSolveStart,cellSolveEnd
+#ifndef DO_PHYSICS
+            scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
+#endif
+
+            do i=1,nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i,iCell)
+
+               ! here we add the horizontal flux divergence into the scalar tendency.
+               ! note that the scalar tendency is modified.
+               do k=1,nVertLevels
+                  do iScalar=1,num_scalars
+                        scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
+                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)/areaCell(iCell)
+                  end do
+               end do
+               
+            end do
+         end do
+
+      end if
 
       !
       !  vertical flux divergence and update of the scalars
       !
 
       ! zero fluxes at top and bottom
-
       wdtn(:,1) = 0.0
       wdtn(:,nVertLevels+1) = 0.0
-
-! We cannot update scalar_new until all other threads have had a chance to
-!    access the old values in the computation of flux_arr
-!$OMP BARRIER
-
-      if (local_advance_density) then
-         ! update density first
-         do iCell=cellSolveStart,cellSolveEnd
-            do k=1,nVertLevels
-               rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
-            end do
-         end do
-      end if
 
 
       do iCell=cellSolveStart,cellSolveEnd
@@ -2118,13 +2142,6 @@ module atm_time_integration
          end do
 
       end do
-
-      if (local_advance_density) then
-!$OMP BARRIER
-         do iCell=cellStart,cellEnd
-            scalar_tend(:,:,iCell) = scalar_tend_save(:,:,iCell)
-         end do
-      end if
 
    end subroutine atm_advance_scalars
 
