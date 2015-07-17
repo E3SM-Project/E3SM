@@ -44,7 +44,7 @@ my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition_cl
 
 my $definition = Build::NamelistDefinition->new( $nldef_file );
 
-my $CSMDATA = "/lustre/atlas1/cli900/world-shared/cesm/inputdata";
+my $CSMDATA = "/glade/p/cesm/cseg/inputdata";
 
 my %opts = ( 
                hgrid=>"all", 
@@ -418,7 +418,7 @@ EOF
       }
       my $mopts  = "$queryopts -namelist default_settings $usrnam";
       my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist clmexp $usrnam";
-      foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col","ord", 
+      foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col", 
                         "fmx", "lai", "urb", "org", "glc", "utp", "wet",
 		        "gdp", "peat","abm", "topostats" , "vic", "ch4") {
          my $lmask = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,mergeGIS=$merge_gis,hirespft=$hirespft -var lmask`;
@@ -514,7 +514,6 @@ EOF
  map_fpft         = '$map{'veg'}'
  map_fglacier     = '$map{'glc'}'
  map_fsoicol      = '$map{'col'}'
- map_fsoiord      = '$map{'ord'}'
  map_furban       = '$map{'urb'}'
  map_fmax         = '$map{'fmx'}'
  map_forganic     = '$map{'org'}'
@@ -634,7 +633,6 @@ EOF
             print $fh <<"EOF";
  mksrf_fvegtyp  = '$vegtyp'
  mksrf_fsoicol  = '$datfil{'col'}'
- mksrf_fsoiord  = '$datfil{'ord'}'
  mksrf_flai     = '$datfil{'lai'}'
 EOF
 	    my $ofile = "surfdata_${res}_${desc_yr0}_${sdate}";

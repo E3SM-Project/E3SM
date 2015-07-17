@@ -501,7 +501,7 @@ in its attributes. (Only used if scripgriddata_src_type = UGRID.)
 <!--                                                   -->
 <entry id="mksrf_filename" type="char*256" category="mksurfdata"
        group="default_settings" 
-       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_fsoiord,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4" >
+       valid_values="mksrf_fsoitex,mksrf_forganic,mksrf_flakwat,mksrf_fwetlnd,mksrf_fmax,mksrf_fmax,mksrf_fglacier,mksrf_fvocef,mksrf_furbtopo,mksrf_flndtopo,firrig,mksrf_furban,mksrf_fvegtyp,mksrf_fsoicol,mksrf_flai,mksrf_fgdp,mksrf_fpeat,mksrf_fabm,mksrf_ftopostats,mksrf_fvic,mksrf_fch4" >
 Filename for mksurfdata_map to remap raw data into the output surface dataset
 </entry>
 
@@ -538,11 +538,6 @@ Soil texture dataset for mksurfdata
 <entry id="mksrf_fsoicol" type="char*256" category="mksurfdata"
        input_pathname="abs" group="clmexp" valid_values="" >
 Soil color dataset for mksurfdata
-</entry>
-
-<entry id="mksrf_fsoiord" type="char*256" category="mksurfdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
-Soil order dataset for mksurfdata
 </entry>
 
 <entry id="mksrf_fmax" type="char*256" category="mksurfdata"
