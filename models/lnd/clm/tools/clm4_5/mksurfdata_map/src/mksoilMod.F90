@@ -5,7 +5,7 @@ module mksoilMod
 ! !MODULE: mksoilMod
 !
 ! !DESCRIPTION:
-! Make soil data (texture, color,order and organic)
+! Make soil data (texture, color and organic)
 !
 ! !REVISION HISTORY:
 ! Author: Erik Kluzek
@@ -29,7 +29,6 @@ module mksoilMod
   public mksoiltex      ! Set soil texture
   public mkorganic      ! Set organic soil
   public mksoilcol      ! Set soil color
-  public mksoilord      ! Set soil order
   public mkfmax         ! Make percent fmax
 !
 ! !PUBLIC DATA MEMBERS:
@@ -40,8 +39,6 @@ module mksoilMod
   real(r8), public    :: soil_fmax = unset     ! soil max saturation frac to override with
   integer , parameter :: unsetcol  = -999      ! flag to indicate soil color NOT set
   integer , public    :: soil_color= unsetcol  ! soil color to override with
-  integer , parameter :: unsetord  = -999      ! flag to indicate soil order NOT set
-  integer , public    :: soil_order= unsetord  ! soil order to override with
 !
 ! !PRIVATE DATA MEMBERS:
 !
@@ -49,7 +46,6 @@ module mksoilMod
   private :: mkrank
   private :: mksoiltexInit  ! Soil texture Initialization
   private :: mksoilcolInit  ! Soil color Initialization
-  private :: mksoilordInit  ! Soil order Initialization
   private :: mksoilfmaxInit ! Soil fmax Initialization
 
 !EOP
@@ -82,7 +78,6 @@ subroutine mksoilInit( )
 !-----------------------------------------------------------------------
   call mksoiltexInit()
   call mksoilcolInit()
-  call mksoilordInit()
   call mksoilfmaxInit()
 
 end subroutine mksoilInit
@@ -845,300 +840,6 @@ subroutine mksoilcol(ldomain, mapfname, datfname, ndiag, &
 end subroutine mksoilcol
 
 !-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: mksoilordInit
-!
-! !INTERFACE:
-subroutine mksoilordInit( )
-!
-! !DESCRIPTION:
-! Initialize of make soil order 
-! !USES:
-!
-! !ARGUMENTS:
-  implicit none
-!
-! !REVISION HISTORY:
-! Author: Xiaoying Shi 
-!
-!
-! !LOCAL VARIABLES:
-!EOP
-  real(r8) :: sumtex
-  character(len=32) :: subname = 'mksoilordInit'
-!-----------------------------------------------------------------------
-
-  ! Error check soil_order if it is set
-  if ( soil_order /= unsetord )then
-     if ( soil_order < 0 .or. soil_order > 16 )then
-        write(6,*)'soil_order is out of range = ', soil_order
-        call abort()
-     end if
-     write(6,*) 'Replace soil order for all points with: ', soil_order
-  end if
-end subroutine mksoilordInit
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: mksoilord
-!
-! !INTERFACE:
-subroutine mksoilord(ldomain, mapfname, datfname, ndiag, &
-                    pctglac_o, soil_order_o, nsoiord)
-!
-! !DESCRIPTION:
-! make soil order from soil order data
-!
-! !USES:
-  use mkdomainMod, only : domain_type, domain_clean, domain_read
-  use mkgridmapMod
-  use mkvarpar
-  use mkvarctl
-  use mkncdio
-!
-! !ARGUMENTS:
-  implicit none
-  type(domain_type), intent(in) :: ldomain
-    character(len=*)  , intent(in) :: mapfname           ! input mapping file name
-  character(len=*)  , intent(in) :: datfname           ! input data file name
-  integer           , intent(in) :: ndiag              ! unit number for diagout
-  real(r8)          , intent(in) :: pctglac_o(:)       ! % glac (output grid)
-  integer           , intent(out):: soil_order_o(:)    ! soil order classes
-  integer           , intent(out):: nsoiord            ! number of soil order 
-
-!
-! !CALLED FROM:
-! subroutine mksrfdat in module mksrfdatMod
-!
-! !REVISION HISTORY:
-! Author: Xiaoying Shi 
-!
-!
-! !LOCAL VARIABLES:
-!EOP
-  type(gridmap_type)    :: tgridmap
-  type(domain_type)    :: tdomain          ! local domain
-  integer, parameter :: num=2               ! set soil mapunit number
-  integer  :: wsti(num)                     ! index to 1st and 2nd largest wst
-  real(r8), allocatable :: wst(:,:)         ! overlap weights, by surface type
-  real(r8), allocatable :: gast_i(:)        ! global area, by surface type
-  real(r8), allocatable :: gast_o(:)        ! global area, by surface type
-  integer , allocatable :: soil_order_i(:)  ! input grid:  soil order 
-  integer , allocatable :: order(:)         ! 0: none; 1: some
-  real(r8) :: wt                            ! map overlap weight
-  real(r8) :: sum_fldi                      ! global sum of dummy input fld
-  real(r8) :: sum_fldo                      ! global sum of dummy output fld
-  character(len=35), allocatable :: ord(:)  ! name of each ord 
-  integer  :: k,l,n,m,ni,no,ns_i,ns_o       ! indices
-  integer  :: ncid,dimid,varid              ! input netCDF id's
-  integer  :: ier                           ! error status
-  integer  :: miss = 99999                  ! missing data indicator
-  real(r8) :: relerr = 0.00001              ! max error: sum overlap wts ne 1
-  character(len=32) :: subname = 'mksoilord'
-!-----------------------------------------------------------------------
-
-  write (6,*) 'Attempting to make soil order classes .....'
-  call shr_sys_flush(6)
-
-  ! -----------------------------------------------------------------
-  ! Read input file
-  ! -----------------------------------------------------------------
-
-  ns_o = ldomain%ns
-  ! Obtain input grid info, read local fields
-
-  call domain_read(tdomain,datfname)
-  ns_i = tdomain%ns
-  allocate(soil_order_i(ns_i), stat=ier)
-  if (ier/=0) call abort()
-
-  write (6,*) 'Open soil order file: ', trim(datfname)
-  call check_ret(nf_open(datfname, 0, ncid), subname)
-  call check_ret(nf_inq_varid (ncid, 'SOILORDER', varid), subname)
-  call check_ret(nf_get_var_int (ncid, varid, soil_order_i), subname)
-  call check_ret(nf_close(ncid), subname)
-
-  nsoiord = maxval(soil_order_i)
-  write(6,*)'nsoiord = ',nsoiord
-
-  allocate(gast_i(0:nsoiord),gast_o(0:nsoiord),ord(0:nsoiord))
-  ! -----------------------------------------------------------------
-  ! Define the model order classes: 0 to nsoiord
-  ! -----------------------------------------------------------------
-
-  if (nsoiord == 16) then
-     ord(0)  = 'no soil                            '
-     ord(1)  = 'class 1: light                     '
-     ord(2)  = 'class 2:                           '
-     ord(3)  = 'class 3:                           '
-     ord(4)  = 'class 4:                           '
-     ord(5)  = 'class 5:                           '
-     ord(6)  = 'class 6:                           '
-     ord(7)  = 'class 7:                           '
-     ord(8)  = 'class 8:                           '
-     ord(9)  = 'class 9:                           '
-     ord(10) = 'class 10:                          '
-     ord(11) = 'class 11:                          '
-     ord(12) = 'class 12: dark                     '
-  else
-     write(6,*)'nsoiord value of ',nsoiord,' is not currently supported'
-     call abort()
-  end if
-
-   ! Error check soil_order if it is set
-   if ( soil_order /= unsetord )then
-     if ( soil_order > nsoiord )then
-        write(6,*)'soil_order is out of range = ', soil_order
-        call abort()
-     end if
-        do no = 1,ns_o
-        soil_order_o(no) = soil_order
-     end do
-
-  else
-      call gridmap_mapread(tgridmap, mapfname)
-     ! Error checks for domain and map consistencies
-
-     call domain_checksame( tdomain, ldomain, tgridmap )
-
-     ! find area of overlap for each soil order for each no
-
-     allocate(wst(0:nsoiord,ns_o))
-     wst(0:nsoiord,:) = 0
-     allocate(order(ns_o))
-     order(:) = 0
-
-     ! TODO: need to do a loop to determine
-     ! the maximum number of over lap cells throughout the grid 
-     ! first get an array that is novr(ns_o) and fill this in - then set
-     ! maxovr - to max(novr) - then allocate the array wst to be size of
-     ! maxovr,ns_o or 0:nsoilord,ns_o
-     
-     do n = 1,tgridmap%ns
-        ni = tgridmap%src_indx(n)
-        no = tgridmap%dst_indx(n)
-        wt = tgridmap%wovr(n)
-        k  = soil_order_i(ni) * tdomain%mask(ni)
-        wst(k,no) = wst(k,no) + wt
-        if (k>0 .and. wst(k,no)>0.) then
-           order(no) = 1
-           wst(0,no) = 0.0
-        end if
-     enddo
-
-     soil_order_o(:) = 0
-     do no = 1,ns_o
-
-        ! Rank non-zero weights by order type. wsti(1) is the most extensive
-        ! order type. 
-
-        if (order(no) == 1) then
-           call mkrank (nsoiord, wst(0:nsoiord,no), miss, wsti, num)
-           soil_order_o(no) = wsti(1)
-        end if
-
-        ! If land but no order, set order to  6?
-
-           if (soil_order_o(no)==0) soil_order_o(no) = 15 ! check with xiaojuan 
-
-        ! Set order for grid cells that are 100% glacier to zero. Otherwise,
-        ! must have a soil order for the non-glacier portion of grid cell.
-
-        if (abs(pctglac_o(no)-100.)<1.e-06) soil_order_o(no)= 15
-         ! Error checks
-
-        if (soil_order_o(no) < 0 .or. soil_order_o(no) > nsoiord) then
-           write (6,*) 'MKSOILCOL error: land model soil order = ', &
-                soil_order_o(no),' is not valid for lon,lat = ',no
-           call abort()
-        end if
-
-     enddo
-     deallocate (wst)
-     deallocate (order)
-
-     ! Global sum of output field 
-
-     sum_fldi = 0.0_r8
-     do ni = 1,ns_i
-       sum_fldi = sum_fldi + tgridmap%area_src(ni) * tgridmap%frac_src(ni)
-     enddo
-
-     sum_fldo = 0.
-     do no = 1,ns_o
-        sum_fldo = sum_fldo + tgridmap%area_dst(no) * tgridmap%frac_dst(no)
-     end do
-     ! -----------------------------------------------------------------
-     ! Error check1
-     ! Compare global sum fld_o to global sum fld_i.
-     ! -----------------------------------------------------------------
-
-     if ( trim(mksrf_gridtype) == 'global') then
-        if ( abs(sum_fldo/sum_fldi-1.) > relerr ) then
-           write (6,*) 'MKSOILORD error: input field not conserved'
-           write (6,'(a30,e20.10)') 'global sum output field = ',sum_fldo
-           write (6,'(a30,e20.10)') 'global sum input  field = ',sum_fldi
-           stop
-        end if
-     end if
-
-       ! -----------------------------------------------------------------
-     ! Error check2
-     ! Compare global area of each soil order on input and output grids
-     ! -----------------------------------------------------------------
-
-     gast_i(:) = 0.
-     do ni = 1,ns_i
-        k = soil_order_i(ni)
-        gast_i(k) = gast_i(k) + tgridmap%area_src(ni)*tgridmap%frac_src(ni)*re**2
-     end do
-
-     gast_o(:) = 0.
-     do no = 1,ns_o
-        k = soil_order_o(no)
-        gast_o(k) = gast_o(k) + tgridmap%area_dst(no)*tgridmap%frac_dst(no)*re**2
-     end do
-       ! area comparison
-
-     write (ndiag,*)
-     write (ndiag,'(1x,70a1)') ('=',k=1,70)
-     write (ndiag,*) 'Soil order Output'
-     write (ndiag,'(1x,70a1)') ('=',k=1,70)
-
-     write (ndiag,*)
-     write (ndiag,'(1x,70a1)') ('.',k=1,70)
-     write (ndiag,1001)
-1001 format (1x,'soil order type',20x,' input grid area output grid area',/ &
-             1x,33x,'     10**6 km**2','      10**6 km**2')
-     write (ndiag,'(1x,70a1)') ('.',k=1,70)
-     write (ndiag,*)
-
-     do k = 0, nsoiord
-        write (ndiag,1002) ord(k),gast_i(k)*1.e-6,gast_o(k)*1.e-6
-1002    format (1x,a35,f16.3,f17.3)
-     end do
-
-  end if
-        ! Deallocate dynamic memory
-
-  call domain_clean(tdomain)
-  if ( soil_order == unsetord )then
-     call gridmap_clean(tgridmap)
-  end if
-  deallocate (soil_order_i,gast_i,gast_o,ord)
-
-  write (6,*) 'Successfully made soil order classes'
-
-  write (6,*)
-  call shr_sys_flush(6)
-
-end subroutine mksoilord
-
-!-----------------------------------------------------------------------
-
 !BOP
 !
 ! !IROUTINE: mkorganic
@@ -1662,16 +1363,6 @@ subroutine mksoilAtt( ncid, dynlanduse, xtype )
         call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
              'Soil_color_raw_data_file_name', len_trim(str), trim(str)), subname)
      end if
-     if ( soil_order /= unsetord )then
-        str = 'TRUE'
-        call check_ret(nf_put_att_text (ncid, NF_GLOBAL, &
-             'soil_order_override', len_trim(str), trim(str)), subname)
-     else
-        str = get_filename(mksrf_fsoiord)
-        call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
-             'Soil_order_raw_data_file_name', len_trim(str), trim(str)),subname)
-     end if
-
      if ( soil_fmax /= unset )then
         str = 'TRUE'
         call check_ret(nf_put_att_text (ncid, NF_GLOBAL, &
@@ -1689,8 +1380,6 @@ subroutine mksoilAtt( ncid, dynlanduse, xtype )
 
      call ncd_defvar(ncid=ncid, varname='mxsoil_color', xtype=nf_int, &
           long_name='maximum numbers of soil colors', units='unitless')
-     call ncd_defvar(ncid=ncid, varname='mxsoil_order', xtype=nf_int, &
-          long_name='maximum numbers of soil order', units='unitless')
      
      if (outnc_1d) then
         call ncd_defvar(ncid=ncid, varname='SOIL_COLOR', xtype=nf_int, &
@@ -1700,16 +1389,6 @@ subroutine mksoilAtt( ncid, dynlanduse, xtype )
         call ncd_defvar(ncid=ncid, varname='SOIL_COLOR', xtype=nf_int, &
              dim1name='lsmlon', dim2name='lsmlat', &
              long_name='soil color', units='unitless')
-     end if
-     
-     if (outnc_1d) then
-        call ncd_defvar(ncid=ncid, varname='SOIL_ORDER', xtype=nf_int, &
-             dim1name='gridcell',&
-             long_name='soil order', units='unitless')
-     else
-        call ncd_defvar(ncid=ncid, varname='SOIL_ORDER', xtype=nf_int, &
-             dim1name='lsmlon', dim2name='lsmlat', &
-             long_name='soil order', units='unitless')
      end if
 
      if (outnc_1d) then

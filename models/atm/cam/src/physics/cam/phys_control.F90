@@ -142,11 +142,7 @@ subroutine phys_ctl_readnl(nlfile)
       conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks, &
       use_gw_oro, use_gw_front, use_gw_convect, fix_g1_err_ndrop, &
       ssalt_tuning, resus_fix, convproc_do_aer, convproc_do_gas, convproc_method_activate, &
-<<<<<<< HEAD
       liqcf_fix, regen_fix, demott_ice_nuc, &                                               
-=======
-      liqcf_fix, regen_fix, demott_ice_nuc, &
->>>>>>> acme-y9s/surfdata_map
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad
    !-----------------------------------------------------------------------------
@@ -324,11 +320,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         history_amwg_out, history_vdiag_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
-<<<<<<< HEAD
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     & !BSINGH - bugfix for ndrop.F90
-=======
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     &
->>>>>>> acme-y9s/surfdata_map
                         ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out,   &
                         liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      &
@@ -411,20 +403,12 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
-<<<<<<< HEAD
    if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop 
-=======
-   if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop
->>>>>>> acme-y9s/surfdata_map
    if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   
    if ( present(resus_fix_out           ) ) resus_fix_out            = resus_fix      
    if ( present(convproc_do_aer_out     ) ) convproc_do_aer_out      = convproc_do_aer
    if ( present(convproc_do_gas_out     ) ) convproc_do_gas_out      = convproc_do_gas
-<<<<<<< HEAD
    if ( present(convproc_method_activate_out))convproc_method_activate_out= convproc_method_activate 
-=======
-   if ( present(convproc_method_activate_out))convproc_method_activate_out= convproc_method_activate
->>>>>>> acme-y9s/surfdata_map
    if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      
    if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      
    if ( present(demott_ice_nuc_out      ) ) demott_ice_nuc_out       = demott_ice_nuc 

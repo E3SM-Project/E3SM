@@ -8,7 +8,7 @@ program mksurfdat
 ! !DESCRIPTION:
 ! Creates land model surface dataset from original "raw" data files.
 ! Surface dataset contains model grid, pfts, inland water, glacier,
-! soil texture, soil color, soil order,LAI and SAI, urban fraction, and urban
+! soil texture, soil color, LAI and SAI, urban fraction, and urban
 ! parameters.
 !
 ! !USES:
@@ -19,8 +19,7 @@ program mksurfdat
                                     natpft_lb, natpft_ub, cft_lb, cft_ub, num_cft
     use mksoilMod          , only : soil_sand, soil_clay, mksoiltex, mksoilInit, &
                                     soil_color, mksoilcol, mkorganic, &
-                                    soil_fmax, mkfmax,&
-                                    soil_order, mksoilord 
+                                    soil_fmax, mkfmax
     use mkvocefMod         , only : mkvocef
     use mklanwatMod        , only : mklakwat, mkwetlnd, mklakparams
     use mkglcmecMod        , only : nglcec, mkglcmec, mkglcmecInit, mkglacier
@@ -54,13 +53,11 @@ program mksurfdat
 ! 3/18/08: David Lawrence added organic matter processing
 ! 1/22/09: Keith Oleson added urban parameter processing
 ! 2/11/13: Sam Levis added abm, peat, and gdp processing for new fire model
-! 3/27/15: Xiaoying Shi added soil order for new Phosphorus models
 !
 !
 ! !LOCAL VARIABLES:
 !EOP
     integer  :: nsoicol                     ! number of model color classes
-    integer  :: nsoiord                     ! number of model order classes
     integer  :: k,m,n                       ! indices
     integer  :: ni,nj,ns_o                  ! indices
     integer  :: ier                         ! error status
@@ -112,8 +109,7 @@ program mksurfdat
     real(r8), allocatable  :: elev(:)            ! glc elevation (m)
     real(r8), allocatable  :: topo(:)            ! land elevation (m)
     real(r8), allocatable  :: fmax(:)            ! fractional saturated area
-    integer , allocatable  :: soicol(:)          ! soil color
-    integer , allocatable  :: soiord(:)          ! soil order                             
+    integer , allocatable  :: soicol(:)          ! soil color                            
     real(r8), allocatable  :: pctsand(:,:)       ! soil texture: percent sand            
     real(r8), allocatable  :: pctclay(:,:)       ! soil texture: percent clay            
     real(r8), allocatable  :: ef1_btr(:)         ! Isoprene emission factor for broadleaf
@@ -150,7 +146,6 @@ program mksurfdat
 	 mksrf_fsoitex,            &
          mksrf_forganic,           &
          mksrf_fsoicol,            &
-         mksrf_fsoiord,            &
          mksrf_fvocef,             &
          mksrf_flakwat,            &
          mksrf_fwetlnd,            &
@@ -170,7 +165,6 @@ program mksurfdat
          nglcec,                   &
          numpft,                   &
          soil_color,               &
-         soil_order,               &
          soil_sand,                &
          soil_fmax,                &
          soil_clay,                &
@@ -184,7 +178,6 @@ program mksurfdat
          map_fglacier,             &
          map_fsoitex,              &
          map_fsoicol,              &
-         map_fsoiord,              &
          map_furban,               &
          map_furbtopo,             &
          map_flndtopo,             &
@@ -224,7 +217,6 @@ program mksurfdat
     !    mksrf_forganic - Organic soil carbon dataset
     !    mksrf_fmax ----- Max fractional saturated area dataset
     !    mksrf_fsoicol -- Soil color dataset
-    !    mksrf_fsoiord -- Soil order dataset
     !    mksrf_fsoitex -- Soil texture dataset
     !    mksrf_furbtopo-- Topography dataset (for limiting urban areas)
     !    mksrf_furban --- Urban dataset
@@ -245,7 +237,6 @@ program mksurfdat
     !    map_fglacier ---- Mapping for mksrf_fglacier
     !    map_fsoitex ----- Mapping for mksrf_fsoitex
     !    map_fsoicol ----- Mapping for mksrf_fsoicol
-    !    map_fsoiord ----- Mapping for mksrf_fsoiord
     !    map_furban ------ Mapping for mksrf_furban
     !    map_furbtopo ---- Mapping for mksrf_furbtopo
     !    map_flndtopo ---- Mapping for mksrf_flndtopo
@@ -274,7 +265,6 @@ program mksurfdat
     !    all_urban --------- If entire area is urban
     !    no_inlandwet ------ If wetland should be set to 0% over land
     !    soil_color -------- If you want to change the soil_color to this value everywhere
-    !    soil_order -------- If you want to change the soil_order to this value everywhere
     !    soil_clay --------- If you want to change the soil_clay % to this value everywhere
     !    soil_fmax --------- If you want to change the soil_fmax  to this value everywhere
     !    soil_sand --------- If you want to change the soil_sand % to this value everywhere
@@ -402,8 +392,7 @@ program mksurfdat
                urbn_classes_g(ns_o,numurbl)       , &
                pctsand(ns_o,nlevsoi)              , & 
                pctclay(ns_o,nlevsoi)              , & 
-               soicol(ns_o)                       , &
-               soiord(ns_o)                       , & 
+               soicol(ns_o)                       , & 
                gdp(ns_o)                          , & 
                fpeat(ns_o)                        , & 
                agfirepkmon(ns_o)                  , & 
@@ -435,7 +424,6 @@ program mksurfdat
     pctsand(:,:)          = spval
     pctclay(:,:)          = spval
     soicol(:)             = -999
-    soiord(:)             = -999
     gdp(:)                = spval
     fpeat(:)              = spval
     agfirepkmon(:)        = -999
@@ -483,7 +471,6 @@ program mksurfdat
     write(ndiag,*) 'soil texture from:           ',trim(mksrf_fsoitex)
     write(ndiag,*) 'soil organic from:           ',trim(mksrf_forganic)
     write(ndiag,*) 'soil color from:             ',trim(mksrf_fsoicol)
-    write(ndiag,*) 'soil order from:            ',trim(mksrf_fsoiord)
     write(ndiag,*) 'VOC emission factors from:   ',trim(mksrf_fvocef)
     write(ndiag,*) 'gdp from:                    ',trim(mksrf_fgdp)
     write(ndiag,*) 'peat from:                   ',trim(mksrf_fpeat)
@@ -497,7 +484,6 @@ program mksurfdat
     write(ndiag,*)' mapping for glacier          ',trim(map_fglacier)
     write(ndiag,*)' mapping for soil texture     ',trim(map_fsoitex)
     write(ndiag,*)' mapping for soil color       ',trim(map_fsoicol)
-     write(ndiag,*)' mapping for soil order      ',trim(map_fsoiord)
     write(ndiag,*)' mapping for soil organic     ',trim(map_forganic)
     write(ndiag,*)' mapping for urban            ',trim(map_furban)
     write(ndiag,*)' mapping for fmax             ',trim(map_fmax)
@@ -547,10 +533,6 @@ program mksurfdat
 
     call mksoilcol (ldomain, mapfname=map_fsoicol, datfname=mksrf_fsoicol, &
          ndiag=ndiag, soil_color_o=soicol, nsoicol=nsoicol)
-     ! Make soil order classes [soiord] [fsoiord]
-
-    call mksoilord (ldomain, mapfname=map_fsoiord, datfname=mksrf_fsoiord, &
-         ndiag=ndiag, pctglac_o=pctgla, soil_order_o=soiord, nsoiord=nsoiord)
 
     ! Make fmax [fmax] from [fmax] dataset
 
@@ -685,8 +667,7 @@ program mksurfdat
     do n = 1,ns_o
 
        ! Assume wetland and/or lake when dataset landmask implies ocean 
-       ! (assume medium soil color (15), soil order(16) and loamy texture).
-       
+       ! (assume medium soil color (15) and loamy texture).
        ! Also set pftdata_mask here
        ! Note that pctpft_full is NOT adjusted here, so that we still have information
        ! about the landunit breakdown into PFTs (pctnatveg and pctcrop will later become 0
@@ -695,7 +676,6 @@ program mksurfdat
        if (pctlnd_pft(n) < 1.e-6_r8) then
           pftdata_mask(n)  = 0
           soicol(n)        = 15
-          soiord(n)        = 16
           pctwet(n)        = 100._r8 - pctlak(n)
           pcturb(n)        = 0._r8
           pctgla(n)        = 0._r8
@@ -836,12 +816,6 @@ program mksurfdat
 
     call check_ret(nf_inq_varid(ncid, 'SOIL_COLOR', varid), subname)
     call check_ret(nf_put_var_int(ncid, varid, soicol), subname)
- 
-    call check_ret(nf_inq_varid(ncid, 'mxsoil_order', varid), subname)
-    call check_ret(nf_put_var_int(ncid, varid, nsoiord), subname)
-
-    call check_ret(nf_inq_varid(ncid, 'SOIL_ORDER', varid), subname)
-    call check_ret(nf_put_var_int(ncid, varid, soiord), subname) 
 
     call check_ret(nf_inq_varid(ncid, 'PCT_SAND', varid), subname)
     call check_ret(nf_put_var_double(ncid, varid, pctsand), subname)
@@ -978,7 +952,6 @@ program mksurfdat
     deallocate ( fmax )
     deallocate ( pctsand, pctclay )
     deallocate ( soicol )
-    deallocate ( soiord )
     deallocate ( gdp, fpeat, agfirepkmon )
     deallocate ( topo_stddev, slope )
     deallocate ( vic_binfl, vic_ws, vic_dsmax, vic_ds )

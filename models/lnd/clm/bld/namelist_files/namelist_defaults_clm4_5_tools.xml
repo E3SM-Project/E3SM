@@ -125,7 +125,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <lmask type="veg" hirespft="on">MODIS</lmask>
 <lmask type="urb"              >LandScan2004</lmask>
 <lmask type="col"              >MODIS</lmask>
-<lmask type="ord"              >MODIS</lmask>
 <lmask type="org"              >ISRIC-WISE</lmask>
 <lmask type="glc"              >GLOBE-Gardner</lmask>
 <lmask type="glc" mergeGIS="on">GLOBE-Gardner-mergeGIS</lmask>
@@ -150,7 +149,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <hgrid type="veg" hirespft="on">3x3min</hgrid>
 <hgrid type="urb"              >3x3min</hgrid>
 <hgrid type="col"              >0.5x0.5</hgrid>
-<hgrid type="ord"              >0.5x0.5</hgrid>
 <hgrid type="org"              >5x5min</hgrid>
 <hgrid type="glc"              >3x3min</hgrid>
 <hgrid type="fmx"              >3x3min</hgrid>
@@ -173,7 +171,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <mksrf_filename type="veg" >mksrf_fvegtyp</mksrf_filename>
 <mksrf_filename type="urb" >mksrf_furban</mksrf_filename>
 <mksrf_filename type="col" >mksrf_fsoicol</mksrf_filename>
-<mksrf_filename type="ord" >mksrf_fsoiord</mksrf_filename>
 <mksrf_filename type="org" >mksrf_forganic</mksrf_filename>
 <mksrf_filename type="glc" >mksrf_fglacier</mksrf_filename>
 <mksrf_filename type="fmx" >mksrf_fmax</mksrf_filename>
@@ -208,9 +205,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <mksrf_fsoicol  hgrid="0.5x0.5"  lmask="MODIS"
 >lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_soilcol_global_c090324.nc</mksrf_fsoicol>
-
-<mksrf_fsoiord  hgrid="0.5x0.5"  lmask="MODIS"
->lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_soilord_global_c150313.nc</mksrf_fsoiord>
 
 <mksrf_forganic hgrid="5x5min"  lmask="ISRIC-WISE"
 >lnd/clm2/rawdata/mksrf_organic_10level_5x5min_ISRIC-WISE-NCSCD_nlev7_c120830.nc</mksrf_forganic>
