@@ -239,7 +239,8 @@ module atm_time_integration
       rk_timestep(2) = dt_dynamics/2.
       rk_timestep(3) = dt_dynamics
 
-      rk_sub_timestep(1) = dt_dynamics/3.
+!      rk_sub_timestep(1) = dt_dynamics/3.
+      rk_sub_timestep(1) = dt_dynamics/2.  !  this is to test the second-order variant of RK3 for dynamics
       rk_sub_timestep(2) = dt_dynamics/real(number_of_sub_steps)
       rk_sub_timestep(3) = dt_dynamics/real(number_of_sub_steps)
 
@@ -2725,6 +2726,9 @@ module atm_time_integration
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
                                                     h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save
 
+      real (kind=RKIND), dimension(:,:), pointer :: exner
+      real (kind=RKIND), dimension(:,:), pointer :: pp_fwd
+
       real (kind=RKIND), dimension(:,:), pointer :: rr_save
 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
@@ -2751,19 +2755,17 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
-      real (kind=RKIND) :: prandtl_inv, r_areaCell
-
+      real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv
 
       real (kind=RKIND), pointer :: r_earth
       real (kind=RKIND), dimension(:,:), pointer :: ur_cell, vr_cell
 
-      real (kind=RKIND), parameter :: c_s = 0.125
       real (kind=RKIND), dimension( nVertLevels ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
 
       real(kind=RKIND), dimension(:,:), pointer :: tend_w_pgf, tend_w_buoy
 
-      real (kind=RKIND), pointer :: coef_3rd_order
+      real (kind=RKIND), pointer :: coef_3rd_order, c_s, smdiv
       logical, pointer :: config_mix_full
       character (len=StrKIND), pointer :: config_horiz_mixing
       real (kind=RKIND), pointer :: config_del4u_div_factor
@@ -2792,6 +2794,8 @@ module atm_time_integration
       call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc4', config_h_mom_eddy_visc4)
       call mpas_pool_get_config(configs, 'config_visc4_2dsmag', config_visc4_2dsmag)
       call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
+      call mpas_pool_get_config(configs, 'config_smagorinsky_coef', c_s)
+      call mpas_pool_get_config(configs, 'config_smdiv', smdiv) 
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
       call mpas_pool_get_array(state, 'u', u, 2)
@@ -2818,6 +2822,9 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'pressure_p', pp)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
       call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
+      call mpas_pool_get_array(diag, 'exner', exner)
+      call mpas_pool_get_array(diag, 'zz_rtheta_pp_old', pp_fwd)
+
 
       call mpas_pool_get_array(mesh, 'pzp', pzp)
       call mpas_pool_get_array(mesh, 'pzm', pzm)
@@ -2968,20 +2975,25 @@ module atm_time_integration
       ! only needed on first rk_step with pert variables defined a pert from time t
       !
       if(rk_step == 1) then
+
+        rgas_cprcv = rgas*cp/cv
         do iCell = cellStart,cellEnd
-           k = 1
-             dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp(k+1,iCell) - pp(k,iCell))   &
-                                  + pzp(k,iCell)*(pp(k+2,iCell) - pp(k,iCell)) )
-           do k = 2, nVertLevels-1
-              dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp(k+1,iCell) - pp(k  ,iCell))  &
-                                   + pzm(k,iCell)*(pp(k  ,iCell) - pp(k-1,iCell)) )
-           end do
-           k = nVertLevels
-           dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
 
           do k = 1,nVertLevels
             tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
+            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
           end do
+
+          k = 1
+            dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp_fwd(k+1,iCell) - pp_fwd(k,iCell))   &
+                                 + pzp(k,iCell)*(pp_fwd(k+2,iCell) - pp_fwd(k,iCell)) )
+          do k = 2, nVertLevels-1
+             dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp_fwd(k+1,iCell) - pp_fwd(k  ,iCell))  &
+                                  + pzm(k,iCell)*(pp_fwd(k  ,iCell) - pp_fwd(k-1,iCell)) )
+          end do
+          k = nVertLevels
+          dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
+
         end do
       end if
 
@@ -3001,7 +3013,7 @@ module atm_time_integration
       if(rk_step == 1) then
 !  first push to tend_u_euler
          do k=1,nVertLevels
-            tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*((pp(k,cell2)-pp(k,cell1))/dcEdge(iEdge)   &
+            tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*((pp_fwd(k,cell2)-pp_fwd(k,cell1))/dcEdge(iEdge)   &
                                         - zxu(k,iEdge)*(dpdz(k,cell1)+dpdz(k,cell2)) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
          end do
       end if

@@ -64,9 +64,10 @@
                 <nml_option name="config_positive_definite"          type="logical"       default_value="false"/>
                 <nml_option name="config_monotonic"                  type="logical"       default_value="true"/>
                 <nml_option name="config_coef_3rd_order"             type="real"          default_value="0.25"/>
+                <nml_option name="config_smagorinsky_coef"           type="real"          default_value="0.125"       in_defaults="false"/>
                 <nml_option name="config_mix_full"                   type="logical"       default_value="true"        in_defaults="false"/>
                 <nml_option name="config_epssm"                      type="real"          default_value="0.1"/>
-                <nml_option name="config_smdiv"                      type="real"          default_value="0.1"/>
+                <nml_option name="config_smdiv"                      type="real"          default_value="0.01"/>
                 <nml_option name="config_apvm_upwinding"             type="real"          default_value="0.5"         in_defaults="false"/>
                 <nml_option name="config_h_ScaleWithMesh"            type="logical"       default_value="true"/>
                 <nml_option name="config_num_halos"                  type="integer"       default_value="2"           in_defaults="false"/>
