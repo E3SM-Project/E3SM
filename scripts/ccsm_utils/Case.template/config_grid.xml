@@ -111,6 +111,10 @@ Each grid is associated with five names
 
 <GRID sname="0.9x1.25_gx1v6_gis20"    alias="f09_g16_g"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.gis20km_w%null</GRID>
 
+<!--- mpas-o + mpas-li grids -->
+
+<GRID sname="T62_mpas120_gis20" alias="T62_m120_g" compset="MPASO.*_MPASLI">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%mpas.gis20km_w%null</GRID>
+
 <!-- new runoff grids for data runoff model DROF -->
 
 <GRID sname="T31_gx3v7_rx1"              alias="T31_g37_rx1"      compset="_DROF">a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</GRID> <!-- back compat -->
