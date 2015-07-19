@@ -981,8 +981,10 @@ contains
   logical  :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
   real(r8) :: reaction_rates(Extra_inst%nr)
   real(r8) :: pscal(1:nprimvars)
-  real(r8) :: o2_consump, o2_limit   
-  
+  real(r8) :: rscal(1:Extra_inst%nr)
+  real(r8) :: p_dt(1:nprimvars)
+  real(r8) :: d_dt(1:nprimvars)
+  logical  :: lneg 
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
@@ -1062,9 +1064,9 @@ contains
   
      if(lneg)then
      
-        call calc_rscal(nprimvars, Extra_inst%nr, pscal, cascade_matrixpd(1:nprimvars, 1:Extra_inst%nr), rscal)
+        call calc_rscal(nprimvars, Extra_inst%nr, pscal, cascade_matrixd(1:nprimvars, 1:Extra_inst%nr), rscal)
      
-        call reduce_reaction_rates(rscal(1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr))
+        call reduce_reaction_rates(Extra_inst%nr, rscal(1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr))
      else   
         exit
      endif
@@ -1087,7 +1089,7 @@ contains
   real(r8), intent(out) :: pscal(1:nprimvars)
   logical,  intent(out) :: lneg
   real(r8) :: yt
-  
+  integer  :: j 
   lneg =.false.
     
   do j = 1, nprimvars
@@ -1107,7 +1109,7 @@ contains
   
 
 !-------------------------------------------------------------------------------    
-  subroutine calc_rscal(nprimvars, nr, pscal, cascade_matrixpd, rscal)
+  subroutine calc_rscal(nprimvars, nr, pscal, cascade_matrixd, rscal)
   !
   ! calcualte limiting factor for each reaction
   !
@@ -1116,13 +1118,13 @@ contains
   integer , intent(in) :: nprimvars
   integer , intent(in) :: nr  
   real(r8), intent(in) :: pscal(1:nprimvars)
-  real(r8), intent(in) :: cascade_matrixpd(1:nprimvars, 1:nr)
+  real(r8), intent(in) :: cascade_matrixd(1:nprimvars, 1:nr)
   real(r8), intent(out):: rscal(1:nr)
   integer :: j
   
   
   do j = 1, nr
-     rscal(j) = minp(pscal,cascade_matrixpd(1:nprimvars, j))
+     rscal(j) = minp(pscal,cascade_matrixd(1:nprimvars, j))
   enddo
   
   

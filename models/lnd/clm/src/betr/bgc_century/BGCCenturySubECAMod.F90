@@ -1,4 +1,4 @@
-module BGCCenturySubMPCMod
+module BGCCenturySubECAMod
 #include "shr_assert.h"
 !
 ! DESCRIPTION
@@ -344,4 +344,4 @@ module BGCCenturySubMPCMod
   
   
   
-end module BGCCenturySubMPCMod
+end module BGCCenturySubECAMod
