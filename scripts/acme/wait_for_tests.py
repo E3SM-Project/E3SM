@@ -82,6 +82,9 @@ def create_cdash_xml(results, cdash_build_name, cdash_project):
     utc_time_tuple = time.gmtime(current_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
+    acme_repo = acme_util.get_source_repo()
+    git_commit = acme_util.get_current_commit(repo=acme_repo)
+
     hostname = acme_util.probe_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
@@ -136,29 +139,12 @@ NightlyStartTime: %s UTC
 
     site_elem = xmlet.Element("Site")
 
-    # It's OK to lie for most of this stuff
     site_elem.attrib["BuildName"] = cdash_build_name
     site_elem.attrib["BuildStamp"] = "%s-Nightly" % subdir_name
     site_elem.attrib["Name"] = hostname
-    site_elem.attrib["Generator"] = "ctest-2.8.11.1"
-    site_elem.attrib["CompilerName"] = ""
     site_elem.attrib["OSName"] = "Linux"
     site_elem.attrib["Hostname"] = hostname
-    site_elem.attrib["OSRelease"] = "2.6.32-504.el6.x86_64"
-    site_elem.attrib["OSVersion"] = "#1 SMP Tue Sep 16 01:56:35 EDT 2014"
-    site_elem.attrib["OSPlatform"] = "x86_64"
-    site_elem.attrib["Is64Bits"] = "1"
-    site_elem.attrib["VendorString"] = "GenuineIntel"
-    site_elem.attrib["VendorID"] = "Intel Corporation"
-    site_elem.attrib["FamilyID"] = "6"
-    site_elem.attrib["ModelID"] = "44"
-    site_elem.attrib["ProcessorCacheSize"] = "12288"
-    site_elem.attrib["NumberOfLogicalCPU"] = "16"
-    site_elem.attrib["NumberOfPhysicalCPU"] = "8"
-    site_elem.attrib["TotalVirtualMemory"] = "26207"
-    site_elem.attrib["TotalPhysicalMemory"] = "24016"
-    site_elem.attrib["LogicalProcessorsPerPhysical"] = "2"
-    site_elem.attrib["ProcessorClockFrequency"] = "2394.04"
+    site_elem.attrib["OSVersion"] = "Commit: %s" % git_commit
 
     testing_elem = xmlet.SubElement(site_elem, "Testing")
 

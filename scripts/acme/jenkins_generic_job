@@ -106,7 +106,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash,
     expect(acme_machine is not None,
            "Did not recognize current machine '%s'" % socket.gethostname())
 
-    acme_repo = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    acme_repo = acme_util.get_source_repo()
     expect(os.path.isdir(os.path.join(acme_repo, ".git")),
            "Expected '%s' to be a git repository" % acme_repo)
 

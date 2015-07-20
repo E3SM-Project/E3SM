@@ -205,6 +205,14 @@ def get_current_commit(short=False, repo=None):
     return output.strip()
 
 ###############################################################################
+def get_source_repo():
+###############################################################################
+    """
+    Return the absolute path to the root of the repo that contains this script
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+###############################################################################
 def stop_buffering_output():
 ###############################################################################
     """
