@@ -196,7 +196,7 @@ contains
          do k=1,nVertLevels
 
            ! average neighboring cell-centered vectors to the edge
-           vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
+           vectorR3Edge(:) = 0.5_RKIND*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
 
            ! normal component at edge: take dot products with unit vectors at edge
            normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
@@ -277,7 +277,7 @@ contains
          do k=1,nVertLevels
 
            ! average neighboring cell-centered vectors to the edge
-           vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
+           vectorR3Edge(:) = 0.5_RKIND*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
 
            ! normal component at edge: take dot products with unit vectors at edge
            normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
@@ -555,7 +555,7 @@ contains
       rotationMatrix(:,2) = meridionalUnitVector
       rotationMatrix(:,3) = verticalUnitVector
 
-      vectorLonLatR = 0.0
+      vectorLonLatR = 0.0_RKIND
       do i=1,3
          do j=1,3
             ! xi = R^T x
@@ -620,7 +620,7 @@ contains
       rotationMatrix(:,2) = meridionalUnitVector
       rotationMatrix(:,3) = verticalUnitVector
 
-      vectorR3 = 0.0
+      vectorR3 = 0.0_RKIND
       do i=1,3
          do j=1,3
             vectorR3(i) = vectorR3(i) + rotationMatrix(i,j)*vectorLonLatR(j)
