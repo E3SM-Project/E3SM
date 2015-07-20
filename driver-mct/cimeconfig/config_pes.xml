@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<config_pes>
+  <pes_layout>
+    <!-- This will always default to $MAX_PES_PER_NODE in ConfigPes::_setPESsettings -->
+  </pes_layout>
+</config_pes>
+

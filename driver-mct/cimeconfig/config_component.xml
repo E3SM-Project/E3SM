@@ -93,8 +93,8 @@
       <value compset="_DATM%COPYALL_NPS"    >72</value> 
       <value compset="_DATM.*_CLM"          >48</value>  
       <value compset="_DATM.*_DICE.*_POP2"  >4</value>
+      <value compset="_DATM.*_CICE.*_POP2"  >48</value>
       <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
-      <value compset="_DATM.*_CICE.*_POP2"  >24</value>
       <value compset="_DATM.*_DOCN%US20"    >24</value> 
       <value compset="_MPAS"                >1</value>  
       <value compset=".+" grid="a%0.23x0.31">96</value>
@@ -103,6 +103,10 @@
       <value compset=".+" grid="a%ne240np4" >96</value>
       <value compset=".+" grid="a%T85"      >144</value>
       <value compset=".+" grid="a%T341"     >288</value>
+      <value compset=".+" grid="1x1"        >48</value>
+      <value compset=".+" grid="1x1_urbanc" >48</value>
+      <value compset=".+" grid="1x1_mexico" >24</value>
+      <value compset=".+" grid="1x1_vancou" >24</value>
       <value compset="_DLND.*_CISM"         >1</value>
     </values>
     <group>run_coupling</group>
@@ -144,7 +148,7 @@
     <values>
       <value compset="_POP2">1</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value> 
-      <value compset="_DATM.*_CLM">1</value>
+      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
