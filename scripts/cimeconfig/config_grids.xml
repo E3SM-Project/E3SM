@@ -612,7 +612,7 @@
       <support_level>For low resolution testing</support_level>
     </domain>
 
-    <domain name="T341" alias="512x1024"> 
+    <domain name="T341"> 
       <nx>1024</nx> <ny>512</ny> 
       <!-- global spectral (eulerian dycore) grids-->
       <!--- mask for atm is irrelevant -->
@@ -621,7 +621,7 @@
       <support_level>Backward compatible for very high resolution Spectral-dycore experiments</support_level>
     </domain>
 
-    <domain name="T85"  alias="128x256">
+    <domain name="T85">
       <!-- global spectral (eulerian dycore) grids-->
       <nx>256</nx>  <ny>128</ny> 
       <file lnd_mask="gx1v6">domain.lnd.T85_gx1v4.060403.nc</file>
@@ -641,7 +641,7 @@
       <desc>T62 is Gaussian grid:</desc> 
     </domain>
 
-    <domain name="T42"  alias="64x128">
+    <domain name="T42">
       <nx>128</nx> <ny>64</ny>
       <file lnd_mask="usgs">domain.lnd.T42_USGS.111004.nc</file>
       <file ocn_mask="usgs">domain.camocn.64x128_USGS_070807.nc</file>
@@ -650,7 +650,7 @@
       <desc>T42 is Gaussian grid:</desc> 
     </domain>
 
-    <domain name="T31"  alias="48x96">
+    <domain name="T31">
       <nx>96</nx> <ny>48</ny>
       <file lnd_mask="gx3v7">domain.lnd.T31_gx3v7.090928.nc</file>
       <file ocn_mask="gx3v7">domain.ocn.48x96_gx3v7_100114.nc</file>
@@ -1000,7 +1000,7 @@
       <OCN2ATM_SMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
-    <gridmap atm_grid="48x96" ocn_grid="gx3v7">
+    <gridmap atm_grid="T31" ocn_grid="gx3v7">
       <!-- alias is used for gridname -->
       <ATM2OCN_FMAPNAME>cpl/cpl6/map_T31_to_gx3v7_aave_da_090903.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/cpl6/map_T31_to_gx3v7_patch_090903.nc</ATM2OCN_SMAPNAME>
@@ -1009,20 +1009,20 @@
       <OCN2ATM_SMAPNAME>cpl/cpl6/map_gx3v7_to_T31_aave_da_090903.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
-    <gridmap atm_grid="128x256" ocn_grid="gx1v6"> 
+    <gridmap atm_grid="T85" ocn_grid="gx1v6"> 
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T85/map_T85_to_gx1v6_aave_110411.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T85/map_T85_to_gx1v6_bilin_110411.nc</ATM2OCN_SMAPNAME>
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T85/map_T85_to_gx1v6_bilin_110411.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_to_T85_aave_110411.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_to_T85_aave_110411.nc</OCN2ATM_SMAPNAME>
     </gridmap>
-    <gridmap atm_grid="128x256" lnd_grid="0.9x1.25">
+    <gridmap atm_grid="T85" lnd_grid="0.9x1.25">
       <ATM2LND_FMAPNAME>cpl/gridmaps/T85/map_T85_to_fv0.9x1.25_aave_110411.nc</ATM2LND_FMAPNAME>
       <ATM2LND_SMAPNAME>cpl/gridmaps/T85/map_T85_to_fv0.9x1.25_bilin_110411.nc</ATM2LND_SMAPNAME>
       <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_to_T85_aave_110411.nc</LND2ATM_FMAPNAME>
       <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_to_T85_bilin_110411.nc</LND2ATM_SMAPNAME>
     </gridmap>
-    <gridmap atm_grid="128x256" ocn_grid="tx0.1v2"> 
+    <gridmap atm_grid="T85" ocn_grid="tx0.1v2"> 
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T85/map_T85_to_tx0.1v2_aave_110411.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T85/map_T85_to_tx0.1v2_bilin_110411.nc</ATM2OCN_SMAPNAME>
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T85/map_T85_to_tx0.1v2_bilin_110411.nc</ATM2OCN_VMAPNAME>
@@ -1137,17 +1137,17 @@
       <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_nomask_to_4x5_nomask_aave_da_c110822.nc</ROF2LND_FMAPNAME>
     </gridmap>
 
-    <gridmap lnd_grid="512x1024" rof_grid="r05">
+    <gridmap lnd_grid="T341" rof_grid="r05">
       <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/512x1024/map_512x1024_nomask_to_0.5x0.5_nomask_aave_da_c110920.nc</LND2ROF_FMAPNAME>
       <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/512x1024/map_0.5x0.5_nomask_to_512x1024_nomask_aave_da_c110920.nc</ROF2LND_FMAPNAME>
     </gridmap>
 
-    <gridmap lnd_grid="128x256" rof_grid="r05">
+    <gridmap lnd_grid="T85" rof_grid="r05">
       <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/128x256/map_128x256_nomask_to_0.5x0.5_nomask_aave_da_c110920.nc</LND2ROF_FMAPNAME>
       <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/128x256/map_0.5x0.5_nomask_to_128x256_nomask_aave_da_c110920.nc</ROF2LND_FMAPNAME>
     </gridmap>
 
-    <gridmap lnd_grid="48x96" rof_grid="r05">
+    <gridmap lnd_grid="T31" rof_grid="r05">
       <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/48x96/map_48x96_nomask_to_0.5x0.5_nomask_aave_da_c110822.nc</LND2ROF_FMAPNAME>
       <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/48x96/map_0.5x0.5_nomask_to_48x96_nomask_aave_da_c110822.nc</ROF2LND_FMAPNAME>
     </gridmap>

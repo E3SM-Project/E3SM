@@ -244,44 +244,63 @@ if ($user_mods_dir) {
     (-d "$user_mods_dir") or  die "** Cannot find user_mods_dir directory $user_mods_dir **"
 }
 
-#------------------------------------------------------------------------------------------
-# *** Create empty new config object ***
-#------------------------------------------------------------------------------------------
-my $cfg_ref = ConfigCase->new("");
 
 #------------------------------------------------------------------------------------------
-# *** Create all values in $cfg_ref that are not component specific
+# *** Set master config file ***
 #------------------------------------------------------------------------------------------
-# The following file determines all non-component specific file and directory variables
-# that will be added to $cfg_ref
-my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
+# The following specifies all necessary files that will be used to configure the case
+my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
-# Read the general specification file and add to $cfg_ref each variable in that file
+#------------------------------------------------------------------------------------------
+# *** Create config object ***
+#------------------------------------------------------------------------------------------
+# First create empty config object
+my $config = ConfigCase->new("");
+
+# Create all values in $config that are not component specific
 my $srcroot  = "$cimeroot/../"; #TODO - this needs to be generalized
 my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
 
-$cfg_ref->add_file_general_spec_variables($file, $cimeroot, $srcroot, $caseroot);
-
-# For each $cfg_ref variable that points to a file that has a "DEFINITION_" prefix,
-# open that file and add all of those variables to $cfg_ref
-foreach my $id (keys %$cfg_ref) {
-    if ($id =~ m/^DEFINITIONS_/) {
-	my $file = $cfg_ref->get($id);
-	$cfg_ref->add_config_variables($file);
+# Read the general specification file and add to $config each variable in that file
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
+my @nodes = $xml->findnodes(".//files_case/entry"); # *** note the element search ***
+if (! @nodes) {
+    die "ERROR create_newcase: no variable elements in file $file_config \n"; 
+}
+foreach my $node (@nodes) {
+    my $id = $node->getAttribute('id');
+    foreach my $child ($node->childNodes()) {
+	my $name  = $child->nodeName();
+	my $value = $child->textContent();
+	$config->add_to_id($id, $name, $value, $cimeroot, $srcroot, $caseroot);
     }
 }
 
-# Overwrite the non-default values for the following cfg_ref elements (needed for the calls below)
-$cfg_ref->set('CCSMUSER'	  , "$username");
-$cfg_ref->set('USER'	          , "$username");
-$cfg_ref->set('CASEROOT'	  , "$caseroot");
-$cfg_ref->set('CASETOOLS'         , "$caseroot/Tools");
-$cfg_ref->set('CASEBUILD'         , "$caseroot/Buildconf");
-$cfg_ref->set('CASE'		  , "$case");
-$cfg_ref->set('CIMEROOT'	  , "$cimeroot");
-$cfg_ref->set('UTILROOT'	  , "$cimeroot/scripts/Tools");
-$cfg_ref->set('SRCROOT'		  , "$srcroot");
-$cfg_ref->set('CCSMROOT'	  , "$cimeroot/../"); #TODO - deprecate CCSMROOT = put out message
+# Determine the non-component specific variables in $config
+my $file = $config->get('CIMECONFIG_FILE');
+$config->add_config_variables($file);
+
+# Determine the component specific variables in $config
+# for each $config variable that points to a file that has a "CONFIG_" prefix,
+# open that file and add all of those variables to $config
+foreach my $id (keys %$config) {
+    if ($id =~ m/^CONFIG_/) {
+	my $file = $config->get($id);
+	$config->add_config_variables($file);
+    }
+}
+
+# Overwrite the non-default values for the following config elements (needed for the calls below)
+$config->set('CCSMUSER'	  , "$username");
+$config->set('USER'	  , "$username");
+$config->set('CASEROOT'	  , "$caseroot");
+$config->set('CASETOOLS'  , "$caseroot/Tools");
+$config->set('CASEBUILD'  , "$caseroot/Buildconf");
+$config->set('CASE'	  , "$case");
+$config->set('CIMEROOT'	  , "$cimeroot");
+$config->set('UTILROOT'	  , "$cimeroot/scripts/Tools");
+$config->set('SRCROOT'	  , "$srcroot");
+$config->set('CCSMROOT'	  , "$cimeroot/../"); #TODO - deprecate CCSMROOT = put out message
 
 #------------------------------------------------------------------------------------------
 # *** Determine grid specification file
@@ -293,19 +312,19 @@ if (defined $opts{'user_grid_dir'}){
     (-d $grids_dir)  or  die "** Cannot find user specified grid directory $grids_dir **\n";
     my $grids_file = "$grids_dir/grids.xml";
     (-f "$grids_file")  or  die "** Cannot find user specified grids file $grids_file **\n";
-    $cfg_ref->set('GRIDS_DIR', "$grids_dir");
+    $config->set('GRIDS_DIR', "$grids_dir");
 } else {
-    $grids_dir = $cfg_ref->get('GRIDS_DIR');
+    $grids_dir = $config->get('GRIDS_DIR');
     (-d "$grids_dir")  or  die "** Cannot find grids dir $grids_dir ***\n";
 }    
-my $file = "$grids_dir" . '/' . "grids.xml";
-$cfg_ref->set('GRIDS_SPEC_FILE', "$file");
+my $file = "$grids_dir" . '/' . "config_grids.xml";
+$config->set('GRIDS_SPEC_FILE', "$file");
 
 #------------------------------------------------------------------------------------------
 # *** Options for listing (exit after listing) 
 #------------------------------------------------------------------------------------------
 if ($opts{'testlist'}) {
-    my $tests_file = $cfg_ref->get('TESTS_SPEC_FILE');
+    my $tests_file = $config->get('TESTS_SPEC_FILE');
     ConfigTests::listTests("$tests_file");
     exit;
 }    
@@ -316,7 +335,6 @@ if ($opts{'testlist'}) {
 # The following file now replaces what used to be config_compsets.xml
 # Each primary component is responsible for defining the compsets that turn of the
 # appropriate feedbacks for development of that component
-my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
 
 # First determine primary component (for now this is only CESM specific)
 my $primary_component;
@@ -327,17 +345,43 @@ $primary_component = ConfigCESM::getPrimaryComponent($compset);
 
 # Now given the primary component, read the xml file that determines the full pathname
 # of the file that defines the compsets for this primary component
-# Note - the value of the cfg_ref variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
+# Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
 # file containing the possible out of the box compsets that can be used by create_newcase
-$cfg_ref->add_file_compset_spec_variables($file, $cimeroot, $srcroot, $primary_component);
 
-my $compsets_file = $cfg_ref->get('COMPSETS_SPEC_FILE');
-
-print "Component that specifies compsets is $primary_component \n";
+# Read the file_compsets block in config_files.xml and add each element to $config
+# This adds the following to $config:
+#     COMPSETS_SPEC_FILE, PES_SPEC_FILE, PIO_SPEC_FILE, TESTS_SPEC_FILE and TEST_MODS_DIR
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
+my @nodes = $xml->findnodes(".//files_compsets/entry"); # *** note the element search ***
+if (! defined @nodes) {
+    die "ERROR create_newcase: no file_compsets/entry elements in $file_config \n"; 
+} else {
+    foreach my $node (@nodes) {
+	my $id = $node->getAttribute('id');
+	foreach my $child ($node->childNodes()) {
+	    my $name = $child->nodeName();
+	    if ($name eq 'values') {
+		foreach my $grandchild ($child->findnodes("./value")) {
+		    my $component = $grandchild->getAttribute('component');
+		    if ($component eq $primary_component) {
+			my $value = $grandchild->textContent();
+			$config->add_to_id($id, 'value', $value, $cimeroot, $srcroot, $caseroot);
+			last;
+		    }
+		}
+	    } else {
+		my $value = $child->textContent();
+		$config->add_to_id($id, $name, $value, $cimeroot, $srcroot, $caseroot);
+	    }
+	}
+    }
+}
+my $compsets_file = $config->get('COMPSETS_SPEC_FILE');
+print "Component that specifies possible compsets, pelayouts and non-default pio settings is $primary_component \n";
 print "File that specifies possible compsets is $compsets_file \n";
 
 #------------------------------------------------------------------------------------------
-# *** Determine the full pathnames of all definition files for each compset component
+# *** Determine the full pathnames of each config_component.xml file for each compset component
 #------------------------------------------------------------------------------------------
 # A few notes for clarification:
 # all possible compset components will contain the file 
@@ -345,19 +389,19 @@ print "File that specifies possible compsets is $compsets_file \n";
 # that specify the xml variable definitions for that component 
 # to obtain the directory containing the definitions_variable.xml file 
 # for the atmospheric component you would use
-#     my $file = $cfg_ref->get('CIMECONFIG_ATM_FILE');
+#     my $file = $config->get('CONFIG_ATM_FILE');
 # if the atmopsheric component was datm, then $file would be
-#     $cimeroot/components/data_comps/datm/cimeconfig/definitions_component.xml
+#     $cimeroot/components/data_comps/datm/cimeconfig/config_component.xml
 # note that for CESM, the only primary components are
 #     cam, clm, cice, cism, pop, drv, allactive
 # so the directories for the primary components will contain the additional two files:
-#     'compsets.xml' and 'pelayouts.xml'   
+#     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'  
 
 # First determine compset longname TODO: remove redundancy of support level
 
 my ($compset_longname, $compset_aliasname, $support_level) = 
     ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
-$cfg_ref->set('COMPSET', "$compset_longname"); 
+$config->set('COMPSET', "$compset_longname"); 
 
 # Next determine compset components given compset longname
 my @compset_components = ('drv');
@@ -374,11 +418,31 @@ foreach my $element (@elements) {
 }
 
 # Finally, given the compset components, determine the full pathname of each compset
-# component xml variable definition file (all have the generic name definitions_component.xml) 
+# component xml variable definition file (all have the generic name config_component.xml
 # and the directories each component's buildlib and buildnml files
-my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
-foreach my $component (@compset_components) {
-    $cfg_ref->add_file_component_spec_variables($file, $cimeroot, $srcroot, $component);
+my @nodes = XML::LibXML->new( no_blanks => 1)->parse_file($file_config)->findnodes(".//files_components/entry"); 
+if (! @nodes) {
+   die "ERROR create_newcase: no variable elements in file $file for block files_components \n"; 
+} else {
+    foreach my $node (@nodes) {
+	foreach my $child ($node->childNodes()) {
+	    my $id   = $node->getAttribute('id');
+	    my $name = $child->nodeName();
+	    if ($name eq 'values') {
+		foreach my $grandchild ($child->findnodes("./value")) {
+		    my $component = $grandchild->getAttribute('component');
+		    if( $component ~~ @compset_components ) {
+			my $value = $grandchild->textContent();
+			$config->add_to_id($id, 'value', $value, $cimeroot, $srcroot, $caseroot);
+			last;
+		    }
+		}
+	    } else {
+		my $value = $child->textContent();
+		$config->add_to_id($id, $name, $value, $cimeroot, $srcroot, $caseroot);
+	    }
+	}
+    }
 }
 
 #------------------------------------------------------------------------------------------
@@ -386,8 +450,8 @@ foreach my $component (@compset_components) {
 #------------------------------------------------------------------------------------------
 # First determine the grid longname and alias 
 my ($grid_longname, $grid_shortname, $grid_aliasname, $compset_match ) = 
-    ConfigCompsetGrid::getGridLongname($cfg_ref, $grid); 
-$cfg_ref->set('GRID', "$grid_longname");
+    ConfigCompsetGrid::getGridLongname($config, $grid); 
+$config->set('GRID', "$grid_longname");
 
 # Check if the grid and compset consistent - TODO put this logic back in getGridLongname
 if ($compset_match) {
@@ -399,10 +463,10 @@ if ($compset_match) {
 
 
 #------------------------------------------------------------------------------------------
-# *** Determine the cfg_ref variables for the specified compset and grid  ***
+# *** Determine the config variables for the specified compset and grid  ***
 #------------------------------------------------------------------------------------------
 # this will overwrite default values
-ConfigCompsetGrid::setCompsetGrid($print, $cfg_ref);
+ConfigCompsetGrid::setCompsetGrid($print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Inform the user of the current support level for the compset they are attempting to run.
@@ -432,22 +496,22 @@ print "$testsforcase\n";
 # *** Determine machines file specifying set of out-of-the box machines and then
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
-ConfigMachine::setMachineValues($machine, $compiler, $print, $cfg_ref);
+ConfigMachine::setMachineValues($file_config, $primary_component, $machine, $compiler, $print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the testname parameters
 #------------------------------------------------------------------------------------------
 if (defined $opts{'testname'}) {
     $testname = $opts{'testname'};
-    _set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $cfg_ref);
+    _set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $config);
 }
 
 #------------------------------------------------------------------------------------------
-# *** Set the input configure options if appropriate and also some additional $cfg_ref variables
+# *** Set the input configure options if appropriate and also some additional $config variables
 #------------------------------------------------------------------------------------------
 if (defined $opts{'confopts'}) {
     $confopts = $opts{'confopts'};
-    _set_confopts($confopts, $cfg_ref);
+    _set_confopts($confopts, $config);
 }
 
 #------------------------------------------------------------------------------------------
@@ -461,29 +525,29 @@ else {
    $project = ProjectTools::find_project();
 }
 
-if ($cfg_ref->get('PROJECT_REQUIRED') eq "TRUE") {
+if ($config->get('PROJECT_REQUIRED') eq "TRUE") {
     ProjectTools::check_project_required_but_unset($project);
 }
 if (ProjectTools::set_project($project)) {
-    $cfg_ref->set('PROJECT', $project);
+    $config->set('PROJECT', $project);
 } 
 
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
-ConfigPes::setPes($pecount, $compset_longname, $machine, $cimeroot, $primary_component, \%opts, $cfg_ref);
+ConfigPes::setPes($file_config, $pecount, $primary_component, \%opts, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the mpi library and the repotag
 #------------------------------------------------------------------------------------------
-_set_mpi_library($mpilib, $cfg_ref);
-_set_repotag($cimeroot, $cfg_ref);
+_set_mpi_library($mpilib, $config);
+_set_repotag($cimeroot, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the sharedlibroot for building shared CESM components
 #------------------------------------------------------------------------------------------
 if (defined $opts{'sharedlibroot'}) {
-    $cfg_ref->set('SHAREDLIBROOT', $opts{'sharedlibroot'});
+    $config->set('SHAREDLIBROOT', $opts{'sharedlibroot'});
 }
 
 #------------------------------------------------------------------------------------------
@@ -491,7 +555,7 @@ if (defined $opts{'sharedlibroot'}) {
 #------------------------------------------------------------------------------------------
 
 # create the caseroot directory and necessary subdirectories
-_create_caseroot($caseroot, $cimeroot, $cfg_ref);
+_create_caseroot($caseroot, $cimeroot, $config);
 
 # Copy the user_mods_dir files in and apply them
 if ( defined($user_mods_dir) ) {
@@ -575,7 +639,7 @@ sub _check_input_options
 #-------------------------------------------------------------------------------
 sub _define_cfg_elements
 {
-    my ($cimeroot, $opts_ref, $primary_component, $cfg_ref) = @_;
+    my ($cimeroot, $opts_ref, $primary_component, $config) = @_;
 }
 
 #-------------------------------------------------------------------------------
@@ -583,16 +647,16 @@ sub _set_confopts
 {
     # Print all currently supported valid grids
 
-    my ($coptions, $cfg_ref) = @_;
+    my ($coptions, $config) = @_;
 
     print "  confopts = $coptions\n";
     if ($coptions =~ "_D" || $coptions =~ "_ED") {
-	$cfg_ref->set('DEBUG', "TRUE");
+	$config->set('DEBUG', "TRUE");
 	print "    confopts DEBUG ON \n";
     }
     if ($coptions =~ "_E" || $coptions =~ "_DE") {
-	$cfg_ref->set('USE_ESMF_LIB', "TRUE");
-	$cfg_ref->set('COMP_INTERFACE', "ESMF");
+	$config->set('USE_ESMF_LIB', "TRUE");
+	$config->set('COMP_INTERFACE', "ESMF");
 	print "    confopts COMP_INTERFACE ESMF set \n";
     }
 
@@ -624,32 +688,32 @@ sub _set_confopts
 	    print "$0 _L confopts run length undefined, only y m d h s n allowed\n\n";
 	    exit -1;
 	}
-	$cfg_ref->set('STOP_OPTION', $lopts);
-	$cfg_ref->set('STOP_N', $lopti);
+	$config->set('STOP_OPTION', $lopts);
+	$config->set('STOP_N', $lopti);
 	print "    confopts run length set to $lopt . $lopts . $lopti \n";
     }
     if ($coptions =~ "_N") {
 	my $nopt = $coptions;
 	$nopt =~ s/.*_N([0-9]*)_?.*/$1/;
-	$cfg_ref->set('NINST_ATM', $nopt);
-	$cfg_ref->set('NINST_LND', $nopt);
-	$cfg_ref->set('NINST_OCN', $nopt);
-	$cfg_ref->set('NINST_ICE', $nopt);
-	$cfg_ref->set('NINST_GLC', $nopt);
-	$cfg_ref->set('NINST_ROF', $nopt);
-	$cfg_ref->set('NINST_WAV', $nopt);
+	$config->set('NINST_ATM', $nopt);
+	$config->set('NINST_LND', $nopt);
+	$config->set('NINST_OCN', $nopt);
+	$config->set('NINST_ICE', $nopt);
+	$config->set('NINST_GLC', $nopt);
+	$config->set('NINST_ROF', $nopt);
+	$config->set('NINST_WAV', $nopt);
 	print "    confopts instances set to $nopt \n";
     }
     if ($coptions =~ "_CG") {
-	$cfg_ref->set('CALENDAR', "GREGORIAN");
+	$config->set('CALENDAR', "GREGORIAN");
 	print "    confopts CALENDAR set to GREGORIAN \n";
     }
     if ($coptions =~ "_AOA") {
-	$cfg_ref->set('AOFLUX_GRID', "atm");
+	$config->set('AOFLUX_GRID', "atm");
 	print "    confopts AOFLUX_GRID set to atm \n";
     }
     if ($coptions =~ "_AOE") {
-	$cfg_ref->set('AOFLUX_GRID', "exch");
+	$config->set('AOFLUX_GRID', "exch");
 	print "    confopts AOFLUX_GRID set to exch \n";
     }
 }
@@ -661,17 +725,17 @@ sub _set_mpi_library
     # $mpilib can be set by -mpilib, confopts, or automatically
     # precedent is confopts, mpilib, automatic, default
 
-    my ($mpilib, $cfg_ref) = @_;
+    my ($mpilib, $config) = @_;
 
-    my $mpilibs = $cfg_ref->get('MPILIBS');
+    my $mpilibs = $config->get('MPILIBS');
     my @mpilibs = split ",", $mpilibs, -1;
 
     if ($mpilib =~ 'unset') 
     {
-	if ($cfg_ref->get('NTASKS_ATM') == 1 && $cfg_ref->get('NTASKS_LND') == 1 &&
-	    $cfg_ref->get('NTASKS_OCN') == 1 && $cfg_ref->get('NTASKS_ICE') == 1 &&
-	    $cfg_ref->get('NTASKS_ROF') == 1 && $cfg_ref->get('NTASKS_GLC') == 1 &&
-	    $cfg_ref->get('NTASKS_WAV') == 1 && $cfg_ref->get('NTASKS_CPL') == 1) 
+	if ($config->get('NTASKS_ATM') == 1 && $config->get('NTASKS_LND') == 1 &&
+	    $config->get('NTASKS_OCN') == 1 && $config->get('NTASKS_ICE') == 1 &&
+	    $config->get('NTASKS_ROF') == 1 && $config->get('NTASKS_GLC') == 1 &&
+	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1) 
 	{ 
 	    $mpilib = "mpi-serial"; 
 	}
@@ -698,14 +762,14 @@ sub _set_mpi_library
 	    $mpilib = $mpilibs[0];
 	}
     }    
-    $cfg_ref->set('MPILIB', "$mpilib");
+    $config->set('MPILIB', "$mpilib");
     if ($print>=2) { print "Machine mpilib specifier: $mpilib.\n"; }
 }
 
 #-------------------------------------------------------------------------------
 sub _set_repotag 
 {
-    my ($cimeroot, $cfg_ref) = @_; 
+    my ($cimeroot, $config) = @_; 
 
     my $repotag;
     if (-f "$cimeroot/ChangeLog") { 
@@ -714,14 +778,14 @@ sub _set_repotag
     my @repotag = split(/ /,$repotag); 
     $repotag = $repotag[2]; 
     chomp($repotag);
-    $cfg_ref->set('CCSM_REPOTAG', $repotag);
+    $config->set('CCSM_REPOTAG', $repotag);
 }
 
 #-------------------------------------------------------------------------------
 sub _create_caseroot
 {
     # Create caseroot directory and all necessary sub directories
-    my ($caseroot, $cimeroot, $cfg_ref) = @_;
+    my ($caseroot, $cimeroot, $config) = @_;
 
     print "Creating $caseroot \n";
     mkdir ("$caseroot");
@@ -745,10 +809,10 @@ sub _create_caseroot
     $sysmod = "cp $scriptsroot/README $caseroot/README.science_support";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-    _create_caseroot_sourcemods($caseroot, $cimeroot, $cfg_ref);  
+    _create_caseroot_sourcemods($caseroot, $cimeroot, $config);  
     _create_caseroot_tools ($caseroot, $scriptsroot);
-    _create_caseroot_buildconf($caseroot, $cimeroot, $cfg_ref);  
-    _create_caseroot_files($case, $caseroot, $cimeroot, $scriptsroot, $machine, $compiler, $print, $cfg_ref);
+    _create_caseroot_buildconf($caseroot, $cimeroot, $config);  
+    _create_caseroot_files($case, $caseroot, $cimeroot, $scriptsroot, $machine, $compiler, $print, $config);
 }
 
 #-------------------------------------------------------------------------------
@@ -778,7 +842,7 @@ sub _create_caseroot_tools
     $sysmod = "chmod u+w $caseroot/create_production_test";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     
-    my $machines_file = $cfg_ref->get('MACHINES_SPEC_FILE');
+    my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);
 
     my $mkbatch = "$ENV{'HOME'}/.cime/mkbatch.$machine";
@@ -801,7 +865,6 @@ sub _create_caseroot_tools
 	      "$scriptsroot/Tools/getTiming", 
 	      "$scriptsroot/Tools/SetupTools.pm",
 	      "$scriptsroot/Tools/ProjectTools.pm",
-	      "$scriptsroot/Tools/ConfigCase.pm",
 	      "$scriptsroot/Tools/compare_namelists.pl",
 	      "$machines_dir/ccsm_getenv", 
 	      "$machines_dir/taskmaker.pl", 
@@ -820,9 +883,9 @@ sub _create_caseroot_tools
 sub _create_caseroot_files
 {
     my ($case, $caseroot, $cimeroot, $scriptsroot, $machine, 
-	$compiler, $print, $cfg_ref) = @_;
+	$compiler, $print, $config) = @_;
 
-    my $machines_file = $cfg_ref->get('MACHINES_SPEC_FILE');
+    my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);
     my $mkbatch_file = "$ENV{'HOME'}/.cime/mkbatch.$machine";
     if (! -f "$mkbatch_file") {
@@ -882,26 +945,26 @@ sub _create_caseroot_files
     }
 
     # Create env_case.xml
-    my  $caseheaders_file = $cfg_ref->get('CASEFILE_HEADERS');
+    my  $caseheaders_file = $config->get('CASEFILE_HEADERS');
     (-f $caseheaders_file) or die "ERROR: case header file $caseheaders_file does not exist \n";
 
-    $cfg_ref->write_file("$caseroot/env_case.xml", "$caseheaders_file", $caseroot, $cimeroot );
+    $config->write_file("$caseroot/env_case.xml", "$caseheaders_file", $caseroot, $cimeroot );
     if ($print) {print "Created $caseroot/env_case.xml \n";}
 
     # Create env_mach_pes.xml.xml
-    $cfg_ref->write_file("$caseroot/env_mach_pes.xml", "$caseheaders_file", $caseroot, $cimeroot );  
+    $config->write_file("$caseroot/env_mach_pes.xml", "$caseheaders_file", $caseroot, $cimeroot );  
     if ($print) {print "Created $caseroot/env_mach_pes.xml \n";}
 
     # Create env_build.xml
-    $cfg_ref->write_file("$caseroot/env_build.xml", "$caseheaders_file", $caseroot, $cimeroot );
+    $config->write_file("$caseroot/env_build.xml", "$caseheaders_file", $caseroot, $cimeroot );
     if ($print) {print "Created $caseroot/env_build.xml \n";}
 
     # Create env_run.xml
-    $cfg_ref->write_file("$caseroot/env_run.xml", "$caseheaders_file", $caseroot, $cimeroot );
+    $config->write_file("$caseroot/env_run.xml", "$caseheaders_file", $caseroot, $cimeroot );
     if ($print) {print "Created $caseroot/env_run.xml \n";}
 
     # Create env_archive.xml
-    $cfg_ref->write_file("$caseroot/env_archive.xml", "$caseheaders_file", $caseroot, , $cimeroot, 
+    $config->write_file("$caseroot/env_archive.xml", "$caseheaders_file", $caseroot, , $cimeroot, 
 			 "$cimeroot/scripts/cimeconfig/archive.xml");
     if ($print) {print "Created $caseroot/env_archive.xml \n";}
 
@@ -924,15 +987,15 @@ sub _create_caseroot_files
 #-------------------------------------------------------------------------------
 sub _create_caseroot_buildconf
 {
-    my ($caseroot, $cimeroot, $cfg_ref) = @_;  
+    my ($caseroot, $cimeroot, $config) = @_;  
 
-    my $dir_atm  = $cfg_ref->get("BLD_ATM_DIR"); 
-    my $dir_lnd  = $cfg_ref->get("BLD_LND_DIR"); 
-    my $dir_ocn  = $cfg_ref->get("BLD_OCN_DIR"); 
-    my $dir_ice  = $cfg_ref->get("BLD_ICE_DIR"); 
-    my $dir_glc  = $cfg_ref->get("BLD_GLC_DIR"); 
-    my $dir_rof  = $cfg_ref->get("BLD_ROF_DIR"); 
-    my $dir_wav  = $cfg_ref->get("BLD_WAV_DIR");
+    my $dir_atm  = $config->get("BLD_ATM_DIR"); 
+    my $dir_lnd  = $config->get("BLD_LND_DIR"); 
+    my $dir_ocn  = $config->get("BLD_OCN_DIR"); 
+    my $dir_ice  = $config->get("BLD_ICE_DIR"); 
+    my $dir_glc  = $config->get("BLD_GLC_DIR"); 
+    my $dir_rof  = $config->get("BLD_ROF_DIR"); 
+    my $dir_wav  = $config->get("BLD_WAV_DIR");
 
     my $sysmod;
     my $buildconf  = "$caseroot/Buildconf";
@@ -969,7 +1032,7 @@ sub _create_caseroot_buildconf
     # copy external libraries buildlib.xxx into Buildconf/
     # ---TODO: this will need to be generalized when csm_share is split up
 
-    my $machines_file = $cfg_ref->get('MACHINES_SPEC_FILE');
+    my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);
     foreach my $lib ("gptl", "mct", "csm_share", "pio") {
 	$sysmod = "cp ${machines_dir}/buildlib.${lib} $buildconf/.";
@@ -981,15 +1044,15 @@ sub _create_caseroot_buildconf
 #-------------------------------------------------------------------------------
 sub _create_caseroot_sourcemods
 {
-    my ($caseroot, $cimeroot, $cfg_ref) = @_;  
+    my ($caseroot, $cimeroot, $config) = @_;  
 
-    my $comps_atm  = $cfg_ref->get("COMP_ATM"); 
-    my $comps_lnd  = $cfg_ref->get("COMP_LND"); 
-    my $comps_ocn  = $cfg_ref->get("COMP_OCN"); 
-    my $comps_ice  = $cfg_ref->get("COMP_ICE"); 
-    my $comps_glc  = $cfg_ref->get("COMP_GLC"); 
-    my $comps_rof  = $cfg_ref->get("COMP_ROF"); 
-    my $comps_wav  = $cfg_ref->get("COMP_WAV");
+    my $comps_atm  = $config->get("COMP_ATM"); 
+    my $comps_lnd  = $config->get("COMP_LND"); 
+    my $comps_ocn  = $config->get("COMP_OCN"); 
+    my $comps_ice  = $config->get("COMP_ICE"); 
+    my $comps_glc  = $config->get("COMP_GLC"); 
+    my $comps_rof  = $config->get("COMP_ROF"); 
+    my $comps_wav  = $config->get("COMP_WAV");
     my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav); 
 
     # Create sourcemods
@@ -1019,9 +1082,9 @@ sub _set_test
     # Set the parameters for the specified testname.  The
     # parameters are read from an input file, and if no testname matches are
     # found then issue error message.
-    # This routine uses the configuration defined at the package level ($cfg_ref).
+    # This routine uses the configuration defined at the package level ($config).
 
-    my ($test_file, $testname, $cfg_ref) = @_;
+    my ($test_file, $testname, $config) = @_;
 
     my $parser = XML::LibXML->new( no_blanks => 1);
     my $xml = $parser->parse_file($test_file);
@@ -1030,7 +1093,7 @@ sub _set_test
 	foreach my $node (@nodes) {
 	    my $id = $node->nodeName();
 	    my $value = $node->textContent();
-	    $cfg_ref->set($id, $value);
+	    $config->set($id, $value);
 	}
     } else {
 	print "_set_test: no match for test $testname - possible testnames are \n";

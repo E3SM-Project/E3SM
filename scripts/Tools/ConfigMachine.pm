@@ -66,7 +66,7 @@ sub setMachineFile
 sub setMachineValues
 {
     # Set the parameters for the specified machine.  
-    my ($machine, $compiler, $print_flag, $cfg_ref) = @_;
+    my ($file_config, $primary_component, $machine, $compiler, $print_flag, $cfg_ref) = @_;
 
     my $machines_file = $cfg_ref->get('MACHINES_SPEC_FILE');
     (-f "$machines_file")  or  die "*** Cannot find supported machines file $machines_file ***\n";
@@ -102,6 +102,13 @@ sub setMachineValues
     _check_machine_compilers($print_flag, $cfg_ref);
 
     if ($print_flag >= 2) { print "Machine specifier: $machine.\n"; }
+
+    # Determine pio settings for target machine
+    # Note that any pio settings that are grid or compset dependent will be overwritten
+    # by the config_pio.xml settings for the primary component
+    _setPIOsettings($file_config, $primary_component, $cfg_ref);
+
+    if ($print_flag >= 2) { print "Set pio settings for $machine.\n"; }
 }
 
 #-------------------------------------------------------------------------------
@@ -138,10 +145,8 @@ sub _set_machine_values
     my $machine       = $cfg_ref->get('MACH'); 
     my $machines_file = $cfg_ref->get('MACHINES_FILE');
 
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml_machines = $parser->parse_file($machines_file);
-
-    my @machine_nodes = $xml_machines->findnodes(".//machine[\@MACH=\"$machine\"]/*");
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
+    my @machine_nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/*");
     if (@machine_nodes) 
     {
 	foreach my $node (@machine_nodes) {
@@ -206,5 +211,59 @@ sub _check_machine_compilers
 	}
     }
 }
+
+#-------------------------------------------------------------------------------
+sub _setPIOsettings
+{
+    # Set pio settings from config_machines.xml and config_pio.xml file
+
+    my ($file_config, $primary_component, $cfg_ref) = @_; 
+
+    my $mach = $cfg_ref->get('MACH');
+    my $machines_file = $cfg_ref->get('MACHINES_FILE');
+    my $cimeroot = $cfg_ref->get('CIMEROOT');
+    my $grid = $cfg_ref->get('GRID');
+
+    # First Read the machines file for any non-default machine specific pio settings
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
+    my @nodes = $xml->findnodes(".//machine[\@MACH=\"$mach\"]/pio/*");
+    if (defined @nodes) {
+	foreach my $node (@nodes) {
+	    my $name  = $node->nodeName();
+	    my $value = $node->textContent();
+	    $cfg_ref->set($name, $value);
+	}
+    }
+
+    # Second, determine the filename for grid and/or compset specific pio settings
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
+    my @files = $xml->findnodes(".//entry[\@id=\"PIO_SPEC_FILE\"]/values/value[\@component=\"$primary_component\"]");
+    if (! defined @files) {
+	die " ERROR ConfigMachine::_setPIOsettings: no pio specification file found for $primary_component \n";
+    }
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+
+    # Third, set non-default grid and/or compsets specific settings
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
+    my @nodes = $xml->findnodes(".//mach[\@name=\"$mach\"]");
+    my %pio_settings;
+    foreach my $node (@nodes) {
+	foreach my $child ($node->childNodes()) {
+	    my $name  = $child->nodeName(); 
+	    my $value = $child->textContent();
+	    my $grid_attr = $child->getAttribute('grid');
+	    if (! defined $pio_settings{$name}) {
+		$pio_settings{$name} = $value;
+		$cfg_ref->set($name, $pio_settings{$name});
+	    } else {		
+		if ((defined $grid_attr) && ($grid =~ m/$grid_attr/)) {
+		    $pio_settings{$name} = $value;
+		    $cfg_ref->set($name, $pio_settings{$name});
+		}
+	    }
+	}
+    }
+}    
 
 1; # to make use or require happy

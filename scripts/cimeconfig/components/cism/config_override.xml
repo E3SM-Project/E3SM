@@ -1,71 +1,55 @@
 <?xml version="1.0"?>
 
-<pioinfo>
+<!-- always place default value first without any attributes -->
+<!-- then place the attribute for grid or compset afterwards -->
+
+<pio_settings>
 
   <pio>
-    <mach name='any'>
-      <pio_typename>netcdf</pio_typename> 
-      <pio_stride>1</pio_stride> 
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
-    </mach>
     <mach os="bgq">
       <pio_typename>pnetcdf</pio_typename> 
       <pio_stride>256</pio_stride> 
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="babbage">
       <pio_typename>pnetcdf</pio_typename>
       <pio_stride>32</pio_stride> 
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="bluewaters">
       <pio_typename>pnetcdf</pio_typename>
       <pio_stride>32</pio_stride> 
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="edison">
       <pio_typename>pnetcdf</pio_typename> 
       <pio_stride>24</pio_stride>
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="eos">
       <pio_typename>pnetcdf</pio_typename> 
       <pio_stride>16</pio_stride>
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="pronghorn">
       <pio_typename>pnetcdf</pio_typename> 
       <pio_stride></pio_stride>
-      <pio_numtasks>-1</pio_numtasks>
       <pio_stride>16</pio_stride>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="stampede">
       <pio_typename>pnetcdf</pio_typename>
       <pio_stride>16</pio_stride>
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="titan">
       <pio_typename>pnetcdf</pio_typename> 
       <pio_stride>16</pio_stride>
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
     </mach>
     <mach name="yellowstone">
-      <pio_typename>pnetcdf</pio_typename> 
-      <pio_stride>16</pio_stride>
-      <pio_stride grid="a%ne120np4.+oi%tx0.1">15</pio_stride> 
-      <pio_stride grid="a%ne30np4.+oi%gx1"   >50</pio_stride> 
-      <pio_numtasks>-1</pio_numtasks>
-      <pio_root>1</pio_root>
+      <pio_typename>netcdf</pio_typename> 
+      <pio_typename grid="a%ne120">pnetcdf</pio_typename>
+      <pio_typename grid="a%ne30" >pnetcdf</pio_typename>
+      <pio_typename grid="a%0.9"  >pnetcdf</pio_typename>
+      <pio_typename grid="a%hcru" >pnetcdf</pio_typename>
+
+      <pio_stride>-1</pio_stride>
+      <pio_stride grid="a%ne120">15</pio_stride> 
+      <pio_stride grid="a%ne30" >15</pio_stride> 
     </mach>
   </pio>
       
-</pioinfo>
+</pio_settings>

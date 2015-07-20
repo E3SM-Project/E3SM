@@ -13,12 +13,13 @@
     <desc>Name of river component</desc>
   </entry>
 
-  <entry id="XROF_FLOOLD_MODE"> 
+  <entry id="XROF_FLOOD_MODE"> 
     <type>char</type>
     <valid_values>ACTIVE,NULL</valid_values>
     <default_value>NULL</default_value>
     <values>
-      <value lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6">ACTIVE</value>
+      <value grid="l%1.9x2.5.+r%r05">ACTIVE</value>
+      <value grid="l%0.9x1.25.+r%r05">ACTIVE</value>
     </values>
     <group>build_component_xrof</group>
     <file>env_build.xml</file>

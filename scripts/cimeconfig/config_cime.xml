@@ -5,6 +5,20 @@
 <definitions_variables> 
 
   <!-- ===================================================================== -->
+  <!-- master configuration file that specifies all relevant filenames and -->
+  <!-- and directories to configure a case -->
+  <!-- ===================================================================== -->
+
+  <entry id="FILES_CONFIG_SPEC"> 
+    <type>char</type>
+    <value>$CIMEROOT/config_files.xml</value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc> master configuration file that specifies all relevant filenames
+    and directories to configure a case</desc> 
+  </entry> 
+
+  <!-- ===================================================================== -->
   <!-- definitions case directories -->
   <!-- ===================================================================== -->
 
@@ -2186,14 +2200,6 @@
     <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="PES_LEVEL">
-    <type>char</type>
-    <value>UNSET</value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>pes level determined by automated initialization (DO NOT EDIT)</desc>
-  </entry>
-
   <entry id="MAX_TASKS_PER_NODE"> 
     <type>integer</type>
     <value>0</value>
@@ -2298,7 +2304,7 @@
 
   <entry id="OCN_PIO_ROOT">
     <type>integer</type>
-    <value>-99</value>
+    <value>0</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio root processor</desc>
@@ -2306,7 +2312,7 @@
 
   <entry id="OCN_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2339,7 +2345,7 @@
 
   <entry id="LND_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2372,7 +2378,7 @@
 
   <entry id="ROF_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2405,7 +2411,7 @@
 
   <entry id="ICE_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2438,7 +2444,7 @@
 
   <entry id="ATM_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2471,7 +2477,7 @@
 
   <entry id="CPL_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2504,7 +2510,7 @@
 
   <entry id="GLC_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>
@@ -2537,7 +2543,7 @@
 
   <entry id="WAV_PIO_NUMTASKS">
     <type>integer</type>
-    <value>-1</value>
+    <value>-99</value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio number of io tasks</desc>

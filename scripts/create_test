@@ -43,6 +43,7 @@ my $ProgName = basename($0);
 my $ProgDir = $1;
 my $cwd = getcwd;
 my $cfgdir;
+my $file_config;
 my $scriptsroot;
 my $cimeroot;
 my $srcroot;
@@ -464,9 +465,9 @@ sub options
     } else {
 
 	# Set the definitions file for the general xml variables that will be needed
-	my $definitions_file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
+	$file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
-	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($definitions_file);
+	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
 	my @nodes = $xml->findnodes(".//entry[\@id=\"TESTS_SPEC_FILE\"]/values/*");
 	if (! @nodes) {die " ERROR: no tests files for variable TESTS_SPEC_FILE \n";}
 	foreach my $node (@nodes) {
@@ -686,14 +687,13 @@ sub checkOptions
     # otherwise use the supplied machine value. 
     
     my $machines_file;
-    my $file = "$cimeroot/scripts/cimeconfig/files_spec.xml";
     if( defined $opts{'nlcompareonly'})
     {
-	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, 'yellowstone', $file);
+	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, 'yellowstone', $file_config);
     }
     else
     {
-	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, $machine, $file);
+	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, $machine, $file_config);
     }
 
     # Determine baselineroot for comparisons and full pathname of cprnc
@@ -1308,56 +1308,54 @@ sub writeEnvTestXML
     my ($test) = @_;
     my $caseroot = "$opts{'testroot'}/$test->{'case'}";
 
-    my $file = "$cimeroot/scripts/cimeconfig/definitions_config.xml";
-    (-f $file) or die "ERROR create_test: definitions_file $file does not exist \n";
+    my $file = "$cimeroot/scripts/cimeconfig/config_cime.xml"; #TODO - read config_file for this
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-
-    my $cfg_ref = ConfigCase->new("");
-    $cfg_ref->add_config_variables($file);
+    my $config = ConfigCase->new("");
+    $config->add_config_variables($file);
 
     &Debug( eval {Dumper $test} );
 
-    $cfg_ref->set('TESTCASE'   , $test->{'testname'});
-    $cfg_ref->set('TEST_TESTID', $opts{'testid'});
-    $cfg_ref->set('TEST_ARGV'  , $test->{'test_argv'});
-    $cfg_ref->set('CASEBASEID' , $test->{'casebaseid'});
+    $config->set('TESTCASE'   , $test->{'testname'});
+    $config->set('TEST_TESTID', $opts{'testid'});
+    $config->set('TEST_ARGV'  , $test->{'test_argv'});
+    $config->set('CASEBASEID' , $test->{'casebaseid'});
 
     if(defined $opts{'generate'}) {
-	$cfg_ref->set('BASELINE_NAME_GEN', $opts{'generate'});
+	$config->set('BASELINE_NAME_GEN', $opts{'generate'});
     }
     if(defined $opts{'compare'})  {
-	$cfg_ref->set('BASELINE_NAME_CMP', $opts{'compare'}); 
+	$config->set('BASELINE_NAME_CMP', $opts{'compare'}); 
     }
     if(defined $test->{'basegen_case'}) {
-	$cfg_ref->set('BASEGEN_CASE', $test->{'basegen_case'});
+	$config->set('BASEGEN_CASE', $test->{'basegen_case'});
     }
     if(defined $test->{'basecmp_case'}) {
-	$cfg_ref->set('BASECMP_CASE', $test->{'basecmp_case'});
+	$config->set('BASECMP_CASE', $test->{'basecmp_case'});
     }
     if(defined $opts{'cleanup'}) {
-	$cfg_ref->set('CLEANUP', 'TRUE');
+	$config->set('CLEANUP', 'TRUE');
     } else {
-	$cfg_ref->set('CLEANUP', 'FALSE');
+	$config->set('CLEANUP', 'FALSE');
     }
     if(defined $opts{'generate'}) {
-	$cfg_ref->set('GENERATE_BASELINE', "TRUE");
+	$config->set('GENERATE_BASELINE', "TRUE");
     } else {
-	$cfg_ref->set('GENERATE_BASELINE', "FALSE");
+	$config->set('GENERATE_BASELINE', "FALSE");
     }
     if(defined $opts{'compare'}) {
-	$cfg_ref->set('COMPARE_BASELINE', "TRUE");
+	$config->set('COMPARE_BASELINE', "TRUE");
     } else {
-	$cfg_ref->set('COMPARE_BASELINE', "FALSE");
+	$config->set('COMPARE_BASELINE', "FALSE");
     }
     if(defined $opts{'baselineroot'}) {
-	$cfg_ref->set('BASELINE_ROOT', $opts{'baselineroot'});
+	$config->set('BASELINE_ROOT', $opts{'baselineroot'});
     }
     if(defined $opts{'cprnc'}) {
-	$cfg_ref->set('CCSM_CPRNC', $opts{'cprnc'});
+	$config->set('CCSM_CPRNC', $opts{'cprnc'});
     }
 
     my $caseheaders = "";
-    $cfg_ref->write_file("${caseroot}/env_test.xml", $caseheaders, $caseroot, $cimeroot );
+    $config->write_file("${caseroot}/env_test.xml", $caseheaders, $caseroot, $cimeroot );
 }
 
 #-----------------------------------------------------------------------------------------------

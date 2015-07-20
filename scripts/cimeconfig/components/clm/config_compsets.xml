@@ -371,74 +371,74 @@
     <STOP_OPTION   grid="a%1x1_urbanc_alpha"		>nsteps</STOP_OPTION> 
     <STOP_N        grid="a%1x1_urbanc_alpha"		>22772</STOP_N> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN">I1850CN_f19_g16_c100503</RUN_REFCASE> 
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN_">I1850CN_f19_g16_c100503</RUN_REFCASE> 
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
     <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%SP">I2000CN_f19_g16_c100503</RUN_REFCASE> 
     <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%SP">0001-01-01</RUN_REFDATE>  
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN">I2000CN_f19_g16_c100503</RUN_REFCASE> 
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN_">I2000CN_f19_g16_c100503</RUN_REFCASE> 
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN">I1850CN_f19_g16_c100503</RUN_REFCASE> 
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN_">I1850CN_f19_g16_c100503</RUN_REFCASE> 
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN">I1850CN_f19_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN_">I1850CN_f19_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="4804_DATM%QIA_CLM40%CN">I2000CN_f19_g16_c100503</RUN_REFCASE> 
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="4804_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="4804_DATM%QIA_CLM40%CN_">I2000CN_f19_g16_c100503</RUN_REFCASE> 
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="4804_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN">I1850CN_f19_g16_c100503</RUN_REFCASE>  
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN_">I1850CN_f19_g16_c100503</RUN_REFCASE>  
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN">I2000CN_f19_g16_c100503</RUN_REFCASE>  
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN_">I2000CN_f19_g16_c100503</RUN_REFCASE>  
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN">I2000CN_f19_g16_c100503</RUN_REFCASE>  
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN_">I2000CN_f19_g16_c100503</RUN_REFCASE>  
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN">I2000CN_f19_g16_c100503</RUN_REFCASE>  
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN_">I2000CN_f19_g16_c100503</RUN_REFCASE>  
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN">I2000CN_f19_g16_c100503</RUN_REFCASE>  
-    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN_">I2000CN_f19_g16_c100503</RUN_REFCASE>  
+    <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN">I2000CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN">I2000CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE>  
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="2000_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE>  
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN">I1850CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN_">I1850CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN">I1850CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN_">I1850CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%CRU_CLM40%CN">I1850CLM40CRUCN_f09_g16_clm4500_c130514</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%CRU_CLM40%CN">1122-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%CRU_CLM40%CN_">I1850CLM40CRUCN_f09_g16_clm4500_c130514</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%CRU_CLM40%CN_">1122-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%CRU_CLM40%CN">I1850CLM40CRUCN_f09_g16_clm4500_c130514</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%CRU_CLM40%CN">1122-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%CRU_CLM40%CN_">I1850CLM40CRUCN_f09_g16_clm4500_c130514</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="HIST_DATM%CRU_CLM40%CN_">1122-01-01</RUN_REFDATE> 
 
     <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="4804_DATM%QIA_CLM40%SP">I2000CN_f09_g16_c100503</RUN_REFCASE>   
     <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="4804_DATM%QIA_CLM40%SP">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN">I1850CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN_">I1850CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="1850_DATM%S1850_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN">I2000CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP2_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN">I2000CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP4_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN">I2000CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP6_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
-    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN">I2000CN_f09_g16_c100503</RUN_REFCASE>   
-    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN">0001-01-01</RUN_REFDATE> 
+    <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
+    <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
 
     <CISM_PHYS compset="CISM1">cism1</CISM_PHYS>
     <CISM_PHYS compset="CISM2">cism2</CISM_PHYS>

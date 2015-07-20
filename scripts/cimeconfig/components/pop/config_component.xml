@@ -18,7 +18,9 @@
     <valid_values>diagnostic,prognostic</valid_values>  
     <default_value>diagnostic</default_value> 
     <values>
-      <value compset="_POP2%ECO" >prognostic</value>
+      <value compset="_DATM.*DICE.*_POP2%ECO">prognostic</value>
+      <value compset="_DATM.*CICE.*_POP2%ECO">diagnostic</value>
+      <value compset="_CAM.*CICE.*_POP2%ECO">prognostic</value>
     </values>
     <group>run_component_pop</group>
     <file>env_run.xml</file>

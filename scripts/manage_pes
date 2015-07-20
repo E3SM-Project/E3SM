@@ -14,44 +14,35 @@ use strict;
 my %opts;
 my $scriptdir = dirname(abs_path(__FILE__));
 my $cimeroot  = abs_path("$scriptdir/../");
-my $peslist;
+my $pes_file;
+my $compsets_file;
 my $component;
-
 my $banner = "==========================================================================";
 
+#==========================================================================
+# Simple class to facilitate easier pe-layout parsing..
+# ==========================================================================
 {
-    #==========================================================================
-    # Simple class to facilitate easier pe-layout parsing..
-    # ==========================================================================
     package CIMEPes;
-
     sub new 
     {
 	my ($class, %params) = @_;
-	
 	my $self = {
 	    grid       => undef,  	
 	    machine    => undef, 	
 	    compset    => undef, 	
 	    pesize     => undef, 	
 	    comment    => undef, 	
-
 	    ntasks_atm => undef, ntasks_lnd => undef, ntasks_ice => undef, ntasks_ocn => undef, 
 	    ntasks_rof => undef, ntasks_glc => undef, ntasks_wav => undef, ntasks_cpl => undef,
-
 	    nthrds_atm => undef, nthrds_lnd => undef, nthrds_ice => undef, nthrds_ocn => undef, 	
 	    nthrds_rof => undef, nthrds_glc => undef, nthrds_wav => undef, nthrds_cpl => undef, 	
-
 	    rootpe_atm => undef, rootpe_lnd => undef, rootpe_ice => undef, rootpe_ocn => undef,
 	    rootpe_rof => undef, rootpe_glc => undef, rootpe_wav => undef, rootpe_cpl => undef,
-
 	    pstrid_atm => undef, pstrid_lnd => undef, pstrid_ice => undef, pstrid_ocn => undef,
 	    pstrid_cpl => undef, pstrid_glc => undef, pstrid_rof => undef, pstrid_wav => undef,
-	    
 	    totalpes   => undef, pes_per_node => undef,  cost_pes     => undef,
 	    ccsm_pcost => undef, ccsm_tcost   => undef,  ccsm_estcost => undef,
-
-	    max_tasks_per_node => undef, pes_level => undef,
 	};
 	bless $self, $class;
 	return $self;
@@ -68,15 +59,16 @@ sub usage
     $usgstatement = <<EOF;
 SYNOPSIS
 
-    manage_pes -query [-grid | -machine] -component component-name
+    manage_pes -query -pes_setby <component_name> [-grid <grid_name> | -machine <machine_name>] 
 
-    manage_pes -add -file newpes-layout -component component-name
+          <component_name> can be one of  [allactive | cam | cice | cism | clm | drv | pop]
+
+    manage_pes -add -file <newpes_layout> -pes_setby <component_name>
     
-  note: the component-name can be one of the following [allactive | cam | cice | cism | clm | drv | pop]
 
 DESCRIPTION
 
-    Adds and queries peslists with the xml pe-layout files for a given primary component.  
+    Adds and queries pes with the xml pe-layout files for a pes file set by the argument "-pes_setby"
 
 USAGE, OPTIONS, AND EXAMPLES
    
@@ -90,7 +82,7 @@ USAGE, OPTIONS, AND EXAMPLES
     (i.e. compset, pesize) entry.  If duplicates are found, they will be silently ignored, 
     even if they contain a different comment.  
     Example:
-          manage_pes -add -component <primary component> -machine -grid -attributes -file <xml file with new pelayout>
+          manage_pes -add -pes_setby <component_name> -machine -grid -attributes -file <xml file with new pelayout>
 
     -query:
 
@@ -122,9 +114,10 @@ sub obtainOptions
 	"f|file=s"	=> \$opts{'file'},
 	"a|add"		=> \$opts{'add'},
 	"q|query"	=> \$opts{'query'},
+	"pes_setby=s"   => \$opts{'pes_setby'},
+	"component=s"   => \$opts{'component'},
 	"grid=s"	=> \$opts{'grid'},
 	"machine=s"	=> \$opts{'machine'},
-	"component=s"   => \$opts{'component'},
 	)  or usage();
 
     if (@ARGV) {
@@ -136,77 +129,62 @@ sub obtainOptions
 	usage() 	
     }
 
-    if ( ! defined $opts{'component'} ) {
-	if (defined $opts{'query'} ) {
-	    foreach my $comp ('allactive', 'cam ', 'clm', 'cice', 'drv', 'cism', 'pop') {
-		$peslist = setPesList($comp);
-		query(); 
+    # Determine possible components that set up compsets and pes
+    my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
+    my @nodes = $xml->findnodes(".//entry[\@id=\"PES_SPEC_FILE\"]/values/value");
+    my @components;
+    foreach my $node (@nodes) {
+	my $component = $node->getAttribute('component');
+	push (@components, $component);
+    }
+
+    if (defined $opts{'query'} ) {
+	if ( ! defined $opts{'pes_setby'} ) {
+	    foreach my $component (@components) {
+		$opts{'pes_setby'}= $component;
+		$pes_file = getPesFile();
+		$compsets_file = getCompsetsFile();
+		queryPes(); 
 	    }
-	    exit(0);
 	} else {
-	    print "Must supply a component argument via the -component option \n";
-	    print " values must be [allactive | cam | clm | cice | cism | pop | drv ] \n";
+	    # $opts{'pes_setby'} is defined
+	    $pes_file = getPesFile();
+	    $compsets_file = getCompsetsFile();
+	    queryPes();
+	}
+	exit(0);
+    } else {
+	if ( ! defined $opts{'pes_setby'} ) {
+	    print "ERROR: must supply a -pes_setby argument \n";
+	    print " possible values are: \n";
+	    print "   @components \n";
 	    exit(1);
 	}
-    } else {
-	$component = $opts{'component'};
-	$peslist = setPesList($component);
+	$pes_file = getPesFile();
+	$compsets_file = getCompsetsFile();
     }
     if (defined $opts{'add'} && ! defined $opts{'file'})
     {
-	print "To add test lists, you must supply a test list via the -file option\n";
+	print "To add a new pes layout, you must supply a test list via the -file option\n";
 	exit(1);
     }
 }
 
 #==========================================================================
-# Create a new, blank xml document, which just contains the skeleton into which
-# we can place tests (i.e., it contains an empty peslist).
-# ==========================================================================
-sub blankXML 
-{
-   my $newxml = XML::LibXML::Document->createDocument();
-   my $root = $newxml->createElement('pesinfo');
-   $newxml->setDocumentElement($root);
-   return $newxml;
-}
-
-#==========================================================================
-# Write the new peslist xml file.  
+# Write the new $pes_file.  
 #==========================================================================
 sub writeXML
 {
     my ($pesxml) = shift;
     my $dtformat = strftime "%d%b%Y-%H%M%S",  localtime;
+    my $newfilename = "$pes_file" . "-$dtformat"; 
 
-    my $newfilename; 
-    if ($component eq 'cam') {
-	$newfilename = "$cimeroot/machines/pesist_cam-$dtformat.xml";
-    } 
-    if ($component eq 'clm') {
-	$newfilename = "$cimeroot/machines/peslist_clm-$dtformat.xml";
-    }
-    if ($component eq 'cice') {
-	$newfilename = "$cimeroot/machines/peslist_cice-$dtformat.xml";
-    }
-    if ($component eq 'cism') {
-	$newfilename = "$cimeroot/machines/peslist_cism-$dtformat.xml";
-    }
-    if ($component eq 'pop') {
-	$newfilename = "$cimeroot/machines/peslist_pop-$dtformat.xml";
-    }
-    if ($component eq 'allactive') {
-	$newfilename = "$cimeroot/scripts/peslist_allactive-$dtformat.xml";
-    }
-    if ($component eq 'drv') {
-	$newfilename = "$cimeroot/machines/peslist_cime-$dtformat.xml";
-    }
     print "\n now writing the new pes list to $newfilename\n";
     print "Please carefully review and/or diff the new file against the\n";
     print "original, and if you are satisfied with the changes, move \n";
     print "$newfilename to \n";
-#	print "$peslist\n"; TODO
-    print "as in with the unix command: \nmv $newfilename $peslist\n\n";
+    print "as in with the unix command: \nmv $newfilename $pes_file\n\n";
 
     open my $NEWPesXML, ">", "$newfilename" or die $?;
     my $tststring = $pesxml->toString(1); 
@@ -215,118 +193,67 @@ sub writeXML
 }
 
 #==========================================================================
-# Convert an undefined value to an empty string.
-# This is useful to avoid warnings.
-#==========================================================================
-sub undefToBlank 
-{
-   my $val = shift;
-   if (! defined($val)) {
-      $val = "";
-   }
-   return $val;
-}
-
-#==========================================================================
 # Add a new pe-layout for a target machine and grid.  
 # ==========================================================================
 sub addPes
 {
-    my $pesfile = shift;
-    my $pesfile_new = shift;
-
-    my $parser = XML::LibXML->new( no_blanks => 1);
-
-    my $pesxml     = $parser->parse_file($peslist);
-    my $pesxml_new = $parser->parse_file($opts{'file'});
-
     # new pes file - assumes for now there is ONLY one entry
 
-    my @grid_nodes = $pesxml_new->findnodes("/newpes/grid");
+    my $xml_new = XML::LibXML->new( no_blanks => 1)->parse_file($opts{'file'});
+    my @grid_nodes = $xml_new->findnodes(".//grid");
     if ($#grid_nodes != 0) {
 	die " ERROR \@grid_nodes has unsupported size $#grid_nodes \n";
     }
-    my @mach_nodes = $pesxml_new->findnodes("/newpes/grid/mach");
+    my $grid = $grid_nodes[0]->getAttribute('name');
+
+    my @mach_nodes = $xml_new->findnodes(".//grid/mach");
     if ($#mach_nodes != 0) {
 	die " ERROR \@mach_nodes has unsupported size $#mach_nodes \n";
     }
-    my @pes_nodes  = $pesxml_new->findnodes("/newpes/grid/mach/pes");
+    my $machine = $mach_nodes[0]->getAttribute('name');
+
+    my @pes_nodes  = $xml_new->findnodes(".//grid/mach/pes");
     if ($#pes_nodes != 0) {
 	die " ERROR \@pes_nodes has unsupported size $#pes_nodes \n";
     }
-    my @comment_nodes  = $pesxml_new->findnodes("/newpes/grid/mach/pes/comment");
-    if ($#comment_nodes != 0) {
-	die " ERROR \@comment_nodes has unsupported size $#comment_nodes \n";
-    }
+    my $compset = $pes_nodes[0]->getAttribute('compset');
+    my $pesize  = $pes_nodes[0]->getAttribute('pesize');
 
-    my $grid_node    = @grid_nodes[0];
-    my $mach_node    = @mach_nodes[0];
-    my $pes_node     = @pes_nodes[0];
-    my $comment_node = @comment_nodes[0];
+    # Is there already an entry with matching grid, machine, compset and pesize 
+    # If so, query if the new settings should replace the current ones
+    # If not - just add the new settings
 
-    my $grid    = $grid_node->getAttribute('name');
-    my $machine = $mach_node->getAttribute('name');
-    my $compset = $pes_node->getAttribute('compset');
-    my $pesize  = $pes_node->getAttribute('pesize');
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
+    my @nodes = $xml->findnodes(".//grid[\@name=\'$grid\']/mach[\@name=\'$machine\']/pes[\@compset=\'$compset\' and \@pesize=\'$pesize\']");
+    if (defined @nodes) {
 
-    # Search the target grid and target machine in config_pes_component.xml 
-    # for matches using Xpath queries. 
+	# we found a match - query the user if the new layout should overwrite the old one
+	my $string = $nodes[0]->toString(1);
+	print " The following pe-layout match already exists \n";
+	print "$string \n";
+	print " Do you want to override the match with your pe-layout? [yes/no] (default is no) \n";
 
-    my @xmlnodes = $pesxml->findnodes("/pesinfo/grid[\@name=\'$grid\']");
-    if (! @xmlnodes) {
-
-	# (1) if the grid does not exist then create a node for it
-
-	print " Adding a new $grid grid pe layout \n";
-	my $root = $pesxml->findnodes('./pesinfo')->get_node(0);
-	$root->addChild($grid_node);
-
+	my $result = <STDIN>;
+	if ($result =~ /yes/) {
+	    # remove old grid node
+	    my $parent = $nodes[0]->parentNode();
+	    my $grandparent = $parent->parentNode();
+	    $parent->removeChild($nodes[0]); 			
+	    $grandparent->removeChilde($parent);
+	    
+	    # add new grid node
+	    my $root = $xml->findnodes('./config_pes')->get_node(0);
+	    $root->addChild($grid_nodes[0]);
+	}
+	
     } else {
 
-	# (2) If the grid exists - does the machine exist in the grid definition
-
-	if ($#xmlnodes != 0) {
-	    die " ERROR number of grids in $peslist has incorrect size $#xmlnodes \n";
-	}
-	@xmlnodes = $pesxml->findnodes("/pesinfo/grid[\@name=\'$grid\']/mach[\@name=\'$machine\']/pes");
-	if (! @xmlnodes) {
-	    print " Adding a new machine $machine to grid $grid \n";
-	    @xmlnodes = $pesxml->findnodes("/pesinfo/grid[\@name=\'$grid\']");
-	    if ($#xmlnodes != 0) {
-		die " ERROR number of machines $machine for grid $grid has incorrect size $#xmlnodes \n";
-	    }
-	    $xmlnodes[0]->addChild($mach_nodes[0]);
-
-	} else {
-
-	    # (3) If the grid and machine exists - do the other attributes match
-
-	    @xmlnodes = $pesxml->findnodes("/pesinfo/grid[\@name=\'$grid\']/mach[\@name=\'$machine\']/pes[\@compset=\'$compset\' and \@pesize=\'$pesize\']");
-	    if (@xmlnodes) {
-		
-		# we found a match - query the user if the new layout should overwrite the old one
-		my $string = $xmlnodes[0]->toString(1);
-		print " The following pe-layout match already exists \n";
-		print "$string \n";
-		print " Do you want to override the match with your pe-layout? [yes/no] (default is no) \n";
-
-		my $result = <STDIN>;
-
-		if ($result =~ /yes/) {
-		    $xmlnodes[0]->parentNode()->addChild($pes_nodes[0]);
-		    $xmlnodes[0]->parentNode()->removeChild($xmlnodes[0]); 
-		}
-
-	    } else {
-
-		# (4) If the grid and machine exists and none of the attributes match - then simply add the node
-
-		@xmlnodes = $pesxml->findnodes("/pesinfo/grid[\@name=\'$grid\']/mach[\@name=\'$machine\']/pes");
-		$xmlnodes[0]->parentNode()->addChild($pes_nodes[0]);
-	    }
-	}
+	# add new grid node
+	my $root = $xml->findnodes('./config_pes')->get_node(0);
+	$root->addChild($grid_nodes[0]);
     }
-    writeXML($pesxml);
+
+    writeXML($xml);
 }
 
 #==========================================================================
@@ -335,20 +262,18 @@ sub addPes
 #==========================================================================
 sub queryPes
 {
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $pesxml = $parser->parse_file($peslist);
-    
     my $grid = $opts{'grid'};
     my $machine = $opts{'machine'};
 
     # drill down into the grid nodes.  Move onto the next element
     # if anything doesn't match the grid and machine
 
-    my $root = $pesxml->getDocumentElement();
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
+    my $root = $xml->getDocumentElement();
 	
     # Does the target grid exist in the config_pes file - if not set it to any
     if (defined $grid) {
-	my @pes = $pesxml->findnodes(".//grid[contains(\@name,\"$grid\")]");
+	my @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid\")]");
 	if ($#pes == -1) {
 	    $grid = 'any';
 	}
@@ -356,22 +281,23 @@ sub queryPes
 
     # Does the target machine exist in the config_pes file - if not set it to any
     if (defined $machine) {
-	my @pes = $pesxml->findnodes(".//grid[contains(\@name,\"$grid\")]/mach[contains(\@name,\"$machine\")]/pes");
+	my @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid\")]/mach[contains(\@name,\"$machine\")]/pes");
 	if ($#pes == -1) {
 	    $machine = 'any';
 	}
     }
+
     # Determine settings for target machine and target grid
-    if ( defined $grid && defined $machine) {
-	foreach my $node_grid ($pesxml->findnodes('/pesinfo/grid')) {
+    if ( defined $opts{'grid'} && defined $opts{'machine'}) {
+	foreach my $node_grid ($xml->findnodes('.//grid')) {
 	    my $node_gridname= $node_grid->getAttribute('name');
-	    if ($node_gridname !~ /$grid/) {
+	    if ($node_gridname !~ /$opts{'grid'}/) {
 		$root->removeChild($node_grid);
 		next;
 	    }
 	    foreach my $node_mach ($node_grid->findnodes("./mach")) {
 		my $node_machname= $node_mach->getAttribute('name');
-		if ($machine !~ /$node_machname/) {	
+		if ($opts{'machine'} !~ /$node_machname/) {	
 		    $node_grid->removeChild($node_mach);
 		    next;
 		}
@@ -383,11 +309,11 @@ sub queryPes
 		$root->removeChild($node_grid);
 	    }
 	}
-    } elsif ( ! defined $grid && defined $machine) {
-	foreach my $node_grid ($pesxml->findnodes('/pesinfo/grid')) {
+    } elsif ( ! defined $opts{'grid'} && defined $opts{'machine'}) {
+	foreach my $node_grid ($xml->findnodes('/config_pes/grid')) {
 	    foreach my $node_mach ($node_grid->findnodes("./mach")) {
 		my $node_machname= $node_mach->getAttribute('name');
-		if ($machine !~ /$node_machname/) {	
+		if ($opts{'machine'} !~ /$node_machname/) {	
 		    $node_grid->removeChild($node_mach);
 		    next;
 		}
@@ -399,23 +325,22 @@ sub queryPes
 		$root->removeChild($node_grid);
 	    }
 	}
-    } elsif ( defined $grid && ! defined $machine) {
-	foreach my $node_grid ($pesxml->findnodes('/pesinfo/grid')) {
+    } elsif ( defined $opts{'grid'} && ! defined $opts{'machine'}) {
+	foreach my $node_grid ($xml->findnodes('/config_pes/grid')) {
 	    my $node_gridname= $node_grid->getAttribute('name');
-	    if ($node_gridname !~ /$grid/) {
+	    if ($node_gridname !~ /$opts{'grid'}/) {
 		$root->removeChild($node_grid);
 		next;
 	    }
 	}
     }
-
-    foreach my $node_override_grid ($pesxml->findnodes(".//override/grid")) {
+    foreach my $node_override_grid ($xml->findnodes(".//override/grid")) {
 	my $gridname = $node_override_grid->getAttribute('name');
 
 	if (($gridname eq 'any') || ($gridname =~ /$grid/ )) {
 	    foreach my $node_mach ($node_override_grid->findnodes("./mach")) {
 		my $machname = $node_mach->getAttribute('name');
-		if ($machname eq 'any' || $machname =~ /$machine/ ) {
+		if ($machname eq 'any' || $machname =~ /$opts{'machine'}/ ) {
 		    foreach my $node_pes ($node_override_grid->findnodes("./pes")) {
 			my $pesize  = $node_pes>getAttribute('pesize');
 			my $compset = $node_pes>getAttribute('compset');
@@ -428,7 +353,7 @@ sub queryPes
 	}
     }
 
-    formattedOutput($pesxml);
+    formattedOutput($xml);
 }
 
 #==========================================================================
@@ -436,34 +361,17 @@ sub queryPes
 #==========================================================================
 sub formattedOutput {
 
-   my $pesxml = shift;
-
-   my @output_ntasks;
-   my @output_nthrds;
-   my @output_rootpe;
-   my @output_header_grid;
-   my @output_header_machine;
-   my @output_header_compset;
-   my @output_header_pesize;
-   my @output_header_comment;
-
-   my %configcompsets;
-   my $compsetxml = XML::LibXML->new()->parse_file("$scriptdir/Tools/config_compsets.xml");
-   foreach my $cfgcompset ($compsetxml->findnodes('//COMPSET')) {
-      my $alias = $cfgcompset->getAttribute('alias');
-      my $sname = $cfgcompset->getAttribute('sname');
-      $configcompsets{$alias} = $sname;
-   }
+   my $xml = shift;
 
    my @pes_settings;
-
-   foreach my $grid_node ($pesxml->findnodes('./pesinfo/grid')) {
+   foreach my $grid_node ($xml->findnodes('./config_pes/grid')) 
+   {
        my $grid = $grid_node->getAttribute('name');
-
-       foreach my $mach_node ($grid_node->findnodes('./mach')) {
+       foreach my $mach_node ($grid_node->findnodes('./mach')) 
+       {
 	   my $machine = $mach_node->getAttribute('name');
-
-	   foreach my $pes_node ($mach_node->findnodes('./pes')) {
+	   foreach my $pes_node ($mach_node->findnodes('./pes')) 
+	   {
 	       my $pes_setting = new CIMEPes();
 	       $pes_setting->{grid} = $grid;
 	       $pes_setting->{machine} = $machine;
@@ -472,43 +380,23 @@ sub formattedOutput {
 	       if (defined $pesize) {
 		   $pes_setting->{pesize} = $pesize;
 	       }
-
                my $compset = $pes_node->getAttribute('compset');
 	       if (defined $compset) {
 		   $pes_setting->{compset} = $compset;
 	       }
-
 	       foreach my $node_comment ($pes_node->findnodes("./comment")) {
 		   my $name  = $node_comment->nodeName();
 		   my $value = $node_comment->textContent();
 		   $pes_setting->{$name} = $value;
 	       }
-	       foreach my $node_ntasks ($pes_node->findnodes("./ntasks")) {
-		   my @child_nodes = $node_ntasks->childNodes();
-		   foreach my $child_node (@child_nodes) {
-		       my $name  = $child_node->nodeName();
-		       my $value = $child_node->textContent();
-		       if ($value eq 'max_tasks_per_node') {$value = 'MTPN';}
-		       $pes_setting->{$name} = $value;
-		   }
-	       }
-	       foreach my $node_nthrds ($pes_node->findnodes("./nthrds")) {
-		   my @child_nodes = $node_nthrds->childNodes();
-		   foreach my $child_node (@child_nodes) {
-		       my $name  = $child_node->nodeName();
-		       my $value = $child_node->textContent();
-		       if ($value eq 'max_thrds_per_node') {$value = 'MTPN';}
-		       $pes_setting->{$name} = $value;
-		   }
-	       }
-	       foreach my $node_rootpe ($pes_node->findnodes("./rootpe")) {
-		   my @child_nodes = $node_rootpe->childNodes();
-		   foreach my $child_node (@child_nodes) {
-
-		       my $name  = $child_node->nodeName();
-		       my $value = $child_node->textContent();
-		       if ($value eq 'max_tasks_per_node') {$value = 'MTPN';}
-		       $pes_setting->{$name} = $value;
+	       foreach my $element ('ntasks','nthrds','rootpe') {
+		   foreach my $node_ntasks ($pes_node->findnodes("./$element")) {
+		       my @child_nodes = $node_ntasks->childNodes();
+		       foreach my $child_node (@child_nodes) {
+			   my $name  = $child_node->nodeName();
+			   my $value = $child_node->textContent();
+			   $pes_setting->{$name} = $value;
+		       }
 		   }
 	       }
 	       push(@pes_settings, $pes_setting);
@@ -516,10 +404,22 @@ sub formattedOutput {
        }
    }
 
+   my (@output_ntasks, @output_nthrds, @output_rootpe);
+   my (@output_header_grid, @output_header_machine, @output_header_compset);
+   my (@output_header_pesize, @output_header_comment);
+
+   my %compsets;
+   my $xml = XML::LibXML->new()->parse_file("$compsets_file");
+   foreach my $compset ($xml->findnodes('//COMPSET')) {
+      my $alias = $compset->getAttribute('alias');
+      my $sname = $compset->getAttribute('sname');
+      $compsets{$alias} = $sname;
+   }
+
    foreach my $pes_setting (@pes_settings) {
        my $grid	       = $pes_setting->{grid};
        my $compset     = $pes_setting->{compset};
-       my $fcompset    = "$compset ($configcompsets{$compset})";
+       my $fcompset    = "$compset ($compsets{$compset})";
        my $pesize      = $pes_setting->{pesize};
        my $machine     = $pes_setting->{machine};
        my $comment     = $pes_setting->{comment};
@@ -557,10 +457,10 @@ sub formattedOutput {
        my $line_rootpe =  sprintf("         %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s",
 				  'rootpe: ', $rootpe_atm, $rootpe_lnd, $rootpe_ice, $rootpe_ocn, $rootpe_rof, $rootpe_glc, $rootpe_wav, $rootpe_cpl);
 
-       my $line_header_grid    = sprintf("      %-8s %-20s ", "grid   :", $grid);
-       my $line_header_machine = sprintf("      %-8s %-20s ", "machine:" ,$machine);
-       my $line_header_compset = sprintf("      %-8s %-20s ", "compset:", $compset);
-       my $line_header_pesize  = sprintf("      %-8s %-20s ", "pesize :", $pesize);
+       my $line_header_grid    = sprintf("      %-8s %-15s ", "grid   :", $grid);
+       my $line_header_machine = sprintf("      %-8s %-15s ", "machine:" ,$machine);
+       my $line_header_compset = sprintf("      %-8s %-15s ", "compset:", $compset);
+       my $line_header_pesize  = sprintf("      %-8s %-10s ", "pesize :", $pesize);
        my $line_header_comment = sprintf("      %-8s %-20s ", "comment:", $comment);
 
        push(@output_header_grid   , $line_header_grid);
@@ -577,9 +477,9 @@ sub formattedOutput {
 				 "atm", "lnd", "ice", "ocn", "rof", "glc", "wav", "cpl");
 
    for (my $i = 0; $i <= $#output_ntasks; $i++) {
-       map { print "$_\n" } $output_header_grid[$i];
-       map { print "$_\n" } $output_header_machine[$i];
-       map { print "$_\n" } $output_header_compset[$i];
+       map { print "$_" } $output_header_grid[$i];
+       map { print "$_" } $output_header_machine[$i];
+       map { print "$_" } $output_header_compset[$i];
        map { print "$_\n" } $output_header_pesize[$i];
        map { print "$_\n" } $output_header_comment[$i];
        map { print "$_\n" } $header2;
@@ -591,36 +491,47 @@ sub formattedOutput {
 }
 
 #==========================================================================
-# Determine peslist for primary component
+# Determine pes file 
 #==========================================================================
-sub setPesList{
-    my $comp = shift;
-    my $list;
+sub getPesFile{
 
-    if ($comp =~ /^cam/ ) {
-	$list = "$cimeroot/machines/config_pes_cam.xml"; 
-    } elsif ($comp =~ /^allactive/) {
-	$list = "$cimeroot/machines/config_pes_allactive.xml"; 
-    } elsif ($comp =~ /^clm/) {
-	$list = "$cimeroot/machines/config_pes_clm.xml"; 
-    } elsif ($comp =~ /^cice/) {
-	$list = "$cimeroot/machines/config_pes_cice.xml"; 
-    } elsif ($comp =~ /^drv/) {
-	$list = "$cimeroot/machines/config_pes_cime.xml"; 
-    } elsif ($comp =~ /^cism/) {
-	$list = "$cimeroot/machines/config_pes_cism.xml"; 
-    } elsif ($comp =~ /^pop/) {
-	$list = "$cimeroot/machines/config_pes_pop.xml"; 
-    } else {
-	die "component $comp does not match supported components \n";
+    my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file_config");
+
+    my @files = $xml->findnodes(".//entry[\@id=\"PES_SPEC_FILE\"]/values/value[\@component=\"$opts{'pes_setby'}\"]");
+    if (! @files) {
+	die " ERROR: no pes specification file found for $opts{'pes_setby'} \n";
     }
-    if (-f $list) {
-	print "# peslist is $list \n";
-	return $list;
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    if (-f "$file")  {
+	print "Pes specification file is $file \n";
     } else {
-	print "peslist $list for primary component is not present \n";
-	exit(1);
+	die "*** Cannot find pes specification file $file ***\n";
     }
+    return $file; 
+}    
+
+#==========================================================================
+# Determine compsets file
+#==========================================================================
+sub getCompsetsFile{
+
+    my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file_config");
+
+    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$opts{'pes_setby'}\"]");
+    if (! @files) {
+	die " ERROR: no compsets specification file found for $opts{'pes_setby'} \n";
+    }
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    if (-f "$file")  {
+	print "Compsets specification file is $compsets_file \n";
+    } else {
+	die "*** Cannot find compsets specification file $file ***\n";
+    }
+    return $file; 
 }    
 
 #==========================================================================

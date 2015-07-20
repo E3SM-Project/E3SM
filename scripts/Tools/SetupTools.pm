@@ -320,6 +320,130 @@ sub set_compiler
 }
 
 #-----------------------------------------------------------------------------------------------
+sub is_valid_value
+{
+    # Check if the input value is a valid value
+    my ($id, $value, $valid_values, $is_list_value) = @_;
+
+    # Check that a list value is not supplied when parameter takes a scalar value.
+    unless ($is_list_value) {  # this conditional is satisfied when the list attribute is false, i.e., for scalars
+	if ($value =~ /.*,.*/) {    
+	    # the pattern matches when $value contains a comma, i.e., is a list
+ 	    die "Errorr is_valid_value; variable $id is a scalar but has a list value $value \n";
+	}
+   }
+
+    # Check that the value is valid
+    # if no valid values are specified, then $value is automatically valid
+    if ( $valid_values ne "" ) {  
+	if ($is_list_value) {
+	    unless (_list_value_ok($value, $valid_values)) { 
+		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
+	    }
+	} else {
+	    unless (_value_ok($value, $valid_values)) { 
+		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
+	    }
+	}
+
+    }
+    return 1;
+}
+
+#-----------------------------------------------------------------------------------------------
+sub validate_variable_value
+{
+    # Validate that a given value matches the expected input type definition
+    # Expected description of keys for the input type hash is:
+    #      type           type description (char, logical, integer, or real)       (string)
+    #      strlen         Length of string (if type char)                          (integer)
+    #      validValues    Reference to array of valid values                       (string)
+    #
+    my ($var, $value, $type_ref) = @_;
+    my $nm = "validate_variable_value";
+
+    # Perl regular expressions to match Fortran namelist tokens.
+    # Variable names.
+    # % for derived types, () for arrays
+    my $varmatch = "[A-Za-z_]{1,31}[A-Za-z0-9_]{0,30}[(0-9)%a-zA-Z_]*";
+
+    # Integer data.
+    my $valint = "[+-]?[0-9]+";
+    my $valint_repeat = "${valint}\\*$valint";
+
+    # Logical data.
+    my $vallogical1 = "[Tt][Rr][Uu][Ee]";
+    my $vallogical2 = "[Ff][Aa][Ll][Ss][Ee]";
+    my $vallogical = "$vallogical1|$vallogical2";
+    my $vallogical_repeat = "${valint}\\*$vallogical1|${valint}\\*$vallogical2";
+
+    # Real data.
+    # "_" are for f90 precision specification
+    my $valreal1 = "[+-]?[0-9]*\\.[0-9]+[EedDqQ]?[0-9+-]*";
+    my $valreal2 = "[+-]?[0-9]+\\.?[EedDqQ]?[0-9+-]*";
+    my $valreal = "$valreal1|$valreal2";
+    my $valreal_repeat = "${valint}\\*$valreal1|${valint}\\*$valreal2";
+
+    # Match for all valid data-types: integer, real or logical
+    # note: valreal MUST come before valint in this string to prevent integer portion of real 
+    #       being separated from decimal portion
+    my $valall = "$vallogical|$valreal|$valint";
+
+    # Match for all valid data-types with repeater: integer, real, logical, or string data
+    # note: valrepeat MUST come before valall in this string to prevent integer repeat specifier 
+    #       being accepted alone as a value
+    my $valrepeat = "$vallogical_repeat|$valreal_repeat|$valint_repeat";
+
+    # Match for all valid data-types with or without numberic repeater at the lead
+    my $valmatch = "$valrepeat|$valall";
+
+    # Same as above when a match isn't required
+    my $nrvalmatch = $valmatch. "||";
+
+    # Ensure type hash has required variables
+    if ( ref($type_ref) !~ /HASH/ ) {
+	die "ERROR: in $nm : Input type is not a HASH reference.\n";
+    }
+    foreach my $item ( "type", "validValues", "strlen" ) {
+	if ( ! exists($$type_ref{$item}) ) {
+	    die "ERROR: in $nm: Variable name $item not defined in input type hash.\n";
+	}
+    }
+    # If string check that less than defined string length
+    my $str_len = 0;
+    if ( $$type_ref{'type'} eq "char" ) {
+	$str_len = $$type_ref{'strlen'};
+	if ( length($value) > $str_len ) {
+	    die "ERROR: in $nm Variable name $var " .
+		"has a string element that is too long: $value\n";
+	}
+    }
+    # If not string -- check that array size is smaller than definition
+    my @values;
+    if ( $str_len == 0 ) {
+	@values = split( /,/, $value );
+	# Now check that values are correct for the given type
+	foreach my $i ( @values ) {
+	    my $compare;
+	    if (      $$type_ref{'type'} eq "logical" ) {
+		$compare = $vallogical;
+	    } elsif ( $$type_ref{'type'} eq "integer" ) {
+		$compare = $valint;
+	    } elsif ( $$type_ref{'type'} eq "real" ) {
+		$compare = $valreal;
+	    } else {
+		die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
+		    "not a valid FORTRAN type (logical, integer, real, or char).\n";
+	    }
+	    if ( $i !~ /^\s*(${compare})$/ ) {
+		die "ERROR: in $nm (package $pkg_nm): Variable name $var " .
+		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} . "\n";
+	    }
+	}
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
 #                               Private routines
 #-----------------------------------------------------------------------------------------------
 sub _parse_hash
@@ -448,131 +572,7 @@ sub _resolveValues
 }
 
 #-----------------------------------------------------------------------------------------------
-sub is_valid_value
-{
-    # Check if the input value is a valid value
-    my ($id, $value, $valid_values, $is_list_value) = @_;
-
-    # Check that a list value is not supplied when parameter takes a scalar value.
-    unless ($is_list_value) {  # this conditional is satisfied when the list attribute is false, i.e., for scalars
-	if ($value =~ /.*,.*/) {    
-	    # the pattern matches when $value contains a comma, i.e., is a list
- 	    die "Errorr is_valid_value; variable $id is a scalar but has a list value $value \n";
-	}
-   }
-
-    # Check that the value is valid
-    # if no valid values are specified, then $value is automatically valid
-    if ( $valid_values ne "" ) {  
-	if ($is_list_value) {
-	    unless (list_value_ok($value, $valid_values)) { 
-		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
-	    }
-	} else {
-	    unless (value_ok($value, $valid_values)) { 
-		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
-	    }
-	}
-
-    }
-    return 1;
-}
-
-#-----------------------------------------------------------------------------------------------
-sub validate_variable_value
-{
-    # Validate that a given value matches the expected input type definition
-    # Expected description of keys for the input type hash is:
-    #      type           type description (char, logical, integer, or real)       (string)
-    #      strlen         Length of string (if type char)                          (integer)
-    #      validValues    Reference to array of valid values                       (string)
-    #
-    my ($var, $value, $type_ref) = @_;
-    my $nm = "validate_variable_value";
-
-    # Perl regular expressions to match Fortran namelist tokens.
-    # Variable names.
-    # % for derived types, () for arrays
-    my $varmatch = "[A-Za-z_]{1,31}[A-Za-z0-9_]{0,30}[(0-9)%a-zA-Z_]*";
-
-    # Integer data.
-    my $valint = "[+-]?[0-9]+";
-    my $valint_repeat = "${valint}\\*$valint";
-
-    # Logical data.
-    my $vallogical1 = "[Tt][Rr][Uu][Ee]";
-    my $vallogical2 = "[Ff][Aa][Ll][Ss][Ee]";
-    my $vallogical = "$vallogical1|$vallogical2";
-    my $vallogical_repeat = "${valint}\\*$vallogical1|${valint}\\*$vallogical2";
-
-    # Real data.
-    # "_" are for f90 precision specification
-    my $valreal1 = "[+-]?[0-9]*\\.[0-9]+[EedDqQ]?[0-9+-]*";
-    my $valreal2 = "[+-]?[0-9]+\\.?[EedDqQ]?[0-9+-]*";
-    my $valreal = "$valreal1|$valreal2";
-    my $valreal_repeat = "${valint}\\*$valreal1|${valint}\\*$valreal2";
-
-    # Match for all valid data-types: integer, real or logical
-    # note: valreal MUST come before valint in this string to prevent integer portion of real 
-    #       being separated from decimal portion
-    my $valall = "$vallogical|$valreal|$valint";
-
-    # Match for all valid data-types with repeater: integer, real, logical, or string data
-    # note: valrepeat MUST come before valall in this string to prevent integer repeat specifier 
-    #       being accepted alone as a value
-    my $valrepeat = "$vallogical_repeat|$valreal_repeat|$valint_repeat";
-
-    # Match for all valid data-types with or without numberic repeater at the lead
-    my $valmatch = "$valrepeat|$valall";
-
-    # Same as above when a match isn't required
-    my $nrvalmatch = $valmatch. "||";
-
-    # Ensure type hash has required variables
-    if ( ref($type_ref) !~ /HASH/ ) {
-	die "ERROR: in $nm : Input type is not a HASH reference.\n";
-    }
-    foreach my $item ( "type", "validValues", "strlen" ) {
-	if ( ! exists($$type_ref{$item}) ) {
-	    die "ERROR: in $nm: Variable name $item not defined in input type hash.\n";
-	}
-    }
-    # If string check that less than defined string length
-    my $str_len = 0;
-    if ( $$type_ref{'type'} eq "char" ) {
-	$str_len = $$type_ref{'strlen'};
-	if ( length($value) > $str_len ) {
-	    die "ERROR: in $nm Variable name $var " .
-		"has a string element that is too long: $value\n";
-	}
-    }
-    # If not string -- check that array size is smaller than definition
-    my @values;
-    if ( $str_len == 0 ) {
-	@values = split( /,/, $value );
-	# Now check that values are correct for the given type
-	foreach my $i ( @values ) {
-	    my $compare;
-	    if (      $$type_ref{'type'} eq "logical" ) {
-		$compare = $vallogical;
-	    } elsif ( $$type_ref{'type'} eq "integer" ) {
-		$compare = $valint;
-	    } elsif ( $$type_ref{'type'} eq "real" ) {
-		$compare = $valreal;
-	    } else {
-		die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
-		    "not a valid FORTRAN type (logical, integer, real, or char).\n";
-	    }
-	    if ( $i !~ /^\s*(${compare})$/ ) {
-		die "ERROR: in $nm (package $pkg_nm): Variable name $var " .
-		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} . "\n";
-	    }
-	}
-    }
-}
-
-#-----------------------------------------------------------------------------------------------
-sub list_value_ok
+sub _list_value_ok
 {
     # Check that all input values ($values_in may be a comma separated list)
     # are contained in the comma separated list of valid values ($valid_values).
@@ -584,13 +584,13 @@ sub list_value_ok
     my $values_ok = 0;
 
     foreach my $value (@values) {
-	if (value_ok($value, $valid_values)) { ++$values_ok; }
+	if (_value_ok($value, $valid_values)) { ++$values_ok; }
     }
     ($num_vals == $values_ok) ? return 1 : return 0;
 }
 
 #-----------------------------------------------------------------------------------------------
-sub value_ok
+sub _value_ok
 {
     # Check that the input value is contained in the comma separated list of
     # valid values ($valid_values).  Return 1 (true) if input value is valid,

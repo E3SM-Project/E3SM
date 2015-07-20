@@ -107,106 +107,17 @@ sub new
 
 
 #-----------------------------------------------------------------------------------------------
-sub add_file_general_spec_variables
+sub add_to_id
 {
     # define variables in $cfg_ref from xml file
 
-    my ($self, $file, $cimeroot, $srcroot, $caseroot) = @_;
+    my ($self, $id, $name, $value, $cimeroot, $srcroot, $caseroot) = @_;
 
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    my @nodes = $xml->findnodes(".//files_case/entry");
-    if (! @nodes) {
-	die "ERROR add_config_variables: no variable elements in file $file \n"; 
-    }
-    foreach my $node (@nodes) 
-    {
-	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->childNodes()) 
-	{
-	    my $node_name = $define_node->nodeName();
-	    my $value = $define_node->textContent();
-	    $value =~ s/\$CIMEROOT/$cimeroot/;
-	    $value =~ s/\$SRCROOT/$srcroot/;
-	    $value =~ s/\$CASEROOT/$caseroot/; 
-	    $self->{$id}->{$node_name} = $value;
-	}
-    }
-}
+    $value =~ s/\$CIMEROOT/$cimeroot/;
+    $value =~ s/\$SRCROOT/$srcroot/;
+    $value =~ s/\$CASEROOT/$caseroot/; 
 
-#-----------------------------------------------------------------------------------------------
-sub add_file_compset_spec_variables
-{
-    # define variables in $cfg_ref from xml file
-
-    my ($self, $file, $cimeroot, $srcroot, $primary_component) = @_;
-
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    my @nodes = $xml->findnodes(".//files_compsets/entry");
-    if (! @nodes) {
-	die "ERROR add_config_variables: no variable elements in file $file \n"; 
-    }
-    foreach my $node (@nodes) 
-    {
-	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->childNodes()) 
-	{
-	    my $node_name  = $define_node->nodeName();
-	    if ($node_name eq 'values') {
-		foreach my $value_node ($define_node->findnodes("./value")) {
-		    my $component = $value_node->getAttribute('component');
-		    if ($component eq $primary_component) {
-			my $value = $value_node->textContent();
-			$value =~ s/\$CIMEROOT/$cimeroot/;
-			$value =~ s/\$SRCROOT/$srcroot/;
-			$self->{$id}->{'value'} = $value;
-			last;
-		    }
-		}
-	    } else {
-		my $value = $define_node->textContent();
-		$self->{$id}->{$node_name} = $value;
-	    }
-	}
-    }
-}
-
-#-----------------------------------------------------------------------------------------------
-sub add_file_component_spec_variables
-{
-    # define variables in $cfg_ref from xml file
-
-    my ($self, $file, $cimeroot, $srcroot, $input_component) = @_;
-
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    my @nodes = $xml->findnodes(".//files_components/entry");
-    if (! @nodes) {
-	die "ERROR add_config_variables: no variable elements in file $file \n"; 
-    }
-    foreach my $node (@nodes) 
-    {
-	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->childNodes()) 
-	{
-	    my $node_name  = $define_node->nodeName();
-	    if ($node_name eq 'values') {
-		foreach my $value_node ($define_node->findnodes("./value")) {
-		    my $comp = $value_node->getAttribute('component');
-		    if ($comp eq $input_component) {
-			my $value = $value_node->textContent();
-			$value =~ s/\$CIMEROOT/$cimeroot/;
-			$value =~ s/\$SRCROOT/$srcroot/;
-			print "$id is $value \n";
-			$self->{$id}->{'value'} = $value;
-			last;
-		    }
-		}
-	    } else {
-		my $value = $define_node->textContent();
-		$self->{$id}->{$node_name} = $value;
-	    }
-	}
-    
-    }
+    $self->{$id}->{$name} = $value;
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -238,7 +149,7 @@ sub add_config_variables
 	    }
 	}
 	if (! defined $self->{$id}->{'value'} ) {
-	    die "ERROR add_config_variables: default_value must be set for $id \n";
+	    die "ERROR add_config_variables: default_value must be set for $id in $file\n";
 	}
     }
 }

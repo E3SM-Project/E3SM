@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<config_override>
+
+  <pes_override>
+    <grid name="any">
+      <mach name="any">
+	<pes pesize="any" compset="CISM1">
+	  <comment>
+	    this overrides ntasks for CISM1 to set the ntasks_glc to 1
+	    ??? question from Bill = what happens if a line is missing ???
+	    check that every entry is present
+	  </comment>
+	  <ntasks>
+	    <ntasks_glc>1</ntasks_glc>
+	  </ntasks>
+	  <nthrds>
+	    <nthrds_glc>1</nthrds_glc>
+	  </nthrds>
+	</pes>
+      </mach>
+    </grid>
+  </pes_override>
+
+</config_override>

@@ -10,9 +10,9 @@
   <!-- Filenames for case config, grids, machines and pio --> 
   <!-- ============================================================ -->
 
-    <entry id="DEFINITIONS_CONFIG_FILE">
+    <entry id="CIMECONFIG_FILE">
       <type>char</type>
-      <value>$CIMEROOT/scripts/cimeconfig/definitions_config.xml</value>
+      <value>$CIMEROOT/scripts/cimeconfig/config_cime.xml</value>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
@@ -20,7 +20,7 @@
 
     <entry id="CASEFILE_HEADERS"> 
       <type>char</type>
-      <value>$CIMEROOT/scripts/cimeconfig/headers.xml</value>
+      <value>$CIMEROOT/scripts/cimeconfig/config_headers.xml</value>
       <group>case_der</group>
       <file>env_case.xml</file>
       <desc>contains both header and group information for all the case env_*.xml files </desc>
@@ -36,7 +36,7 @@
 
     <entry id="GRIDS_SPEC_FILE"> 
       <type>char</type>
-      <value>grids.xml</value>
+      <value>config_grids.xml</value>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of all supported model grids, domains and mapping files (for documentation only - DO NOT EDIT)</desc>
@@ -48,14 +48,6 @@
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
-    </entry>
-
-    <entry id="PIO_SPEC_FILE">
-      <type>char</type>
-      <value>$CIMEROOT/machines/config_pio.xml</value>
-      <group>case_last</group>
-      <file>env_case.xml</file>
-      <desc>file containing specification of machine specific pio settings(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
   </files_case>
@@ -70,13 +62,64 @@
     <entry id="COMPSETS_SPEC_FILE">
       <type>char</type>
       <values>
-	<value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/compsets.xml</value>
-	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/compsets.xml</value>
-	<value component="cam"      >$CIMEROOT/scripts/cimeconfig/components/cam/compsets.xml</value>
-	<value component="cism"     >$CIMEROOT/scripts/cimeconfig/components/cism/compsets.xml</value>
-	<value component="clm"      >$CIMEROOT/scripts/cimeconfig/components/clm/compsets.xml</value>
-	<value component="cice"     >$CIMEROOT/scripts/cimeconfig/components/cice/compsets.xml</value>
-	<value component="pop"      >$CIMEROOT/scripts/cimeconfig/components/pop/compsets.xml</value>
+	<value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/config_compsets.xml</value>
+	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/config_compsets.xml</value>
+	<value component="cam"      >$CIMEROOT/scripts/cimeconfig/components/cam/config_compsets.xml</value>
+	<value component="cism"     >$CIMEROOT/scripts/cimeconfig/components/cism/config_compsets.xml</value>
+	<value component="clm"      >$CIMEROOT/scripts/cimeconfig/components/clm/config_compsets.xml</value>
+	<value component="cice"     >$CIMEROOT/scripts/cimeconfig/components/cice/config_compsets.xml</value>
+	<value component="pop"      >$CIMEROOT/scripts/cimeconfig/components/pop/config_compsets.xml</value>
+      </values>
+      <group>case_last</group>
+      <file>env_case.xml</file>
+      <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+
+    <entry id="PES_SPEC_FILE">
+      <type>char</type>
+      <values>
+	<value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/config_pes.xml</value>
+	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/config_pes.xml</value>
+	<value component="cam"      >$CIMEROOT/scripts/cimeconfig/components/cam/config_pes.xml</value>
+	<value component="cism"     >$CIMEROOT/scripts/cimeconfig/components/cism/config_pes.xml</value>
+	<value component="clm"      >$CIMEROOT/scripts/cimeconfig/components/clm/config_pes.xml</value>
+	<value component="cice"     >$CIMEROOT/scripts/cimeconfig/components/cice/config_pes.xml</value>
+	<value component="pop"      >$CIMEROOT/scripts/cimeconfig/components/pop/config_pes.xml</value>
+      </values>
+      <group>case_last</group>
+      <file>env_case.xml</file>
+      <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+
+    <entry id="PIO_SPEC_FILE">
+      <type>char</type>
+      <values>
+	<value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/config_pio.xml</value>
+	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/config_pio.xml</value>
+	<value component="cam"      >$CIMEROOT/scripts/cimeconfig/components/cam/config_pio.xml</value>
+	<value component="cism"     >$CIMEROOT/scripts/cimeconfig/components/cism/config_pio.xml</value>
+	<value component="clm"      >$CIMEROOT/scripts/cimeconfig/components/clm/config_pio.xml</value>
+	<value component="cice"     >$CIMEROOT/scripts/cimeconfig/components/cice/config_pio.xml</value>
+	<value component="pop"      >$CIMEROOT/scripts/cimeconfig/components/pop/config_pio.xml</value>
+      </values>
+      <group>case_last</group>
+      <file>env_case.xml</file>
+      <desc>file containing pio specification that are grid and/or compset sepcific. 
+      The definitions along with default settings are given in config_cime.xml.
+      Any machine-specific non-default settings are then set in config_machines.xml.
+      Any grid and compset specific values are then specified in config_pio.xml (for documentation only - DO NOT EDIT)</desc>
+    </entry>
+
+    <entry id="OVERRIDE_SPEC_FILE">
+      <type>char</type>
+      <values>
+	<value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/config_override.xml</value>
+	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/config_override.xml</value>
+	<value component="cam"      >$CIMEROOT/scripts/cimeconfig/components/cam/config_override.xml</value>
+	<value component="cism"     >$CIMEROOT/scripts/cimeconfig/components/cism/config_override.xml</value>
+	<value component="clm"      >$CIMEROOT/scripts/cimeconfig/components/clm/config_override.xml</value>
+	<value component="cice"     >$CIMEROOT/scripts/cimeconfig/components/cice/config_override.xml</value>
+	<value component="pop"      >$CIMEROOT/scripts/cimeconfig/components/pop/config_override.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
@@ -123,102 +166,102 @@
 
   <files_components>
 
-    <entry id="CIMECONFIG_DRV_FILE">
+    <entry id="CONFIG_DRV_FILE">
       <type>char</type>
       <values>
-	<value component="drv">$CIMEROOT/driver_cpl/cimeconfig/definitions_component.xml</value>
+	<value component="drv">$CIMEROOT/driver_cpl/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_ATM_FILE">
+    <entry id="CONFIG_ATM_FILE">
       <type>char</type>
       <values>
-	<value component="cam" >$CIMEROOT/scripts/cimeconfig/components/cam/definitions_component.xml</value>
-	<value component="datm">$CIMEROOT/components/data_comps/datm/cimeconfig/definitions_component.xml</value>
-	<value component="satm">$CIMEROOT/components/stub_comps/satm/cimeconfig/definitions_component.xml</value>
-	<value component="xatm">$CIMEROOT/components/xcpl_comps/xatm/cimeconfig/definitions_component.xml</value>
+	<value component="cam" >$CIMEROOT/scripts/cimeconfig/components/cam/config_component.xml</value>
+	<value component="datm">$CIMEROOT/components/data_comps/datm/cimeconfig/config_component.xml</value>
+	<value component="satm">$CIMEROOT/components/stub_comps/satm/cimeconfig/config_component.xml</value>
+	<value component="xatm">$CIMEROOT/components/xcpl_comps/xatm/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_LND_FILE">
+    <entry id="CONFIG_LND_FILE">
       <type>char</type>
       <values>
-	<value component="clm" >$CIMEROOT/scripts/cimeconfig/components/clm/definitions_component.xml</value>
-	<value component="vic" >$CIMEROOT/scripts/cimeconfig/components/vic/definitions_component.xml</value>
-	<value component="dlnd">$CIMEROOT/components/data_comps/dlnd/cimeconfig/definitions_component.xml</value>
-	<value component="slnd">$CIMEROOT/components/stub_comps/slnd/cimeconfig/definitions_component.xml</value>
-	<value component="xlnd">$CIMEROOT/components/xcpl_comps/xlnd/cimeconfig/definitions_component.xml</value>
+	<value component="clm" >$CIMEROOT/scripts/cimeconfig/components/clm/config_component.xml</value>
+	<value component="vic" >$CIMEROOT/scripts/cimeconfig/components/vic/config_component.xml</value>
+	<value component="dlnd">$CIMEROOT/components/data_comps/dlnd/cimeconfig/config_component.xml</value>
+	<value component="slnd">$CIMEROOT/components/stub_comps/slnd/cimeconfig/config_component.xml</value>
+	<value component="xlnd">$CIMEROOT/components/xcpl_comps/xlnd/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_ROF_FILE">
+    <entry id="CONFIG_ROF_FILE">
       <type>char</type>
       <values>
-	<value component="rtm" >$CIMEROOT/scripts/cimeconfig/components/rtm/definitions_component.xml</value>
-	<value component="drof">$CIMEROOT/components/data_comps/drof/cimeconfig/definitions_component.xml</value>
-	<value component="srof">$CIMEROOT/components/stub_comps/srof/cimeconfig/definitions_component.xml</value>
-	<value component="xrof">$CIMEROOT/components/xcpl_comps/xrof/cimeconfig/definitions_component.xml</value>
+	<value component="rtm" >$CIMEROOT/scripts/cimeconfig/components/rtm/config_component.xml</value>
+	<value component="drof">$CIMEROOT/components/data_comps/drof/cimeconfig/config_component.xml</value>
+	<value component="srof">$CIMEROOT/components/stub_comps/srof/cimeconfig/config_component.xml</value>
+	<value component="xrof">$CIMEROOT/components/xcpl_comps/xrof/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_ICE_FILE">
+    <entry id="CONFIG_ICE_FILE">
       <type>char</type>
       <values>
-	<value component="cice">$CIMEROOT/scripts/cimeconfig/components/cice/definitions_component.xml</value>
-	<value component="dice">$CIMEROOT/components/data_comps/dice/cimeconfig/definitions_component.xml</value>
-	<value component="sice">$CIMEROOT/components/stub_comps/sice/cimeconfig/definitions_component.xml</value>
-	<value component="xice">$CIMEROOT/components/xcpl_comps/xice/cimeconfig/definitions_component.xml</value>
+	<value component="cice">$CIMEROOT/scripts/cimeconfig/components/cice/config_component.xml</value>
+	<value component="dice">$CIMEROOT/components/data_comps/dice/cimeconfig/config_component.xml</value>
+	<value component="sice">$CIMEROOT/components/stub_comps/sice/cimeconfig/config_component.xml</value>
+	<value component="xice">$CIMEROOT/components/xcpl_comps/xice/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_OCN_FILE">
+    <entry id="CONFIG_OCN_FILE">
       <type>char</type>
       <values>
-	<value component="pop" >$CIMEROOT/scripts/cimeconfig/components/pop/definitions_component.xml</value>
-	<value component="docn">$CIMEROOT/components/data_comps/docn/cimeconfig/definitions_component.xml</value>
-	<value component="socn">$CIMEROOT/components/stub_comps/socn/cimeconfig/definitions_component.xml</value>
-	<value component="xocn">$CIMEROOT/components/xcpl_comps/xocn/cimeconfig/definitions_component.xml</value>
+	<value component="pop" >$CIMEROOT/scripts/cimeconfig/components/pop/config_component.xml</value>
+	<value component="docn">$CIMEROOT/components/data_comps/docn/cimeconfig/config_component.xml</value>
+	<value component="socn">$CIMEROOT/components/stub_comps/socn/cimeconfig/config_component.xml</value>
+	<value component="xocn">$CIMEROOT/components/xcpl_comps/xocn/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_GLC_FILE">
+    <entry id="CONFIG_GLC_FILE">
       <type>char</type>
       <values>
-	<value component="cism">$CIMEROOT/scripts/cimeconfig/components/cism/definitions_component.xml</value>
-	<value component="dglc">$CIMEROOT/components/data_comps/dglc/cimeconfig/definitions_component.xml</value>
-	<value component="sglc">$CIMEROOT/components/stub_comps/sglc/cimeconfig/definitions_component.xml</value>
-	<value component="xglc">$CIMEROOT/components/xcpl_comps/xglc/cimeconfig/definitions_component.xml</value>
+	<value component="cism">$CIMEROOT/scripts/cimeconfig/components/cism/config_component.xml</value>
+	<value component="dglc">$CIMEROOT/components/data_comps/dglc/cimeconfig/config_component.xml</value>
+	<value component="sglc">$CIMEROOT/components/stub_comps/sglc/cimeconfig/config_component.xml</value>
+	<value component="xglc">$CIMEROOT/components/xcpl_comps/xglc/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
       <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
     </entry>
 
-    <entry id="CIMECONFIG_WAV_FILE">
+    <entry id="CONFIG_WAV_FILE">
       <type>char</type>
       <values>
-	<value component="ww3">$CIMEROOT/scripts/cimeconfig/components/ww3/definitions_component.xml</value>
+	<value component="ww3">$CIMEROOT/scripts/cimeconfig/components/ww3/config_component.xml</value>
 	<value component="dwav">not implemented yet</value>
-	<value component="swav">$CIMEROOT/components/stub_comps/swav/cimeconfig/definitions_component.xml</value>
-	<value component="xwav">$CIMEROOT/components/xcpl_comps/xwav/cimeconfig/definitions_component.xml</value>
+	<value component="swav">$CIMEROOT/components/stub_comps/swav/cimeconfig/config_component.xml</value>
+	<value component="xwav">$CIMEROOT/components/xcpl_comps/xwav/cimeconfig/config_component.xml</value>
       </values>
       <group>case_last</group>
       <file>env_case.xml</file>
@@ -271,6 +314,7 @@
       <type>char</type>
       <values>
 	<value component="rtm" >$SRCROOT/components/rtm/bld</value>
+	<value component="mosart">$SRCROOT/components/mosart/bld</value>
 	<value component="drof">$CIMEROOT/components/data_comps/drof/bld</value>
 	<value component="srof">$CIMEROOT/components/stub_comps/srof/bld</value>
 	<value component="xrof">$CIMEROOT/components/xcpl_comps/xrof/bld</value>
@@ -323,7 +367,7 @@
       <type>char</type>
       <values>
 	<value component="ww3" >$SRCROOT/components/ww3/bld</value>
-	<value component="dwav">not implemented yet</value>
+	<value component="dwav">$CIMEROOT/components/data_comps/dwav/bld</value>
 	<value component="swav">$CIMEROOT/components/stub_comps/swav/bld</value>
 	<value component="xwav">$CIMEROOT/components/xcpl_comps/xwav/bld</value>
       </values>

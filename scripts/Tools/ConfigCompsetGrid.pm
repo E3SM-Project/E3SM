@@ -39,18 +39,18 @@ sub setCompsetGrid {
 
     my ($print_flag, $cfg_ref) = @_;
     
-    my $cimeroot           = $cfg_ref->get('CASEROOT');
-    my $caseroot           = $cfg_ref->get('CIMEROOT');		
-    my $compset_longname   = $cfg_ref->get('COMPSET');		
-    my $grid_longname      = $cfg_ref->get('GRID');			
-    my $grids_file         = $cfg_ref->get('GRIDS_SPEC_FILE');		
+    my $cimeroot         = $cfg_ref->get('CASEROOT');
+    my $caseroot         = $cfg_ref->get('CIMEROOT');		
+    my $compset_longname = $cfg_ref->get('COMPSET');		
+    my $grid_longname    = $cfg_ref->get('GRID');			
+    my $grids_file       = $cfg_ref->get('GRIDS_SPEC_FILE');		
     
     (-f "$grids_file") or  die "Cannot find supported model grids file $grids_file ";
 
     # Note that DRV must be first in the list below
     my @setup_comp_files;
-    foreach my $model ('DRV', 'ATM', 'ICE', 'GLC', 'LND', 'ROF', 'OCN', 'WAV') {
-	my $name = "CIMECONFIG_" . "$model" . "_FILE";
+    foreach my $name ('CONFIG_DRV_FILE', 'CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 
+		      'CONFIG_LND_FILE', 'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
 	my $file = $cfg_ref->get($name);	
 	push (@setup_comp_files, $file);
     }
@@ -136,132 +136,6 @@ sub setCompsetGrid {
 }
 
 #-----------------------------------------------------------------------------------------------
-sub listCompsets
-{
-    # List the supported compsets for the primary component
-    my ($compsets_file) = @_;
-
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml = $parser->parse_file($compsets_file);
-
-    print "     =============================================================\n";
-    print "     The following are the supported components sets in the file \n";
-    print "     $compsets_file \n";
-    print "     =============================================================\n";
-
-    print " \n";
-    foreach my $node ($xml->findnodes(".//help")) {
-	my $help = $node->textContent();
-	print "$help \n\n";
-    }
-
-    foreach my $node ($xml->findnodes(".//COMPSET")) {
-	my @lname_node = $node->findnodes("./lname");
-	my @alias_node = $node->findnodes("./alias");
-	my @support_node = $node->findnodes("./support_level");
-
-	my $lname   = $lname_node[0]->textContent;
-	my $alias   = $alias_node[0]->textContent;
-	my $grid    = $node->getAttribute('grid');
-	my $support;
-	if (@support_node)  {$support = $support_node[0]->textContent;}
-
-	printf("     alias: %-25s longname: %-96s \n",$alias,$lname);
-        if ( $grid) {
-        printf("                                                grid match:  %-96s \n", _clean($grid) );
-        }
-        if ($support) {
-        printf("                                                support level    :  %-96s \n", _clean($support) );
-        }
-    }    
-    print "\n";
-}
-
-#-----------------------------------------------------------------------------------------------
-sub listComponentDefinitions
-{
-    my ($compsets_file) = @_;
- 
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml = $parser->parse_file($compsets_file);
-
-    my $xml = $parser->parse_file($compsets_file);
-    foreach my $node ($xml->findnodes("//help")) {
-	my $value = $node->textContent();
-	print"     $value \n"; 
-    }
-    foreach my $node ($xml->findnodes("//description/*")) {
-	my $attr  = $node->getAttribute('compset');
-	my $value = $node->textContent();
-	printf("    %-25s => %-96s \n",$attr,$value);
-    }
-    print "\n";
-}
-
-#-------------------------------------------------------------------------------
-sub listGrids
-{
-    # Print all currently supported valid grids
-    my ($grids_file, $domains_file) = @_;
-
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml_grids   = $parser->parse_file($grids_file);
-    my $xml_domains = $parser->parse_file($domains_file);
-
-    print " \n";
-    foreach my $node ($xml_grids->findnodes(".//help")) {
-	my $help = $node->textContent();
-	print "$help \n\n";
-    }
-
-    print "\n";
-    print " ======================================================\n";
-    print "                Component Grids:                       \n";
-    print " ======================================================\n";
-    print "\n";
-    foreach my $node ($xml_domains->findnodes(".//domain")) {
-	my $name  = $node->getAttribute('name');
-	my $alias = $node->getAttribute('alias');
-	if ($alias) { 
-	    print " component grid: $name (alias: $alias) \n";
-	} else {
-	    print " component grid: $name \n";
-	}	    
-	my $support_level; my $nx; my $ny; my $desc;
-	foreach my $child_node ($node->childNodes()) {
-	    my $name  = $child_node->nodeName();
-	    my $value = $child_node->textContent();
-	    if ($name eq 'support_level') {$support_level= $value;}
-	    if ($name eq 'nx') {$nx = $value;}
-	    if ($name eq 'ny') {$ny = $value;}
-	    if ($name eq 'desc') {$desc = $value;}
-	}
-	if (defined $desc)           {print "   $desc \n";}
-	if (defined $nx  )           {print "   nx: $nx ny: $ny \n";}
-	if (defined $support_level ) {print "   support_level: support_level \n";}
-	print " \n";
-    }
-
-    print "\n";
-    print " ======================================================\n";
-    print "                Model Grids:                           \n";
-    print " ======================================================\n";
-    print "\n";
-    foreach my $node ($xml_grids->findnodes(".//GRID")) {
-	my $alias         = $node->getAttribute('alias');
-	my $compset       = $node->getAttribute('compset');
-	my $support_level = $node->getAttribute('support_level');
-	my $lname         = $node->textContent();
-	print " model grid: $lname \n";
-	if (defined ($alias)  )       { print "    alias        : $alias \n"}
-	if (defined ($compset))       { print "    compset match: $compset \n"}
-	if (defined ($support_level)) { print "    support_level: $support_level \n";}
-	print " \n";
-    }    
-    print " \n";
-}
-
-#-----------------------------------------------------------------------------------------------
 sub getCompsetLongname
 {
     # Determine compset longname, alias and support level
@@ -328,9 +202,7 @@ sub getGridLongname
 
     my $grids_file = $cfg_ref->get('GRIDS_SPEC_FILE');
 
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml = $parser->parse_file($grids_file);
-
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($grids_file);
     my @nodes_alias = $xml->findnodes(".//GRID[alias=\"$grid_input\"]");
     my @nodes_lname = $xml->findnodes(".//GRID[lname=\"$grid_input\"]");
     my @nodes_sname = $xml->findnodes(".//GRID[sname=\"$grid_input\"]");

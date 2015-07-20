@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<!-- always place default value first without any attributes -->
+<!-- then place the attribute for grid or compset afterwards -->
+
+<pio_settings>
+
+  <pio>
+    <mach name="yellowstone">
+      <pio_stride>-1</pio_stride> 
+    </mach>
+  </pio>
+      
+</pio_settings>
