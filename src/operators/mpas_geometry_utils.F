@@ -1121,21 +1121,23 @@ module mpas_geometry_utils
 !
 !> \brief Compute the barycentric Wachspress coordinates for a polygon
 !> \author  Phillip Wolfram
-!> \date    03/13/2014
+!> \date    01/26/2015
 !> \details
 !>  Computes the barycentric Wachspress coordinates for a polygon with nVertices
-!>  points in R3 (xv, yv, zv) for a particular point xp, yp, zp in geometry
-!>  with radius R.  Follows Gillette, A., Rand, A., Bajaj, C., 2011.
+!>  points in R3, vertCoords for a particular pointInterp with normalized radius.
+!>  Follows Gillette, A., Rand, A., Bajaj, C., 2011.
 !>  Error estimates for generalized barycentric interpolation.
 !>  Advances in computational mathematics 37 (3), 417–439.
+!>  Optimized version of mpas_wachspress_coordinates uses optional cached B_i areas
 !------------------------------------------------------------------------
-   function mpas_wachspress_coordinates(nVertices, vertCoords, cellCenter, meshPool) !{{{
+   function mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool, areaBin) !{{{
       implicit none
 
       ! input points
       integer, intent(in) :: nVertices
       real (kind=RKIND), dimension(3, nVertices), intent(in) :: vertCoords
-      real (kind=RKIND), dimension(3), intent(in) :: cellCenter
+      real (kind=RKIND), dimension(3), intent(in) :: pointInterp
+      real (kind=RKIND), dimension(nVertices), optional, intent(in) :: areaBin
       type (mpas_pool_type), pointer :: meshPool
       ! output
       real (kind=RKIND), dimension(nVertices) :: mpas_wachspress_coordinates
@@ -1155,11 +1157,32 @@ module mpas_geometry_utils
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
-
       if ( on_a_sphere ) then
          radiusLocal = sphere_radius
       else
          radiusLocal = 1.0_RKIND
+      end if
+
+      if (.not. present(areaBin)) then
+        ! compute areas
+        do i = 1, nVertices
+           ! compute first area B_i
+           ! get vertex indices
+           im1 = mod(nVertices + i - 2, nVertices) + 1
+           i0  = mod(nVertices + i - 1, nVertices) + 1
+           ip1 = mod(nVertices + i    , nVertices) + 1
+
+           ! precompute B_i areas
+           ! always the same because B_i independent of xp,yp,zp
+           ! (COULD CACHE AND USE RESULT FROM ARRAY FOR FURTHER OPTIMIZATION)
+           areaB(i) = mpas_triangle_signed_area(vertCoords(:, im1), vertCoords(:, i0), vertCoords(:, ip1), meshPool)
+           areaB(i) = areaB(i) * radiusLocal * radiusLocal
+        end do
+      else
+        ! assign areas
+        do i = 1, nVertices
+          areaB(i) = areaBin(i)
+        end do
       end if
 
       ! compute areas
@@ -1172,106 +1195,24 @@ module mpas_geometry_utils
 
          ! compute A_ij areas
          ! must be computed each time
-         areaA(i0) = mpas_triangle_signed_area( cellCenter(:) , &
-                     vertCoords(:, i0), vertCoords(:, ip1), meshPool )
-         areaA(i0) = areaA(i0) * radiusLocal * radiusLocal
-
-         ! precompute B_i areas
-         ! always the same because B_i independent of xp,yp,zp
-         ! (COULD CACHE AND USE RESULT FROM ARRAY FOR FURTHER OPTIMIZATION)
-         areaB(i) = mpas_triangle_signed_area(vertCoords(:, im1), vertCoords(:, i0), vertCoords(:, ip1), meshPool)
-         areaB(i) = areaB(i) * radiusLocal * radiusLocal
-      end do
-
-
-      ! for each vertex compute wachpress coordinate
-      do i = 1, nVertices
-         wach(i) = areaB(i)
-         do j = (i + 1), (i + nVertices - 2)
-            i0  = mod(nVertices + j - 1, nVertices) + 1
-            ! accumulate products for A_ij subareas
-            wach(i) = wach(i) * areaA(i0)
-         end do
-      end do
-
-      ! get summed weights for normalization
-      wach_total = 0
-      do i = 1, nVertices
-         wach_total = wach_total + wach(i)
-      end do
-
-      ! compute lambda
-      mpas_wachspress_coordinates = 0.0_RKIND
-      do i = 1, nVertices
-         mpas_wachspress_coordinates(i) = wach(i)/wach_total
-      end do
-
-   end function mpas_wachspress_coordinates!}}}
-
-
-!***********************************************************************
-!
-!  function mpas_wachspress_coordinates_cached
-!
-!> \brief Compute the barycentric Wachspress coordinates for a polygon
-!> \author  Phillip Wolfram
-!> \date    01/26/2015
-!> \details
-!>  Computes the barycentric Wachspress coordinates for a polygon with nVertices
-!>  points in R3 (xv, yv, zv) for a particular point xp, yp, zp in geometry
-!>  with radius R.  Follows Gillette, A., Rand, A., Bajaj, C., 2011.
-!>  Error estimates for generalized barycentric interpolation.
-!>  Advances in computational mathematics 37 (3), 417–439.
-!>  Optimized version of mpas_wachspress_coordinates that uses cached B_i areas
-!------------------------------------------------------------------------
-   function mpas_wachspress_coordinates_cached(nVertices, vertCoords, cellCenter, areaB, meshPool) !{{{
-      implicit none
-
-      ! input points
-      integer, intent(in) :: nVertices
-      real (kind=RKIND), dimension(3, nVertices), intent(in) :: vertCoords
-      real (kind=RKIND), dimension(3), intent(in) :: cellCenter
-      real (kind=RKIND), dimension(:), intent(in) :: areaB
-      type (mpas_pool_type), pointer :: meshPool
-      ! output
-      real (kind=RKIND), dimension(nVertices) :: mpas_wachspress_coordinates_cached
-      ! computational intermediates
-      real (kind=RKIND), dimension(nVertices) :: wach       ! The wachpress area-product
-      real (kind=RKIND) :: wach_total                       ! The wachpress total weight
-      integer :: i, j                                       ! Loop indices
-      integer :: im1, i0, ip1                               ! im1 = (i-1), i0 = i, ip1 = (i+1)
-
-      ! triangle areas to compute wachspress coordinate
-      real (kind=RKIND), dimension(nVertices) :: areaA
-
-      logical, pointer :: on_a_sphere
-      integer, pointer :: sphere_radius
-      integer :: radiusLocal
-
-      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
-      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
-      if ( on_a_sphere ) then
-         radiusLocal = sphere_radius
-      else
-         radiusLocal = 1.0_RKIND
-      end if
-
-      ! compute areas
-      do i = 1, nVertices
-         ! compute first area B_i
-         ! get vertex indices
-         im1 = mod(nVertices + i - 2, nVertices) + 1
-         i0  = mod(nVertices + i - 1, nVertices) + 1
-         ip1 = mod(nVertices + i    , nVertices) + 1
-
-         ! compute A_ij areas
-         ! must be computed each time
-         areaA(i0) = mpas_triangle_signed_area( cellCenter, vertCoords(i0,:), vertCoords(ip1,:), meshPool)
+#if MPAS_DEBUG
+         write(stderrUnit,*) 'i=', i,' i0=', i0,' ip1=', ip1
+         write(stderrUnit,*) 'a=', pointInterp
+         write(stderrUnit,*) 'b=', vertCoords(i0,:)
+         write(stderrUnit,*) 'c=', vertCoords(ip1,:)
+#endif
+         areaA(i0) = mpas_triangle_signed_area( pointInterp, vertCoords(:, i0), vertCoords(:, ip1), meshPool)
          areaA(i0) = areaA(i0) * radiusLocal * radiusLocal
 
          ! precomputed B_i areas, cached
       end do
 
+#if MPAS_DEBUG
+      write(stderrUnit,*) 'pointInterp=', pointInterp
+      write(stderrUnit,*) 'vertCoords=', vertCoords
+      write(stderrUnit,*) 'areaA=', areaA
+      write(stderrUnit,*) 'areaB=', areaB
+#endif
 
       ! for each vertex compute wachpress coordinate
       do i = 1, nVertices
@@ -1290,12 +1231,12 @@ module mpas_geometry_utils
       end do
 
       ! compute lambda
-      mpas_wachspress_coordinates_cached = 0.0_RKIND
+      mpas_wachspress_coordinates= 0.0_RKIND
       do i = 1, nVertices
-         mpas_wachspress_coordinates_cached(i) = wach(i)/wach_total
+         mpas_wachspress_coordinates(i) = wach(i)/wach_total
       end do
 
-   end function mpas_wachspress_coordinates_cached!}}}
+   end function mpas_wachspress_coordinates!}}}
 
 
 !***********************************************************************
@@ -1309,19 +1250,189 @@ module mpas_geometry_utils
 !>  Interpolate using the barycentric Wachspress coordinates for a polygon with nVertices
 !>  having values phi.
 !------------------------------------------------------------------------
-   subroutine mpas_wachspress_interpolate(lambda, phi, phiX) !{{{
+   real (kind=RKIND) function mpas_wachspress_interpolate(lambda, phi) !{{{
       implicit none
 
       ! input points
       real (kind=RKIND), dimension(:), intent(in) :: lambda   !< Input: Wachspress coordinate / weight
       real (kind=RKIND), dimension(:), intent(in) :: phi      !< Input: values at lambda weights
-
       ! output for function
-      real (kind=RKIND), intent(out) :: phiX
+      !real (kind=RKIND), intent(out) :: mpas_wachspress_interpolate
 
-      phiX = sum(phi * lambda)
+      mpas_wachspress_interpolate = sum(phi * lambda)
 
-   end subroutine mpas_wachspress_interpolate! }}}
+   end function mpas_wachspress_interpolate! }}}
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_wachspress_hexagon
+!
+!> \brief   Simple unit test for testing wachspress interpolation on a hexagon.
+!> \author  Phillip J. Wolfram
+!> \date    07/21/2015
+!> \details
+!>  This routine tests the mpas_wachspress_coordinates and
+!>  mpas_wachspress_interpolate routines on a hexagon.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_wachspress_hexagon(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer, parameter :: nVertices = 6
+      real (kind=RKIND), dimension(3, nVertices) :: vertCoords
+      real (kind=RKIND), dimension(nVertices) :: vertValues
+      real (kind=RKIND), dimension(3) :: pointInterp
+      type (mpas_pool_type), pointer :: meshPool
+      integer :: j
+      real (kind=RKIND), dimension(nVertices) :: lambda
+      real (kind=RKIND), dimension(3) :: velocity
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+      real (kind=RKIND) :: theta, interpValue
+
+      ierr = 0
+#if MPAS_DEBUG
+      write(stderrUnit,*) 'starting mpas_unit_test_wachspress_hexagon'
+#endif
+      ! set on a plane
+      call mpas_pool_create_pool(meshPool)
+      call mpas_pool_add_config(meshPool,'on_a_sphere', .False.)
+      call mpas_pool_add_config(meshPool, 'sphere_radius', 1)
+      ! hexagon geometry values
+      do j = 1,nVertices
+        theta = 2*pii/nVertices * (j-1)
+        vertCoords(1,j) = cos(theta)
+        vertCoords(2,j) = sin(theta)
+        vertCoords(3,j) = 0.0_RKIND
+        vertValues(j) = 3.0_RKIND + vertCoords(1,j) + 2.0_RKIND*vertCoords(2,j)
+      end do
+
+      ! interpolation at hexagon center
+      pointInterp(:) = (/0.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      ! test without precached areas
+      lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
+      interpValue = mpas_wachspress_interpolate(lambda, vertValues)
+      if (abs(interpValue - 3.0_RKIND) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_hexagon: test1 - FAILED.'
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_wachspress_hexagon:  test1 - SUCCESS'
+      end if
+
+      ! interpolation at vertex
+      pointInterp(:) = (/1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      ! test without precached areas
+      lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
+      interpValue = mpas_wachspress_interpolate(lambda, vertValues)
+      if (abs(interpValue - 4.0_RKIND) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_hexagon: test2 - FAILED.'
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_wachspress_hexagon:  test2 - SUCCESS'
+      end if
+
+      call mpas_pool_destroy_pool(meshPool)
+#if MPAS_DEBUG
+      write(stderrUnit,*) 'finished mpas_unit_test_wachspress_hexagon'
+#endif
+
+   end subroutine mpas_unit_test_wachspress_hexagon!}}}
+
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_wachspress_triangle
+!
+!> \brief   Simple unit test for testing wachspress interpolation on a triangle.
+!> \author  Phillip J. Wolfram
+!> \date    07/21/2015
+!> \details
+!>  This routine tests the mpas_wachspress_coordinates and
+!>  mpas_wachspress_interpolate routines on a triangle.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_wachspress_triangle(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer, parameter :: nVertices = 3
+      real (kind=RKIND), dimension(3, nVertices) :: vertCoords
+      real (kind=RKIND), dimension(nVertices) :: vertValues
+      real (kind=RKIND), dimension(3) :: pointInterp
+      type (mpas_pool_type), pointer :: meshPool
+      integer :: j
+      real (kind=RKIND), dimension(nVertices) :: lambda
+      real (kind=RKIND), dimension(3) :: velocity
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+      real (kind=RKIND) :: interpValue
+
+      ierr = 0
+#if MPAS_DEBUG
+      write(stderrUnit,*) 'starting mpas_unit_test_wachspress_triangle'
+#endif
+      ! set on a plane
+      call mpas_pool_create_pool(meshPool)
+      call mpas_pool_add_config(meshPool,'on_a_sphere', .False.)
+      call mpas_pool_add_config(meshPool, 'sphere_radius', 1)
+      ! hexagon geometry values
+      vertCoords(:,1) = (/ 1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      vertCoords(:,2) = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
+      vertCoords(:,3) = (/ 0.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      vertValues(:) = 3.0_RKIND + vertCoords(1,:) + 2.0_RKIND*vertCoords(2,:)
+
+      ! interpolation at triangle interior
+      pointInterp(:) = (/0.25_RKIND, 0.25_RKIND, 0.0_RKIND /)
+      ! test without precached areas
+      lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
+      interpValue = mpas_wachspress_interpolate(lambda, vertValues)
+      if (abs(interpValue - 3.75_RKIND) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_triangle: test1 - FAILED.'
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_wachspress_triangle: test1 - SUCCESS'
+      end if
+
+      ! interpolation at vertex
+      pointInterp(:) = (/1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      ! test without precached areas
+      lambda = mpas_wachspress_coordinates(nVertices, vertCoords, pointInterp, meshPool)
+      interpValue = mpas_wachspress_interpolate(lambda, vertValues)
+      if (abs(interpValue - 4.0_RKIND) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_wachspress_triangle: test2 - FAILED.'
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_wachspress_triangle: test2 - SUCCESS'
+      end if
+
+      call mpas_pool_destroy_pool(meshPool)
+#if MPAS_DEBUG
+      write(stderrUnit,*) 'finished mpas_unit_test_wachspress_triangle'
+#endif
+
+   end subroutine mpas_unit_test_wachspress_triangle!}}}
 
 
 !***********************************************************************
@@ -1332,8 +1443,8 @@ module mpas_geometry_utils
 !> \author  Phillip Wolfram
 !> \date    09/13/2014
 !> \details
-!>  Returns the zonal and meridional velocity field (Uzon,Umer) from 
-!>  velocity field defined in R3: (x,y,z) point with velocity 
+!>  Returns the zonal and meridional velocity field (Uzon,Umer) from
+!>  velocity field defined in R3: (x,y,z) point with velocity
 !>  vectors (Ux,Uy,Uz).
 !------------------------------------------------------------------------
    subroutine mpas_convert_xyz_velocity_to_latlon(Uzon, Umer, xyzPoint, xyzVel) !{{{
@@ -1347,7 +1458,7 @@ module mpas_geometry_utils
       real(kind=RKIND) :: Rxy, Rxyz, slon,clon,slat,clat
 
       ! test for singularities at the poles
-      if(xyzPoint(1) == 0.0_RKIND .and. xyzPoint(2) == 0.0_RKIND) then 
+      if(xyzPoint(1) == 0.0_RKIND .and. xyzPoint(2) == 0.0_RKIND) then
 #ifdef MPAS_DEBUG
         write(stderrUnit,*) 'Point is located at a pole, cannot convert accurately to lat/lon velocity!'
 #endif
@@ -1415,9 +1526,9 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test1 - FAILED.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test1 - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test1 - SUCCESS'
       end if
-      
+
       ! equator case (merid vel)
       sphereLocation = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
       velocity = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
@@ -1427,9 +1538,9 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test2 - FAILED.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test2 - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test2 - SUCCESS'
       end if
-     
+
       ! pole case
       sphereLocation = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
       velocity = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
@@ -1439,9 +1550,9 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test3 - FAILED.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
       end if
-      
+
       ! equator case (zonal vel)
       sphereLocation = (/ 1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
       velocity = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
@@ -1451,9 +1562,9 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test3 - FAILED.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test3 - SUCCESS'
       end if
-      
+
       ! equator case (zonal vel)
       sphereLocation = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
       velocity = (/ -1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
@@ -1463,7 +1574,7 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_velocity_conversion: test4 - FAILED.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_velocity_conversion: test4 - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_velocity_conversion: test4 - SUCCESS'
       end if
 
    end subroutine mpas_unit_test_velocity_conversion!}}}
