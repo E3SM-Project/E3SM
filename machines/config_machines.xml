@@ -632,9 +632,7 @@
          </mpirun>
          <!-- all commands in the module_system elements will be executed sequentially... -->
          <module_system type="module">
-           <!--<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path> -->
            <init_path >/usr/share/Modules/init/perl.pm</init_path> 
-           <!-- <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path> -->
            <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
            <modules compiler="intel">
              <load>compiler/intel/14.0.2</load>

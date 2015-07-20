@@ -44,7 +44,6 @@ sub new
 		$self->{debug} = 'FALSE';
 	}
 	$self->{machroot} = Cwd::abs_path($self->{cimeroot}) . "/machines/";
-	print "machroot: $self->{machroot}\n";
 	my $toolsroot = $self->{'caseroot'} . "/Tools";
 	push(@INC, $toolsroot);
 	$self->{'toolsroot'} = $toolsroot;
@@ -290,18 +289,23 @@ sub writeXMLFileForCase()
 	my @envnodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables");
 	foreach my $enode(@envnodes)
 	{
+		print "env var node: \n";
+		print Dumper $enode;
 		$newmachnode->addChild($enode);
 	}
 	my @limitnodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits");
 	foreach my $lnode(@limitnodes)
 	{
+		print "limit node: \n";
+		print Dumper $lnode;
 		$newmachnode->addChild($lnode);
 	}
 
-	my $newdom = XML::LibXML::Document->new("1.0.0");
+	#print "new mach node: ", $newmachnode->toString();
+	my $newdom = XML::LibXML::Document->new("1.0");
 	$newdom->setDocumentElement($newmachnode);
 	my $filepath = $self->{caseroot} . "/mach_specific.xml";
-	$newdom->toFile($filepath, 1);
+	$newdom->toFile($filepath, 1) || die "could not write file: ", $self->{caseroot} . ", $?\n";
 }
 
 sub loadModulesForCase()
@@ -312,10 +316,19 @@ sub loadModulesForCase()
 	my $mpilib = $self->{mpilib};
 	my $debug = $self->{debug};
 
-	my $cmroot = $self->{configmachinesroot};
-	my @allmodulenodes = $cmroot->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
+	#my $cmroot = $self->{configmachinesroot};
+	my $machspecificfile = $self->{'caseroot'} . "/mach_specific.xml";
+	if( ! -e $machspecificfile)
+	{
+		die "$machspecificfile was not found!\n";
+	}
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    #my $xml = $parser->parse_file($self->{'configmachinesfile'});
+	my $casemoduleparser = $parser->parse_file($machspecificfile);
+	my @allmodulenodes = $casemoduleparser->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
 
 	my @foundmodules = $self->findModules(\@allmodulenodes);
+	return @foundmodules; 
 }
 
 sub findModules()
@@ -375,6 +388,7 @@ sub findModules()
 					my $actupon = $child->textContent();	
 					my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum };
 					push(@foundmodules, $modhash);
+				    $seqnum += 1;
 				}
 			}
 		}
