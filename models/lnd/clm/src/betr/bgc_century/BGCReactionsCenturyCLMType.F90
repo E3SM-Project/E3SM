@@ -669,7 +669,7 @@ contains
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j) 
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose   
       !print*,c,grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-!      if(c==1310 .and. j==1)then
+!      if(c==554 .and. j==1)then
 !         ldebug=.true.
 !         ldebug_bgc=.true.
 !        print*,'grd',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c)) 
@@ -679,6 +679,7 @@ contains
 !        ldebug_bgc=.false.
 !      endif
 !      ldebug_ode=ldebug
+!      print*,c,j,ldebug_ode
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j),pscal)
       if(pscal<1.e-1_r8)then
@@ -1034,23 +1035,28 @@ contains
         elseif(lk == centurybgc_vars%lid_ch4_aere_reac)then
           jj = centurybgc_vars%lid_ch4
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-        
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
+
         elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
           jj = centurybgc_vars%lid_ar
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))      
-      
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
+
         elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
           jj = centurybgc_vars%lid_n2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-      
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
+
         elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
           jj = centurybgc_vars%lid_co2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-      
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
+
         elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
           jj = centurybgc_vars%lid_n2o
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-        
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
+
         else
           reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
         endif              
@@ -1059,7 +1065,7 @@ contains
     else
     
       reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
-      reaction_rates(lk)=min(reaction_rates(lk),ystate(centurybgc_vars%primvarid(lk))/dtime)
+!      reaction_rates(lk)=min(reaction_rates(lk),ystate(centurybgc_vars%primvarid(lk))/dtime)
       if(ldebug)then
         write(*,'(A,2(X,I4),3(X,E20.10))')'lk',lk,centurybgc_vars%primvarid(lk),ystate(centurybgc_vars%primvarid(lk)),Extra_inst%k_decay(lk),reaction_rates(lk)
       endif

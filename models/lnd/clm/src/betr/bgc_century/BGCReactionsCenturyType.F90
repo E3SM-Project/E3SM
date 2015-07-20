@@ -1010,22 +1010,27 @@ contains
         elseif(lk == centurybgc_vars%lid_ch4_aere_reac)then
           jj = centurybgc_vars%lid_ch4
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         
         elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
           jj = centurybgc_vars%lid_ar
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))      
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
       
         elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
           jj = centurybgc_vars%lid_n2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
       
         elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
           jj = centurybgc_vars%lid_co2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
       
         elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
           jj = centurybgc_vars%lid_n2o
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         
         else
           reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
