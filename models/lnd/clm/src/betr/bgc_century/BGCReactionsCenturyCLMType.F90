@@ -1113,6 +1113,8 @@ contains
   
   !
   ! this down regulation does not consider the extra nitrogen made available from mineralization
+  ! this implements is corresponding to the CLM-1 approach as described in Tang and Riley (2015), BG, tehcnique note.
+  
   use clm_varctl,   only : CNAllocate_Carbon_only
   use MathfuncMod,  only : safe_div
  

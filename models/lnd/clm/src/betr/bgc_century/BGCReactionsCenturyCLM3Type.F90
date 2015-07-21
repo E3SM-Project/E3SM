@@ -1,4 +1,4 @@
-module BGCReactionsCenturyType
+module BGCReactionsCenturyCLM3Type
 
 #include "shr_assert.h"
 
@@ -1070,7 +1070,7 @@ contains
   subroutine apply_nutrient_down_regulation(nstvars, nreactions, nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
   
   ! this down-regulation considers nitrogen made available from gross mineralization
-  ! this implements is corresponding to the CLM-2 approach as described in Tang and Riley (2015), BG, tehcnique note.
+  ! this implements is corresponding to the CLM-3 approach as described in Tang and Riley (2015), BG, tehcnique note.
   use clm_varctl,   only : CNAllocate_Carbon_only
   use MathfuncMod,  only : safe_div
   
@@ -1094,6 +1094,7 @@ contains
   real(r8) :: frac_nh4_to_decomp_plant
   real(r8) :: supp_nh4_to_decomp_plant_flx
   real(r8) :: frac_supp_nh4_to_decomp_plant
+  real(r8) :: gross_nh4_to_decomp_plant_flx
   real(r8) :: gross_min_nh4_flx  
   real(r8) :: alpha
   real(r8) :: frac_gross_immob=1.0_r8  
@@ -1133,9 +1134,10 @@ contains
   !in clm-century, nh4 is first competed between decomposer immobilization, plant and nitrification
   !
   reac = lid_nh4_nit_reac
-  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac) - gross_min_nh4_flx*frac_gross_immob
+  tot_nh4_demand_flx = decomp_plant_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_nh4 ,reac)
   
-  if(tot_nh4_demand_flx*dtime>smin_nh4)then
+  if(tot_nh4_demand_flx*dtime>(smin_nh4+gross_min_nh4_flx*dtime))then
+    !not enought nitrogen
     if(CNAllocate_Carbon_only())then
       
 
@@ -1153,15 +1155,19 @@ contains
       
     else
       !nitrifiers, decomposers and plants are nh4 limited
-      alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
+      alpha = (smin_nh4+gross_min_nh4_flx*dtime)/(tot_nh4_demand_flx*dtime)
       smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
-      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
+      gross_nh4_to_decomp_plant_flx= gross_min_nh4_flx
+      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - decomp_plant_minn_demand_flx*alpha
+      
       !downregulate nitrification
       reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha
     endif
   else
     !none is nh4 limited
-    smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx
+    !part of nh4 is from smin_nh4, another part is from gross mineralization
+    smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx*(smin_nh4/(smin_nh4+gross_min_nh4_flx*dtime))
+    gross_nh4_to_decomp_plant_flx= decomp_plant_minn_demand_flx*(1._r8-smin_nh4/(smin_nh4+gross_min_nh4_flx*dtime))
     decomp_plant_residual_minn_demand_flx = 0._r8
   endif
 
@@ -1192,7 +1198,7 @@ contains
     smin_no3_to_decomp_plant_flx = tot_no3_demand_flx
   endif
   
-  tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
+  tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx + gross_nh4_to_decomp_plant_flx
   if(CNAllocate_Carbon_only())then
     supp_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx - tot_sminn_to_decomp_plant_flx
     tot_sminn_to_decomp_plant_flx = decomp_plant_minn_demand_flx
@@ -1207,6 +1213,11 @@ contains
     alpha = 1._r8
   endif
 
+  if(gross_nh4_to_decomp_plant_flx>0._r8)then
+    frac_gross_nh4_to_decomp_plant = gross_nh4_to_decomp_plant_flx/tot_sminn_to_decomp_plant_flx
+  else
+    frac_gross_nh4_to_decomp_plant = 0._r8
+  endif
   if(smin_nh4_to_decomp_plant_flx>=tot_sminn_to_decomp_plant_flx)then
     frac_nh4_to_decomp_plant = 1._r8
   else
@@ -1224,7 +1235,7 @@ contains
   do reac = 1,  nom_pools
     if(nitrogen_limit_flag(reac))then
       reaction_rates(reac) = reaction_rates(reac) * alpha
-      cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
+      cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant-frac_gross_nh4_to_decomp_plant)
       cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
       cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
         
@@ -1236,12 +1247,13 @@ contains
   !for plant
   reac = lid_plant_minn_up_reac
   reaction_rates(reac) = reaction_rates(reac) * alpha
-  cascade_matrix(lid_nh4, reac)        = -frac_nh4_to_decomp_plant
+  
+  cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant-frac_gross_nh4_to_decomp_plant)
   cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
-  cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
+  cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_nh4_supp, reac)
   
   cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
   end associate
   end subroutine apply_nutrient_down_regulation  
-end module BGCReactionsCenturyType
+end module BGCReactionsCenturyCLM3Type
