@@ -1319,7 +1319,7 @@ subroutine ccsm_init()
    endif
    if (glc_present) then
       if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
-      if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+!      if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
       if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
    endif
    if (wav_present) then
