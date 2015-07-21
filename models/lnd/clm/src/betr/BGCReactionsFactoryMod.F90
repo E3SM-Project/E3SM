@@ -32,6 +32,7 @@ implicit none
   use BGCReactionsCenturyCLMType   , only : bgc_reaction_CENTURY_clm_type
   use BGCReactionsCenturyECAType   , only : bgc_reaction_CENTURY_ECA_type
   use BGCReactionsSminNType        , only : bgc_reaction_sminn_type
+  use BGCReactionsCenturyCLM3Type  , only : bgc_reaction_CENTURY_clm3_type
    
 !  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
   use abortutils                , only : endrun
@@ -56,8 +57,11 @@ implicit none
     allocate(bgc_reaction, source=bgc_reaction_CENTURY_clm_type())
   case ("century_bgcECA")
     is_active_betr_bgc = .true.
-    allocate(bgc_reaction, source=bgc_reaction_CENTURY_ECA_type())    
-  case ("betr_sminn")
+    allocate(bgc_reaction, source=bgc_reaction_CENTURY_ECA_type())
+  case ("century_bgcclm3")
+    is_active_betr_bgc=.true.
+    allocate(bgc_reaction, source=bgc_reaction_CENTURY_clm3_type())
+  case ("betr_sminn")  
     !this must be used together with clm45bgc
     do_betr_leaching = .true.
     allocate(bgc_reaction, source=bgc_reaction_sminn_type())

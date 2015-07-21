@@ -37,12 +37,12 @@ implicit none
   private
   !
   ! !PUBLIC TYPES:
-  public :: bgc_reaction_CENTURY_type
+  public :: bgc_reaction_CENTURY_clm3_type
   type(centurybgc_type), private :: centurybgc_vars
 
   integer, private :: lpr
   type, extends(bgc_reaction_type) :: &
-  bgc_reaction_CENTURY_type
+  bgc_reaction_CENTURY_clm3_type
   private
   contains
    procedure :: Init_betrbgc                  ! initialize betr bgc
@@ -54,7 +54,7 @@ implicit none
    procedure :: readParams
    procedure :: init_betr_alm_bgc_coupler         ! update state vars using other bgc parts in alm
    procedure :: betr_alm_flux_statevar_feedback
-  end type bgc_reaction_CENTURY_type
+  end type bgc_reaction_CENTURY_clm3_type
 
   
    type, private :: Extra_type
@@ -76,10 +76,10 @@ implicit none
    type(Extra_type), private :: Extra_inst   
   
   
-  interface bgc_reaction_CENTURY_type
+  interface bgc_reaction_CENTURY_clm3_type
     module procedure constructor
 
-  end interface bgc_reaction_CENTURY_type
+  end interface bgc_reaction_CENTURY_clm3_type
 
 
 contains
@@ -184,10 +184,10 @@ contains
    end subroutine AAssign
    
 !-------------------------------------------------------------------------------
-  type(bgc_reaction_CENTURY_type) function constructor()
+  type(bgc_reaction_CENTURY_clm3_type) function constructor()
   !
   ! ! DESCRIPTION
-  ! create an object of type bgc_reaction_CENTURY_type.
+  ! create an object of type bgc_reaction_CENTURY_clm3_type.
   ! Right now it is purposely left empty
 
   end function constructor
@@ -203,7 +203,7 @@ contains
   use BeTRTracerType              , only : betrtracer_type
   
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_CENTURY_clm3_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds  
   type(BeTRtracer_type )          ,  intent(in) :: betrtracer_vars
   type(tracerboundarycond_type)   ,  intent(in) :: tracerboundarycond_vars
@@ -236,7 +236,7 @@ contains
   use MathfuncMod           , only : addone
   use clm_varctl            , only : cnallocate_carbon_only_set
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_CENTURY_clm3_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0  
   type(BeTRtracer_type )          , intent(inout) :: betrtracer_vars
@@ -444,7 +444,7 @@ contains
   use WaterfluxType         , only : waterflux_type  
 
   
-  class(bgc_reaction_CENTURY_type), intent(in) :: this
+  class(bgc_reaction_CENTURY_clm3_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: num_soilc                 ! number of columns in column filter
   integer                         , intent(in) :: filter_soilc(:)            ! column filter
@@ -518,7 +518,7 @@ contains
   use CNNitrogenFluxType       , only : nitrogenflux_type  
   use CNNitrogenStateType      , only : nitrogenstate_type
   !ARGUMENTS
-  class(bgc_reaction_CENTURY_type)   , intent(in) :: this
+  class(bgc_reaction_CENTURY_clm3_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -713,7 +713,7 @@ contains
   use tracercoeffType       , only : tracercoeff_type
   use BeTRTracerType        , only : betrtracer_type
   
-  class(bgc_reaction_CENTURY_type),    intent(in) :: this
+  class(bgc_reaction_CENTURY_clm3_type),    intent(in) :: this
 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
@@ -741,7 +741,7 @@ contains
   use BeTRTracerType           , only : BeTRTracer_Type
   use ncdio_pio               , only : file_desc_t
   use BGCCenturyParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams, readCentCNAllocParams                                       
-  class(bgc_reaction_CENTURY_type) , intent(in)    :: this  
+  class(bgc_reaction_CENTURY_clm3_type) , intent(in)    :: this  
   type(BeTRTracer_Type)            , intent(inout) :: betrtracer_vars  
   type(file_desc_t)  :: ncid  ! pio netCDF file id
   
@@ -769,7 +769,7 @@ contains
     use clm_varcon               , only : spval, ispval
     
     ! !ARGUMENTS:
-    class(bgc_reaction_CENTURY_type) , intent(in)    :: this    
+    class(bgc_reaction_CENTURY_clm3_type) , intent(in)    :: this    
     type(bounds_type)                 , intent(in)    :: bounds
     type(BeTRTracer_Type)             , intent(in)    :: betrtracer_vars
     type(waterstate_type)             , intent(in)    :: waterstate_vars    
@@ -853,7 +853,7 @@ contains
    
 
     ! !ARGUMENTS:
-    class(bgc_reaction_CENTURY_type) , intent(in)    :: this    
+    class(bgc_reaction_CENTURY_clm3_type) , intent(in)    :: this    
    type(bounds_type)          , intent(in) :: bounds                             ! bounds   
    integer                    , intent(in) :: num_soilc                               ! number of columns in column filter
    integer                    , intent(in) :: filter_soilc(:)                          ! column filter
@@ -885,7 +885,7 @@ contains
   use landunit_varcon          , only : istsoil, istcrop
   
   ! !ARGUMENTS:
-  class(bgc_reaction_CENTURY_type) , intent(in)    :: this     
+  class(bgc_reaction_CENTURY_clm3_type) , intent(in)    :: this     
   type(bounds_type)                  , intent(in) :: bounds
   type(tracerstate_type)             , intent(inout) :: tracerstate_vars
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information  
