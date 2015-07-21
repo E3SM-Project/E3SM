@@ -380,7 +380,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="MPASLI_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLI_SWAV</COMPSET>
 
 <!-- OCN-GLC-only compsets -->
-<COMPSET sname="C_MPAS_NORMAL_YEAR_GLC"   alias="CMPASO-NYF-MPASLI" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_MPASLI_SWAV</COMPSET>
+<COMPSET sname="C_MPAS_NORMAL_YEAR_GLC"   alias="CMPASO-NYF-MPASLI" support_level="Experimental, under development" >2000_DATM%NYF_SLND_SICE_MPASO_SROF_MPASLI_SWAV</COMPSET>
 
 <!-- Stubs/Dead compsets -->
 
