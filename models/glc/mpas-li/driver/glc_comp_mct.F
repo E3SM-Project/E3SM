@@ -78,7 +78,7 @@ module glc_comp_mct
       cpl_diag_global,     &! flag id for computing diagnostics
       cpl_diag_transp       ! flag id for computing diagnostics
 
-  integer  :: nsend, nrecv
+  integer  :: nsend, nrecv, glc_logunit
 
   character(len=StrKIND) :: runtype  !< ACME run type: initial, continue, branch
   character(len=StrKIND) :: coupleTimeStamp
@@ -124,7 +124,7 @@ contains
 !-----------------------------------------------------------------------
 
     integer :: glcID, mpicom_g, lsize, start_ymd, start_tod, start_year, start_day,   &
-       start_month, start_hour, iyear, mpas_li_cpl_dt, shrloglev, shrlogunit, stdout_shr, pio_iotype
+       start_month, start_hour, iyear, mpas_li_cpl_dt, shrloglev, shrlogunit, pio_iotype
 
     type(mct_gsMap), pointer :: gsMap_g
 
@@ -281,30 +281,30 @@ contains
     pio_iotype = shr_pio_getiotype(glcid)
     call MPAS_io_set_iotype(pio_iotype)
 
- stdout_shr = shr_file_getUnit()
+    glc_logunit = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(glc_logunit, file='/dev/null', position='APPEND')
     else
        inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
-          call shr_file_setio('glc_modelio.nml'//trim(inst_suffix),stdout_shr)
+          call shr_file_setio('glc_modelio.nml'//trim(inst_suffix),glc_logunit)
        endif
     end if
 #else
     inquire(file='glc_modelio.nml'//trim(inst_suffix),exist=exists)
     if(exists) then
-       call shr_file_setio('glc_modelio.nml'//trim(inst_suffix),stdout_shr)
+       call shr_file_setio('glc_modelio.nml'//trim(inst_suffix),glc_logunit)
     endif
 #endif
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdout_shr)
+    call shr_file_setLogUnit (glc_logunit)
 
     write(stderrUnit,*) '=== Beginning glc_init_mct.'
 
-    call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
+    call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=glc_logunit, stderrUnit_in=glc_logunit)
 
    write(*,*) 'MPAS-LI stderrunit: ', stderrUnit
 
@@ -739,6 +739,10 @@ contains
       call shr_file_getLogLevel(shrloglev)
       call shr_file_setLogUnit (stdoutUnit)
 
+      ! Reset the MPAS log unit, in case another MPAS component has clobbered them
+      stdoutUnit = glc_logunit
+      stderrUnit = glc_logunit
+
       write(stdoutUnit,*) '=== Beginning glc_run_mct.'
 
       ! Get config options that will be needed
@@ -965,6 +969,10 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (stdoutUnit)
+
+    ! Reset the MPAS log unit, in case another MPAS component has clobbered them
+    stdoutUnit = glc_logunit
+    stderrUnit = glc_logunit
 
     ! Finalize MPAS-LI
     iErr = domain % core % core_finalize(domain)

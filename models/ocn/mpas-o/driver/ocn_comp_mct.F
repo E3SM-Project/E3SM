@@ -85,7 +85,7 @@ module ocn_comp_mct
 
    real (kind=RKIND) :: tlast_coupled
 
-   integer  :: nsend, nrecv
+   integer  :: nsend, nrecv, ocn_logunit
 
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
@@ -131,7 +131,7 @@ contains
     type (domain_type), pointer :: domain_ptr
 
     integer :: OCNID, mpicom_o, lsize, start_ymd, start_tod, start_year, start_day,   &
-       start_month, start_hour, iyear, mpas_o_cpl_dt, shrloglev, shrlogunit, stdout_shr, pio_iotype
+       start_month, start_hour, iyear, mpas_o_cpl_dt, shrloglev, shrlogunit, pio_iotype
 
     type(mct_gsMap), pointer :: gsMap_o
 
@@ -286,31 +286,31 @@ contains
     pio_iotype = shr_pio_getiotype(ocnid)
     call MPAS_io_set_iotype(pio_iotype)
 
-    stdout_shr = shr_file_getUnit()
+    ocn_logunit = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(ocn_logunit, file='/dev/null', position='APPEND')
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
-          call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),stdout_shr)
+          call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),ocn_logunit)
        endif
     end if
 #else
     inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
     if(exists) then
-       call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),stdout_shr)
+       call shr_file_setio('ocn_modelio.nml'//trim(inst_suffix),ocn_logunit)
     endif
 #endif
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (stdout_shr)
+    call shr_file_setLogUnit (ocn_logunit)
 
     domain_ptr => domain
-    call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
+    call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=ocn_logunit, stderrUnit_in=ocn_logunit)
 
-   write(*,*) 'MPAS-O stderrunit: ', stderrUnit
+    write(*,*) 'MPAS-O stderrunit: ', stderrUnit
 
     ! Setup function pointers for MPAS-O core and domain types
     call ocn_setup_core(corelist)
@@ -733,6 +733,10 @@ contains
 
       domain_ptr => domain
 
+      ! Reset MPAS log units, in case another MPAS component clobbered them for the ocean
+      stderrUnit = ocn_logunit
+      stdoutUnit = ocn_logunit
+
       call mpas_pool_get_config(domain_ptr % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       ! Setup log information.
@@ -915,6 +919,10 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (stdoutUnit)
+
+    ! Reset MPAS log units, in case another MPAS component clobbered them for the ocean
+    stderrUnit = ocn_logunit
+    stdoutUnit = ocn_logunit
 
     ! Finalize MPAS-O
     iErr = domain_ptr % core % core_finalize(domain_ptr)
