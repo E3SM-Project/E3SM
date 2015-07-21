@@ -310,6 +310,8 @@ contains
     domain_ptr => domain
     call mpas_framework_init_phase1(domain_ptr % dminfo, mpicom_o, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
+   write(*,*) 'MPAS-O stderrunit: ', stderrUnit
+
     ! Setup function pointers for MPAS-O core and domain types
     call ocn_setup_core(corelist)
     call ocn_setup_domain(domain_ptr)

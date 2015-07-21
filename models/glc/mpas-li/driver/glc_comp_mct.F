@@ -306,6 +306,9 @@ contains
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
+   write(*,*) 'MPAS-LI stderrunit: ', stderrUnit
+
+
     ! Setup function pointers for MPAS-LI core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
@@ -654,6 +657,7 @@ contains
 !
 !----------------------------------------------------------------------------
 
+   write(*,*) '2 MPAS-LI stderrunit: ', stderrUnit
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
 
@@ -666,6 +670,7 @@ contains
 #endif
     call shr_sys_flush(stderrUnit)
 
+   write(*,*) '3 MPAS-LI stderrunit: ', stderrUnit
     call check_clocks_sync(domain % clock, Eclock, stderrUnit, err_tmp)
     ierr = ior(ierr,err_tmp)
 
