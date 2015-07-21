@@ -276,7 +276,7 @@ sub writeXMLFileForCase()
 	
 	my $casexml = XML::LibXML::Document->new("1.0.0");
 	print "machinenode\n";
-	print Dumper $machinenode;
+	#print Dumper $machinenode;
 	my $newmachnode = XML::LibXML::Element->new($machinenode->nodeName);
 	$newmachnode->setAttribute("MACH", $machinenode->getAttribute("MACH"));
 	
@@ -289,15 +289,15 @@ sub writeXMLFileForCase()
 	my @envnodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables");
 	foreach my $enode(@envnodes)
 	{
-		print "env var node: \n";
-		print Dumper $enode;
+		#print "env var node: \n";
+		#print Dumper $enode;
 		$newmachnode->addChild($enode);
 	}
 	my @limitnodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits");
 	foreach my $lnode(@limitnodes)
 	{
-		print "limit node: \n";
-		print Dumper $lnode;
+		#print "limit node: \n";
+		#print Dumper $lnode;
 		$newmachnode->addChild($lnode);
 	}
 
@@ -308,7 +308,7 @@ sub writeXMLFileForCase()
 	$newdom->toFile($filepath, 1) || die "could not write file: ", $self->{caseroot} . ", $?\n";
 }
 
-sub loadModulesForCase()
+sub findModulesForCase()
 {
 	my $self = shift;
 	my $compiler = $self->{compiler};
@@ -328,6 +328,8 @@ sub loadModulesForCase()
 	my @allmodulenodes = $casemoduleparser->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
 
 	my @foundmodules = $self->findModules(\@allmodulenodes);
+	$self->{modulestoload} = \@foundmodules;
+	#print Dumper $self;
 	return @foundmodules; 
 }
 
@@ -394,5 +396,32 @@ sub findModules()
 		}
 	}
 	return @foundmodules;
+}
+
+sub loadModules()
+{
+	my $self = shift;
+	
+	if(! defined $self->{modulestoload})
+	{
+		die "no modules to load, wtf??";
+	}
+	
+	my $modulestoload = $self->{modulestoload};
+	
+	foreach my $mod(@$modulestoload)
+	{
+		print "mod seqnum: $mod->{seqnum}\n";
+		print "mod action: $mod->{action}\n";
+		print "mod actupon: $mod->{actupon}\n";
+		my $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
+		print "running cmd: $cmd\n";
+		eval qx($cmd);
+		if($?)
+		{
+			warn "module cmd $cmd died with $? $!\n";
+		}
+	}
+	#map { print "key: $_, value: $ENV{$_}\n" } sort keys %ENV;
 }
 1;

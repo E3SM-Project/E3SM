@@ -396,6 +396,7 @@ require ProjectTools;
 require UserModsTools;
 require Testing::CESMTest;
 require Testing::TestLists; 
+require Module::ModuleLoader;
 
 
 #-----------------------------------------------------------------------------------------------
@@ -927,13 +928,15 @@ foreach my $file (@files) {
 }
 
 # Create $case.build
-$sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "chmod 755 $caseroot/$case.build";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+#$sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
+#system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+#$sysmod = "chmod 755 $caseroot/$case.build";
+#system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Create $caseroot/Buildconf/cesm_build.pl
-$sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
+# cesm_build.pl can now be $case.build
+#$sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
+$sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "chmod 755 $caseroot/Buildconf/cesm_build.pl";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
@@ -1033,16 +1036,24 @@ foreach my $comp (@comps)  {
 mkpath("$caseroot/SourceMods/src.share"); 
 mkpath("$caseroot/SourceMods/src.drv"); 
 
-# Create machine specific environment file (env_mach_specific)
-if(-e "$machdir/env_mach_specific.$mach" ) {
-    $sysmod = "cp $machdir/env_mach_specific.$mach $caseroot/env_mach_specific";
-}else{
-    $sysmod = "touch $caseroot/env_mach_specific";
-}
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+# ENV_MACH_SPECIFIC
+my $dbug = $cfg_ref->get("DEBUG");
+my $moduleloader = Module::ModuleLoader->new(machine => $mach, compiler => $compiler, mpilib => $mpilib, 
+                                             debug => $dbug, case => $case, caseroot => $caseroot, cimeroot => $cimeroot);
+$moduleloader->moduleInit();
+$moduleloader->writeXMLFileForCase();
 
-$sysmod = "chmod 755 $caseroot/env_mach_specific";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+# Create machine specific environment file (env_mach_specific)
+#if(-e "$machdir/env_mach_specific.$mach" ) {
+#    $sysmod = "cp $machdir/env_mach_specific.$mach $caseroot/env_mach_specific";
+#}else{
+#    $sysmod = "touch $caseroot/env_mach_specific";
+#}
+#system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+#
+#$sysmod = "chmod 755 $caseroot/env_mach_specific";
+#system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Copy Depends files if they exist
 if( -e "$machdir/Depends.$mach" ) {

@@ -112,11 +112,13 @@ sub doPreRunChecks()
 	
 	# Now, load the module environment... 
 	# ModuleLoader for module-based systems.  
-	
 	my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
-	                                    mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'}, 
-	                                    scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
-	$moduleloader->loadModules();
+                                        mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'},
+                                        scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'}, cimeroot => $config{'CIMEROOT'});
+    $moduleloader->moduleInit();
+    $moduleloader->findModulesForCase();
+    $moduleloader->loadModules();
+
 	
     my $mpilib = $buildenv->getresolved('MPILIB');
     if($mpilib =~ /mpi-serial/)

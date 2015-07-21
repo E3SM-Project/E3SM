@@ -10,7 +10,7 @@ use File::Copy;
 use File::Spec;
 use File::Basename;
 use Data::Dumper;
-use Cwd;
+use Cwd qw(abs_path);
 use POSIX qw(strftime);
 
 use English;
@@ -59,10 +59,12 @@ my $banner = "------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------
 sub main {
 
-    if ($#ARGV == -1) {
-	die " ERROR: must specify a caseroot input argument";
-    }
-    ($CASEROOT) = @ARGV;
+    #if ($#ARGV == -1) {
+	#die " ERROR: must specify a caseroot input argument";
+    #}
+    #($CASEROOT) = @ARGV;
+	$CASEROOT = abs_path(".");
+	print "CASEROOT: $CASEROOT\n";
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 
@@ -147,6 +149,14 @@ sub main {
     my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
     $ENV{USE_TRILINOS} = ${use_trilinos};
     $ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
+	my $perl5libdir = "$CIMEROOT/utils/perl5lib";
+	push(@INC, $perl5libdir);
+	require Module::ModuleLoader;
+	my $moduleloader = Module::ModuleLoader->new(machine => $MACH, compiler => $COMPILER, mpilib => $MPILIB, debug => $DEBUG, 
+                                                 case => $CASE, caseroot => $CASEROOT, cimeroot => $CIMEROOT);
+    $moduleloader->moduleInit();
+	$moduleloader->findModulesForCase();
+	$moduleloader->loadModules();
 
     print "    .... checking namelists (calling ./preview_namelists) \n";
     $sysmod = "./preview_namelists > /dev/null";

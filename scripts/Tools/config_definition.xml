@@ -2996,7 +2996,37 @@
 	 value="UNSET"
 	 group="config_batch"
 	 sdesc="The module command path for module system defined for this machine"
-	 ></entry>
+	 ></entry> 
+
+  <entry id="environment_variables"
+     type="char"
+     valid_values=""
+     value="UNSET"
+     group="config_batch"
+     sdesc="The environment variables that will be loaded for this machine"
+  ></entry>
+
+  <entry id="env"
+     type="char"
+     valid_values=""
+     value="UNSET"
+     group="config_batch"
+     sdesc="The individual environment variable entry for config_machines"
+  ></entry>
+  <entry id="limits"
+     type="char"
+     valid_values=""
+     value="UNSET"
+     group="config_batch"
+     sdesc="The limits tag"
+  ></entry>
+  <entry id="limit"
+     type="char"
+     valid_values=""
+     value="UNSET"
+     group="config_batch"
+     sdesc="The individual limit variable"
+  ></entry>
   
   <!-- ======================================================================= -->
   <!-- env_run.xml - drv namelist                                              -->

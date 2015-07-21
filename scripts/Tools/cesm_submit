@@ -35,7 +35,9 @@ sub main
 	
 	my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
                                             mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'},
-                                            scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
+                                            scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'}, cimeroot => $cimeroot);
+	$moduleloader->moduleInit();
+	$moduleloader->findModulesForCase();
     $moduleloader->loadModules();
 
 	#my $batchutils = new Batch::BatchUtils(machine => $machine, machroot => $machroot, caseconfig => \%config);
