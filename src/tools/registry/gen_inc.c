@@ -1233,7 +1233,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			fortprintf(fd, "      if (associated(newSubPool)) then\n");
 			fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
 			fortprintf(fd, "      end if\n");
-			fortprintf(fd, "      if (index_counter > 0) then\n", spacing);
+			fortprintf(fd, "      if (const_index > 0) then\n", spacing);
 			fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
 			fortprintf(fd, "      end if\n", spacing);
 		}
@@ -1282,6 +1282,36 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% recvList)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% copyList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% attLists(size(%s(%d) %% constituentNames, dim=1)))\n", pointer_name, time_lev, pointer_name, time_lev);
+
+		for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
+			varname = ezxml_attr(var_xml, "name");
+			varname_in_code = ezxml_attr(var_xml, "name_in_code");
+			vardesc = ezxml_attr(var_xml, "description");
+			varunits = ezxml_attr(var_xml, "units");
+
+			if ( vardesc != NULL || varunits != NULL) {
+				if(!varname_in_code){
+					varname_in_code = ezxml_attr(var_xml, "name");
+				}
+
+				fortprintf(fd, "      if (associated(newSubPool)) then\n");
+				fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
+				fortprintf(fd, "      end if\n");
+				fortprintf(fd, "      if (const_index > 0) then\n", spacing);
+				if ( vardesc != NULL ) {
+					fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
+				}
+
+				if ( varunits != NULL ) {
+					fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
+				}
+				fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
+				fortprintf(fd, "      end if\n", spacing);
+			}
+		}
+
+
 		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
 	}
 
@@ -1358,6 +1388,8 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	vardefaultval = ezxml_attr(var_xml, "default_value");
 	vartimelevs = ezxml_attr(var_xml, "time_levs");
 	varname_in_code = ezxml_attr(var_xml, "name_in_code");
+	varunits = ezxml_attr(var_xml, "units");
+	vardesc = ezxml_attr(var_xml, "description");
 
 	if(!varname_in_code){
 		varname_in_code = ezxml_attr(var_xml, "name");
@@ -1448,7 +1480,18 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, "      nullify(%s(%d) %% sendList)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% recvList)\n", pointer_name, time_lev);
 		fortprintf(fd, "      nullify(%s(%d) %% copyList)\n", pointer_name, time_lev);
+		fortprintf(fd, "      allocate(%s(%d) %% attLists(1))\n", pointer_name, time_lev);
+
+		if ( varunits != NULL ) {
+			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
+		}
+
+		if ( vardesc != NULL ) {
+			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
+		}
+
 		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
+
 	}
 
 	// Parse packages if they are defined

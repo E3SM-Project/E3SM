@@ -7,6 +7,7 @@
 !
 module init_atm_core_interface
 
+   use mpas_attlist
 
    contains
 
