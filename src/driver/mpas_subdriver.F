@@ -280,7 +280,8 @@ module mpas_subdriver
       !
       ! Set up run-time streams
       !
-      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % clock, domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
+      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % ioContext, domain_ptr % clock, &
+                                domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
 
       call add_stream_attributes(domain_ptr)
 

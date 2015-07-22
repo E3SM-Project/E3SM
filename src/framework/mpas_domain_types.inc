@@ -6,6 +6,7 @@
       type (MPAS_Clock_type), pointer :: clock
       type (MPAS_streamManager_type), pointer :: streamManager
       type (mpas_decomp_list), pointer :: decompositions => null()
+      type (mpas_io_context_type), pointer :: ioContext => null()
 
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo

@@ -68,6 +68,7 @@
       type (fieldlist_type), pointer :: fieldlist_tail => null()
       type (attlist_type), pointer :: attlist_head => null()
       type (attlist_type), pointer :: attlist_tail => null()
+      type (mpas_io_context_type), pointer :: ioContext => null()
    end type MPAS_IO_Handle_type
 
    type decomphandle_type
@@ -128,3 +129,9 @@
       type (fieldlist_type), pointer :: next => null()
    end type fieldlist_type
 
+   type mpas_io_context_type
+      type (decomplist_type), pointer :: decomp_list => null()
+      type (iosystem_desc_t), pointer :: pio_iosystem => null()
+      integer :: master_pio_iotype = -999
+      type (dm_info), pointer :: dminfo => null()
+   end type mpas_io_context_type
