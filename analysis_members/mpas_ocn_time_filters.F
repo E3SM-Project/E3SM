@@ -27,6 +27,9 @@ module ocn_time_filters
 
    use ocn_constants
    use ocn_diagnostics_routines
+#ifdef MPAS_DEBUG
+   use mpas_constants
+#endif
 
    implicit none
    private
@@ -54,6 +57,10 @@ module ocn_time_filters
    ! Private module variables
    !
    !--------------------------------------------------------------------
+#ifdef MPAS_DEBUG
+   integer :: iEdgeOutput = 0, iBlockOutput = 0, iklevel = 1
+   real (kind=RKIND) :: lonEdgePoint = (360.0_RKIND-7.5_RKIND)*pii/180.0_RKIND, latEdgePoint = 32.5_RKIND*pii/180.0_RKIND
+#endif
 
 !***********************************************************************
 
@@ -107,6 +114,13 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass
       logical, pointer :: config_AM_timeFilters_do_restart
 
+#ifdef MPAS_DEBUG
+      real (kind=RKIND), dimension(:), pointer :: lonEdge, latEdge
+      real (kind=RKIND) :: dist, distmax = 1e9
+      integer :: i, iBlock
+      integer, pointer :: nEdgesSolve
+#endif
+
       err = 0
 
       ! read in data on restart
@@ -142,6 +156,40 @@ contains
         end do
 
       end if
+
+#ifdef MPAS_DEBUG
+      ! get index for edge nearest to a location
+      block => domain % blocklist
+      iBlock = 0
+      do while (associated(block))
+        iBlock = iBlock + 1
+        call mpas_pool_get_subpool(block % structs, 'mesh', statePool)
+        call mpas_pool_get_array(statePool, 'latEdge', latEdge)
+        call mpas_pool_get_array(statePool, 'lonEdge', lonEdge)
+        call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
+
+        do i=1,nEdgesSolve
+          dist = sqrt((latEdge(i) - latEdgePoint)**2 + (lonEdge(i) - lonEdgePoint)**2)
+          if (dist < distmax) then
+            distmax = dist
+            iEdgeOutput = i
+            iBlockOutput = iBlock
+          end if
+        end do
+
+        block => block % next
+      end do
+
+      block => domain % blocklist
+      ! get the right block number
+      do i=1,iBlockOutput-1
+        block => block % next
+      end do
+      call mpas_pool_get_subpool(block % structs, 'mesh', statePool)
+      call mpas_pool_get_array(statePool, 'latEdge', latEdge)
+      call mpas_pool_get_array(statePool, 'lonEdge', lonEdge)
+      write(stderrUnit,*) 'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), ' iklevel=',iklevel
+#endif
 
 #ifdef MPAS_DEBUG
         write(stderrUnit,*) 'finished initializing time filters'
@@ -210,6 +258,9 @@ contains
       type (MPAS_timeInterval_type) :: timeStepESMF
       character(len=StrKIND), pointer :: config_dt
       real (kind=RKIND) :: dt, tau
+#ifdef MPAS_DEBUG
+      integer :: iBlock
+#endif
 
       err = 0
 
@@ -229,11 +280,17 @@ contains
       call mpas_get_timeInterval(timeStepESMF, dt=tau)
 
 #ifdef MPAS_DEBUG
-          write(stderrUnit,*) 'dt = ', dt, ' tau = ', tau
+          !write(stderrUnit,*) 'dt = ', dt, ' tau = ', tau
 #endif
 
       block => domain % blocklist
+#ifdef MPAS_DEBUG
+      iBlock = 0
+#endif
       do while (associated(block))
+#ifdef MPAS_DEBUG
+         iBlock = iBlock + 1
+#endif
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
@@ -259,6 +316,11 @@ contains
               ! normalVelocityTest line can possibly be removed (needed for testing purposes)
               normalVelocityTest(k,iEdge) = normalVelocity(k,iEdge)
             end do
+#ifdef MPAS_DEBUG
+            if (iEdge == iEdgeOutput .and. iBlock == iBlockOutput) then
+                write(stderrUnit,*) 'vl=', normalVelocityLowPass(iklevel, iEdge), ' v=', normalVelocity(iklevel, iEdge)
+            end if
+#endif
          end do
 
          block => block % next
