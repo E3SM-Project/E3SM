@@ -320,7 +320,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         history_amwg_out, history_vdiag_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     & !BSINGH - bugfix for ndrop.F90
+                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     &
                         ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out,   &
                         liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      &

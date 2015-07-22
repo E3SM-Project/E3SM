@@ -219,6 +219,10 @@ contains
     str = get_filename(map_fsoicol)
     call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
          'map_soil_color_file', len_trim(str), trim(str)), subname)
+  
+     str = get_filename(map_fsoiord)
+    call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
+         'map_soil_order_file', len_trim(str), trim(str)), subname)
 
     str = get_filename(map_forganic)
     call check_ret(nf_put_att_text(ncid, NF_GLOBAL, &
