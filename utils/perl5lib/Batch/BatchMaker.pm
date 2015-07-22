@@ -444,13 +444,16 @@ sub setQueue()
 	# we die. 
 	# TODO find a better method of alerting the user that there is no default queue defined for this machine.   
 	my @defaultqueue = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue[\@default=\'true\']");
+	print Dumper \@defaultqueue;
 
-	die "Cannot set queue for this machine! No default queue defined" if (! @defaultqueue);
+	#die "Cannot set queue for this machine! No default queue defined" if (! @defaultqueue);
 	
-	# set the default queue. 
-	my $defelement = $defaultqueue[0];
-
-	$self->{'queue'} = $defelement->textContent();
+	# set the default queue if we've found one. 
+	if(@defaultqueue)
+	{
+		my $defelement = $defaultqueue[0];
+		$self->{'queue'} = $defelement->textContent();
+	}
 
 	
 	# We already have a default queue at this point, but if there is a queue that our job's node count

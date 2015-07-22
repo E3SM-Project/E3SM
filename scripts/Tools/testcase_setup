@@ -170,7 +170,7 @@ my $testcase_interp = <<END_INTERP;
 
     setenv CASEROOT  $caseroot
 
-    source env_mach_specific
+    source .env_mach_specific.csh
 
     # valid test output states are:  
     #   PASS      Test passed

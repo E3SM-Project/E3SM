@@ -129,7 +129,7 @@
            </arguments>
          </mpirun>
          <module_system type="module">
-           <init_path>/usr/share/Modules/init/perl.pm</init_path>
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
            <cmd_path>/usr/bin/modulecmd perl</cmd_path>
            <modules>
              <unload>intel</unload>
@@ -207,7 +207,7 @@
            </arguments>
          </mpirun>
          <module_system type="module">
-           <init_path>/usr/share/Modules/init/perl.pm</init_path>
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
            <cmd_path>/usr/bin/modulecmd perl</cmd_path>
            <modules>
              <unload>intel</unload>
@@ -288,7 +288,7 @@
              </arguments>
          </mpirun>
          <module_system type="module">
-           <init_path>/opt/modules/default/init/perl.pm</init_path>
+           <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
            <cmd_path>/opt/modules/3.2.10.3/bin/modulecmd perl</cmd_path>
            <modules>
              <rm>PrgEnv-pgi</rm>
@@ -371,7 +371,7 @@
            <executable></executable>
          </mpirun>
          <module_system type="module">
-           <init_path>/etc/profile.d/modules.perl</init_path>
+           <init_path lang="perl">/etc/profile.d/modules.perl</init_path>
            <!-- This is a guess!! -->
            <cmd_path>/usr/bin/modulecmd perl</cmd_path>
          </module_system>
@@ -632,8 +632,13 @@
          </mpirun>
          <!-- all commands in the module_system elements will be executed sequentially... -->
          <module_system type="module">
-           <init_path >/usr/share/Modules/init/perl.pm</init_path> 
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path> 
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path> 
+           <init_path lang="bash">/usr/share/Modules/init/bash</init_path> 
            <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <modules>
+             <purge></purge>
+           </modules>
            <modules compiler="intel">
              <load>compiler/intel/14.0.2</load>
            </modules>
@@ -649,11 +654,11 @@
          </module_system>
          <environment_variables>
            <env name="P4_GLOBMEMSIZE">500000000</env>
-           <env name="NETCDF_DIR">NETCDF_PATH</env>
+           <env name="NETCDF_DIR">$NETCDF_PATH</env>
          </environment_variables>
          <limits>
-           <limit type="stacksize">unlimited</limit>
-           <limit type="coredumpsize">unlimited</limit>
+           <limit name="stacksize">unlimited</limit>
+           <limit name="coredumpsize">unlimited</limit>
          </limits>
 </machine>
 <machine MACH="logan">
@@ -1237,7 +1242,7 @@
         <executable>mpirun.lsf </executable>
       </mpirun>
       <module_system type="module">
-      <init_path>/glade/apps/opt/lmod/lmod/init/perl</init_path>
+      <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>
       <cmd_path>/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
       <modules>
 	    <purge></purge>

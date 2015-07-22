@@ -1,8 +1,13 @@
 <?xml version="1.0"?>
 <machine MACH="goldbach">
   <module_system type="module">
-    <init_path>/usr/share/Modules/init/perl.pm</init_path>
+    <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+    <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+    <init_path lang="bash">/usr/share/Modules/init/bash</init_path>
     <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+    <modules>
+      <purge/>
+    </modules>
     <modules compiler="intel">
       <load>compiler/intel/14.0.2</load>
     </modules>
@@ -18,10 +23,10 @@
   </module_system>
   <environment_variables>
     <env name="P4_GLOBMEMSIZE">500000000</env>
-    <env name="NETCDF_DIR">NETCDF_PATH</env>
+    <env name="NETCDF_DIR">$NETCDF_PATH</env>
   </environment_variables>
   <limits>
-    <limit type="stacksize">unlimited</limit>
-    <limit type="coredumpsize">unlimited</limit>
+    <limit name="stacksize">unlimited</limit>
+    <limit name="coredumpsize">unlimited</limit>
   </limits>
 </machine>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <machine MACH="yellowstone">
   <module_system type="module">
-    <init_path>/glade/apps/opt/lmod/lmod/init/perl</init_path>
+    <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>
     <cmd_path>/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
     <modules>
       <purge/>

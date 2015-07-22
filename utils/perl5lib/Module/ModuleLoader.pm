@@ -106,7 +106,6 @@ sub loadModulesCshEval()
 			$output[$i] = '';
 		}
 	}
-	#print Dumper \@output;
 	foreach my $line(@output)
 	{
 		if(length($line) > 0)
@@ -163,7 +162,7 @@ sub moduleInit()
 	# Get the init_path.  Module systems usually have an 'init' script for 
 	# various scripting languages, we need to get this path from config_machines
 	
-	my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path");
+	my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");
 	foreach my $initnode(@initnodes)
 	{
 		$self->{initpath} = $initnode->textContent();
@@ -198,10 +197,6 @@ sub findModulesFromMachinesDir()
 	my $debug = $self->{debug};
 
 	my $cmroot = $self->{configmachinesroot};
-	#my @modulenodes = $cmroot->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules[not(\@\*) or \@compiler=\'$compiler\' or \@mpilib=\'$mpilib\' or \@debug=\'$debug\']");
-    #my @modulenodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules[\@compiler=\'$compiler\' or \@mpilib=\'$mpilib\' or \@debug=\'$debug\']/module");
-    #my @modulenodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules[\@compiler=\'$compiler\']");
-	#print Dumper \@modulenodes;
 	my @modulenodes; 
 	my $seqnum = 1;
 	my @allmodulenodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules");
@@ -257,7 +252,6 @@ sub findModulesFromMachinesDir()
 		}
 	}
 	$self->{modulestoload} = \@modulenodes;
-	#print Dumper $self;
 	return @modulenodes;
 }
 
@@ -276,7 +270,6 @@ sub writeXMLFileForCase()
 	
 	my $casexml = XML::LibXML::Document->new("1.0.0");
 	print "machinenode\n";
-	#print Dumper $machinenode;
 	my $newmachnode = XML::LibXML::Element->new($machinenode->nodeName);
 	$newmachnode->setAttribute("MACH", $machinenode->getAttribute("MACH"));
 	
@@ -289,15 +282,11 @@ sub writeXMLFileForCase()
 	my @envnodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables");
 	foreach my $enode(@envnodes)
 	{
-		#print "env var node: \n";
-		#print Dumper $enode;
 		$newmachnode->addChild($enode);
 	}
 	my @limitnodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits");
 	foreach my $lnode(@limitnodes)
 	{
-		#print "limit node: \n";
-		#print Dumper $lnode;
 		$newmachnode->addChild($lnode);
 	}
 
@@ -423,5 +412,218 @@ sub loadModules()
 		}
 	}
 	#map { print "key: $_, value: $ENV{$_}\n" } sort keys %ENV;
+	$self->writeCshModuleFile();
+	$self->writeBashModuleFile();
+}
+
+sub getEnvironmentVars()
+{
+	my $self = shift;
+    #my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/environment_variables/env");
+	#
+	#foreach my $enode(@envnodes)
+	#{
+	#	my $type = $enode->getAttribute('name');
+	#	my $value = $enode->getValue();
+	#}
+}
+
+sub getLimits()
+{
+	my $self = shift;
+}
+
+sub writeCshModuleFile()
+{
+	my $self = shift;
+	my $machine = $self->{machine};
+	
+	#my $xml = $self->{configmachinesroot};
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    my $xml = $parser->parse_file($self->{'configmachinesfile'});
+	
+       #my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");	
+	my @cshinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'csh\']");
+	print Dumper $xml;
+	print Dumper \@cshinitnodes;
+	
+	die "no csh init path defined for this machine!" if !@cshinitnodes;
+	foreach my $node(@cshinitnodes)
+	{
+		$self->{cshinitpath} = $node->textContent();
+	}
+	
+	
+
+my $csh =<<"START";
+#!/usr/bin/env csh -f 
+#===============================================================================
+# Automatically generated module settings for $self->{machine}
+#===============================================================================
+
+source $self->{cshinitpath}
+START
+	
+	my @allmodules = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules");
+	
+	foreach my $mod(@allmodules)
+	{
+		if(!$mod->hasAttributes())
+		{
+			my @modchildren = $mod->getChildNodes();
+			foreach my $child(@modchildren)
+			{
+				my $action = $child->getName();
+				my $actupon = $child->textContent();
+				$csh .= "module $action $actupon\n";
+			}
+		}
+		else
+		{
+			my @attrs = $mod->attributes;
+	
+			$csh .= "if ( ";
+			while(@attrs)
+			{
+				my $attr = shift @attrs;
+				my $name = uc($attr->getName());
+				my $value = $attr->getValue();
+				$csh .= "\$$name == \"$value\"";
+				$csh .= " && " if(@attrs);
+			}
+			$csh .= " ) then\n";
+
+			my @modchildren = $mod->getChildNodes();
+			foreach my $child(@modchildren)
+			{
+				
+				my $action = $child->getName();
+				my $actupon = $child->textContent();
+				$csh .= "\tmodule $action $actupon\n";
+			}
+			$csh .= "endif\n";
+		}
+	}
+	
+	my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables/env");
+    foreach my $enode(@envnodes)
+    {
+        my $name = $enode->getAttribute('name');
+        my $value = $enode->textContent();
+		$csh .= "setenv $name $value\n";
+    }
+
+	my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits/limit");
+	foreach my $lnode(@limitnodes)
+	{
+		my $name = $lnode->getAttribute('name');
+		my $value = $lnode->textContent();
+		$csh .= "limit $name $value\n";
+	}
+	
+	open my $CSHFILE, ">", "$self->{caseroot}/.env_mach_specific.csh" || die " coult not open test.csh, $!";
+	print $CSHFILE $csh;
+	close $CSHFILE;
+}
+
+sub writeBashModuleFile()
+{
+    my $self = shift;
+	my %cshtobash = ( "cputime" => "-t", 
+                      "filesize" => "-f",
+                      "datasize" => "-d", 
+                      "stacksize" => "-s", 
+                      "coredumpsize" => "-c", 
+                      "memoryuse" => "-m", 
+                      "vmemoryuse" => "-v",
+                      "descriptors" => "-n", 
+                      "memorylocked" => "-l",
+                      "maxproc" => "-u" );
+    my $machine = $self->{machine};
+
+    #my $xml = $self->{configmachinesroot};
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    my $xml = $parser->parse_file($self->{'configmachinesfile'});
+
+    my @bashinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'bash\']");
+
+    die "no bash init path defined for this machine!" if !@bashinitnodes;
+    foreach my $node(@bashinitnodes)
+    {
+        $self->{bashinitpath} = $node->textContent();
+    }
+
+    my $bash =<<"START";
+#!/usr/bin/env bash -f 
+#===============================================================================
+# Automatically generated module settings for $self->{machine}
+#===============================================================================
+
+.  $self->{bashinitpath}
+START
+
+	my @allmodules = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules");
+	
+	foreach my $mod(@allmodules)
+	{
+		if(! $mod->hasAttributes())
+		{
+			my @modchildren = $mod->getChildNodes();
+			foreach my $child(@modchildren)
+			{
+				my $action = $child->getName();
+				my $actupon = $child->textContent();
+				$bash .= "module $action $actupon \n";
+			}
+		}
+		else
+		{
+			my @attrs = $mod->attributes;
+			
+			$bash .= "if [ ";
+			while(@attrs)
+			{
+				my $attr = shift @attrs;
+				my $name = uc($attr->getName());
+				my $value = $attr->getValue();
+				$bash .= "\"\$$name\" = \"$value\"";
+				$bash .= "] && [ " if (@attrs);
+			}
+			$bash .= " ]\n";
+			$bash .= "then\n";
+	
+			my @modchildren = $mod->getChildNodes();
+			foreach my $child(@modchildren)
+			{
+                my $action = $child->getName();
+				my $actupon = $child->textContent();
+				$bash .= "\tmodule $action $actupon\n";
+			}
+			$bash .= "fi\n";
+		}
+	}
+
+
+    my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables/env");
+    foreach my $enode(@envnodes)
+    {
+        my $name = $enode->getAttribute('name');
+        my $value = $enode->textContent();
+        $bash .= "export $name=$value\n";
+    }
+
+    my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits/limit");
+    foreach my $lnode(@limitnodes)
+    {
+        my $name = $lnode->getAttribute('name');
+        my $value = $lnode->textContent();
+		print Dumper \%cshtobash;
+		my $bashname = $cshtobash{$name};
+        $bash .= "ulimit $bashname $value\n";
+    }
+
+	open my $BASHFILE, ">", "$self->{caseroot}/.env_mach_specific.bash" || die "could not open .env_mach_specific.bash, $!";
+	print $BASHFILE $bash;
+	close $BASHFILE;
 }
 1;

@@ -96,6 +96,12 @@
      </directives>
    </batch_system>
 
+   <batch_system MACH="goldbach">
+   <directives>
+     <directive>-q {{ fake_queue }}</directive>
+   </directives>
+   </batch_system>
+
     <!-- edison is PBS -->
     <batch_system MACH="edison" version="x.y">
       <directives>
