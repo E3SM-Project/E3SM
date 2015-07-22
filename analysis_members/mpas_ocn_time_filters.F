@@ -105,8 +105,15 @@ contains
       logical, pointer :: initializeFilters
       type (mpas_pool_type), pointer :: timeFiltersAMPool, statePool
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass
+      logical, pointer :: config_AM_timeFilters_do_restart
 
       err = 0
+
+      ! read in data on restart
+      call mpas_pool_get_config(domain % configs, 'config_AM_timeFilters_do_restart', config_AM_timeFilters_do_restart)
+      if ( config_AM_timeFilters_do_restart ) then
+        call MPAS_stream_mgr_read(domain % streamManager, streamID='timeFiltersRestart', ierr=err)
+      end if
 
       call mpas_pool_get_config(ocnConfigs, 'config_AM_timeFilters_initialize_filters', initializeFilters)
       if (initializeFilters) then
