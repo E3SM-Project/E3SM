@@ -25,6 +25,7 @@ module mpas_framework
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
+   use mpas_block_decomp
 
 
    contains
@@ -131,6 +132,8 @@ module mpas_framework
       call mpas_deallocate_domain(domain)
 
       call mpas_dmpar_finalize(dminfo)
+
+      call mpas_finish_block_proc_list(dminfo)
 
       call mpas_timekeeping_finalize()
 
