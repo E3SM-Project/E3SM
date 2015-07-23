@@ -211,7 +211,7 @@ sub submitSingleJob()
 	print "Submitting CESM job script $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
-    
+	print "RUNCMD: $runcmd\n";    
 	my $output;
 
 	eval {
@@ -598,6 +598,7 @@ sub submitSingleJob()
     
     print "Submitting CESM job script $scriptname\n";
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
+    print "Runcmd: $runcmd\n";
     
     my $output;
     
