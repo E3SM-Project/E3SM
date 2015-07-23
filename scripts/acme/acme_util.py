@@ -94,7 +94,8 @@ MACHINE_INFO = {
         True,
         "HiRes_EarthSys",
         "/projects/<PROJECT>/<USER>",
-        "/projects/ccsm/ccsm_baselines"
+        "/projects/ccsm/ccsm_baselines",
+        None
     ),
     "cetus"     : (
         "ibm",
@@ -102,7 +103,8 @@ MACHINE_INFO = {
         True,
         "HiRes_EarthSys",
         "/projects/<PROJECT>/<USER>",
-        "/projects/ccsm/ccsm_baselines"
+        "/projects/ccsm/ccsm_baselines",
+        None
     ),
 }
 
