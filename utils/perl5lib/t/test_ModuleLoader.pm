@@ -221,7 +221,7 @@ sub test_writeXMLFileForCase_goldbach() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $actual;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findModulesForCase_goldbach() : Test(1):
@@ -265,6 +265,19 @@ sub test_writeCshModuleFile_goldbach() : Test(1):
     $moduleloader->writeXMLFileForCase();
     $moduleloader->findModulesForCase();
 	$moduleloader->writeCshModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.goldbach.csh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    #my $expected = <$EXPECTED>;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.csh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    unlink $actualfile;
 }
 
 sub test_writeBashModuleFile_goldbach() : Test(1):
@@ -278,6 +291,19 @@ sub test_writeBashModuleFile_goldbach() : Test(1):
     $moduleloader->writeXMLFileForCase();
     $moduleloader->findModulesForCase();
     $moduleloader->writeBashModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.goldbach.bash";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    #my $expected = <$EXPECTED>;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.bash";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    unlink $actualfile;
 }
 
 sub test_moduleInit_yellowstone() : Test(2)
@@ -391,7 +417,7 @@ sub test_writeXMLFileForCase_yellowstone() : Test(3):
 	my $actual = do { local $/; <$ACTUAL> } ;
 	close $actual;
 	cmp_ok($actual,  'eq',  $expected);
-	#unlink $actualfile; 
+	unlink $actualfile; 
 }
 
 sub test_findModulesForCase_yellowstone() : Test(1):

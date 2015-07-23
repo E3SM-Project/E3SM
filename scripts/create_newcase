@@ -938,7 +938,7 @@ foreach my $file (@files) {
 #$sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
 $sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "chmod 755 $caseroot/Buildconf/cesm_build.pl";
+$sysmod = "chmod 755 $caseroot/$case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Create $case.clean_build

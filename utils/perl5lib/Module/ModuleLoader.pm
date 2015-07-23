@@ -86,7 +86,6 @@ sub loadModulesCshEval()
 	#eval { $out = `$cmd`;};
 	#$out = `$cmd`;
 	chomp @output;
-	#print Dumper \@output;
 	if($?)
 	{
 		die "could not load modules for machine $self->{'machine'}";
@@ -269,7 +268,6 @@ sub writeXMLFileForCase()
 	my $machinenode = $machinenodes[0];
 	
 	my $casexml = XML::LibXML::Document->new("1.0.0");
-	print "machinenode\n";
 	my $newmachnode = XML::LibXML::Element->new($machinenode->nodeName);
 	$newmachnode->setAttribute("MACH", $machinenode->getAttribute("MACH"));
 	
@@ -318,7 +316,6 @@ sub findModulesForCase()
 
 	my @foundmodules = $self->findModules(\@allmodulenodes);
 	$self->{modulestoload} = \@foundmodules;
-	#print Dumper $self;
 	return @foundmodules; 
 }
 
@@ -444,8 +441,6 @@ sub writeCshModuleFile()
 	
        #my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");	
 	my @cshinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'csh\']");
-	print Dumper $xml;
-	print Dumper \@cshinitnodes;
 	
 	die "no csh init path defined for this machine!" if !@cshinitnodes;
 	foreach my $node(@cshinitnodes)
@@ -464,7 +459,12 @@ my $csh =<<"START";
 source $self->{cshinitpath}
 START
 	
-	my @allmodules = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules");
+	if(! -e "$self->{caseroot}/mach_specific.xml")
+	{
+		$self->writeXmlFileForCase();
+	}
+	my $casexml = $parser->parse_file("$self->{caseroot}/mach_specific.xml");
+	my @allmodules = $casexml->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
 	
 	foreach my $mod(@allmodules)
 	{
@@ -617,7 +617,6 @@ START
     {
         my $name = $lnode->getAttribute('name');
         my $value = $lnode->textContent();
-		print Dumper \%cshtobash;
 		my $bashname = $cshtobash{$name};
         $bash .= "ulimit $bashname $value\n";
     }
