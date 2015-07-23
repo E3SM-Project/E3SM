@@ -127,7 +127,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                "You did not specify a machine name and one could not be probed")
 
     compiler, _, use_batch, project, testroot, baseline_root, _ = \
-        acme_util.get_machine_info(args.machine)
+        acme_util.get_machine_info(args.machine, project=args.project)
 
     if (args.compiler is None):
         args.compiler = compiler
@@ -197,7 +197,7 @@ def create_test(testargs, compiler, machine, no_run=False, no_build=False, no_ba
 
     create_test_cmd = "./create_test -input_list %s -mach %s" % (testlist_file, machine)
     if (no_run):
-        expect(False, "--no-run not currently supported")
+        create_test_cmd = "%s -autosubmit off" % create_test_cmd
     if (no_build):
         create_test_cmd = "%s -nobuild on" % create_test_cmd
     if (test_root):
