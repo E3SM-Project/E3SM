@@ -453,6 +453,57 @@ sub test_findModulesForCase_yellowstone() : Test(1):
     is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules);
 }
 
+sub test_writeCshModuleFile_yellowstone() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeCshModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.yellowstone.csh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.csh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    unlink $actualfile;
+}
+
+sub test_writeBashModuleFile_yellowstone() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeBashModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.yellowstone.bash";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    #my $expected = <$EXPECTED>;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.bash";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    unlink $actualfile;
+}
+
 #sub test_loadModules_yellowstone()  : Test(1):
 #{
 #    my $self = shift;

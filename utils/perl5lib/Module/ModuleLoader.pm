@@ -522,6 +522,7 @@ START
 	}
 	
 	open my $CSHFILE, ">", "$self->{caseroot}/.env_mach_specific.csh" || die " coult not open test.csh, $!";
+	print "writing csh file $self->{caseroot}/.env_mach_specific.csh\n";
 	print $CSHFILE $csh;
 	close $CSHFILE;
 }
@@ -587,7 +588,7 @@ START
 				my $name = uc($attr->getName());
 				my $value = $attr->getValue();
 				$bash .= "\"\$$name\" = \"$value\"";
-				$bash .= "] && [ " if (@attrs);
+				$bash .= " ] && [ " if (@attrs);
 			}
 			$bash .= " ]\n";
 			$bash .= "then\n";
