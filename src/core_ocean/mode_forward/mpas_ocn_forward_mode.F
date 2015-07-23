@@ -456,6 +456,7 @@ module ocn_forward_mode
          end do
 
          call ocn_analysis_compute(domain, err) 
+         call ocn_analysis_restart(domain, err) 
          call ocn_analysis_write(domain, err)
 
          call mpas_timer_start('io_write', .false.)
