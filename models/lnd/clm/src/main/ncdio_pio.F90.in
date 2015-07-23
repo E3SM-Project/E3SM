@@ -210,20 +210,46 @@ contains
   end subroutine ncd_pio_closefile
 
   !-----------------------------------------------------------------------
-  subroutine ncd_pio_createfile(file, fname)
+  subroutine ncd_pio_createfile(file, fname, avoid_pnetcdf)
     !
     ! !DESCRIPTION:
     ! Create a new NetCDF file with PIO
     !
+    ! !USES:
+    use pio, only : pio_iotype_pnetcdf, pio_iotype_netcdf
+    !
     ! !ARGUMENTS:
     class(file_desc_t), intent(inout) :: file    ! PIO file descriptor
     character(len=*) ,  intent(in)    :: fname   ! File name to create
+
+    ! BUG(wjs, 2014-10-20, bugz 1730) Workaround for
+    ! http://bugs.cgd.ucar.edu/show_bug.cgi?id=1730
+    logical, intent(in), optional     :: avoid_pnetcdf
     !
     ! !LOCAL VARIABLES:
+    logical :: l_avoid_pnetcdf  ! local version of avoid_pnetcdf
+    integer :: my_io_type
     integer :: ierr
     !-----------------------------------------------------------------------
 
-    ierr = pio_createfile(pio_subsystem, file, io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
+    l_avoid_pnetcdf = .false.
+    if (present(avoid_pnetcdf)) then
+       l_avoid_pnetcdf = avoid_pnetcdf
+    end if
+
+    my_io_type = io_type
+    if (l_avoid_pnetcdf) then
+       if (my_io_type == pio_iotype_pnetcdf) then
+          my_io_type = pio_iotype_netcdf
+          if (pio_subsystem%io_rank==0) then
+             write(iulog,*) 'Workaround for bugz 1730: creating'
+             write(iulog,*) trim(fname)
+             write(iulog,*) 'with type netcdf instead of pnetcdf'
+          end if
+       end if
+    end if
+
+    ierr = pio_createfile(pio_subsystem, file, my_io_type, fname, ior(PIO_CLOBBER,PIO_64BIT_OFFSET))
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort( ' ncd_pio_createfile ERROR: Failed to open file to write: '//trim(fname))
