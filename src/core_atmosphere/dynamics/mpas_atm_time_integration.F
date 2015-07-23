@@ -47,6 +47,8 @@ module atm_time_integration
    real (kind=RKIND), dimension(:,:), pointer :: s_max, s_min
    real (kind=RKIND), dimension(:,:,:), pointer :: scale_arr
    real (kind=RKIND), dimension(:,:), pointer :: flux_arr
+   real (kind=RKIND), dimension(:,:), pointer :: flux_upwind_tmp
+   real (kind=RKIND), dimension(:,:), pointer :: flux_tmp
    real (kind=RKIND), dimension(:,:), pointer :: wdtn
    real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
    real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
@@ -571,6 +573,9 @@ module atm_time_integration
                   allocate(wdtn(nVertLevels+1,nCells+1))
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                      allocate(horiz_flux_arr(num_scalars,nVertLevels,nEdges+1))
+                  else
+                     allocate(flux_upwind_tmp(nVertLevels,nEdges+1))
+                     allocate(flux_tmp(nVertLevels,nEdges+1))
                   end if
 
                   !
@@ -613,6 +618,9 @@ module atm_time_integration
                   deallocate(wdtn)
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                      deallocate(horiz_flux_arr)
+                  else
+                     deallocate(flux_upwind_tmp)
+                     deallocate(flux_tmp)
                   end if
 
                   block => block % next
@@ -760,6 +768,9 @@ module atm_time_integration
                allocate(scalar_tend(num_scalars,nVertLevels,nCells+1))
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                   allocate(horiz_flux_arr(num_scalars,nVertLevels,nEdges+1))
+               else
+                  allocate(flux_upwind_tmp(nVertLevels,nEdges+1))
+                  allocate(flux_tmp(nVertLevels,nEdges+1))
                end if
 
                !
@@ -804,6 +815,9 @@ module atm_time_integration
                deallocate(scalar_tend)
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                   deallocate(horiz_flux_arr)
+               else
+                  deallocate(flux_upwind_tmp)
+                  deallocate(flux_tmp)
                end if
 
                block => block % next
@@ -2205,7 +2219,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, invAreaCell, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
@@ -2270,7 +2284,7 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
       call mpas_pool_get_field(state, 'scalars', scalars_old_field, 1)
 
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
@@ -2332,7 +2346,7 @@ module atm_time_integration
                iEdge = edgesOnCell(i,iCell)
    
                do k=1,nVertLevels
-                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(iCell)
+                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge) * dvEdge(iEdge) * invAreaCell(iCell)
                end do
                
             end do
@@ -2456,7 +2470,6 @@ module atm_time_integration
          !  horizontal flux divergence
          !
 
-         !flux_arr(:,:) = 0. ! Now only initialized as needed (see default case)
          do iEdge=edgeStart,edgeEnd
 
             cell1 = cellsOnEdge(1,iEdge)
@@ -2539,22 +2552,27 @@ module atm_time_integration
          !
 
          !  upwind flux computation
+         do iEdge=edgeStart,edgeEnd
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k=1, nVertLevels
+               flux_upwind_tmp(k,iEdge) = dvEdge(iEdge) * dt *   &
+                      (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
+               flux_tmp(k,iEdge) = dt * flux_arr(k,iEdge) - flux_upwind_tmp(k,iEdge)
+            end do
+         end do
+!$OMP BARRIER
          do iCell=cellSolveStart,cellSolveEnd
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
 
                do k=1, nVertLevels
-                  flux_upwind = dvEdge(iEdge) * dt *   &
-                         (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
-                  flux = dt * flux_arr(k,iEdge) - flux_upwind
-                  scalar_new(k,iCell) = scalar_new(k,iCell) - edgesOnCell_sign(i,iCell) * flux_upwind / areaCell(iCell)
+                  scalar_new(k,iCell) = scalar_new(k,iCell) - edgesOnCell_sign(i,iCell) * flux_upwind_tmp(k,iEdge) * invAreaCell(iCell)
  
                   scale_arr(SCALE_OUT,k,iCell) = scale_arr(SCALE_OUT,k,iCell) &
-                                                 - max(0.0_RKIND,edgesOnCell_sign(i,iCell)*flux) / areaCell(iCell)
+                                                 - max(0.0_RKIND,edgesOnCell_sign(i,iCell)*flux_tmp(k,iEdge)) * invAreaCell(iCell)
                   scale_arr(SCALE_IN, k,iCell) = scale_arr(SCALE_IN, k,iCell) &
-                                                 - min(0.0_RKIND,edgesOnCell_sign(i,iCell)*flux) / areaCell(iCell)
+                                                 - min(0.0_RKIND,edgesOnCell_sign(i,iCell)*flux_tmp(k,iEdge)) * invAreaCell(iCell)
                end do
 
             end do
@@ -2630,8 +2648,6 @@ module atm_time_integration
                   flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k,cell1), scale_arr(SCALE_IN, k,cell2)) &
                        + min(0.0_RKIND,flux) * min(scale_arr(SCALE_IN, k,cell1), scale_arr(SCALE_OUT,k,cell2))
                   flux_arr(k,iEdge) = flux
-!                  scalar_new(k,cell1) = scalar_new(k,cell1) - flux/areaCell(cell1)
-!                  scalar_new(k,cell2) = scalar_new(k,cell2) + flux/areaCell(cell2)
                end do
             end if
          end do
@@ -2643,7 +2659,7 @@ module atm_time_integration
  
          do iCell=cellSolveStart,cellSolveEnd
             do k = 2, nVertLevels
-               flux =  wdtn(k,iCell)
+               flux = wdtn(k,iCell)
                flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k-1,iCell), scale_arr(SCALE_IN,k  ,iCell)) &
                     + min(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k  ,iCell), scale_arr(SCALE_IN,k-1,iCell))
                wdtn(k,iCell) = flux
@@ -2658,15 +2674,12 @@ module atm_time_integration
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                do k=1,nVertLevels
-                  scalar_new(k,iCell) = scalar_new(k,iCell) - edgesOnCell_sign(i,iCell)*flux_arr(k,iEdge)/areaCell(iCell)
+                  scalar_new(k,iCell) = scalar_new(k,iCell) - edgesOnCell_sign(i,iCell)*flux_arr(k,iEdge) * invAreaCell(iCell)
                end do
             end do
-         end do
 
-         do iCell=cellSolveStart,cellSolveEnd
             do k=1,nVertLevels
-               scalar_new(k,iCell) = (   scalar_new(k,iCell)  &
-                   + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/rho_zz_int(k,iCell)
+               scalar_new(k,iCell) = (   scalar_new(k,iCell) + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/rho_zz_int(k,iCell)
             end do
          end do
 
