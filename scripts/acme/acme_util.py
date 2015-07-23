@@ -12,6 +12,9 @@ MACHINE_NODENAMES = [
     ("melvin", re.compile(r"melvin")),
     ("edison", re.compile(r"edison")),
     ("blues", re.compile(r"blogin")),
+    ("titan", re.compile(r"titan")),
+    ("mira", re.compile(r"mira")),
+    ("cetus", re.compile(r"cetus")),
 ]
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
@@ -75,6 +78,31 @@ MACHINE_INFO = {
         "/lcrc/project/ACME/<USER>/acme_scratch",
         "/lcrc/group/earthscience/acme_baselines",
         None
+    ),
+    "titan"    : (
+        "pgi",
+        "acme_integration",
+        True,
+        "cli112",
+        "/lustre/atlas/scratch/<USER>/<PROJECT>",
+        "/lustre/atlas1/cli900/world-shared/cesm/baselines",
+        None
+    ),
+    "mira"     : (
+        "ibm",
+        "acme_integration",
+        True,
+        "HiRes_EarthSys",
+        "/projects/<PROJECT>/<USER>",
+        "/projects/ccsm/ccsm_baselines"
+    ),
+    "cetus"     : (
+        "ibm",
+        "acme_integration",
+        True,
+        "HiRes_EarthSys",
+        "/projects/<PROJECT>/<USER>",
+        "/projects/ccsm/ccsm_baselines"
     ),
 }
 
@@ -335,7 +363,7 @@ def get_batch_system_info(batch_system=None):
     return BATCH_INFO[batch_system]
 
 ###############################################################################
-def get_machine_info(machine=None, user=None):
+def get_machine_info(machine=None, user=None, project=None):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -349,8 +377,9 @@ def get_machine_info(machine=None, user=None):
     expect(machine is not None, "Failed to probe machine")
     expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
     user = getpass.getuser() if user is None else user
+    project = project if project is not None else MACHINE_INFO[machine][3]
 
-    return [item.replace("<USER>", user) if type(item) is str else item for item in MACHINE_INFO[machine]]
+    return [item.replace("<USER>", user).replace("<PROJECT>", project) if type(item) is str else item for item in MACHINE_INFO[machine]]
 
 ###############################################################################
 def get_utc_timestamp(format="%Y%m%d_%H%M%S"):
