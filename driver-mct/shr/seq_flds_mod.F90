@@ -126,6 +126,7 @@ module seq_flds_mod
    use seq_drydep_mod, only : seq_drydep_init, seq_drydep_read, lnd_drydep
    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
    use shr_megan_mod,  only : shr_megan_readnl, shr_megan_mechcomps_n
+   use shr_fire_emis_mod,  only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
    use shr_carma_mod,  only : shr_carma_readnl
 
    implicit none
@@ -140,6 +141,7 @@ module seq_flds_mod
    integer, parameter, private :: CLL = 1024
    character(len=CXX) :: seq_drydep_fields   ! List of dry-deposition fields
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
+   character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
    integer            :: seq_flds_glc_nec    ! number of glc elevation classes
 
@@ -196,6 +198,7 @@ module seq_flds_mod
    character(CXX) :: seq_flds_xao_albedo
    character(CXX) :: seq_flds_xao_states 
    character(CXX) :: seq_flds_xao_fluxes
+   character(CXX) :: seq_flds_xao_diurnl  ! for diurnal cycle
 
    character(CXX) :: seq_flds_r2x_states 
    character(CXX) :: seq_flds_r2x_fluxes
@@ -289,6 +292,7 @@ module seq_flds_mod
      character(CXX) :: xao_albedo = ''
      character(CXX) :: xao_states = ''
      character(CXX) :: xao_fluxes = ''
+     character(CXX) :: xao_diurnl = ''
      character(CXX) :: r2x_states = ''
      character(CXX) :: r2x_fluxes = ''
      character(CXX) :: x2r_states = ''
@@ -1376,6 +1380,14 @@ module seq_flds_mod
      attname  = 'So_bldepth'
      call metadata_set(attname, longname, stdname, units)
 
+     call seq_flds_add(xao_states,"So_fswpen")
+     call seq_flds_add(o2x_states,"So_fswpen")
+     longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
+     stdname  = 'Fraction of sw penetrating surface layer for diurnal cycle'
+     units    = 'unitless'
+     attname  = 'So_fswpen'
+     call metadata_set(attname, longname, stdname, units)
+
      !-----------------------------
      ! lnd->rof exchange
      ! TODO: put in attributes below
@@ -1481,6 +1493,158 @@ module seq_flds_mod
      stdname  = 'wave_model_stokes_drift_depth'
      units    = 'm'
      attname  = 'Sw_hstokes'
+     call metadata_set(attname, longname, stdname, units)
+
+     !-----------------------------
+     ! New xao_states diagnostic
+     ! fields for history output only 
+     !-----------------------------
+
+     call seq_flds_add(xao_fluxes,"Faox_swdn")
+     longname = 'Downward solar radiation'
+     stdname  = 'surface_downward_shortwave_flux'
+     units    = 'W m-2'
+     attname  = 'Faox_swdn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_fluxes,"Faox_swup")
+     longname = 'Upward solar radiation'
+     stdname  = 'surface_upward_shortwave_flux'
+     units    = 'W m-2'
+     attname  = 'Faox_swup'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tbulk_diurn")
+     longname = 'atm/ocn flux temperature bulk'
+     stdname  = 'aoflux_tbulk'
+     units    = 'K'
+     attname  = 'So_tbulk_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tskin_diurn")
+     longname = 'atm/ocn flux temperature skin'
+     stdname  = 'aoflux_tskin'
+     units    = 'K'
+     attname  = 'So_tskin_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tskin_night_diurn")
+     longname = 'atm/ocn flux temperature skin at night'
+     stdname  = 'aoflux_tskin_night'
+     units    = 'K'
+     attname  = 'So_tskin_night_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tskin_day_diurn")
+     longname = 'atm/ocn flux temperature skin at day'
+     stdname  = 'aoflux_tskin_day'
+     units    = 'K'
+     attname  = 'So_tskin_day_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_cskin_diurn")
+     longname = 'atm/ocn flux cool skin'
+     stdname  = 'aoflux_cskin'
+     units    = 'K'
+     attname  = 'So_cskin_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_cskin_night_diurn")
+     longname = 'atm/ocn flux cool skin at night'
+     stdname  = 'aoflux_cskin_night'
+     units    = 'K'
+     attname  = 'So_cskin_night_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_warm_diurn")
+     longname = 'atm/ocn flux warming'
+     stdname  = 'aoflux_warm'
+     units    = 'unitless'
+     attname  = 'So_warm_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_salt_diurn")
+     longname = 'atm/ocn flux salting'
+     stdname  = 'aoflux_salt'
+     units    = 'unitless'
+     attname  = 'So_salt_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_speed_diurn")
+     longname = 'atm/ocn flux speed'
+     stdname  = 'aoflux_speed'
+     units    = 'unitless'
+     attname  = 'So_speed_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_regime_diurn")
+     longname = 'atm/ocn flux regime'
+     stdname  = 'aoflux_regime'
+     units    = 'unitless'
+     attname  = 'So_regime_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_warmmax_diurn")
+     longname = 'atm/ocn flux warming dialy max'
+     stdname  = 'aoflux_warmmax'
+     units    = 'unitless'
+     attname  = 'So_warmmax_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windmax_diurn")
+     longname = 'atm/ocn flux wind daily max'
+     stdname  = 'aoflux_windmax'
+     units    = 'unitless'
+     attname  = 'So_windmax_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_qsolavg_diurn")
+     longname = 'atm/ocn flux q-solar daily avg'
+     stdname  = 'aoflux_qsolavg'
+     units    = 'unitless'
+     attname  = 'So_qsolavg_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windavg_diurn")
+     longname = 'atm/ocn flux wind daily avg'
+     stdname  = 'aoflux_windavg'
+     units    = 'unitless'
+     attname  = 'So_windavg_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_warmmaxinc_diurn")
+     longname = 'atm/ocn flux daily max increment'
+     stdname  = 'aoflux_warmmaxinc'
+     units    = 'unitless'
+     attname  = 'So_warmmaxinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windmaxinc_diurn")
+     longname = 'atm/ocn flux wind daily max increment'
+     stdname  = 'aoflux_windmaxinc'
+     units    = 'unitless'
+     attname  = 'So_windmaxinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_qsolinc_diurn")
+     longname = 'atm/ocn flux q-solar increment'
+     stdname  = 'aoflux_qsolinc'
+     units    = 'unitless'
+     attname  = 'So_qsolinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windinc_diurn")
+     longname = 'atm/ocn flux wind increment'
+     stdname  = 'aoflux_windinc'
+     units    = 'unitless'
+     attname  = 'So_windinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_ninc_diurn")
+     longname = 'atm/ocn flux increment counter'
+     stdname  = 'aoflux_ninc'
+     units    = 'unitless'
+     attname  = 'So_ninc_diurn'
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------
@@ -1744,6 +1908,20 @@ module seq_flds_mod
      endif
 
      !-----------------------------------------------------------------------------
+     ! Read namelist for Fire Emissions
+     ! if fire emission are specified then setup fields for CLM to CAM communication 
+     ! (emissions fluxes)
+     !-----------------------------------------------------------------------------
+
+     call shr_fire_emis_readnl(nlfilename='drv_flds_in', emis_fields=fire_emis_fields)
+     if (shr_fire_emis_mechcomps_n>0) then
+        call seq_flds_add(l2x_fluxes, trim(fire_emis_fields))
+        call seq_flds_add(x2a_fluxes, trim(fire_emis_fields))
+        call seq_flds_add(l2x_states, trim(shr_fire_emis_ztop_token))
+        call seq_flds_add(x2a_states, trim(shr_fire_emis_ztop_token))
+     endif
+
+     !-----------------------------------------------------------------------------
      ! Dry Deposition fields
      ! First read namelist and figure out the drydep field list to pass
      ! Then check if file exists and if not, n_drydep will be zero
@@ -1776,6 +1954,7 @@ module seq_flds_mod
      seq_flds_x2g_states = trim(x2g_states)
      seq_flds_xao_states = trim(xao_states)
      seq_flds_xao_albedo = trim(xao_albedo)
+     seq_flds_xao_diurnl = trim(xao_diurnl)
      seq_flds_r2x_states = trim(r2x_states)
      seq_flds_x2r_states = trim(x2r_states)
      seq_flds_w2x_states = trim(w2x_states)
@@ -1822,6 +2001,7 @@ module seq_flds_mod
         write(logunit,"(A)") subname//': seq_flds_xao_states= ',trim(seq_flds_xao_states)
         write(logunit,"(A)") subname//': seq_flds_xao_fluxes= ',trim(seq_flds_xao_fluxes)
         write(logunit,"(A)") subname//': seq_flds_xao_albedo= ',trim(seq_flds_xao_albedo)
+        write(logunit,"(A)") subname//': seq_flds_xao_diurnl= ',trim(seq_flds_xao_diurnl)
         write(logunit,"(A)") subname//': seq_flds_r2x_states= ',trim(seq_flds_r2x_states)
         write(logunit,"(A)") subname//': seq_flds_r2x_fluxes= ',trim(seq_flds_r2x_fluxes)
         write(logunit,"(A)") subname//': seq_flds_x2r_states= ',trim(seq_flds_x2r_states)
@@ -1843,8 +2023,9 @@ module seq_flds_mod
      call catFields(seq_flds_x2o_fields, seq_flds_x2o_states, seq_flds_x2o_fluxes)
      call catFields(seq_flds_g2x_fields, seq_flds_g2x_states, seq_flds_g2x_fluxes)
      call catFields(seq_flds_x2g_fields, seq_flds_x2g_states, seq_flds_x2g_fluxes)
-     call catFields(stringtmp          , seq_flds_xao_albedo, seq_flds_xao_states)
-     call catFields(seq_flds_xao_fields, stringtmp          , seq_flds_xao_fluxes)
+     call catFields(seq_flds_xao_fields, seq_flds_xao_albedo, seq_flds_xao_states)
+     call catFields(stringtmp          , seq_flds_xao_fields, seq_flds_xao_fluxes)
+     call catFields(seq_flds_xao_fields, stringtmp          , seq_flds_xao_diurnl)
      call catFields(seq_flds_r2x_fields, seq_flds_r2x_states, seq_flds_r2x_fluxes)
      call catFields(seq_flds_x2r_fields, seq_flds_x2r_states, seq_flds_x2r_fluxes)
      call catFields(seq_flds_w2x_fields, seq_flds_w2x_states, seq_flds_w2x_fluxes)
