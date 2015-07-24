@@ -94,6 +94,14 @@
      </directives>
    </batch_system>
 
+    <!-- blues is PBS -->
+    <batch_system MACH="blues" version="x.y">
+      <directives>
+        <directive>-A {{ project }}</directive>
+        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+      </directives>
+    </batch_system> 
+
     <!-- edison is PBS -->
     <batch_system MACH="edison" version="x.y">
       <directives>
