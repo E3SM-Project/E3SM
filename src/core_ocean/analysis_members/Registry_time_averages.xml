@@ -25,7 +25,7 @@
 					default_value="dt" 
 					units="unitless"
 					description="Interval that determines frequency of computation for the time_averages analysis member."
-					possible_values="Any valid time stamp or 'dt'. This must also be <= output_interval / 2, such that output_interval must be >= 2 * dt (at least two samples in a series)."
+					possible_values="Any valid time stamp or 'dt'. This must also be <= output_interval / 2 (at least two samples in a series)."
 		/>
 		<nml_option name="config_AM_timeAverages_stream_name" 
 					type="character" 
