@@ -70,7 +70,8 @@ require Module::ModuleLoader;
 
 my $moduleloader = new Module::ModuleLoader(machine => "$MACH", compiler => "$COMPILER",
 	                                    mpilib => $MPILIB, debug => $DEBUG, 
-	                                    scriptsroot => "$CIMEROOT/scripts", caseroot => "$CASEROOT");
+	                                    cimeroot => "$CIMEROOT", caseroot => "$CASEROOT");
+$moduleloader->findModulesForCase();
 $moduleloader->loadModules();
 
 

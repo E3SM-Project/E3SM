@@ -49,7 +49,7 @@ sub new
 	$self->{'toolsroot'} = $toolsroot;
 	#require ConfigCase;
 	bless $self, $class;
-	#$self->moduleInit();
+	$self->moduleInit();
 	return $self;
 }
 
