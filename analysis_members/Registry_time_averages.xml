@@ -25,7 +25,7 @@
 					default_value="dt" 
 					units="unitless"
 					description="Interval that determines frequency of computation for the time_averages analysis member."
-					possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+					possible_values="Any valid time stamp or 'dt'. This must also be <= output_interval / 2, such that output_interval must be >= 2 * dt (at least two samples in a series)."
 		/>
 		<nml_option name="config_AM_timeAverages_stream_name" 
 					type="character" 
@@ -49,7 +49,7 @@
 					type="character"
 					default_value="avg"
 					units="unitless"
-					description="A list of operations describing type of reduction operations to apply to the accumulation."
+					description="A list of operations describing type of reduction operations to apply to the time series."
 					possible_values="an operation, where it can be 'avg', 'min', or 'max'"
 		/>
 		<nml_option name="config_AM_timeAverages_number_of_buffers"
@@ -64,28 +64,28 @@
 					default_value="same_as_simulation"
 					units="unitless"
 					description="A list of absolute times describing when to start accumulating."
-					possible_values="a list of absolute times separated by spaces, or 'same_as_simulation'"
+					possible_values="a list of absolute times separated by spaces, or 'same_as_simulation'."
 		/>
 		<nml_option name="config_AM_timeAverages_duration_intervals"
 					type="character"
 					default_value="same_as_repeat"
 					units="unitless"
 					description="A list of time durations describing how long to accumulate."
-					possible_values="a list of time durations separated by spaces, or 'same_as_repeat'"
+					possible_values="a list of time durations separated by spaces, or 'same_as_repeat'. Must be >= compute_interval * 2."
 		/>
 		<nml_option name="config_AM_timeAverages_repeat_intervals"
 					type="character"
 					default_value="same_as_reset"
 					units="unitless"
 					description="A list of time durations describing the accumulation periodicity (how often to accumulate)."
-					positive_values="a list of time durations separated by spaces, or 'same_as_reset'"
+					positive_values="a list of time durations separated by spaces, or 'same_as_reset'. Must be <= reset_interval."
 		/>
 		<nml_option name="config_AM_timeAverages_reset_intervals"
 					type="character"
 					default_value="same_as_output"
 					units="unitless"
 					description="A list of time durations describing the buffer reset periodicity (how often to reset)."
-					possible_values="a list of time durations separated by spaces, or 'same_as_output'"
+					possible_values="a list of time durations separated by spaces, or 'same_as_output'. Must be <= output_interval."
 		/>
 
 	</nml_record>

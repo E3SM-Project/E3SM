@@ -48,7 +48,8 @@ module ocn_time_averages
    ! this keeps track of timers and if and when they need to accumulate
    type time_buffer_type
       ! internal state
-      logical :: started_flag, accumulate_flag, reset_flag
+      logical :: started_flag, accumulate_flag, reset_flag, delay_reset_flag
+      logical :: reset_alarm_armed
       integer :: total_accum
 
       type (MPAS_Time_type) :: start_time
@@ -215,11 +216,11 @@ contains
             end if
          else
             if (time_str .eq. 'same_as_output') then
-               call mpas_set_timeInterval(buffers(b) % reset_interval, &
-                    timeString=inv_str, ierr=err)
+               buffers(b) % reset_alarm_armed = .false.
             else
                call mpas_set_timeInterval(buffers(b) % reset_interval, &
                     timeString=time_str, ierr=err)
+               buffers(b) % reset_alarm_armed = .true.
             end if
          end if 
          ! get the next time string
@@ -418,6 +419,7 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
       if (.not. ok) then
          call mpas_dmpar_global_abort('Error: number_of_buffers != number of reset_intervals in time averaging member analysis member configuration.')
       end if
+      ! TODO? sanity check that it is <= output_interval
 
       ! configure repeat intervals
       config_str = trim(prefix_str) // '_repeat_intervals'
@@ -436,6 +438,7 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
       if (.not. ok) then
          call mpas_dmpar_global_abort('Error: number_of_buffers != number of duration_intervals in time averaging member analysis member configuration.')
       end if
+      ! TODO sanity check to see if >= compute_interval * 2
 
       ! configure start times
       config_str = trim(prefix_str) // '_initial_times' 
@@ -450,12 +453,14 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
       do b = 1, number_of_buffers
          if (buffers(b) % repeat_interval .gt. &
              buffers(b) % reset_interval) then
+            ! TODO error out
             write(stderrUnit,*) 'Warning: repeat_interval > reset_interval in time averaging analysis member configuration. Truncating repeat_interval.'
             buffers(b) % repeat_interval = buffers(b) % reset_interval
          end if
 
          if (buffers(b) % duration_interval .gt. &
              buffers(b) % repeat_interval) then
+            ! TODO error out
             write(stderrUnit,*) 'Warning: duration_interval > repeat_interval in time averaging analysis member configuration. Truncating duration_interval.'
             buffers(b) % repeat_interval = buffers(b) % reset_interval
          end if
@@ -588,6 +593,7 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
          buffers(b) % started_flag = .false.
          buffers(b) % reset_flag = .false.
          buffers(b) % accumulate_flag = .false.
+         buffers(b) % delay_reset_flag = .false.
       end do
 
    end subroutine ocn_init_time_averages!}}}
@@ -604,13 +610,13 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
 !>  This routine conducts timer checking to determine if it 
 !>  needs to run at this particular time. 
 !-----------------------------------------------------------------------
-   subroutine timer_checking(clock, err)!{{{
+   subroutine timer_checking(domain, err)!{{{
       ! input variables
       !-----------------------------------------------------------------
 
       ! input/output variables
       !-----------------------------------------------------------------
-      type (MPAS_Clock_type), intent(inout) :: clock
+      type (domain_type), intent(inout) :: domain
 
       ! output variables
       !-----------------------------------------------------------------
@@ -625,48 +631,66 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
       err = 0
 
       do b = 1, size(buffers)
-         ! always disable reset
-         buffers(b) % reset_flag = .false.
-
          ! see if the started alarm is ringing
-         if (mpas_is_alarm_ringing(clock, &
+         if (mpas_is_alarm_ringing(domain % clock, &
                buffers(b) % start_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(clock, &
+            call mpas_reset_clock_alarm(domain % clock, &
                buffers(b) % start_alarm_ID, ierr=err)
             buffers(b) % started_flag = .true. 
+            ! TODO only reset if not restart
+            buffers(b) % reset_flag = .true.
          end if
 
          ! if we aren't started, continue to next buffer
          if (.not. buffers(b) % started_flag) then
-            buffers(b) % accumulate_flag = .false.
             continue
          end if
 
          ! check various other alarms
          ! see if we need to reset
-         if (mpas_is_alarm_ringing(clock, &
+         if (buffers(b) % reset_alarm_armed) then
+            if(mpas_is_alarm_ringing(domain % clock, &
                buffers(b) % reset_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(clock, &
-               buffers(b) % reset_alarm_ID, ierr=err)
-            buffers(b) % reset_flag = .true.
+               call mpas_reset_clock_alarm(domain % clock, &
+                  buffers(b) % reset_alarm_ID, ierr=err)
+               buffers(b) % reset_flag = .true.
+            end if
+         else
+            if(mpas_stream_mgr_ringing_alarms(domain % streamManager, &
+               stream_name)) then
+               buffers(b) % reset_flag = .true. 
+            end if
          end if 
 
          ! turn off accumulation
-         if (mpas_is_alarm_ringing(clock, &
+         !
+         ! duration needs to be >= 2 * compute_interval 
+         ! (a series can only be 2 or more)
+         if (mpas_is_alarm_ringing(domain % clock, &
                buffers(b) % duration_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(clock, &
+            call mpas_reset_clock_alarm(domain % clock, &
                buffers(b) % duration_alarm_ID, ierr=err)
             buffers(b) % accumulate_flag = .false.
          end if
 
          ! turn on accumulation 
-         ! (this is second, in case the duration/reset 
+         ! (this is second, in case the duration and repeat
          !  overlaps on the same timer)
-         if (mpas_is_alarm_ringing(clock, &
+         if (mpas_is_alarm_ringing(domain % clock, &
                buffers(b) % repeat_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(clock, &
+            call mpas_reset_clock_alarm(domain % clock, &
                buffers(b) % repeat_alarm_ID, ierr=err)
             buffers(b) % accumulate_flag = .true.
+         end if
+
+         ! see if we need to delay resetting to the next time around,
+         ! when the reset is on the same time as an output
+         ! (we don't want to clear if we are outputting)
+         if (buffers(b) % reset_flag) then
+            if(mpas_stream_mgr_ringing_alarms(domain % streamManager, &
+               stream_name)) then
+               buffers(b) % delay_reset_flag = .true. 
+            end if
          end if
       end do
 
@@ -703,7 +727,8 @@ do while (associated(block)) ;\
       tvar % input_name, in_array, 1) ;\
 \
    do b = 1, size(buffers) ;\
-      if (buffers(b) % reset_flag) then ;\
+      if (buffers(b) % reset_flag .and. \
+          (.not. buffers(b) % delay_reset_flag)) then ;\
          call mpas_pool_get_array(block % allFields, \
               tvar % output_names(b), out_array, 1) ;\
          out_array = in_array ;\
@@ -965,20 +990,30 @@ OPERATE_MULTI_MAX(3i_max, integer, dimension(:, :, :))
       err = 0
 
       ! do all of the time checking and flag setting
-      call timer_checking(domain % clock, err)
+      call timer_checking(domain, err)
 
+      ! update number of accumulations, once only
       do b = 1, size(buffers)
-         ! update number of accumulations, once only
-         if (buffers(b) % reset_flag) then
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
             buffers(b) % total_accum = 1
-         else
+         else if (buffers(b) % accumulate_flag) then
             buffers(b) % total_accum = buffers(b) % total_accum + 1
          end if
       end do
 
+      ! do all of the operations
       do v = 1, size(variables)
-         ! do all of the operations
          call typed_operate(domain % blocklist, variables(v), operation)
+      end do
+
+      ! clear resets
+      do b = 1, size(buffers)
+         if (buffers(b) % delay_reset_flag) then
+            buffers(b) % delay_reset_flag = .false.
+         else
+            buffers(b) % reset_flag = .false.
+         end if
       end do
 
    end subroutine ocn_compute_time_averages!}}}
