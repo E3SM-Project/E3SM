@@ -28,8 +28,6 @@ use XML::LibXML;
 use Exporter qw(import);
 use lib '.';
 require Task::TaskMaker;
-require Misc::MiscUtils;
-
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
 my @requiredargs = qw/caseroot case machroot machine scriptsroot cimeroot/;
 
@@ -64,6 +62,8 @@ sub new
 	# set up paths to the template files, this could and should be extracted out somehow??
 	$self->{'job_id'} = $self->{'case'};
 	$self->{'output_error_path'} = $self->{'case'};
+	$self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
+	$self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
 
 	# we need ConfigCase, and ProjectTools. 
 	my $casetoolsdir = "$self->{'caseroot'}/Tools";
@@ -74,11 +74,6 @@ sub new
 	require ProjectTools;
 	$self->{'cwd'} = Cwd::getcwd();
 	bless $self, $class;
-
-	$self->getConfigMachinesParser();
-        $self->getBatchSystemTypeForMachine();
-	$self->getBatchConfigParser();
-
 	return $self;
 }
 #==============================================================================
@@ -132,13 +127,16 @@ sub transformVars()
 #==============================================================================
 sub getBatchConfigParser()
 {
-  my $self = shift;
-  my $batch_system = $self->{'batch_system'};
-  $self->{'batchparser'} = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
-                                                             $self->{'caseroot'},
-                                                             'config_batch.xml',
-                                                             "/config_batch/batch_system[\@type=\'$batch_system\']");
-  return $self->{'batchparser'};
+	my $self = shift;
+	my $toolsdir = $self->{'caseroot'} . "/Tools";
+	if(! defined $self->{'batchparser'})
+	{
+		chdir $self->{'caseroot'};
+		my $batchparser = XML::LibXML->new(no_blanks => 1);
+		my $batchconfig = $batchparser->parse_file($self->{'configbatch'});
+		$self->{'batchparser'} = $batchconfig->getDocumentElement();
+	}
+	return $self->{'batchparser'};
 }
 
 #==============================================================================
@@ -147,14 +145,15 @@ sub getBatchConfigParser()
 #==============================================================================
 sub getConfigMachinesParser()
 {
-  my $self = shift;
-  my $machine = $self->{'machine'};
-  my $root = Misc::MiscUtils::getConfigXMLRoot($self->{'machroot'},
-                                                 $self->{'caseroot'},
-                                                 'config_machines.xml',
-                                                 "/config_machines/machine[\@MACH=\'$machine\']");
-  $self->{'configmachinesparser'} = $root;
-  return $self->{'configmachinesparser'};
+	my $self = shift;
+	my $toolsdir = $self->{'caseroot'} . "/Tools";
+	if(! defined $self->{'configmachinesparser'})
+	{
+		chdir $self->{'caseroot'};
+		my $configmachinesparser = XML::LibXML->new(no_blanks => 1);
+		my $configmachines = $configmachinesparser->parse_file($self->{'configmachines'});
+		$self->{'configmachinesparser'} = $configmachines->getDocumentElement();
+	}
 }
 
 #==============================================================================
@@ -174,9 +173,13 @@ sub makeBatchScript()
 	{
 		die "$inputfilename does not exist!";
 	}
-
-        $self->setTaskInfo();
-        $self->getBatchDirectives();
+	
+	$self->getBatchSystemTypeForMachine();
+	$self->setTaskInfo();
+	$self->setQueue();
+	$self->setWallTime();
+	$self->setProject();
+	$self->setBatchDirectives();
 	$self->setCESMRun();
 	$self->writeBatchScript($inputfilename, $outputfilename);
 }
@@ -187,9 +190,17 @@ sub makeBatchScript()
 sub getBatchSystemTypeForMachine()
 {
 	my $self = shift;
-	$self->{'batch_system'} = Misc::MiscUtils::getBatchSystemType($self->{'machine'},
-                                                                      $self->{'machroot'},
-                                                                      $self->{'caseroot'});
+	my $mach = $self->{'machine'};
+	$self->getConfigMachinesParser();
+	my $configmachinesparser = $self->{'configmachinesparser'};
+    my @batchtypes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$mach\']/batch_system");
+
+	if(!@batchtypes)
+	{
+		die "Could not find batch system for machine $self->{'machine'}, aborting";
+	}
+	$self->{'batch_system'} = $batchtypes[0]->getAttribute('type');
+	
 }
 
 #==============================================================================
@@ -202,17 +213,16 @@ sub getBatchDirectives()
 	
 	if(! defined $self->{'batchdirectives'})
 	{
-          if ($self->{'batch_system'} eq 'none') {
-            $self->{'batchdirectives'} = '';
-          } else {
-            $self->setTaskInfo();
-            $self->setQueue();
-            $self->setWallTime();
-            $self->setProject();
-            $self->setBatchDirectives();
-          }
-        }
-        return $self->{'batchdirectives'};
+
+	    $self->getBatchSystemTypeForMachine();
+	    $self->setTaskInfo();
+	    $self->setQueue();
+	    $self->setWallTime();
+	    $self->setProject();
+		$self->setBatchDirectives();
+	}
+	return $self->{'batchdirectives'};
+
 }
 #==============================================================================
 # Get a particular field of data from the instance data that gets stored 
@@ -223,6 +233,7 @@ sub getField()
 {
     my $self = shift;
     my $fieldname = shift;
+    $self->getBatchSystemTypeForMachine();
     $self->setTaskInfo();
     $self->setQueue();
     $self->setWallTime();
@@ -244,10 +255,8 @@ sub getField()
 sub setBatchDirectives()
 {
 	my $self = shift;
-	my $batchparser = $self->{'batchparser'};
-        # FIXME(2015-06) Why is this being called here?
-        # getConfigMachinesParser doesn't return anything...
-	my $configmachinesparser = $self->{'configmachinesparser'};
+	my $batchparser = $self->getBatchConfigParser();
+	my $configmachinesparser = $self->getConfigMachinesParser();
 	
 	# get the batch directive for this particular queueing system. 
 
@@ -344,6 +353,7 @@ sub setTaskInfo()
 	$self->{'task_count'} = $taskmaker->sumOnly();
 	$self->{'sumtasks'} = $taskmaker->sumTasks();
 	$self->{'num_tasks'} = $taskmaker->sumTasks();
+	$self->{'totaltasks'} = $taskmaker->sumTasks();
 	$self->{'maxthreads'} = $taskmaker->maxThreads();
 	$self->{'taskgeometry'} = $taskmaker->taskGeometry();
 	$self->{'threadgeometry'} = $taskmaker->threadGeometry();
@@ -371,6 +381,8 @@ sub setTaskInfo()
 sub setWallTime()
 {
 	my $self = shift;
+	$self->getBatchConfigParser();
+	$self->getConfigMachinesParser();
 	$self->getEstCost();
 	my $batchparser = $self->{'batchparser'};
 	my $configmachinesparser = $self->{'configmachinesparser'};
@@ -435,28 +447,26 @@ sub setQueue()
 {
 	my $self = shift;
 	#get the batch config parser, and the estimated cost of the run. 
+	$self->getBatchConfigParser();	
+	$self->getConfigMachinesParser();
 	$self->getEstCost();
 	my $batchparser = $self->{'batchparser'};
 	my $configmachinesparser = $self->{'configmachinesparser'};
 	
 
-	# First, set the queue based on the default queue defined in config_batch.xml. If not found, 
-	# we die. 
-	# TODO find a better method of alerting the user that there is no default queue defined for this machine.   
+	# First, set the queue based on the default queue defined in config_batch.xml. 
 	my @defaultqueue = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue[\@default=\'true\']");
-	print Dumper \@defaultqueue;
 
-	#die "Cannot set queue for this machine! No default queue defined" if (! @defaultqueue);
 	
-	# set the default queue if we've found one. 
+	# set the default queue IF we have a default queue defined, some machines (blues) do not allow one to 
+	# specifiy the queue directly. 
 	if(@defaultqueue)
 	{
-		my $defelement = $defaultqueue[0];
-		$self->{'queue'} = $defelement->textContent();
+        my $defelement = $defaultqueue[0];
+        $self->{'queue'} = $defelement->textContent();
 	}
 
-	
-	# We already have a default queue at this point, but if there is a queue that our job's node count
+	# We may have a default queue at this point, but if there is a queue that our job's node count
 	# falls in between, then we should use that queue. 
 	my @qelems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue");
 	foreach my $qelem(@qelems)
@@ -630,7 +640,9 @@ sub writeBatchScript()
 	close $RUNTMPL;
 	
 	# transform the template variables to their actual values. 
+	
 	$templatetext = $self->transformVars($templatetext);
+	
 	# write the new run script. 
 	open (my $RUNSCRIPT, ">", $outputfilename) or die "could not open new script, $!";
 	print $RUNSCRIPT $templatetext;
@@ -743,19 +755,20 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-    my $config = $taskmaker->{'config'};
-    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
-    $self->{'mppsize'} = $self->{'mppsum'};
+	#print "in Batch::BatchMaker_cray setTaskInfo\n";
+    #my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    #my $config = $taskmaker->{'config'};
+    #my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+    #$self->{'mppsize'} = $self->{'mppsum'};
 
 
-    if($self->{'mppsize'} % $maxTasksPerNode > 0)
-    {
-        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
-        $mppnodes += 1;
-        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
-    }
-	$self->{'mppwidth'} = $self->{'mppsize'};
+    #if($self->{'mppsize'} % $maxTasksPerNode > 0)
+    #{
+    #    my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+    #    $mppnodes += 1;
+    #    $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
+    #}
+	#$self->{'mppwidth'} = $self->{'mppsize'};
 
     $self->SUPER::setTaskInfo();
 }
@@ -772,10 +785,50 @@ sub _test()
 sub setTaskInfo()
 {
 	my $self = shift;
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-	$self->{'mppsum'} = $taskmaker->sumTasks();
     $self->SUPER::setTaskInfo();
+	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+
+	$self->{'mppsize'}  = $taskmaker->sumTasks();
+    if($self->{'mppsize'} % $maxTasksPerNode > 0)
+    {
+        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+        $mppnodes += 1;
+        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
+    }
+	$self->{'mppsum'} = $taskmaker->sumPES();
+
+    if($self->{'mppsum'} > 1)
+    {
+        $self->{'mppwidth'} = $self->{'mppsum'} / 2;
+    }
+    else
+    {
+        $self->{'mppwidth'} = 1;
+    }
+
 }
+
+sub setCESMRun()
+{
+	my $self = shift;
+	
+	# For the aprun command we only want -S tasks_per_numa
+    # and -cc numa_node to be set if the tasks per node is > 1
+	if($self->{'tasks_per_node'} > 1)
+	{
+		$self->{'numa_node'} = 'numa_node';
+	}
+	else
+	{
+		$self->{'tasks_per_numa'} = undef;
+		$self->{'numa_node'} = undef;
+	}
+	$self->SUPER::setCESMRun();
+
+
+}
+	
 
 #==============================================================================
 #==============================================================================

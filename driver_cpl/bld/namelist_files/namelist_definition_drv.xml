@@ -430,6 +430,15 @@ default: month
 </entry>
 
 <entry 
+id="flux_diurnal" 
+type="logical"
+category="control" 
+group="seq_infodata_inparm">
+If true, turn on diurnal cycle in computing atm/ocn fluxes
+default: false
+</entry>
+
+<entry 
 id="atm_gnam"
 type="char*64"
 category="mapping" 
@@ -751,6 +760,78 @@ category="history"
 group="seq_infodata_inparm">
 turns on coupler history stream for annual sno to coupler fields.  
 default: false
+</entry>
+
+<entry 
+id="histavg_atm"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes atm fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_lnd"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes lnd fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_ocn"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes ocn fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_ice"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes ice fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_rof"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes rof fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_glc"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes glc fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_wav"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes wav fields in coupler average history files.
+default: true
+</entry>
+
+<entry 
+id="histavg_xao"
+type="logical"
+category="history" 
+group="seq_infodata_inparm">
+writes xao fields in coupler average history files.
+default: true
 </entry>
 
 <entry 

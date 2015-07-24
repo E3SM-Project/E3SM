@@ -31,7 +31,12 @@ sub main
 	{
 		print "$_";
 	}
-	wait;
+    close $CHECKCASE;
+    if($?)
+    {
+        print "check_case failed\n";
+        exit(-1);
+    }
 	
 	my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
                                             mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'},
