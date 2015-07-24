@@ -667,7 +667,7 @@ contains
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j), pscal)
 !      print*,'cjp',c,j,pscal
-      if(pscal<1.e-1_r8)then
+      if(pscal<5.e-1_r8)then
         write(*,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
         write(*,*)'col, lev, pscal=',c, j, pscal
         write(*,*)'nstep =',get_nstep()
@@ -1154,17 +1154,19 @@ contains
     else
       !nitrifiers, decomposers and plants are nh4 limited
       alpha = smin_nh4/(tot_nh4_demand_flx*dtime)
-      smin_nh4_to_decomp_plant_flx = smin_nh4 * (decomp_plant_minn_demand_flx/tot_nh4_demand_flx)/dtime
-      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
       !downregulate nitrification
       reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac)*alpha
+      smin_nh4_to_decomp_plant_flx = smin_nh4/dtime + reaction_rates(lid_nh4_nit_reac) * cascade_matrix(lid_nh4, reac)
+      decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - smin_nh4_to_decomp_plant_flx
     endif
   else
     !none is nh4 limited
     smin_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx
     decomp_plant_residual_minn_demand_flx = 0._r8
   endif
-
+  !avoid negative smin_nh4 due to roundoff 
+  smin_nh4_to_decomp_plant_flx = max(smin_nh4_to_decomp_plant_flx -1.e-21_r8, smin_nh4_to_decomp_plant_flx)
+ 
 
   reac = lid_no3_den_reac  
   tot_no3_demand_flx = decomp_plant_residual_minn_demand_flx - reaction_rates(reac) * cascade_matrix(lid_no3 ,reac)
@@ -1186,12 +1188,13 @@ contains
       alpha = smin_no3/(tot_no3_demand_flx*dtime)    
       reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*alpha
     
-      smin_no3_to_decomp_plant_flx = smin_no3/dtime * (decomp_plant_residual_minn_demand_flx/tot_no3_demand_flx)
+      smin_no3_to_decomp_plant_flx = smin_no3/dtime + reaction_rates(lid_no3_den_reac ) * cascade_matrix(lid_no3 ,reac)
     endif  
   else
     smin_no3_to_decomp_plant_flx = tot_no3_demand_flx
   endif
-  
+  !avoid negative smin_no3 due to roundoff
+  smin_no3_to_decomp_plant_flx = max(smin_no3_to_decomp_plant_flx-1.e-21_r8,0._r8) 
   tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
   if(CNAllocate_Carbon_only())then
     supp_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx - tot_sminn_to_decomp_plant_flx
