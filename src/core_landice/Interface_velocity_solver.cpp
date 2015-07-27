@@ -208,7 +208,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
       int iCell = vertexToFCell[index];
       for (int il = 0; il < nLayers; il++) {
         temperatureData[index + il * nVertices] = temperature_F[iCell * nLayers
-            + (nLayers - il - 1)] + T0;
+            + (nLayers - il - 1)];
       }
     }
 
@@ -1330,7 +1330,7 @@ void importP0Temperature(double const * temperature_F) {
       if (nPoints == 0)
         temperature = T0;
       else
-        temperature = temperature / nPoints + T0;
+        temperature = temperature / nPoints;
       for (int k = 0; k < 3; k++)
         temperatureOnTetra[index * elemLayerShift + il * lElemColumnShift + k] =
             temperature;
