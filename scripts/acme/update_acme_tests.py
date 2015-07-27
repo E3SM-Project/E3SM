@@ -70,6 +70,36 @@ def get_test_suites():
     return __TEST_SUITES.keys()
 
 ###############################################################################
+def find_all_supported_platforms():
+###############################################################################
+    """Returns a set of all ACME supported platforms as defined in the 
+XML configuration file config_machines.xml in the ACME source tree. A platform
+is defined by a triple (machine name, compiler, mpi library)."""
+    import xml.etree.ElementTree as ET
+    import os.path
+    config_machines_xml = os.path.join(acme_util.get_source_repo(), 'scripts', 'ccsm_utils', 'Machines', 'config_machines.xml')
+    tree = ET.parse(config_machines_xml)
+    root = tree.getroot()
+    expect(root.tag == 'config_machines', 
+           'The given XML file is not a valid list of machine configurations.')
+    platform_set = set()
+    # Each child of this root is a machine entry.
+    for machine in root:
+        expect(machine.tag == 'machine', 'Invalid machine tag: %s'%machine.tag)
+        expect('MACH' in machine.attrib, 'Invalid machine entry found')
+        mach_name = machine.attrib['MACH']
+        expect('COMPILERS' in [item.tag for item in machine],
+               'COMPILERS entry not found in machine %s'%mach_name)
+        compilers_string = machine.find('COMPILERS').text
+        compilers = [compiler.strip() for compiler in compilers_string.split(',')]
+        mpilibs_string = machine.find('MPILIBS').text
+        mpilibs = [mpilib.strip() for mpilib in mpilibs_string.split(',')]
+        for compiler in compilers:
+            for mpilib in mpilibs:
+                platform_set.add((mach_name, compiler, mpilib))
+    return list(platform_set)
+
+###############################################################################
 def find_all_platforms(xml_file):
 ###############################################################################
     f = open(xml_file, 'r')
@@ -115,11 +145,21 @@ def generate_acme_test_entries(category, platforms):
 ###############################################################################
 def update_acme_test(xml_file, category, platform):
 ###############################################################################
+    # Retrieve all supported ACME platforms, killing the third entry (MPI lib) 
+    # for the moment.
+    supported_platforms = [p[:2] for p in find_all_supported_platforms()]
+
     # Fish all of the existing machine/compiler combos out of the XML file.
     if (platform is not None):
         platforms = [tuple(platform.split(","))]
     else:
         platforms = find_all_platforms(xml_file)
+
+    # Prune the non-supported platforms from our list.
+    for p in platforms:
+        if p not in supported_platforms:
+            acme_util.verbose_print('pruning unsupported platform %s'%repr(p))
+    platforms = [p for p in platforms if p in supported_platforms]
 
     # Try to find the manage_xml_entries script. Assume sibling of xml_file
     manage_xml_entries = os.path.join(os.path.dirname(xml_file), "manage_xml_entries")
