@@ -113,7 +113,7 @@ module ocn_forward_mode
       type (MPAS_Time_Type) :: startTime
       type (MPAS_TimeInterval_type) :: timeStep
 
-      logical, pointer :: config_do_restart, config_filter_btr_mode, config_conduct_tests
+      logical, pointer :: config_do_restart, config_read_nearest_restart, config_filter_btr_mode, config_conduct_tests
       character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
@@ -130,6 +130,7 @@ module ocn_forward_mode
       call ocn_constants_init(domain % configs, domain % packages)
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_read_nearest_restart', config_read_nearest_restart)
       call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
       call mpas_pool_get_config(domain % configs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
@@ -142,7 +143,11 @@ module ocn_forward_mode
       call mpas_timer_start('io_read', .false.)
       call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
       if ( config_do_restart ) then
-         call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
+         if ( config_read_nearest_restart ) then
+            call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
+         else
+            call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
+         end if
       else
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       end if
