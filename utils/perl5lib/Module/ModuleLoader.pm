@@ -400,10 +400,18 @@ sub loadModules()
 	
 	foreach my $mod(@$modulestoload)
 	{
-		print "mod seqnum: $mod->{seqnum}\n";
-		print "mod action: $mod->{action}\n";
-		print "mod actupon: $mod->{actupon}\n";
-		my $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
+		#print "mod seqnum: $mod->{seqnum}\n";
+		#print "mod action: $mod->{action}\n";
+		#print "mod actupon: $mod->{actupon}\n";
+		my $cmd;
+		if($mod->{action} =~ /xmlchange/)
+		{
+			$cmd = "./xmlchange $mod->{actupon}";
+		}
+		else
+		{
+		    $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
+		}
 		print "running cmd: $cmd\n";
 		eval qx($cmd);
 		if($?)
@@ -502,7 +510,14 @@ START
 				
 				my $action = $child->getName();
 				my $actupon = $child->textContent();
-				$csh .= "\tmodule $action $actupon\n";
+				if($action =~ /xmlchange/)
+				{
+					$csh .= "\t./$action $actupon\n";
+				}
+				else
+				{
+					$csh .= "\tmodule $action $actupon\n";
+				}
 			}
 			$csh .= "endif\n";
 		}
@@ -601,7 +616,14 @@ START
 			{
                 my $action = $child->getName();
 				my $actupon = $child->textContent();
-				$bash .= "\tmodule $action $actupon\n";
+				if($action =~ /xmlchange/)
+				{
+					$bash .= "\t./$action $actupon\n";
+				}
+				else
+				{
+					$bash .= "\tmodule $action $actupon\n";
+				}
 			}
 			$bash .= "fi\n";
 		}
