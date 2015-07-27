@@ -857,6 +857,10 @@
 					description="Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_read_nearest_restart" type="logical" default_value=".false." units="unitless"  mode="forward"
+					description="This flag is intended for the expert user.  If false, forward model will error out if time given by config_start_time (or Restart_timestamp file if config_start_time='file') does not match any xtime strings in the restart file.  If true, forward model will read in record with xtime nearest to config_start_time.  Note that the restart file name is still given by config_start_time (or Restart_timestamp file), regardless of the state of this flag."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
