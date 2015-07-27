@@ -282,13 +282,14 @@ contains
 
        integer :: latSearch, lonSearch, searchIdx
        integer :: iCell, coc, j, k, maxLevel
+       integer :: minimum_levels
 
        logical, pointer :: config_global_realistic_smooth_topography
-       integer, pointer :: config_global_realistic_minimum_levels
+       real (kind=RKIND), pointer :: config_global_realistic_minimum_depth
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_minimum_levels', config_global_realistic_minimum_levels)
+       call mpas_pool_get_config(domain % configs, 'config_global_realistic_minimum_depth', config_global_realistic_minimum_depth)
        call mpas_pool_get_config(domain % configs, 'config_global_realistic_smooth_topography', config_global_realistic_smooth_topography)
 
        block_ptr => domain % blocklist
@@ -304,6 +305,15 @@ contains
           call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+          do k = 1, nVertLevels
+             if (refBottomDepth(k).gt.config_global_realistic_minimum_depth) then
+                minimum_levels = k
+                write (stdoutUnit,'(a,f8.2,2a,i5,a,f8.2,a)') 'config_global_realistic_minimum_depth=',config_global_realistic_minimum_depth,' m.  ', &
+                   'Setting minimum layer index to ',minimum_levels, ' with a bottom depth of ', refBottomDepth(k), ' m.'
+                exit
+             end if
+          end do
 
           do iCell = 1, nCells
              currentLat = latCell(iCell)
@@ -343,12 +353,10 @@ contains
                 if (maxLevelCell(iCell) == -1) then
                    maxLevelCell(iCell) = nVertLevels
                    bottomDepth(iCell) = refBottomDepth( nVertLevels )
-                else if (maxLevelCell(iCell) <= config_global_realistic_minimum_levels) then
-                   maxLevelCell(iCell) = config_global_realistic_minimum_levels
-                   bottomDepth(iCell) = refBottomDepth( config_global_realistic_minimum_levels )
+                else if (maxLevelCell(iCell) <= minimum_levels) then
+                   maxLevelCell(iCell) = minimum_levels
+                   bottomDepth(iCell) = refBottomDepth( minimum_levels )
                 end if
-
-
 
              else
                 bottomDepth(iCell) = 0.0_RKIND
@@ -391,9 +399,9 @@ contains
 
           ! Enforce minimum number of layers in ocean cells.
           do iCell = 1, nCells
-              if (maxLevelCell(iCell) > 0 .and. maxLevelCell(iCell) < config_global_realistic_minimum_levels) then
-                  maxLevelCell(iCell) = config_global_realistic_minimum_levels
-                  bottomDepth(iCell) = refBottomDepth(config_global_realistic_minimum_levels)
+              if (maxLevelCell(iCell) > 0 .and. maxLevelCell(iCell) < minimum_levels) then
+                  maxLevelCell(iCell) = minimum_levels
+                  bottomDepth(iCell) = refBottomDepth(minimum_levels)
               end if
           end do
 

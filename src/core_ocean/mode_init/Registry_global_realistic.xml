@@ -1,7 +1,7 @@
 	<nml_record name="global_realistic" mode="init" configuration="global_realistic">
-		<nml_option name="config_global_realistic_minimum_levels" type="integer" default_value="3" units="unitless"
-					description="Minimum number of vertical levels in a column."
-					possible_values="Any positive integer value greater than 0."
+		<nml_option name="config_global_realistic_minimum_depth" type="real" default_value="15" units="m"
+					description="Minimum depth where column contains all water-filled cells.  The first layer with refBottomDepth greater than this value is included in whole, i.e. no partial bottom cells are used in this layer."
+					possible_values="Any positive real value greater than 0, but typically greater than 10 m."
 		/>
 		<nml_option name="config_global_realistic_depth_file" type="character" default_value="none" units="unitless"
 					description="Path to the depth initial condition file."
