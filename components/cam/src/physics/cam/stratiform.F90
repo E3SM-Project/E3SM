@@ -603,7 +603,7 @@ subroutine stratiform_tend( &
 
    lq(:)        = .FALSE.
    lq(ixcldliq) = .TRUE.
-   call physics_ptend_init( ptend_loc, state1%psetcols, 'pcwdetrain', lq=lq)
+   call physics_ptend_init( ptend_loc, state1%psetcols, 'pcwdet', lq=lq)
    
    do k = 1, pver
       do i = 1, state1%ncol

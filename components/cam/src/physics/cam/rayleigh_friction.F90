@@ -120,7 +120,7 @@ contains
     real(r8) :: c1, c2, c3                         ! temporary variables
     !-----------------------------------------------------------------------
 
-    call physics_ptend_init(ptend, state%psetcols, 'rayleigh friction', ls=.true., lu=.true., lv=.true.)
+    call physics_ptend_init(ptend, state%psetcols, 'rayfri', ls=.true., lu=.true., lv=.true.)
 
     if (otau0 .eq. 0._r8) return
 

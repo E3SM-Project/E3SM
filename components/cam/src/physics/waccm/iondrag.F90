@@ -1094,7 +1094,7 @@ contains
     !-------------------------------------------------------------------------
 
     if (.not.doiodrg) then
-       call physics_ptend_init(ptend,state%psetcols,'none') !Initialize an empty ptend for use with physics_update
+       call physics_ptend_init(ptend,state%psetcols,'none_ion') !Initialize an empty ptend for use with physics_update
        return
     end if
 

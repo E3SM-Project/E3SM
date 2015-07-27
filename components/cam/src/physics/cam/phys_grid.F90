@@ -811,7 +811,7 @@ contains
     enddo
 
     deallocate( pchunkid )
-    deallocate( npchunks )
+    !deallocate( npchunks ) !BSINGH -  do not deallocate as it is being used in physpkg
     !
     !-----------------------------------------------------------------------
     !
@@ -3218,7 +3218,7 @@ logical function phys_grid_initialized ()
 
 !---------------------------Local workspace-----------------------------
 #if ( defined SPMD )
-   integer :: p                        ! loop indices
+   integer :: i, p                     ! loop indices
    integer :: bbuf_siz                 ! size of block_buffer
    integer :: cbuf_siz                 ! size of chunk_buffer
    integer :: lwindow                  ! placeholder for missing window
@@ -3548,7 +3548,7 @@ logical function phys_grid_initialized ()
 
 !---------------------------Local workspace-----------------------------
 #if ( defined SPMD )
-   integer :: p                        ! loop indices
+   integer :: i, p                     ! loop indices
    integer :: bbuf_siz                 ! size of block_buffer
    integer :: cbuf_siz                 ! size of chunk_buffer
    integer :: lwindow                  ! placeholder for missing window
@@ -3896,6 +3896,8 @@ logical function phys_grid_initialized ()
    integer :: jb, ib                     ! global block and columns indices
    integer :: blksiz                     ! current block size
    integer :: ntmp1, ntmp2, nlchunks     ! work variables
+   integer :: cbeg                       ! beginning longitude index for 
+                                         !  current chunk
    integer :: max_ncols                  ! upper bound on number of columns in a block
    integer :: ncols                      ! number of columns in current chunk
    logical :: error                      ! error flag 

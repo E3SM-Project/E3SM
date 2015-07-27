@@ -51,7 +51,7 @@
 
       subroutine mcica_subcol_lw(lchnk, ncol, nlay, icld, permuteseed, play, &
                        cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
-                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl)
+                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, rnglw, pergro)
 
 ! ----- Input -----
 ! Control
@@ -63,6 +63,7 @@
                                                         ! permute the seed between each call.
                                                         ! between calls for LW and SW, recommended
                                                         ! permuteseed differes by 'ngpt'
+      logical, intent(in) :: pergro
 
 ! Atmosphere
       real(kind=r8), intent(in) :: play(:,:)          ! layer pressures (mb) 
@@ -85,6 +86,7 @@
                                                         !    Dimensions: (ncol,nlay)
       real(kind=r8), intent(in) :: rel(:,:)           ! cloud liquid particle size
                                                         !    Dimensions: (ncol,nlay)
+      real(kind=r8), intent(in) :: rnglw(:,:,:)           ! rand lw
 
 ! ----- Output -----
 ! Atmosphere/clouds - cldprmc [mcica]
@@ -150,14 +152,14 @@
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed)
+                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, rnglw, pergro)!BSINGH
 
       end subroutine mcica_subcol_lw
 
 
 !-------------------------------------------------------------------------------------------------
       subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
-                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed) 
+                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed,rnglw, pergro)!BSINGH  
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -228,6 +230,7 @@
       integer, intent(in) :: icld            ! clear/cloud, cloud overlap flag
       integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
       integer, optional, intent(in) :: changeSeed     ! allows permuting seed
+      logical, intent(in) :: pergro
 
 ! Column state (cloud fraction, cloud water, cloud ice) + variables needed to read physics state 
       real(kind=r8), intent(in) :: pmid(:,:)          ! layer pressure (Pa)
@@ -243,6 +246,7 @@
 !      real(kind=r8), intent(in) :: ssac(:,:,:)       ! cloud single scattering albedo
                                                         !    Dimensions: (nbndlw,ncol,nlay)
                                                         !   inactive - for future expansion
+       real(kind=r8), intent(in) :: rnglw(:,:,:)           ! rand #lw
 !      real(kind=r8), intent(in) :: asmc(:,:,:)       ! cloud asymmetry parameter
                                                         !    Dimensions: (nbndlw,ncol,nlay)
                                                         !   inactive - for future expansion
@@ -378,7 +382,8 @@
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
-                  CDF(isubcol,:,ilev) = rand_num
+                  CDF(isubcol,:,ilev) = rand_num !BSINGH -commented this line
+                  if(pergro)CDF(isubcol,:,ilev) = rnglw(isubcol,1:ncol,ilev) !BSINGH - added this line
                enddo
             enddo
          elseif (irnd.eq.1) then

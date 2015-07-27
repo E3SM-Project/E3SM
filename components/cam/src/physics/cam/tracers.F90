@@ -274,7 +274,7 @@ subroutine tracers_timestep_tend(state, ptend, cflx, landfrac, deltat)
 !-----------------------------------------------------------------------
 
   if (.not. tracers_flag) then
-       call physics_ptend_init(ptend,state%psetcols,'none') !Initialize an empty ptend for use with physics_update
+       call physics_ptend_init(ptend,state%psetcols,'nonetrc') !Initialize an empty ptend for use with physics_update
        return
   else
      lq(:)      = .FALSE.

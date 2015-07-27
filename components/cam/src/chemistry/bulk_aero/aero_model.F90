@@ -435,7 +435,7 @@ contains
     ! note that tendencies are not only in sfc layer (because of sedimentation)
     ! and that ptend is updated within each subroutine for different species
     
-    call physics_ptend_init(ptend, state%psetcols, 'aero_model_drydep', lq=drydep_lq)
+    call physics_ptend_init(ptend, state%psetcols, 'drydep', lq=drydep_lq)
 
     aeronames(:sslt_nbin)   = sslt_names(:)
     aeronames(sslt_nbin+1:) = dust_names(:)
