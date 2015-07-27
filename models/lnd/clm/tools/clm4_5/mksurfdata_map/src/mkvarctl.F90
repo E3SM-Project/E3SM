@@ -30,6 +30,7 @@ module mkvarctl
   character(len=256), public :: mksrf_fsoitex    = ' '  ! soil texture data file name
   character(len=256), public :: mksrf_forganic   = ' '  ! organic matter data file name
   character(len=256), public :: mksrf_fsoicol    = ' '  ! soil color data file name
+  character(len=256), public :: mksrf_fsoiord  = ' '    ! soil order data file name
   character(len=256), public :: mksrf_fabm       = ' '  ! ag fire peak month and
   character(len=256), public :: mksrf_fpeat      = ' '  ! peatlands and
   character(len=256), public :: mksrf_fgdp       = ' '  ! gdp data file names
@@ -55,6 +56,7 @@ module mkvarctl
   character(len=256), public :: map_fglacier    = ' ' ! Mapping file for glacier
   character(len=256), public :: map_fsoitex     = ' ' ! Mapping file for soil texture
   character(len=256), public :: map_fsoicol     = ' ' ! Mapping file for soil color
+  character(len=256), public :: map_fsoiord     = ' ' ! Mapping file for soil order 
   character(len=256), public :: map_fabm        = ' ' ! Mapping file: ag fire...
   character(len=256), public :: map_fpeat       = ' ' ! Mapping file: peatlands
   character(len=256), public :: map_fgdp        = ' ' ! Mapping file: gdp

@@ -136,7 +136,7 @@ begin
   ;
   ; go the other direction now check the _a variables
   ;
-  mksrf_files = (/"mksrf_fvegtyp", "mksrf_fglacier", "mksrf_furbtopo", "mksrf_flndtopo", "mksrf_flai", "mksrf_fsoitex", "mksrf_fsoicol", "mksrf_ffrac", "mksrf_fmax", "mksrf_ftopo", "mksrf_firrig", "mksrf_forganic", "mksrf_flakwat", "mksrf_fwetlnd", "mksrf_furban", "mksrf_fvocef"/)
+  mksrf_files = (/"mksrf_fvegtyp", "mksrf_fglacier", "mksrf_furbtopo", "mksrf_flndtopo", "mksrf_flai", "mksrf_fsoitex", "mksrf_fsoicol","mksrf_fsoiord", "mksrf_ffrac", "mksrf_fmax", "mksrf_ftopo", "mksrf_firrig", "mksrf_forganic", "mksrf_flakwat", "mksrf_fwetlnd", "mksrf_furban", "mksrf_fvocef"/)
   do i = 0, dimsizes(mapgrids)-1
      grid = str_get_field( mapgrids(i), 1, "_" );
      lmask = str_get_field( mapgrids(i), 2, "_" );
