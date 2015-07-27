@@ -86,19 +86,19 @@ module phys_grid
 ! Author: Patrick Worley and John Drake
 ! 
 !-----------------------------------------------------------------------
-   use shr_kind_mod,     only: r8 => shr_kind_r8, r4 => shr_kind_r4
-   use physconst,        only: pi
-   use ppgrid,           only: pcols, pver, begchunk, endchunk
+   use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
+   use physconst,    only: pi
+   use ppgrid,       only: pcols, pver, begchunk, endchunk
 #if ( defined SPMD )
-   use spmd_dyn,         only: block_buf_nrecs, chunk_buf_nrecs, &
-                               local_dp_map
+   use spmd_dyn,     only: block_buf_nrecs, chunk_buf_nrecs, &
+                           local_dp_map
    use mpishorthand
 #endif
-   use spmd_utils,       only: iam, masterproc, npes, proc_smp_map, nsmps
-   use m_MergeSorts,     only: IndexSet, IndexSort
+   use spmd_utils,   only: iam, masterproc, npes, proc_smp_map, nsmps
+   use m_MergeSorts, only: IndexSet, IndexSort
    use cam_abortutils,   only: endrun
    use perf_mod
-   use cam_logfile,      only: iulog
+   use cam_logfile,  only: iulog
 
    implicit none
    save
@@ -108,9 +108,6 @@ module phys_grid
    integer, private :: chunk_buf_nrecs
    logical, private :: local_dp_map=.true. 
 #endif
-
-! The identifier for the physics grid
-   integer, parameter, public :: phys_decomp = 100
 
 ! dynamics field grid information
    integer, private :: hdim1_d, hdim2_d
@@ -163,10 +160,8 @@ module phys_grid
    type (chunk), dimension(:), allocatable, public :: chunks  
                                        ! global computational grid
 
-!!XXgoldyXX: v this should be private!
-   integer, dimension(:), allocatable, public :: npchunks 
-!   integer, dimension(:), allocatable, private :: npchunks 
-!!XXgoldyXX: ^ this should be private
+   !integer, dimension(:), allocatable, private :: npchunks 
+   integer, dimension(:), allocatable, public :: npchunks !BSINGH (07/06/2015): changed private to public as it is used in phypkg.F90 now
                                        ! number of chunks assigned to each process
 
    type lchunk
@@ -325,18 +320,13 @@ contains
     ! 
     !-----------------------------------------------------------------------
     use pmgrid, only: plev
-    use dycore, only: dycore_is
     use dyn_grid, only: get_block_bounds_d, &
          get_block_gcol_d, get_block_gcol_cnt_d, &
          get_block_levels_d, get_block_lvl_cnt_d, &
          get_block_owner_d, &
          get_gcol_block_d, get_gcol_block_cnt_d, &
-         get_horiz_grid_dim_d, get_horiz_grid_d, physgrid_copy_attributes_d
-    use spmd_utils, only: pair, ceil2
-    use cam_grid_support, only: cam_grid_register, iMap, max_hcoordname_len
-    use cam_grid_support, only: horiz_coord_t, horiz_coord_create
-    use cam_grid_support, only: cam_grid_attribute_copy
-
+         get_horiz_grid_dim_d, get_horiz_grid_d
+       use spmd_utils, only: pair, ceil2
     !
     !------------------------------Arguments--------------------------------
     !
@@ -365,16 +355,19 @@ contains
     integer :: owner_p                    ! process owning given chunk column
     integer :: blockids(plev+1)           ! block indices
     integer :: bcids(plev+1)              ! block column indices
+    integer :: glon, glat                 ! global (lon,lat) indices
+    integer :: ntmp1, ntmp2               ! work variables
 
+    logical :: clon_wrap                  ! flag used in initializing lat_p, lon_p
 
     ! column surface area (from dynamics)
-    real(r8), dimension(:), allocatable :: area_d
+    real(r8), dimension(:), allocatable :: area_d 
 
     ! column integration weight (from dynamics)
-    real(r8), dimension(:), allocatable :: wght_d
+    real(r8), dimension(:), allocatable :: wght_d 
 
     ! chunk global ordering
-    integer, dimension(:), allocatable :: pchunkid
+    integer, dimension(:), allocatable :: pchunkid                   
 
     ! permutation array used in physics column sorting;
     ! reused later as work space in (lbal_opt == -1) logic
@@ -383,32 +376,10 @@ contains
     ! latitudes and longitudes and column area for dynamics columns
     real(r8), dimension(:), allocatable :: clat_d
     real(r8), dimension(:), allocatable :: clon_d
-    real(r8), dimension(:), allocatable :: lat_d
-    real(r8), dimension(:), allocatable :: lon_d
     real(r8) :: clat_p_tmp
     real(r8) :: clon_p_tmp
 
-    ! Maps and values for physics grid
-    real(r8),       pointer             :: lonvals(:)
-    real(r8),       pointer             :: latvals(:)
-    real(r8),               allocatable :: latdeg_p(:)
-    real(r8),               allocatable :: londeg_p(:)
-    integer(iMap),  pointer             :: grid_map(:,:)
-    integer(iMap),  pointer             :: coord_map(:)
-    type(horiz_coord_t), pointer        :: lat_coord
-    type(horiz_coord_t), pointer        :: lon_coord
-    integer                             :: gcols(pcols)
-    character(len=max_hcoordname_len), pointer :: copy_attributes(:)
-    character(len=max_hcoordname_len)   :: copy_gridname
-    logical                             :: unstructured
-    real(r8)                            :: lonmin, latmin
-
-    nullify(lonvals)
-    nullify(latvals)
-    nullify(grid_map)
-    nullify(coord_map)
-    nullify(lat_coord)
-    nullify(lon_coord)
+    integer lons(2), lats(2)
 
     call t_adj_detailf(-2)
     call t_startf("phys_grid_init")
@@ -422,15 +393,10 @@ contains
     ngcols = hdim1_d*hdim2_d
     allocate( clat_d(1:ngcols) )
     allocate( clon_d(1:ngcols) )
-    allocate( lat_d(1:ngcols) )
-    allocate( lon_d(1:ngcols) )
     allocate( cdex(1:ngcols) )
     clat_d = 100000.0_r8
     clon_d = 100000.0_r8
-    call get_horiz_grid_d(ngcols, clat_d_out=clat_d, clon_d_out=clon_d, lat_d_out=lat_d, lon_d_out=lon_d)
-    latmin = MINVAL(ABS(lat_d))
-    lonmin = MINVAL(ABS(lon_d))
-!!XXgoldyXX: To do: replace collection above with local physics points
+    call get_horiz_grid_d(ngcols, clat_d_out=clat_d, clon_d_out=clon_d)
 
     ! count number of "real" column indices
     ngcols_p = 0
@@ -455,19 +421,16 @@ contains
 
     allocate( clon_p(1:clon_p_tot) )
     allocate( clon_p_cnt(1:clon_p_tot) )
-    allocate( londeg_p(1:clon_p_tot) )
 
     pre_i = 1
     clon_p_tot = 1
     clon_p(1) = clon_d(cdex(1))
-    londeg_p(1) = lon_d(cdex(1))
     do i=2,ngcols_p
        if (clon_d(cdex(i)) > clon_p(clon_p_tot)) then
           clon_p_cnt(clon_p_tot) = i-pre_i
           pre_i = i
           clon_p_tot = clon_p_tot + 1
           clon_p(clon_p_tot) = clon_d(cdex(i))
-          londeg_p(clon_p_tot) = lon_d(cdex(i))
        endif
     enddo
     clon_p_cnt(clon_p_tot) = (ngcols_p+1)-pre_i
@@ -487,19 +450,16 @@ contains
     allocate( clat_p(1:clat_p_tot) )
     allocate( clat_p_cnt(1:clat_p_tot) )
     allocate( clat_p_idx(1:clat_p_tot) )
-    allocate( latdeg_p(1:clat_p_tot) )
 
     pre_i = 1
     clat_p_tot = 1
     clat_p(1) = clat_d(cdex(1))
-    latdeg_p(1) = lat_d(cdex(1))
     do i=2,ngcols_p
        if (clat_d(cdex(i)) > clat_p(clat_p_tot)) then
           clat_p_cnt(clat_p_tot) = i-pre_i
           pre_i = i
           clat_p_tot = clat_p_tot + 1
           clat_p(clat_p_tot) = clat_d(cdex(i))
-          latdeg_p(clat_p_tot) = lat_d(cdex(i))
        endif
     enddo
     clat_p_cnt(clat_p_tot) = (ngcols_p+1)-pre_i
@@ -508,9 +468,6 @@ contains
     do j=2,clat_p_tot
        clat_p_idx(j) = clat_p_idx(j-1) + clat_p_cnt(j-1)
     enddo
-
-    deallocate(lat_d)
-    deallocate(lon_d)
 
     ! sort by longitude within latitudes
     end_dex = 0
@@ -796,7 +753,7 @@ contains
     enddo
 
     deallocate( pchunkid )
-    deallocate( npchunks )
+    !deallocate( npchunks ) !BSINGH -  do not deallocate as it is being used in physpkg
     !
     !-----------------------------------------------------------------------
     !
@@ -955,110 +912,6 @@ contains
     deallocate( gs_col_offset )
     ! (if eliminate get_lon_xxx, can also deallocate
     !  clat_p_idx, and grid_latlon?))
-
-    ! Add physics-package grid to set of CAM grids
-    ! physgrid always uses 'lat' and 'lon' as coordinate names; If dynamics
-    !    grid is different, it will use different coordinate names
-
-    ! First, create a map for the physics grid
-    ! It's structure will depend on whether or not the physics grid is
-    ! unstructured
-    unstructured = dycore_is('UNSTRUCTURED')
-    if (unstructured) then
-      allocate(grid_map(3, pcols * (endchunk - begchunk + 1)))
-    else
-      allocate(grid_map(4, pcols * (endchunk - begchunk + 1)))
-    end if
-    grid_map = 0
-    allocate(latvals(size(grid_map, 2)))
-    allocate(lonvals(size(grid_map, 2)))
-    p = 0
-    do lcid = begchunk, endchunk
-      ncols = lchunks(lcid)%ncols
-      call get_gcol_all_p(lcid, pcols, gcols)
-      ! collect latvals and lonvals
-      cid = lchunks(lcid)%cid
-      do i = 1, chunks(cid)%ncols
-        latvals(p + i) = latdeg_p(chunks(cid)%lat(i))
-        lonvals(p + i) = londeg_p(chunks(cid)%lon(i))
-      end do
-      if (pcols > ncols) then
-        ! Need to set these to detect unused columns
-        latvals(p+ncols+1:p+pcols) = 1000.0_r8
-        lonvals(p+ncols+1:p+pcols) = 1000.0_r8
-      end if
-
-      ! Set grid values for this chunk
-      do i = 1, pcols
-        p = p + 1
-        grid_map(1, p) = i
-        grid_map(2, p) = lcid
-        if ((i <= ncols) .and. (gcols(i) > 0)) then
-          if (unstructured) then
-            grid_map(3, p) = gcols(i)
-          else
-            grid_map(3, p) = get_lon_p(lcid, i)
-            grid_map(4, p) = get_lat_p(lcid, i)
-          end if
-        else
-          if (i <= ncols) then
-            call endrun("phys_grid_init: unmapped column")
-          end if
-        end if
-      end do
-    end do
-
-    ! Note that if the dycore is using the same points as the physics grid,
-    !      it will have already set up 'lat' and 'lon' axes for the physics grid
-    !      However, these will be in the dynamics decomposition
-
-    if (unstructured) then
-      coord_map => grid_map(3,:)
-      lon_coord => horiz_coord_create('lon', 'ncol', ngcols_p, 'longitude',   &
-           'degrees_east', 1, size(lonvals), lonvals, map=coord_map)
-      lat_coord => horiz_coord_create('lat', 'ncol', ngcols_p, 'latitude',    &
-           'degrees_north', 1, size(latvals), latvals, map=coord_map)
-    else
-      ! Create a lon coord map which only writes from one of each unique lon
-      allocate(coord_map(size(grid_map, 2)))
-      where(latvals == latmin)
-        coord_map(:) = grid_map(3, :)
-      elsewhere
-        coord_map(:) = 0_iMap
-      end where
-      lon_coord => horiz_coord_create('lon', 'lon', hdim1_d, 'longitude',     &
-           'degrees_east', 1, size(lonvals), lonvals, map=coord_map)
-      nullify(coord_map)
-      ! Create a lat coord map which only writes from one of each unique lat
-      allocate(coord_map(size(grid_map, 2)))
-      where(lonvals == lonmin)
-        coord_map(:) = grid_map(4, :)
-      elsewhere
-        coord_map(:) = 0_iMap
-      end where
-      lat_coord => horiz_coord_create('lat', 'lat', hdim2_d, 'latitude',      &
-           'degrees_north', 1, size(latvals), latvals, map=coord_map)
-    end if
-    nullify(coord_map)
-    call cam_grid_register('physgrid', phys_decomp, lat_coord, lon_coord,     &
-         grid_map, unstruct=unstructured, block_indexed=.true.)
-    ! Copy required attributes from the dynamics array
-    nullify(copy_attributes)
-    call physgrid_copy_attributes_d(copy_gridname, copy_attributes)
-    do i = 1, size(copy_attributes)
-      call cam_grid_attribute_copy(copy_gridname, 'physgrid', copy_attributes(i))
-    end do
-    ! Cleanup pointers (they belong to the grid now)
-    nullify(grid_map)
-    deallocate(latvals)
-    nullify(latvals)
-    deallocate(lonvals)
-    nullify(lonvals)
-    ! Cleanup, we are responsible for copy attributes
-    if (associated(copy_attributes)) then
-      deallocate(copy_attributes)
-      nullify(copy_attributes)
-    end if
 
     !
     physgrid_set = .true.   ! Set flag indicating physics grid is now set
@@ -3203,7 +3056,7 @@ logical function phys_grid_initialized ()
 
 !---------------------------Local workspace-----------------------------
 #if ( defined SPMD )
-   integer :: p                        ! loop indices
+   integer :: i, p                     ! loop indices
    integer :: bbuf_siz                 ! size of block_buffer
    integer :: cbuf_siz                 ! size of chunk_buffer
    integer :: lwindow                  ! placeholder for missing window
@@ -3533,7 +3386,7 @@ logical function phys_grid_initialized ()
 
 !---------------------------Local workspace-----------------------------
 #if ( defined SPMD )
-   integer :: p                        ! loop indices
+   integer :: i, p                     ! loop indices
    integer :: bbuf_siz                 ! size of block_buffer
    integer :: cbuf_siz                 ! size of chunk_buffer
    integer :: lwindow                  ! placeholder for missing window
@@ -3881,6 +3734,8 @@ logical function phys_grid_initialized ()
    integer :: jb, ib                     ! global block and columns indices
    integer :: blksiz                     ! current block size
    integer :: ntmp1, ntmp2, nlchunks     ! work variables
+   integer :: cbeg                       ! beginning longitude index for 
+                                         !  current chunk
    integer :: max_ncols                  ! upper bound on number of columns in a block
    integer :: ncols                      ! number of columns in current chunk
    logical :: error                      ! error flag 

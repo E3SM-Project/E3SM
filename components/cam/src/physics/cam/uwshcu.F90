@@ -550,7 +550,7 @@ end subroutine uwshcu_readnl
     !
     ! Internal Output Variables
     !
-
+    real(r8) :: gam_fac !BSINGH - declared this var based on Sungsu suggestion
     real(r8)                   qtten_out(mix,mkx)             !  Tendency of qt [ kg/kg/s ]
     real(r8)                   slten_out(mix,mkx)             !  Tendency of sl [ J/kg/s ]
     real(r8)                   ufrc_out(mix,0:mkx)            !  Updraft fractional area at the interfaces [ fraction ]
@@ -2858,8 +2858,8 @@ end subroutine uwshcu_readnl
        ! It seems that below qudarature solving formula is valid only when bogbot < 0.  !
        ! Below solving equation is clearly wrong ! I should revise this !               !
        ! ------------------------------------------------------------------------------ ! 
-            
-       if( drage .eq. 0._r8 ) then
+!       if( drage .eq. 0._r8 ) then !BSINGH - This is the original code
+       if( drage*dp0(kpen) .lt. 1.e-4_r8 ) then !BSINGH - Phil suggested modification
            aquad =  ( bogtop - bogbot ) / ( ps0(kpen) - ps0(kpen-1) )
            bquad =  2._r8 * bogbot
            cquad = -wu(kpen-1)**2 * rho0j
@@ -3098,24 +3098,43 @@ end subroutine uwshcu_readnl
 
                  if( ( emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen ) .lt. -0.1_r8*rhos0j )        limit_emf(i) = 1
                  if( ( emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen ) .lt. -0.9_r8*dp0(k+1)/g/dt ) limit_emf(i) = 1         
-                 emf(k) = max(max(emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen, -0.1_r8*rhos0j), -0.9_r8*dp0(k+1)/g/dt )    
-                 if( abs(emf(k)) .gt. abs(emf(k+1)) ) then
-                     thlu_emf(k) = ( thlu_emf(k+1) * emf(k+1) + thl0(k+1) * ( emf(k) - emf(k+1) ) ) / emf(k)
-                     qtu_emf(k)  = ( qtu_emf(k+1)  * emf(k+1) + qt0(k+1)  * ( emf(k) - emf(k+1) ) ) / emf(k)
-                     uu_emf(k)   = ( uu_emf(k+1)   * emf(k+1) + u0(k+1)   * ( emf(k) - emf(k+1) ) ) / emf(k)
-                     vu_emf(k)   = ( vu_emf(k+1)   * emf(k+1) + v0(k+1)   * ( emf(k) - emf(k+1) ) ) / emf(k)
-                     do m = 1, ncnst
-                        tru_emf(k,m)  = ( tru_emf(k+1,m)  * emf(k+1) + tr0(k+1,m)  * ( emf(k) - emf(k+1) ) ) / emf(k)
-                     enddo
-                 else   
-                     thlu_emf(k) = thl0(k+1)
-                     qtu_emf(k)  =  qt0(k+1)
-                     uu_emf(k)   =   u0(k+1)
-                     vu_emf(k)   =   v0(k+1)
-                     do m = 1, ncnst
-                        tru_emf(k,m)  =  tr0(k+1,m)
-                     enddo
-                 endif   
+                 emf(k) = max(max(emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen, -0.1_r8*rhos0j), -0.9_r8*dp0(k+1)/g/dt )  
+
+
+                 !BSINGH - new code suggected by sungsu
+                 gam_fac = emf(k) / min( -1.e-20_r8, emf(k+1)-umf(k)*dp0(k+1)*rei(k+1)*rpen )
+
+                 thlu_emf(k) = ( thlu_emf(k+1) * emf(k+1) * gam_fac + thl0(k+1) * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 qtu_emf(k)  = ( qtu_emf(k+1)  * emf(k+1) * gam_fac + qt0(k+1)  * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 uu_emf(k)   = ( uu_emf(k+1)   * emf(k+1) * gam_fac + u0(k+1)   * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 vu_emf(k)   = ( vu_emf(k+1)   * emf(k+1) * gam_fac + v0(k+1)   * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 do m = 1, ncnst
+                    tru_emf(k,m) = ( tru_emf(k+1,m)  * emf(k+1) * gam_fac + tr0(k+1,m)  * ( emf(k) - emf(k+1) * gam_fac ) ) / emf(k)
+                 enddo
+                 !BSINGH - new code suggected by sungsu ENDS
+
+                 !BSINGH - commenting out the following original code:
+                 !if( abs(emf(k)) .gt. abs(emf(k+1)) ) then
+                 !   if(lchnk == 165 .and. k == 8.and. i==15)print*,'BALLI:uwshcu-:,thlu_emf3:',thlu_emf(k)
+                 !    thlu_emf(k) = ( thlu_emf(k+1) * emf(k+1) + thl0(k+1) * ( emf(k) - emf(k+1) ) ) / emf(k)
+                 !    if(lchnk == 165 .and. k == 8.and. i==15)print*,'BALLI:uwshcu-:,thlu_emf4:',thlu_emf(k),thlu_emf(k+1),emf(k+1),thl0(k+1),emf(k),emf(k+1), emf(k)
+                 !    qtu_emf(k)  = ( qtu_emf(k+1)  * emf(k+1) + qt0(k+1)  * ( emf(k) - emf(k+1) ) ) / emf(k)
+                 !    uu_emf(k)   = ( uu_emf(k+1)   * emf(k+1) + u0(k+1)   * ( emf(k) - emf(k+1) ) ) / emf(k)
+                 !    vu_emf(k)   = ( vu_emf(k+1)   * emf(k+1) + v0(k+1)   * ( emf(k) - emf(k+1) ) ) / emf(k)
+                 !    do m = 1, ncnst
+                 !       tru_emf(k,m)  = ( tru_emf(k+1,m)  * emf(k+1) + tr0(k+1,m)  * ( emf(k) - emf(k+1) ) ) / emf(k)
+                 !    enddo
+                 !else   
+                 !    thlu_emf(k) = thl0(k+1)
+                 !    if(lchnk == 165 .and. k == 8.and. i==15)print*,'BALLI:uwshcu-:,thlu_emf5:',thlu_emf(k), thl0(k+1)
+                 !    qtu_emf(k)  =  qt0(k+1)
+                 !    uu_emf(k)   =   u0(k+1)
+                 !    vu_emf(k)   =   v0(k+1)
+                 !    do m = 1, ncnst
+                 !       tru_emf(k,m)  =  tr0(k+1,m)
+                 !    enddo
+                 !endif   
+                 !BSINGH -  commenting out the following original code ENDS
                      
              else ! Alternative Non-Cumulative Penetrative Entrainment
 

@@ -211,6 +211,7 @@ contains
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
+    use cam_history,  only: outfld, fieldname_len    
 
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
@@ -239,14 +240,16 @@ contains
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
-         (/ "stratiform", "cldwat    ", "micro_mg  ", "macro_park" /)
+         (/ "stratiform", "cldwat    ", "micro_mg  ", "macropk   " /)
 
     ! cldliq/ice limits that are always on.
     character(len=24), parameter :: cldlim_names(2) = &
-         (/ "convect_deep", "zm_conv_tend" /)
+         (/ "convect_deep", "zm_convt    " /)
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
+
+    character(len=fieldname_len)   :: str_S,str_Stend,str_QV,str_QVtend,str_T
 
     !-----------------------------------------------------------------------
 
@@ -257,7 +260,7 @@ contains
     !-----------------------------------------------------------------------
     ! If no fields are set, then return
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
-       ptend%name  = "none"
+       ptend%name  = "none_pupif"
        ptend%psetcols = 0
        return
     end if
@@ -450,10 +453,30 @@ contains
 
     deallocate(cpairv_loc, rairv_loc)
 
+
+    !BSINGH - for pergrow
+    
+    !BSINGH - Added these calls to output fields
+    str_T = 'T_'//trim(adjustl(ptend%name))
+    call outfld( trim(adjustl(str_T)), state%t, pcols, state%lchnk )
+    
+    str_S = 'S_'//trim(adjustl(ptend%name))
+    call outfld( trim(adjustl(str_S)), state%s, pcols, state%lchnk )
+    
+    !str_Stend = 'St_'//trim(adjustl(ptend%name))
+    !call outfld( trim(adjustl(str_Stend)), ptend%s, pcols, state%lchnk )
+    
+    str_QV = 'QV_'//trim(adjustl(ptend%name))
+    call outfld( trim(adjustl(str_QV)), state%q(:,:,1), pcols, state%lchnk )
+    
+    !str_QVtend = 'QVt_'//trim(adjustl(ptend%name))
+    !call outfld( trim(adjustl(str_QVtend)), ptend%q(:,:,1), pcols, state%lchnk )
+
+
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
 
-    ptend%name  = "none"
+    ptend%name  = "nonepup"
     ptend%lq(:) = .false.
     ptend%ls    = .false.
     ptend%lu    = .false.

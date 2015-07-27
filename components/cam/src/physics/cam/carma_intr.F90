@@ -121,7 +121,7 @@ contains
     real(r8), intent(in), optional     :: ustar(pcols)          !! friction velocity (m/s)
     real(r8), intent(in), optional     :: obklen(pcols)         !! Obukhov length [ m ]
     
-    call physics_ptend_init(ptend,state%psetcols,'none') !Initialize an empty ptend for use with physics_update
+    call physics_ptend_init(ptend,state%psetcols,'none_car') !Initialize an empty ptend for use with physics_update
 
     if (present(prec_str))  prec_str(:)    = 0._r8
     if (present(snow_str))  snow_str(:)    = 0._r8

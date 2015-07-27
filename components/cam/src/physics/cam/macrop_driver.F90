@@ -710,7 +710,7 @@ end subroutine macrop_driver_readnl
    lq(ixcldice) = .TRUE.
    lq(ixnumliq) = .TRUE.
    lq(ixnumice) = .TRUE.
-   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwdetrain', ls=.true., lq=lq)   ! Initialize local physics_ptend object
+   call physics_ptend_init(ptend_loc, state%psetcols, 'pcwdet', ls=.true., lq=lq)   ! Initialize local physics_ptend object
 
      ! Procedures :
      ! (1) Partition detrained convective cloud water into liquid and ice based on T.
@@ -1026,7 +1026,7 @@ end subroutine macrop_driver_readnl
    lq(ixnumice) = .true.
 
    ! Initialize local physics_ptend object again
-   call physics_ptend_init(ptend_loc, state%psetcols, 'macro_park', &
+   call physics_ptend_init(ptend_loc, state%psetcols, 'macropk', &
         ls=.true., lq=lq )  
 
  ! --------------------------------- !

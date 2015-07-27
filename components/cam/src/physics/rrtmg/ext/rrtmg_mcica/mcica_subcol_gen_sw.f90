@@ -51,7 +51,7 @@
       subroutine mcica_subcol_sw(lchnk, ncol, nlay, icld, permuteseed, play, &
                        cldfrac, ciwp, clwp, rei, rel, tauc, ssac, asmc, fsfc, &
                        cldfmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, &
-                       taucmcl, ssacmcl, asmcmcl, fsfcmcl)
+                       taucmcl, ssacmcl, asmcmcl, fsfcmcl, rngsw)
 
 ! ----- Input -----
 ! Control
@@ -87,6 +87,7 @@
                                                         !    Dimensions: (ncol,nlay)
       real(kind=r8), intent(in) :: rel(:,:)           ! cloud liquid particle size
                                                         !    Dimensions: (ncol,nlay)
+      real(kind=r8), intent(in) :: rngsw(:,:,:)           ! rand #      
 
 ! ----- Output -----
 ! Atmosphere/clouds - cldprmc [mcica]
@@ -154,7 +155,7 @@
 
 !  Generate the stochastic subcolumns of cloud optical properties for the shortwave;
       call generate_stochastic_clouds_sw (ncol, nlay, nsubcsw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               ssac, asmc, fsfc, cldfmcl, clwpmcl, ciwpmcl, taucmcl, ssacmcl, asmcmcl, fsfcmcl, permuteseed)
+                               ssac, asmc, fsfc, cldfmcl, clwpmcl, ciwpmcl, taucmcl, ssacmcl, asmcmcl, fsfcmcl, permuteseed, rngsw)
 
       end subroutine mcica_subcol_sw
 
@@ -162,7 +163,7 @@
 !-------------------------------------------------------------------------------------------------
       subroutine generate_stochastic_clouds_sw(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, & 
                                    ssac, asmc, fsfc, cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, &
-                                   ssac_stoch, asmc_stoch, fsfc_stoch, changeSeed) 
+                                   ssac_stoch, asmc_stoch, fsfc_stoch, changeSeed, rngsw) 
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -251,6 +252,7 @@
                                                         !    Dimensions: (nbndsw,ncol,nlay)
       real(kind=r8), intent(in) :: fsfc(:,:,:)        ! cloud forward scattering fraction (non-delta scaled)
                                                         !    Dimensions: (nbndsw,ncol,nlay)
+      real(kind=r8), intent(in) :: rngsw(:,:,:)           ! rand #
 
       real(kind=r8), intent(out) :: cld_stoch(:,:,:)  ! subcolumn cloud fraction 
                                                         !    Dimensions: (ngptsw,ncol,nlay)
@@ -385,7 +387,8 @@
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num)
-                  CDF(isubcol,:,ilev) = rand_num
+                  !CDF(isubcol,:,ilev) = rand_num!BASINGH - commented this line
+                  CDF(isubcol,:,ilev) = rngsw(isubcol,1:ncol,ilev)!BSINGH - added this line
                enddo
             enddo
          elseif (irnd.eq.1) then

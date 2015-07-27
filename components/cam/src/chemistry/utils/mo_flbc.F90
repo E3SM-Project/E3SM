@@ -764,7 +764,7 @@ contains
   end subroutine flbc_gmean_vmr
 
   function global_mean_vmr( flbcs, dels, last, next  )
-    use phys_gmean, only: gmean
+    !use phys_gmean, only: gmean!BSINGH - Commented out due to circular dependency, see below
     use phys_grid,  only: get_ncols_p
 
     implicit none
@@ -787,7 +787,8 @@ contains
           vmr_arr(:ncol,lchnk) = flbcs%vmr(:ncol,lchnk,last) &
                + dels * (flbcs%vmr(:ncol,lchnk,next) - flbcs%vmr(:ncol,lchnk,last))
        enddo
-       call gmean (vmr_arr, global_mean_vmr)
+       call endrun ('BALLI- circular dependency[physics_types->cam_history->mo_flbc->phys_gmean->physics_type]')
+       !BALLIcall gmean (vmr_arr, global_mean_vmr)
     endif
 
   endfunction global_mean_vmr

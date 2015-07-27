@@ -759,7 +759,8 @@ main_i_loop: &
             
             ! fraction that is not removed within the cloud
             ! (assumed to be interstitial, and subject to convective transport)
-            fracp = deltat*srct(i)/max(cldmabs(i)*tracer(i,k),1.e-36_r8)  ! amount removed
+            !fracp = deltat*srct(i)/max(cldmabs(i)*tracer(i,k),1.e-36_r8)  ! amount removed !BALLI - original lines
+            fracp = deltat*srct(i)/(max(cldmabs(i),1.e-4_r8)*max(tracer(i,k),1.e-36_r8))  ! amount removed !BALLI - phil suggested 2nd approach
             fracp = max(0._r8,min(1._r8,fracp))
             fracis(i,k) = 1._r8 - fracp
 

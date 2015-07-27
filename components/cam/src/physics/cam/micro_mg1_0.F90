@@ -1095,6 +1095,8 @@ do k=top_lev,pver
 
       icldm(i,k)=max(icecldf(i,k),mincld)
       lcldm(i,k)=max(liqcldf(i,k),mincld)
+!pjr - BSINGH - Added by phil as a temporary solution to avoid temprature jump
+      if (cldm(i,k).gt.0.9999999_r8) cldm(i,k) = 0.9999999_r8 !BSINGH
 
       ! subcolumns, set cloud fraction variables to one
       ! if cloud water or ice is present, if not present

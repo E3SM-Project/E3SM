@@ -594,7 +594,7 @@ end function radiation_nextsw_cday
        cam_out, cam_in, &
        landfrac,landm,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx)
+       fsds, net_flx, rnglw, rngsw) !BSINGH - Added rngsw and rnglw
 
     !----------------------------------------------------------------------- 
     ! 
@@ -648,11 +648,17 @@ end function radiation_nextsw_cday
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
 
+    !BSINGH -  for pergrow
+    use parrrtm, only: nsubcollw => ngptlw !BSINGH
+    use parrrsw, only: nsubcolsw => ngptsw !BSINGH
+
     ! Arguments
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
+    real(r8), intent(in)    :: rnglw(nsubcollw,pcols,pver)     ! rand # for long wave
+    real(r8), intent(in)    :: rngsw(nsubcolsw,pcols,pver)     ! rand # for short wave
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
     real(r8), intent(inout) :: fsnt(pcols)      ! Net column abs solar flux at model top
     real(r8), intent(inout) :: flns(pcols)      ! Srf longwave cooling (up-down) flux
@@ -1058,7 +1064,7 @@ end function radiation_nextsw_cday
                        fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                        fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
                        cam_out%solsd,cam_out%solld,fns,          fcns,                         &
-                       Nday,         Nnite,        IdxDay,       IdxNite,                      &
+                       Nday,         Nnite,        IdxDay,       IdxNite,      rngsw,          &!BSINGH - added rngsw
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
@@ -1168,7 +1174,7 @@ end function radiation_nextsw_cday
                        state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
                        qrl,          qrlc,                                                       &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
-                       flut,         flutc,        fnl,             fcnl,         fldsc, &
+                       flut,         flutc,        fnl,             fcnl,         fldsc, rnglw,  & !BSINGH - added rnglw
                        lu,           ld)
                   call t_stopf ('rad_rrtmg_lw')
 

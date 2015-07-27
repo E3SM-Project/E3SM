@@ -330,7 +330,8 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          endif
          rh(i,k) = max(rh(i,k), 0.0_r8)
          rh(i,k) = min(rh(i,k), 0.98_r8)
-         if (cldn(i,k) .lt. 1.0_r8) then
+         !if (cldn(i,k) .lt. 1.0_r8) then
+         if (cldn(i,k) .lt. 0.9998_r8) then !BSINGH - new code
             rh(i,k) = (rh(i,k) - cldn(i,k)) / (1.0_r8 - cldn(i,k))  ! clear portion
          end if
          rh(i,k) = max(rh(i,k), 0.0_r8)

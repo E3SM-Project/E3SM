@@ -681,7 +681,8 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !-----------------------------------------------------------------------
     ncol = state%ncol
 
-    call physics_ptend_init(ptend, state%psetcols, 'chkenergyfix', ls=.true.)
+    !call physics_ptend_init(ptend, state%psetcols, 'chkenergyfix', ls=.true.)
+    call physics_ptend_init(ptend, state%psetcols, 'chkeyfix', ls=.true.) !BSINGH - changed ptend name
 
 #if ( defined OFFLINE_DYN )
     ! disable the energy fix for offline driver

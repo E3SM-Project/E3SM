@@ -109,7 +109,8 @@ real(r8), parameter, public :: pi = 3.14159265358979323846_r8
 real(r8), parameter, public :: omsm   = 1._r8 - 1.e-5_r8
 
 ! Smallest mixing ratio considered in microphysics.
-real(r8), parameter, public :: qsmall = 1.e-18_r8
+!real(r8), parameter, public :: qsmall = 1.e-18_r8
+real(r8), parameter, public :: qsmall = 1.e-8_r8 !BSINGH: Changed the threshold for pergrow [this mod is climate changing ]
 
 ! minimum allowed cloud fraction
 real(r8), parameter, public :: mincld = 0.0001_r8
