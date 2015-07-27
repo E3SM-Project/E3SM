@@ -12,11 +12,12 @@ MODULE MOSART_physics_mod
 ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
+  use RtmVar        , only : iulog
   use RunoffMod, only : Tctl, TUnit, TRunoff, TPara, rtmCTL
   use rof_cpl_indices, only : nt_rtm, rtm_tracers
   use perf_mod, only: t_startf, t_stopf
   implicit none
-  real(r8), parameter :: TINYVALUE = 1.0e-50_r8  ! double precision variable has a significance of about 16 decimal digits
+  real(r8), parameter :: TINYVALUE = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
     integer  :: nt               ! loop indices
   
 !-----------------------------------------------------------------------
@@ -31,6 +32,7 @@ MODULE MOSART_physics_mod
     
     integer :: iunit, m, k   !local index
     real(r8) :: temp_erout(nt_rtm), localDeltaT
+    real(r8) :: negchan
 
     call t_startf('mosart_hillslope')
     do iunit=rtmCTL%begr,rtmCTL%endr
@@ -42,6 +44,7 @@ MODULE MOSART_physics_mod
     call t_stopf('mosart_hillslope')
 
     TRunoff%flow = 0._r8
+    negchan = 9999.0_r8
     do m=1,Tctl%DLevelH2R
        call t_startf('mosart_subnetwork')    
        do iunit=rtmCTL%begr,rtmCTL%endr
@@ -64,6 +67,10 @@ MODULE MOSART_physics_mod
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_r(iunit)
              call mainchannelRouting(iunit,localDeltaT)    
              TRunoff%wr(iunit,:) = TRunoff%wr(iunit,:) + TRunoff%dwr(iunit,:) * localDeltaT
+!             if(TRunoff%wr(iunit,1) < -1.e-10) then
+!                 write(iulog,*) 'Negative channel storage! ', iunit, TRunoff%wr(iunit,1)
+!                 call shr_sys_abort('mosart: negative channel storage')
+!             end if
              call UpdateState_mainchannel(iunit)
              temp_erout = temp_erout + TRunoff%erout(iunit,:) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
           end do
@@ -71,13 +78,16 @@ MODULE MOSART_physics_mod
           TRunoff%erout(iunit,:) = temp_erout
           TRunoff%flow(iunit,:) = TRunoff%flow(iunit,:) - TRunoff%erout(iunit,:)
        end do
+       negchan = min(negchan, minval(Trunoff%wr(:,:)))
+
        call t_stopf('mosart_chanroute')    
     end do
+    if (negchan < -1.e-10) then
+       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
+!       call shr_sys_abort('mosart: negative channel storage')
+    endif
     TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
 
-    if(0 .gt. 1) then
-    end if    
-    
   end subroutine Euler
 
 !-----------------------------------------------------------------------
@@ -163,6 +173,7 @@ MODULE MOSART_physics_mod
     integer, intent(in) :: iunit      
     real(r8), intent(in) :: theDeltaT    
     integer  :: k
+    real(r8) :: temp_gwl, temp_dwr, temp_gwl0
 
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,:) = 0._r8
@@ -189,7 +200,28 @@ MODULE MOSART_physics_mod
                 end if
              end if
           end if
-          TRunoff%dwr(iunit,nt) = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)
+          temp_dwr = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)
+          temp_gwl = TRunoff%qgwl(iunit,nt) * TUnit%area(iunit) * TUnit%frac(iunit)
+          temp_gwl0 = temp_gwl
+          if(abs(temp_gwl) <= TINYVALUE) then
+              temp_gwl = 0._r8
+          end if 
+          if(temp_gwl < -TINYVALUE) then 
+              if(TRunoff%wr(iunit,nt) < TINYVALUE) then
+                  temp_gwl = 0._r8
+              else 
+                  if(TRunoff%wr(iunit,nt)/theDeltaT + temp_dwr + temp_gwl < -TINYVALUE) then
+                      !write(iulog,*) 'adjust! ', temp_gwl, -(temp_dwr+TRunoff%wr(iunit,nt)/theDeltaT)
+                      temp_gwl = -(temp_dwr + TRunoff%wr(iunit,nt) / theDeltaT)
+                  end if
+              end if
+          end if
+           
+          TRunoff%dwr(iunit,nt) = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt) + temp_gwl
+          !if(TRunoff%wr(iunit,nt) > 1._r8 .and. (TRunoff%wr(iunit,nt)/theDeltaT + TRunoff%dwr(iunit,nt))/TRunoff%wr(iunit,nt) < -TINYVALUE) then
+          !    write(iulog,*) 'negative wr!', TRunoff%wr(iunit,nt), TRunoff%dwr(iunit,nt), temp_dwr, temp_gwl, temp_gwl0, theDeltaT
+          !    stop          
+          !end if 
        end do
     end if
   end subroutine Routing_KW

@@ -73,7 +73,8 @@ module clm_atmlnd
      real(r8), pointer :: forc_pc13o2(:)  => null() !C13O2 partial pressure (Pa)
      real(r8), pointer :: forc_po2(:)     => null() !O2 partial pressure (Pa)
      real(r8), pointer :: forc_flood(:)   => null() ! rof flood (mm/s)
-     real(r8), pointer :: volr(:)         => null() ! rof volr (m3)
+     real(r8), pointer :: volr(:)         => null() ! rof volr total (m3)
+     real(r8), pointer :: volrmch(:)      => null() ! rof volr main channel (m3)
      real(r8), pointer :: forc_aer(:,:)   => null() ! aerosol deposition array
      ! Needed for backwards compatibility with lnd_comp_mct used in clm4_5
      real(r8), pointer :: forc_pch4(:)     => null() !CH4 partial pressure (Pa)
@@ -204,6 +205,7 @@ contains
   allocate(a2l%forc_po2(beg:end))
   allocate(a2l%forc_flood(beg:end))
   allocate(a2l%volr(beg:end))
+  allocate(a2l%volrmch(beg:end))
   allocate(a2l%forc_aer(beg:end,14))
 
   ! ival = nan      ! causes core dump in map_maparray, tcx fix
@@ -236,6 +238,7 @@ contains
   a2l%forc_po2(beg:end) = ival
   a2l%forc_flood(beg:end) = ival
   a2l%volr(beg:end) = ival
+  a2l%volrmch(beg:end) = ival
   a2l%forc_aer(beg:end,:) = ival
 
   ! The following alias is needed just so that lnd_import_export can remain consistent

@@ -3,8 +3,9 @@
 ! namelist_var = new_namelist_value 
 ! NOTE: namelist variable rtm_tstep CAN ONLY be changed by modifying the value
 !       of the xml variable ROF_NCPL in env_run.xml
-! NOTE: if the xml variable MOSART_MODE in env_run.xml is set to 'NULL', then
-!        then rtm will set rof_present to .false. - and will ignore everything else
+! NOTE: if the xml variable ROF GRID in env_build.xml is set to 'null', then
+!        the RTM build-namelist will set do_rtm to .false. - and will ignore 
+!        any change below
 !----------------------------------------------------------------------------------
 
 

@@ -381,7 +381,7 @@ contains
     character(len=128) :: lname
     !-----------------------------------------------------------------------
 
-    do nv = 1,4
+    do nv = 1,8
     do nt = 1,nt_rtm
 
        if (nv == 1) then
@@ -404,6 +404,26 @@ contains
           lname = 'water volume change in cell (dvolrdt)'
           uname = 'mm/s'
           dfld  => rtmCTL%dvolrdt(:,nt)
+       elseif (nv == 5) then
+          vname = 'RTM_WH_'//trim(rtm_tracers(nt))
+          lname = 'surface water storage at hillslopes in cell'
+          uname = 'm'
+          dfld  => rtmCTL%wh(:,nt)
+       elseif (nv == 6) then
+          vname = 'RTM_WT_'//trim(rtm_tracers(nt))
+          lname = 'water storage in tributary channels in cell'
+          uname = 'm3'
+          dfld  => rtmCTL%wt(:,nt)
+       elseif (nv == 7) then
+          vname = 'RTM_WR_'//trim(rtm_tracers(nt))
+          lname = 'water storage in main channel in cell'
+          uname = 'm3'
+          dfld  => rtmCTL%wr(:,nt)
+       elseif (nv == 8) then
+          vname = 'RTM_EROUT_'//trim(rtm_tracers(nt))
+          lname = 'instataneous flow out of main channel in cell'
+          uname = 'm3/s'
+          dfld  => rtmCTL%erout(:,nt)
        else
           write(iulog,*) 'Rtm ERROR: illegal nv value a ',nv
           call shr_sys_abort()
@@ -435,6 +455,10 @@ contains
              if (abs(rtmCTL%runoff(n,nt))  > 1.e30) rtmCTL%runoff(n,nt) = 0.
              if (abs(rtmCTL%dvolrdt(n,nt)) > 1.e30) rtmCTL%dvolrdt(n,nt) = 0.
              if (abs(rtmCTL%fluxout(n,nt)) > 1.e30) rtmCTL%fluxout(n,nt) = 0.
+             if (abs(rtmCTL%wh(n,nt))      > 1.e30) rtmCTL%wh(n,nt) = 0.
+             if (abs(rtmCTL%wt(n,nt))      > 1.e30) rtmCTL%wt(n,nt) = 0.
+             if (abs(rtmCTL%wr(n,nt))      > 1.e30) rtmCTL%wr(n,nt) = 0.
+             if (abs(rtmCTL%erout(n,nt))   > 1.e30) rtmCTL%erout(n,nt) = 0.
           end do
           if (rtmCTL%mask(n) == 1) then
              do nt = 1,nt_rtm

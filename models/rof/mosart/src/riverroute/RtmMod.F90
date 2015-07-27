@@ -1104,8 +1104,18 @@ contains
     if ((nsrest == nsrStartup .and. finidat_rtm /= ' ') .or. &
         (nsrest == nsrContinue) .or. & 
         (nsrest == nsrBranch  )) then
-       call RtmRestFileRead( file=fnamer )
-       fluxout(:,:) = rtmCTL%fluxout(:,:)
+        call RtmRestFileRead( file=fnamer )
+        fluxout(:,:) = rtmCTL%fluxout(:,:)
+        !write(iulog,*) ' MOSART init file is read'
+        TRunoff%wh   = rtmCTL%wh
+        TRunoff%wt   = rtmCTL%wt
+        TRunoff%wr   = rtmCTL%wr
+        TRunoff%erout= rtmCTL%erout
+        do nr = rtmCTL%begr,rtmCTL%endr
+            call UpdateState_hillslope(nr)
+            call UpdateState_subnetwork(nr)
+            call UpdateState_mainchannel(nr)
+        enddo
     end if
 
     call t_stopf('mosarti_restart')
@@ -1138,7 +1148,7 @@ contains
 ! !IROUTINE: Rtmrun
 !
 ! !INTERFACE:
-  subroutine Rtmrun(totrunin, subrunin, rstwr, nlend, rdate)
+  subroutine Rtmrun(totrunin,surrunin, subrunin, gwlrunin,rstwr, nlend, rdate)
 !
 ! !DESCRIPTION:
 ! River routing model
@@ -1151,8 +1161,10 @@ contains
 ! !ARGUMENTS:
     implicit none
     real(r8),         pointer    :: totrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
+    real(r8),         pointer    :: surrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
     real(r8),         pointer    :: subrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
-    logical ,         intent(in) :: rstwr          ! true => write restart file this step
+    real(r8),         pointer    :: gwlrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
+    logical ,         intent(in) :: rstwr          ! true => write restart file this step)
     logical ,         intent(in) :: nlend          ! true => end of run on this step
     character(len=*), intent(in) :: rdate          ! restart file time stamp for name
 !
@@ -1214,10 +1226,14 @@ contains
 
     do n = rtmCTL%begr,rtmCTL%endr
     do nt = 1,nt_rtm
-       n2 = n-rtmCTL%begr+1
+       !n2 = n-rtmCTL%begr+1
        !-- surface is (total - subsurface)
-       TRunoff%qsur(n,nt) = totrunin(n,nt) - subrunin(n,nt)
+       !!!TRunoff%qsur(n,nt) = totrunin(n,nt) - subrunin(n,nt)
+       !!!TRunoff%qsub(n,nt) = subrunin(n,nt)
+       TRunoff%qsur(n,nt) = surrunin(n,nt)
        TRunoff%qsub(n,nt) = subrunin(n,nt)
+       TRunoff%qgwl(n,nt) = gwlrunin(n,nt)
+
     enddo
     enddo
 
@@ -1238,8 +1254,11 @@ contains
 
     ! convert from kg/m2-s (mm/s) to m/s
     do n = rtmCTL%begr,rtmCTL%endr
-       TRunoff%qsur = TRunoff%qsur * 0.001_r8
-       TRunoff%qsub = TRunoff%qsub * 0.001_r8
+    do nt = 1,nt_rtm
+       TRunoff%qsur(n,nt) = TRunoff%qsur(n,nt) * 0.001_r8
+       TRunoff%qsub(n,nt) = TRunoff%qsub(n,nt) * 0.001_r8
+       TRunoff%qgwl(n,nt) = TRunoff%qgwl(n,nt) * 0.001_r8
+    enddo
     enddo
 
 !    write(iulog,*) 'tcx trunoff check1r ',minval(TRunoff%qsur(:,1)),maxval(TRunoff%qsur(:,1))
@@ -1294,7 +1313,7 @@ contains
              !   it at the end or even during the run loop as the
              !   new volume is computed.  fluxout depends on volr, so
              !   how this is implemented does impact the solution.
-             totrunin(nr,nt)= totrunin(nr,nt) - rtmCTL%flood(nr)
+             surrunin(nr,nt)= surrunin(nr,nt) - rtmCTL%flood(nr)
           endif
        endif
     enddo
@@ -1335,6 +1354,7 @@ contains
     sumrin = 0._r8
     sumdvt = 0._r8
     rtmCTL%runoff = 0._r8
+    rtmCTL%runoffall = 0._r8
     rtmCTL%runofflnd = spval
     rtmCTL%runoffocn = spval
     rtmCTL%dvolrdt = 0._r8
@@ -1436,8 +1456,10 @@ contains
 
           if (abs(rtmCTL%mask(n)) == 1) then
              rtmCTL%runoff(n,nt) = rtmCTL%runoff(n,nt) + fluxout(n,nt)
+             rtmCTL%runoffall(n,nt) = rtmCTL%runoffall(n,nt) + TRunoff%flow(n,nt)
           elseif (rtmCTL%mask(n) == 2) then
              rtmCTL%runoff(n,nt) = rtmCTL%runoff(n,nt) + dvolrdt
+             rtmCTL%runoffall(n,nt) = rtmCTL%runoffall(n,nt) + TRunoff%flow(n,nt)
           elseif (dvolrdt /= 0.0_r8) then
              ! this water has no where to go.....
              write(iulog,*) subname,' runoff dvolrdt ERROR ',nt,n,rtmCTL%mask(n),dvolrdt
@@ -1445,7 +1467,7 @@ contains
           endif
 
           ! Convert local dvolrdt (in m3/s) to output dvolrdt (in mm/s)
-          if (rtmCTL%area(n) <= 1.e-10) then !gulu
+          if (rtmCTL%area(n) <= 1.e-10) then !
              write(iulog,*) 'area error: ', n, rtmCTL%area(n)
              call shr_sys_flush(iulog)
           else
@@ -1459,6 +1481,7 @@ contains
 
     ! average fluxes over subcycling
     rtmCTL%runoff  = rtmCTL%runoff / float(nsub)
+    rtmCTL%runoffall  = rtmCTL%runoffall / float(nsub)
     rtmCTL%dvolrdt = rtmCTL%dvolrdt / float(nsub)
     rtmCTL%fluxout = fluxout
 
@@ -1466,16 +1489,25 @@ contains
        if (rtmCTL%mask(n) == 1) then
           do nt = 1,nt_rtm
              rtmCTL%volrlnd(n,nt)= rtmCTL%volr(n,nt)
-             rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)
+            ! rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)
+             rtmCTL%runofflnd(n,nt) = rtmCTL%runoffall(n,nt)
              rtmCTL%dvolrdtlnd(n,nt)= rtmCTL%dvolrdt(n,nt)
           enddo
        elseif (rtmCTL%mask(n) == 2) then
           do nt = 1,nt_rtm
-             rtmCTL%runoffocn(n,nt) = rtmCTL%runoff(n,nt)
+             !rtmCTL%runoffocn(n,nt) = rtmCTL%runoff(n,nt)
+             rtmCTL%runoffocn(n,nt) = rtmCTL%runoffall(n,nt)
              rtmCTL%dvolrdtocn(n,nt)= rtmCTL%dvolrdt(n,nt)
           enddo
        endif
     enddo
+
+    ! record states when subsycling completed
+    rtmCTL%fluxout = fluxout
+    rtmCTL%wh      = TRunoff%wh
+    rtmCTL%wt      = TRunoff%wt
+    rtmCTL%wr      = TRunoff%wr
+    rtmCTL%erout   = TRunoff%erout
 
     call t_stopf('mosartr_subcycling')
 
@@ -1867,6 +1899,9 @@ contains
      allocate (TRunoff%qsub(begr:endr,nt_rtm))
      TRunoff%qsub = 0._r8
 
+     allocate (TRunoff%qgwl(begr:endr,nt_rtm))
+     TRunoff%qgwl = 0._r8
+
      allocate (TRunoff%ehout(begr:endr,nt_rtm))
      TRunoff%ehout = 0._r8
 
@@ -1941,6 +1976,9 @@ contains
 
      allocate (TRunoff%erout(begr:endr,nt_rtm))
      TRunoff%erout = 0._r8
+
+     allocate (TRunoff%ergwl(begr:endr,nt_rtm))
+     TRunoff%ergwl = 0._r8
 
      allocate (TRunoff%flow(begr:endr,nt_rtm))
      TRunoff%flow = 0._r8

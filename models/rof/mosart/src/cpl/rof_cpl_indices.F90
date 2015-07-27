@@ -23,7 +23,7 @@ module rof_cpl_indices
 !
 ! !PUBLIC DATA MEMBERS:
 !
-  integer, public :: index_x2r_Flrl_rofl  = 0   ! lnd->rof liquid runoff forcing from land
+  integer, public :: index_x2r_Flrl_rofsur = 0  ! lnd->rof liquid surface runoff forcing from land
   integer, public :: index_x2r_Flrl_rofgwl = 0  ! lnd->rof liquid gwl runoff from land
   integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rof liquid subsurface runoff from land
   integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
@@ -39,7 +39,8 @@ module rof_cpl_indices
   integer, public :: index_r2x_Forr_rofl  = 0   ! rof->ocn liquid runoff to ocean
   integer, public :: index_r2x_Forr_rofi  = 0   ! rof->ocn ice runoff to ocean
   integer, public :: index_r2x_Flrr_flood = 0   ! rof->lnd flood runoff (>fthresh) back to land
-  integer, public :: index_r2x_Flrr_volr = 0   ! rof->lnd volr back to land
+  integer, public :: index_r2x_Flrr_volr = 0    ! rof->lnd volr total volume back to land
+  integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -76,7 +77,7 @@ contains
 
     call mct_aVect_init(avtmp, rList=seq_flds_x2r_fields, lsize=1)
 
-    index_x2r_Flrl_rofl   = mct_avect_indexra(avtmp,'Flrl_rofl')
+    index_x2r_Flrl_rofsur = mct_avect_indexra(avtmp,'Flrl_rofsur') !'Flrl_rofsur')
     index_x2r_Flrl_rofgwl = mct_avect_indexra(avtmp,'Flrl_rofgwl')
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
@@ -93,6 +94,7 @@ contains
     index_r2x_Forr_rofi  = mct_avect_indexra(avtmp,'Forr_rofi')
     index_r2x_Flrr_flood = mct_avect_indexra(avtmp,'Flrr_flood')
     index_r2x_Flrr_volr  = mct_avect_indexra(avtmp,'Flrr_volr')
+    index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
 
     nflds_r2x = mct_avect_nRattr(avtmp)
 

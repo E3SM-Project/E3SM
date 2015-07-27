@@ -19,7 +19,7 @@ module rof_comp_mct
                                 seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                 seq_infodata_start_type_brnch
   use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-  use RunoffMod        , only : rtmCTL
+  use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
                                 inst_index, inst_suffix, inst_name, RtmVarSet
@@ -28,9 +28,11 @@ module rof_comp_mct
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
-                                index_x2r_Flrl_rofl, index_x2r_Flrl_rofi, &
+                                index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
-                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, index_r2x_Flrr_flood
+                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
+                                index_r2x_Flrr_flood, &
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
   use mct_mod
   use ESMF
 !
@@ -55,6 +57,8 @@ module rof_comp_mct
 ! PRIVATE DATA MEMBERS:
   real(r8), pointer :: totrunin(:,:)   ! total runoff on rtm grid (mm/s)
   real(r8), pointer :: subrunin(:,:)   ! subsurface runoff on rtm grid (mm/s)
+  real(r8), pointer :: surrunin(:,:)   ! surface runoff on rtm grid (mm/s)
+  real(r8), pointer :: gwlrunin(:,:)   ! water residual from glacier, wetlands and lakes water balance on rtm grid (mm/s)
 
 ! REVISION HISTORY:
 ! Author: Mariana Vertenstein
@@ -197,6 +201,8 @@ contains
        endr = rtmCTL%endr
        allocate (totrunin(begr:endr,nt_rtm))
        allocate (subrunin(begr:endr,nt_rtm))
+       allocate (surrunin(begr:endr,nt_rtm))
+       allocate (gwlrunin(begr:endr,nt_rtm))
        
        ! Initialize rof gsMap for ocean rof and land rof
        call rof_SetgsMap_mct( mpicom_rof, ROFID, gsMap_rof)
@@ -299,7 +305,7 @@ contains
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call advance_timestep()
-    call Rtmrun(totrunin, subrunin, rstwr, nlend, rdate)
+    call Rtmrun(totrunin,surrunin, subrunin, gwlrunin,rstwr, nlend, rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
@@ -536,12 +542,16 @@ contains
     endr = rtmCTL%endr
     do n = begr,endr
        n2 = n - begr + 1
-       totrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofl,n2) + &
+       totrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2) + &
                           x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2) + &
                           x2r_r%rAttr(index_x2r_Flrl_rofsub,n2)
        totrunin(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2)
-       subrunin(n,nliq) = 0.0_r8
+       surrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2)
+       surrunin(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2)
+       subrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsub,n2)
        subrunin(n,nfrz) = 0.0_r8
+       gwlrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2)
+       gwlrunin(n,nfrz) = 0.0_r8
     enddo
 
   end subroutine rof_import_mct
@@ -630,6 +640,8 @@ contains
     do n = rtmCTL%begr, rtmCTL%endr
        ni = ni + 1
        r2x_r%rattr(index_r2x_Flrr_flood,ni) = -rtmCTL%flood(n)
+       r2x_r%rattr(index_r2x_Flrr_volr,ni)    = Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)
+       r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq)
     end do
 
   end subroutine rof_export_mct

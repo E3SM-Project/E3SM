@@ -24,7 +24,7 @@ module clm_cpl_indices
 
   ! lnd -> drv (required)
 
-  integer, public ::index_l2x_Flrl_rofl       ! lnd->rtm input surface liquid fluxes
+  integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input surface liquid fluxes
   integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input gwl liquid fluxes
   integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input subsurface liquid fluxes
   integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
@@ -102,7 +102,8 @@ module clm_cpl_indices
   integer, public ::index_x2l_Faxa_dstdry4    ! flux: Size 4 dust -- dry deposition
  
   integer, public ::index_x2l_Flrr_flood      ! rtm->lnd rof (flood) flux
-  integer, public ::index_x2l_Flrr_volr      ! rtm->lnd rof volr
+  integer, public ::index_x2l_Flrr_volr       ! rtm->lnd rof volr total volume
+  integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
@@ -161,7 +162,7 @@ contains
     ! clm -> drv 
     !-------------------------------------------------------------
 
-    index_l2x_Flrl_rofl     = mct_avect_indexra(l2x,'Flrl_rofl')
+    index_l2x_Flrl_rofsur   = mct_avect_indexra(l2x,'Flrl_rofsur')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
@@ -226,6 +227,7 @@ contains
     index_x2l_Sa_methane    = mct_avect_indexra(x2l,'Sa_methane',perrWith='quiet')
 
     index_x2l_Flrr_volr     = mct_avect_indexra(x2l,'Flrr_volr')
+    index_x2l_Flrr_volrmch  = mct_avect_indexra(x2l,'Flrr_volrmch')
 
     index_x2l_Faxa_lwdn     = mct_avect_indexra(x2l,'Faxa_lwdn')
     index_x2l_Faxa_rainc    = mct_avect_indexra(x2l,'Faxa_rainc')

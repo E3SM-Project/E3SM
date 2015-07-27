@@ -25,7 +25,7 @@ module rof_comp_esmf
   use seq_flds_mod
   use esmf
   use esmfshr_mod
-  use RunoffMod        , only : rtmCTL
+  use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
                                 inst_index, inst_suffix, inst_name, RtmVarSet
@@ -33,9 +33,11 @@ module rof_comp_esmf
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
-                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, index_r2x_Flrr_flood, &
-                                index_x2r_Flrl_rofl, index_x2r_Flrl_rofi, &
-                                index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub
+                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
+                                index_x2r_Flrl_rofi, index_x2r_Flrl_rofsur, &
+                                index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
+                                index_r2x_Flrr_flood, &
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -65,6 +67,7 @@ module rof_comp_esmf
   real(r8), pointer :: totrunin(:,:)   ! total runoff on rtm grid (mm/s)
   real(r8), pointer :: surrunin(:,:)   ! surface runoff on rtm grid (mm/s)
   real(r8), pointer :: subrunin(:,:)   ! subsurface runoff on rtm grid (mm/s)
+  real(r8), pointer :: gwlrunin(:,:)   ! glacier, wetlands and lakes water balance residual on rtm grid (mm/s)
 !
 
 !===============================================================================
@@ -271,6 +274,7 @@ contains
        allocate(totrunin(begr:endr,nt_rtm))
        allocate(surrunin(begr:endr,nt_rtm))
        allocate(subrunin(begr:endr,nt_rtm))
+       allocate(gwlrunin(begr:endr,nt_rtm))
 
        ! Initialize rof distgrid and domain
 
@@ -449,7 +453,7 @@ contains
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call advance_timestep()
-    call Rtmrun(totrunin, subrunin, rstwr, nlend, rdate)
+    call Rtmrun(totrunin,surrunin, subrunin, gwlrunin,rstwr, nlend, rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
       
@@ -682,12 +686,16 @@ contains
     
     do n = rtmCTL%begr,rtmCTL%endr
        ni = n - rtmCTL%begr + 1
-       totrunin(n,nliq) = fptr(index_x2r_Flrl_rofl,ni) + &
+       totrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,ni) + &
                           fptr(index_x2r_Flrl_rofgwl,ni) + &
                           fptr(index_x2r_Flrl_rofsub,ni)
        totrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,ni)
-       subrunin(n,nliq) = 0.0_r8
+       subrunin(n,nliq) = fptr(index_x2r_Flrl_rofsub,ni)
        subrunin(n,nfrz) = 0.0_r8
+       surrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,ni)
+       surrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,ni)
+       gwlrunin(n,nliq) = fptr(index_x2r_Flrl_rofgwl,ni)
+       gwlrunin(n,nfrz) = 0.0_r8
     enddo
 
   end subroutine rof_import_esmf
@@ -771,6 +779,8 @@ contains
     do n = rtmCTL%begr, rtmCTL%endr
        ni = ni + 1
        fptr(index_r2x_Flrr_flood,ni) = -rtmCTL%flood(n)
+       fptr(index_r2x_Flrr_volr,ni)    = Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)
+       fptr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq)
     end do
 
   end subroutine rof_export_esmf
