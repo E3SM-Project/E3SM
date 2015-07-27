@@ -44,7 +44,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-p", "--platform", action="store", default=None, dest="platform",
                         help="Only add tests for a specific platform, format=machine,compiler")
 
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                        help="Print extra information")
+
     args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
 
     expect(os.path.isfile(args.test_list_path),
            "'%s' is not a valid file" % args.test_list_path)
