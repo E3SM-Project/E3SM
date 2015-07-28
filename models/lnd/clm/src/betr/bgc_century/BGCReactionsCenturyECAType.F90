@@ -65,7 +65,9 @@ implicit none
      real(r8), pointer :: conv_f(:)              !converting factor for first order sink
      real(r8), pointer :: conc_f(:)              !external forcing strength
      real(r8)          :: n2_n2o_ratio_denit     !ratio of n2 to n2o during denitrification
-     real(r8)          :: cellsand               !sand content
+     real(r8)          :: pct_sand               !sand content [0-100]
+     real(r8)          :: pct_clay               !clay content [0-100]
+     real(r8)          :: plant_frts             !fine roots for nutrient uptake
      logical,  pointer :: is_zero_order(:)
      integer           :: nr                     !number of reactions involved
      contains
@@ -120,7 +122,8 @@ contains
    end subroutine DDeallocate
 !-------------------------------------------------------------------------------
 
-   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
+   subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, cell_sand, cell_clay, &
+     plant_froots, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
    use BeTRTracerType              , only : betrtracer_type
 
    class(Extra_type) :: this
@@ -129,6 +132,8 @@ contains
    real(r8), dimension(:), intent(in) :: k_d
    real(r8)              , intent(in) :: n2_n2o_r_denit
    real(r8)              , intent(in) :: cell_sand
+   real(r8)              , intent(in) :: cell_clay
+   real(r8)              , intent(in) :: plant_froots
    type(BeTRtracer_type ), intent(in) :: betrtracer_vars
    real(r8)              , intent(in) :: gas2bulkcef(1:betrtracer_vars%nvolatile_tracers)
    real(r8)              , intent(in) :: aere_cond(1:betrtracer_vars%nvolatile_tracers)
@@ -145,9 +150,10 @@ contains
    this%cp_ratios(1:n2) = cp_r
 
    this%n2_n2o_ratio_denit = n2_n2o_r_denit
-   this%cellsand           = cell_sand
+   this%pct_sand           = cell_sand
+   this%pct_clay           = cell_clay
    this%k_decay            = k_d
-
+   this%plant_frts         = plant_froots
 
    do j = 1, betrtracer_vars%ngwmobile_tracers
      if(j == betrtracer_vars%id_trc_o2)then
@@ -646,6 +652,11 @@ contains
     carbonflux_vars%rr_col(bounds%begc:bounds%endc), cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj),            &
     k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
 
+  call  apply_plant_root_nuptake_prof(bounds, ubj, num_soilc, filter_soilc    , &
+   plantsoilnutrientflux_vars%plant_frootsc_col(bounds%begc:bounds%endc,1:ubj), &
+   cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj)             ,  &
+   plantsoilnutrientflux_vars%plant_frootsc_vr_col)
+
   !do ode integration and update state variables for each layer
   !print*,get_nstep()
   !lpr = .true.
@@ -654,10 +665,12 @@ contains
       c = filter_soilc(fc)
       if(j<jtops(c))cycle
       !assign parameters for stoichiometric matrix calculation
-      call Extra_inst%AAssign(cn_r=cn_ratios(:,c,j),cp_r=cp_ratios(:,c,j), k_d=k_decay(:,c,j), &
-        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j)                  , &
-        cell_sand=soilstate_vars%cellsand_col(c,j), betrtracer_vars=betrtracer_vars          , &
-        gas2bulkcef=tracercoeff_vars%gas2bulkcef_mobile_col(c,j,:)                           , &
+      call Extra_inst%AAssign(cn_r=cn_ratios(:,c,j),cp_r=cp_ratios(:,c,j), k_d=k_decay(:,c,j) , &
+        n2_n2o_r_denit=n2_n2o_ratio_denit(c,j)                                                , &
+        cell_sand=soilstate_vars%cellsand_col(c,j), cell_clay=soilstate_vars%cellclay_col(c,j), &
+        plant_froots= plantsoilnutrientflux_vars%plant_frootsc_vr_col(c,j)                    , &
+        betrtracer_vars=betrtracer_vars                                                       , &
+        gas2bulkcef=tracercoeff_vars%gas2bulkcef_mobile_col(c,j,:)                            , &
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
 
       !update state variables
@@ -963,7 +976,7 @@ contains
   !
   ! the input only contains litter input and mineral nutrient, som is assumed to be of fixed stoichiometry
   use SOMStateVarUpdateMod   , only : calc_dtrend_som_bgc
-  use BGCCenturySubECAMod    , only : calc_cascade_matrix
+  use BGCCenturySubMod       , only : calc_cascade_matrix
   use MathfuncMod            , only : pd_decomp
   implicit none
   integer,  intent(in)  :: nstvars
@@ -987,7 +1000,7 @@ contains
   logical  :: lneg
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
-      Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, cascade_matrix)
+      Extra_inst%n2_n2o_ratio_denit, Extra_inst%pct_sand, centurybgc_vars, nitrogen_limit_flag,  cascade_matrix)
 
 
 
@@ -1004,7 +1017,7 @@ contains
         if(lk == centurybgc_vars%lid_o2_aere_reac)then
           jj = centurybgc_vars%lid_o2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-          !I add the following line to disconnect the nitrogen and oxygen interaction
+          !avoid excessive arenchyma o2 transport into the atmosphere
           reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         else
           reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
@@ -1014,27 +1027,33 @@ contains
         if(lk == centurybgc_vars%lid_o2_aere_reac)then
           jj = centurybgc_vars%lid_o2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
+          !avoid excessive arenchyma o2 transport into the atmosphere
           reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         elseif(lk == centurybgc_vars%lid_ch4_aere_reac)then
           jj = centurybgc_vars%lid_ch4
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-
+          !avoid excessive arenchyma ch4 transport into the atmosphere
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         elseif(lk == centurybgc_vars%lid_ar_aere_reac)then
           jj = centurybgc_vars%lid_ar
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-
+          !avoid excessive arenchyma ar transport into the atmosphere
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         elseif(lk == centurybgc_vars%lid_n2_aere_reac)then
           jj = centurybgc_vars%lid_n2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-
+          !avoid excessive arenchyma n2 transport into the atmosphere
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         elseif(lk == centurybgc_vars%lid_co2_aere_reac)then
           jj = centurybgc_vars%lid_co2
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-
+          !avoid excessive arenchyma co2 transport into the atmosphere
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         elseif(lk == centurybgc_vars%lid_n2o_aere_reac)then
           jj = centurybgc_vars%lid_n2o
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
-
+          !avoid excessive arenchyma n2o transport into the atmosphere
+          reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
         else
           reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
         endif
@@ -1044,10 +1063,9 @@ contains
       reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
     endif
   enddo
-!  if(lpr)then
-!    print*,'reac',centurybgc_vars%lid_nh4,reaction_rates(centurybgc_vars%lid_nh4_nit_reac)
-!    print*,reaction_rates
-!  endif
+
+  call (nprimvars, Extra_inst%nr, Extra_inst%pct_clay, nitrogen_limit_flag,  ystate(1:nprimvars),
+     Extra_inst%plant_frts, reaction_rates(1:Extra_inst%nr), cascade_matrix(1:nprimvars, 1:Extra_inst%nr))
 
   call pd_decomp(nprimvars, Extra_inst%nr, cascade_matrix(1:nprimvars, 1:Extra_inst%nr), &
           cascade_matrixp(1:nprimvars, 1:Extra_inst%nr),  cascade_matrixd(1:nprimvars, 1:Extra_inst%nr))
@@ -1144,6 +1162,131 @@ contains
   enddo
   end subroutine  reduce_reaction_rates
 
+!-------------------------------------------------------------------------------
+  subroutine apply_ECA_nutrient_regulation(nprimvars, nr, pct_clay, nitrogen_limit_flag, &
+    ystate, plant_frts, reaction_rates, cascade_matrix)
+
+  use KineticsMod, only : kd_infty, ecacomplex_cell_norm
+  implicit none
+  integer , intent(in) :: nprimvars
+  integer , intent(in) :: nr
+  real(r8), intent(in) :: pct_clay
+  logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
+  real(r8), intent(in) :: ystate(1:nprimvars)
+  real(r8), intent(in) :: plant_frts
+  real(r8), intent(inout) :: reaction_rates(1:nr)
+  real(r8), intent(inout) :: cascade_matrixd(1:nprimvars, 1:nr)
+
+  real(r8) :: k_mat(2,1:centurybgc_vars%ncompets)
+  real(r8) :: vcompet(1:centurybgc_vars%ncompets)
+  real(r8) :: siej_cell_norm(2, 1:centurybgc_vars%ncompets)
+  real(r8) :: eca_nh4, eca_no3
+  integer :: j
+
+  ! the following parameters are arbitrary
+  real(r8), parameter :: kd_nh4_nit   = 1._r8
+  real(r8), parameter :: kd_nh4_plant = 1._r8
+  real(r8), parameter :: kd_nh4_clay  = 1._r8
+  real(r8), parameter :: kd_no3_denit = 1._r8
+  real(r8), parameter :: kd_no3_plant = 1._r8
+  real(r8), parameter :: kd_nh4_decomp= 1._r8
+  real(r8), parameter :: kd_no3_decomp= 1._r8
 
 
+  !assume microbial biomass are 1% of the respective som pool
+  !assume the conversion factor between clay (%) and NH4 adorsption capacity is gamma
+  !also assume no competition between NH4 adsoprtion and other chemical adsorption
+  !nh4 adsoprtion follows linear isotherm
+
+  associate(              &
+    lid_nitri_compet   => centurybgc_vars%lid_nitri_compet , &
+    lid_denit_compet   => centurybgc_vars%lid_denit_compet , &
+    lid_plant_compet   => centurybgc_vars%lid_plant_compet , &
+    lid_clay_compet    => centurybgc_vars%lid_clay_compet  , &
+    lid_lit1_compet    => centurybgc_vars%lid_lit1_compet  , &
+    lid_lit2_compet    => centurybgc_vars%lid_lit2_compet  , &
+    lid_lit3_compet    => centurybgc_vars%lid_lit3_compet  , &
+    lid_cwd_compet     => centurybgc_vars%lid_cwd_compet   , &
+    lid_som1_compet    => centurybgc_vars%lid_som1_compet  , &
+    lid_som2_compet    => centurybgc_vars%lid_som2_compet  , &
+    lid_som3_compet    => centurybgc_vars%lid_som3_compet  , &
+    lit1               => centurybgc_vars%lit1             , &
+    lit2               => centurybgc_vars%lit2             , &
+    lit3               => centurybgc_vars%lit3             , &
+    cwd                => centurybgc_vars%cwd              , &
+    som1               => centurybgc_vars%som1             , &
+    som2               => centurybgc_vars%som2             , &
+    som3               => centurybgc_vars%som3             , &
+    lid_nh4            => centurybgc_vars%lid_nh4          , &
+    lid_no3            => centurybgc_vars%lid_no3          , &
+    nelms              => centurybgc_vars%nelms            , &
+    c_loc              => centurybgc_vars%c_loc              &
+    )
+  !form the K matrix
+
+  !nh4
+  k_mat(1,:) = kd_infty
+  !no3
+  k_mat(2,:) = kd_infty
+  vcompet=0._r8
+  do j = 1,  centurybgc_vars%nom_pools
+    if(nitrogen_limit_flag(j))then
+      k_mat(1,j) = kd_nh4_decomp
+      k_mat(2,j) = kd_no3_decomp
+    endif
+  enddo
+
+  k_mat(1,lid_nitri_compet) = kd_nh4_nit
+  k_mat(1,lid_plant_compet) = kd_nh4_plant
+  k_mat(1,lid_clay_compet)  = kd_nh4_clay
+  !
+  k_mat(2,lid_denit_compet) = kd_no3_denit
+  k_mat(2,lid_plant_compet) = kd_no3_plant
+
+  !form the competitor vector
+  vcompet(lid_lit1_compet) = ystate((lit1-1)*nelms+c_loc) * 0.01_r8
+  vcompet(lid_lit2_compet) = ystate((lit2-1)*nelms+c_loc) * 0.01_r8
+  vcompet(lid_lit3_compet) = ystate((lit3-1)*nelms+c_loc) * 0.01_r8
+  vcompet(lid_cwd_compet)  = ystate((cwd-1)*nelms+c_loc) * 0.01_r8
+
+  ! by default som decomposition releases mineral nutrient, but I include them as
+  ! subject to potential change
+  vcompet(lid_som1_compet) = ystate((som1-1)*nelms+c_loc) * 0.01_r8
+  vcompet(lid_som2_compet) = ystate((som2-1)*nelms+c_loc) * 0.01_r8
+  vcompet(lid_som3_compet) = ystate((som3-1)*nelms+c_loc) * 0.01_r8
+
+  vcompet(lid_nitri_compet)= smin_nh4 * 1.e-3_r8    !this number is arbitrary
+  vcompet(lid_plant_compet)= plant_frts
+  vcompet(lid_denit_compet)= smin_no3 * 1.e-3_r8    !this number is arbitrary
+  vcompet(lid_clay_compet) = 1._r8
+  !form the resource vector
+  call ecacomplex_cell_norm(k_mat,(/smin_nh4,smin_no3/),vcompet,siej_cell_norm)
+
+  !now modify the reaction rates
+  do j = 1,  centurybgc_vars%nom_pools
+    if(nitrogen_limit_flag(j))then
+      eca_nh4 = siej_cell_norm(1,j)/kd_nh4_decomp
+      eca_no3 = siej_cell_norm(2,j)/kd_no3_decomp
+      reaction_rates(j) = reaction_rates(j) * (eca_nh4 + eca_no3)
+      cascade_matrix(lid_no3, j) = cascade_matrix(lid_nh4,j) * safe_div(eca_no3,eca_nh4+eca_no3)
+      cascade_matrix(lid_nh4, j) = cascade_matrix(lid_nh4, j) - cascade_matrix(lid_nh4,j)
+    endif
+  enddo
+
+  !adjust for nitrification
+  reaction_rates(lid_nh4_nit_reac) = raection_rates(lid_nh4_nit_reac) * siej_cell_norm(1,lid_nitri_compet)
+  !adjust for denitrification
+  reaction_rates(lid_no3_den_reac) = reaction_rates(lid_no3_den_reac) * siej_cell_norm(2,lid_denit_compet)
+
+  !adjust for plant mineral nitrogen uptake
+  eca_nh4 = siej_cell_norm(1,lid_plant_compet)/kd_nh4_decomp
+  eca_no3 = siej_cell_norm(2,lid_plant_compet)/kd_no3_decomp
+
+  reaction_rates(lid_plant_compet) = eaction_rates(lid_plant_compet) * (eca_nh4+eca_no3) * vcompet(lid_plant_compet)
+  cascade_matrix(lid_no3, lid_plant_minn_up_reac) = cascade_matrix(lid_nh4, lid_plant_minn_up_reac) * &
+    safe_div(eca_no3, eca_nh4+eca_no3)
+  casecade_matrix(lid_nh4,lid_plant_minn_up_reac) = casecade_matrix(lid_nh4,lid_plant_minn_up_reac) - &
+    cascade_matrix(lid_no3, lid_plant_minn_up_reac)
+  end associate
+  end subroutine apply_ECA_nutrient_regulation
 end module BGCReactionsCenturyECAType
