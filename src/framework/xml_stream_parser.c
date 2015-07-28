@@ -184,25 +184,55 @@ void parse_xml_tag_name(char *tag_buf, char *tag_name)
 size_t parse_xml_tag(char *xml_buf, size_t buf_len, char *tag, size_t *tag_len, int *line, int *start_line)
 {
 	size_t i, j;
+	int found_end, block_comment;
 
-	/* Look for beginning of tag */
+
 	i = 0;
-	while (i < buf_len && xml_buf[i] != '<') {
-		if (xml_buf[i] == '\n')
-			(*line)++;
+	do {
+		/* Look for beginning of tag */
+		while (i < buf_len && xml_buf[i] != '<') {
+			if (xml_buf[i] == '\n')
+				(*line)++;
+			i++;
+		}
+
+		/* Ran out of characters... */
+		if (i == buf_len) {
+			*tag_len = 0;
+			return 0;
+		}
+
+		/* Move on to next character after opening '<' */
+		*start_line = *line;
 		i++;
-	}
 
-	/* Ran out of characters... */
-	if (i == buf_len) {
-		*tag_len = 0;
-		return 0;
-	}
+		block_comment = 0;
+		/* Skip comment tags */
+		if ( xml_buf[i] == '!' && xml_buf[i+1] == '-' && xml_buf[i+2] == '-' ) {
+			block_comment = 1;
+
+			/* find end of the comment... */
+			i = i+2;
+			found_end = 0;
+			while (i < buf_len && ! found_end) {
+				if ( xml_buf[i] == '-' && xml_buf[i+1] == '-' && xml_buf[i+2] == '>' ) {
+					found_end = 1;
+					i = i+2;
+				} else if ( xml_buf[i] == '\n' ) {
+					(*line)++;
+				}
+
+				i++;
+			}
 
 
-	/* Move on to next character after opening '<' */
-	*start_line = *line;
-	i++;
+			/* Ran out of characters... */
+			if (i == buf_len) {
+				*tag_len = 0;
+				return 0;
+			}
+		}
+	} while (block_comment);
 
 	/* Copy tag into string */
 	j = 0;
