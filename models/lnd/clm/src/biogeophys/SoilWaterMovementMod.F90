@@ -28,11 +28,17 @@ contains
     !specify method for doing soil&root water interactions
     !
     use clm_varctl, only : use_vsfm
+    use spmdMod,    only : mpicom, MPI_LOGICAL
     ! !ARGUMENTS:
     implicit none
+    integer :: ier ! error status
     !------------------------------------------------------------------------------
 
     soilroot_water_method = zengdecker_2009
+
+    ! GB-FIX-ME: The call to control_spmd() [in subroutine control_init()] before
+    !            call to init_hydrology() would avoid the mpi broadcast
+    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_vsfm) soilroot_water_method = vsfm
 
   end subroutine init_soilwater_movement
@@ -774,6 +780,7 @@ contains
     real(r8) :: total_mass_flux_drain_col(bounds%begc:bounds%endc)
     real(r8) :: vsfm_mass_prev_col(bounds%begc:bounds%endc,1:nlevgrnd)
     real(r8) :: vsfm_dmass_col(bounds%begc:bounds%endc)
+    integer           :: ier                     ! error status
     !
 #ifdef USE_PETSC_LIB
     PetscInt              :: jwt                             ! index of first unsaturated soil layer
@@ -921,7 +928,7 @@ contains
 
          do j = 1, nlevsoi
             ! ET sink
-            idx = (c-1)*nlevgrnd + j
+            idx = (c-bounds%begc)*nlevgrnd + j
             mflx_et_col_1d(idx) = -qflx_tran_veg_col(c)*rootr_col(c,j)*flux_unit_conversion
          end do
 
@@ -932,7 +939,7 @@ contains
          !end do
 
          ! Infiltration source term
-         idx = c
+         idx = c-bounds%begc+1
          mflx_infl_col_1d(idx) = qflx_infl(c)*flux_unit_conversion
 
          ! Dew source term
@@ -987,7 +994,7 @@ contains
                endif
                qflx_drain_tot = qflx_drain_tot + qflx_drain_layer
 
-               idx = (c-1)*nlevgrnd + j
+               idx = (c-bounds%begc)*nlevgrnd + j
                mflx_drain_col_1d(idx) = -qflx_drain_layer*flux_unit_conversion
 
            end do
@@ -1034,7 +1041,7 @@ contains
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
          do j = 1, nlevgrnd
-            idx = (c-1)*nlevgrnd + j
+            idx = (c-bounds%begc)*nlevgrnd + j
             frac_ice(c,j) = h2osoi_liq(c,j)/vsfm_mass_col_1d(idx)
             frac_ice(c,j) = h2osoi_ice(c,j)/(h2osoi_liq(c,j) + h2osoi_ice(c,j))
          end do
@@ -1063,7 +1070,7 @@ contains
 
          do j = 1, nlevgrnd
 
-            idx = (c-1)*nlevgrnd + j
+            idx = (c-bounds%begc)*nlevgrnd + j
             total_mass_flux_et        = total_mass_flux_et        + mflx_et_col_1d(idx)
             total_mass_flux_et_col(c) = total_mass_flux_et_col(c) + mflx_et_col_1d(idx)
 
@@ -1074,7 +1081,7 @@ contains
             vsfm_mass_prev_col(c,j) = vsfm_mass_col_1d(idx)
          end do
 
-         idx = c
+         idx = c-bounds%begc+1
          total_mass_flux_dew        = total_mass_flux_dew        + mflx_dew_col_1d(idx)
          total_mass_flux_dew_col(c) = total_mass_flux_dew_col(c) + mflx_dew_col_1d(idx)
 
@@ -1121,7 +1128,7 @@ contains
 
          ! Loops in decreasing j so WTD can be computed in the same loop
          do j = nlevgrnd, 1, -1
-            idx = (c-1)*nlevgrnd + j
+            idx = (c-bounds%begc)*nlevgrnd + j
 
             h2osoi_liq(c,j) = (1.d0 - frac_ice(c,j))*vsfm_mass_col_1d(idx)
             h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)
@@ -1158,7 +1165,7 @@ contains
       ! soilp_col is used for restarting VSFM.
       do c = bounds%begc, bounds%endc
          do j = 1, nlevgrnd
-            idx = (c-1)*nlevgrnd + j
+            idx = (c-bounds%begc)*nlevgrnd + j
             soilp_col(c,j) = vsfm_soilp_col_1d(idx)
          end do
       end do

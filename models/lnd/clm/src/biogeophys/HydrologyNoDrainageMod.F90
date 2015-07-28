@@ -215,7 +215,7 @@ contains
          j = 1
          do fc = 1, num_snowc
             c = filter_snowc(fc)
-            mflx_snowlyr_col_1d(c) = h2osoi_liq(c,j)
+            mflx_snowlyr_col_1d(c-bounds%begc+1) = h2osoi_liq(c,j)
          end do
       end if
 
@@ -232,7 +232,7 @@ contains
          j = 1
          do fc = 1, num_snowc
             c = filter_snowc(fc)
-            mflx_snowlyr_col_1d(c) = (h2osoi_liq(c,j) - mflx_snowlyr_col_1d(c))/dtime
+            mflx_snowlyr_col_1d(c-bounds%begc+1) = (h2osoi_liq(c,j) - mflx_snowlyr_col_1d(c-bounds%begc+1))/dtime
          end do
          mflx_snowlyr_col(:) = mflx_snowlyr_col_1d(:)
       end if

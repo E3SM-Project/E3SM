@@ -1170,7 +1170,7 @@ contains
        ! Save data in 1D array for VSFM
        do c = bounds_proc%begc, bounds_proc%endc
           do j = 1, nlevgrnd
-             idx = (c-1)*nlevgrnd + j
+             idx = (c-bounds_proc%begc)*nlevgrnd + j
              vsfm_soilp_col_1d(idx) = soilp_col(c,j)
           end do
        end do
@@ -1213,7 +1213,7 @@ contains
 
        ! Loops in decreasing j so WTD can be computed in the same loop
        do j = nlevgrnd, 1, -1
-          idx = (c-1)*nlevgrnd + j
+          idx = (c-bounds_proc%begc)*nlevgrnd + j
 
           if (.not. restart_vsfm) then
              h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)

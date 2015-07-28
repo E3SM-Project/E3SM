@@ -1638,7 +1638,7 @@ contains
                 rsub_top_tot = rsub_top_tot - rsub_top_layer
 
                 ! save the flux for VSFM
-                idx = (c-1)*nlevgrnd + k
+                idx = (c-bounds%begc)*nlevgrnd + k
                 mflx_drain_perched_col_1d(idx) = rsub_top_layer/dtime
 
                 if (rsub_top_tot >= 0.) then
@@ -1720,7 +1720,7 @@ contains
                    rsub_top_tot = rsub_top_tot - rsub_top_layer
 
                    ! save the flux for VSFM
-                   idx = (c-1)*nlevgrnd + k
+                   idx = (c-bounds%begc)*nlevgrnd + k
                    mflx_drain_perched_col_1d(idx) = rsub_top_layer/dtime
 
                    if (rsub_top_tot >= 0.) then
