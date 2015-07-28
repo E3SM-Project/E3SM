@@ -19,8 +19,6 @@ module cice_forcing
   use mpas_forcing
   use mpas_stream_manager
 
-  use cice_debug
-
   implicit none
 
   private
@@ -310,8 +308,6 @@ contains
          simulationClock, &
          firstTimeStep)
 
-    call cice_debug_rotate_winds(domain)
-
   end subroutine cice_forcing_get
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -504,10 +500,6 @@ contains
          cloudFraction, &
          airSpecificHumidity, &
          currentForcingTime)
-
-    !where (lonCell > pii) lonCell = lonCell - 2.0_RKIND * pii    
-
-    call cice_debug_output_array(shortwaveDown)
 
     do iCell = 1, nCells
 
@@ -1421,12 +1413,6 @@ contains
     integer :: &
          iCell
 
-    !type (mpas_pool_type), pointer :: &
-    !     ocean_coupling_input
-    !real(kind=RKIND), dimension(:), pointer :: &
-    !     uOceanVelocity
-
-
     call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(block % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
 
@@ -1439,11 +1425,6 @@ contains
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
-
-
-    !call MPAS_pool_get_subpool(block % structs, "ocean_coupling_forcing_input", ocean_coupling_input)
-    !call MPAS_pool_get_array(ocean_coupling_input, "uOceanVelocity_forcing_input", uOceanVelocity, 1)
-    !call cice_debug_output_array(uOceanVelocity) ; stop
 
     do iCell = 1, nCells
 
