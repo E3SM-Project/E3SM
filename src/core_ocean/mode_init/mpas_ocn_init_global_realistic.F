@@ -714,7 +714,11 @@ contains
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-         refBottomDepth(:) = depthIC % array(:)
+         ! depthIC is the mid-depth of each layer.  Convert to bottom depth.
+         refBottomDepth(1) = 2.0 * depthIC % array(1)
+         do k=2,nDepth
+            refBottomDepth(k) = refBottomDepth(k-1) + 2*(depthIC % array(k) - refBottomDepth(k-1))
+         enddo
 
          block_ptr => block_ptr % next
        end do
