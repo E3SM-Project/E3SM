@@ -4,6 +4,7 @@ module CNGapMortalityMod
   ! !DESCRIPTION:
   ! Module holding routines used in gap mortality for coupled carbon
   ! nitrogen code.
+  ! add phosphorus fluxes - X.YANG
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
@@ -18,6 +19,10 @@ module CNGapMortalityMod
   use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnType          , only : col                
   use PatchType           , only : pft                
+
+  use PhosphorusFluxType  , only : phosphorusflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+
   !
   implicit none
   save
@@ -74,7 +79,8 @@ contains
   subroutine CNGapMortality (&
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
        dgvs_vars, cnstate_vars, &
-       carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+       carbonstate_vars, nitrogenstate_vars, carbonflux_vars,nitrogenflux_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Gap-phase mortality routine for coupled carbon-nitrogen code (CN)
@@ -96,6 +102,10 @@ contains
     type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+
+    type(phosphorusstate_type) , intent(in) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
     !
     ! !LOCAL VARIABLES:
     integer :: p             ! patch index
@@ -217,6 +227,37 @@ contains
          nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%livecrootn_xfer_patch(p)     * m
          nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch(p)     = nitrogenstate_vars%deadcrootn_xfer_patch(p)     * m
 
+         !------------------------------------------------------
+         ! patch-level gap mortality phosphorus fluxes
+         !------------------------------------------------------
+
+         ! displayed pools
+         phosphorusflux_vars%m_leafp_to_litter_patch(p)               = phosphorusstate_vars%leafp_patch(p)               * m
+         phosphorusflux_vars%m_frootp_to_litter_patch(p)              = phosphorusstate_vars%frootp_patch(p)              * m
+         phosphorusflux_vars%m_livestemp_to_litter_patch(p)           = phosphorusstate_vars%livestemp_patch(p)           * m
+         phosphorusflux_vars%m_deadstemp_to_litter_patch(p)           = phosphorusstate_vars%deadstemp_patch(p)           * m
+         phosphorusflux_vars%m_livecrootp_to_litter_patch(p)          = phosphorusstate_vars%livecrootp_patch(p)          * m
+         phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)          = phosphorusstate_vars%deadcrootp_patch(p)          * m
+         if (ivt(p) < npcropmin) then
+            phosphorusflux_vars%m_retransp_to_litter_patch(p) = phosphorusstate_vars%retransp_patch(p) * m
+         end if
+            
+         ! storage pools
+         phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = phosphorusstate_vars%leafp_storage_patch(p)       * m
+         phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = phosphorusstate_vars%frootp_storage_patch(p)      * m
+         phosphorusflux_vars%m_livestemp_storage_to_litter_patch(p)   = phosphorusstate_vars%livestemp_storage_patch(p)   * m
+         phosphorusflux_vars%m_deadstemp_storage_to_litter_patch(p)   = phosphorusstate_vars%deadstemp_storage_patch(p)   * m
+         phosphorusflux_vars%m_livecrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%livecrootp_storage_patch(p)  * m
+         phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch(p)  = phosphorusstate_vars%deadcrootp_storage_patch(p)  * m
+
+         ! transfer pools
+         phosphorusflux_vars%m_leafp_xfer_to_litter_patch(p)          = phosphorusstate_vars%leafp_xfer_patch(p)          * m
+         phosphorusflux_vars%m_frootp_xfer_to_litter_patch(p)         = phosphorusstate_vars%frootp_xfer_patch(p)         * m
+         phosphorusflux_vars%m_livestemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%livestemp_xfer_patch(p)      * m
+         phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch(p)      = phosphorusstate_vars%deadstemp_xfer_patch(p)      * m
+         phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%livecrootp_xfer_patch(p)     * m
+         phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch(p)     = phosphorusstate_vars%deadcrootp_xfer_patch(p)     * m
+
          ! added by F. Li and S. Levis
          if (use_cndv) then
             if (woody(ivt(p)) == 1._r8)then
@@ -234,7 +275,7 @@ contains
       ! for litter C and N inputs
 
       call CNGapPftToColumn(num_soilc, filter_soilc, &
-           cnstate_vars, carbonflux_vars, nitrogenflux_vars)
+           cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 
     end associate
   end subroutine CNGapMortality
@@ -242,7 +283,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNGapPftToColumn ( &
        num_soilc, filter_soilc, &
-       cnstate_vars, carbonflux_vars, nitrogenflux_vars)
+       cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! called in the middle of CNGapMoratlity to gather all pft-level gap mortality fluxes
@@ -257,6 +298,7 @@ contains
     type(cnstate_type)      , intent(in)    :: cnstate_vars
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: fc,c,pi,p,j               ! indices
@@ -319,6 +361,27 @@ contains
          m_livecrootn_xfer_to_litter         =>    nitrogenflux_vars%m_livecrootn_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
          m_deadcrootn_xfer_to_litter         =>    nitrogenflux_vars%m_deadcrootn_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
          
+         !! add phosphorus  -X.YANG
+         m_leafp_to_litter                   =>    phosphorusflux_vars%m_leafp_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
+         m_frootp_to_litter                  =>    phosphorusflux_vars%m_frootp_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
+         m_livestemp_to_litter               =>    phosphorusflux_vars%m_livestemp_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
+         m_deadstemp_to_litter               =>    phosphorusflux_vars%m_deadstemp_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
+         m_livecrootp_to_litter              =>    phosphorusflux_vars%m_livecrootp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+         m_deadcrootp_to_litter              =>    phosphorusflux_vars%m_deadcrootp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+         m_retransp_to_litter                =>    phosphorusflux_vars%m_retransp_to_litter_patch           , & ! Input:  [real(r8) (:)   ]                                                    
+         m_leafp_storage_to_litter           =>    phosphorusflux_vars%m_leafp_storage_to_litter_patch      , & ! Input:  [real(r8) (:)   ]                                                    
+         m_frootp_storage_to_litter          =>    phosphorusflux_vars%m_frootp_storage_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+         m_livestemp_storage_to_litter       =>    phosphorusflux_vars%m_livestemp_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
+         m_deadstemp_storage_to_litter       =>    phosphorusflux_vars%m_deadstemp_storage_to_litter_patch  , & ! Input:  [real(r8) (:)   ]                                                    
+         m_livecrootp_storage_to_litter      =>    phosphorusflux_vars%m_livecrootp_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
+         m_deadcrootp_storage_to_litter      =>    phosphorusflux_vars%m_deadcrootp_storage_to_litter_patch , & ! Input:  [real(r8) (:)   ]                                                    
+         m_leafp_xfer_to_litter              =>    phosphorusflux_vars%m_leafp_xfer_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+         m_frootp_xfer_to_litter             =>    phosphorusflux_vars%m_frootp_xfer_to_litter_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+         m_livestemp_xfer_to_litter          =>    phosphorusflux_vars%m_livestemp_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+         m_deadstemp_xfer_to_litter          =>    phosphorusflux_vars%m_deadstemp_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
+         m_livecrootp_xfer_to_litter         =>    phosphorusflux_vars%m_livecrootp_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
+         m_deadcrootp_xfer_to_litter         =>    phosphorusflux_vars%m_deadcrootp_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
+
          gap_mortality_c_to_litr_met_c       =>    carbonflux_vars%gap_mortality_c_to_litr_met_c_col      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
          gap_mortality_c_to_litr_cel_c       =>    carbonflux_vars%gap_mortality_c_to_litr_cel_c_col      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
          gap_mortality_c_to_litr_lig_c       =>    carbonflux_vars%gap_mortality_c_to_litr_lig_c_col      , & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
@@ -327,7 +390,13 @@ contains
          gap_mortality_n_to_litr_met_n       =>    nitrogenflux_vars%gap_mortality_n_to_litr_met_n_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter metabolic pool (gN/m3/s)
          gap_mortality_n_to_litr_cel_n       =>    nitrogenflux_vars%gap_mortality_n_to_litr_cel_n_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter cellulose pool (gN/m3/s)
          gap_mortality_n_to_litr_lig_n       =>    nitrogenflux_vars%gap_mortality_n_to_litr_lig_n_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter lignin pool (gN/m3/s)
-         gap_mortality_n_to_cwdn             =>    nitrogenflux_vars%gap_mortality_n_to_cwdn_col            & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to CWD pool (gN/m3/s)
+         gap_mortality_n_to_cwdn             =>    nitrogenflux_vars%gap_mortality_n_to_cwdn_col          ,  & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to CWD pool (gN/m3/s)
+
+         gap_mortality_p_to_litr_met_p       =>    phosphorusflux_vars%gap_mortality_p_to_litr_met_p_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter metabolic pool (gN/m3/s)
+         gap_mortality_p_to_litr_cel_p       =>    phosphorusflux_vars%gap_mortality_p_to_litr_cel_p_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter cellulose pool (gN/m3/s)
+         gap_mortality_p_to_litr_lig_p       =>    phosphorusflux_vars%gap_mortality_p_to_litr_lig_p_col    , & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to litter lignin pool (gN/m3/s)
+         gap_mortality_p_to_cwdp             =>    phosphorusflux_vars%gap_mortality_p_to_cwdp_col            & ! InOut:  [real(r8) (:,:) ]  N fluxes associated with gap mortality to CWD pool (gN/m3/s)
+
          )
 
       do j = 1,nlevdecomp
@@ -428,6 +497,51 @@ contains
                      gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
                           (m_livecrootn_xfer_to_litter(p) + m_deadcrootn_xfer_to_litter(p)) * wtcol(p) * croot_prof(p,j)
 
+                     ! leaf gap mortality phosphorus fluxes
+                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
+                          m_leafp_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                     gap_mortality_p_to_litr_cel_p(c,j) = gap_mortality_p_to_litr_cel_p(c,j) + &
+                          m_leafp_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                     gap_mortality_p_to_litr_lig_p(c,j) = gap_mortality_p_to_litr_lig_p(c,j) + &
+                          m_leafp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+
+                     ! fine root litter phosphorus fluxes
+                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
+                          m_frootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                     gap_mortality_p_to_litr_cel_p(c,j) = gap_mortality_p_to_litr_cel_p(c,j) + &
+                          m_frootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                     gap_mortality_p_to_litr_lig_p(c,j) = gap_mortality_p_to_litr_lig_p(c,j) + &
+                          m_frootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                     ! wood gap mortality phosphorus fluxes
+                     gap_mortality_p_to_cwdp(c,j)  = gap_mortality_p_to_cwdp(c,j)  + &
+                          (m_livestemp_to_litter(p) + m_deadstemp_to_litter(p))  * wtcol(p) * stem_prof(p,j)
+                     gap_mortality_p_to_cwdp(c,j) = gap_mortality_p_to_cwdp(c,j) + &
+                          (m_livecrootp_to_litter(p) + m_deadcrootp_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+
+                     ! retranslocated N pool gap mortality fluxes
+                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
+                          m_retransp_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+
+                     ! storage gap mortality phosphorus fluxes
+                     gap_mortality_p_to_litr_met_p(c,j)      = gap_mortality_p_to_litr_met_p(c,j)      + &
+                          m_leafp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j)     = gap_mortality_p_to_litr_met_p(c,j)     + &
+                          m_frootp_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j)  = gap_mortality_p_to_litr_met_p(c,j)  + &
+                          (m_livestemp_storage_to_litter(p) + m_deadstemp_storage_to_litter(p))  * wtcol(p) * stem_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
+                          (m_livecrootp_storage_to_litter(p) + m_deadcrootp_storage_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+
+                     ! transfer gap mortality phosphorus fluxes
+                     gap_mortality_p_to_litr_met_p(c,j)      = gap_mortality_p_to_litr_met_p(c,j)      + &
+                          m_leafp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j)     = gap_mortality_p_to_litr_met_p(c,j)     + &
+                          m_frootp_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j)  = gap_mortality_p_to_litr_met_p(c,j)  + &
+                          (m_livestemp_xfer_to_litter(p) + m_deadstemp_xfer_to_litter(p))  * wtcol(p) * stem_prof(p,j)
+                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
+                          (m_livecrootp_xfer_to_litter(p) + m_deadcrootp_xfer_to_litter(p)) * wtcol(p) * croot_prof(p,j)
 
                   end if
                end if

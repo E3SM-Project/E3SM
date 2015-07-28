@@ -9,6 +9,7 @@ module CNPrecisionControlMod
   use clm_varpar          , only : ndecomp_pools
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
+  use PhosphorusStateType , only : phosphorusstate_type
   use PatchType           , only : pft
   use ColumnType          , only : col
   !
@@ -24,7 +25,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNPrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars)
+       carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,&
+       phosphorusstate_vars)
     !
     ! !DESCRIPTION: 
     ! On the radiation time step, force leaf and deadstem c and n to 0 if
@@ -44,18 +46,20 @@ contains
     type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
     type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k  ! indices
     integer :: fp,fc    ! lake filter indices
-    real(r8):: pc,pn    ! truncation terms for patch-level corrections
-    real(r8):: cc,cn    ! truncation terms for column-level corrections
+    real(r8):: pc,pn,pp    ! truncation terms for patch-level corrections
+    real(r8):: cc,cn,cp    ! truncation terms for column-level corrections
     real(r8):: pc13     ! truncation terms for patch-level corrections
     real(r8):: cc13     ! truncation terms for column-level corrections
     real(r8):: pc14     ! truncation terms for patch-level corrections
     real(r8):: cc14     ! truncation terms for column-level corrections
     real(r8):: ccrit    ! critical carbon state value for truncation
     real(r8):: ncrit    ! critical nitrogen state value for truncation
+    real(r8):: pcrit    ! critical phosphorus state value for truncation
     !-----------------------------------------------------------------------
 
     ! carbonstate_vars%ctrunc_vr_col                 Output:  [real(r8) (:,:)   ]  (gC/m3) column-level sink for C truncation      
@@ -169,6 +173,7 @@ contains
     associate(&
          cs    => carbonstate_vars     , &
          ns    => nitrogenstate_vars   , &
+         ps    => phosphorusstate_vars , &
          c13cs => c13_carbonstate_vars , &
          c14cs => c14_carbonstate_vars   &
          )
@@ -179,6 +184,9 @@ contains
       ! set the critical nitrogen state value for truncation (gN/m2)
       ncrit = 1.e-8_r8
 
+      ! set the critical phosphorus state value for truncation (gN/m2)
+      pcrit = 1.e-8_r8
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -186,6 +194,7 @@ contains
          ! initialize the patch-level C and N truncation terms
          pc = 0._r8
          pn = 0._r8
+         pp = 0._r8
          if ( use_c13 ) pc13 = 0._r8
          if ( use_c14 ) pc14 = 0._r8
 
@@ -207,6 +216,9 @@ contains
                pc14 = pc14 + c14cs%leafc_patch(p)
                c14cs%leafc_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%leafp_patch(p)
+            ps%leafp_patch(p) = 0._r8
          end if
 
          ! leaf storage C and N
@@ -223,6 +235,9 @@ contains
                pc14 = pc14 + c14cs%leafc_storage_patch(p)
                c14cs%leafc_storage_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%leafp_storage_patch(p)
+            ps%leafp_storage_patch(p) = 0._r8
          end if
 
          ! leaf transfer C and N
@@ -239,6 +254,9 @@ contains
                pc14 = pc14 + c14cs%leafc_xfer_patch(p)
                c14cs%leafc_xfer_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%leafp_xfer_patch(p)
+            ps%leafp_xfer_patch(p) = 0._r8
          end if
 
          ! froot C and N
@@ -255,6 +273,9 @@ contains
                pc14 = pc14 + c14cs%frootc_patch(p)
                c14cs%frootc_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%frootp_patch(p)
+            ps%frootp_patch(p) = 0._r8
          end if
 
          ! froot storage C and N
@@ -271,6 +292,9 @@ contains
                pc14 = pc14 + c14cs%frootc_storage_patch(p)
                c14cs%frootc_storage_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%frootp_storage_patch(p)
+            ps%frootp_storage_patch(p) = 0._r8
          end if
 
          ! froot transfer C and N
@@ -287,6 +311,9 @@ contains
                pc14 = pc14 + c14cs%frootc_xfer_patch(p)
                c14cs%frootc_xfer_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%frootp_xfer_patch(p)
+            ps%frootp_xfer_patch(p) = 0._r8
          end if
 
          if ( crop_prog .and. pft%itype(p) >= nc3crop )then
@@ -296,6 +323,8 @@ contains
                cs%grainc_patch(p) = 0._r8
                pn = pn + ns%grainn_patch(p)
                ns%grainn_patch(p) = 0._r8
+               pp = pp + ps%grainp_patch(p)
+               ps%grainp_patch(p) = 0._r8
             end if
 
             ! grain storage C and N
@@ -304,6 +333,8 @@ contains
                cs%grainc_storage_patch(p) = 0._r8
                pn = pn + ns%grainn_storage_patch(p)
                ns%grainn_storage_patch(p) = 0._r8
+               pp = pp + ps%grainp_storage_patch(p)
+               ps%grainp_storage_patch(p) = 0._r8
             end if
 
             ! grain transfer C and N
@@ -312,6 +343,8 @@ contains
                cs%grainc_xfer_patch(p) = 0._r8
                pn = pn + ns%grainn_xfer_patch(p)
                ns%grainn_xfer_patch(p) = 0._r8
+               pp = pp + ps%grainp_xfer_patch(p)
+               ps%grainp_xfer_patch(p) = 0._r8
             end if
          end if
 
@@ -329,6 +362,9 @@ contains
                pc14 = pc14 + c14cs%livestemc_patch(p)
                c14cs%livestemc_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%livestemp_patch(p)
+            ps%livestemp_patch(p) = 0._r8
          end if
 
          ! livestem storage C and N
@@ -345,6 +381,9 @@ contains
                pc14 = pc14 + c14cs%livestemc_storage_patch(p)
                c14cs%livestemc_storage_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%livestemp_storage_patch(p)
+            ps%livestemp_storage_patch(p) = 0._r8
          end if
 
          ! livestem transfer C and N
@@ -361,6 +400,9 @@ contains
                pc14 = pc14 + c14cs%livestemc_xfer_patch(p)
                c14cs%livestemc_xfer_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%livestemp_xfer_patch(p)
+            ps%livestemp_xfer_patch(p) = 0._r8
          end if
 
          ! deadstem C and N
@@ -377,6 +419,9 @@ contains
                pc14 = pc14 + c14cs%deadstemc_patch(p)
                c14cs%deadstemc_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%deadstemp_patch(p)
+            ps%deadstemp_patch(p) = 0._r8
          end if
 
          ! deadstem storage C and N
@@ -393,6 +438,9 @@ contains
                pc14 = pc14 + c14cs%deadstemc_storage_patch(p)
                c14cs%deadstemc_storage_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%deadstemp_storage_patch(p)
+            ps%deadstemp_storage_patch(p) = 0._r8
          end if
 
          ! deadstem transfer C and N
@@ -409,6 +457,9 @@ contains
                pc14 = pc14 + c14cs%deadstemc_xfer_patch(p)
                c14cs%deadstemc_xfer_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%deadstemp_xfer_patch(p)
+            ps%deadstemp_xfer_patch(p) = 0._r8
          end if
 
          ! livecroot C and N
@@ -425,6 +476,9 @@ contains
                pc14 = pc14 + c14cs%livecrootc_patch(p)
                c14cs%livecrootc_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%livecrootp_patch(p)
+            ps%livecrootp_patch(p) = 0._r8
          end if
 
          ! livecroot storage C and N
@@ -441,6 +495,9 @@ contains
                pc14 = pc14 + c14cs%livecrootc_storage_patch(p)
                c14cs%livecrootc_storage_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%livecrootp_storage_patch(p)
+            ps%livecrootp_storage_patch(p) = 0._r8
          end if
 
          ! livecroot transfer C and N
@@ -457,6 +514,9 @@ contains
                pc14 = pc14 + c14cs%livecrootc_xfer_patch(p)
                c14cs%livecrootc_xfer_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%livecrootp_xfer_patch(p)
+            ps%livecrootp_xfer_patch(p) = 0._r8
          end if
 
          ! deadcroot C and N
@@ -473,6 +533,9 @@ contains
                pc14 = pc14 + c14cs%deadcrootc_patch(p)
                c14cs%deadcrootc_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%deadcrootp_patch(p)
+            ps%deadcrootp_patch(p) = 0._r8
          end if
 
          ! deadcroot storage C and N
@@ -489,6 +552,9 @@ contains
                pc14 = pc14 + c14cs%deadcrootc_storage_patch(p)
                c14cs%deadcrootc_storage_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%deadcrootp_storage_patch(p)
+            ps%deadcrootp_storage_patch(p) = 0._r8
          end if
 
          ! deadcroot transfer C and N
@@ -505,6 +571,9 @@ contains
                pc14 = pc14 + c14cs%deadcrootc_xfer_patch(p)
                c14cs%deadcrootc_xfer_patch(p) = 0._r8
             endif
+
+            pp = pp + ps%deadcrootp_xfer_patch(p)
+            ps%deadcrootp_xfer_patch(p) = 0._r8
          end if
 
          ! gresp_storage (C only)
@@ -563,14 +632,28 @@ contains
             ns%retransn_patch(p) = 0._r8
          end if
 
+         ! retransp (P only)
+         if (abs(ps%retransp_patch(p)) < pcrit) then
+            pp = pp + ps%retransp_patch(p)
+            ps%retransp_patch(p) = 0._r8
+         end if
+
          ! npool (N only)
          if (abs(ns%npool_patch(p)) < ncrit) then
             pn = pn + ns%npool_patch(p)
             ns%npool_patch(p) = 0._r8
          end if
 
+         ! ppool (P only)
+         if (abs(ps%ppool_patch(p)) < pcrit) then
+            pp = pp + ps%ppool_patch(p)
+            ps%ppool_patch(p) = 0._r8
+         end if
+
          cs%ctrunc_patch(p) = cs%ctrunc_patch(p) + pc
          ns%ntrunc_patch(p) = ns%ntrunc_patch(p) + pn
+         ps%ptrunc_patch(p) = ps%ptrunc_patch(p) + pp
+
          if ( use_c13 ) then
             c13cs%ctrunc_patch(p) = c13cs%ctrunc_patch(p) + pc13
          endif
@@ -590,6 +673,7 @@ contains
             if ( use_c13 ) cc13 = 0._r8
             if ( use_c14 ) cc14 = 0._r8
             cn = 0._r8
+            cp = 0._r8
 
             ! do tests on state variables for precision control
             ! for linked C-N state variables, perform precision test on
@@ -597,6 +681,7 @@ contains
 
 
             ! all decomposing pools C and N
+            ! add P pools  -- X.YANG
             do k = 1, ndecomp_pools
 
                if (abs(cs%decomp_cpools_vr_col(c,j,k)) < ccrit) then
@@ -612,6 +697,9 @@ contains
                      cc14 = cc14 + c14cs%decomp_cpools_vr_col(c,j,k)
                      c14cs%decomp_cpools_vr_col(c,j,k) = 0._r8
                   endif
+
+                  cp = cp + ps%decomp_ppools_vr_col(c,j,k)
+                  ps%decomp_ppools_vr_col(c,j,k) = 0._r8
                end if
 
             end do
@@ -621,6 +709,7 @@ contains
 
             cs%ctrunc_vr_col(c,j) = cs%ctrunc_vr_col(c,j) + cc
             ns%ntrunc_vr_col(c,j) = ns%ntrunc_vr_col(c,j) + cn
+            ps%ptrunc_vr_col(c,j) = ps%ptrunc_vr_col(c,j) + cp
             if ( use_c13 ) then
                c13cs%ctrunc_vr_col(c,j) = c13cs%ctrunc_vr_col(c,j) + cc13
             endif
