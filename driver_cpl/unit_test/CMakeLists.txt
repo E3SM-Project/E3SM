@@ -43,7 +43,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # Set the list of libraries needed for these unit tests. Note that not all unit
 # tests need all of these libraries, but it's easiest just to set the same list
 # for everyone.
-set(DRV_UNIT_TEST_LIBS drv;csm_share;esmf_wrf_timemgr;mct;mpeu;mpi-serial)
+set(DRV_UNIT_TEST_LIBS drv;csm_share;esmf_wrf_timemgr;mct;mpeu)
 list(APPEND DRV_UNIT_TEST_LIBS ${NETCDF_LIBRARIES})
 
 # Add the test directories

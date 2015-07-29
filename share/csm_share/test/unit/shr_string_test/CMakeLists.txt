@@ -16,3 +16,4 @@ extract_sources("${sources_needed}" "${share_sources}" test_sources)
 
 create_pFUnit_test(shr_string shr_string_exe "${pf_sources}" "${test_sources}")
 
+declare_generated_dependencies(shr_string_exe "${share_genf90_sources}")
