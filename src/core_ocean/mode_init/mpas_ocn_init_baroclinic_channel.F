@@ -87,6 +87,7 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: verticalMeshPool
 
       integer :: iCell, k, idx
@@ -113,7 +114,7 @@ contains
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       ! Define local interfaceLocations variable
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
@@ -197,12 +198,13 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-        call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
 
         call mpas_pool_get_array(meshPool, 'xCell', xCell)
         call mpas_pool_get_array(meshPool, 'yCell', yCell)
@@ -214,7 +216,7 @@ contains
         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
-        call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
@@ -242,15 +244,15 @@ contains
               temperature = config_baroclinic_channel_bottom_temperature &
                           + (config_baroclinic_channel_surface_temperature - config_baroclinic_channel_bottom_temperature) &
                           * ( (refZMid(k) + refBottomDepth(nVertLevels)) / refBottomDepth(nVertLevels) )
-              tracers(idx, k, iCell) = temperature
+              activeTracers(idx, k, iCell) = temperature
            end do
 
            if(yCell(iCell) < yMidGlobal - yOffset) then
                 ! If cell is in the southern half, outside the sin width, subtract temperature difference
-                tracers(idx, :, iCell) = tracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
+                activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
            else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
                    yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
-                tracers(idx, :, iCell) = tracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
+                activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
                               - ((yMaxGlobal + yMinGlobal) * 0.5 - yOffset)) / perturbationWidth)
            end if
 
@@ -264,14 +266,14 @@ contains
 
 
                 do k = 1, nVertLevels
-                   tracers(idx, k, iCell) = tracers(idx, k, iCell) + &
+                   activeTracers(idx, k, iCell) = activeTracers(idx, k, iCell) + &
                              0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) /(0.5_RKIND * perturbationWidth)))
                 end do
            end if
 
            ! Set salinity
            idx = index_salinity
-           tracers(idx, :, iCell) = config_baroclinic_channel_salinity
+           activeTracers(idx, :, iCell) = config_baroclinic_channel_salinity
 
            ! Set layerThickness and restingThickness
            do k = 1, nVertLevels
