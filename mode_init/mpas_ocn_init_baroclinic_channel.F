@@ -106,7 +106,7 @@ contains
 
       ! Define dimension pointers
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
-      integer, pointer :: index_temperature, index_salinity
+      integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
       integer, dimension(:), pointer :: maxLevelCell
@@ -114,7 +114,7 @@ contains
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
       ! Define local interfaceLocations variable
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
@@ -205,6 +205,7 @@ contains
 
         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
         call mpas_pool_get_array(meshPool, 'xCell', xCell)
         call mpas_pool_get_array(meshPool, 'yCell', yCell)
@@ -217,6 +218,7 @@ contains
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
@@ -237,6 +239,12 @@ contains
         do iCell = 1, nCellsSolve
            ! Determine cutoff location for large sin wave
            yOffset = perturbationWidth * sin (6.0_RKIND * pii * (xCell(iCell) - xMinGlobal) / (xMaxGlobal - xMinGlobal))
+
+           ! Set debug tracer
+           idx = index_tracer1
+           do k = 1, nVertLevels
+             debugTracers(idx, k, iCell) = 1.0_RKIND
+           enddo
 
            ! Set stratification based on northern half of domain temperature
            idx = index_temperature
