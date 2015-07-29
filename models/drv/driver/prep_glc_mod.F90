@@ -99,7 +99,7 @@ contains
 
     allocate(mapper_SFl2g)
 
-    if (glc_present) then
+    if (glc_present .and. lnd_c2_glc) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)

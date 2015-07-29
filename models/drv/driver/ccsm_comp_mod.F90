@@ -1452,9 +1452,6 @@ subroutine ccsm_init()
    if ((ice_prognostic .or. ocn_prognostic .or. lnd_prognostic) .and. .not. atm_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic surface model must also have atm present')
    endif
-   if (glc_prognostic .and. .not.lnd_present) then
-      call shr_sys_abort(subname//' ERROR: if prognostic glc must also have lnd present')
-   endif
    if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
       call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
    endif
@@ -1474,10 +1471,6 @@ subroutine ccsm_init()
 
    if (.not. samegrid_oi) then
       call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
-   endif
-
-   if (.not. samegrid_lg) then
-      call shr_sys_abort(subname//' ERROR: samegrid_lg is false')
    endif
 
    !----------------------------------------------------------

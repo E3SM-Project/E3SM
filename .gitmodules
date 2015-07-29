@@ -2,3 +2,6 @@
 	path = models/ocn/mpas-o/model
 	url = git@github.com:ACME-Climate/MPAS.git
 	branch = ocean/develop
+[submodule "mpas-li"]
+	path = models/glc/mpas-li/model
+	url = git@github.com:ACME-Climate/MPAS.git
