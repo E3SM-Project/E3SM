@@ -1529,94 +1529,104 @@ module mpas_block_creator
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, real1DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, real1DField % dimNames(iDim), tempDim)
+                     if ( real1DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, real1DField % dimNames(iDim), tempDim)
 
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(real1DField % dimNames(iDim), poolItr % memberName)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(real1DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           real1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                          real1DField % dimNames(iDim), iErr = localErr)
+                        end do
+
+                        if ( real1DField % isPersistent ) then
+                           allocate(real1DField % array(real1DField % dimSizes(1)))
+                           real1DField % array(:) = real1DField % defaultValue
                         end if
-                        real1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                       real1DField % dimNames(iDim), iErr = localErr)
-                     end do
-
-                     if ( real1DField % isActive .and. real1DField % isPersistent ) then
-                        allocate(real1DField % array(real1DField % dimSizes(1)))
-                        real1DField % array(:) = real1DField % defaultValue
                      end if
                   end do
                else if ( poolItr % nDims == 2 ) then
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, real2DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, real2DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(real2DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        real2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                       real2DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( real2DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, real2DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(real2DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           real2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                          real2DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( real2DField % isActive .and. real2DField % isPersistent ) then
-                        allocate(real2DField % array(real2DField % dimSizes(1), real2DField % dimSizes(2)))
-                        real2DField % array(:,:) = real2DField % defaultValue
+                        if ( real2DField % isPersistent ) then
+                           allocate(real2DField % array(real2DField % dimSizes(1), real2DField % dimSizes(2)))
+                           real2DField % array(:,:) = real2DField % defaultValue
+                        end if
                      end if
                   end do
                else if ( poolItr % nDims == 3 ) then
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, real3DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, real3DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(real3DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        real3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                       real3DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( real3DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, real3DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(real3DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           real3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                          real3DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( real3DField % isActive .and. real3DField % isPersistent ) then
-                        allocate(real3DField % array(real3DField % dimSizes(1), real3DField % dimSizes(2), real3DField % dimSizes(3)))
-                        real3DField % array(:,:,:) = real3DField % defaultValue
+                        if ( real3DField % isPersistent ) then
+                           allocate(real3DField % array(real3DField % dimSizes(1), real3DField % dimSizes(2), real3DField % dimSizes(3)))
+                           real3DField % array(:,:,:) = real3DField % defaultValue
+                        end if
                      end if
                   end do
                else if ( poolItr % nDims == 4 ) then
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, real4DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, real4DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(real4DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        real4DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                       real4DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( real4DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, real4DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(real4DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           real4DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                          real4DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( real4DField % isActive .and. real4DField % isPersistent ) then
-                        allocate(real4DField % array(real4DField % dimSizes(1), real4DField % dimSizes(2), &
-                                                     real4DField % dimSizes(3), real4DField % dimSizes(4)))
-                        real4DField % array(:,:,:,:) = real4DField % defaultValue
+                        if ( real4DField % isPersistent ) then
+                           allocate(real4DField % array(real4DField % dimSizes(1), real4DField % dimSizes(2), &
+                                                        real4DField % dimSizes(3), real4DField % dimSizes(4)))
+                           real4DField % array(:,:,:,:) = real4DField % defaultValue
+                        end if
                      end if
                   end do
                else if ( poolItr % nDims == 5 ) then
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, real5DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, real5DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(real5DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        real5DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                       real5DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( real5DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, real5DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(real5DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           real5DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                          real5DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( real5DField % isActive .and. real5DField % isPersistent ) then
-                        allocate(real5DField % array(real5DField % dimSizes(1), real5DField % dimSizes(2), &
-                                                     real5DField % dimSizes(3), real5DField % dimSizes(4), &
-                                                     real5DField % dimSizes(5)))
-                        real5DField % array(:,:,:,:,:) = real5DField % defaultValue
+                        if ( real5DField % isPersistent ) then
+                           allocate(real5DField % array(real5DField % dimSizes(1), real5DField % dimSizes(2), &
+                                                        real5DField % dimSizes(3), real5DField % dimSizes(4), &
+                                                        real5DField % dimSizes(5)))
+                           real5DField % array(:,:,:,:,:) = real5DField % defaultValue
+                        end if
                      end if
                   end do
                end if
@@ -1625,54 +1635,60 @@ module mpas_block_creator
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, int1DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, int1DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(int1DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        int1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                      int1DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( int1DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, int1DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(int1DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           int1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                         int1DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( int1DField % isActive .and. int1DField % isPersistent ) then
-                        allocate(int1DField % array(int1DField % dimSizes(1)))
-                        int1DField % array(:) = int1DField % defaultValue
+                        if ( int1DField % isPersistent ) then
+                           allocate(int1DField % array(int1DField % dimSizes(1)))
+                           int1DField % array(:) = int1DField % defaultValue
+                        end if
                      end if
                   end do
                else if ( poolItr % nDims == 2 ) then
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, int2DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, int2DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(int2DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        int2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                      int2DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( int2DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, int2DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(int2DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           int2DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                         int2DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( int2DField % isActive .and. int2DField % isPersistent ) then
-                        allocate(int2DField % array(int2DField % dimSizes(1), int2DField % dimSizes(2)))
-                        int2DField % array(:,:) = int2DField % defaultValue
+                        if ( int2DField % isPersistent ) then
+                           allocate(int2DField % array(int2DField % dimSizes(1), int2DField % dimSizes(2)))
+                           int2DField % array(:,:) = int2DField % defaultValue
+                        end if
                      end if
                   end do
                else if ( poolItr % nDims == 3 ) then
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, int3DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, int3DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(int3DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        int3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                      int3DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( int3DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, int3DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(int3DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           int3DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                         int3DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( int3DField % isActive .and. int3DField % isPersistent ) then
-                        allocate(int3DField % array(int3DField % dimSizes(1), int3DField % dimSizes(2), int3DField % dimSizes(3)))
-                        int3DField % array(:,:,:) = int3DField % defaultValue
+                        if ( int3DField % isPersistent ) then
+                           allocate(int3DField % array(int3DField % dimSizes(1), int3DField % dimSizes(2), int3DField % dimSizes(3)))
+                           int3DField % array(:,:,:) = int3DField % defaultValue
+                        end if
                      end if
                   end do
                end if
@@ -1681,18 +1697,20 @@ module mpas_block_creator
                   do timeLev = 1, poolItr % nTimeLevels
                      call mpas_pool_get_field(currentPool, poolItr % memberName, char1DField, timeLev)
 
-                     do iDim = 1, poolItr % nDims
-                        call mpas_pool_get_dimension(currentPool, char1DField % dimNames(iDim), tempDim)
-                        if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
-                            call missing_dim_abort(char1DField % dimNames(iDim), poolItr % memberName)
-                        end if
-                        char1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
-                                                       char1DField % dimNames(iDim), iErr = localErr)
-                     end do
+                     if ( char1DField % isActive ) then
+                        do iDim = 1, poolItr % nDims
+                           call mpas_pool_get_dimension(currentPool, char1DField % dimNames(iDim), tempDim)
+                           if ( .not. associated(tempDim) .or. tempDim == MPAS_MISSING_DIM ) then
+                               call missing_dim_abort(char1DField % dimNames(iDim), poolItr % memberName)
+                           end if
+                           char1DField % dimSizes(iDim) = tempDim + mpas_dimension_num_garbage_elements( &
+                                                          char1DField % dimNames(iDim), iErr = localErr)
+                        end do
 
-                     if ( char1DField % isActive .and. char1DField % isPersistent ) then
-                        allocate(char1DField % array(char1DField % dimSizes(1)))
-                        char1DField % array(:) = char1DField % defaultValue
+                        if ( char1DField % isPersistent ) then
+                           allocate(char1DField % array(char1DField % dimSizes(1)))
+                           char1DField % array(:) = char1DField % defaultValue
+                        end if
                      end if
                   end do
                end if
