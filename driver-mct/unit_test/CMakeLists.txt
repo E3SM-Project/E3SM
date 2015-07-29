@@ -44,12 +44,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # tests need all of these libraries, but it's easiest just to set the same list
 # for everyone.
 set(DRV_UNIT_TEST_LIBS drv;csm_share;esmf_wrf_timemgr;mct;mpeu;mpi-serial)
-if (CESM_NETCDF_LIBS)
-  # Not all machines define CESM_NETCDF_LIBS - e.g., on yellowstone, the correct
-  # libraries are implicitly included on the link line via the necessary module
-  # load.
-  list(APPEND DRV_UNIT_TEST_LIBS ${CESM_NETCDF_LIBS})
-endif()
+list(APPEND DRV_UNIT_TEST_LIBS ${NETCDF_LIBRARIES})
 
 # Add the test directories
 add_subdirectory(avect_wrapper_test)
