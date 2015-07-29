@@ -5335,6 +5335,95 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_shift_time_levels!}}}
 
+!-----------------------------------------------------------------------
+!  subroutine mpas_pool_print_summary
+!
+!> \brief MPAS Pool Summary write routine
+!> \author Doug Jacobsen
+!> \date   07/29/2015
+!> \details
+!> This routine writes out a summary of the contents of a pool that match a specific type.
+!> The memberType input argument can take the value of MPAS_POOL_FIELD,
+!> MPAS_POOL_CONFIG, or MPAS_POOL_PACKAGE.
+!> The recurseSubpools_in input argument defaults to false, but can be used to
+!> write a summary of subpool contents in addition to the current pool.
+!>
+!> It's important to note that this routine iterates over a pool. So if it is
+!> called within a pool iteration loop, it could cause issues.
+!
+!-----------------------------------------------------------------------
+   recursive subroutine mpas_pool_print_summary(inPool, memberType, recurseSubpools_in)!{{{
+      type (mpas_pool_type), pointer :: inPool
+      integer, intent(in) :: memberType
+      logical, optional, intent(in) :: recurseSubpools_in
+
+      type (mpas_pool_iterator_type) :: poolItr
+      logical :: recurseSubpools
+
+      type (mpas_pool_type), pointer :: subPool
+      real (kind=RKIND), pointer :: tempReal
+      integer, pointer :: tempInteger
+      logical, pointer :: tempLogical
+      character (len=StrKIND), pointer :: tempChar
+
+      if ( present(recurseSubpools_in) ) then
+         recurseSubpools = recurseSubpools_in
+      else
+         recurseSubpools = .false.
+      end if
+
+      call mpas_pool_begin_iteration(inPool)
+      do while ( mpas_pool_get_next_member(inPool, poolItr) )
+         ! Handle writing out configs
+         if ( poolItr % memberType == memberType .and. memberType == MPAS_POOL_CONFIG ) then
+            if ( poolItr % dataType == MPAS_POOL_REAL ) then
+               call mpas_pool_get_config(inPool, poolItr % memberName, tempReal)
+               write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = ', tempReal
+            else if ( poolItr % dataType == MPAS_POOL_INTEGER ) then
+               call mpas_pool_get_config(inPool, poolItr % memberName, tempInteger)
+               write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = ', tempInteger
+            else if ( poolItr % dataType == MPAS_POOL_LOGICAL ) then
+               call mpas_pool_get_config(inPool, poolItr % memberName, tempLogical)
+               if ( tempLogical ) then
+                  write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = .true.'
+               else
+                  write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = .false.'
+               end if
+            else if ( poolItr % dataType == MPAS_POOL_CHARACTER ) then
+               call mpas_pool_get_config(inPool, poolItr % memberName, tempChar)
+               write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = ''' // trim(tempChar) // ''''
+            end if
+         ! Handle packages
+         else if (poolItr % memberType == memberType .and. memberType == MPAS_POOL_PACKAGE ) then
+            call mpas_pool_get_package(inPool, poolItr % memberName, tempLogical)
+            if ( tempLogical ) then
+               write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = .true.'
+            else
+               write(stderrUnit, *) '      ' // trim(poolItr % memberName) // ' = .false.'
+            end if
+         ! Handle fields
+         else if (poolItr % memberType == memberType .and. memberType == MPAS_POOL_FIELD ) then
+            write(stderrUnit, *) '      ' // trim(poolItr % memberName)
+            if ( poolItr % dataType == MPAS_POOL_REAL) then
+               write(stderrUnit, *) '            Type: Real'
+            else if ( poolItr % dataType == MPAS_POOL_INTEGER) then
+               write(stderrUnit, *) '            Type: Integer'
+            else if ( poolItr % dataType == MPAS_POOL_CHARACTER) then
+               write(stderrUnit, *) '            Type: Character'
+            else if ( poolItr % dataType == MPAS_POOL_LOGICAL) then
+               write(stderrUnit, *) '            Type: Logical'
+            end if
+            write(stderrUnit, *) '            Number of dimensions: ', poolItr % nDims
+            write(stderrUnit, *) '            Number of time levels: ', poolItr % nTimeLevels
+         else if (poolItr % memberType == MPAS_POOL_SUBPOOL .and. recurseSubpools ) then
+            write(stderrUnit, *) '   ** Begin subpool: ' // trim(poolItr % memberName)
+            call mpas_pool_get_subpool(inPool, poolItr % memberName, subPool)
+            call mpas_pool_print_summary(subPool, memberType, recurseSubpools)
+            write(stderrUnit, *) '   ** End subpool: ' // trim(poolItr % memberName)
+         end if
+      end do
+
+   end subroutine mpas_pool_print_summary!}}}
 
 !!!!!!!!!! Private subroutines !!!!!!!!!!
 
