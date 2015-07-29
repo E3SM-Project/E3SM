@@ -310,7 +310,7 @@ contains
          simulationClock, &
          firstTimeStep)
 
-    call cice_debug_rotate_winds(domain)
+    !call cice_debug_rotate_winds(domain)
 
   end subroutine cice_forcing_get
 
@@ -507,7 +507,7 @@ contains
 
     !where (lonCell > pii) lonCell = lonCell - 2.0_RKIND * pii    
 
-    call cice_debug_output_array(shortwaveDown)
+    !call cice_debug_output_array(shortwaveDown)
 
     do iCell = 1, nCells
 

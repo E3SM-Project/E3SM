@@ -91,7 +91,7 @@
 		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"        possible_values="any positive integer"/> 
 		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="weak"       possible_values="'weak' or 'variational'"/>
 		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress" possible_values="'wachspress' or 'pwl'"/>
-		<nml_option name="config_evp_damping"                 type="logical"       default_value="true"       possible_values="true or false"/>		
+		<nml_option name="config_revised_evp"	type="logical"	     default_value="true" possible_values="true or false"/>		
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
@@ -552,7 +552,7 @@
 		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
 		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
 		<var name="fEdge"                             type="real"     dimensions="nEdges"/>
-		<var name="fVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="fVertex"                           type="real"     dimensions="nVertices Time"/>
 		<var name="fCell"                             type="real"     dimensions="nCells"/>
 		<var name="h_s"                               type="real"     dimensions="nCells"/>
 		<var name="derivTwo"                          type="real"     dimensions="maxEdges2 TWO nEdges"/>
@@ -740,16 +740,16 @@
 
 	<!--ocean coupling -->	
 	<var_struct name="ocean_coupling" time_levs="1">
-		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells"              name_in_code="seaSurfaceTemperature"/>
-		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
-		<var name="seaFreezingTemperature"            type="real"     dimensions="nCells"              name_in_code="seaFreezingTemperature"/>
-		<var name="freezingMeltingPotential"	      type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotential"/>
-		<var name="uOceanVelocity"                    type="real"     dimensions="nCells"              name_in_code="uOceanVelocity"/>
-		<var name="vOceanVelocity"                    type="real"     dimensions="nCells"              name_in_code="vOceanVelocity"/>
-		<var name="seaSurfaceTiltU"                   type="real"     dimensions="nCells"              name_in_code="seaSurfaceTiltU"/>	
-		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells"              name_in_code="seaSurfaceTiltV"/>
-		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells"              name_in_code="oceanMixedLayerDepth"/>
-		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells"              name_in_code="oceanHeatFluxConvergence"/>
+		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTemperature"/>
+		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceSalinity"/>
+		<var name="seaFreezingTemperature"            type="real"     dimensions="nCells Time"              name_in_code="seaFreezingTemperature"/>
+		<var name="freezingMeltingPotential"	      type="real"     dimensions="nCells Time"              name_in_code="freezingMeltingPotential"/>
+		<var name="uOceanVelocity"                    type="real"     dimensions="nCells Time"              name_in_code="uOceanVelocity"/>
+		<var name="vOceanVelocity"                    type="real"     dimensions="nCells Time"              name_in_code="vOceanVelocity"/>
+		<var name="seaSurfaceTiltU"                   type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTiltU"/>	
+		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTiltV"/>
+		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells Time"              name_in_code="oceanMixedLayerDepth"/>
+		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxConvergence"/>
 	</var_struct>
 
 	<!-- boundary variables -->
@@ -766,28 +766,33 @@
 		<var name="elasticTimeStep"                   type="real"     dimensions=""                              name_in_code="elasticTimeStep"/>
 		<var name="uVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="uVelocity"/>
 		<var name="vVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="vVelocity"/>
+		<var name="uVelocityInitial"                         type="real"     dimensions="nVertices Time"                name_in_code="uVelocityInitial"/>
+		<var name="vVelocityInitial"                         type="real"     dimensions="nVertices Time"                name_in_code="vVelocityInitial"/>
 		<var name="edgeVelocity"                      type="real"     dimensions="nEdges"                   name_in_code="edgeVelocity"/>
 		<var name="normalVectorEdge"                  type="real"     dimensions="TWO maxEdges nCells"      name_in_code="normalVectorEdge"/>
 		<var name="solveStress"                       type="integer"  dimensions="nCells"                   name_in_code="solveStress"/>
-		<var name="solveVelocity"                     type="integer"  dimensions="nVertices"                name_in_code="solveVelocity"/>	
-		<var name="icePressure"                       type="real"     dimensions="nCells"                   name_in_code="icePressure"/>
+		<var name="solveVelocity"                     type="integer"  dimensions="nVertices"                name_in_code="solveVelocity"/>
+		<var name="solveVelocityPrevious"             type="integer"  dimensions="nVertices"                name_in_code="solveVelocityPrevious"/>		    
+		<var name="icePressure"                       type="real"     dimensions="nCells Time"                   name_in_code="icePressure"/>
 		<var name="stressDivergenceU"                 type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceU"/>
 		<var name="stressDivergenceV"                 type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceV"/>
 		<var name="airStressCellU"                    type="real"     dimensions="nCells Time"                   name_in_code="airStressCellU"/>
 		<var name="airStressCellV"                    type="real"     dimensions="nCells Time"                   name_in_code="airStressCellV"/>
 		<var name="airStressVertexU"                  type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexU"/>
 		<var name="airStressVertexV"                  type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexV"/>
-		<var name="uOceanVelocityVertex"              type="real"     dimensions="nVertices"                name_in_code="uOceanVelocityVertex"/>
-		<var name="vOceanVelocityVertex"              type="real"     dimensions="nVertices"                name_in_code="vOceanVelocityVertex"/>
+		<var name="uOceanVelocityVertex"              type="real"     dimensions="nVertices Time"                name_in_code="uOceanVelocityVertex"/>
+		<var name="vOceanVelocityVertex"              type="real"     dimensions="nVertices Time"                name_in_code="vOceanVelocityVertex"/>
 		<var name="oceanStressU"                      type="real"     dimensions="nVertices Time"                name_in_code="oceanStressU"/>
 		<var name="oceanStressV"                      type="real"     dimensions="nVertices Time"                name_in_code="oceanStressV"/>
 		<var name="oceanStressCoeff"                  type="real"     dimensions="nVertices Time"                name_in_code="oceanStressCoeff"/>
-		<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceU"/>
-		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceV"/>
-		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices"                name_in_code="totalMassVertexfVertex"/>
+		<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceU"/>
+		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceV"/>
+		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices Time"                name_in_code="totalMassVertexfVertex"/>
 		<var name="principalStress1"                  type="real"     dimensions="nCells"                   name_in_code="principalStress1"/>
 		<var name="principalStress2"                  type="real"     dimensions="nCells"                   name_in_code="principalStress2"/>
 		<var name="replacementPressure"               type="real"     dimensions="nCells"                   name_in_code="replacementPressure"/>
+		<var name="divergence"               type="real"     dimensions="nCells Time"                   name_in_code="divergence"/>
+		<var name="shear"               type="real"     dimensions="nCells Time"                   name_in_code="shear"/>
 	</var_struct>
 
 	<!-- weak formulation -->

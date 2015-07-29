@@ -136,22 +136,40 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_column_physics_package_variables(domain)
+  subroutine cice_init_column_physics_package_variables(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
-    ! initialize level ice tracers
-    call init_column_level_ice_tracers(domain)
+    type (MPAS_Clock_type), intent(in) :: &
+         clock !< Input: 
+    
+    logical, pointer :: &
+         config_use_column_package, &
+         config_do_restart
 
-    ! initialize the itd thickness classes
-    call init_column_itd(domain)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
-    ! initialize thermodynamic tracer profiles
-    call init_column_thermodynamic_profiles(domain)
+    if (config_use_column_package) then
 
-    ! history variables
-    call init_column_history_variables(domain)
+       ! initialize level ice tracers
+       call init_column_level_ice_tracers(domain)
+       
+       ! initialize the itd thickness classes
+       call init_column_itd(domain)
+       
+       ! initialize thermodynamic tracer profiles
+       call init_column_thermodynamic_profiles(domain)
+       
+       ! history variables
+       call init_column_history_variables(domain)
 
+       ! shortwave
+       call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+       if (config_do_restart) &
+            call cice_init_column_shortwave(domain, clock)
+       
+    endif
+       
   end subroutine cice_init_column_physics_package_variables
 
 !-----------------------------------------------------------------------
@@ -355,7 +373,7 @@ contains
 
     character(len=strKIND), pointer :: &
          config_shortwave_type
-
+    
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
 
     if (trim(config_shortwave_type) == "dEdd") then
@@ -462,7 +480,7 @@ contains
           albedoIRDiffuseArea(iCell)      = albedoIRDiffuseCell(iCell)
 
        enddo ! iCell
-
+       
        block => block % next
     end do
 
@@ -638,6 +656,7 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
+         config_use_column_package, &
          config_use_column_shortwave, &
          config_use_column_vertical_thermodynamics, &
          !config_use_column_biogeochemistry, &
@@ -647,57 +666,63 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
-    !call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
-    call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
-
-    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
-
-    !-----------------------------------------------------------------
-    ! Scale radiation fields
-    !-----------------------------------------------------------------
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     
-    call mpas_timer_start("Column shortwave prep")
-    if (config_use_column_shortwave .and. config_calc_surface_temperature) &
-         call column_prep_radiation(domain)
-    call mpas_timer_stop("Column shortwave prep")
+    if (config_use_column_package) then
     
-    !-----------------------------------------------------------------
-    ! Vertical thermodynamics
-    !-----------------------------------------------------------------
-            
-    call mpas_timer_start("Column vertical thermodynamics")
-    if (config_use_column_vertical_thermodynamics) &
-         call column_vertical_thermodynamics(domain, clock)
-    call mpas_timer_stop("Column vertical thermodynamics")
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+       !call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
+       call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
 
-    !-----------------------------------------------------------------
-    ! Biogeochemistry
-    !-----------------------------------------------------------------
+       call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
-    !call mpas_timer_start("Column biogeochemistry")
-    !if (config_use_column_biogeochemistry) &
-    ! call column biogeochemistry ! not implemented yet
-    !call mpas_timer_stop("Column biogeochemistry")
+       !-----------------------------------------------------------------
+       ! Scale radiation fields
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! ITD thermodynamics
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column shortwave prep")
+       if (config_use_column_shortwave .and. config_calc_surface_temperature) &
+            call column_prep_radiation(domain)
+       call mpas_timer_stop("Column shortwave prep")
 
-    call mpas_timer_start("Column ITD thermodynamics")
-    if (config_use_column_itd_thermodynamics) &
-         call column_itd_thermodynamics(domain, clock)
-    call mpas_timer_stop("Column ITD thermodynamics")
+       !-----------------------------------------------------------------
+       ! Vertical thermodynamics
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Update the aggregated state variables
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column vertical thermodynamics")
+       if (config_use_column_vertical_thermodynamics) &
+            call column_vertical_thermodynamics(domain, clock)
+       call mpas_timer_stop("Column vertical thermodynamics")
+        call cice_debug_write_out_fields(domain, "cice_column_predynamics_time_integration", 1)
+       !-----------------------------------------------------------------
+       ! Biogeochemistry
+       !-----------------------------------------------------------------
 
-    call mpas_timer_start("Column update state")
-    call cice_column_update_state(domain, config_dt, config_dt)
-    call mpas_timer_stop("Column update state")
+       !call mpas_timer_start("Column biogeochemistry")
+       !if (config_use_column_biogeochemistry) &
+       ! call column biogeochemistry ! not implemented yet
+       !call mpas_timer_stop("Column biogeochemistry")
+
+       !-----------------------------------------------------------------
+       ! ITD thermodynamics
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column ITD thermodynamics")
+       if (config_use_column_itd_thermodynamics) &
+            call column_itd_thermodynamics(domain, clock)
+       call mpas_timer_stop("Column ITD thermodynamics")
+
+       !-----------------------------------------------------------------
+       ! Update the aggregated state variables
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column update state")
+       call cice_column_update_state(domain, config_dt, config_dt)
+       call mpas_timer_stop("Column update state")
+
+    endif
 
   end subroutine cice_column_predynamics_time_integration
 
@@ -720,6 +745,7 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
+         config_use_column_package, &
          config_use_column_ridging
 
     type(MPAS_pool_type), pointer :: &
@@ -728,27 +754,33 @@ contains
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+
+    if (config_use_column_package) then
     
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
-    call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
 
-    !-----------------------------------------------------------------
-    ! Ridging
-    !-----------------------------------------------------------------
+       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
+       call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
 
-    call mpas_timer_start("Column ridging")
-    if (config_use_column_ridging) &
-         call column_ridging(domain)
-    call mpas_timer_stop("Column ridging")
+       !-----------------------------------------------------------------
+       ! Ridging
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Update the aggregated state variables
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column ridging")
+       if (config_use_column_ridging) &
+            call column_ridging(domain)
+       call mpas_timer_stop("Column ridging")
 
-    call mpas_timer_start("Column update state")
-    call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
-    call mpas_timer_stop("Column update state")
+       !-----------------------------------------------------------------
+       ! Update the aggregated state variables
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column update state")
+       call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
+       call mpas_timer_stop("Column update state")
+
+    endif
 
   end subroutine cice_column_dynamics_time_integration
 
@@ -771,26 +803,33 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
+         config_use_column_package, &
          config_use_column_shortwave
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
-    !-----------------------------------------------------------------
-    ! Shortwave radiation
-    !-----------------------------------------------------------------
+    if (config_use_column_package) then
+    
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       
+       !-----------------------------------------------------------------
+       ! Shortwave radiation
+       !-----------------------------------------------------------------
+       
+       call mpas_timer_start("Column shortwave")
+       if (config_use_column_shortwave) &
+            call column_radiation(domain, clock, .false.)
+       call mpas_timer_stop("Column shortwave")
 
-    call mpas_timer_start("Column shortwave")
-    if (config_use_column_shortwave) &
-         call column_radiation(domain, clock, .false.)
-    call mpas_timer_stop("Column shortwave")
+       !-----------------------------------------------------------------
+       ! Coupling prep
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Coupling prep
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column coupling prep")
+       call cice_column_coupling_prep(domain)
+       call mpas_timer_stop("Column coupling prep")
 
-    call mpas_timer_start("Column coupling prep")
-    call cice_column_coupling_prep(domain)
-    call mpas_timer_stop("Column coupling prep")
+    endif
 
   end subroutine cice_column_postdynamics_time_integration
 
@@ -1209,7 +1248,7 @@ contains
           else
              northernHemisphereMask = .false.
           endif
-          
+
           call colpkg_step_therm1(&
                config_dt, &
                nCategories, &
@@ -2117,7 +2156,7 @@ contains
 
     character(len=strKIND) :: &
          abortMessage
-
+    
     block => domain % blocklist
     do while (associated(block))
 
@@ -2177,7 +2216,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
-
+       
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
 

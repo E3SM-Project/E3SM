@@ -2460,6 +2460,13 @@ contains
     real(kind=RKIND), dimension(:,:), pointer :: &
          kiteAreasOnVertex
 
+
+    integer :: &
+         iCellOnVertex
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+    
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
@@ -2469,25 +2476,37 @@ contains
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
     call MPAS_pool_get_array(mesh, "kiteAreasOnVertex", kiteAreasOnVertex)
 
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+
     do iVertex = 1, nVerticesSolve
     
-       variableVertex(iVertex) = 0.0_RKIND
-       totalArea = 0.0_RKIND
+       !variableVertex(iVertex) = 0.0_RKIND
+       !totalArea = 0.0_RKIND
 
-       do iVertexDegree = 1, vertexDegree
+       !do iVertexDegree = 1, vertexDegree
 
-          iCell = cellsOnVertex(iVertexDegree,iVertex) 
+       !   iCell = cellsOnVertex(iVertexDegree,iVertex) 
 
-          !variableVertex(iVertex) = variableVertex(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex) * variableCell(iCell)
+       !   !variableVertex(iVertex) = variableVertex(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex) * variableCell(iCell)
 
-          variableVertex(iVertex) = variableVertex(iVertex) + areaCell(iCell) * variableCell(iCell)
-          totalArea = totalArea + areaCell(iCell)
+       !   variableVertex(iVertex) = variableVertex(iVertex) + areaCell(iCell) * variableCell(iCell)
+       !   totalArea = totalArea + areaCell(iCell)
 
-       enddo ! iVertexDegree
+       !enddo ! iVertexDegree
 
-       variableVertex(iVertex) = variableVertex(iVertex) / totalArea
+       !variableVertex(iVertex) = variableVertex(iVertex) / totalArea
 
-       !variableVertex(iVertex) = variableVertex(iVertex) / areaTriangle(iVertex)
+       !!variableVertex(iVertex) = variableVertex(iVertex) / areaTriangle(iVertex)
+
+       do iCellOnVertex = 1, vertexDegree
+
+          iCell = cellsOnVertex(iCellOnVertex,iVertex)
+          
+          if (verticesOnCell(3,iCell) == iVertex) exit
+          
+       enddo ! iCellOnVertex
+          
+       variableVertex(iVertex) = variableCell(iCell)
 
     enddo ! iVertex
 

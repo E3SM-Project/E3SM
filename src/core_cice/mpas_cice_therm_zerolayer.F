@@ -173,7 +173,7 @@ contains
          configs, &
          tracers, &
          atmos_forcing, &
-         ocean_forcing
+         ocean_coupling
 
     real(kind=RKIND) :: &
          cumulativeIceAblation, &
@@ -221,7 +221,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
-    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -238,7 +238,7 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "sensibleTransferCoefficient", sensibleTransferCoefficient)
     call MPAS_pool_get_array(atmos_forcing, "latentTransferCoefficient", latentTransferCoefficient)
     call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
-    call MPAS_pool_get_array(ocean_forcing, "seaSurfaceSalinity", seaSurfaceSalinity)
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
 
 #if test_1d == 1
     call MPAS_pool_get_array(mesh, "latCell", latCell) ! testing 

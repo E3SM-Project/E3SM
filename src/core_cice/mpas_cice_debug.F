@@ -2641,7 +2641,7 @@ contains
 
     integer :: recl
 
-    recl = size(array) * 2
+    recl = size(array) * 8
 
     if (present(fileout)) then
        open(60,file=trim(fileout),form="unformatted",access="direct",recl=recl)
@@ -2710,12 +2710,16 @@ contains
     type(mpas_pool_type), pointer :: &
          pool
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
+    !real(kind=RKIND), dimension(:,:,:), pointer :: &
+    real(kind=RKIND), dimension(:), pointer :: &  
          array
 
+    !character(len=200), parameter :: &
+    !     poolName  = "tracers", &
+    !     fieldName = "iceVolumeCategory"
     character(len=200), parameter :: &
-         poolName  = "", &
-         fieldName = "absorbedShortwaveIceLayer"
+         poolName  = "atmos_coupling", &
+         fieldName = "airPotentialTemperature"
 
     write(stderrUnit,*) trim(poolName), " ", trim(fieldName)
 
@@ -2726,7 +2730,8 @@ contains
 
        call MPAS_pool_get_array(pool, trim(fieldName), array, 1)
 
-       call cice_debug_output_array(array(1,1,:))
+       !call cice_debug_output_array(array(1,1,:))
+       call cice_debug_output_array(array(:))      
 
        block => block % next
     end do
@@ -2788,8 +2793,7 @@ contains
        call MPAS_pool_get_field(pool, trim(fieldname), array1D)
 
        if (trim(fieldname) == "lonCell") where(array1D % array > pii) array1D % array = array1D % array - 2.0_RKIND * pii
-
-
+       
        if (array1D % isActive) then
           fileout = "comparison/pop_mpas_array_comparison_"//trim(cicename)//".dat"
           call cice_debug_output_array(array1D % array, trim(fileout))
@@ -2860,9 +2864,9 @@ contains
     integer, intent(in) :: location
 
     ! parameters where we want to writeout output
-    character(len=strKIND), parameter :: callingSubroutineDesired = "cice_timestep"
-    integer, parameter :: locationDesired = 3
-    integer, parameter :: iStepDesired = 8760
+    character(len=strKIND), parameter :: callingSubroutineDesired = "column_vertical_thermodynamics"
+    integer, parameter :: locationDesired = 1
+    integer, parameter :: iStepDesired = 1
 
 ! cice_init_column_shortwave           1           0
 ! column_radiation           1           0
@@ -2881,9 +2885,9 @@ contains
 
     write(stderrUnit,*) trim(callingSubroutine), location, iStep
 
-    if (trim(callingSubroutine) == trim(callingSubroutineDesired) .and. &
-        location == locationDesired .and. &
-        iStep == iStepDesired) then
+    !if (trim(callingSubroutine) == trim(callingSubroutineDesired) .and. &
+    !    location == locationDesired .and. &
+    !    iStep == iStepDesired) then
 
        !write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
        
@@ -3071,7 +3075,7 @@ contains
 
        stop
 
-    endif
+    !endif
 
   end subroutine cice_debug_write_out_fields
 

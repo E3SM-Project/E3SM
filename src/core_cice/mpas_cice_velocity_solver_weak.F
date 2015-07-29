@@ -25,8 +25,9 @@ module cice_velocity_solver_weak
        cice_internal_stress_weak, &
        cice_strain_tensor_weak, &
        cice_stress_tensor_weak, &
-       cice_stress_divergence_weak
-
+       cice_stress_divergence_weak, &
+       cice_final_divergence_shear_weak
+  
 contains
 
 !-----------------------------------------------------------------------
@@ -117,6 +118,7 @@ contains
        icePressure, &
        replacementPressure, &
        dtElastic, &
+       dt, &
        evpDamping, &
        stressDivergenceU, &
        stressDivergenceV, &
@@ -136,8 +138,9 @@ contains
          replacementPressure !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input: 
-
+         dtElastic, & !< Input: 
+         dt           !< Input: 
+         
     logical, intent(in) :: &
          evpDamping !< Input: 
 
@@ -197,6 +200,7 @@ contains
          replacementPressure, &
          solveStress, &       
          dtElastic, &
+         dt, &
          evpDamping)
 
     call cice_stress_divergence_weak(&
@@ -388,11 +392,12 @@ contains
        replacementPressure, &
        solveStress, &
        dtElastic, &
-       evpDamping)!{{{
+       dt, &
+       revisedEVP)!{{{
 
     use cice_velocity_solver_shared, only: &
          cice_evp_constitutive_relation, &
-         cice_linear_constitutive_relation
+         cice_evp_constitutive_relation_revised
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -413,10 +418,11 @@ contains
          solveStress !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input: 
-
+         dtElastic, & !< Input: 
+         dt           !< Input: 
+         
     logical, intent(in) :: &
-         evpDamping !< Input: 
+         revisedEVP !< Input: 
 
     integer :: &
          iCell
@@ -432,40 +438,63 @@ contains
 
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
-    do iCell = 1, nCells
+    if (.not. revisedEVP) then
+    
+       do iCell = 1, nCells
 
-       if (solveStress(iCell) == 1) then
+          if (solveStress(iCell) == 1) then
 
-          call cice_evp_constitutive_relation(&
-               stress11(iCell), &
-               stress22(iCell), &
-               stress12(iCell), &
-               strain11(iCell), &
-               strain22(iCell), &
-               strain12(iCell), &
-               icePressure(iCell), &
-               replacementPressure(iCell), &
-               areaCell(iCell), &
-               dtElastic, &
-               evpDamping)
+             call cice_evp_constitutive_relation(&
+                  stress11(iCell), &
+                  stress22(iCell), &
+                  stress12(iCell), &
+                  strain11(iCell), &
+                  strain22(iCell), &
+                  strain12(iCell), &
+                  icePressure(iCell), &
+                  replacementPressure(iCell), &
+                  areaCell(iCell), &
+                  dtElastic)
 
-          !call cice_linear_constitutive_relation(&
-          !     stress11(iCell), &
-          !     stress22(iCell), &
-          !     stress12(iCell), &
-          !     strain11(iCell), &
-          !     strain22(iCell), &
-          !     strain12(iCell))
+          else
 
-       else
+             stress11(iCell) = 0.0_RKIND
+             stress22(iCell) = 0.0_RKIND
+             stress12(iCell) = 0.0_RKIND
 
-          stress11(iCell) = 0.0_RKIND
-          stress22(iCell) = 0.0_RKIND
-          stress12(iCell) = 0.0_RKIND
+          endif ! solveStress
 
-       endif ! solveStress
+       end do ! iCell
 
-    end do ! iCell
+    else
+
+       do iCell = 1, nCells
+
+          if (solveStress(iCell) == 1) then
+
+             call cice_evp_constitutive_relation_revised(&
+                  stress11(iCell), &
+                  stress22(iCell), &
+                  stress12(iCell), &
+                  strain11(iCell), &
+                  strain22(iCell), &
+                  strain12(iCell), &
+                  icePressure(iCell), &
+                  replacementPressure(iCell), &
+                  areaCell(iCell), &
+                  dt)
+
+          else
+
+             stress11(iCell) = 0.0_RKIND
+             stress22(iCell) = 0.0_RKIND
+             stress12(iCell) = 0.0_RKIND
+
+          endif ! solveStress
+
+       end do ! iCell
+
+    endif
 
   end subroutine cice_stress_tensor_weak!}}}
 
@@ -628,7 +657,116 @@ contains
     enddo ! iVertex
 
   end subroutine cice_stress_divergence_weak!}}}
+  
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  final_divergence_shear_weak
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date July 9th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
+  subroutine cice_final_divergence_shear_weak(block)
+
+    use cice_velocity_solver_shared, only: &
+         eccentricitySquared
+    
+    type(block_type), intent(inout) :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityWeakPool, &
+         velocitySolverPool, &
+         ridgingPool
+    
+    integer, pointer :: &
+         nCellsSolve
+    
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         divergence, &
+         shear, &
+         ridgeConvergence, &
+         ridgeShear
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         Delta
+
+    real(kind=RKIND) :: &
+         strainDivergence, &
+         strainTension, &
+         strainShearing
+
+    logical, pointer :: &
+         pkgColumnRidgingActive
+    
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+    
+    call MPAS_pool_get_dimension(meshPool, "nCellsSolve", nCellsSolve)
+    
+    call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
+    
+    call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+    call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+    call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
+
+    call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
+    call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
+
+    allocate(Delta(nCellsSolve))
+     
+    do iCell = 1, nCellsSolve
+
+       strainDivergence = strain11(iCell) + strain22(iCell)
+       strainTension    = strain11(iCell) - strain22(iCell)
+       strainShearing   = strain12(iCell) * 2.0_RKIND
+       
+       Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+
+       divergence(iCell) = strainDivergence
+       shear(iCell)      = sqrt(strainTension**2 + strainShearing**2)
+
+    enddo ! iCell
+
+    ! ridging parameters
+    call MPAS_pool_get_package(block % packages, "pkgColumnRidgingActive", pkgColumnRidgingActive)
+
+    if (pkgColumnRidgingActive) then
+
+       call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
+
+       call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
+       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)       
+    
+       do iCell = 1, nCellsSolve
+          
+          ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
+          ridgeShear(iCell)       = 0.5_RKIND * (Delta(iCell) - abs(divergence(iCell)))
+          
+       enddo ! iCell
+       
+    endif ! pkgColumnRidgingActive
+
+    ! cleanup
+    deallocate(Delta)
+
+  end subroutine cice_final_divergence_shear_weak
+  
 !-----------------------------------------------------------------------
 
 end module cice_velocity_solver_weak

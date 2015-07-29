@@ -26,8 +26,8 @@ module cice_initialize
 
   public :: &
        cice_init, &
-       cice_init_first_step
-
+       cice_init_post_clock_advance
+  
 contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -72,13 +72,11 @@ contains
     logical, pointer :: &
          config_use_advection, &
          config_use_forcing, &
-         config_do_restart, &
-         config_use_column_package
+         config_do_restart
 
     call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
     block => domain % blocklist
     do while (associated(block))
@@ -94,7 +92,7 @@ contains
 
     ! init coupler fluxes
     call initialize_coupler_fields(domain)
-
+ 
     ! initialize forcing
     call cice_forcing_init(domain)
 
@@ -111,9 +109,7 @@ contains
     endif
 
     ! column physics initialization
-    if (config_use_column_package) then
-       call cice_init_column_physics_package_variables(domain)
-    endif
+    call cice_init_column_physics_package_variables(domain, clock)
 
     ! init ice state
     if (.not. config_do_restart) &
@@ -135,7 +131,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init
+!  cice_init_post_clock_advance
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -145,7 +141,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_first_step(&
+  subroutine cice_init_post_clock_advance(&
        domain, &
        clock)!{{{
 
@@ -158,10 +154,17 @@ contains
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input: 
     
-    ! init column shortwave
-    call cice_init_column_shortwave(domain, clock)
+    logical, pointer :: &
+         config_use_column_package, &
+         config_do_restart
+    
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+    
+    if (config_use_column_package .and. .not. config_do_restart) &
+         call cice_init_column_shortwave(domain, clock)
 
-  end subroutine cice_init_first_step
+  end subroutine cice_init_post_clock_advance
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -339,10 +342,10 @@ contains
     ! halo exchanges
     call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
     
-    call MPAS_pool_get_field(tracers_fields, "iceAreaCategory", iceAreaCategoryField)
-    call MPAS_pool_get_field(tracers_fields, "iceVolumeCategory", iceVolumeCategoryField)
-    call MPAS_pool_get_field(tracers_fields, "snowVolumeCategory", snowVolumeCategoryField)
-    call MPAS_pool_get_field(tracers_fields, "surfaceTemperature", surfaceTemperatureField)
+    call MPAS_pool_get_field(tracers_fields, "iceAreaCategory", iceAreaCategoryField, 1)
+    call MPAS_pool_get_field(tracers_fields, "iceVolumeCategory", iceVolumeCategoryField, 1)
+    call MPAS_pool_get_field(tracers_fields, "snowVolumeCategory", snowVolumeCategoryField, 1)
+    call MPAS_pool_get_field(tracers_fields, "surfaceTemperature", surfaceTemperatureField, 1)
 
     call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
     call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
@@ -644,7 +647,7 @@ contains
          block, &
          initialCategoryIceArea, &
          initialCategoryIceThickness)
-
+    
     do iCell = 1, nCellsSolve
 
        if (seaSurfaceTemperature(iCell) <= seaFreezingTemperature(iCell) + 0.2_RKIND .and. &
@@ -658,7 +661,7 @@ contains
              iceVolumeCategory(1,iCategory,iCell)  = initialCategoryIceArea(iCategory) * initialCategoryIceThickness(iCategory)
              snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
                                                          0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
-
+             
              call colpkg_init_trcr(&
                   airTemperature(iCell), &
                   seaFreezingTemperature(iCell), &
@@ -725,6 +728,9 @@ contains
     use cice_constants, only: &
          cicePuny
 
+    use ice_colpkg, only: &
+         colpkg_init_itd
+
     ! Note: the resulting average ice thickness 
     ! tends to be less than hbar due to the
     ! nonlinear distribution of ice thicknesses 
@@ -751,15 +757,33 @@ contains
     integer :: &
          iCategory
 
+    logical, pointer :: &
+         config_use_column_package
+
     real(kind=RKIND), parameter :: &
          thicknessWithLargestArea = 3.0_RKIND ! initial ice thickness with greatest area
-
+    
     call MPAS_pool_get_subpool(block % structs, "initial", initial)
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
     call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
+    !--------------------------------------------------------
+    ! init caregory limits if needed
+    !--------------------------------------------------------
+
+    call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+    
+    if (.not. config_use_column_package) then
+       
+       call colpkg_init_itd(&
+            nCategories, &
+            categoryThicknessLimits, &
+            stdoutUnit)
+       
+    endif
+       
     !--------------------------------------------------------
     ! volumes
     !--------------------------------------------------------
@@ -1318,7 +1342,7 @@ contains
          mesh, &
          velocity_solver, &
          boundary, &
-         ocean_forcing
+         ocean_coupling
 
     integer, pointer :: &
          nVertices
@@ -1342,15 +1366,15 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
     call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
     call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
 
-    call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
-    call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
