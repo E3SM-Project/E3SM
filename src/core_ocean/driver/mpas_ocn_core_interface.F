@@ -111,6 +111,9 @@ module ocn_core_interface
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
 
+      type (mpas_pool_iterator_type) :: pkgItr
+      logical, pointer :: packageActive
+
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_frazil_ice_formation
       character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type
@@ -174,6 +177,24 @@ module ocn_core_interface
 
       call ocn_analysis_setup_packages(configPool, packagePool, ierr)
       call ocn_init_mode_validate_configuration(configPool, packagePool, ierr)
+
+
+      write(stderrUnit, *) ''
+      write(stderrUnit, *) '  **** Summary of ocean packages ****'
+      call mpas_pool_begin_iteration(packagePool)
+      do while ( mpas_pool_get_next_member(packagePool, pkgItr) )
+
+         if ( pkgItr % memberType == MPAS_POOL_PACKAGE ) then
+            call mpas_pool_get_package(packagePool, pkgItr % memberName, packageActive)
+            if ( packageActive ) then
+               write(stderrUnit, *) '      ' // trim(pkgItr % memberName) // ' = ON'
+            else
+               write(stderrUnit, *) '      ' // trim(pkgItr % memberName) // ' = OFF'
+            end if
+         end if
+      end do
+      write(stderrUnit, *) '  ***********************************'
+      write(stderrUnit, *) ''
 
    end function ocn_setup_packages!}}}
 
