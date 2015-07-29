@@ -131,6 +131,7 @@ module ocn_time_integration_split
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
+      logical, pointer :: config_use_tracerGroup
 
       real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
       real (kind=RKIND), pointer :: config_btr_gam3_velWt2
@@ -197,6 +198,7 @@ module ocn_time_integration_split
       ! tracer iterators
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
+      character (len=StrKIND) :: configName
 
       call mpas_timer_start("se timestep", .false., timer_main)
 
@@ -1406,18 +1408,23 @@ module ocn_time_integration_split
                call mpas_pool_begin_iteration(tracersPool)
                do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
                   if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-                     call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupCur, 1)
-                     call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
+                     configName = 'config_use_' // trim(groupItr % memberName)
+                     call mpas_pool_get_config(domain % configs, configName, config_use_tracerGroup)
 
-                     modifiedGroupName = trim(groupItr % memberName) // 'Tend'
-                     call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
+                     if ( config_use_tracerGroup ) then
+                        call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupCur, 1)
+                        call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
 
-                     do iCell = 1, nCells
-                        do k = 1, maxLevelCell(iCell)
-                           tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt * tracersGroupTend(:,k,iCell) ) &
-                            / layerThicknessNew(k,iCell)
+                        modifiedGroupName = trim(groupItr % memberName) // 'Tend'
+                        call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
+
+                        do iCell = 1, nCells
+                           do k = 1, maxLevelCell(iCell)
+                              tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt * tracersGroupTend(:,k,iCell) ) &
+                               / layerThicknessNew(k,iCell)
+                           end do
                         end do
-                     end do
+                     end if
                   end if
                end do
 
