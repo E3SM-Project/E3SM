@@ -82,7 +82,8 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, tracersPool
+      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool
+      type (mpas_pool_type), pointer :: tracersPool, tracersSurfaceFluxPool, tracersSurfaceRestoringFieldsPool
       type (mpas_pool_type), pointer :: diagnosticsPool, forcingPool
 
       integer, pointer :: nVertLevels, nVertLevelsP1, nCellsSolve, nEdgesSolve, nVerticesSolve
@@ -97,6 +98,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracers, debugTracers
+      real (kind=RKIND), dimension(:, :), pointer :: activeTracersSurfaceFlux, activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
@@ -163,6 +165,10 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -191,12 +197,15 @@ contains
         call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-        call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
-        call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
-        call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
-        call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
-        call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
-        call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+        call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress, 1)
+        call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
+    !   call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
+    !   call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
+    !   call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
+    !   call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
+    !   call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
         ! Set refBottomDepth and refBottomDepthTopOfCell
         do k = 1, nVertLevels
@@ -223,26 +232,29 @@ contains
               restingThickness(k, iCell) = layerThickness(k, iCell)
            end do
 
-           write(6,*) maxval(layerThickness)
+           ! Set temperature restoring value and rate
+           ! Value in units of C, piston velocity in units of m/s
+           activeTracersSurfaceRestoringValue(index_temperature, iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
+           activeTracersPistonVelocity(index_temperature, iCell) = 10.0_RKIND / 30.0_RKIND / 86400.0_RKIND
 
-           ! Set temperatureRestore
-           temperatureRestore(iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
+           ! Set salinity restoring value and rate
+           ! Value in units of PSU, piston velocity in units of m/s
+           activeTracersSurfaceRestoringValue(index_salinity, iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
+           activeTracersPistonVelocity(index_salinity, iCell) = 10.0_RKIND / 30.0_RKIND / 86400.0_RKIND
 
-           ! Set salinityRestore
-           salinityRestore(iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
+      ! TDR
+      !    ! Set sensible heat flux
+      !    sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
 
-           ! Set sensible heat flux
-           sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
+      !    ! Set latent heat flux
+      !    latentHeatFlux(iCell) = config_cvmix_WSwSBF_latent_heat_flux
 
-           ! Set latent heat flux
-           latentHeatFlux(iCell) = config_cvmix_WSwSBF_latent_heat_flux
+      !    ! Set shortwave heat flux
+      !    shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
 
-           ! Set shortwave heat flux
-           shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
-
-           ! Set precipation and evaporation
-           rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
-           evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
+      !    ! Set precipation and evaporation
+      !    rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
+      !    evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
 
            ! Set Coriolis parameter
            fCell(iCell) = config_cvmix_WSwSBF_coriolis_parameter
