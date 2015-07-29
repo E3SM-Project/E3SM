@@ -82,11 +82,11 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool
+      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, tracersPool
       type (mpas_pool_type), pointer :: diagnosticsPool, forcingPool
 
       integer, pointer :: nVertLevels, nVertLevelsP1, nCellsSolve, nEdgesSolve, nVerticesSolve
-      integer, pointer :: index_temperature, index_salinity
+      integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid, vertCoordMovementWeights
@@ -96,7 +96,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: salinityRestore, bottomDepth, angleEdge
       real (kind=RKIND), dimension(:), pointer :: fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:, :, :), pointer :: tracers
+      real (kind=RKIND), dimension(:, :, :), pointer :: activeTracers, debugTracers
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
@@ -168,13 +168,10 @@ contains
         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
         call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
 
-        write(6,*) nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve
-
-        call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
  
-        write(6,*) index_temperature, index_salinity
-
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -190,11 +187,9 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
-        call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-
-   ! should be removed
-   !    call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
 
         call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
         call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
@@ -216,12 +211,11 @@ contains
            ! Set temperature and salinity
            do k = 1, nVertLevels
               temperature = config_cvmix_WSwSBF_surface_temperature + refZMid(k) * config_cvmix_WSwSBF_temperature_gradient
-              tracers(index_temperature, k, iCell) = temperature
+              activeTracers(index_temperature, k, iCell) = temperature
               salinity = config_cvmix_WSwSBF_surface_salinity + refZMid(k) * config_cvmix_WSwSBF_salinity_gradient
-              tracers(index_salinity, :, iCell) = salinity
+              activeTracers(index_salinity, :, iCell) = salinity
+              debugTracers(index_tracer1, :, iCell) = 1.0_RKIND
            end do
-
-           write(6,*) ' maxval ', maxval(tracers)
 
            ! Set layerThickness
            do k = 1, nVertLevels
@@ -238,24 +232,20 @@ contains
            salinityRestore(iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
 
            ! Set sensible heat flux
-       !   sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
+           sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
 
            ! Set latent heat flux
-       !   latentHeatFlux(iCell) = config_cvmix_WSwSBF_latent_heat_flux
+           latentHeatFlux(iCell) = config_cvmix_WSwSBF_latent_heat_flux
 
            ! Set shortwave heat flux
-       !   shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
+           shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
 
            ! Set precipation and evaporation
-       !   rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
-       !   evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
+           rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
+           evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
 
            ! Set Coriolis parameter
            fCell(iCell) = config_cvmix_WSwSBF_coriolis_parameter
-
-       ! to be removed
-           ! Set boundary layer depth
-           ! boundaryLayerDepth(iCell) = 2.0_RKIND * (config_cvmix_shear_unit_test_bottom_depth / nVertLevels) - 1.0-4_RKIND
 
            ! Set bottomDepth
            bottomDepth(iCell) = config_cvmix_WSwSBF_bottom_depth
