@@ -14,6 +14,9 @@ add_library (pioc
     bget.c)
 
 target_include_directories (pioc 
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_include_directories (pioc 
     PRIVATE $ENV{HOME}/Software/installs/netcdf-c/include)
 target_compile_definitions (pioc 
     PRIVATE _NETCDF)
