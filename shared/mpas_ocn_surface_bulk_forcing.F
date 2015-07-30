@@ -243,7 +243,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell
-      integer, pointer :: index_temperature_flux, index_salinity_flux
       integer, pointer :: nCells, nEdges
 
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -366,8 +365,9 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-      call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
-      call mpas_pool_get_dimension(forcingPool, 'index_salinitySurfaceFlux', index_salinity_flux)
+ ! CLEANUP
+   !  call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
+   !  call mpas_pool_get_dimension(forcingPool, 'index_salinitySurfaceFlux', index_salinity_flux)
 
       call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
       call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
@@ -383,12 +383,13 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       ! Build surface fluxes at cell centers
+      ! CLEANUP
       do iCell = 1, nCells
-        tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
+        tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) &
                                                            + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
                                                            + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor
 
-        tracersSurfaceFlux(index_salinity_flux, iCell) = tracersSurfaceFlux(index_salinity_flux, iCell)  &
+        tracersSurfaceFlux(2, iCell) = tracersSurfaceFlux(2, iCell)  &
                                                         + seaIceSalinityFlux(iCell) * sflux_factor
       end do
 
