@@ -982,6 +982,7 @@
 			<var name="boundaryLayerDepth"/>
 			<var name="refBottomDepth"/>
 			<var name="bottomDepth"/>
+			<var name="bottomDepthObserved"/>
 			<var name="maxLevelCell"/>
 			<var name="seaSurfacePressure"/>
 			<var name="vertCoordMovementWeights"/>
@@ -1502,6 +1503,9 @@
 		/>
 		<var name="bottomDepth" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as a positive distance from sea level."
+		/>
+		<var name="bottomDepthObserved" type="real" dimensions="nCells" units="m"
+			 description="Depth of the bottom of the ocean, before any alterations for modeling purposes. Given as a positive distance from sea level."
 		/>
 		<var name="derivTwo" type="real" dimensions="maxEdges2 TWO nEdges" units="m^{-2}"
 			 description="Value of the second derivative of the polynomial used for reconstruction of cell center quantities at edges."
