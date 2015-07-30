@@ -24,7 +24,8 @@ program pioperformance
   integer, parameter :: max_nvars=12
   integer :: niotasks(max_io_task_array_size)
   integer :: nv, nframes, nvars(max_nvars)
-  namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, nvars
+  integer :: vs, varsize(max_nvars) !  Local size of array for idealized decomps
+  namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, nvars, varsize
 #ifdef BGQTRY
   external :: print_memusage
 #endif
@@ -52,6 +53,8 @@ program pioperformance
   decompfile = ' '
   pio_typenames = ' '
   piotypes = -1
+  varsize = 0
+  varsize(1) = 1
   if(mype==0) then
      open(unit=12,file='pioperf.nl',status='old')
      read(12,pioperf)
@@ -79,6 +82,7 @@ program pioperformance
   call MPI_Bcast(niotasks, max_io_task_array_size, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(nframes, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(nvars, max_nvars, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(varsize, max_nvars, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
 
   call t_initf('pioperf.nl', LogPrint=.false., mpicom=MPI_COMM_WORLD, MasterTask=MasterTask)
   niotypes = 0
@@ -92,20 +96,23 @@ program pioperformance
 
   do i=1,max_decomp_files
      if(len_trim(decompfile(i))==0) exit
-     if(mype == 0) print *, decompfile(i)
-     do nv=1,max_nvars
-       if(nvars(nv)>0) then
-         call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes, nvars(nv))
-     endif
-   enddo
+     if(mype == 0) print *, ' Testing decomp: ',trim(decompfile(i))
+     do vs = 1, max_nvars
+        if(varsize(vs) > 0 ) then
+           do nv=1,max_nvars
+              if(nvars(nv)>0) then
+                 call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes, nvars(nv), varsize(vs))
+              endif
+           enddo
+        endif
+     enddo
   enddo
-!  print *,__FILE__,__LINE__,'task: ',mype,' exited main',i,decompfile(i)
   call t_finalizef()
 
   call MPI_Finalize(ierr)
 contains
 
-  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks,nframes, nvars)
+  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks,nframes, nvars, varsize)
     use pio
     use pio_support, only : pio_readdof
     use perf_mod
@@ -116,7 +123,7 @@ contains
     integer, intent(inout) :: niotasks(:)
     integer, intent(in) :: nframes 
     integer, intent(in) :: nvars
-
+    integer, intent(in) :: varsize
     integer(kind=PIO_Offset_kind), pointer :: compmap(:)
     integer :: ntasks
     integer :: comm
@@ -135,7 +142,7 @@ contains
     type(file_desc_t) :: File
     type(io_desc_t) :: iodesc_i4, iodesc_r4, iodesc_r8
     integer :: ierr
-    integer(pio_offset_kind) :: frame=1
+    integer(kind=pio_offset_kind) :: frame=1
     integer :: iotype, rearr, rearrtype
     integer :: j, k, errorcnt
     character(len=8) :: varname
@@ -145,10 +152,15 @@ contains
     integer,  parameter :: c0 = -1
     double precision, parameter :: cd0 = 1.0e30
     integer :: nvarmult
+    character(len=*), parameter :: rearr_name(2) = (/'   BOX','SUBSET'/)
 
     nullify(compmap)
-
-    call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
+    if(mype.eq.0) print *,trim(filename)
+    if(trim(filename) .eq. 'ROUNDROBIN' .or. trim(filename).eq.'BLOCK') then
+       call init_ideal_dof(filename, mype, npe_base, ndims, gdims, compmap, varsize)
+    else
+       call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
+    endif
     maplen = size(compmap)
 
 !    color = 0
@@ -295,7 +307,7 @@ contains
 #ifdef VARDOUBLE
                    nvarmult = nvarmult+2
 #endif
-                   print *, 'write ',rearr, ntasks, nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'write ',rearr_name(rearr), varsize, ntasks, nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY
   call print_memusage()
 #endif
@@ -391,7 +403,7 @@ contains
 #ifdef VARDOUBLE
                    nvarmult = nvarmult+2
 #endif
-                   print *, 'read ',rearr, ntasks,nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'read ',rearr_name(rearr), varsize, ntasks,nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY 
   call print_memusage()
 #endif
@@ -419,6 +431,46 @@ contains
     endif
 
   end subroutine pioperformancetest
+
+  subroutine init_ideal_dof(doftype, mype, npe, ndims, gdims, compmap, varsize)
+    use pio
+    use pio_support, only : piodie
+    character(len=*), intent(in) :: doftype
+    integer, intent(in) :: mype
+    integer, intent(in) :: npe
+    integer, intent(out) :: ndims
+    integer, pointer :: gdims(:)
+    integer(kind=PIO_Offset_kind), pointer :: compmap(:)
+    integer, intent(in) :: varsize
+    integer :: i
+
+    ndims = 1
+    allocate(gdims(1))
+    gdims(1) = npe*varsize
+
+    allocate(compmap(varsize))
+    if(doftype .eq. 'ROUNDROBIN') then
+       do i=1,varsize
+          compmap(i) = (i-1)*npe+mype+1 
+       enddo
+    else if(doftype .eq. 'BLOCK') then
+       do i=1,varsize
+          compmap(i) =  (i+varsize*mype)
+       enddo
+    endif
+    if(minval(compmap)< 1 .or. maxval(compmap) > gdims(1)) then
+       print *,__FILE__,__LINE__,trim(doftype),varsize,minval(compmap),maxval(compmap)
+       call piodie(__FILE__,__LINE__,'Compmap out of bounds')
+    endif
+  end subroutine init_ideal_dof
+
+
+    
+
+
+
+
+
 
   subroutine WriteMetadata(File, gdims, vari, varr, vard)
     use pio

@@ -33,6 +33,7 @@ static PIO_Offset maxusage=0;
 /** @brief Initialize the compute buffer to size PIO_CNBUFFER_LIMIT
  *
  *  This routine initializes the compute buffer pool if the bget memory management is used.
+ * @param ios the iosystem descriptor which will use the new buffer
  */
 
 void compute_buffer_init(iosystem_desc_t ios)
@@ -58,7 +59,11 @@ void compute_buffer_init(iosystem_desc_t ios)
 }
 
 /** @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
- *
+ *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
+ *   @param[in] iodesc: a pointer to the defined iodescriptor for the buffer
+ *   @param[in] vid: the variable id to be written
+ *   @param[in] IOBUF: the buffer to be written from this mpi task
+ *   @param[in] fillvalue: the optional fillvalue to be used for missing data in this buffer
  */
 
 
@@ -311,8 +316,20 @@ void compute_buffer_init(iosystem_desc_t ios)
  *        
  *   This routine is used if aggregation is enabled, data is already on the
  *   io-tasks
+ *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
+ *   @param[in] nvars: the number of variables to be written with this decomposition
+ *   @param[in] vid: an array of the variable ids to be written 
+ *   @param[in] iodesc_ndims: the number of dimensions explicitly in the iodesc
+ *   @param[in] basetype : the basic type of the minimal data unit
+ *   @param[in] gsize : array of the global dimensions of the field to be written
+ *   @param[in] maxregions : max number of blocks to be written from this iotask
+ *   @param[in] firstregion : pointer to the first element of a linked list of region descriptions.
+ *   @param[in] llen : length of the iobuffer on this task for a single field
+ *   @param[in] maxiobuflen : maximum llen participating 
+ *   @param[in] num_aiotasks : actual number of iotasks participating
+ *   @param[in] IOBUF: the buffer to be written from this mpi task
+ *   @param[in] frame : the frame or record dimension for each of the nvars variables in IOBUF  
  */
-
 
 int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[], 
 			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
@@ -562,7 +579,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	       vdesc->request[reqn] = PIO_REQ_NULL;  //keeps wait calls in sync
 	     }
 	     vdesc->nreqs = reqn;
-	     printf("%s %d %d %d\n",__FILE__,__LINE__,vdesc->nreqs,vdesc->request[reqn-1]);
+	     //printf("%s %d %d %d\n",__FILE__,__LINE__,vdesc->nreqs,vdesc->request[reqn-1]);
 	   }
 	   for(i=0;i<rrcnt;i++){
              //printf("%d %ld %ld %ld %ld\n",i,startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]);
@@ -669,47 +686,44 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    else{
      vdesc0->iobuf = array;
      } */
+   ierr = pio_write_darray_multi_nc(file, nvars, vid,  
+				    iodesc->ndims, iodesc->basetype, iodesc->gsize,
+				    iodesc->maxregions, iodesc->firstregion, iodesc->llen,
+				    iodesc->maxiobuflen, iodesc->num_aiotasks,
+				    vdesc0->iobuf, frame);     
+     
+   
+   
  
-   switch(file->iotype){
-   case PIO_IOTYPE_PNETCDF:
-   case PIO_IOTYPE_NETCDF:
-   case PIO_IOTYPE_NETCDF4P:
-   case PIO_IOTYPE_NETCDF4C:
-     if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
-	iodesc->holegridsize>0){
-       if(vdesc0->fillbuf != NULL){
-	 piodie("Attempt to overwrite existing buffer",__FILE__,__LINE__);
-       }
-
-       vdesc0->fillbuf = bget(iodesc->holegridsize*vsize*nvars);
-       if(vsize==4){
-	 for(int nv=0;nv<nvars;nv++){
-	   for(int i=0;i<iodesc->holegridsize;i++){
-	     ((float *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
-	   }
-	 }
-       }else if(vsize==8){
-	 for(int nv=0;nv<nvars;nv++){
-	   for(int i=0;i<iodesc->holegridsize;i++){
-	     ((double *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
-	   }
-	 }
-       }
-
-       ierr = pio_write_darray_multi_nc(file, nvars, vid,  
-					iodesc->ndims, iodesc->basetype, iodesc->gsize,
-					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
-					iodesc->holegridsize, iodesc->num_aiotasks,
-					vdesc0->fillbuf, frame);
+   if(iodesc->rearranger == PIO_REARR_SUBSET && iodesc->needsfill &&
+      iodesc->holegridsize>0){
+     if(vdesc0->fillbuf != NULL){
+       piodie("Attempt to overwrite existing buffer",__FILE__,__LINE__);
      }
-
+     
+     vdesc0->fillbuf = bget(iodesc->holegridsize*vsize*nvars);
+     if(vsize==4){
+       for(int nv=0;nv<nvars;nv++){
+	 for(int i=0;i<iodesc->holegridsize;i++){
+	   ((float *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((float *) fillvalue)[nv];
+	 }
+       }
+     }else if(vsize==8){
+       for(int nv=0;nv<nvars;nv++){
+	 for(int i=0;i<iodesc->holegridsize;i++){
+	   ((double *) vdesc0->fillbuf)[i+nv*iodesc->holegridsize] = ((double *) fillvalue)[nv];
+	 }
+       }
+     }
+     
      ierr = pio_write_darray_multi_nc(file, nvars, vid,  
 				      iodesc->ndims, iodesc->basetype, iodesc->gsize,
-				      iodesc->maxregions, iodesc->firstregion, iodesc->llen,
-				      iodesc->maxiobuflen, iodesc->num_aiotasks,
-				      vdesc0->iobuf, frame);     
+				      iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
+				      iodesc->holegridsize, iodesc->num_aiotasks,
+				      vdesc0->fillbuf, frame);
+       
    }
-   
+
    flush_output_buffer(file, flushtodisk, 0);
  
 
@@ -1328,7 +1342,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
       int reqcnt=0;
       while(vdesc->request[reqcnt] != NC_REQ_NULL) {
 	  //	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,i,vdesc->request,vdesc->distributed, vdesc->record, vdesc->type);
-      printf("%s %d %d %d\n",__FILE__,__LINE__,i,vdesc->request[0]);
+      //printf("%s %d %d %d\n",__FILE__,__LINE__,i,vdesc->request[0]);
 	request[rcnt++] = max(vdesc->request[reqcnt],NC_REQ_NULL);
 	vdesc->request[reqcnt] = NC_REQ_NULL;
 	reqcnt++;
