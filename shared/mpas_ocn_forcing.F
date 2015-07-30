@@ -25,7 +25,6 @@ module ocn_forcing
    use mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
-   use ocn_forcing_restoring
    use ocn_constants
 
    implicit none
@@ -34,7 +33,6 @@ module ocn_forcing
 
    ! TRACER-CLEAN-UP
    ! Need to figure out what to do with absorption coefficient computation.
-   ! Also need to remove restoring stuff
 
    !--------------------------------------------------------------------
    !
@@ -48,8 +46,7 @@ module ocn_forcing
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_forcing_build_arrays, &
-             ocn_forcing_init, &
+   public :: ocn_forcing_init, &
              ocn_forcing_build_fraction_absorbed_array, &
              ocn_forcing_transmission
 
@@ -61,108 +58,11 @@ module ocn_forcing
 
    real (kind=RKIND) :: attenuationCoefficient
 
-   logical :: restoringOn
-
 !***********************************************************************
 
 contains
 
 !***********************************************************************
-!
-!  routine ocn_forcing_build_arrays
-!
-!> \brief   Determines the forcing arrays.
-!> \author  Doug Jacobsen
-!> \date    12/13/12
-!> \details 
-!>  This routine computes the forcing arrays used later in MPAS.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_forcing_build_arrays(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: &
-         statePool, &  !< Input: State information
-         meshPool      !< Input: mesh information
-
-      integer, intent(in), optional :: timeLevelIn
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: Error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      ! pool pointers
-      type (mpas_pool_type), pointer :: tracersPool
-      type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
-
-      ! scalar pointers
-      integer, pointer :: indexTemperature, indexSalinity
-      integer, pointer :: indexTemperatureSurfaceFlux, indexSalinitySurfaceFlux
-
-      ! array pointers
-      real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore
-      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux
-      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-
-      ! local integer/real/logical
-      integer :: timeLevel
-
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
-
-      if (present(timeLevelIn)) then
-         timeLevel = timeLevelIn
-      else
-         timeLevel = 1
-      end if
-
-      if ( restoringOn ) then
-         call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-
-         call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', indexTemperatureSurfaceFlux)
-         call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', indexSalinitySurfaceFlux)
-
-         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
-
-         call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
-         call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
-
-         call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
-
-         call ocn_forcing_restoring_build_arrays(meshPool, indexTemperature, indexSalinity, &
-              indexTemperatureSurfaceFlux, indexSalinitySurfaceFlux, &
-              activeTracers, temperatureRestore, salinityRestore, &
-              activeTracersSurfaceFlux, err)
-      end if
-
-   !--------------------------------------------------------------------
-
-   end subroutine ocn_forcing_build_arrays!}}}
 
 !***********************************************************************
 !
@@ -180,31 +80,13 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      integer :: err1
-
       character (len=StrKIND), pointer :: config_forcing_type
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
-
-      err = 0
-      err1 = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
       call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       attenuationCoefficient = config_flux_attenuation_coefficient
-
-      if ( config_forcing_type == trim('restoring') ) then
-         call ocn_forcing_restoring_init(err1)
-         restoringOn = .true.
-      else if ( config_forcing_type == trim('off') ) then
-         restoringOn = .false.
-      else
-         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'restoring', or 'off'."
-         err = 1
-         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'restoring', or 'off'.")
-      end if
-
-      err = ior(err,err1)
 
    end subroutine ocn_forcing_init!}}}
 

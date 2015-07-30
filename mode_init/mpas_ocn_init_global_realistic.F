@@ -971,7 +971,8 @@ contains
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
 
-       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, temperatureRestore, salinityRestore
+       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+   ! ToBeRemoved   real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore
        real (kind=RKIND), dimension(:, :), pointer :: smoothedTemperature, smoothedSalinity
        real (kind=RKIND), dimension(:, :, :), pointer :: tracers
 
@@ -999,8 +1000,8 @@ contains
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-          call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
-          call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
+  ! ToBeRemoved        call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
+  ! ToBeRemoved        call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
 
           call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
 
@@ -1127,12 +1128,13 @@ contains
              call mpas_dmpar_finalize(domain % dminfo)
           endif
 
-          if (config_global_realistic_tracer_restore) then
-             do iCell = 1, nCellsSolve
-                temperatureRestore(iCell) = tracers(idxTemperature, 1, iCell)
-                salinityRestore(iCell) = tracers(idxSalinity, 1, iCell)
-             end do
-          endif
+    ! ToBeRemoved
+    !     if (config_global_realistic_tracer_restore) then
+    !        do iCell = 1, nCellsSolve
+    !           temperatureRestore(iCell) = tracers(idxTemperature, 1, iCell)
+    !           salinityRestore(iCell) = tracers(idxSalinity, 1, iCell)
+    !        end do
+    !     endif
 
           block_ptr => block_ptr % next
        end do
