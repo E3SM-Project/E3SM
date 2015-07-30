@@ -12,5 +12,11 @@ add_library (pioc
              pio_put_nc.c 
              pio_get_nc.c
              bget.c)
-target_link_libraries (pioc pnetcdf)
+
+target_include_directories (pioc $ENV{HOME}/Software/installs/netcdf-c/include)
+target_compile_definitions (pioc _NETCDF)
 target_link_libraries (pioc netcdf)
+
+target_include_directories (pioc $ENV{HOME}/Software/installs/pnetcdf/include)
+target_compile_definitions (pioc _PNETCDF)
+target_link_libraries (pioc pnetcdf)
