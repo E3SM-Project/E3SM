@@ -2595,6 +2595,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: theta
       real (kind=RKIND), dimension(:,:), pointer :: rho
       real (kind=RKIND), dimension(:,:), pointer :: relhum
+      real (kind=RKIND), dimension(:,:), pointer :: sp
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: rw
       real (kind=RKIND), dimension(:), pointer :: precipw
@@ -2616,6 +2617,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: z_fg
       real (kind=RKIND), dimension(:,:), pointer :: t_fg
       real (kind=RKIND), dimension(:,:), pointer :: rh_fg
+      real (kind=RKIND), dimension(:,:), pointer :: sp_fg
       real (kind=RKIND), dimension(:,:), pointer :: gfs_z
       real (kind=RKIND), dimension(:,:), pointer :: p_fg
       real (kind=RKIND), dimension(:,:), pointer :: st_fg
@@ -2678,6 +2680,7 @@ module init_atm_cases
       call mpas_pool_get_array(diag, 'pressure', pressure)
       call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
       call mpas_pool_get_array(diag, 'relhum', relhum)
+      call mpas_pool_get_array(diag, 'sp', sp)
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(diag, 'rw', rw)
 
@@ -2725,6 +2728,7 @@ module init_atm_cases
       call mpas_pool_get_array(fg, 'z', z_fg)
       call mpas_pool_get_array(fg, 't', t_fg)
       call mpas_pool_get_array(fg, 'rh', rh_fg)
+      call mpas_pool_get_array(fg, 'sp', sp_fg)
       call mpas_pool_get_array(fg, 'gfs_z', gfs_z)
       call mpas_pool_get_array(fg, 'p', p_fg)
 
@@ -3279,6 +3283,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              index(field % field, 'VV') /= 0 .or. &
              index(field % field, 'TT') /= 0 .or. &
              index(field % field, 'RH') /= 0 .or. &
+             index(field % field, 'SPECHUMD') /= 0 .or. &
              index(field % field, 'GHT') /= 0 .or. &
              index(field % field, 'PMSL') /= 0 .or. &
              index(field % field, 'PSFC') /= 0 .or. &
@@ -3405,6 +3410,13 @@ write(0,*) 'Interpolating RH at ', k, vert_level(k)
                latPoints => latCell
                lonPoints => lonCell
                call mpas_pool_get_array(fg, 'rh', destField2d)
+               ndims = 2
+            else if (index(field % field, 'SPECHUMD') /= 0) then
+write(0,*) 'Interpolating SPECHUMD at ', k, vert_level(k)
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sp', destField2d)
                ndims = 2
             else if (index(field % field, 'GHT') /= 0) then
 write(0,*) 'Interpolating GHT at ', k, vert_level(k)
@@ -4273,6 +4285,7 @@ write(0,*) 'PROCESSING OMLD'
 !           t(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
             t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                       sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+!                                     sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=2)
          end do
 
 
@@ -4291,8 +4304,35 @@ write(0,*) 'PROCESSING OMLD'
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
             if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
-            relhum(k,iCell) = scalars(index_qv,k,iCell)
+            relhum(k,iCell) = scalars(index_qv,k,iCell)*0.01
          end do
+
+         ! SPECHUMD: from native GFS data
+         sorted_arr(:,:) = -999.0
+         do k=1,nfglevels_actual
+            sorted_arr(1,k) = z_fg(k,iCell)
+!NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
+            if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
+            sorted_arr(2,k) = sp_fg(k,iCell)
+         end do
+         call mpas_quicksort(nfglevels_actual, sorted_arr)
+!        do k=1,nVertLevels
+!           target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
+!!          scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
+!           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+!                                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+!           rh(k,iCell) = scalars(index_qv,k,iCell)
+!        end do
+! enforce constant sp if mpas level is below bottom gfs level
+         do k=nVertLevels,1,-1
+            target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
+!           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
+            scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+            if(target_z .lt. z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell)
+            sp(k,iCell) = scalars(index_qv,k,iCell)
+         end do
+!write(0,*) 'Vertically Interpolating SP'
 
 
          ! GHT
@@ -4428,10 +4468,28 @@ write(0,*) 'PROCESSING OMLD'
          do k=1,nVertLevels
 
             ! QV
-            es = 6.112 * exp((17.27*(t(k,iCell) - 273.16))/(t(k,iCell) - 35.86))
-            es = min(es,0.99*0.01*pressure(k,iCell))             ! WCS 20141003, from LF; temporary fix 
-            rs = 0.622 * es * 100. / (pressure(k,iCell) - es * 100.)
-            scalars(index_qv,k,iCell) = 0.01 * rs * scalars(index_qv,k,iCell)
+!           es = 6.112 * exp((17.27*(t(k,iCell) - 273.16))/(t(k,iCell) - 35.86))
+!           es = min(es,0.99*0.01*pressure(k,iCell)) ! WCS 20141003, from LF; temporary fix
+!           rs = 0.622 * es * 100. / (pressure(k,iCell) - es * 100.)
+!           scalars(index_qv,k,iCell) = 0.01 * rs * scalars(index_qv,k,iCell)
+!
+! the following applies for native GFS data obtained via rd_sig program
+! retrieve es from GFS fuction fpvsnew (which considers ice), output in Pa
+!   compute saturation specific humidity, and specific humidity, and then mixing ratio
+!           es = fpvsnew(t(k,iCell))
+!           if ( es .le. pressure(k,iCell) ) then
+! when saturated specific humidity can be defined
+!              es = min( es , pressure(k,iCell) )
+!              rs = 0.622 * es / (pressure(k,iCell) - (1.-0.622) * es )
+!              rs = 0.01 * rs * scalars(index_qv,k,iCell)
+!              scalars(index_qv,k,iCell) = MAX( rs / (1.-rs) , 1.e-6)
+!           else
+! when saturated specific humidity cannot be defined
+!              scalars(index_qv,k,iCell) = 1.e-6
+!           end if
+
+            ! QV computed from specific humidity
+            scalars(index_qv,k,iCell) = scalars(index_qv,k,iCell) / ( 1. - scalars(index_qv,k,iCell) )
 
             ! PI
             p(k,iCell) = (pressure(k,iCell) / p0) ** (rgas / cp)
@@ -4936,6 +4994,5 @@ write(0,*) 'PROCESSING OMLD'
       end do
 
    end subroutine decouple_variables
-
 
 end module init_atm_cases

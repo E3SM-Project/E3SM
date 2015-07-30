@@ -339,12 +339,12 @@
                         <var name="theta_base" packages="met_stage_out"/>
                         <var name="surface_pressure" packages="met_stage_out"/>
                         <var name="precipw" packages="met_stage_out"/>
-			<var name="h_oml_initial"/>
-			<var name="u10"/>
-			<var name="v10"/>
-			<var name="q2"/>
-			<var name="rh2"/>
-			<var name="t2"/>
+			<var name="h_oml_initial" packages="met_stage_out"/>
+			<var name="u10" packages="met_stage_out"/>
+			<var name="v10" packages="met_stage_out"/>
+			<var name="q2" packages="met_stage_out"/>
+			<var name="rh2" packages="met_stage_out"/>
+			<var name="t2" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 
@@ -500,6 +500,7 @@
                 <var name="p_fg"       name_in_code="p"       type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="z_fg"       name_in_code="z"       type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="rh_fg"      name_in_code="rh"      type="real"     dimensions="nFGLevels nCells Time"/>
+                <var name="sp_fg"      name_in_code="sp"      type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="soilz_fg"   name_in_code="soilz"   type="real"     dimensions="nCells Time"/>
                 <var name="psfc_fg"    name_in_code="psfc"    type="real"     dimensions="nCells Time"/>
                 <var name="pmsl_fg"    name_in_code="pmsl"    type="real"     dimensions="nCells Time"/>
@@ -544,6 +545,7 @@
                 <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="relhum"                            type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="sp"                                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"/>
