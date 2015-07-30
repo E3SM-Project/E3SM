@@ -172,7 +172,6 @@ module mpas_core
       logical, pointer :: forwardModeActive, analysisModeActive, initModeActive
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
-      logical, pointer :: surfaceRestoringActive
       logical, pointer :: bulkForcingActive
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
@@ -188,7 +187,6 @@ module mpas_core
       call mpas_pool_get_package(packagePool, 'initModeActive', initModeActive)
       call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
-      call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
       call mpas_pool_get_package(packagePool, 'bulkForcingActive', bulkForcingActive)
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
       call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
@@ -214,12 +212,6 @@ module mpas_core
             .or. config_time_integrator == trim('unsplit_explicit') ) then
 
             splitTimeIntegratorActive = .true.
-         end if
-
-         if (config_forcing_type == trim('restoring')) then
-            surfaceRestoringActive = .true.
-         else if (config_forcing_type == trim('bulk')) then
-            bulkForcingActive = .true.
          end if
 
          if (config_frazil_ice_formation) then

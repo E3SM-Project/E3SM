@@ -106,7 +106,6 @@ module ocn_core_interface
       logical, pointer :: forwardModeActive, analysisModeActive, initModeActive
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
-      logical, pointer :: surfaceRestoringActive
       logical, pointer :: windStressBulkPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
@@ -141,7 +140,6 @@ module ocn_core_interface
       call mpas_pool_get_package(packagePool, 'initModeActive', initModeActive)
       call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
-      call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
       call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
       call mpas_pool_get_package(packagePool, 'windStressBulkPKGActive', windStressBulkPKGActive)
@@ -171,10 +169,6 @@ module ocn_core_interface
             .or. config_time_integrator == trim('unsplit_explicit') ) then
 
             splitTimeIntegratorActive = .true.
-         end if
-
-         if (config_forcing_type == trim('restoring')) then
-            surfaceRestoringActive = .true.
          end if
 
          if ( config_use_bulk_wind_stress ) then
