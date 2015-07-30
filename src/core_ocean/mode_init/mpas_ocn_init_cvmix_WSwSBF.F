@@ -91,7 +91,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid, vertCoordMovementWeights
-      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, boundaryLayerDepth, temperatureRestore
+      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, shortWaveHeatFlux
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, rainFlux
       real (kind=RKIND), dimension(:), pointer :: salinityRestore, bottomDepth, angleEdge
@@ -181,8 +181,6 @@ contains
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-        call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
-        call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
 

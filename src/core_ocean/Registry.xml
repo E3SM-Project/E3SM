@@ -585,23 +585,6 @@
 					description="Controls if a bulk thickness flux will be computed for surface forcing."
 					possible_values=".true. or .false."
 		/>
-		<!-- TRACER-CLEAN-UP Need to remove restoring information, and restoring as an option here... -->
-		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
-					description="Restoring time scale for temperature, $\tau_r.$"
-					possible_values="any positive real value, but typically between 30 and 90 days."
-		/>
-		<nml_option name="config_restoreS_timescale" type="real" default_value="90.0" units="days"
-					description="Restoring time scale for salinity, $\tau_r$."
-					possible_values="any positive real value, but typically between 30 and 90 days."
-		/>
-		<nml_option name="config_restoreT_lengthscale" type="real" default_value="50.0" units="m"
-					description="Restoring length scale for temperature."
-					possible_values="any positive real value, but typically about 50 meters."
-		/>
-		<nml_option name="config_restoreS_lengthscale" type="real" default_value="50.0" units="m"
-					description="Restoring length scale for salinity."
-					possible_values="any positive real value, but typically about 50 meters."
-		/>
 		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
 					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
 					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."
@@ -980,8 +963,6 @@
 			<var_array name="activeTracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
-			<var name="temperatureRestore"/>
-			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
@@ -1044,8 +1025,6 @@
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
 			<var name="restingThickness" packages="forwardMode;analysisMode"/>
-			<var name="temperatureRestore"/>
-			<var name="salinityRestore"/>
 			<var name="surfaceWindStress"/>
 		</stream>
 		<stream name="input" 
@@ -1574,14 +1553,6 @@
 		/>
 		<var name="cellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
 			 description="Mask on cells that determines if computations should be done on cell."
-		/>
-		<var name="temperatureRestore" type="real" dimensions="nCells" units="^\circ C"
-			 description="Temperature restoring field, for restoring temperature at the surface."
-			 packages="surfaceRestoring;initMode"
-		/>
-		<var name="salinityRestore" type="real" dimensions="nCells" units="PSU"
-			 description="Salinity restoring field, for restoring salinity at the surface."
-			 packages="surfaceRestoring;initMode"
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
