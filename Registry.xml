@@ -853,7 +853,6 @@
 	<packages>
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
-		<package name="surfaceRestoring" description="This package includes variables required for surface tracer restoring."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
