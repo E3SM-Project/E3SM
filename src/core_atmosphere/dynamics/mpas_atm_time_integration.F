@@ -3597,7 +3597,8 @@ module atm_time_integration
 
 
    subroutine atm_compute_solve_diagnostics(dt, state, time_lev, diag, mesh, configs, &
-                                            cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd)
+                                            cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                            rk_step )
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Compute diagnostic fields used in the tendency computations
    !
@@ -3611,6 +3612,7 @@ module atm_time_integration
       real (kind=RKIND), intent(in) :: dt
       type (mpas_pool_type), intent(inout) :: state
       integer, intent(in) :: time_lev                   ! which time level of state to use
+      integer, intent(in), optional :: rk_step          ! which rk_step
       type (mpas_pool_type), intent(inout) :: diag
       type (mpas_pool_type), intent(in) :: mesh
       type (mpas_pool_type), intent(in) :: configs
@@ -3634,6 +3636,7 @@ module atm_time_integration
       logical, parameter :: hollingsworth=.true.
       real (kind=RKIND) :: ke_fact, efac
       real (kind=RKIND), pointer :: config_apvm_upwinding
+      logical :: reconstruct_v
 
 
       call mpas_pool_get_config(configs, 'config_apvm_upwinding', config_apvm_upwinding)
@@ -3818,17 +3821,24 @@ module atm_time_integration
 
       !
       ! Compute v (tangential) velocities following Thuburn et al JCP 2009
-      !
-      do iEdge = edgeStart,edgeEnd
-         v(1:nVertLevels,iEdge) = 0.0
-         do i=1,nEdgesOnEdge(iEdge)
+      ! The tangential velocity is only used to compute the Smagorinsky coefficient
+
+      reconstruct_v = .true.
+      if(present(rk_step)) then
+        if(rk_step /= 3) reconstruct_v = .false.
+      end if
+
+      if (reconstruct_v) then
+        do iEdge = edgeStart,edgeEnd
+          v(1:nVertLevels,iEdge) = 0.0
+          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
             do k = 1,nVertLevels
-               v(k,iEdge) = v(k,iEdge) + weightsOnEdge(i,iEdge) * u(k, eoe)
+              v(k,iEdge) = v(k,iEdge) + weightsOnEdge(i,iEdge) * u(k, eoe)
             end do
-         end do
-      end do
-
+          end do
+        end do
+      end if
 
       !
       ! Compute height at vertices, pv at vertices, and average pv to edge locations
@@ -3858,9 +3868,12 @@ module atm_time_integration
          end do
       end do
 
+      if (config_apvm_upwinding > 0.0) then
+
       !
       ! Compute pv at cell centers
       !    ( this computes pv_cell for all real cells )
+      !  only needed for APVM upwinding
       !
       do iCell=cellStart,cellEnd
          pv_cell(1:nVertLevels,iCell) = 0.0
@@ -3874,8 +3887,6 @@ module atm_time_integration
          end do
       end do
 
-
-      if (config_apvm_upwinding > 0.0) then
 
 !$OMP BARRIER
 
