@@ -630,10 +630,9 @@ contains
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number of surface layers
                !
-               ! TRACER-CLEAN-UP surfaceTracerFlux
-               call mpas_timer_start("surface_flux", .false.)
+               call mpas_timer_start("surface_tracer_flux", .false.)
                call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, tracerGroupSurfaceFlux, tracerGroupTend, err)
-               call mpas_timer_stop("surface_flux")
+               call mpas_timer_stop("surface_tracer_flux")
 
                !
                ! Performing shortwave absorption
