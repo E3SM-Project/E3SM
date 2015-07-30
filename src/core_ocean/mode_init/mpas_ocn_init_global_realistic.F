@@ -268,10 +268,10 @@ contains
        type (mpas_pool_type), pointer :: meshPool, scratchPool, statePool, verticalMeshPool
 
        real (kind=RKIND) :: currentLat, currentLon
-       real (kind=RKIND) :: dist, minDist, depth
+       real (kind=RKIND) :: dist, minDist
        real (kind=RKIND) :: alpha, beta, depthLat1, depthLat2, proposedDepth
 
-       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, refBottomDepth
+       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, refBottomDepth
        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
 
        integer, pointer :: nCells, nCellsSolve, nVertLevels
@@ -282,13 +282,14 @@ contains
 
        integer :: latSearch, lonSearch, searchIdx
        integer :: iCell, coc, j, k, maxLevel
+       integer :: minimum_levels
 
        logical, pointer :: config_global_realistic_smooth_topography
-       integer, pointer :: config_global_realistic_minimum_levels
+       real (kind=RKIND), pointer :: config_global_realistic_minimum_depth
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_minimum_levels', config_global_realistic_minimum_levels)
+       call mpas_pool_get_config(domain % configs, 'config_global_realistic_minimum_depth', config_global_realistic_minimum_depth)
        call mpas_pool_get_config(domain % configs, 'config_global_realistic_smooth_topography', config_global_realistic_smooth_topography)
 
        block_ptr => domain % blocklist
@@ -302,8 +303,18 @@ contains
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
           call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+          call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+          do k = 1, nVertLevels
+             if (refBottomDepth(k).gt.config_global_realistic_minimum_depth) then
+                minimum_levels = k
+                write (stdoutUnit,'(a,f8.2,2a,i5,a,f8.2,a)') 'config_global_realistic_minimum_depth=',config_global_realistic_minimum_depth,' m.  ', &
+                   'Setting minimum layer index to ',minimum_levels, ' with a bottom depth of ', refBottomDepth(k), ' m.'
+                exit
+             end if
+          end do
 
           do iCell = 1, nCells
              currentLat = latCell(iCell)
@@ -330,25 +341,24 @@ contains
              end do
 
              if (topoIC % array(lonSearch, latSearch) < 0.0_RKIND) then
-                bottomDepth(iCell) = abs(topoIC % array(lonSearch, latSearch))
+                ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
+                bottomDepthObserved(iCell) = abs(topoIC % array(lonSearch, latSearch))
+
+                ! Enforce minimum depth
+                bottomDepth(iCell) = max(bottomDepthObserved(iCell), refBottomDepth(minimum_levels))
+
                 maxLevelCell(iCell) = -1
                 do k = 1, nVertLevels
-                   depth = refBottomDepth(k)
-
-                   if (depth > bottomDepth(iCell) .and. maxLevelCell(iCell) == -1) then
+                   if (refBottomDepth(k) >= bottomDepth(iCell)) then
                       maxLevelCell(iCell) = k
+                      exit
                    end if
                 end do
 
                 if (maxLevelCell(iCell) == -1) then
                    maxLevelCell(iCell) = nVertLevels
                    bottomDepth(iCell) = refBottomDepth( nVertLevels )
-                else if (maxLevelCell(iCell) <= config_global_realistic_minimum_levels) then
-                   maxLevelCell(iCell) = config_global_realistic_minimum_levels
-                   bottomDepth(iCell) = refBottomDepth( config_global_realistic_minimum_levels )
                 end if
-
-
 
              else
                 bottomDepth(iCell) = 0.0_RKIND
@@ -388,14 +398,6 @@ contains
 
              call mpas_deallocate_scratch_field(smoothedLevelsField, .true.)
           end if
-
-          ! Enforce minimum number of layers in ocean cells.
-          do iCell = 1, nCells
-              if (maxLevelCell(iCell) > 0 .and. maxLevelCell(iCell) < config_global_realistic_minimum_levels) then
-                  maxLevelCell(iCell) = config_global_realistic_minimum_levels
-                  bottomDepth(iCell) = refBottomDepth(config_global_realistic_minimum_levels)
-              end if
-          end do
 
           block_ptr => block_ptr % next
        end do
