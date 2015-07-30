@@ -81,6 +81,8 @@
                                            rucuten,rvcuten
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw,rthratensw                                    
  real(kind=RKIND),dimension(:,:),pointer:: rthdynten
+
+ real(kind=RKIND),dimension(:,:),pointer:: tend_rtheta_adv
  
  real(kind=RKIND),dimension(:,:),pointer  :: tend_theta,tend_theta_euler,tend_diabatic,tend_u
  real(kind=RKIND),dimension(:,:,:),pointer:: tend_scalars
@@ -113,6 +115,7 @@
  call mpas_pool_get_array(state, 'scalars', scalars, 1)
  call mpas_pool_get_array(state, 'rho_zz', mass, 2)
  call mpas_pool_get_array(diag , 'rho_edge', mass_edge)
+ call mpas_pool_get_array(diag , 'tend_rtheta_adv', tend_rtheta_adv)
 
  call mpas_pool_get_dimension(state, 'index_qv', index_qv)
  call mpas_pool_get_dimension(state, 'index_qc', index_qc)
@@ -174,8 +177,7 @@
  do i = 1, nCellsSolve
  do k = 1, nVertLevels
     coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
-    rthdynten(k,i) = coeff*(tend_theta(k,i)-tend_theta_euler(k,i) &
-                   - mass(k,i)*tend_diabatic(k,i))/mass(k,i)
+    rthdynten(k,i) = coeff*tend_rtheta_adv(k,i)/mass(k,i)
  enddo
  enddo
  write(0,*) '--- end calculate rthdynten:'

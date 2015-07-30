@@ -2458,6 +2458,9 @@ module atm_time_integration
                                                     circulation, divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zx, cqu, & 
                                                     h_divergence, kdiff
+
+      real (kind=RKIND), dimension(:,:), pointer :: tend_rtheta_adv  ! needed for Tiedtke convection scheme
+
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       real (kind=RKIND), dimension(:,:), pointer :: tend_u_euler, tend_w_euler, tend_theta_euler
@@ -2573,6 +2576,8 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'pressure_p', pp)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
       call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
+
+      call mpas_pool_get_array(diag, 'tend_rtheta_adv', tend_rtheta_adv)
 
       call mpas_pool_get_array(mesh, 'pzp', pzp)
       call mpas_pool_get_array(mesh, 'pzm', pzm)
@@ -3619,8 +3624,13 @@ module atm_time_integration
 
          do k=1,nVertLevels
             tend_theta(k,iCell) = tend_theta(k,iCell)/areaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k))
+            tend_rtheta_adv(k,iCell) = tend_theta(k,iCell)
+         end do
+
+         do k=1,nVertLevels
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
+
       end do
 
       !
