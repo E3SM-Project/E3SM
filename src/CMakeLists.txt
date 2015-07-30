@@ -14,16 +14,18 @@ add_library (pioc
     bget.c)
 
 target_include_directories (pioc 
-    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR})
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_include_directories (pioc 
     PRIVATE $ENV{HOME}/Software/installs/netcdf-c/include)
 target_compile_definitions (pioc 
     PRIVATE _NETCDF)
-target_link_libraries (pioc netcdf)
+target_link_libraries (pioc
+    $ENV{HOME}/Software/installs/netcdf-c/lib/libnetcdf.a)
 
 target_include_directories (pioc 
     PRIVATE $ENV{HOME}/Software/installs/pnetcdf/include)
 target_compile_definitions (pioc 
     PRIVATE _PNETCDF)
-target_link_libraries (pioc pnetcdf)
+target_link_libraries (pioc
+    $ENV{HOME}/Software/installs/pnetcdf/lib/libpnetcdf.a)
