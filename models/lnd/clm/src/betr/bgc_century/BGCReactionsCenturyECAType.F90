@@ -653,7 +653,7 @@ contains
     k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
 
   call  apply_plant_root_nuptake_prof(bounds, ubj, num_soilc, filter_soilc    , &
-   plantsoilnutrientflux_vars%plant_frootsc_col(bounds%begc:bounds%endc,1:ubj), &
+   plantsoilnutrientflux_vars%plant_frootsc_col(bounds%begc:bounds%endc)      , &
    cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj)             ,  &
    plantsoilnutrientflux_vars%plant_frootsc_vr_col)
 
@@ -1064,7 +1064,7 @@ contains
     endif
   enddo
 
-  call (nprimvars, Extra_inst%nr, Extra_inst%pct_clay, nitrogen_limit_flag,  ystate(1:nprimvars),
+  call apply_ECA_nutrient_regulation(nprimvars, Extra_inst%nr, Extra_inst%pct_clay, nitrogen_limit_flag,  ystate(1:nprimvars), &
      Extra_inst%plant_frts, reaction_rates(1:Extra_inst%nr), cascade_matrix(1:nprimvars, 1:Extra_inst%nr))
 
   call pd_decomp(nprimvars, Extra_inst%nr, cascade_matrix(1:nprimvars, 1:Extra_inst%nr), &
@@ -1167,6 +1167,7 @@ contains
     ystate, plant_frts, reaction_rates, cascade_matrix)
 
   use KineticsMod, only : kd_infty, ecacomplex_cell_norm
+  use MathfuncMod, only : safe_div
   implicit none
   integer , intent(in) :: nprimvars
   integer , intent(in) :: nr
@@ -1175,7 +1176,7 @@ contains
   real(r8), intent(in) :: ystate(1:nprimvars)
   real(r8), intent(in) :: plant_frts
   real(r8), intent(inout) :: reaction_rates(1:nr)
-  real(r8), intent(inout) :: cascade_matrixd(1:nprimvars, 1:nr)
+  real(r8), intent(inout) :: cascade_matrix(1:nprimvars, 1:nr)
 
   real(r8) :: k_mat(2,1:centurybgc_vars%ncompets)
   real(r8) :: vcompet(1:centurybgc_vars%ncompets)
@@ -1219,6 +1220,9 @@ contains
     som3               => centurybgc_vars%som3             , &
     lid_nh4            => centurybgc_vars%lid_nh4          , &
     lid_no3            => centurybgc_vars%lid_no3          , &
+    lid_nh4_nit_reac   => centurybgc_vars%lid_nh4_nit_reac , &
+    lid_no3_den_reac   => centurybgc_vars%lid_no3_den_reac , &
+    lid_plant_minn_up_reac=> centurybgc_vars%lid_plant_minn_up_reac, &
     nelms              => centurybgc_vars%nelms            , &
     c_loc              => centurybgc_vars%c_loc              &
     )
@@ -1255,12 +1259,12 @@ contains
   vcompet(lid_som2_compet) = ystate((som2-1)*nelms+c_loc) * 0.01_r8
   vcompet(lid_som3_compet) = ystate((som3-1)*nelms+c_loc) * 0.01_r8
 
-  vcompet(lid_nitri_compet)= smin_nh4 * 1.e-3_r8    !this number is arbitrary
+  vcompet(lid_nitri_compet)= ystate(lid_nh4) * 1.e-3_r8    !this number is arbitrary
   vcompet(lid_plant_compet)= plant_frts
-  vcompet(lid_denit_compet)= smin_no3 * 1.e-3_r8    !this number is arbitrary
+  vcompet(lid_denit_compet)= ystate(lid_no3) * 1.e-3_r8    !this number is arbitrary
   vcompet(lid_clay_compet) = 1._r8
   !form the resource vector
-  call ecacomplex_cell_norm(k_mat,(/smin_nh4,smin_no3/),vcompet,siej_cell_norm)
+  call ecacomplex_cell_norm(k_mat,(/ystate(lid_nh4),ystate(lid_no3)/),vcompet,siej_cell_norm)
 
   !now modify the reaction rates
   do j = 1,  centurybgc_vars%nom_pools
@@ -1274,7 +1278,7 @@ contains
   enddo
 
   !adjust for nitrification
-  reaction_rates(lid_nh4_nit_reac) = raection_rates(lid_nh4_nit_reac) * siej_cell_norm(1,lid_nitri_compet)
+  reaction_rates(lid_nh4_nit_reac) = reaction_rates(lid_nh4_nit_reac) * siej_cell_norm(1,lid_nitri_compet)
   !adjust for denitrification
   reaction_rates(lid_no3_den_reac) = reaction_rates(lid_no3_den_reac) * siej_cell_norm(2,lid_denit_compet)
 
@@ -1282,10 +1286,10 @@ contains
   eca_nh4 = siej_cell_norm(1,lid_plant_compet)/kd_nh4_decomp
   eca_no3 = siej_cell_norm(2,lid_plant_compet)/kd_no3_decomp
 
-  reaction_rates(lid_plant_compet) = eaction_rates(lid_plant_compet) * (eca_nh4+eca_no3) * vcompet(lid_plant_compet)
+  reaction_rates(lid_plant_compet) = reaction_rates(lid_plant_compet) * (eca_nh4+eca_no3) * vcompet(lid_plant_compet)
   cascade_matrix(lid_no3, lid_plant_minn_up_reac) = cascade_matrix(lid_nh4, lid_plant_minn_up_reac) * &
     safe_div(eca_no3, eca_nh4+eca_no3)
-  casecade_matrix(lid_nh4,lid_plant_minn_up_reac) = casecade_matrix(lid_nh4,lid_plant_minn_up_reac) - &
+  cascade_matrix(lid_nh4,lid_plant_minn_up_reac) = cascade_matrix(lid_nh4,lid_plant_minn_up_reac) - &
     cascade_matrix(lid_no3, lid_plant_minn_up_reac)
   end associate
   end subroutine apply_ECA_nutrient_regulation

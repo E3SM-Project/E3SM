@@ -36,7 +36,7 @@ contains
    siej = 0._r8
 
    do j = 1, jj
-      if(kd(j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+      if(kd(j)>0._r8 .and. (kd(j)<.9*kd_infty))then
          siej(j) = ss * ee(j) / (kd(j) + ss)
       endif
    enddo
@@ -96,7 +96,7 @@ contains
    siej = 0._r8
    do i = 1, ii
       do j = 1, jj
-         if(kd(i,j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+         if(kd(i,j)>0._r8 .and. (kd(i,j)<.9*kd_infty))then
             siej(i,j) = ss(i) * ee(j) / (kd(i,j) + ss(i))
          endif
       enddo
@@ -137,12 +137,12 @@ contains
 
    dnm2=1._r8
    do j = 1, jj
-      if(kd(j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+      if(kd(j)>0._r8 .and. (kd(j)<.9*kd_infty))then
          dnm2=dnm2 + ee(j)/kd(j)
       endif
    enddo
    do j = 1, jj
-      if(kd(j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+      if(kd(j)>0._r8 .and. (kd(j)<.9*kd_infty))then
          siej(j) = ss*ee(j)/(kd(j)*(dnm2+ss/kd(j)))
       endif
    enddo
@@ -200,15 +200,15 @@ contains
    do i = 1, ii
       dnm1 = 0._r8
       do k = 1, jj
-         if(kd(i,k)>0._r8 .and. (kd(i)<.9*kd_infty))then
+         if(kd(i,k)>0._r8 .and. (kd(i,k)<.9*kd_infty))then
             dnm1 = dnm1 + ee(k)/kd(i,k)
          endif
       enddo
       do j = 1, jj
          dnm2 = 0._r8
-         if(kd(i,j)>0._r8 .and. (kd(i)<.9*kd_infty) )then
+         if(kd(i,j)>0._r8 .and. (kd(i,j)<.9*kd_infty) )then
             do k = 1, ii
-               if(kd(k,j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+               if(kd(k,j)>0._r8 .and. (kd(k,j)<.9*kd_infty))then
                   dnm2=dnm2 + ss(k)/kd(k,j)
                endif
             enddo
@@ -241,13 +241,13 @@ contains
    do i = 1, ii
       dnm1 = 0._r8
       do k = 1, jj
-         if(kd(i,k)>0._r8 .and. (kd(i)<.9*kd_infty))then
+         if(kd(i,k)>0._r8 .and. (kd(i,k)<.9*kd_infty))then
             dnm1 = dnm1 + ee(k)/kd(i,k)
          endif
       enddo
       do j = 1, jj
          dnm2 = 0._r8
-         if(kd(i,j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+         if(kd(i,j)>0._r8 .and. (kd(i,j)<.9*kd_infty))then
             do k = 1, ii
                if(kd(k,j)>0._r8)then
                   dnm2=dnm2 + ss(k)/kd(k,j)
@@ -279,12 +279,12 @@ contains
 
    dnm2=1._r8
    do j = 1, jj
-      if(kd(j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+      if(kd(j)>0._r8 .and. (kd(j)<.9*kd_infty))then
          dnm2=dnm2 + ee(j)/kd(j)
       endif
    enddo
    do j = 1, jj
-      if(kd(j)>0._r8 .and. (kd(i)<.9*kd_infty))then
+      if(kd(j)>0._r8 .and. (kd(j)<.9*kd_infty))then
          siej(j) = ss/(kd(j)*(dnm2+ss/kd(j)))
       endif
    enddo

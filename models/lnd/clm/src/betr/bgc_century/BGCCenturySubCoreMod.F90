@@ -1737,7 +1737,7 @@ module BGCCenturySubCoreMod
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
   real(r8)                           , intent(in) :: plant_frootsc_col(bounds%begc:bounds%endc)
   real(r8)                           , intent(in) :: root_prof_col(bounds%begc:bounds%endc, 1:ubj)
-  real(r8)                           , intent(inout):: plant_frootsc_vr(1,bounds%begc:bounds%endc, 1:ubj)
+  real(r8)                           , intent(inout):: plant_frootsc_vr(bounds%begc:bounds%endc, 1:ubj)
 
   integer :: fc, c, j
   do j = 1, ubj
