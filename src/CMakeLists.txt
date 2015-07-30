@@ -13,7 +13,7 @@ add_library (pioc
     pio_get_nc.c
     bget.c)
 
-target_include_directories (pioc 
+target_include_directories (pioc
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_include_directories (pioc 
