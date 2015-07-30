@@ -84,7 +84,6 @@ module mpas_framework
 
 #ifdef MPAS_DEBUG
       call mpas_pool_set_error_level(MPAS_POOL_WARN)
-      call mpas_pool_set_error_level(MPAS_POOL_FATAL)
 #endif
 
       call mpas_pool_get_config(domain % configs, 'config_calendar_type', config_calendar_type)
