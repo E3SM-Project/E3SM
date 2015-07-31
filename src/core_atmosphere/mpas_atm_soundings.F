@@ -25,7 +25,8 @@ module mpas_atm_soundings
     subroutine mpas_atm_soundings_init(clock, mesh, soundingInterval)
 
         use mpas_io_units, only : stderrUnit
-        use mpas_grid_types, only : MPAS_pool_type, mpas_pool_get_dimension, mpas_pool_get_array
+        use mpas_derived_types, only : MPAS_pool_type
+        use mpas_pool_routines, only : mpas_pool_get_dimension, mpas_pool_get_array
         use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
                                      MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
 
@@ -121,7 +122,8 @@ module mpas_atm_soundings
     subroutine mpas_atm_soundings_write(mesh, state, diag, diag_physics)
 
         use mpas_io_units, only : stderrUnit
-        use mpas_grid_types, only : MPAS_pool_type, MPAS_pool_get_dimension, MPAS_pool_get_array
+        use mpas_derived_types, only : MPAS_pool_type
+        use mpas_pool_routines, only : mpas_pool_get_dimension, mpas_pool_get_array
         use mpas_timekeeping, only : MPAS_time_type, MPAS_is_alarm_ringing, MPAS_reset_clock_alarm, MPAS_get_clock_time, &
                                      MPAS_get_time, MPAS_NOW
         use mpas_constants, only : rvord
