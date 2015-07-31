@@ -3056,7 +3056,10 @@ module atm_time_integration
             eoe = edgesOnEdge(j,iEdge)
             do k=1,nVertLevels
                workpv = 0.5 * (pv_edge(k,iEdge) + pv_edge(k,eoe))
-               q(k) = q(k) + weightsOnEdge(j,iEdge) * u(k,eoe) * workpv * rho_edge(k,eoe)
+!  the origonal definition of pv_edge had a factor of 1/density.  We have removed that factor
+!  given that it was not integral to any conservation property of the system
+!               q(k) = q(k) + weightsOnEdge(j,iEdge) * u(k,eoe) * workpv * rho_edge(k,eoe)
+               q(k) = q(k) + weightsOnEdge(j,iEdge) * u(k,eoe) * workpv
             end do
          end do
 
@@ -3852,11 +3855,14 @@ module atm_time_integration
       ! numerator for the pv_vertex calculation
       do iVertex = vertexStart,vertexEnd
          do k=1,nVertLevels
-            h_vertex = 0.0
-            do i=1,vertexDegree
-               h_vertex = h_vertex + h(k,cellsOnVertex(i,iVertex)) * kiteAreasOnVertex(i,iVertex)
-            end do
-            pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex)) * areaTriangle(iVertex) / h_vertex
+!
+! the following commented code is for the PV conserving shallow water solver.  
+!            h_vertex = 0.0
+!            do i=1,vertexDegree
+!               h_vertex = h_vertex + h(k,cellsOnVertex(i,iVertex)) * kiteAreasOnVertex(i,iVertex)
+!            end do
+!            pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex)) * areaTriangle(iVertex) / h_vertex
+            pv_vertex(k,iVertex) = (fVertex(iVertex) + vorticity(k,iVertex))
          end do
       end do
 
