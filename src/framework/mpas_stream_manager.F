@@ -39,6 +39,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_begin_iteration, &
               MPAS_stream_mgr_get_next_stream, &
               MPAS_stream_mgr_get_next_field, &
+              MPAS_stream_mgr_stream_exists, &
               MPAS_get_stream_filename, &
               MPAS_build_stream_filename
 
@@ -4961,6 +4962,35 @@ module mpas_stream_manager
         end if
 
     end function MPAS_stream_mgr_get_next_field !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  logical function MPAS_stream_mgr_stream_exists
+    !
+    !> \brief Determine if a stream exists in a stream manager
+    !> \author Doug Jacobsen
+    !> \date   07/29/2015
+    !> \details
+    !>  This function takes a stream manager and the name of a stream, and
+    !>  returns a logical describing if the stream exists within the manager or
+    !>  not. It gives no information about if the stream will be "handled" at
+    !>  any point in time, only if it exists within the manager queried.
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_stream_exists(manager, streamID) result(validStream)!{{{
+
+       implicit none
+
+       type (MPAS_streamManager_type), intent(inout) :: manager
+       character (len=*), intent(in) :: streamID
+
+       type (mpas_stream_list_type), pointer :: streamPtr
+
+       validStream = mpas_stream_list_query(manager % streams, streamID, streamPtr)
+
+       return
+
+    end function MPAS_stream_mgr_stream_exists!}}}
  
 
 end module mpas_stream_manager
