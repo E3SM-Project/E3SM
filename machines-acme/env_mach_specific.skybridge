@@ -38,3 +38,7 @@ setenv NETCDF_INCLUDES $NETCDFROOT/include
 setenv NETCDF_LIBS $NETCDFROOT/lib
 
 setenv PNETCDFROOT $NETCDFROOT
+
+if ( $?PERL ) then
+   printenv
+endif
