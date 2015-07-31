@@ -58,7 +58,7 @@ Each grid is associated with five names
 <GRID sname="0.23x0.31_tx0.1v2" alias="f02_t12">a%0.23x0.31_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</GRID>
 <GRID sname="0.47x0.63_gx1v6"   alias="f05_g16">a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="0.47x0.63_tx0.1v2" alias="f05_t12">a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</GRID>    
-<GRID sname="0.9x1.25_gx1v6"    alias="f09_g16">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
+<GRID sname="0.9x1.25_gx1v6"    alias="f09_g16">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%0.9x1.25_w%null</GRID>
 <GRID sname="1.9x2.5_gx1v6"     alias="f19_g16">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="4x5_gx3v7"         alias="f45_g37">a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</GRID>
 <GRID sname="1.9x2.5_gx1v6_r01" alias="f19_g16_r01" support_level="Non-standard grid, for testing high resolution RTM grid" >a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null</GRID>
