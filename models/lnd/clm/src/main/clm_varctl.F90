@@ -13,6 +13,10 @@ module clm_varctl
   public :: clm_varctl_set    ! Set variables
   public :: cnallocate_carbon_only_set
   public :: cnallocate_carbon_only
+  public :: cnallocate_carbonnitrogen_only_set
+  public :: cnallocate_carbonnitrogen_only
+  public :: cnallocate_carbonphosphorus_only_set
+  public :: cnallocate_carbonphosphorus_only
   !
   private
   save
@@ -94,6 +98,9 @@ module clm_varctl
   character(len=fname_len), public :: fsnowoptics  = ' '      ! snow optical properties file name
   character(len=fname_len), public :: fsnowaging   = ' '      ! snow aging parameters file name
 
+ !! X. YANG  : add soil order dependent parameter file
+  character(len=fname_len), public :: fsoilordercon    = ' '  ! ASCII data file with soil order dependent  constants
+
   !----------------------------------------------------------
   ! Flag to turn on MEGAN VOC's
   !----------------------------------------------------------
@@ -153,6 +160,8 @@ module clm_varctl
 
   ! Set in CNAllocationInit (TODO - had to move it here to avoid circular dependency)
   logical, private:: carbon_only      
+  logical, private:: carbonnitrogen_only      
+  logical, private:: carbonphosphorus_only      
 
   !----------------------------------------------------------
   ! Physics
@@ -333,5 +342,31 @@ contains
   logical function CNAllocate_Carbon_only()
     cnallocate_carbon_only = carbon_only
   end function CNAllocate_Carbon_only
+
+
+  ! Set module carbonnitrogen_only flag
+  subroutine cnallocate_carbonnitrogen_only_set(carbonnitrogen_only_in)
+    logical, intent(in) :: carbonnitrogen_only_in
+    carbonnitrogen_only = carbonnitrogen_only_in
+  end subroutine cnallocate_carbonnitrogen_only_set
+
+  ! Get module carbonnitrogen_only flag
+  logical function CNAllocate_CarbonNitrogen_only()
+    cnallocate_carbonnitrogen_only = carbonnitrogen_only
+  end function CNAllocate_CarbonNitrogen_only
+
+
+  ! Set module carbonphosphorus_only flag
+  subroutine cnallocate_carbonphosphorus_only_set(carbonphosphorus_only_in)
+    logical, intent(in) :: carbonphosphorus_only_in
+    carbonphosphorus_only = carbonphosphorus_only_in
+  end subroutine cnallocate_carbonphosphorus_only_set
+
+  ! Get module carbonphosphorus_only flag
+  logical function CNAllocate_CarbonPhosphorus_only()
+    cnallocate_carbonphosphorus_only = carbonphosphorus_only
+  end function CNAllocate_CarbonPhosphorus_only
+
+
 
 end module clm_varctl

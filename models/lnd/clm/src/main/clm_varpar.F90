@@ -57,6 +57,8 @@ module clm_varpar
 
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
 
+  integer, parameter :: nsoilorder  =  15     ! number of soil orders
+
   ! constants for decomposition cascade
 
   integer :: i_met_lit 

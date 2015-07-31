@@ -16,6 +16,8 @@ module CNSoilLittVertTranspMod
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
+  use PhosphorusFluxType     , only : phosphorusflux_type
+  use PhosphorusStateType    , only : phosphorusstate_type
   !
   implicit none
   save
@@ -86,7 +88,8 @@ contains
        canopystate_vars, cnstate_vars,                               &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,    &
-       nitrogenstate_vars, nitrogenflux_vars)
+       nitrogenstate_vars,nitrogenflux_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Calculate vertical mixing of soil and litter pools.  Also reconcile sources and sinks of these pools 
@@ -114,6 +117,9 @@ contains
     type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     real(r8) :: diffus (bounds%begc:bounds%endc,1:nlevdecomp+1)    ! diffusivity (m2/s)  (includes spinup correction, if any)
@@ -170,7 +176,7 @@ contains
 
       dtime = get_step_size()
 
-      ntype = 2
+      ntype = 3
       if ( use_c13 ) then
          ntype = ntype+1
       endif
@@ -234,7 +240,11 @@ contains
             conc_ptr          => nitrogenstate_vars%decomp_npools_vr_col
             source            => nitrogenflux_vars%decomp_npools_sourcesink_col
             trcr_tendency_ptr => nitrogenflux_vars%decomp_npools_transport_tendency_col
-         case (3)
+         case (3)  ! P
+            conc_ptr          => phosphorusstate_vars%decomp_ppools_vr_col
+            source            => phosphorusflux_vars%decomp_ppools_sourcesink_col
+            trcr_tendency_ptr => phosphorusflux_vars%decomp_ppools_transport_tendency_col
+         case (4)
             if ( use_c13 ) then
                ! C13
                conc_ptr          => c13_carbonstate_vars%decomp_cpools_vr_col
@@ -246,14 +256,14 @@ contains
                source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
                trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
             endif
-         case (4)
+         case (5)
             if ( use_c14 .and. use_c13 ) then
                ! C14
                conc_ptr          => c14_carbonstate_vars%decomp_cpools_vr_col
                source            => c14_carbonflux_vars%decomp_cpools_sourcesink_col
                trcr_tendency_ptr => c14_carbonflux_vars%decomp_cpools_transport_tendency_col
             else
-               write(iulog,*) 'error.  ncase = 4, but c13 and c14 not both enabled.'
+               write(iulog,*) 'error.  ncase = 5, but c13 and c14 not both enabled.'
                call endrun(msg=errMsg(__FILE__, __LINE__))
             endif
          end select

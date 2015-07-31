@@ -87,6 +87,15 @@ over-productive.
     ALL            = Supplemental Nitrogen is active for all vegetation types
 </entry>
 
+<entry id="suplphos" type="char*15" category="clm_physics"
+       group="clm_inparm" valid_values="NONE,ALL" >
+Supplemental Phosphorus mode and for what type of vegetation it's turned on for. 
+In this mode Phosphorus is unlimited rather than prognosed and in general vegetation is 
+over-productive.
+    NONE           = No vegetation types get supplemental Phosphorus
+    ALL            = Supplemental Phosphorus is active for all vegetation types
+</entry>
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
@@ -207,6 +216,11 @@ Full pathname datafile with plant function type (PFT) constants combined with
 constants for biogeochem modules
 </entry>
 
+<entry id="fsoilordercon" type="char*256" category="datasets"
+       input_pathname="abs" group="clm_inparm" valid_values="" >
+       Full pathname datafile with soil order dependent constants
+</entry>
+       
 <entry id="flanduse_timeseries" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
 Full pathname of time varying PFT data file. This causes the land-use types of

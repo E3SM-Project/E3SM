@@ -29,6 +29,10 @@ module clm_initializeMod
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
+
+  use PhosphorusFluxType     , only : phosphorusflux_type
+  use PhosphorusStateType    , only : phosphorusstate_type
+
   use CropType               , only : crop_type
   use DryDepVelocity         , only : drydepvel_type
   use DUSTMod                , only : dust_type
@@ -57,6 +61,7 @@ module clm_initializeMod
   use CNDecompCascadeConType , only : decomp_cascade_con ! Constants 
   use CNDVType               , only : dgv_ecophyscon     ! Constants 
   use EcophysConType         , only : ecophyscon         ! Constants 
+  use SoilorderConType       , only : soilordercon         ! Constants 
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
@@ -111,6 +116,9 @@ module clm_initializeMod
   type(glc_diagnostics_type)  :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(EDbio_type)            :: EDbio_vars
+
+  type(phosphorusstate_type)    :: phosphorusstate_vars
+  type(phosphorusflux_type)     :: phosphorusflux_vars
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -122,10 +130,7 @@ contains
   subroutine initialize1( )
     !
     ! !DESCRIPTION:
-    ! CLM initialization first phase
-    ! PET: 9 Feb 2015: In preparation for modifying land sub-grid architecture. This initialization
-    ! 	   phase will change to accommodate topographic units as a new level in the sub-grid hierarchy,
-    !	   added between gridcell and landunit. 
+    ! CLM initialization first phase 
     !
     ! !USES:
     use clm_varpar       , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
@@ -134,6 +139,7 @@ contains
     use column_varcon    , only: col_itype_to_icemec_class
     use clm_varctl       , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
     use pftvarcon        , only: pftconrd
+    use soilorder_varcon , only: soilorder_conrd
     use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
     use domainMod        , only: domain_check, ldomain, domain_init
     use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data 
@@ -262,9 +268,9 @@ contains
     ! Independent of model resolution, Needs to stay before surfrd_get_data
 
     call pftconrd()
+    call soilorder_conrd()
 
     ! Read surface dataset and set up subgrid weight arrays
-    
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
     ! ------------------------------------------------------------------------
@@ -391,6 +397,7 @@ contains
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
     use EDInitMod             , only : ed_init  
     use EcophysConType        , only : ecophysconInit 
+    use SoilorderConType      , only : soilorderconInit 
     use EDEcophysConType      , only : EDecophysconInit 
     use EDPftVarcon           , only : EDpftvarcon_inst
     use LakeCon               , only : LakeConInit 
@@ -572,6 +579,10 @@ contains
        call EDecophysconInit( EDpftvarcon_Inst, numpft)
     end if
 
+    ! Initialize soil order related constants
+
+    call soilorderconInit()
+
     ! Initialize lake constants
 
     call LakeConInit()
@@ -718,6 +729,17 @@ contains
 
        call nitrogenflux_vars%Init(bounds_proc) 
 
+
+       call phosphorusstate_vars%Init(bounds_proc,                      &
+            carbonstate_vars%leafc_patch(begp:endp),                  &
+            carbonstate_vars%leafc_storage_patch(begp:endp),          &
+            carbonstate_vars%deadstemc_patch(begp:endp),              &
+            carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
+            carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
+            carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
+
+       call phosphorusflux_vars%Init(bounds_proc) 
+
        ! Note - always initialize the memory for the dgvs_vars data structure so
        ! that it can be used in associate statements (nag compiler complains otherwise)
        call dgvs_vars%Init(bounds_proc)
@@ -828,7 +850,8 @@ contains
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars )
+               waterflux_vars, waterstate_vars, EDbio_vars,&
+               phosphorusstate_vars,phosphorusflux_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -841,7 +864,8 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            waterflux_vars, waterstate_vars, EDbio_vars,&
+            phosphorusstate_vars,phosphorusflux_vars )
 
     end if
 
@@ -880,7 +904,8 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            waterflux_vars, waterstate_vars, EDbio_vars,&
+            phosphorusstate_vars,phosphorusflux_vars )
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -893,7 +918,8 @@ contains
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
             soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            waterflux_vars, waterstate_vars, EDbio_vars,&
+            phosphorusstate_vars,phosphorusflux_vars )
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)

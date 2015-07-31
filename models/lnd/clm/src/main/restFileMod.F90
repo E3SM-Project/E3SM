@@ -28,6 +28,10 @@ module restFileMod
   use CNStateType          , only : cnstate_type
   use CNNitrogenFluxType   , only : nitrogenflux_type
   use CNNitrogenStateType  , only : nitrogenstate_type
+
+  use PhosphorusFluxType     , only : phosphorusflux_type
+  use PhosphorusStateType    , only : phosphorusstate_type
+
   use AerosolType          , only : aerosol_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
@@ -89,7 +93,8 @@ contains
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-       waterflux_vars, waterstate_vars, EDbio_vars, rdate, noptr)
+       waterflux_vars, waterstate_vars, EDbio_vars, &
+       phosphorusstate_vars,phosphorusflux_vars,rdate,noptr)
     !
     ! !DESCRIPTION:
     ! Define/write CLM restart file.
@@ -121,6 +126,10 @@ contains
     type(waterstate_type)    , intent(inout) :: waterstate_vars  ! due to EDrest call
     type(waterflux_type)     , intent(in)    :: waterflux_vars
     type(EDbio_type)         , intent(inout) :: EDbio_vars       ! due to EDrest call
+
+    type(phosphorusstate_type),intent(inout)    :: phosphorusstate_vars
+    type(phosphorusflux_type) ,intent(in)     :: phosphorusflux_vars
+
     character(len=*)         , intent(in), optional :: rdate     ! restart file time stamp for name
     logical                  , intent(in), optional :: noptr     ! if should NOT write to the restart pointer file
     !
@@ -206,6 +215,9 @@ contains
        call carbonflux_vars%restart(bounds, ncid, flag='define')
        call nitrogenflux_vars%Restart(bounds, ncid, flag='define')
        call nitrogenstate_vars%Restart(bounds, ncid, flag='define')
+
+       call phosphorusflux_vars%Restart(bounds, ncid, flag='define')
+       call phosphorusstate_vars%Restart(bounds, ncid, flag='define')
 
        call cnstate_vars%Restart(bounds, ncid, flag='define')
 
@@ -293,6 +305,9 @@ contains
        call nitrogenflux_vars%Restart(bounds, ncid, flag='write')
        call nitrogenstate_vars%Restart(bounds, ncid, flag='write')
 
+       call phosphorusflux_vars%Restart(bounds, ncid, flag='write')
+       call phosphorusstate_vars%Restart(bounds, ncid, flag='write')
+
        call cnstate_vars%Restart(bounds, ncid, flag='write')
 
     end if
@@ -340,7 +355,8 @@ contains
        ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-       waterflux_vars, waterstate_vars, EDbio_vars)
+       waterflux_vars, waterstate_vars, EDbio_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Read a CLM restart file.
@@ -377,6 +393,10 @@ contains
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
     type(EDbio_type)         , intent(inout) :: EDbio_vars
+
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid ! netcdf id
@@ -454,6 +474,9 @@ contains
 
        call nitrogenflux_vars%Restart(bounds, ncid, flag='read')
        call nitrogenstate_vars%Restart(bounds, ncid, flag='read')
+
+       call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
+       call phosphorusstate_vars%Restart(bounds, ncid, flag='read')
 
        call cnstate_vars%Restart(bounds, ncid, flag='read')
 

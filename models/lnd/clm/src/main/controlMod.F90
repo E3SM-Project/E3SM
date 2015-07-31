@@ -26,10 +26,10 @@ module controlMod
   use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact 
   use CNAllocationMod         , only: suplnitro
+  use CNAllocationMod         , only: suplphos
   use CNCarbonFluxType        , only: nfix_timeconst
   use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use CNC14DecayMod           , only: use_c14_bombspike, atm_c14_filename
-  use CNAllocationMod         , only: suplnitro
   use CNSoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
   use CNVerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp 
   use CNVerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile  
@@ -133,7 +133,7 @@ contains
 
     namelist /clm_inparm/  &
          fsurdat, fatmtopo, flndtopo, &
-         paramfile, flanduse_timeseries,  fsnowoptics, fsnowaging
+         paramfile, flanduse_timeseries,  fsnowoptics, fsnowaging,fsoilordercon
 
     ! History, restart options
 
@@ -150,7 +150,7 @@ contains
     ! BGC info
 
     namelist /clm_inparm/  &
-         suplnitro
+         suplnitro,suplphos
     namelist /clm_inparm/ &
          nfix_timeconst
     namelist /clm_inparm/ &
@@ -250,6 +250,7 @@ contains
        unitn = getavu()
        write(iulog,*) 'Read in clm_inparm namelist from: ', trim(NLFilename)
        open( unitn, file=trim(NLFilename), status='old' )
+       print*,trim(NLFilename),"X.YANG debug"
        call shr_nl_find_group_name(unitn, 'clm_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
@@ -257,6 +258,8 @@ contains
              call endrun(msg='ERROR reading clm_inparm namelist'//errMsg(__FILE__, __LINE__))
           end if
        end if
+       
+       print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
@@ -467,6 +470,7 @@ contains
     call mpi_bcast (fatmtopo, len(fatmtopo) ,MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (flndtopo, len(flndtopo) ,MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (paramfile, len(paramfile) , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (fsoilordercon, len(fsoilordercon) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (flanduse_timeseries , len(flanduse_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowoptics, len(fsnowoptics),  MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fsnowaging,  len(fsnowaging),   MPI_CHARACTER, 0, mpicom, ier)
@@ -491,6 +495,7 @@ contains
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
+    call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -601,6 +606,7 @@ contains
     ! !USES:
     !
     use CNAllocationMod, only : suplnitro, suplnNon
+    use CNAllocationMod, only : suplphos, suplpNon
     !
     ! !ARGUMENTS:
     implicit none
@@ -635,6 +641,7 @@ contains
 
     write(iulog,*) 'input data files:'
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
+    write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'
     else
@@ -679,6 +686,10 @@ contains
        
        write(iulog,*) '   override_bgc_restart_mismatch_dump                     : ', override_bgc_restart_mismatch_dump
     end if
+       if (suplphos /= suplpNon)then
+          write(iulog,*) '   Supplemental Phosphorus mode is set to run over Patches: ', &
+               trim(suplphos)
+       end if
 
     if (use_cn .and. use_vertsoilc) then
        write(iulog, *) '   som_adv_flux, the advection term in soil mixing (m/s) : ', som_adv_flux
