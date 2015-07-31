@@ -39,7 +39,7 @@ implicit none
   ! !PUBLIC TYPES:
   public :: bgc_reaction_CENTURY_ECA_type
   type(centurybgc_type), private :: centurybgc_vars
-
+  logical :: ldebug
   !integer, private :: lpr
   type, extends(bgc_reaction_type) :: &
   bgc_reaction_CENTURY_ECA_type
@@ -675,7 +675,9 @@ contains
 
       !update state variables
       time = 0._r8
-
+!      ldebug=.false.
+!      if(c==415 .and. j==1)ldebug=.true.
+!      if(ldebug)print*,'cj',c,j
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
@@ -997,6 +999,7 @@ contains
   real(r8) :: rscal(1:Extra_inst%nr)
   real(r8) :: p_dt(1:nprimvars)
   real(r8) :: d_dt(1:nprimvars)
+  integer  :: it
   logical  :: lneg
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
@@ -1069,7 +1072,7 @@ contains
 
   call pd_decomp(nprimvars, Extra_inst%nr, cascade_matrix(1:nprimvars, 1:Extra_inst%nr), &
           cascade_matrixp(1:nprimvars, 1:Extra_inst%nr),  cascade_matrixd(1:nprimvars, 1:Extra_inst%nr))
-
+  it=0
   do
      call calc_dtrend_som_bgc(nprimvars, Extra_inst%nr, cascade_matrixp(1:nprimvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), p_dt)
 
@@ -1087,6 +1090,11 @@ contains
         call reduce_reaction_rates(Extra_inst%nr, rscal(1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr))
      else
         exit
+     endif
+     it = it + 1
+     if(it>100)then
+        write(iulog,*)'it',it
+        call endrun('too many iterations')     
      endif
   enddo
 
@@ -1107,17 +1115,19 @@ contains
   real(r8), intent(out) :: pscal(1:nprimvars)
   logical,  intent(out) :: lneg
   real(r8) :: yt
+  real(r8) :: bb=0.999_r8
   integer  :: j
   lneg =.false.
 
   do j = 1, nprimvars
      yt = ystate(j) + (p_dt(j)+d_dt(j))*dtime
      if(yt<0._r8)then
-        pscal(j) = -(p_dt(j)*dtime+ystate(j))/(dtime*d_dt(j))
+        pscal(j) = -(p_dt(j)*dtime+ystate(j))/(dtime*d_dt(j))*bb
         lneg=.true.
         if(pscal(j)<0._r8)then
            call endrun('ngeative p in calc_pscal')
         endif
+!        if(ldebug)write(*,'(A,X,I4,4(X,E20.10))')'j',j,pscal(j),yt,p_dt(j)*dtime,dtime*d_dt(j)
      else
         pscal(j) = 1._r8
      endif
