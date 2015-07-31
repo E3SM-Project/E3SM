@@ -1705,7 +1705,7 @@ module atm_time_integration
                                                     rtheta_p_save, rt_diabatic_tend, rho_p, rho_p_save, &
                                                     rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, &
                                                     exner, exner_base, rtheta_base, pressure_p,         &
-                                                    zz, theta_m, pressure_b
+                                                    zz, theta_m, pressure_b, pressure_p_old
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
@@ -1749,6 +1749,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'exner_base', exner_base)
 
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_p_old', pressure_p_old)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
@@ -1812,6 +1813,7 @@ module atm_time_integration
                theta_m(k,iCell) = (rtheta_p(k,iCell) + rtheta_base(k,iCell))/rho_zz(k,iCell)
                exner(k,iCell) = (zz(k,iCell)*(rgas/p0)*(rtheta_p(k,iCell)+rtheta_base(k,iCell)))**rcv
                ! pressure_p is perturbation pressure
+               pressure_p_old(k,iCell) = pressure_p(k,iCell)
                pressure_p(k,iCell) = zz(k,iCell) * rgas * (exner(k,iCell)*rtheta_p(k,iCell)+rtheta_base(k,iCell)  &
                                                           * (exner(k,iCell)-exner_base(k,iCell)))
             end do
@@ -2727,7 +2729,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, areaCell, areaTriangle, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
                                                     divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
-                                                    rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
+                                                    rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
                                                     h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save
 
       real (kind=RKIND), dimension(:,:), pointer :: theta_m_save
@@ -2827,6 +2829,7 @@ module atm_time_integration
       call mpas_pool_get_array(diag, 'ke', ke)
       call mpas_pool_get_array(diag, 'pv_edge', pv_edge)
       call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'pressure_p_old', pp_old)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
       call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
       call mpas_pool_get_array(diag, 'exner', exner)
@@ -2988,7 +2991,9 @@ module atm_time_integration
 
           do k = 1,nVertLevels
             tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
-            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
+!            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
+!  test new div damping formulation, assume 2 acoustic steps per RK step (factor of 0.5)
+            pp_fwd(k,iCell) = pp(k,iCell) + 0.5*smdiv*(pp(k,iCell) - pp_old(k,iCell))
           end do
 
           k = 1
@@ -3957,6 +3962,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: u
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: pressure_p
+      real (kind=RKIND), dimension(:,:), pointer :: pressure_p_old
       real (kind=RKIND), dimension(:,:), pointer :: exner
       real (kind=RKIND), dimension(:,:), pointer :: exner_base
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
@@ -3991,6 +3997,7 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'u', u, time_lev)
       call mpas_pool_get_array(state, 'w', w, time_lev)
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_p_old', pressure_p_old)
       call mpas_pool_get_array(diag, 'exner', exner)
       call mpas_pool_get_array(diag, 'exner_base', exner_base)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
@@ -4080,6 +4087,7 @@ module atm_time_integration
                                                * (  exner(k,iCell) * rtheta_p(k,iCell) &
                                                   + rtheta_base(k,iCell) * (exner(k,iCell) - exner_base(k,iCell)) &
                                                  )
+            pressure_p_old(k,iCell) = pressure_p(k,iCell)
          end do
       end do
 
