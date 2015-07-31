@@ -689,6 +689,28 @@
     </files>
   </comp_archive_spec>
 
+  <comp_archive_spec name="mpas-li">
+    <rootdir>glc</rootdir>
+        <multi_instance>y</multi_instance>
+        <files>
+          <file_extension suffix=".log\.+">
+            <subdir>logs</subdir>
+                <dispose>n</dispose>
+                <keepLast>n</keepLast>
+          </file_extension>
+          <file_extension suffix="rst.+\.nc">
+            <subdir>rest</subdir>
+                <dispose>y</dispose>
+                <keepLast>y</keepLast>
+          </file_extension>
+          <file_extension suffix="hist.+\.nc">
+            <subdir>hist</subdir>
+                <dispose>n</dispose>
+                <keepLast>n</keepLast>
+          </file_extension>
+        </files>
+  </comp_archive_spec>
+
   <comp_archive_spec name="ww3">
     <rootdir>wav</rootdir>
     <multi_instance>y</multi_instance>

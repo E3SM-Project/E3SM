@@ -1427,7 +1427,7 @@ NAME:
 
     my $atm_grid, my $lnd_grid, my $ice_grid, my $ocn_grid;
     my $rof_grid, my $glc_grid, my $wav_grid;
-    my $cism_grid, my $mask_grid; 
+    my $mask_grid;
 
 # first determine if there is any compset attribute for this grid
     $found = 0;
@@ -1494,15 +1494,12 @@ NAME:
     }
 
     $grid_longname =~ /(a%)(.+)(_l%)/ ; $atm_grid  = $2;
-    $grid_longname =~ /(l%)(.+)(_oi%)/; $lnd_grid  = $2; $glc_grid = $2;
+    $grid_longname =~ /(l%)(.+)(_oi%)/; $lnd_grid  = $2;
     $grid_longname =~ /(oi%)(.+)(_r%)/; $ocn_grid  = $2; $ice_grid = $2;
     $grid_longname =~ /(r%)(.+)(_m%)/ ; $rof_grid  = $2; 
     $grid_longname =~ /(m%)(.+)(_g%)/ ; $mask_grid = $2; 
-    $grid_longname =~ /(g%)(.+)(_w%)/ ; $cism_grid = $2; 
+    $grid_longname =~ /(g%)(.+)(_w%)/ ; $glc_grid = $2;
     $grid_longname =~ /(w%)(.+)$/     ; $wav_grid  = $2; 
-    if ($cism_grid ne 'null') {
-	$cfg_ref->set('CISM_GRID',$cism_grid);
-    }
 
 # ========================================================
 # check that compset is supported for target grid
@@ -1596,9 +1593,6 @@ NAME:
 	}
 	if ($mask_grid eq $hgrid) {
 	    $cfg_ref->set('MASK_GRID',$gridname);
-	}
-	if ($cism_grid eq $hgrid) {
-	    $cfg_ref->set('CISM_GRID',$gridname);
 	}
     }
 
@@ -1908,11 +1902,6 @@ NAME:
     $grg = $cfg_ref->get('GLC_GRID');
     $nxw = $cfg_ref->get('WAV_NX'); $nyw= $cfg_ref->get('WAV_NY'); 
     $grw = $cfg_ref->get('WAV_GRID');
-
-    if ($compset_longname =~ /CISM/) {
-	$grid = $cfg_ref->get('CISM_GRID');
-	print "  CISM_GRID = $grid \n";  
-    }
 
     # output to standard out
     print     "Component set: longname (shortname) (alias) \n";
