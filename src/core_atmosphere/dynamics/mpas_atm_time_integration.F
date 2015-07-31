@@ -635,7 +635,7 @@ module atm_time_integration
                   call atm_compute_solve_diagnostics(dt, state, 2, diag, mesh, block % configs, &
                                                      block % cellThreadStart(thread), block % cellThreadEnd(thread), &
                                                      block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
-                                                     block % edgeThreadStart(thread), block % edgeThreadEnd(thread))
+                                                     block % edgeThreadStart(thread), block % edgeThreadEnd(thread), rk_step)
                end do
 !$OMP END PARALLEL DO
 
@@ -1429,7 +1429,8 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
 
       call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
-      call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+!      call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+      call mpas_pool_get_array(state, 'theta_m', theta_m, 1)
 !  change needed for rw_p, change 6 (see rayleigh damping)
       call mpas_pool_get_array(state, 'w', w, 2)
 !      call mpas_pool_get_array(state, 'w', w, 1)
@@ -1808,20 +1809,18 @@ module atm_time_integration
             do k = 1, nVertLevels
                rtheta_p(k,iCell) = rtheta_p_save(k,iCell) + rtheta_pp(k,iCell) &
                                  - dt * rho_zz(k,iCell) * rt_diabatic_tend(k,iCell)
+               theta_m(k,iCell) = (rtheta_p(k,iCell) + rtheta_base(k,iCell))/rho_zz(k,iCell)
+               exner(k,iCell) = (zz(k,iCell)*(rgas/p0)*(rtheta_p(k,iCell)+rtheta_base(k,iCell)))**rcv
+               ! pressure_p is perturbation pressure
+               pressure_p(k,iCell) = zz(k,iCell) * rgas * (exner(k,iCell)*rtheta_p(k,iCell)+rtheta_base(k,iCell)  &
+                                                          * (exner(k,iCell)-exner_base(k,iCell)))
             end do
          else
             do k = 1, nVertLevels
                rtheta_p(k,iCell) = rtheta_p_save(k,iCell) + rtheta_pp(k,iCell)
+               theta_m(k,iCell) = (rtheta_p(k,iCell) + rtheta_base(k,iCell))/rho_zz(k,iCell)
             end do
          end if
-
-         do k = 1, nVertLevels
-            theta_m(k,iCell) = (rtheta_p(k,iCell) + rtheta_base(k,iCell))/rho_zz(k,iCell)
-            exner(k,iCell) = (zz(k,iCell)*(rgas/p0)*(rtheta_p(k,iCell)+rtheta_base(k,iCell)))**rcv
-            ! pressure_p is perturbation pressure
-            pressure_p(k,iCell) = zz(k,iCell) * rgas * (exner(k,iCell)*rtheta_p(k,iCell)+rtheta_base(k,iCell)  &
-                                                          * (exner(k,iCell)-exner_base(k,iCell)))
-         end do
 
       end do
 
