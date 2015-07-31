@@ -399,6 +399,14 @@ module atm_core
       end if
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
+      block_ptr => domain % blocklist
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+      call mpas_timer_start('write_soundings')
+      call mpas_atm_soundings_write(mesh, state, diag, diag_physics)
+      call mpas_timer_stop('write_soundings')
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
