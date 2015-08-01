@@ -851,6 +851,10 @@ end subroutine interpol_spelt_latlon
     ! Generic version written in terms of HOMME's 'ref2sphere' and 'Dmap' operaters,
     ! with no assumption as to the type of map (gnomonic, equi-angular, parametric)
     !
+    ! Note that the coordinate increment from newton iterations is not a direction and thus 
+    ! should not be converted into motion along a great circle arc - this routine
+    ! correclty applies the increment by just adding it to the coordintes
+    !
     ! f = ref2sphere(xvec) - sphere
     ! df = d(ref2sphere) 
     !
