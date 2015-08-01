@@ -2188,15 +2188,11 @@ end do
                                 dum_cart(:,:,3)*elem%vec_sphere2cart(:,:,3,component) 
     end do 
 
-#undef UNDAMPRRCART
+#define UNDAMPRRCART
 #ifdef UNDAMPRRCART
-    do n=1,np
-       do m=1,np
-          ! add in correction so we dont damp rigid rotation
-          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(rrearth**2)
-          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(rrearth**2)
-       enddo
-    enddo
+    ! add in correction so we dont damp rigid rotation
+    laplace(:,:,1)=laplace(:,:,1) + 2*elem%spheremp(:,:)*v(:,:,1)*(rrearth**2)
+    laplace(:,:,2)=laplace(:,:,2) + 2*elem%spheremp(:,:)*v(:,:,2)*(rrearth**2)
 #endif
   end function vlaplace_sphere_wk_cartesian
 
