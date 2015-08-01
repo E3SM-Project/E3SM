@@ -22,7 +22,8 @@ contains
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
-         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity
+         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity,&
+         toy_chemistry_forcing
     !-----------------
 #ifdef PIO_INTERP
     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
@@ -67,7 +68,7 @@ contains
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
          test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output, &
-         tstep_type
+         tstep_type, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use bndry_mod, only : compute_ghost_corner_orientation, &
@@ -537,7 +538,9 @@ contains
 !             end if
           end if
 
+          if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt)
           if(Debug) print *,'homme: point #7'
+
 
           ! =================================
           ! Call advance
@@ -1016,7 +1019,7 @@ contains
          tc6_init_state, tc5_invariants, tc8_init_state, vortex_init_state, &
          vortex_errors, sj1_init_state, tc6_errors, tc1_errors, tc2_errors, &
          tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors,&
-         kmass_swirl
+         kmass_swirl, toy_chemistry_forcing
     !-----------------
 #ifdef PIO_INTERP
     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
@@ -1049,7 +1052,7 @@ contains
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, topology, &
          rk_stage_user, test_case, sub_case, kmass, qsplit, nu, nu_s, limiter_option, &
-         hypervis_subcycle, g_sw_output
+         hypervis_subcycle, g_sw_output, toy_chemistry
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
 
     use rk_mod, only     : RkInit
@@ -1360,6 +1363,7 @@ contains
 
        call RkInit(cfl,RungeKutta)  ! number of stages: cfl+1
 
+       if (toy_chemistry==1) call toy_chemistry_forcing(elem,nets,nete,tl,dt_rk)
        call advance_nonstag_rk(RungeKutta, elem,  edge2, edge3, deriv, flt, hybrid, &
             dt_rk   , pmean, tl   , nets, nete)
        

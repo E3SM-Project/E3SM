@@ -35,6 +35,7 @@ module control_mod
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
+  integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
   real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
 
   real (kind=real_kind), public ::nu_mc = 0.0

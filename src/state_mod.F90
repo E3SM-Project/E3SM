@@ -179,8 +179,8 @@ private
 			      vel_norm_max_local(nets:nete)
     integer :: ie,k, i, j, k1,k2, k6
 
-    real (kind=real_kind) :: umin, vmin, pmin
-    real (kind=real_kind) :: umax, vmax, pmax
+    real (kind=real_kind) :: umin, vmin, pmin, chem_min
+    real (kind=real_kind) :: umax, vmax, pmax, chem_max
     real (kind=real_kind) :: usum, vsum, psum
     real (kind=real_kind), dimension(np, np) :: v1, v2
     real (kind=real_kind), dimension(np, np,2) :: ulatlon
@@ -279,15 +279,36 @@ private
     vsum = global_shared_sum(2)
     psum = global_shared_sum(3)
 
-    if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
+
+    if(hybrid%masterthread) then 
       if (k==1) then 
          write (*,100) "u= ",umin,umax,usum
          write (*,100) "v= ",vmin,vmax,vsum
       endif
       write (*,100) "p= ",pmin,pmax,psum
+    endif
+
+    if (k==6 .and. kmass>0) then
+       ! compute min/max for tracer5+tracer6
+       do ie=nets,nete
+          pmax_local(ie) = MAXVAL( &
+               (elem(ie)%state%p(:,:,5,n0)+ 2*elem(ie)%state%p(:,:,6,n0))/&
+               elem(ie)%state%p(:,:,kmass,n0))
+          pmin_local(ie) = MINVAL( &
+               (elem(ie)%state%p(:,:,5,n0)+ 2*elem(ie)%state%p(:,:,6,n0))/&
+               elem(ie)%state%p(:,:,kmass,n0))
+       enddo
+       chem_min = ParallelMin(pmin_local,hybrid)
+       chem_max = ParallelMax(pmax_local,hybrid)
+       if(hybrid%masterthread) write (*,100) "p5+p6=",chem_min,chem_max
+    endif
+
+    if(hybrid%masterthread) then 
       if (k==nlev) print *,'sqrt(g(h0+max(h)) = ',sqrt(pmean+pmax)
       if (k==nlev) print *
     endif
+
+
     100 format (A5,3(E24.15))
     110 format (A57,3(E24.15))
     120 format (A20,3(E24.15))

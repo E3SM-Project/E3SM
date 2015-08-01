@@ -42,7 +42,7 @@ module shallow_water_mod
   use viscosity_mod, only: biharmonic_wk, neighbor_minmax
   ! ------------------------
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
-                           kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
+                           kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation, toy_chemistry
   ! ------------------------
 
   implicit none
@@ -229,7 +229,7 @@ module shallow_water_mod
   public  :: swirl_velocity
   public  :: swirl_init_state
   public  :: swirl_errors
-
+  public  :: toy_chemistry_forcing
 
   public  :: sj1_init_state  ! Initialize strong jet case 1: Galewski et al.
   public  :: sj1_init_pmean
@@ -304,7 +304,7 @@ contains
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"sweq.mass",status="unknown",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"sweq.ke",status="unknown",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"sweq.pe",status="unknown",form="formatted")
@@ -442,7 +442,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        if (tl%nstep==0) then
           Imass_init   = Imass
           Ienergy_init = Ienergy
@@ -1074,7 +1074,7 @@ contains
 #endif
 
     if (tl%nstep == 0) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           if(sub_case == 1)then
 
              open(iounit+0,file=TRIM(output_prefix)//"swtc1.cosi.l1.errors",form="formatted")
@@ -1411,7 +1411,7 @@ contains
     !$OMP BARRIER
 #endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc2.l1.errors",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"swtc2.l2.errors",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"swtc2.linf.errors",form="formatted")
@@ -1760,7 +1760,7 @@ contains
     !$OMP BARRIER
 #endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc5.l1.errors",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"swtc5.l2.errors",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"swtc5.linf.errors",form="formatted")
@@ -1805,7 +1805,7 @@ contains
     l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
     linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
 
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        write(iounit+0,30)REAL(simday),l1
        write(iounit+1,30)REAL(simday),l2
        write(iounit+2,30)REAL(simday),linf
@@ -1832,7 +1832,7 @@ contains
 
     time   = Time_at(tl%nstep)/secpday
 
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        open(iounit+0,file=TRIM(output_prefix)//"swtc5.mass",status="unknown",form="formatted")
        open(iounit+1,file=TRIM(output_prefix)//"swtc5.energy",status="unknown",form="formatted")
        open(iounit+2,file=TRIM(output_prefix)//"swtc5.penst",status="unknown",form="formatted")
@@ -1910,7 +1910,7 @@ contains
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc5.mass",status="unknown",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"swtc5.energy",status="unknown",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"swtc5.penst",status="unknown",form="formatted")
@@ -2014,7 +2014,7 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        !print *,'mass, pmean/g = ',Imass,pmean/g
        if (tl%nstep==0) then
           Imass0   = Imass
@@ -2218,7 +2218,7 @@ contains
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"swtc6.l1.errors",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"swtc6.l2.errors",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"swtc6.linf.errors",form="formatted")
@@ -2264,7 +2264,7 @@ contains
     l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
     linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
 
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        write(iounit+0,30)REAL(simday),l1
        write(iounit+1,30)REAL(simday),l2
        write(iounit+2,30)REAL(simday),linf
@@ -3035,7 +3035,7 @@ contains
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"vortex.l1.errors",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"vortex.l2.errors",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"vortex.linf.errors",form="formatted")
@@ -3057,14 +3057,14 @@ contains
        linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,np,nets,nete)
        
        if (k==1) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           write(iounit+0,30)time_tmp/secpday,l1
           write(iounit+1,30)time_tmp/secpday,l2
           write(iounit+2,30)time_tmp/secpday,linf
        end if
        end if
 
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           write(*,'(a,i2,f6.2,a,3e15.7)') 'k=',k,time_tmp/secpday,' days  l1,l2,linf=',&
                l1,l2,linf
        end if
@@ -3110,7 +3110,7 @@ contains
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
 
           open(iounit+0,file=TRIM(output_prefix)//"swirl.l1.errors",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"swirl.l2.errors",form="formatted")
@@ -3143,16 +3143,19 @@ contains
        linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,np,nets,nete)
        
        if (k==1) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           write(iounit+0,30)time_tmp/secpday,l1
           write(iounit+1,30)time_tmp/secpday,l2
           write(iounit+2,30)time_tmp/secpday,linf
        end if
        end if
 
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           write(*,'(a,i2,f6.2,a,3e15.7)') 'k=',k,time_tmp/secpday,' days  l1,l2,linf=',&
                l1,l2,linf
+          if (toy_chemistry .and. k==4) then
+             print *,'***NOTE***:  Terminator toy-chemistry applied to p5 and p6'
+          endif
        end if
     enddo
 
@@ -3210,21 +3213,21 @@ contains
        lat1=lat1_case1
        lon2=lon2_case1
        lat2=lat2_case1
-       Kcoef=2.4 !was 2.4 for 5 days, 1 for 12 days
+       Kcoef=2.4  ! dimensionless units
        add_pure_rotation = .false.
     elseif(sub_case==2)then 
        lon1=lon1_case2
        lat1=lat1_case2
        lon2=lon2_case2
        lat2=lat2_case2 
-       Kcoef=2.0   
+       Kcoef=2.0 ! dimensionless units   
        add_pure_rotation = .false.
     elseif(sub_case==3)then
        lon1=lon1_case3
        lat1=lat1_case3
        lon2=lon2_case3
        lat2=lat2_case3
-       Kcoef=1.0   
+       Kcoef=1.0 ! dimensionless units  
        add_pure_rotation = .true.
 !as subcase 2 but with rotation
     elseif(sub_case==4)then
@@ -3232,15 +3235,19 @@ contains
        lat1=lat1_case2
        lon2=lon2_case2
        lat2=lat2_case2
-       Kcoef=2.0  ! was 2.0 for 5 days, 2/(12/5) = 2/2.4 for 12 days
+       Kcoef=2.0  ! dimensionless units
        add_pure_rotation = .true.
+       if (nlev>=6) toy_chemistry=1
     endif
 
-!    Tperiod=12*24*60*60 for 12 days
-    Tperiod=5*24*60*60 !for 5 days
+
+!   original units: bad mix of dimensionless and dimensional:
+!   Tperiod=5*24*60*60 !for 5 days
+!   dimensional unts.  Run 12 days:
+    Tperiod=12*24*60*60  !for 12 days
 
 
-    Kcoef=Kcoef*rearth/24/60/60
+    Kcoef=Kcoef*rearth*5/Tperiod
 
     nm1= 1
     n0 = 2
@@ -3293,17 +3300,20 @@ contains
     real (kind=real_kind) :: h1,h2
     real (kind=real_kind) :: r1,r2,A1,A2, bellrad, latc, lonc,xc,yc,zc,snlon,cslon,x1,y1,z1
     real (kind=real_kind) :: lon_1,lat_1,lon_2,lat_2
+    real (kind=real_kind) :: k1,k2,r,D,Cly,lat_center,lon_center,density,dminusr(np,np) 
     integer i,j,k
-
+!
+!  Nick Lopez  7/2015  added terminator toy chemistry 
+!
 ! layers in swirl:
 ! lev=1: COS BELLS
 ! lev=2: GAUSS BELLS
 ! lev=3: SLOTTED CYLINDERS
 ! lev=4: CONST=1
-
+! lev=5: "Cl" from Lauritzen et al. Toy Chemistry test
+! lev=6: "Cl2" from Lauritzen et al. Toy Chemistry test
+! Note: chemistry is applied to tracers 5 & 6, if they are present
 !------------------------ levels below are more or less temporary
-! lev=5: FLIPPED COS BELLS
-! lev=6: TRACER 6 = -0.8 Tracer1^2+0.9, to test mixing by Thuburn&P paper
 ! lev=7: Tracer 6 + Tracer 2, to test if linear relations are preserved
 ! lev=8: metric for level 1
 ! lev=9: metric for level 2
@@ -3312,6 +3322,25 @@ contains
 ! lev=12: is filter applied to level 1 and where
 ! lev=13: is filter applied to level 2 and where
 ! lev=14: is filter applied to level 3 and where
+
+    ! code used for tracers 5 and 6
+    lat_center = 1.0d0/9.0d0*DD_PI
+    lon_center = 2.0d0/3.0d0*DD_PI
+    Cly = 4.0d-6
+    do i=1, np
+       do j=1, np
+          k1 = SIN(sphere(i,j)%lat)*SIN(lat_center) + COS(sphere(i,j)%lat)*COS(lat_center)*COS(sphere(i,j)%lon-lon_center)
+          if (k1<0.0d0) then
+             k1 = 0.0d0
+          endif
+          k2 = 1.0d0
+          
+          r = k1/(4.0d0*k2)
+          D = sqrt(r**2.0d0 + 2.0d0*r*Cly)
+          dminusr(i,j) = ( D-r )
+       enddo
+    enddo
+
 
     if(level==1)then
 	bellrad=bellradius !bellradius=1/2
@@ -3333,18 +3362,13 @@ contains
 	    r2=ACOS(A2)
 
 	    if (r1<bellrad) then
-!temp code to fix lim8 for badly scaled
-!	      h1 = 0.0d0+1e9*(1.0d0 + COS(DD_PI*r1/bellrad))
 	      h1 = tracer_lowest+tracer_highest*(1.0d0 + COS(DD_PI*r1/bellrad)) 
 	    else
-!	      h1 = 0.0d0
 	      h1 = tracer_lowest
 	    endif
 	    if (r2<bellrad) then
-!	      h2 = 0.0d0+1e9*(1.0d0 + COS(DD_PI*r2/bellrad))
 	      h2 = tracer_lowest+tracer_highest*(1.0d0 + COS(DD_PI*r2/bellrad)) 
 	    else
-!	      h2 = 0.0d0
 	      h2 = tracer_lowest
 	    endif
 
@@ -3442,13 +3466,9 @@ contains
     elseif(level==4)then
         p(:,:)=1.0D0
     elseif(level==5)then
-	p(:,:)=1.0d0
-	!flipped tracer
-	!p(:,:)=tracer_highest+2.0d0*tracer_lowest-swirl_init_tracer(sphere,1)
-    !tracer made of level1 to test mixing
+       p(:,:) = dminusr(:,:)  ! Tracer "Cl"
     elseif(level==6)then
-	p(:,:)=swirl_init_tracer(sphere,1)**2*(-0.8d0)+0.9d0
-    !tracer to test if scheme preserve linear relationship
+       p(:,:) = 0.5d0*(Cly-dminusr(:,:))  ! tracer "Cl_2"
     elseif(level==7)then
 	p(:,:)=swirl_init_tracer(sphere,6)+swirl_init_tracer(sphere,2)
     !this level is for observing metric of level 1
@@ -3968,7 +3988,7 @@ contains
     !$OMP BARRIER
 #endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           open(iounit+0,file=TRIM(output_prefix)//"sjtc1.l1.errors",form="formatted")
           open(iounit+1,file=TRIM(output_prefix)//"sjtc1.l2.errors",form="formatted")
           open(iounit+2,file=TRIM(output_prefix)//"sjtc1.linf.errors",form="formatted")
@@ -4013,7 +4033,7 @@ contains
     l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
     linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
 
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        write(iounit+0,30)REAL(simday),l1
        write(iounit+1,30)REAL(simday),l2
        write(iounit+2,30)REAL(simday),linf
@@ -4029,5 +4049,86 @@ contains
 30  format(f11.6,4x,e13.6)
 
   end subroutine sj1_errors
+
+
+
+
+
+subroutine toy_chemistry_forcing(elem, nets, nete, tl, dt)
+  ! ---- Nick Lopez 7/2015
+  type (element_t)     , intent(inout), target                :: elem(:)
+  integer              , intent(in)                           :: nets
+  integer              , intent(in)                           :: nete
+  type (TimeLevel_t), intent(in)                              :: tl
+  real (kind=real_kind), intent(in)                           :: dt
+
+  real (real_kind)                         :: lat_center, lon_center, k1, k2
+  real (real_kind)                         :: cl, cl2, cly, r, d, e, el, f_cl, f_cl2
+  real (real_kind)                         :: lat,lon
+  integer                                  :: cl_index,cl2_index,i,j,ie,n0
+  integer, parameter                       :: allowNegChem=1
+
+  ! Center of k1. This is essentially a longitude offset of PI from Fig.1 of Lauritzen et. al
+  lat_center = DD_PI/9  
+  lon_center = 2*DD_PI/3
+
+  cl_index = 5
+  cl2_index = 6
+
+  do ie=nets, nete
+     do i=1, np
+        do j=1, np
+           lat = elem(ie)%spherep(i,j)%lat
+           lon = elem(ie)%spherep(i,j)%lon
+
+           cl = elem(ie)%state%p(i,j,cl_index,tl%n0)
+           cl2 = elem(ie)%state%p(i,j,cl2_index,tl%n0)
+           cly = cl + 2.0d0*cl2
+           k1 = SIN(lat)*SIN(lat_center) + COS(lat)*COS(lat_center)*COS(lon-lon_center)
+           if (k1<0.0) then
+              k1 = 0.0d0
+           endif
+           k2 = 1.0d0
+
+           r = k1 / (4.0d0*k2)
+           d = sqrt( r*r + 2.0d0*r*cly )
+           e = exp( -4.0d0*k2*d*dt)
+           if (abs(d*k2*dt) .gt. 1.0d-16) then
+              el = (1.0d0-e) / (d*dt)
+           else
+              el = 4.0d0*k2
+           endif
+
+           f_cl = -el * (cl-d+r) * (cl+d+r) / (1.0d0 + e + dt*el*(cl+r))
+           f_cl2 = -f_cl/2.0d0
+
+           if (allowNegChem==0) then
+              if (cl + f_cl*dt < 0.0d0) then
+                f_cl = (0.0d0 - cl) / dt
+                f_cl2 = -f_cl/2.0d0
+                elem(ie)%state%p(i,j,cl_index,tl%n0) = 0.0d0
+                elem(ie)%state%p(i,j,cl2_index,tl%n0) = cl2 + f_cl2*dt
+              else if (cl2 + f_cl2*dt < 0.0d0) then
+                f_cl2 = (0.0d0 - cl2) / dt
+                f_cl = -f_cl2*2.0d0
+                elem(ie)%state%p(i,j,cl_index,tl%n0) = cl + f_cl*dt
+                elem(ie)%state%p(i,j,cl2_index,tl%n0) = 0.0d0
+              else
+                elem(ie)%state%p(i,j,cl_index,tl%n0) = cl + f_cl*dt
+                elem(ie)%state%p(i,j,cl2_index,tl%n0) = cl2 + f_cl2*dt
+              endif
+
+           else ! Can allow chemistry to force negative values
+              elem(ie)%state%p(i,j,cl_index,tl%n0) = cl + f_cl*dt
+              elem(ie)%state%p(i,j,cl2_index,tl%n0) = cl2 + f_cl2*dt
+           endif
+        enddo
+     enddo
+  enddo
+
+ end subroutine 
+
+
+
 
 end module shallow_water_mod

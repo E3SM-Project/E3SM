@@ -282,9 +282,8 @@ contains
     logical :: Debug = .FALSE.
     logical :: use_advective_flux 
 
-    real (kind=real_kind) ::  notreliable
 
-
+    ! flux used for DG tracers in hybrid CG/DG option (npdg>0):
     if (test_case=="swtc1" .or. test_case=="vortex" .or. test_case=="swirl") then
        ! advection test cases support conservation form or advective form
        use_advective_flux=.true.
@@ -297,18 +296,14 @@ contains
           stop '(tracer_advection_formulation=1)'
        endif   
     endif
+    if (limiter_option /= 0 .and. kmass==-1) then
+       print *,'Error: limiter can only be applied for advection tests with kmass>0'
+       stop 
+    endif
 
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-
-    ! hyperviscosity can be applied in 3 different ways:
-    ! 1. added to the RHS within each RK stage ( 1 extra DSS per stage)
-    ! 2. time-split after each RK stage (2 extra DSS per stage)
-    ! 3. time-split after complete RK step ( 2 extra DSS per step)
-#define HYPERVIS_T1
-#undef HYPERVIS_T2
-#undef HYPERVIS_T3
 
 
     ! We want to make this leap-frog compliant
@@ -338,11 +333,7 @@ contains
 
 !group optimal based on iteration
        if (( limiter_option == 8 ).or.(limiter_option == 81 )) then
-	  if(kmass.ne.-1)then
-	    call neighbor_minmax(elem,hybrid,edge3,nets,nete,n0,pmin,pmax,kmass=kmass)
-	  else
-	    call neighbor_minmax(elem,hybrid,edge3,nets,nete,n0,pmin,pmax)
-	  endif
+          call neighbor_minmax(elem,hybrid,edge3,nets,nete,n0,pmin,pmax,kmass=kmass)
        endif
 
 
@@ -354,7 +345,6 @@ contains
        ! on the velocity grid...
        ! ===================================
 
-#ifdef HYPERVIS_T1
        ! compute weak biharmonic operator.  has mass matrix built in,
        ! but to fit into structure below, remove it for now:
 
@@ -421,12 +411,6 @@ contains
 	    enddo
 	enddo
 	endif
-#else
-       ptens=0
-       vtens=0
-! ---
-#endif
-! --- endif  HYPERVIS_T1
 
        do ie=nets,nete
           fcor   => elem(ie)%fcor
@@ -481,16 +465,14 @@ contains
 
           
           if ((limiter_option == 8))then
-             call limiter_optim_iter_full4(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
+             call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass)
-!             call limiter_optim_iter_full3(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
-!                  pmin(:,ie),pmax(:,ie),kmass,.true.,.true.)
           endif
 
           if ((limiter_option == 81))then
-             call limiter_optim_iter_full(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
-                  pmin(:,ie),pmax(:,ie),kmass,.true.,.false.,&
-                  notreliable)
+             pmax(:,ie)=pmax(:,ie)+9e19  ! disable max constraint
+             call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
+                  pmin(:,ie),pmax(:,ie),kmass)
           endif
           
           if ((limiter_option == 84))then
@@ -501,9 +483,9 @@ contains
                     k=3; pmin(k,ie)=.1d0
                  endif
              endif
- 	     call limiter_optim_iter_full(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
-               pmin(:,ie),pmax(:,ie),kmass,.true.,.false.,&
-		notreliable)
+             pmax(:,ie)=pmax(:,ie)+9e19  ! disable max constraint
+             call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
+                  pmin(:,ie),pmax(:,ie),kmass)
           endif
 
           if ( (limiter_option == 4) ) then
@@ -620,10 +602,8 @@ contains
              ! truncation + mass weighted redistribution:
              if (limiter_option==4) call limiter2d_zero(ptens(:,:,:,ie),elem(ie)%spheremp, kmass)
              ! Find optimal (l2 norm) solution which is closest to unlimited solution:
-             if (limiter_option==8) call limiter_optim_iter_full4(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
+             if (limiter_option==8) call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass)
-             !if (limiter_option==8) call limiter_optim_iter_full3(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
-              !    pmin(:,ie),pmax(:,ie),kmass,.true.,.true.)
           endif
           do k=1,nlev
              ! ====================================================
@@ -642,34 +622,13 @@ contains
           end do
        end do
 
-
-
-#ifdef HYPERVIS_T2
-       call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,n0,&
-            nets,nete,dtstage) 
-! ---
-#endif
-! --- endif  HYPERVIS_T2
-
        real_time =real_time + dtstage
-
 !this is only for output reasons, if velocities are prescribed
       do ie=nets,nete
 	  call set_prescribed_velocity(elem(ie),n0,real_time)
       enddo
-
-
     enddo ! stage loop
 
-    ! ====================================================
-    ! apply viscosity  
-    ! ====================================================
-#ifdef HYPERVIS_T3
-    call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,n0,&
-         nets,nete,dt) 
-! ---
-#endif
-! --- endif HYPERVIS_T3
 
     ! make leap-frog compliant
     ! after RK loop u^n containe u^{n+1} and u^{n+1} contains u^n
@@ -685,568 +644,28 @@ contains
 
 !-----------------------------------------------------------------------------------------------
 
-  subroutine limiter_optim_iter_full4(ptens,sphweights,minp,maxp,kmass)
+  subroutine limiter_optim_wrap(ptens,sphweights,minp,maxp,kmass)
 !THIS IS A NEW VERSION OF LIM8, from 3D code
 
     use kinds, only : real_kind
     use dimensions_mod, only : np, np, nlev
+    use derivative_mod, only : limiter_optim_iter_full
 
     real (kind=real_kind), dimension(nlev), intent(inout)   :: minp, maxp
     real (kind=real_kind), dimension(np,np,nlev), intent(inout)   :: ptens
     real (kind=real_kind), dimension(np,np), intent(in)   :: sphweights
     integer, intent(in) :: kmass
-
-    real (kind=real_kind), dimension(np,np) :: weights
-    real (kind=real_kind), dimension(np,np) :: ptens_mass
-    integer  k1, k, i, j, i1, i2
-    integer :: whois_neg(np*np), whois_pos(np*np), neg_counter, pos_counter
-
-    real (kind=real_kind) :: addmass, weightssum, mass
-    real (kind=real_kind) :: x(np*np),c(np*np)
-
-    real (kind=real_kind) :: al_neg(np*np), al_pos(np*np), howmuch
-    real (kind=real_kind) :: tol_limiter=1e-15
-
-    integer, parameter :: maxiter = 5
-
-    weights=sphweights
-
-!if kmass is valid number, we first get (\rho Q)/(\rho) fields 
-    if(kmass.ne.-1)then   
-	ptens_mass(:,:)=ptens(:,:,kmass)
-	weights=weights*ptens_mass
-	do k=1,nlev
-	  if(k.ne.kmass)then
-	    ptens(:,:,k)=ptens(:,:,k)/ptens_mass
-	  endif
-	enddo
-    endif
+    ! local variables
+    real (kind=real_kind), dimension(np,np,nlev) :: ptens_mass
+    integer :: k
 
     do k=1,nlev
-
-      if(k.ne.kmass)then
-
-      k1=1
-      do i=1,np
-	do j=1,np
-	  c(k1)=weights(i,j)
-	  x(k1)=ptens(i,j,k)
-	  k1=k1+1
-	enddo
-      enddo
-
-      mass=sum(c*x)
-
-      ! relax constraints to ensure limiter has a solution:
-      ! This is only needed if runnign with the SSP CFL>1 or 
-      ! due to roundoff errors
-      if( (mass/sum(c))<minp(k) ) then
-         minp(k)=mass/sum(c)
-      endif
-      if( (mass/sum(c))>maxp(k) ) then
-         maxp(k)=mass/sum(c)
-      endif
-
-      addmass=0.0d0
-      pos_counter=0;
-      neg_counter=0;
-      
-      ! apply constraints, compute change in mass caused by constraints 
-      do k1=1,np*np
-         if((x(k1)>=maxp(k)) ) then
-	    addmass=addmass+(x(k1)-maxp(k))*c(k1)
-	    x(k1)=maxp(k)
-	    whois_pos(k1)=-1
-         else
-            pos_counter=pos_counter+1;
-	    whois_pos(pos_counter)=k1;
-         endif
-         if((x(k1)<=minp(k)) ) then
-	    addmass=addmass-(minp(k)-x(k1))*c(k1)
-	    x(k1)=minp(k)
-	    whois_neg(k1)=-1
-         else
-	    neg_counter=neg_counter+1;
-	    whois_neg(neg_counter)=k1;
-         endif
-      enddo
-      
-      ! iterate to find field that satifies constraints and is l2-norm closest to original 
-      weightssum=0.0d0
-      if(addmass>0)then
-         do i2=1,maxIter
-            weightssum=0.0
-            do k1=1,pos_counter
-               i1=whois_pos(k1)
-               weightssum=weightssum+c(i1)
-               al_pos(i1)=maxp(k)-x(i1)
-            enddo
-            
-            if((pos_counter>0).and.(addmass>tol_limiter*abs(mass)))then
-               do k1=1,pos_counter
-                  i1=whois_pos(k1)
-                  howmuch=addmass/weightssum
-                  if(howmuch>al_pos(i1))then
-                     howmuch=al_pos(i1)
-                     whois_pos(k1)=-1
-                  endif
-                  addmass=addmass-howmuch*c(i1)
-                  weightssum=weightssum-c(i1)
-                  x(i1)=x(i1)+howmuch
-               enddo
-               !now sort whois_pos and get a new number for pos_counter
-               !here neg_counter and whois_neg serve as temp vars
-               neg_counter=pos_counter
-               whois_neg=whois_pos
-               whois_pos=-1
-               pos_counter=0
-               do k1=1,neg_counter
-                  if(whois_neg(k1).ne.-1)then
-                     pos_counter=pos_counter+1
-                     whois_pos(pos_counter)=whois_neg(k1)
-                  endif
-               enddo
-            else
-               exit
-            endif
-         enddo
-      else
-         do i2=1,maxIter
-            weightssum=0.0
-            do k1=1,neg_counter
-               i1=whois_neg(k1)
-               weightssum=weightssum+c(i1)
-               al_neg(i1)=x(i1)-minp(k)
-            enddo
-            
-            if((neg_counter>0).and.((-addmass)>tol_limiter*abs(mass)))then
-               
-               do k1=1,neg_counter
-                  i1=whois_neg(k1)
-                  howmuch=-addmass/weightssum
-                  if(howmuch>al_neg(i1))then
-                     howmuch=al_neg(i1)
-                     whois_neg(k1)=-1
-                  endif
-                  addmass=addmass+howmuch*c(i1)
-                  weightssum=weightssum-c(i1)
-                  x(i1)=x(i1)-howmuch
-               enddo
-               !now sort whois_pos and get a new number for pos_counter
-               !here pos_counter and whois_pos serve as temp vars
-               pos_counter=neg_counter
-               whois_pos=whois_neg
-               whois_neg=-1
-               neg_counter=0
-               do k1=1,pos_counter
-                  if(whois_pos(k1).ne.-1)then
-                     neg_counter=neg_counter+1
-                     whois_neg(neg_counter)=whois_pos(k1)
-                  endif
-               enddo
-            else
-               exit
-            endif
-            
-         enddo
-         
-      endif
-      
-      k1=1
-      do i=1,np
-         do j=1,np
-            ptens(i,j,k)=x(k1)
-            k1=k1+1
-         enddo
-      enddo
-      
-      endif !if k is not kmass
-   enddo
-   
-    if(kmass.ne.-1)then   
-	do k=1,nlev
-	  if(k.ne.kmass)then
-	    ptens(:,:,k)=ptens(:,:,k)*ptens_mass
-	  endif
-	enddo
-    endif
-
-  end subroutine limiter_optim_iter_full4
-
-
-!----------------------------------------------------------------------------
-  subroutine limiter_optim_iter_full3(ptens,sphweights,minp,maxp,kmass,checkmin,checkmax)
-!The idea here is the following: We need to find a grid field which is closest
-!to the initial field (in terms of a weighted sum), but satisfies the constraints.
-!So, first we find values which do not satisfy constraints and bring these values
-!to a closest constraint. This way we introduce some mass change (addmass),
-!so, we redistribute addmass in the way that error is smallest. This redistribution might
-!violate constraints (though I think the solution is given by one iteration only if the
-!problem is well-posed) due to round off, for example; thus, we do a few iterations. 
-
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev
-    use control_mod, only : tol_limiter
-
-    logical, intent(in) :: checkmin,checkmax
-    real (kind=real_kind), dimension(nlev), intent(inout)   :: minp
-    real (kind=real_kind), dimension(nlev), intent(inout)   :: maxp
-    real (kind=real_kind), dimension(np,np,nlev), intent(inout)   :: ptens
-    real (kind=real_kind), dimension(np,np), intent(in)   :: sphweights
-    integer, intent(in) :: kmass
- 
-    real (kind=real_kind), dimension(np,np) :: weights
-    real (kind=real_kind), dimension(np,np) :: ptens_mass
-    integer  k1, k, i, j, i1, i2
-    integer :: pos_counter, neg_counter, whois_neg(np*np), whois_pos(np*np)
-    real (kind=real_kind) :: addmass, weightssum, mass
-    real (kind=real_kind) :: x(np*np),c(np*np)
-    real (kind=real_kind) :: al_neg(np*np), al_pos(np*np), howmuch
-
-    integer, parameter :: maxIter=10
-
-    weights=sphweights
-
-!!!!this is a fix for huge tracers, otherwise we'd expect undershoots do not accumulate badly
-    if(minp(1)<0) minp(1)=0.0d0
-
-!if kmass is valid number, we first get (\rho Q)/(\rho) fields 
-    if(kmass.ne.-1)then   
-	ptens_mass(:,:)=ptens(:,:,kmass)
-	weights=weights*ptens_mass
-	do k=1,nlev
-	  if(k.ne.kmass)then
-	    ptens(:,:,k)=ptens(:,:,k)/ptens_mass
-	  endif
-	enddo
-    endif
-
-    do k=1,nlev
-
-      if(k.ne.kmass)then
-	k1=1
-	do i=1,np
-	  do j=1,np
-	    c(k1)=weights(i,j)
-	    x(k1)=ptens(i,j,k)
-	    k1=k1+1
-	  enddo
-	enddo
-
-        mass=sum(c*x)
-
-        if((mass-minp(k)*sum(c)<0.0).and.checkmin)then
-	   minp(k)=mass/sum(c)
-        endif
-        if((mass-maxp(k)*sum(c)>0.0).and.checkmax)then
-	   maxp(k)=mass/sum(c)
-        endif
-
-	addmass=0.0d0
-	pos_counter=0;
-        neg_counter=0;
-
-	do k1=1,np*np
-	  if((x(k1)>=maxp(k)).AND.(checkmax))then
-	    addmass=addmass+(x(k1)-maxp(k))*c(k1)
-	    x(k1)=maxp(k)
-	    whois_pos(k1)=-1
-          else
-            pos_counter=pos_counter+1;
-	    whois_pos(pos_counter)=k1;
-	  endif
-	  if((x(k1)<=minp(k)).AND.(checkmin))then
-	    addmass=addmass-(minp(k)-x(k1))*c(k1)
-	    x(k1)=minp(k)
-	    whois_neg(k1)=-1
-	  else
-	    neg_counter=neg_counter+1;
-	    whois_neg(neg_counter)=k1;
-	  endif
-	enddo
-
-	weightssum=0.0d0
-
-	if(addmass>0)then
-
-	    do i2=1,maxIter
-
-		weightssum=0.0
-		do k1=1,pos_counter
-		    i1=whois_pos(k1)
-		    weightssum=weightssum+c(i1)
-		    al_pos(i1)=maxp(k)-x(i1)
-		enddo
-
-!		if((pos_counter>0).and.(addmass>1e-20))then
-		if((pos_counter>0).and.(addmass>tol_limiter*abs(mass)))then
-
-		  do k1=1,pos_counter
-		    i1=whois_pos(k1)
-		    howmuch=addmass/weightssum
-		    if(howmuch>al_pos(i1))then
-			howmuch=al_pos(i1)
-			whois_pos(k1)=-1
-		    endif
-		    addmass=addmass-howmuch*c(i1)
-		    weightssum=weightssum-c(i1)
-		    x(i1)=x(i1)+howmuch
-		  enddo
-		  !now sort whois_pos and get a new number for pos_counter
-		  !here neg_counter and whois_neg serve as temp vars
-		  neg_counter=pos_counter
-		  whois_neg=whois_pos
-		  whois_pos=-1
-		  pos_counter=0
-		  do k1=1,neg_counter
-		    if(whois_neg(k1).ne.-1)then
-		      pos_counter=pos_counter+1
-		      whois_pos(pos_counter)=whois_neg(k1)
-		    endif
-		  enddo
-		else
-!			  if (abs(sum(c*x))>0) x=x*(mass+addmass)/sum(c*x)
-!			  x=x+addmass/sum(c)
-		  exit
-		endif
-	    enddo
-	else
-	    do i2=1,maxIter
-
-		weightssum=0.0
-		do k1=1,neg_counter
-		    i1=whois_neg(k1)
-		    weightssum=weightssum+c(i1)
-		    al_neg(i1)=x(i1)-minp(k)
-		enddo
-
-!		if((neg_counter>0).and.((-addmass)>1e-20))then
-		if((neg_counter>0).and.((-addmass)>tol_limiter*abs(mass)))then
-
-		  do k1=1,neg_counter
-		    i1=whois_neg(k1)
-		    howmuch=-addmass/weightssum
-		    if(howmuch>al_neg(i1))then
-			howmuch=al_neg(i1)
-			whois_neg(k1)=-1
-		    endif
-		    addmass=addmass+howmuch*c(i1)
-		    weightssum=weightssum-c(i1)
-		    x(i1)=x(i1)-howmuch
-		  enddo
-		  !now sort whois_pos and get a new number for pos_counter
-		  !here pos_counter and whois_pos serve as temp vars
-		  pos_counter=neg_counter
-		  whois_pos=whois_neg
-		  whois_neg=-1
-		  neg_counter=0
-		  do k1=1,pos_counter
-		    if(whois_pos(k1).ne.-1)then
-		      neg_counter=neg_counter+1
-		      whois_neg(neg_counter)=whois_pos(k1)
-		    endif
-		  enddo
-		else
-!			 if (abs(sum(c*x))>0) x=x*(mass+addmass)/sum(c*x)
-!			 x=x+addmass/sum(c)
-		  exit
-		endif
-	    enddo
-	endif
-
-
-	k1=1
-	do i=1,np
-	  do j=1,np
-	    ptens(i,j,k)=x(k1)
-	    k1=k1+1
-	  enddo
-	enddo
-
-      endif!if k is not kmass
+       ptens_mass(:,:,k)=ptens(:,:,kmass) ! save mass, since 3D limiter will apply limiter to it
     enddo
+    call limiter_optim_iter_full(ptens,sphweights,minp,maxp,ptens_mass)
+    ptens(:,:,kmass) = ptens_mass(:,:,1)
+  end subroutine
 
-    if(kmass.ne.-1)then   
-	do k=1,nlev
-	  if(k.ne.kmass)then
-	    ptens(:,:,k)=ptens(:,:,k)*ptens_mass
-	  endif
-	enddo
-    endif
-
-  end subroutine limiter_optim_iter_full3
-
-
-
-!--------------------------------------------------------------------------
-
-
-  subroutine limiter_optim_iter_full(ptens,sphweights,minp,maxp,kmass,checkmin,checkmax, notreliable)
-!The idea here is the following: We need to find a grid field which is closest
-!to the initial field (in terms of a weighted sum), but satisfies the constraints.
-!So, first we find values which do not satisfy constraints and bring these values
-!to a closest constraint. This way we introduce some mass change (addmass),
-!so, we redistribute addmass in the way that error is smallest. This redistribution might
-!violate constraints (though I think the solution is given by one iteration only if the
-!problem is well-posed) due to round off, for example; thus, we do a few iterations. 
-
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, nlev
-    use control_mod, only : tol_limiter
-
-    logical, intent(in) :: checkmin,checkmax
-    real (kind=real_kind), dimension(nlev), intent(inout)   :: minp
-    real (kind=real_kind), dimension(nlev), intent(inout)   :: maxp
-    real (kind=real_kind), dimension(np,np,nlev), intent(inout)   :: ptens
-    real (kind=real_kind), dimension(np,np), intent(in)   :: sphweights
-    integer, intent(in) :: kmass
-    real (kind=real_kind),  intent(out) :: notreliable
- 
-    real (kind=real_kind), dimension(np,np) :: weights
-    real (kind=real_kind), dimension(np,np) :: ptens_mass
-    integer  k1, k, i, j, iter
-    logical :: whois_neg(np*np), whois_pos(np*np)
-    real (kind=real_kind) :: addmass, weightssum, mass
-    real (kind=real_kind) :: x(np*np),c(np*np)
-
-    integer, parameter :: maxiter = 10
-
-    weights=sphweights
-    notreliable=0
-
-!if kmass is valid number, we first get (\rho Q)/(\rho) fields 
-    if(kmass.ne.-1)then   
-	ptens_mass(:,:)=ptens(:,:,kmass)
-	weights=weights*ptens_mass
-	do k=1,nlev
-	  if(k.ne.kmass)then
-	    ptens(:,:,k)=ptens(:,:,k)/ptens_mass
-	  endif
-	enddo
-    endif
-
-    do k=1,nlev
-
-      if(k.ne.kmass)then
-	k1=1
-	do i=1,np
-	  do j=1,np
-	    c(k1)=weights(i,j)
-	    x(k1)=ptens(i,j,k)
-	    k1=k1+1
-	  enddo
-	enddo
-
-        mass=sum(c*x)
-
-!first, check if the problem has a solution
-!if it seens that it does not, we initialize a flag, 
-!but the limiter still might do a good job
-        if((mass-minp(k)*sum(c)<-tol_limiter).and.checkmin)then
-           notreliable=1
-	   minp(k)=mass/sum(c)
-        endif
-        if((mass-maxp(k)*sum(c)>tol_limiter).and.checkmax)then
-           notreliable=1
-	   maxp(k)=mass/sum(c)
-        endif
-
-        iter=0
-        do 
-          iter=iter+1
-
-          if(iter>maxiter)then
-	    notreliable=1.0
-            exit
-          endif
-
-	  addmass=0.0d0
-
-	  do k1=1,np*np
-	    whois_neg(k1)=.true.
-	    whois_pos(k1)=.true.
-	    if((x(k1)>=maxp(k)).AND.(checkmax))then
-	      addmass=addmass+(x(k1)-maxp(k))*c(k1)
-	      x(k1)=maxp(k)
-	      whois_pos(k1)=.false.
-	    endif
-	    if((x(k1)<=minp(k)).AND.(checkmin))then
-	      addmass=addmass-(minp(k)-x(k1))*c(k1)
-	      x(k1)=minp(k)
-	      whois_neg(k1)=.false.
-	    endif
-	  enddo
-
-	  if(abs(addmass)>tol_limiter*abs(mass))then
-
-	    weightssum=0.0d0
-	    if(addmass>0)then
-	      do k1=1,np*np
-		if(whois_pos(k1))then
-		  weightssum=weightssum+c(k1)
-		endif
-	      enddo
-              if(weightssum>0.0)then
-		do k1=1,np*np
-		  if(whois_pos(k1))then
-		    x(k1)=x(k1)+addmass/weightssum
-		  endif
-		enddo
-              else
-	        x=x+addmass/sum(c)
-		notreliable=1
-		exit
-	      endif
-            else
-	      do k1=1,np*np
-		if(whois_neg(k1))then
-		  weightssum=weightssum+c(k1)
-		endif
-	      enddo
-              if(weightssum>0.0)then
-		do k1=1,np*np
-		  if(whois_neg(k1))then
-		    x(k1)=x(k1)+addmass/weightssum
-		  endif
-		enddo
-              else
-	        x=x+addmass/sum(c)
-		notreliable=1
-		exit
-	      endif
-            endif
-
-	  else
-            x=x+addmass/sum(c)
-	    exit
-	  endif
-
-	enddo!end of iteration
-
-	k1=1
-	do i=1,np
-	  do j=1,np
-	    ptens(i,j,k)=x(k1)
-	    k1=k1+1
-	  enddo
-	enddo
-
-
-      endif
-    enddo
-
-
-    if(kmass.ne.-1)then   
-	do k=1,nlev
-	  if(k.ne.kmass)then
-	    ptens(:,:,k)=ptens(:,:,k)*ptens_mass
-	  endif
-	enddo
-    endif
-
-
-  end subroutine limiter_optim_iter_full
-!--------------------------------------------------------------------------
 
 
   subroutine limiter2d_zero(Q,spheremp,kmass)
@@ -1267,29 +686,18 @@ contains
     integer k
     real (kind=real_kind) :: qmin
 
-    if(kmass.ne.-1)then
-      do k=nlev,1,-1
-	qmin=0
-	if (test_case=='swirl') then
-	    if (k.eq.1) qmin=0.0d0   ! lifted cosine bell
-	    if (k.eq.3) qmin=0.1d0   ! lifted slotted cylinder
-        endif
-	if(k.ne.kmass)then
+    do k=nlev,1,-1
+       qmin=0
+       if (test_case=='swirl') then
+          if (k.eq.1) qmin=0.0d0   ! lifted cosine bell
+          if (k.eq.3) qmin=0.1d0   ! lifted slotted cylinder
+       endif
+       if(k.ne.kmass)then
 	  Q(:,:,k)=Q(:,:,k)/Q(:,:,kmass)
-	  call limiter2d_min_onelevel(Q(:,:,k),spheremp(:,:)*Q(:,:,kmass),qmin)
-	  Q(:,:,k)=Q(:,:,k)*Q(:,:,kmass)
-	endif
-      enddo
-    else
-      do k=nlev,1,-1
-	qmin=0
-	if (test_case=='swirl') then
-	    if (k.eq.1) qmin=0.1d0   ! lifted cosine bell
-	    if (k.eq.3) qmin=0.1d0   ! lifted slotted cylinder
-	endif
-	call limiter2d_min_onelevel(Q(:,:,k),spheremp(:,:),qmin)
-      enddo
-    endif
+          call limiter2d_min_onelevel(Q(:,:,k),spheremp(:,:)*Q(:,:,kmass),qmin)
+          Q(:,:,k)=Q(:,:,k)*Q(:,:,kmass)
+       endif
+    enddo
   end subroutine limiter2d_zero
 
 
@@ -1429,21 +837,9 @@ contains
     real (kind=real_kind), dimension(np,np) :: lap_p
     real (kind=real_kind), dimension(np,np,2) :: lap_v
     real (kind=real_kind) :: v1,v2,dt
-    real (kind=real_kind) :: pmin(nlev,nets:nete),pmax(nlev,nets:nete)
-    real (kind=real_kind) :: notreliable
 
     if (hypervis_order == 0 ) return;
     if (nu_s == 0 .and. nu == 0 ) return;
-
-!group of lim3 limiters, redistribution
-    if ( (limiter_option == 8 ).or.( limiter_option == 81 )) then
-      if(kmass.ne.-1)then
-	call neighbor_minmax(elem,hybrid,edge3,nets,nete,nt,pmin,pmax,kmass=kmass)
-      else
-	call neighbor_minmax(elem,hybrid,edge3,nets,nete,nt,pmin,pmax)
-      endif
-    endif
-
 
 
     do ie=nets,nete
@@ -1550,36 +946,6 @@ contains
                    enddo
                 enddo
              enddo
-
-             ! smooth some of the negativities introduced by diffusion:
-             if (test_case=="swtc1" .or. test_case=="vortex" .or. test_case=="swirl") then
-
-                   ! this routine takes p  (not p*spheremp)
-                   do k=1,nlev
-                      elem(ie)%state%p(:,:,k,nt)  =  elem(ie)%state%p(:,:,k,nt)/spheremp(:,:)
-                   enddo
-
-		   if ((limiter_option == 8))then
-		      call limiter_optim_iter_full(elem(ie)%state%p(:,:,:,nt),elem(ie)%spheremp(:,:),&
-		      pmin(:,ie),pmax(:,ie),kmass,.true.,.true.,&
-			notreliable)
-		   elseif ((limiter_option == 81))then
-		      call limiter_optim_iter_full(elem(ie)%state%p(:,:,:,nt),elem(ie)%spheremp(:,:),&
-		      pmin(:,ie),pmax(:,ie),kmass,.true.,.false.,notreliable)
-		   elseif ((limiter_option == 84))then
-		      pmin(:,ie)=0.0d0
-		      call limiter_optim_iter_full(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
-			  pmin(:,ie),pmax(:,ie),kmass,.true.,.false.,notreliable)
-          	   else
-		      call limiter2d_zero(elem(ie)%state%p(:,:,:,nt),elem(ie)%spheremp,kmass)
-		   endif
-
-                   do k=1,nlev
-                      elem(ie)%state%p(:,:,k,nt)  =  elem(ie)%state%p(:,:,k,nt)*spheremp(:,:)
-                   enddo
-
-             endif
-
 
              kptr=0
              call edgeVpack(edge3, elem(ie)%state%p(:,:,:,nt),nlev,kptr,ie)
