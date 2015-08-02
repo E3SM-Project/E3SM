@@ -4,50 +4,55 @@
 
 <compsets>
 
-  <compset_definitions>
+  <compset_names>
 
     <!---TG compsets -->
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gl">
       <alias>TG</alias>
       <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TG1850"</alias>
+    <COMPSET grid="g%gl">
+      <alias>TG1850</alias>
       <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
       </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TGHIST"</alias>     
+    <COMPSET grid="g%gl">
+      <alias>TGHIST</alias>     
       <lname>HIST_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TGRCP85"</alias>    
+    <COMPSET grid="g%gl">
+      <alias>TGRCP85</alias>    
       <lname>RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TGIS2"</alias>      
+    <COMPSET grid="g%gl">
+      <alias>TGIS2</alias>      
       <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TG1850IS2"</alias>  
+    <COMPSET grid="g%gl">
+      <alias>TG1850IS</alias>  
+      <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="g%gl">
+      <alias>TG1850IS2</alias>  
       <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TGHISTIS2"</alias>  
+    <COMPSET grid="g%gl">
+      <alias>TGHISTIS2</alias>  
       <lname>HIST_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
-      <alias>TGRCP85IS2"</alias> 
+    <COMPSET grid="g%gl">
+      <alias>TGRCP85IS2</alias> 
       <lname>RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
     </COMPSET>
 
-  </compset_definitions>
+  </compset_names>
 
   <!-- ===============================================================================  -->
 

@@ -167,6 +167,18 @@
       precedence over any settings for finidat in the $CASEROOT/user_clm_clm file.</desc>
   </entry>
 
+  <entry id="GLC_NEC"> 
+    <GLC_NEC compset="_CISM">10</GLC_NEC> 
+    <type>integer</type>
+    <valid_values>0,1,3,5,10,36</valid_values> 
+    <default_value>0</default_value>
+    <values>
+      <value compset="CISM">10</value>
+    </values>
+    <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
+    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used)</desc>
+  </entry>
+
   <description>
     <desc compset="_CLM40"			>clm4.0 physics:</desc>
     <desc compset="_CLM40%[^_]*SP"		>clm4.0 Satellite phenology:</desc>

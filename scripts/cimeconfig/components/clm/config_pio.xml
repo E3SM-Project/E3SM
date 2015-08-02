@@ -8,7 +8,7 @@
   <mach name="yellowstone">
     <PIO_TYPENAME>netcdf</PIO_TYPENAME> 
     <PIO_TYPENAME grid="l%0.9">pnetcdf</PIO_TYPENAME>
-    <PIO_TYPENAME grid="l%hcru">pnetcdf</PIO_TYPENAME>
+    <PIO_TYPENAME grid="l%.+cru">pnetcdf</PIO_TYPENAME>
     <PIO_TYPENAME grid="l%ne30">pnetcdf</PIO_TYPENAME>
     
     <PIO_STRIDE>-1</PIO_STRIDE> 

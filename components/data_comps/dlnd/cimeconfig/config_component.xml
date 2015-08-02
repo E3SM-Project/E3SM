@@ -86,7 +86,7 @@
     <desc>starting year to loop data over (only used for CPLHIST mode)</desc>
   </entry>
 
-  <entry name="DLND_CPLHIST_YR_END"> 
+  <entry id="DLND_CPLHIST_YR_END"> 
     <type>integer</type>
     <default_value>1</default_value>
     <values>

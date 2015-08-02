@@ -124,12 +124,12 @@
       </pes>
     </mach>
   </grid>
-  <grid name="hcru">
+  <grid name="l%360x720cru">
     <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
-	  <ntasks_atm>600</ntasks_atm> 
+	  <ntasks_atm>30</ntasks_atm> 
 	  <ntasks_lnd>600</ntasks_lnd>           
 	  <ntasks_rof>600</ntasks_rof> 
 	  <ntasks_ice>600</ntasks_ice> 

@@ -237,10 +237,10 @@ sub _listCompsets
 
 	printf("     alias: %-25s longname: %-96s \n",$alias,$lname);
         if ( $grid) {
-        printf("                                                grid match:  %-96s \n", _clean($grid) );
+        printf("                                                grid match:  %-96s \n", $grid );
         }
         if ($support) {
-        printf("                                                support level    :  %-96s \n", _clean($support) );
+        printf("                                                support level    :  %-96s \n", $support );
         }
     }    
     print "\n";

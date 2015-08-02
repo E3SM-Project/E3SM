@@ -173,7 +173,7 @@ sub getCompsetLongname
 	unless ($found) { 
 	    print "ERROR getCompsetLongname: no match for compset $compset_input \n";
 	    print "  to see supported compsets issue \n";
-	    print "  create_newcase -list compsets \n";
+	    print "  ./manage_case -list compsets -compsets_setby <target component name>\n";
 	    die "setCompset: exiting\n"; 
 	}
 	my @lname_nodes = $nodes[0]->findnodes("./lname");

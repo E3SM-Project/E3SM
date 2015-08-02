@@ -260,88 +260,104 @@
 
     <!---IG compsets -->
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IG1850</alias>         
       <lname>1850_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IG1850CLM45</alias>    
       <lname>1850_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IG</alias>             
       <lname>2000_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IGCLM45</alias>        
       <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IGCLM45IS2</alias>     
       <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_CISM2_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IGHIST</alias> 
       <lname>HIST_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>IGHISTCLM45</alias>
       <lname>HIST_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
-      <alias>IG1850CN</alias>
-      <lname>1850_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
+
+    <COMPSET grid="g%gland">
+      <alias>IGHISTCLM45CN</alias>
+      <lname>HIST_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
-      <alias>IG1850CLM50</alias>
-      <lname>1850_DATM%QIA_CLM50%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
-    </COMPSET>
-    <COMPSET grid="gland">
-      <alias>IGCN</alias>       
-      <lname>2000_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
-    </COMPSET>
-    <COMPSET grid="gland">
-      <alias>IGCLM45BGC</alias> 
-      <lname>2000_DATM%QIA_CLM45%BGC_SICE_SOCN_RTM_CISM1_SWAV</lname>
-    </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
       <alias>IGHISTCN</alias>   
       <lname>HIST_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
+      <alias>IG1850CN</alias>
+      <lname>1850_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="g%gland">
+      <alias>IG1850CLM50</alias>
+      <lname>1850_DATM%QIA_CLM50%SP_SICE_SOCN_RTM_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="g%gland">
+      <alias>IGCN</alias>       
+      <lname>2000_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="g%gland">
+      <alias>IGCLM45BGC</alias> 
+      <lname>2000_DATM%QIA_CLM45%BGC_SICE_SOCN_RTM_CISM1_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET grid="g%gland">
       <alias>IGRCP85CN</alias>
       <lname>RCP8_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
       <alias>IGRCP60CN</alias>
       <lname>RCP6_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
       <alias>IGRCP45CN</alias>
       <lname>RCP4_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
       <alias>IGRCP26CN</alias>
       <lname>RCP2_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
       <alias>IGRCP85CLM45CN</alias>
       <lname>RCP8_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
-    <COMPSET grid="gland">
+
+    <COMPSET grid="g%gland">
       <alias>IGRCP45CLM45CN</alias>
       <lname>RCP4_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
     <!-- IG for clm testing -->
 
-    <COMPSET grid="gland">
+    <COMPSET grid="g%gland">
       <alias>ICLM45GLCMEC</alias>  
       <lname>2000_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV_TEST</lname>
     </COMPSET>
@@ -439,17 +455,6 @@
 
     <RUN_REFCASE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN_">I2000CN_f09_g16_c100503</RUN_REFCASE>   
     <RUN_REFDATE grid="a%0.9x1.25_l%0.9x1.25_.*_r%r05_m%gx1v6" compset="RCP8_DATM%QIA_CLM40%CN_">0001-01-01</RUN_REFDATE> 
-
-    <CISM_PHYS compset="CISM1">cism1</CISM_PHYS>
-    <CISM_PHYS compset="CISM2">cism2</CISM_PHYS>
-
-    <GLC_NEC compset="_CISM">10</GLC_NEC> 
-
-    <GLC_TWO_WAY_COUPLING compset="_CLM45.+CISM">TRUE</GLC_TWO_WAY_COUPLING>
-    <GLC_TWO_WAY_COUPLING compset="_CLM50.+CISM">TRUE</GLC_TWO_WAY_COUPLING>
-    <!-- Turn on two-way coupling for TG compsets - even though there are no
-	 feedbacks for a TG compset, this will give us additional diagnostics -->
-    <GLC_TWO_WAY_COUPLING compset="_DLND.+CISM">TRUE</GLC_TWO_WAY_COUPLING>
 
   </compset_variables>
 

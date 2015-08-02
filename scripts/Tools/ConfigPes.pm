@@ -254,7 +254,8 @@ sub _setPESsettings
 	}
     }
     print "ConfigPES: target grid match is $target_grid \n";
-    print "ConfigPES: grid match is $grid_set and machine match is $mach_set\n";
+    print "ConfigPES: grid match is $grid_set \n";
+    print "ConfigPES: machine match is $mach_set\n";
 
     if (($mach_set ne 'any') || ($grid_set ne 'any')) {
 	# Now search the pes
@@ -323,11 +324,11 @@ sub _setPESsettings
     }
 
     # --------------------------------------
-    # override settings
+    # override pes settings
     # --------------------------------------
     
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($override_file);
-    foreach my $node_grid ($xml->findnodes("./config_pes/pes_override/grid")) 
+    foreach my $node_grid ($xml->findnodes(".//pes_override/*")) 
     {
 	my $gridname = $node_grid->getAttribute('name');
 	if (($gridname eq 'any') || ($gridname =~ /$grid_set/ )) 

@@ -123,7 +123,7 @@ sub setTargetGridMatch
 	$target_grid = 'oi%' . "$grid";
     }
     if ($primary_component eq 'cism') {
-	my $grid =  $cfg_ref->get('GLC_GRID');
+	my $grid =  $cfg_ref->get('CISM_GRID');
 	$target_grid = 'g%' . "$grid";
     }
     if ($primary_component eq 'allactive') {

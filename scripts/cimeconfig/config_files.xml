@@ -145,12 +145,13 @@
     <entry id="TESTS_MODS_DIR">
       <type>char</type>
       <values>
-	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/testmods_dirs</value>
 	<value component="drv"      >$CIMEROOT/driver_cpl/cimetest/testmods_dirs</value>
+	<value component="allactive">$CIMEROOT/scripts/cimeconfig/components/allactive/testmods_dirs</value>
 	<value component="cam"      >$SRCROOT/components/cam/cimetest/testmods_dirs</value>
 	<value component="cism"     >$SRCROOT/components/cism/cimetest/testmods_dirs/cism</value>
 	<value component="clm"      >$SRCROOT/components/clm/cimetest/testmods_dirs</value>
 	<value component="cice"     >$SRCROOT/components/cice/cimetest/testmods_dirs</value>
+	<value component="rtm"      >$SRCROOT/components/rtm/cimetest/testmods_dirs</value>
 	<value component="pop"      >$SRCROOT/components/pop/cimetest/testmods_dirs</value>
       </values>
       <group>case_last</group>

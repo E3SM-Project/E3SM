@@ -408,7 +408,7 @@ foreach my $stream ( @streams ) {
 
 	# Create the streams txt file for this stream (from a generic template)
 	my $stream_template = Streams::TemplateGeneric->new( \%stream_template_opts );
-	$stream_template->Read( "${CASEROOT}/Buildconf/dice.template.streams.xml" );
+	$stream_template->Read( "${CASEROOT}/Buildconf/dlnd.template.streams.xml" );
 	$stream_template->Write( $outstream );
 	
 	# Append to dice.input_data_list

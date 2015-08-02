@@ -1223,7 +1223,7 @@ sub runCreateNewcase
 		$testmods = "$xml_testmod_dir/".$testmods;
 		$cn_args .= " -user_mods_dir $testmods";
 	    } else {
-		die "ERROR: Can NOT find testmod directory for $comp\n";
+		die "ERROR create_test: CANNOT find testmod directory for $comp\n";
 	    }
 	}
     }

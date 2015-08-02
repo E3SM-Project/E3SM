@@ -398,7 +398,6 @@ print "File that specifies possible compsets is $compsets_file \n";
 #     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'  
 
 # First determine compset longname TODO: remove redundancy of support level
-
 my ($compset_longname, $compset_aliasname, $support_level) = 
     ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
 $config->set('COMPSET', "$compset_longname"); 

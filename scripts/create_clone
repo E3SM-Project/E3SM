@@ -207,30 +207,16 @@ my $machdir     = `./xmlquery MACHDIR -value`;
 my $mach        = `./xmlquery MACH -value`;
 my $username     = "$ENV{'USER'}"; #TODO - change ccsmuser to username
 
-$sysmod = "./xmlchange CCSMUSER=$username";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "./xmlchange USER=$username";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "./xmlchange CASEROOT=$caseroot";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "./xmlchange CASE=$case";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "./xmlchange BUILD_COMPLETE=FALSE";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "xmlchange CONTINUE_RUN=FALSE";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "xmlchange RESUBMIT=0";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CCSMUSER=$username"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange USER=$username"      ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CASEROOT=$caseroot"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CASE=$case"          ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange BUILD_COMPLETE=FALSE"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CONTINUE_RUN=FALSE"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange RESUBMIT=0"          ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 if ($opts{'mach_dir'}) {
-    $sysmod = "xmlchange MACHIDR=$opts{'mach_dir'}";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange MACHIDR=$opts{'mach_dir'}"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 my $repotag="tag unknown";
 if (-f "$cimeroot/ChangeLog") { 
@@ -239,7 +225,8 @@ if (-f "$cimeroot/ChangeLog") {
 my @repotag = split(/ /,$repotag); 
 $repotag = @repotag[2]; 
 chomp($repotag);
-$sysmod = "xmlchange CCSM_REPOTAG=$repotag";
+$sysmod = "./xmlchange CCSM_REPOTAG=$repotag";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Set project id 
 # Note: we do not just copy this from the clone because it seems likely that
@@ -278,14 +265,10 @@ if (defined $opts{'testname'}) {
 }
 
 # Delete files
-$sysmod = "rm -f $caseroot/LockedFiles/*";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/logs/*";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/timing/*";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/TestStatus*";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -f $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/logs/*"      ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/timing/*"    ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/TestStatus*" ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Copy env_case.xml in locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked";
@@ -314,7 +297,8 @@ require Batch::BatchMaker;
 
 # --- env_archive.xml doesn't use the id / value pairs do needs to be read from
 # --- config_archive.xml file in the scriptsroot/Tools/ directory
-$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/Tools");
+#TODO - the following should not be needed
+#$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/Tools");
 
 # --- Create $case.build
 $sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";

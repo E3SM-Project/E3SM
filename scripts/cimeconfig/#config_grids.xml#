@@ -369,24 +369,6 @@
       <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland20_w%null</lname>
     </GRID>
 
-    <GRID compset="_CISM">
-      <sname>T31_gx3v7_gl5UM</sname>
-      <alias>T31_g37_gl5UM</alias>
-      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
-    </GRID> <!-- back compat -->
-
-    <GRID compset="_CISM">
-      <sname>1.9x2.5_gx1v6_gl5UM</sname>
-      <alias>f19_g16_gl5UM</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </GRID> <!-- back compat -->
-
-    <GRID compset="_CISM">
-      <sname>0.9x1.25_gx1v6_gl5UM</sname>
-      <alias>f09_g16_gl5UM</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </GRID> <!-- back compat -->
-
     <GRID compset="DOCN.*_CISM">
       <sname>1.9x2.5_1.9x2.5_gland10</sname>
       <alias>f19_f19_gl10</alias>
@@ -394,21 +376,46 @@
     </GRID>
 
     <GRID compset="DOCN.*_CISM">
-      <sname>T31_T31_gl5UM</sname>
-      <alias>T31_T31_gl5UM</alias>
+      <sname>T31_T31_gl5</sname>
+      <alias>T31_T31_gl5</alias>
       <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
     </GRID> <!-- back compat -->
 
     <GRID compset="DOCN.*_CISM">
-      <sname>1.9x2.5_1.9x2.5_gl5UM</sname>
-      <alias>f19_f19_gl5UM</alias>
+      <sname>1.9x2.5_1.9x2.5_gl5</sname>
+      <alias>f19_f19_gl5</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </GRID> <!-- back compat -->
 
     <GRID compset="DOCN.*_CISM">
-      <sname>0.9x1.25_0.9x1.25_gl5UM</sname>
-      <alias>f09_f09_gl5UM</alias>
+      <sname>0.9x1.25_0.9x1.25_gl5</sname>
+      <alias>f09_f09_gl5</alias>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </GRID> <!-- back compat -->
+
+    <GRID compset="_CISM">
+      <sname>T31_gx3v7_gl5</sname>
+      <alias>T31_g37_gl5</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </GRID> <!-- back compat -->
+
+
+    <GRID compset="_CISM">
+      <sname>T31_gx3v7_gl5</sname>
+      <alias>T31_g37_gl5</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </GRID> <!-- back compat -->
+
+    <GRID compset="_CISM">
+      <sname>1.9x2.5_gx1v6_gl5</sname>
+      <alias>f19_g16_gl5</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </GRID> <!-- back compat -->
+
+    <GRID compset="_CISM">
+      <sname>0.9x1.25_gx1v6_gl5</sname>
+      <alias>f09_g16_gl5</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </GRID> <!-- back compat -->
 
     <!-- new runoff grids for data runoff model DROF -->
