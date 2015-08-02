@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<config_pio>
+
+  <!-- always place default value first without any attributes -->
+  <!-- then place the attribute for grid or compset afterwards -->
+
+</config_pio>
