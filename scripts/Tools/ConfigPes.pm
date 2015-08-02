@@ -216,13 +216,39 @@ sub _setPESsettings
 	}
     }
 
+    # Parse the pes xml file
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
+
+    # First determine that the xml file has consistent attributes
+    foreach my $grid ($xml->findnodes(".//grid")) {
+	if (! defined $grid->getAttribute('name')) {
+	    my $name = $grid->nodeName();
+	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n";
+	}
+    }
+    foreach my $mach ($xml->findnodes(".//mach")) {
+	if (! defined $mach->getAttribute('name')) {
+	    my $name = $mach->nodeName();
+	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n";
+	}
+    }
+    foreach my $pes ($xml->findnodes(".//pes")) {
+	if (! defined $pes->getAttribute('pesize')) {
+	    my $name = $pes->nodeName();
+	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"pesize\" in $pes_file \n\n";
+	}
+	if (! defined $pes->getAttribute('compset')) {
+	    my $name = $pes->nodeName();
+	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"compset\" in $pes_file \n\n";
+	}
+    }
+
     # Set the match variables $mach_set and $grid_set
     # Determine if there are any settings for target grid AND target_machine
     # If not, look for match for target_grid and 'any' machine
     # If not, look for match for 'any' grid and target_machine
     # If not, look for match for 'any' grid and 'any' machine
     
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
     my $mach_set = $mach; 
     my $grid_set = $target_grid;
     my @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_set\")]/mach[contains(\@name,\"$mach_set\")]/pes");

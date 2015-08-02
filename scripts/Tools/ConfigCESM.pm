@@ -48,7 +48,10 @@ sub getPrimaryComponent
 	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_POP/){
 	    $primary_component = 'allactive';
 	}
-	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN/){
+	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN%SOM/){
+	    $primary_component = 'allactive';
+	}
+	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN%DOM/){
 	    $primary_component = 'cam';
 	}
 	if ($compset =~ m/_DATM/ && $compset =~ m/_CLM/ && $compset =~ m/_SICE/ && $compset =~ m/_SOCN/){
@@ -76,6 +79,9 @@ sub getPrimaryComponent
 	if ($compset =~ m/^B.*/) {
 	    $primary_component = 'allactive';
 	}
+	if ($compset =~ m/^E.*/) {
+	    $primary_component = 'allactive';
+	}
 	if ($compset =~ m/^F.*/) {
 	    $primary_component = 'cam';
 	}
@@ -86,7 +92,7 @@ sub getPrimaryComponent
 	    $primary_component = 'pop';
 	}
 	if ($compset =~ m/^D.*/) {
-	    $primary_component = 'pop';
+	    $primary_component = 'cice';
 	}
 	if ($compset =~ m/^T.*/) {
 	    $primary_component = 'cism';
