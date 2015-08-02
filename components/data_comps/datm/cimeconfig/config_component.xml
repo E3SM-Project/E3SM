@@ -105,7 +105,7 @@
     <valid_values></valid_values>
     <default_value>-999</default_value>
     <values>
-      <value compset="1850_DATM%S1850">960 </value> 
+      <value compset="1850_DATM%S1850">960</value> 
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
