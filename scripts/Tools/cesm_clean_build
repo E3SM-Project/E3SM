@@ -95,4 +95,4 @@ my @lockedfiles = glob("LockedFiles/env_build*");
 foreach my $lf (@lockedfiles) {
     unlink($lf);
 }
-system("./xmlchange SMP_BUILD=0 NINST_BUILD=0 BUILD_COMPLETE=FALSE BUILD_STATUS=0");
+system("./xmlchange SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");
