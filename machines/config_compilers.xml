@@ -500,13 +500,13 @@ for mct, etc.
   <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
   <PAPI_INC> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
   <PAPI_LIB>/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
-  <ADD_SLIBS> -Wl,-rpath $(PAPI_LIB) -L$(PAPI_LIB) -lpapi</ADD_SLIBS>
+  <ADD_SLIBS> -Wl,-rpath ${PAPI_LIB} -L${PAPI_LIB} -lpapi</ADD_SLIBS>
 </compiler>
 
 
 
 <compiler MACH="yellowstone" COMPILER="intel">
-  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.0.1_Intel14.0.2_Serial</PFUNIT_PATH>
+  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="pgi">
