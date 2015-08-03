@@ -683,6 +683,9 @@ contains
     ! !DESCRIPTION:
     ! Finalize land surface model
     !
+    ! !USES:
+    use clm_finalizeMod, only : final
+    !
     ! !ARGUMENTS:
     type(ESMF_GridComp)  :: comp            ! CLM gridded component
     type(ESMF_State)     :: import_state    ! CLM import state
@@ -692,6 +695,8 @@ contains
     !---------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    call final()
 
     ! Destroy ESMF objects
     call esmfshr_util_StateArrayDestroy(export_state,'domain',rc=rc)

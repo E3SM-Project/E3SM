@@ -493,6 +493,7 @@ contains
     use seq_timemgr_mod ,only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use mct_mod
     use esmf
+    use clm_finalizeMod, only : final
     !
     ! !ARGUMENTS:
     type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
@@ -502,6 +503,8 @@ contains
     !---------------------------------------------------------------------------
 
     ! fill this in
+    call final()
+
   end subroutine lnd_final_mct
 
   !====================================================================================
