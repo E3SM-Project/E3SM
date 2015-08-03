@@ -675,9 +675,9 @@ contains
 
       !update state variables
       time = 0._r8
-!      ldebug=.false.
-!      if(c==415 .and. j==1)ldebug=.true.
-!      if(ldebug)print*,'cj',c,j
+      ldebug=.false.
+!      if(c==619 .and. get_nstep()==494)ldebug=.true.
+      if(ldebug)print*,'cj',c,j
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
@@ -1281,9 +1281,17 @@ contains
     if(nitrogen_limit_flag(j))then
       eca_nh4 = siej_cell_norm(1,j)/kd_nh4_decomp
       eca_no3 = siej_cell_norm(2,j)/kd_no3_decomp
+      if(ldebug)then
+        print*,'bf corr pool',j
+        print*,cascade_matrix(:,j)
+      endif
       reaction_rates(j) = reaction_rates(j) * (eca_nh4 + eca_no3)
       cascade_matrix(lid_no3, j) = cascade_matrix(lid_nh4,j) * safe_div(eca_no3,eca_nh4+eca_no3)
-      cascade_matrix(lid_nh4, j) = cascade_matrix(lid_nh4, j) - cascade_matrix(lid_nh4,j)
+      cascade_matrix(lid_nh4, j) = cascade_matrix(lid_nh4, j) - cascade_matrix(lid_no3,j)
+      if(ldebug)then
+        print*,'af corr pool',j
+        print*,cascade_matrix(:,j)
+      endif
     endif
   enddo
 
@@ -1296,11 +1304,20 @@ contains
   eca_nh4 = siej_cell_norm(1,lid_plant_compet)/kd_nh4_decomp
   eca_no3 = siej_cell_norm(2,lid_plant_compet)/kd_no3_decomp
 
+  if(ldebug)then
+    print*,'bf corr plt'
+    print*,cascade_matrix(:,lid_plant_minn_up_reac)
+  endif
+
   reaction_rates(lid_plant_compet) = reaction_rates(lid_plant_compet) * (eca_nh4+eca_no3) * vcompet(lid_plant_compet)
   cascade_matrix(lid_no3, lid_plant_minn_up_reac) = cascade_matrix(lid_nh4, lid_plant_minn_up_reac) * &
     safe_div(eca_no3, eca_nh4+eca_no3)
   cascade_matrix(lid_nh4,lid_plant_minn_up_reac) = cascade_matrix(lid_nh4,lid_plant_minn_up_reac) - &
     cascade_matrix(lid_no3, lid_plant_minn_up_reac)
+  if(ldebug)then
+    print*,'af corr plt'
+    print*,cascade_matrix(:,lid_plant_minn_up_reac)
+  endif
   end associate
   end subroutine apply_ECA_nutrient_regulation
 end module BGCReactionsCenturyECAType
