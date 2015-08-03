@@ -14,12 +14,12 @@ module BGCReactionsFactoryMod
   use shr_log_mod           , only : errMsg => shr_log_errMsg
 implicit none
   save
-  private  
+  private
   public ::  ctreate_bgc_reaction_type
 
-  
-  contains 
-  
+
+  contains
+
   function ctreate_bgc_reaction_type(method) result(bgc_reaction)
   !
   ! ! DESCRIPTION
@@ -33,19 +33,20 @@ implicit none
   use BGCReactionsCenturyECAType   , only : bgc_reaction_CENTURY_ECA_type
   use BGCReactionsSminNType        , only : bgc_reaction_sminn_type
   use BGCReactionsCenturyCLM3Type  , only : bgc_reaction_CENTURY_clm3_type
-   
+  use BGCReactionsCenturyCLMOType  , only : bgc_reaction_CENTURY_clmo_type
+
 !  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
   use abortutils                , only : endrun
   use clm_varctl                , only : iulog
   use tracer_varcon             , only : is_active_betr_bgc, do_betr_leaching
   ! !ARGUMENTS
-  
+
   class(bgc_reaction_type), allocatable :: bgc_reaction
-  
+
   character(len=*), intent(in) :: method
   character(len=*), parameter :: subname = 'ctreate_bgc_reaction_type'
-  
-  
+
+
   select case(trim(method))
   case ("mock_run")
     allocate(bgc_reaction, source=bgc_reaction_mock_run_type())
@@ -61,7 +62,10 @@ implicit none
   case ("century_bgcclm3")
     is_active_betr_bgc=.true.
     allocate(bgc_reaction, source=bgc_reaction_CENTURY_clm3_type())
-  case ("betr_sminn")  
+  case ("century_bgcclmo")
+      is_active_betr_bgc=.true.
+      allocate(bgc_reaction, source=bgc_reaction_CENTURY_clmo_type())
+  case ("betr_sminn")
     !this must be used together with clm45bgc
     do_betr_leaching = .true.
     allocate(bgc_reaction, source=bgc_reaction_sminn_type())
@@ -72,7 +76,7 @@ implicit none
     call endrun(msg=errMsg(__FILE__, __LINE__))
   end select
   end function ctreate_bgc_reaction_type
-  
-  
+
+
 
 end module BGCReactionsFactoryMod
