@@ -206,7 +206,7 @@ sub _setPESsettings
     # to match on the grid name
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($override_file);
     my @nodes = $xml->findnodes("//pes_grid_translation/grid");
-    if (@nodes) {
+    if (defined @nodes) {
 	foreach my $node (@nodes) {
 	    my $attr  = $node->getAttribute('name');
 	    my $value = $node->textContent();
@@ -291,9 +291,10 @@ sub _setPESsettings
 	my $pesize_match;
       SEARCH: foreach my $pe (@pes) {
 	  my @nodes = $pe->findnodes("./*[contains(\@pesize,\"$pesize_opts\") and not(contains(\@compset,'any'))]");
-	  if (@nodes) {
+	  if (defined @nodes) {
 	      foreach my $node (@nodes) {
 		  my $compset_attr = $node->getAttribute('compset');
+		  print "DEBUG: i am HERE2 with compset_attr of $compset_attr \n";
 		  if ($compset_name =~ m/$compset_attr/) {
 		      $pe_select = $node;
 		      $pesize_match = $pesize_opts;
@@ -303,8 +304,8 @@ sub _setPESsettings
 	      }
 	  }
 	  if ((! defined @nodes) || (! defined $pe_select)) {
-	      @nodes = $pe->findnodes("./*[\@pesize='any' and not(contains(\@compset,'any'))]");
-	      if (@nodes) {
+              @nodes = $pe->findnodes("./*[\@pesize='any' and not(contains(\@compset,'any'))]");
+	      if (defined @nodes) {
 		  foreach my $node (@nodes) {
 		      my $compset_attr = $node->getAttribute('compset');
 		      if ($compset_name =~ m/$compset_attr/) {
@@ -317,12 +318,12 @@ sub _setPESsettings
 	      }
 	      if ((! defined @nodes) || (! defined $pe_select)) {
 		  @nodes = $pe->findnodes("./*[\@pesize=\"$pesize_opts\" and \@compset='any']");
-		  if (@nodes) {
+		  if (defined @nodes) {
 		      $pe_select = $nodes[0];
 		  }
 		  if ((! defined @nodes) || (! defined $pe_select)) {
 		      @nodes = $pe->findnodes("./*[\@pesize='any' and \@compset='any']");
-		      if (@nodes) {
+		      if (defined @nodes) {
 			  $pesize_match = 'any';
 			  $compset_match = 'any';
 			  $pe_select = $nodes[0];
@@ -330,11 +331,14 @@ sub _setPESsettings
 		  }
 	      }
 	  }
-	  print "ConfigPES: pesize match is $pesize_match and compset_match is $compset_match\n"; 
         }
 	if (! defined $pe_select) {
 	    die "ERROR: no pes match found in $pes_file \n";
+	} else {
+	    print "ConfigPES: compset_match is $compset_match\n"; 
+	    print "ConfigPES: pesize match is $pesize_match \n"; 
 	}
+
 	my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
 	my @pes_nthrds = $pe_select->findnodes("./nthrds"); 
 	my @pes_rootpe = $pe_select->findnodes("./rootpe"); 

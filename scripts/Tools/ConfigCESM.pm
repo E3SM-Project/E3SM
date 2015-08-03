@@ -82,7 +82,7 @@ sub getPrimaryComponent
 	if ($compset =~ m/^E.*/) {
 	    $primary_component = 'allactive';
 	}
-	if ($compset =~ m/^F.*/) {
+	if ($compset =~ m/^F.*/ || $compset =~ m/^P*/) {
 	    $primary_component = 'cam';
 	}
 	if ($compset =~ m/^I.*/) {

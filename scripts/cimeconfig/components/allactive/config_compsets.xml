@@ -381,6 +381,39 @@
       <lname>2000_CAM4_CLM40%SP_CICE_POP2%1D_RTM_SGLC_SWAV</lname>
     </COMPSET>
 
+    <COMPSET>
+      <alias>ETEST</alias>
+      <lname>2000_CAM4_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>E1850C5</alias>
+      <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+      <support>Requires additional user-supplied datasets></support>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>E1850C5TEST</alias>
+      <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>E1850CN</alias>
+      <support>Requires additional user-supplied datasets</support>
+      <lname>1850_CAM4_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>E1850C5CN</alias> 
+      <support>Requires additional user-supplied datasets</support>
+      <lname>1850_CAM5_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>E1850C5CNTEST</alias>
+      <lname>1850_CAM5_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST</lname>
+    </COMPSET>
+
   </compset_names>
 
   <compset_variables>
@@ -501,11 +534,12 @@
     <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="C2R4_CAM4%SSOA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">b_1950_2100_refc2_CCSM4_chem_no_sp.001</RUN_REFCASE>
     <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="C2R4_CAM4%SSOA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">2004-01-01</RUN_REFDATE>
 
+    <RUN_STARTDATE compset="1850_"     >0001-01-01</RUN_STARTDATE> 
+    <RUN_STARTDATE compset="2000_"     >0001-01-01</RUN_STARTDATE>
     <RUN_STARTDATE compset="HIST_"     >1850-01-01</RUN_STARTDATE> 
     <RUN_STARTDATE compset="C2R[68]_"  >1950-01-01</RUN_STARTDATE> 
     <RUN_STARTDATE compset="C2R4_"     >2004-01-01</RUN_STARTDATE>
     <RUN_STARTDATE compset="5505_"     >1955-01-01</RUN_STARTDATE> 
-    <RUN_STARTDATE compset="2000_"     >2000-01-01</RUN_STARTDATE>
     <RUN_STARTDATE compset="RCP[2468]_">2005-01-01</RUN_STARTDATE>
     <RUN_STARTDATE compset="2013_"     >2013-01-01</RUN_STARTDATE> 
   </compset_variables>

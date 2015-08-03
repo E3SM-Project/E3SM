@@ -244,11 +244,19 @@
       <lname>HIST_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_CISM1_SWAV</lname>
     </COMPSET>
 
-    <!-- K compsets (just for testing)-->
-
     <COMPSET>
       <alias>F1850</alias>           
       <lname>1850_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>PC4</alias>
+      <lname>2000_CAM4%PORT_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+    </COMPSET>
+
+    <COMPSET>
+      <alias>PC5</alias>
+      <lname>2000_CAM5%PORT_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
     </COMPSET>
 
   </compset_names>
