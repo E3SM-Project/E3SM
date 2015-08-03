@@ -454,20 +454,19 @@ sub setQueue()
 	my $configmachinesparser = $self->{'configmachinesparser'};
 	
 
-	# First, set the queue based on the default queue defined in config_batch.xml. If not found, 
-	# we die. 
-	# TODO find a better method of alerting the user that there is no default queue defined for this machine.   
+	# First, set the queue based on the default queue defined in config_batch.xml. 
 	my @defaultqueue = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue[\@default=\'true\']");
 
-	die "Cannot set queue for this machine! No default queue defined" if (! @defaultqueue);
 	
-	# set the default queue. 
-	my $defelement = $defaultqueue[0];
+	# set the default queue IF we have a default queue defined, some machines (blues) do not allow one to 
+	# specifiy the queue directly. 
+	if(@defaultqueue)
+	{
+        my $defelement = $defaultqueue[0];
+        $self->{'queue'} = $defelement->textContent();
+	}
 
-	$self->{'queue'} = $defelement->textContent();
-
-	
-	# We already have a default queue at this point, but if there is a queue that our job's node count
+	# We may have a default queue at this point, but if there is a queue that our job's node count
 	# falls in between, then we should use that queue. 
 	my @qelems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue");
 	foreach my $qelem(@qelems)
@@ -756,19 +755,20 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-    my $config = $taskmaker->{'config'};
-    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
-    $self->{'mppsize'} = $self->{'mppsum'};
+	#print "in Batch::BatchMaker_cray setTaskInfo\n";
+    #my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    #my $config = $taskmaker->{'config'};
+    #my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+    #$self->{'mppsize'} = $self->{'mppsum'};
 
 
-    if($self->{'mppsize'} % $maxTasksPerNode > 0)
-    {
-        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
-        $mppnodes += 1;
-        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
-    }
-	$self->{'mppwidth'} = $self->{'mppsize'};
+    #if($self->{'mppsize'} % $maxTasksPerNode > 0)
+    #{
+    #    my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+    #    $mppnodes += 1;
+    #    $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
+    #}
+	#$self->{'mppwidth'} = $self->{'mppsize'};
 
     $self->SUPER::setTaskInfo();
 }
@@ -785,10 +785,50 @@ sub _test()
 sub setTaskInfo()
 {
 	my $self = shift;
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-	$self->{'mppsum'} = $taskmaker->sumTasks();
     $self->SUPER::setTaskInfo();
+	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+
+	$self->{'mppsize'}  = $taskmaker->sumTasks();
+    if($self->{'mppsize'} % $maxTasksPerNode > 0)
+    {
+        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+        $mppnodes += 1;
+        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
+    }
+	$self->{'mppsum'} = $taskmaker->sumPES();
+
+    if($self->{'mppsum'} > 1)
+    {
+        $self->{'mppwidth'} = $self->{'mppsum'} / 2;
+    }
+    else
+    {
+        $self->{'mppwidth'} = 1;
+    }
+
 }
+
+sub setCESMRun()
+{
+	my $self = shift;
+	
+	# For the aprun command we only want -S tasks_per_numa
+    # and -cc numa_node to be set if the tasks per node is > 1
+	if($self->{'tasks_per_node'} > 1)
+	{
+		$self->{'numa_node'} = 'numa_node';
+	}
+	else
+	{
+		$self->{'tasks_per_numa'} = undef;
+		$self->{'numa_node'} = undef;
+	}
+	$self->SUPER::setCESMRun();
+
+
+}
+	
 
 #==============================================================================
 #==============================================================================
