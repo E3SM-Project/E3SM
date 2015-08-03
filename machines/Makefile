@@ -748,7 +748,7 @@ cleanwav:
 
 cleanglc: 
 	$(RM) -f $(LIBROOT)/libglc.a
-	cd $(EXEROOT)/glc/obj ; $(RM) -f *.o *.mod
+	$(RM) -fr $(EXEROOT)/glc 
 
 cleanice: 
 	$(RM) -f $(LIBROOT)/libice.a
