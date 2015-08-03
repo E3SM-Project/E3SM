@@ -91,3 +91,8 @@ foreach my $lib (@opts){
     }
 }
 system($sysmod) == 0 or die "$sysmod failed: $?\n";
+my @lockedfiles = glob("LockedFiles/env_build*");
+foreach my $lf (@lockedfiles) {
+    unlink($lf);
+}
+system("./xmlchange SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");
