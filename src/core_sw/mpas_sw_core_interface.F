@@ -42,6 +42,7 @@ module sw_core_interface
       core % get_mesh_stream => sw_get_mesh_stream
       core % setup_immutable_streams => sw_setup_immutable_streams
       core % setup_derived_dimensions => sw_setup_derived_dimensions
+      core % setup_decomposed_dimensions => sw_setup_decomposed_dimensions
       core % setup_block => sw_setup_block
       core % setup_namelist => sw_setup_namelists
 

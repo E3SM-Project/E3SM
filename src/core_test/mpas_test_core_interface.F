@@ -42,6 +42,7 @@ module test_core_interface
       core % get_mesh_stream => test_get_mesh_stream
       core % setup_immutable_streams => test_setup_immutable_streams
       core % setup_derived_dimensions => test_setup_derived_dimensions
+      core % setup_decomposed_dimensions => test_setup_decomposed_dimensions
       core % setup_block => test_setup_block
       core % setup_namelist => test_setup_namelists
 
