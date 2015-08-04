@@ -29,16 +29,20 @@ usage() {
   echo ' * ocn -> lnd: conservative'
   echo ' * lnd -> rtm: conservative'
   echo ' * rtm -> lnd: conservative'
+  echo ' * lnd -> glc: conservative, bilinear'
+  echo ' * glc -> lnd: conservative, bilinear'
   echo ''
   echo 'gen_cesm_maps.sh '
   echo '  --fileatm|-fatm  input atm_grid_filename'
   echo '  --fileocn|-focn  input ocn_grid_filename'
   echo '  --filelnd|-flnd  input lnd_grid_filename'
   echo '  --filertm|-frtm  input rtm_grid_filename'
+  echo '  --fileglc|-fglc  input glc_grid_filename'
   echo '  --nameocn|-nocn  output ocn_name in mapping file' 
   echo '  --nameatm|-natm  output atm_name in mapping file'
   echo '  --namelnd|-nlnd  output lnd_name in mapping file'
   echo '  --namertm|-nrtm  output rtm_name in mapping file'
+  echo '  --nameglc|-nglc  output glc_name in mapping file'
   echo '  [ --typeocn|tocn ] [regional|global]'
   echo '  [ --typeatm|tatm ] [regional|global]'
   echo '  [ --nogridcheck ]'
@@ -55,6 +59,8 @@ usage() {
   echo '   SCRIP grid format land filename (full pathname), must be global'
   echo ' --filertm (or -frtm) '
   echo '   SCRIP grid format runoff filename (full pathname)'
+  echo ' --fileglc (or -fglc) '
+  echo '   SCRIP grid format glc filename (full pathname), assumed to be regional'
   echo ' --nameatm (or -natm) '
   echo '   Shortname to use for atm in mapping filename'
   echo ' --nameocn (or -nocn) '
@@ -63,6 +69,8 @@ usage() {
   echo '   Shortname to use for lnd in mapping filename'
   echo ' --namertm (or -nrtm) '
   echo '   Shortname to use for rtm in mapping filename'
+  echo ' --nameglc (or -nglc) '
+  echo '   Shortname to use for glc in mapping filename'
   echo ' --typeocn (or -tocn) '
   echo '   ocean grid type,  valid values are regional or global'
   echo '   default is global'
@@ -86,7 +94,7 @@ usage() {
   echo ' --help or -h  '
   echo '   displays this help message'
   echo ''
-  echo 'Note: if rtm is specified and lnd is not, then this tool will'
+  echo 'Note: if rtm or glc are specified and lnd is not, then this tool will'
   echo '      assume lnd and atm are on the same grid.'
   echo ''
   echo 'You can also set the following env variables:'
@@ -145,6 +153,7 @@ atm_ocn=0
 atm_lnd=0
 lnd_rtm=0
 ocn_lnd=0
+lnd_glc=0
 
 
 while [ $# -gt 0 ]; do
@@ -171,6 +180,10 @@ while [ $# -gt 0 ]; do
 	   frtm=$2
 	   shift
 	   ;;
+       -fglc|--fileglc )
+	   fglc=$2
+	   shift
+	   ;;
        -nocn|--nameocn )
 	   nocn=$2
 	   shift
@@ -185,6 +198,10 @@ while [ $# -gt 0 ]; do
 	   ;;
        -nrtm|--namertm )
 	   nrtm=$2
+	   shift
+	   ;;
+       -nglc|--nameglc )
+	   nglc=$2
 	   shift
 	   ;;
        -tocn|--typeocn )
@@ -268,6 +285,18 @@ if [ ! -z "$frtm" ]; then
     exit 8
   fi
 fi
+if [ ! -z "$fglc" ]; then
+  if [ -z "$nglc" ]; then
+    echo "If you specify glc grid (-fglc), you must"\
+         "also provide glc short name (-nglc)."
+    echo "Invoke gen_cesm_maps.sh -h for usage"
+    exit 5
+  fi
+  if [ ! -f "${fglc}" ]; then
+    echo "GLC grid file does NOT exist: $fglc"
+    exit 6
+  fi
+fi
 
 # Determine what maps to make
 if [ ! -z "$fatm" ] && [ ! -z "$focn" ]; then
@@ -295,12 +324,29 @@ if [ ! -z "$frtm" ]; then
   fi
 fi
 
+if [ ! -z "$fglc" ]; then
+  if [ ! -z "$flnd" ] || [ ! -z "$fatm" ]; then
+    lnd_glc=1
+  fi
+  if [ -z "$flnd" ]; then
+    if [ "${type_atm}" == "regional" ]; then
+      echo "WARNING: Can not use regional atmosphere to create atm2glc map!"
+      lnd_glc=0
+    else
+      echo "Assuming atmosphere and land grid are identical, generating"\
+           "atm2glc and glc2atm maps"
+      nlnd=$natm
+      flnd=$fatm
+    fi
+  fi
+fi
+
 if [ ! -z "$focn" ] && [ ! -z "$flnd" ]; then
   ocn_lnd=1
 fi
 
 # See if any maps are being made
-if [ $((atm_ocn+atm_lnd+lnd_rtm+ocn_lnd)) == 0 ]; then
+if [ $((atm_ocn+atm_lnd+lnd_rtm+lnd_glc+ocn_lnd)) == 0 ]; then
   echo "ERROR: can not generate any maps based on given input!"
   echo "Invoke gen_cesm_maps.sh -h for usage"
   exit 9
@@ -375,7 +421,7 @@ fi
 
 if [ $atm_lnd == 1 ]; then
   #--- atm to lnd conservative (area avg?) -------------------------------------
-  if [ $atm_ocn == 1 ]; then
+  if [ ! -z "$file_list" ]; then
     echo ""
     echo "----------------------------------------------------------"
     echo ""
@@ -404,7 +450,7 @@ fi
 
 if [ $ocn_lnd == 1 ]; then
   #--- ocn to lnd conservative (area avg) -------------------------------------
-  if [ $atm_ocn == 1 ] || [ $atm_lnd == 1 ]; then
+  if [ ! -z "$file_list" ]; then
     echo ""
     echo "----------------------------------------------------------"
     echo ""
@@ -416,7 +462,7 @@ fi
 
 if [ $lnd_rtm == 1 ]; then
   #--- lnd to rtm conservative (area avg) -------------------------------------
-  if [ $atm_ocn == 1 ] || [ $atm_lnd == 1 ] || [$ocn_lnd == 1]; then
+  if [ ! -z "$file_list" ]; then
     echo ""
     echo "----------------------------------------------------------"
     echo ""
@@ -432,6 +478,35 @@ if [ $lnd_rtm == 1 ]; then
   $make_map -fsrc $frtm -nsrc $nrtm -fdst $flnd -ndst $nlnd \
             -tsrc global -tdst global -map aave $batchrun
   file_list="$file_list map_${nrtm}_TO_${nlnd}_aave.$cdate.nc"
+
+fi
+
+if [ $lnd_glc == 1 ]; then
+  #--- glc to lnd conservative (area avg?) -------------------------------------
+  if [ ! -z "$file_list" ]; then
+    echo ""
+    echo "----------------------------------------------------------"
+    echo ""
+  fi
+  $make_map -fsrc $fglc -nsrc $nglc -fdst $flnd -ndst $nlnd \
+            -tsrc regional -tdst global -map aave $batchrun
+  file_list="$file_list map_${nglc}_TO_${nlnd}_aave.$cdate.nc"
+
+  #--- lnd to glc conservative (area avg?) -------------------------------------
+  echo ""
+  echo "----------------------------------------------------------"
+  echo ""
+  $make_map -fsrc $flnd -nsrc $nlnd -fdst $fglc -ndst $nglc \
+            -tsrc global -tdst regional -map aave $batchrun
+  file_list="$file_list map_${nlnd}_TO_${nglc}_aave.$cdate.nc"
+
+  #--- lnd to glc bilinear (non-conservative) ----------------------------------
+  echo ""
+  echo "----------------------------------------------------------"
+  echo ""
+  $make_map -fsrc $flnd -nsrc $nlnd -fdst $fglc -ndst $nglc \
+            -tsrc global -tdst regional -map blin $batchrun
+  file_list="$file_list map_${nlnd}_TO_${nglc}_blin.$cdate.nc"
 
 fi
 
