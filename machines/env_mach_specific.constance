@@ -14,22 +14,22 @@ echo "MPILIB=$MPILIB"
 source /etc/profile.d/modules.csh
 #source /share/apps/modules/Modules/3.2.7/init/csh
 module purge
-module load perl/5.20.7
-module load cmake/3.0.0
+module load perl/5.20.0
+module load cmake/2.8.12
 
 if ( $COMPILER == "intel") then
-module load intel/12.1.3.293
-module load mpi/mvapich2/2.0/intel/12.1.3.293
-module load netcdf/4.2.0/intel/12.1.3.293
+module load intel/15.0.1
+module load mvapich2/2.1
+module load netcdf/4.3.2
+module load mkl/15.0.1
+setenv NETCDF_HOME /share/apps/netcdf/4.3.2/intel/15.0.1
 endif
 
 if ( $COMPILER == "pgi") then
-#module load pgi/9.0
-#module load mpi/mvapich2/1.4.1/pgi
-#module load netcdf/3.6.3/pgi90
-module load pgi/15.5
-module load mpi/mvapich2/1.5.1p1/pgi11.3
-module load netcdf/4.1.2/pgi
+module load pgi/14.10
+module load mvapich2/2.1
+module load netcdf/4.3.2
+setenv NETCDF_HOME /share/apps/netcdf/4.3.2/pgi/14.10
 #module list
 endif
 

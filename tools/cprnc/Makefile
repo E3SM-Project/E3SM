@@ -45,7 +45,7 @@ INC_NETCDF := $(NETCDF)/include
 UNAMES := $(shell uname -s)
 SNAME := $(shell uname -n | cut -c1-2)
 
-GENF90 = ../../genf90/genf90.pl
+GENF90 = ../../externals/genf90/genf90.pl
 
 # Architecture-specific flags and rules
 #------------------------------------------------------------------------
