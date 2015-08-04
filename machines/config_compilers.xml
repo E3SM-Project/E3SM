@@ -877,6 +877,7 @@ for mct, etc.
  <MPI_PATH MPILIB="openmpi"> /usr/local/openmpi-gcc-nag</MPI_PATH>
  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
  <!-- needed for nag pio build.. -->
+ <ADD_FFLAGS> -kind=byte </ADD_FFLAGS>
  <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
  <!-- Experimental wrapper for OpenMP. -->
  <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,--rpath=/home/santos/lib/fake_omp </ADD_LDFLAGS>

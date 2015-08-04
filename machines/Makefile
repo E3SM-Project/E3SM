@@ -286,16 +286,13 @@ ifeq ($(MODEL),driver)
 else
   ifeq ($(strip $(COMPILER)),nag)
     ifeq ($(DEBUG), TRUE)
+      ifeq ($(strip $(MACH)),hobart)
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
-       # No longer hard-coded to $(NAG), as we now have
-       # modules on goldbach. The modules on goldbach 
-       # now have $COMPILER_PATH defined, so we can 
-       # get the base path to the compiler without any 
-       # acrobatics.
-       CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+       endif
     endif
   endif
 endif
