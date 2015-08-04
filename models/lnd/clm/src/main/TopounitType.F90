@@ -52,7 +52,7 @@ module TopounitType
   
   ! declare the public instances
   type(topounit_properties) , public, target :: top_pp
-  type(topunit_energy_state), public, target :: top_es
+  type(topounit_energy_state), public, target :: top_es
   
   contains
   
@@ -62,7 +62,7 @@ module TopounitType
     integer, intent(in) :: endt   ! ending topographic unit index
     
     allocate(this%grd         (begt:endt)) ; this%grd         (:) = ispval
-    allocate(this%wt_grd      (begt:endt)) ; this%grd         (:) = nan
+    allocate(this%wt_grd      (begt:endt)) ; this%wt_         (:) = nan
     allocate(this%lndi        (begt:endt)) ; this%lndi        (:) = ispval
     allocate(this%lndf        (begt:endt)) ; this%lndf        (:) = ispval
     
