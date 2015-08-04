@@ -3153,7 +3153,7 @@ contains
        if (hybrid%masterthread) then
           write(*,'(a,i2,f6.2,a,3e15.7)') 'k=',k,time_tmp/secpday,' days  l1,l2,linf=',&
                l1,l2,linf
-          if (toy_chemistry .and. k==4) then
+          if ((toy_chemistry/=0) .and.(k==4)) then
              print *,'***NOTE***:  Terminator toy-chemistry applied to p5 and p6'
           endif
        end if
