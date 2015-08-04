@@ -62,7 +62,7 @@ module TopounitType
     integer, intent(in) :: endt   ! ending topographic unit index
     
     allocate(this%grd         (begt:endt)) ; this%grd         (:) = ispval
-    allocate(this%wt_grd      (begt:endt)) ; this%wt_         (:) = nan
+    allocate(this%wt_grd      (begt:endt)) ; this%wt_grd      (:) = nan
     allocate(this%lndi        (begt:endt)) ; this%lndi        (:) = ispval
     allocate(this%lndf        (begt:endt)) ; this%lndf        (:) = ispval
     
