@@ -485,7 +485,7 @@ for mct, etc.
   <!-- interfaces from certain argument checks. Should not be necessary in   -->
   <!-- libraries that only use the F90 module interface. mpibcast and        -->
   <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
-  <FFLAGS      > -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv,mpi_alltoallw    -convert=BIG_ENDIAN </FFLAGS>
+  <FFLAGS      > -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv,mpi_alltoallw,nfmpi_get_vara_all,NFMPI_IPUT_VARA,NFMPI_GET_VAR_ALL,NFMPI_PUT_VARA,NFMPI_PUT_ATT_REAL,NFMPI_PUT_ATT_DOUBLE,NFMPI_PUT_ATT_INT,NFMPI_GET_ATT_REAL,NFMPI_GET_ATT_INT,NFMPI_GET_ATT_DOUBLE,NFMPI_PUT_VARA_DOUBLE_ALL,NFMPI_PUT_VARA_REAL_ALL,NFMPI_PUT_VARA_INT_ALL    -convert=BIG_ENDIAN </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
@@ -921,14 +921,18 @@ for mct, etc.
 
 <compiler COMPILER="intel" MACH="cascade">
   <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <CONFIG_ARGS> --host=Linux --enable-filesystem-hints=lustre</CONFIG_ARGS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L/msc/apps/compilers/intel/14.0/composer_xe_2013_sp1.1.106/mkl/lib/intel64 -lmkl_rt </SLIBS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt </SLIBS>
 </compiler>
  
 <compiler COMPILER="nag" MACH="cascade">
  <NETCDF_PATH>$(NETCDF_ROOT)</NETCDF_PATH >
+ <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+ <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
  <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
  <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
  <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
@@ -939,7 +943,7 @@ for mct, etc.
  -->
  <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
  <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
- <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff</ADD_SLIBS>
+ <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
 </compiler> 
 
 <compiler COMPILER="intel" MACH="evergreen">
