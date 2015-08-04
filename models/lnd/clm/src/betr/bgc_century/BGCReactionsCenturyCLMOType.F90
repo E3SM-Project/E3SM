@@ -668,7 +668,7 @@ contains
 !      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose
 !      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
-!      if(c==1099 .and. j==10 .and. get_nstep()>=3657)then
+!      if(c==896 .and. j==8 .and. get_nstep()>=29035)then
 
 !        ldebug_ode=.true.
 !        ldebug = .true.
@@ -1061,7 +1061,6 @@ contains
 !    print*,reaction_rates
 !  endif
 
-
   call apply_nutrient_down_regulation(nstvars, Extra_inst%nr, nitrogen_limit_flag, ystate(centurybgc_vars%lid_nh4), ystate(centurybgc_vars%lid_no3), &
      dtime, cascade_matrix, reaction_rates)
 
@@ -1075,6 +1074,12 @@ contains
       endif
     enddo
   endif
+  !reset cascade matrix
+  call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
+      Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
+
+  call apply_nutrient_down_regulation(nstvars, Extra_inst%nr, nitrogen_limit_flag, ystate(centurybgc_vars%lid_nh4), ystate(centurybgc_vars%lid_no3), &
+     dtime, cascade_matrix, reaction_rates)
 
   !if(ldebug)then
   !  print*,'nh4 flx',dot_product(cascade_matrix(centurybgc_vars%lid_nh4,1:Extra_inst%nr),reaction_rates(1:Extra_inst%nr))
@@ -1202,7 +1207,7 @@ contains
 !    tot_nh4_to_decomp_plant_flx = tot_nh4_to_decomp_plant_flx + dnegt*1.1_r8/dtime
 !  endif
 !  dnegt=(-tot_nh4_to_decomp_plant_flx+gross_min_nh4_flx+reaction_rates(lid_nh4_nit_reac)* cascade_matrix(lid_nh4 ,lid_nh4_nit_reac))*dtime+smin_nh4 - dnegt
-  if(ldebug)print*,'dnegt2',dnegt
+  !if(ldebug)print*,'dnegt2',dnegt
   decomp_plant_residual_minn_demand_flx = decomp_plant_minn_demand_flx - tot_nh4_to_decomp_plant_flx
 
   reac = lid_no3_den_reac
@@ -1269,23 +1274,32 @@ contains
     if(nitrogen_limit_flag(reac))then
       reaction_rates(reac) = reaction_rates(reac) * alpha
       cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * frac_no3_to_decomp_plant
-      cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
-      cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
+      if(lid_nh4_supp>0)then
+        cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
+        cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
 
-      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+        cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+      else
+        cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) 
+
+        cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+      endif
       cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
     endif
   enddo
-
   !for plant
   reac = lid_plant_minn_up_reac
   reaction_rates(reac) = reaction_rates(reac) * alpha
 
   cascade_matrix(lid_no3, reac)        = -frac_no3_to_decomp_plant
-  cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
-  cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_nh4_supp, reac)-cascade_matrix(lid_no3, reac)
-  !if(ldebug)print*,'plt',cascade_matrix(lid_no3, reac),cascade_matrix(lid_nh4, reac)
-  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+  if(lid_nh4_supp>0)then
+    cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
+    cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_nh4_supp, reac)-cascade_matrix(lid_no3, reac)
+    cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+  else
+    cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_no3, reac)
+    cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
+  endif
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
 
 

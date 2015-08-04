@@ -1728,23 +1728,30 @@ module BGCCenturySubCoreMod
   end subroutine assign_nitrogen_hydroloss
 !-------------------------------------------------------------------------------
   subroutine apply_plant_root_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
-   plant_frootsc_col, root_prof_col, plant_frootsc_vr)
+   root_prof_col, plantsoilnutrientflux_vars)
+
+  use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   implicit none
 
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
-  real(r8)                           , intent(in) :: plant_frootsc_col(bounds%begc:bounds%endc)
   real(r8)                           , intent(in) :: root_prof_col(bounds%begc:bounds%endc, 1:ubj)
-  real(r8)                           , intent(inout):: plant_frootsc_vr(bounds%begc:bounds%endc, 1:ubj)
+  type(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
 
   integer :: fc, c, j
+
+  associate(                                                            &
+  plant_frootsc_col  =>  plantsoilnutrientflux_vars%plant_frootsc_col,  &
+  plant_frootsc_vr  => plantsoilnutrientflux_vars%plant_frootsc_vr_col  &
+  )
   do j = 1, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
       plant_frootsc_vr(c, j) = root_prof_col(c,j)  * plant_frootsc_col(c)
     enddo
   enddo
+  end associate
   end subroutine apply_plant_root_nuptake_prof
 end module BGCCenturySubCoreMod

@@ -653,9 +653,8 @@ contains
     k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
 
   call  apply_plant_root_nuptake_prof(bounds, ubj, num_soilc, filter_soilc    , &
-   plantsoilnutrientflux_vars%plant_frootsc_col(bounds%begc:bounds%endc)      , &
    cnstate_vars%nfixation_prof_col(bounds%begc:bounds%endc,1:ubj)             ,  &
-   plantsoilnutrientflux_vars%plant_frootsc_vr_col)
+   plantsoilnutrientflux_vars)
 
   !do ode integration and update state variables for each layer
   !print*,get_nstep()

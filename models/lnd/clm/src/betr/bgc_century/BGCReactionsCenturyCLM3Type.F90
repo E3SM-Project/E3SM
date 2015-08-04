@@ -1264,10 +1264,14 @@ contains
     if(nitrogen_limit_flag(reac))then
       reaction_rates(reac) = reaction_rates(reac) * alpha
       cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * frac_no3_to_decomp_plant
-      cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
-      cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
-
-      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+      if(lid_nh4_supp>0)then
+        cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
+        cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
+        cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+      else
+        cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) 
+        cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+      endif
       cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
     endif
   enddo
@@ -1277,10 +1281,16 @@ contains
   reaction_rates(reac) = reaction_rates(reac) * alpha
 
   cascade_matrix(lid_no3, reac)        = -frac_no3_to_decomp_plant
-  cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
-  cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_nh4_supp, reac)-cascade_matrix(lid_no3, reac)
+  if(lid_nh4_supp>0)then
+    cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
+    cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_nh4_supp, reac)-cascade_matrix(lid_no3, reac)
   !if(ldebug)print*,'plt',cascade_matrix(lid_no3, reac),cascade_matrix(lid_nh4, reac)
-  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+    cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+  else
+    cascade_matrix(lid_nh4, reac)        = -1._r8-cascade_matrix(lid_no3, reac)
+  !if(ldebug)print*,'plt',cascade_matrix(lid_no3, reac),cascade_matrix(lid_nh4, reac)
+    cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
+  endif
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
 
 

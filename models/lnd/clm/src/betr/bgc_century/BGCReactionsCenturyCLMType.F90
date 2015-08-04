@@ -1275,10 +1275,14 @@ contains
   !    if(ldebug)then
   !      write(iulog,*)'nomnh4',reac,cascade_matrix(lid_nh4,reac)
   !    endif
-      cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
-      cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
-
-      cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+      if(lid_nh4_supp>0)then
+        cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
+        cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
+        cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+      else
+        cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac)
+        cascade_matrix(lid_minn_nh4_immob, reac) = -cascade_matrix(lid_nh4, reac)
+      endif
       cascade_matrix(lid_minn_no3_immob, reac) = -cascade_matrix(lid_no3, reac)
     endif
   enddo
@@ -1287,10 +1291,16 @@ contains
   reac = lid_plant_minn_up_reac
   reaction_rates(reac) = reaction_rates(reac) * alpha
   cascade_matrix(lid_nh4, reac)        = -frac_nh4_to_decomp_plant
-  cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
-  cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
+  if(lid_nh4_supp>0)then
+    cascade_matrix(lid_nh4_supp, reac)   = -frac_supp_nh4_to_decomp_plant
+    cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
 
-  cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+    cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)-cascade_matrix(lid_nh4_supp, reac)
+  else
+    cascade_matrix(lid_no3, reac)        = -(1._r8-frac_nh4_to_decomp_plant)
+
+    cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
+  endif
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
 !  if(ldebug)then
 !    write(*,*)'supp nh4 sum',frac_supp_nh4_to_decomp_plant,frac_nh4_to_decomp_plant,frac_supp_nh4_to_decomp_plant+frac_nh4_to_decomp_plant
