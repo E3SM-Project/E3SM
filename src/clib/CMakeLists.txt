@@ -21,14 +21,21 @@ target_include_directories (pioc
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Compiler
-target_compile_definitions (pioc
-    PUBLIC CPRGNU
-    PUBLIC LINUX)
-target_compile_options (pioc
-    PUBLIC -std=c99)
+if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    target_compile_options (pioc
+        PUBLIC -std=c99)
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
+    target_compile_options (pioc
+        PUBLIC -c99)
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+    target_compile_options (pioc
+        PUBLIC -std=c99)
+endif()
     
 # GPTL Timing
 if (ENABLE_TIMING)
+    target_compile_definitions (pioc
+        PUBLIC TIMING)
     target_link_libraries (pioc gptl)
 endif ()
 

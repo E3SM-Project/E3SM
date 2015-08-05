@@ -1,9 +1,3 @@
-if (ENABLE_TIMING)
-    add_subdirectory(gptl EXCLUDE_FROM_ALL)
-endif ()
-
-add_subdirectory(c)
-
-if (ENABLE_FORTRAN)
-    add_subdirectory(fortran)
-endif ()
+add_subdirectory (gptl)
+add_subdirectory (clib)
+add_subdirectory (flib)

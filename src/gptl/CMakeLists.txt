@@ -5,25 +5,24 @@ FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE "FCI_")
 
 set (GPTL_C_SRCS GPTLget_memusage.c
-            GPTLprint_memusage.c
-            GPTLutil.c
-            f_wrappers.c
-            gptl.c
-            gptl_papi.c
-            threadutil.c)
+                 GPTLprint_memusage.c
+                 GPTLutil.c
+                 f_wrappers.c
+                 gptl.c
+                 gptl_papi.c
+                 threadutil.c)
 
 set (GPTL_Fortran_SRCS perf_mod.F90
-              perf_utils.F90)
+                       perf_utils.F90)
 
-add_library (gptl ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
+add_library (gptl EXCLUDE_FROM_ALL ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
 
 target_include_directories (gptl
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_compile_definitions (gptl
-    PRIVATE INCLUDE_CMAKE_FCI
-    PUBLIC TIMING)
+    PRIVATE INCLUDE_CMAKE_FCI)
 
 find_package (MPI)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
