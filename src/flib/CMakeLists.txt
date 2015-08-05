@@ -74,4 +74,4 @@ target_compile_definitions (piof
     PUBLIC USE_PNETCDF_VARN
     PUBLIC USE_PNETCDF_VARN_ON_READ)
 target_link_libraries (piof
-    PUBLIC $ENV{PNETCDF}/lib/libpnetcdf.a)
+    $ENV{PNETCDF}/lib/libpnetcdf.a)
