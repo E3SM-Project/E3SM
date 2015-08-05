@@ -584,11 +584,13 @@ module mpas_geometry_utils
       !-----------------------------------------------------------------
       logical, pointer :: on_a_sphere
       real(kind=RKIND), dimension(3) :: normalvec
+      real(kind=RKIND), pointer :: radius
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', radius)
 
       if (on_a_sphere) then
-         mpas_triangle_signed_area = mpas_triangle_signed_area_sphere(a, b, c)
+         mpas_triangle_signed_area = mpas_triangle_signed_area_sphere(a, b, c, radius)
       else
          normalvec = (/ 0, 0, 1 /)
          mpas_triangle_signed_area = mpas_triangle_signed_area_plane(a, b, c, normalvec)
@@ -644,25 +646,26 @@ module mpas_geometry_utils
 !>  Uses the spherical analog of Heron's formula.
 !>  Copied from mesh generator.
 !-----------------------------------------------------------------------
-   real(kind=RKIND) function mpas_triangle_signed_area_sphere(a, b, c)!{{{
+   real(kind=RKIND) function mpas_triangle_signed_area_sphere(a, b, c, radius)!{{{
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       real(kind=RKIND), dimension(3), intent(in) :: a, b, c  !< Input: 3d (x,y,z) points forming the triangle in which to calculate the bary weights
+      real(kind=RKIND), intent(in) :: radius  !< sphere radius
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
       real(kind=RKIND) :: ab, bc, ca, semiperim, tanqe
 
-      ab = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))
-      bc = mpas_arc_length(b(1), b(2), b(3), c(1), c(2), c(3))
-      ca = mpas_arc_length(c(1), c(2), c(3), a(1), a(2), a(3))
+      ab = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))/radius
+      bc = mpas_arc_length(b(1), b(2), b(3), c(1), c(2), c(3))/radius
+      ca = mpas_arc_length(c(1), c(2), c(3), a(1), a(2), a(3))/radius
       semiperim = 0.5 * (ab + bc + ca)
 
       tanqe = sqrt(tan(0.5_RKIND * semiperim) * tan(0.5_RKIND * (semiperim - ab)) &
                    * tan(0.5_RKIND * (semiperim - bc)) * tan(0.5_RKIND * (semiperim - ca)) )
 
-      mpas_triangle_signed_area_sphere = 4.0_RKIND * atan(tanqe)
+      mpas_triangle_signed_area_sphere = 4.0_RKIND * radius * radius * atan(tanqe)
    end function mpas_triangle_signed_area_sphere !}}}
 
 
@@ -797,6 +800,66 @@ module mpas_geometry_utils
 
    end subroutine mpas_cells_to_points_using_baryweights !}}}
 
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_triangle_signed_area_sphere
+!
+!> \brief   Simple unit test for testing the mpas_triangle_signed_area_sphere
+!> \author  Phillip J. Wolfram
+!> \date    08/05/2015
+!> \details
+!>  This routine tests the mpas_triangle_signed_area_sphere routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_triangle_signed_area_sphere(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(3) :: a, b, c
+      real (kind=RKIND) :: sphereRadius
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+
+      ierr = 0
+
+      a = (/ 1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
+      b = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
+      c = (/ 0.0_RKIND, 0.0_RKIND, 1.0_RKIND /)
+      sphereRadius = 1.0_RKIND
+
+      ! 1/8 of spherical area = pi*r*r/8 = pi/2 for r=1.0
+      if (abs((mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND)/(pii/2.0_RKIND)) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_triangle_signed_area_sphere: unit sphere area wrong.'
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: unit sphere area ok - SUCCESS'
+      endif
+
+      ! 1/8 of spherical area = pi*r*r/8 = r*r*pi/2 for r=sphereRadius
+      sphereRadius = 6371220._RKIND
+      a = a*sphereRadius
+      b = b*sphereRadius
+      c = c*sphereRadius
+      if (abs((mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND*sphereRadius*sphereRadius)/(pii/2.0_RKIND*sphereRadius*sphereRadius)) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_triangle_signed_area_sphere: radius sphere area wrong.'
+         write(stderrUnit,*) mpas_triangle_signed_area_sphere(a,b,c,sphereRadius) - pii/2.0_RKIND*sphereRadius*sphereRadius
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: radius sphere area ok - SUCCESS'
+      endif
+
+
+   end subroutine mpas_unit_test_triangle_signed_area_sphere!}}}
 
 
 !***********************************************************************
