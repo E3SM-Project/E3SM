@@ -20,9 +20,9 @@ module mpas_vector_reconstruction
 
   use mpas_derived_types
   use mpas_pool_routines
-  use mpas_configure
   use mpas_constants
   use mpas_rbf_interpolation
+  use mpas_vector_operations
 
   implicit none
 
@@ -48,15 +48,17 @@ module mpas_vector_reconstruction
 !>  Output: grid % coeffs_reconstruct - coefficients used to reconstruct 
 !>                                      velocity vectors at cell centers 
 !-----------------------------------------------------------------------
-  subroutine mpas_init_reconstruct(meshPool)!{{{
+  subroutine mpas_init_reconstruct(meshPool, includeHalos)!{{{
 
     implicit none
 
     type (mpas_pool_type), intent(in) :: &
          meshPool         !< Input: Mesh information
 
+    logical, optional, intent(in) :: includeHalos
+
     ! temporary arrays needed in the (to be constructed) init procedure
-    integer, pointer :: nCellsSolve
+    integer, pointer :: nCells
     integer, dimension(:,:), pointer :: edgesOnCell
     integer, dimension(:), pointer :: nEdgesOnCell
     integer :: i, iCell, iEdge, pointCount, maxEdgeCount
@@ -68,6 +70,20 @@ module mpas_vector_reconstruction
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
 
     real (kind=RKIND), dimension(:,:,:), pointer :: coeffs_reconstruct
+    logical, pointer :: is_periodic
+    real(kind=RKIND), pointer :: x_period, y_period
+
+    logical :: includeHalosLocal
+
+    call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+    call mpas_pool_get_config(meshPool, 'x_period', x_period)
+    call mpas_pool_get_config(meshPool, 'y_period', y_period)
+
+    if ( present(includeHalos) ) then
+       includeHalosLocal = includeHalos
+    else
+       includeHalosLocal = .false.
+    end if
 
     !========================================================
     ! arrays filled and saved during init procedure
@@ -88,7 +104,11 @@ module mpas_vector_reconstruction
     call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
     call mpas_pool_get_array(meshPool, 'cellTangentPlane', cellTangentPlane)
 
-    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+    if ( includeHalosLocal ) then
+       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+    else
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCells)
+    end if
 
     ! init arrays
     coeffs_reconstruct = 0.0
@@ -100,7 +120,7 @@ module mpas_vector_reconstruction
     allocate(coeffs(maxEdgeCount,3))
 
     ! loop over all cells to be solved on this block
-    do iCell=1,nCellsSolve
+    do iCell=1,nCells
       pointCount = nEdgesOnCell(iCell)
       cellCenter(1) = xCell(iCell)
       cellCenter(2) = yCell(iCell)
@@ -108,9 +128,15 @@ module mpas_vector_reconstruction
 
       do i=1,pointCount
         iEdge = edgesOnCell(i,iCell)
-        edgeOnCellLocations(i,1)  = xEdge(iEdge)
-        edgeOnCellLocations(i,2)  = yEdge(iEdge)
-        edgeOnCellLocations(i,3)  = zEdge(iEdge)
+        if (is_periodic) then
+          edgeOnCellLocations(i,1)  = mpas_fix_periodicity(xEdge(iEdge), cellCenter(1), x_period)
+          edgeOnCellLocations(i,2)  = mpas_fix_periodicity(yEdge(iEdge), cellCenter(2), y_period)
+          edgeOnCellLocations(i,3)  = zEdge(iEdge)
+        else
+          edgeOnCellLocations(i,1)  = xEdge(iEdge)
+          edgeOnCellLocations(i,2)  = yEdge(iEdge)
+          edgeOnCellLocations(i,3)  = zEdge(iEdge)
+        end if
         edgeOnCellNormals(i,:)  = edgeNormalVectors(:, iEdge)
       end do
 
@@ -166,7 +192,7 @@ module mpas_vector_reconstruction
 !>  Input: grid meta data and vector component data residing at cell edges
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at cell centers
 !-----------------------------------------------------------------------
-  subroutine mpas_reconstruct_2d(meshPool, u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional)!{{{
+  subroutine mpas_reconstruct_2d(meshPool, u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional, includeHalos)!{{{
 
     implicit none
 
@@ -177,9 +203,11 @@ module mpas_vector_reconstruction
     real (kind=RKIND), dimension(:,:), intent(out) :: uReconstructZ !< Output: Z Component of velocity reconstructed to cell centers
     real (kind=RKIND), dimension(:,:), intent(out) :: uReconstructZonal !< Output: Zonal Component of velocity reconstructed to cell centers
     real (kind=RKIND), dimension(:,:), intent(out) :: uReconstructMeridional !< Output: Meridional Component of velocity reconstructed to cell centers
+    logical, optional, intent(in) :: includeHalos !< Input: Optional logical that allows reconstruction over halo regions
 
     !   temporary arrays needed in the compute procedure
-    integer, pointer :: nCellsSolve
+    logical :: includeHalosLocal
+    integer, pointer :: nCells
     integer, dimension(:,:), pointer :: edgesOnCell
     integer, dimension(:), pointer :: nEdgesOnCell
     integer :: iCell,iEdge, i
@@ -191,6 +219,11 @@ module mpas_vector_reconstruction
 
     real (kind=RKIND) :: clat, slat, clon, slon
 
+    if ( present(includeHalos) ) then
+       includeHalosLocal = includeHalos
+    else
+       includeHalosLocal = .false.
+    end if
 
     ! stored arrays used during compute procedure
     call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffs_reconstruct)
@@ -198,7 +231,12 @@ module mpas_vector_reconstruction
     ! temporary variables
     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
     call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+    if ( includeHalosLocal ) then
+       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+    else
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCells)
+    end if
 
     call mpas_pool_get_array(meshPool, 'latCell', latCell)
     call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
@@ -211,7 +249,7 @@ module mpas_vector_reconstruction
     uReconstructZ = 0.0
 
     ! loop over cell centers
-    do iCell = 1, nCellsSolve
+    do iCell = 1, nCells
       ! a more efficient reconstruction where rbf_values*matrix_reconstruct has been precomputed
       ! in coeffs_reconstruct
       do i=1,nEdgesOnCell(iCell)
@@ -227,7 +265,7 @@ module mpas_vector_reconstruction
     enddo   ! iCell
 
     if (on_a_sphere) then
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
         clat = cos(latCell(iCell))
         slat = sin(latCell(iCell))
         clon = cos(lonCell(iCell))
@@ -257,7 +295,7 @@ module mpas_vector_reconstruction
 !>  Input: grid meta data and vector component data residing at cell edges
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at cell centers
 !-----------------------------------------------------------------------
-  subroutine mpas_reconstruct_1d(meshPool, u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional)!{{{
+  subroutine mpas_reconstruct_1d(meshPool, u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional, includeHalos)!{{{
 
     implicit none
 
@@ -268,9 +306,10 @@ module mpas_vector_reconstruction
     real (kind=RKIND), dimension(:), intent(out) :: uReconstructZ !< Output: Z Component of velocity reconstructed to cell centers
     real (kind=RKIND), dimension(:), intent(out) :: uReconstructZonal !< Output: Zonal Component of velocity reconstructed to cell centers
     real (kind=RKIND), dimension(:), intent(out) :: uReconstructMeridional !< Output: Meridional Component of velocity reconstructed to cell centers
+    logical, optional, intent(in) :: includeHalos !< Input: Logical flag that allows reconstructing over halo regions
 
     !   temporary arrays needed in the compute procedure
-    integer, pointer :: nCellsSolve
+    integer, pointer :: nCells
     integer, dimension(:,:), pointer :: edgesOnCell
     integer, dimension(:), pointer :: nEdgesOnCell
     integer :: iCell,iEdge, i
@@ -279,9 +318,15 @@ module mpas_vector_reconstruction
     real (kind=RKIND), dimension(:,:,:), pointer :: coeffs_reconstruct
 
     logical, pointer :: on_a_sphere
+    logical :: includeHalosLocal
 
     real (kind=RKIND) :: clat, slat, clon, slon
 
+    if ( present(includeHalos) ) then
+       includeHalosLocal = includeHalos
+    else
+       includeHalosLocal = .false.
+    end if
 
     ! stored arrays used during compute procedure
     call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffs_reconstruct)
@@ -289,7 +334,12 @@ module mpas_vector_reconstruction
     ! temporary variables
     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
     call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-    call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+    if ( includeHalosLocal ) then
+       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+    else
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCells)
+    end if
 
     call mpas_pool_get_array(meshPool, 'latCell', latCell)
     call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
@@ -302,7 +352,7 @@ module mpas_vector_reconstruction
     uReconstructZ = 0.0
 
     ! loop over cell centers
-    do iCell = 1, nCellsSolve
+    do iCell = 1, nCells
       ! a more efficient reconstruction where rbf_values*matrix_reconstruct has been precomputed
       ! in coeffs_reconstruct
       do i=1,nEdgesOnCell(iCell)
@@ -318,7 +368,7 @@ module mpas_vector_reconstruction
     enddo   ! iCell
 
     if (on_a_sphere) then
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
         clat = cos(latCell(iCell))
         slat = sin(latCell(iCell))
         clon = cos(lonCell(iCell))

@@ -25,7 +25,6 @@ module mpas_framework
    use mpas_timekeeping
    use mpas_io
    use mpas_io_units
-   use mpas_configure
 
 
    contains
@@ -82,9 +81,10 @@ module mpas_framework
       integer :: pio_num_iotasks
       integer :: pio_stride
 
+      call mpas_timer_init(domain)
+
 #ifdef MPAS_DEBUG
       call mpas_pool_set_error_level(MPAS_POOL_WARN)
-      call mpas_pool_set_error_level(MPAS_POOL_FATAL)
 #endif
 
       call mpas_pool_get_config(domain % configs, 'config_calendar_type', config_calendar_type)

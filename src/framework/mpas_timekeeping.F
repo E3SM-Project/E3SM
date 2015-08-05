@@ -10,6 +10,7 @@ module mpas_timekeeping
    use mpas_kind_types
    use mpas_derived_types
    use mpas_io_units
+   use mpas_dmpar
 
    use ESMF
    use ESMF_BaseMod
@@ -438,6 +439,11 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
+
+      if ( len_trim(alarmID) > ShortStrKIND ) then
+         write(stderrUnit, *) 'ERROR: Length of alarmID ''' // trim(alarmID) // ''' is ', len_trim(alarmID), ' which is longer than the allowable length of ', ShortStrKIND
+         call mpas_dmpar_global_abort('ERROR: alarmID length is too long')
+      end if
 
       ! Add a new entry to the linked list of alarms for this clock
       if (.not. associated(clock % alarmListHead)) then
@@ -2110,6 +2116,8 @@ end module mpas_timekeeping
 
 
 subroutine wrf_error_fatal(msg)
+
+   use mpas_dmpar
 
    implicit none
 

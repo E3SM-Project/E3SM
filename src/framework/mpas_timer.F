@@ -23,6 +23,15 @@
         use mpas_kind_types
         use mpas_derived_types
         use mpas_io_units
+        use mpas_dmpar
+
+#ifdef MPAS_PERF_MOD_TIMERS
+        use perf_mod
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+        use gptl
+#endif
 
         implicit none
         save
@@ -31,9 +40,10 @@
         include 'f90papi.h'
 #endif
 
-        type (timer_node), pointer :: all_timers
+        type (timer_node), pointer :: all_timers => null()
         integer :: levels, synced
 
+        ! DWJ 06/12/2015 -- Needs to be removed for multiple domains
         type (dm_info), pointer :: domain_info
 
         public :: mpas_timer_start, &
@@ -56,9 +66,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_start(timer_name, clear_timer, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
 
           character (len=*), intent (in) :: timer_name !< Input: name of timer, stored as name of timer
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
@@ -68,14 +75,23 @@
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
-          integer :: clock, hz, usecs, nlen
+          integer :: clock, hz, usecs, nlen, iErr
           trimed_name = trim(timer_name)
           nlen = len(trimed_name)
 
-#ifdef MPAS_TAU 
+#ifdef MPAS_TAU_TIMERS
           call tau_start(trimed_name)
 #endif
 
+#ifdef MPAS_PERF_MOD_TIMERS
+          call t_startf(trimed_name)
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlstart(trimed_name)
+#endif
+
+#ifdef MPAS_NATIVE_TIMERS
           timer_added = .false.
           timer_found = .false.
 
@@ -162,12 +178,8 @@
 #ifdef _PAPI
             call PAPIF_get_real_usec(usecs, check_flag)
             current%start_time = usecs/1.0e6
-#elif _MPI
-            current%start_time = MPI_Wtime()
 #else
-            call system_clock (count=clock)
-            call system_clock (count_rate=hz)
-            current%start_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+            call mpas_dmpar_get_time(current % start_time)
 #endif
           endif
 
@@ -187,6 +199,7 @@
           if(present(timer_ptr)) then
               timer_ptr => current
           endif
+#endif
           
         end subroutine mpas_timer_start!}}}
        
@@ -203,9 +216,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_stop(timer_name, timer_ptr)!{{{
-#         ifdef _MPI
-          include 'mpif.h'
-#         endif
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
@@ -215,14 +225,23 @@
           
           real (kind=R8KIND) :: time_temp
           logical :: timer_found, string_equal, check_flag
-          integer :: clock, hz, usecs, nlen
+          integer :: clock, hz, usecs, nlen, iErr
           trimed_name = trim(timer_name)
           nlen = len(trimed_name)
 
-#ifdef MPAS_TAU 
+#ifdef MPAS_TAU_TIMERS
           call tau_stop(trimed_name)
 #endif
+
+#ifdef MPAS_PERF_MOD_TIMERS
+          call t_startf(trimed_name)
+#endif
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlstop(trimed_name)
+#endif
  
+#ifdef MPAS_NATIVE_TIMERS
           timer_found = .false.
  
           if(present(timer_ptr)) then
@@ -257,12 +276,8 @@
 #ifdef _PAPI
             call PAPIF_get_real_usec(usecs, check_flag)
             current%end_time = usecs/1.0e6
-#elif _MPI
-            current%end_time = MPI_Wtime()
 #else
-            call system_clock(count=clock)
-            call system_clock(count_rate=hz)
-            current%end_time = real(clock,kind=R8KIND)/real(hz,kind=R8KIND)
+            call mpas_dmpar_get_time(current % end_time)
 #endif
             
             time_temp = current%end_time - current%start_time
@@ -278,6 +293,7 @@
 
             current%calls = current%calls + 1
           endif
+#endif
 
         end subroutine mpas_timer_stop!}}}
 
@@ -302,8 +318,16 @@
           logical :: total_found, string_equals
           type (timer_node), pointer :: current, total
           real (kind=RKIND) :: percent
-          integer :: i, nlen
+          integer :: i, nlen, iErr
 
+#ifdef MPAS_GPTL_TIMERS
+          if ( domain_info % my_proc_id == IO_NODE ) then
+             iErr = gptlpr(domain_info % my_proc_id)
+          end if
+#endif
+
+
+#ifdef MPAS_NATIVE_TIMERS
           total_found = .false.
 
 #ifdef MPAS_SYNC_TIMERS
@@ -371,6 +395,7 @@
               current => current%next
             endif
           end do print_timers
+#endif
 
         end subroutine mpas_timer_write!}}}
 
@@ -388,11 +413,21 @@
         subroutine mpas_timer_init(domain)!{{{
           type (domain_type), intent(in), optional :: domain !< Input - Optional: Domain structure
 
+          integer :: iErr
+
           if( present(domain) ) then
               domain_info => domain % dminfo
           endif
 
           synced = 0
+
+#ifdef MPAS_GPTL_TIMERS
+          iErr = gptlsetoption(gptloverhead, 0)
+          iErr = gptlsetoption(gptlpercent, 0)
+          iErr = gptlsetoption(gptlsync_mpi, 1)
+
+          iErr = gptlinitialize()
+#endif
 
         end subroutine mpas_timer_init!}}}
 
@@ -415,7 +450,6 @@
 !
 !-----------------------------------------------------------------------
         subroutine mpas_timer_sync()!{{{
-          use mpas_dmpar
 
           type (timer_node), pointer :: current
           real (kind=RKIND) :: all_total_time, all_max_time, all_min_time, all_ave_time
