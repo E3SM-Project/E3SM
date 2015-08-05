@@ -644,7 +644,7 @@ module mpas_geometry_utils
 !> \details
 !>  This routine calculates the area of a triangle on the surface of a sphere.
 !>  Uses the spherical analog of Heron's formula.
-!>  Copied from mesh generator.
+!>  Copied from mesh generator.  A CCW winding angle is positive.
 !-----------------------------------------------------------------------
    real(kind=RKIND) function mpas_triangle_signed_area_sphere(a, b, c, radius)!{{{
       !-----------------------------------------------------------------
@@ -656,6 +656,7 @@ module mpas_geometry_utils
       ! local variables
       !-----------------------------------------------------------------
       real(kind=RKIND) :: ab, bc, ca, semiperim, tanqe
+      real(kind=RKIND), dimension(3) :: ablen, aclen, Dlen
 
       ab = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))/radius
       bc = mpas_arc_length(b(1), b(2), b(3), c(1), c(2), c(3))/radius
@@ -666,6 +667,24 @@ module mpas_geometry_utils
                    * tan(0.5_RKIND * (semiperim - bc)) * tan(0.5_RKIND * (semiperim - ca)) )
 
       mpas_triangle_signed_area_sphere = 4.0_RKIND * radius * radius * atan(tanqe)
+
+      ! computing correct signs (in similar fashion to mpas_sphere_angle)
+      ablen(1) = b(1) - a(1)
+      ablen(2) = b(2) - a(2)
+      ablen(3) = b(3) - a(3)
+
+      aclen(1) = c(1) - a(1)
+      aclen(2) = c(2) - a(2)
+      aclen(3) = c(3) - a(3)
+
+      dlen(1) =   (ablen(2) * aclen(3)) - (ablen(3) * aclen(2))
+      dlen(2) = -((ablen(1) * aclen(3)) - (ablen(3) * aclen(1)))
+      dlen(3) =   (ablen(1) * aclen(2)) - (ablen(2) * aclen(1))
+
+      if ((Dlen(1)*a(1) + Dlen(2)*a(2) + Dlen(3)*a(3)) < 0.0) then
+        mpas_triangle_signed_area_sphere = -mpas_triangle_signed_area_sphere
+      end if
+
    end function mpas_triangle_signed_area_sphere !}}}
 
 
@@ -843,6 +862,14 @@ module mpas_geometry_utils
          ierr = 1
       else
          write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: unit sphere area ok - SUCCESS'
+      endif
+
+      ! 1/8 of spherical area = pi*r*r/8 = pi/2 for r=1.0
+      if (abs((mpas_triangle_signed_area_sphere(a,c,b,sphereRadius) + pii/2.0_RKIND)/(pii/2.0_RKIND)) > eps) then
+         write(stderrUnit,*) 'Error in mpas_unit_test_triangle_signed_area_sphere: unit sphere area sign wrong.'
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_triangle_signed_area_sphere: unit sphere area sign ok - SUCCESS'
       endif
 
       ! 1/8 of spherical area = pi*r*r/8 = r*r*pi/2 for r=sphereRadius
