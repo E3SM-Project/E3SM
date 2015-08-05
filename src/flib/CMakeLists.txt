@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (PIOF Fortran)
 
+#==============================================================================
+#  DEFINE THE TARGET
+#==============================================================================
+
 set (PIO_Fortran_SRCS pio_nf.F90
                       pio.F90
                       pio_kinds.F90
@@ -28,20 +32,23 @@ endif ()
 target_include_directories (piof
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Compiler
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
         PUBLIC -ffree-line-length-none)
 endif()
-    
-# GPTL Timing
+
+#==============================================================================
+#  DEFINE THE DEPENDENCIES
+#==============================================================================
+
+#===== GPTL =====
 if (ENABLE_TIMING)
     target_compile_definitions (piof
         PUBLIC TIMING)
     target_link_libraries (piof gptl)
 endif ()
 
-# MPI
+#===== MPI =====
 find_package (MPI)
 target_include_directories (piof 
     PUBLIC ${MPI_Fortran_INCLUDE_PATH})
@@ -50,7 +57,7 @@ target_compile_definitions (piof
 target_link_libraries (piof
     ${MPI_Fortran_LIBRARIES})
 
-# NetCDF
+#===== NetCDF =====
 target_include_directories (piof 
     PUBLIC $ENV{HOME}/Software/installs/netcdf-fortran/include)
 target_compile_definitions (piof 
@@ -59,7 +66,7 @@ target_compile_definitions (piof
 target_link_libraries (piof
     $ENV{HOME}/Software/installs/netcdf-fortran/lib/libnetcdff.a)
 
-# PnetCDF
+#===== PnetCDF =====
 target_include_directories (piof 
     PUBLIC $ENV{HOME}/Software/installs/pnetcdf/include)
 target_compile_definitions (piof 

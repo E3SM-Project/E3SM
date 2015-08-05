@@ -4,6 +4,10 @@ include (FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE "FCI_")
 
+#==============================================================================
+#  DEFINE THE TARGET
+#==============================================================================
+
 set (GPTL_C_SRCS GPTLget_memusage.c
                  GPTLprint_memusage.c
                  GPTLutil.c
@@ -24,6 +28,11 @@ target_include_directories (gptl
 target_compile_definitions (gptl
     PRIVATE INCLUDE_CMAKE_FCI)
 
+#==============================================================================
+#  DEFINE THE DEPENDENCIES
+#==============================================================================
+
+#===== MPI =====
 find_package (MPI)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
     target_compile_definitions (gptl 

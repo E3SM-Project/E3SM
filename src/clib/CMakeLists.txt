@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (PIOC C)
 
+#==============================================================================
+#  DEFINE THE TARGET
+#==============================================================================
+
 set (PIO_C_SRCS topology.c
                pio_nc.c
                pio_file.c
@@ -20,7 +24,6 @@ add_library (pioc ${PIO_C_SRCS})
 target_include_directories (pioc
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Compiler
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pioc
         PUBLIC -std=c99)
@@ -31,15 +34,19 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
     target_compile_options (pioc
         PUBLIC -std=c99)
 endif()
+
+#==============================================================================
+#  DEFINE THE DEPENDENCIES
+#==============================================================================
     
-# GPTL Timing
+#===== GPTL =====
 if (ENABLE_TIMING)
     target_compile_definitions (pioc
         PUBLIC TIMING)
     target_link_libraries (pioc gptl)
 endif ()
 
-# MPI
+#===== MPI =====
 find_package (MPI)
 target_include_directories (pioc 
     PUBLIC ${MPI_C_INCLUDE_PATH})
@@ -48,7 +55,7 @@ target_compile_definitions (pioc
 target_link_libraries (pioc
     ${MPI_C_LIBRARIES})
 
-# NetCDF
+#===== NetCDF =====
 target_include_directories (pioc 
     PUBLIC $ENV{HOME}/Software/installs/netcdf-c/include)
 target_compile_definitions (pioc 
@@ -57,7 +64,7 @@ target_compile_definitions (pioc
 target_link_libraries (pioc
     $ENV{HOME}/Software/installs/netcdf-c/lib/libnetcdf.a)
 
-# PnetCDF
+#===== PnetCDF =====
 target_include_directories (pioc 
     PUBLIC $ENV{HOME}/Software/installs/pnetcdf/include)
 target_compile_definitions (pioc 
