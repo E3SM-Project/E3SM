@@ -24,11 +24,11 @@ post_build:
 column_package:
 	(cd column; $(MAKE))
 
-forward_model: column_package
-	(cd forward_model; $(MAKE))
-
-analysis_members: column_package forward_model
+analysis_members:
 	(cd analysis_members; $(MAKE))
+
+forward_model: column_package analysis_members
+	(cd forward_model; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

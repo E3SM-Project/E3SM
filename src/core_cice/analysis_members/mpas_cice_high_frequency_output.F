@@ -25,8 +25,6 @@ module cice_high_frequency_output
    use mpas_timekeeping
    use mpas_stream_manager
 
-   use cice_constants
-
    implicit none
    private
    save

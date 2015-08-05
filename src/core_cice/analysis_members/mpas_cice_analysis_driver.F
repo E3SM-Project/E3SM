@@ -25,7 +25,6 @@ module cice_analysis_driver
    use mpas_timer
    use mpas_stream_manager
 
-   use cice_constants
    use cice_high_frequency_output
 !   use cice_TEMP_LATE
 
@@ -129,8 +128,9 @@ contains
 
       call mpas_pool_create_pool(analysisMemberList)
       call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
+      write(6,*) ' debug:  mpas_pool_add_config'
    !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
-!     call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
+   !  call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -139,10 +139,12 @@ contains
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
          nameLength = len_trim(poolItr % memberName)
          configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         write(6,*) ' debug : ', configName
          call mpas_pool_get_config(configPool, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
             packageName = poolItr % memberName(1:nameLength) // 'AMPKGActive'
+            write(6,*) ' debug : ', packageName
             call mpas_pool_get_package(packagePool, packageName, AMPackageActive)
             AMPackageActive = .true.
          end if
@@ -708,7 +710,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_init_test_compute_interval(domain, err_tmp)
+         call cice_init_high_frequency_output(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -743,7 +745,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_compute_test_compute_interval(domain, timeLevel, err_tmp)
+         call cice_compute_high_frequency_output(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -777,7 +779,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_restart_test_compute_interval(domain, err_tmp)
+         call cice_restart_high_frequency_output(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -811,7 +813,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_finalize_test_compute_interval(domain, err_tmp)
+         call cice_finalize_high_frequency_output(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
