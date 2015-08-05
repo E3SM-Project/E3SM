@@ -24,7 +24,7 @@ post_build:
 column_package:
 	(cd column; $(MAKE))
 
-analysis_members:
+analysis_members: column_package
 	(cd analysis_members; $(MAKE))
 
 forward_model: column_package analysis_members
