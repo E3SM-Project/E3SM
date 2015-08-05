@@ -10,8 +10,14 @@ option (ENABLE_TIMING  "Enable GPTL timing"                OFF)
 option (ENABLE_TESTS   "Enable the testing builds"         OFF)
 
 #==============================================================================
-#  INCLUDE PATHS
+#  APPEND TO CMAKE MODULE PATH
+#==============================================================================
+
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+#==============================================================================
+#  INCLUDE SOURCE DIRECTORIES
 #==============================================================================
      
 add_subdirectory (src)
-add_subdirectory (tests)
+#add_subdirectory (tests)
