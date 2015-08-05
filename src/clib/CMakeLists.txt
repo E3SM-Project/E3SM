@@ -26,13 +26,13 @@ target_include_directories (pioc
 
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pioc
-        PUBLIC -std=c99)
+        PRIVATE -std=c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
     target_compile_options (pioc
-        PUBLIC -c99)
+        PRIVATE -c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
     target_compile_options (pioc
-        PUBLIC -std=c99)
+        PRIVATE -std=c99)
 endif()
 
 #==============================================================================
@@ -42,7 +42,7 @@ endif()
 #===== GPTL =====
 if (ENABLE_TIMING)
     target_compile_definitions (pioc
-        PUBLIC TIMING)
+        PRIVATE TIMING)
     target_link_libraries (pioc gptl)
 endif ()
 
@@ -51,7 +51,7 @@ find_package (MPI)
 target_include_directories (pioc 
     PUBLIC ${MPI_C_INCLUDE_PATH})
 target_compile_definitions (pioc 
-    PUBLIC USEMPIIO)
+    PRIVATE USEMPIIO)
 target_link_libraries (pioc
     ${MPI_C_LIBRARIES})
 
@@ -59,8 +59,8 @@ target_link_libraries (pioc
 target_include_directories (pioc 
     PUBLIC $ENV{NETCDF}/include)
 target_compile_definitions (pioc 
-    PUBLIC _NETCDF
-    PUBLIC _NETCDF4)
+    PRIVATE _NETCDF
+    PRIVATE _NETCDF4)
 target_link_libraries (pioc
     $ENV{NETCDF}/lib/libnetcdf.a)
 
@@ -68,8 +68,8 @@ target_link_libraries (pioc
 target_include_directories (pioc 
     PUBLIC $ENV{PNETCDF}/include)
 target_compile_definitions (pioc 
-    PUBLIC _PNETCDF
-    PUBLIC USE_PNETCDF_VARN
-    PUBLIC USE_PNETCDF_VARN_ON_READ)
+    PRIVATE _PNETCDF
+    PRIVATE USE_PNETCDF_VARN
+    PRIVATE USE_PNETCDF_VARN_ON_READ)
 target_link_libraries (pioc
     $ENV{PNETCDF}/lib/libpnetcdf.a)
