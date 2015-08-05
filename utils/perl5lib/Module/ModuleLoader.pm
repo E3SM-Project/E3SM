@@ -56,6 +56,7 @@ sub new
 #------------------------------------------------------------------------------
 # eval the env_mach_specific file for this machine, which should give us the new environment, 
 # then insert the new or modified environment variables into %ENV
+# TODO: remove!
 #------------------------------------------------------------------------------
 sub loadModulesCshEval()
 {
@@ -154,17 +155,35 @@ sub moduleInit()
 	{
 		$self->{configmachinesfile} = $configmachinesfile;
 	}
+    
+    $self->{machspecificfile} = $self->{'caseroot'} . "/mach_specific.xml";
 	
 	# Set up the XML::LibXML parser..
 	my $parser = XML::LibXML->new(no_blanks => 1);
-	#my $xml = $parser->parse_file($$configmachinesfile);
 	my $xml = $parser->parse_file($self->{'configmachinesfile'});
 	$self->{configmachinesroot} = $xml;
+
+    # First, get the module system type. 
+    my @moduletypes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system");
+    #my $modulesystemtype;
+    foreach my $modtype(@moduletypes)
+    {
+        $self->{modulesystemtype} = $modtype->getAttribute('type');
+    }
 	
 	# Get the init_path.  Module systems usually have an 'init' script for 
 	# various scripting languages, we need to get this path from config_machines
-	
-	my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");
+    # We want to use Bourne shell for soft, there is no way to load modules via Perl 
+    # for the soft environment
+	my @initnodes; 
+    if($self->{modulesystemtype} eq 'soft')
+    {
+        @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'sh\']");
+    }
+    elsif($self->{modulesystemtype} eq 'module')
+    {
+        @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");
+    }
 	foreach my $initnode(@initnodes)
 	{
 		$self->{initpath} = $initnode->textContent();
@@ -184,8 +203,6 @@ sub moduleInit()
 		die "the module cmd path could not be found for the machine $machine\n";
 	}
 
-	#$self->{initpath} .= "perl.pm";
-	#$self->{cmdpath} .=  " perl";
 }
 
 sub findModulesFromMachinesDir()
@@ -307,14 +324,15 @@ sub findModulesForCase()
 	my $debug = $self->{debug};
 
 	#my $cmroot = $self->{configmachinesroot};
-	my $machspecificfile = $self->{'caseroot'} . "/mach_specific.xml";
-	if( ! -e $machspecificfile)
+	#my $machspecificfile = $self->{'caseroot'} . "/mach_specific.xml";
+    print "machspecificfile: $self->{machspecificfile}\n";
+	if( ! -e $self->{machspecificfile})
 	{
-		die "$machspecificfile was not found!\n";
+		die "$self->{machspecificfile} was not found!\n";
 	}
     my $parser = XML::LibXML->new(no_blanks => 1);
     #my $xml = $parser->parse_file($self->{'configmachinesfile'});
-	my $casemoduleparser = $parser->parse_file($machspecificfile);
+	my $casemoduleparser = $parser->parse_file($self->{machspecificfile});
 	my @allmodulenodes = $casemoduleparser->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
 
 	my @foundmodules = $self->findModules(\@allmodulenodes);
@@ -389,11 +407,24 @@ sub findModules()
 
 sub loadModules()
 {
+    my $self = shift;
+    if($self->{modulesystemtype}  eq 'module')
+    {
+        $self->loadModuleModules();
+    }
+    elsif($self->{modulesystemtype} eq 'soft')
+    {
+        $self->loadSoftModules();
+    }
+}
+
+sub loadModuleModules()
+{
 	my $self = shift;
 	
 	if(! defined $self->{modulestoload})
 	{
-		die "no modules to load, wtf??";
+		die "no modules to load.. Aborting!";
 	}
 	
 	my $modulestoload = $self->{modulestoload};
@@ -421,7 +452,59 @@ sub loadModules()
 	}
 	#map { print "key: $_, value: $ENV{$_}\n" } sort keys %ENV;
 	$self->writeCshModuleFile();
-	$self->writeBashModuleFile();
+	$self->writeShModuleFile();
+}
+
+
+sub loadSoftModules()
+{
+    my $self = shift;
+    if(! defined $self->{shmodulecode})
+    {
+        $self->getShModuleCode();
+    }
+    print "self shell module code: \n";
+    print "$self->{shmodulecode}\n";
+
+    # Stash the old env here. 
+    my %oldenv = %ENV;
+    my %newenv;
+    my @output;
+    
+    my $cmd = $self->{shmodulecode};
+    $cmd .= "\nprintenv";
+    
+    eval { @output = qx($cmd); };
+    chomp @output;
+    foreach my $line(@output)
+    {
+        if(length($line) > 0)
+        {
+            chomp $line;
+            my ($key, $value) = split('=', $line, 2);
+            $newenv{$key} = $value;
+        }
+    }
+
+    my %newbuildenv;
+
+    foreach my $k(keys %newenv)
+    {
+        if(! defined $oldenv{$k})
+        {
+            $newbuildenv{$k} = $newenv{$k};
+            $ENV{$k} = $newenv{$k};
+            #print "newenv: $k : $newenv{$k}\n";
+        }
+        if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
+        { 
+            $newbuildenv{$k} = $newenv{$k};
+            $ENV{$k} = $newenv{$k};
+            #print "newenv: $k : $newenv{$k}\n";
+        }
+    }
+	$self->writeCshModuleFile();
+	$self->writeShModuleFile();
 }
 
 sub getEnvironmentVars()
@@ -441,14 +524,22 @@ sub getLimits()
 	my $self = shift;
 }
 
-sub writeCshModuleFile()
+sub getCshModuleCode()
 {
 	my $self = shift;
 	my $machine = $self->{machine};
 	
-	#my $xml = $self->{configmachinesroot};
     my $parser = XML::LibXML->new(no_blanks => 1);
-    my $xml = $parser->parse_file($self->{'configmachinesfile'});
+    my $xml;
+    if( -e $self->{machspecificfile})
+    {
+        $xml = $parser->parse_file($self->{machspecificfile});
+    }
+    else
+    {
+        $xml = $parser->parse_file($self->{configmachinesfile});
+    }
+
 	
        #my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");	
 	my @cshinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'csh\']");
@@ -475,7 +566,7 @@ START
 		$self->writeXmlFileForCase();
 	}
 	my $casexml = $parser->parse_file("$self->{caseroot}/mach_specific.xml");
-	my @allmodules = $casexml->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
+	my @allmodules = $casexml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
 	
 	foreach my $mod(@allmodules)
 	{
@@ -486,7 +577,7 @@ START
 			{
 				my $action = $child->getName();
 				my $actupon = $child->textContent();
-				$csh .= "module $action $actupon\n";
+				$csh .= "$self->{cmdpath} $action $actupon\n";
 			}
 		}
 		else
@@ -516,7 +607,7 @@ START
 				}
 				else
 				{
-					$csh .= "\tmodule $action $actupon\n";
+					$csh .= "\t$self->{cmdpath} $action $actupon\n";
 				}
 			}
 			$csh .= "endif\n";
@@ -539,16 +630,25 @@ START
 		$csh .= "limit $name $value\n";
 	}
 	
+    $self->{cshmodulecode} = $csh;
+}
+sub writeCshModuleFile()
+{
+    my $self = shift;
+    if(! defined $self->{cshmodulecode})
+    {
+        $self->getCshModuleCode();
+    }
 	open my $CSHFILE, ">", "$self->{caseroot}/.env_mach_specific.csh" || die " coult not open test.csh, $!";
 	print "writing csh file $self->{caseroot}/.env_mach_specific.csh\n";
-	print $CSHFILE $csh;
+	print $CSHFILE $self->{cshmodulecode};
 	close $CSHFILE;
 }
 
-sub writeBashModuleFile()
+sub getShModuleCode()
 {
     my $self = shift;
-	my %cshtobash = ( "cputime" => "-t", 
+	my %cshtosh = ( "cputime" => "-t", 
                       "filesize" => "-f",
                       "datasize" => "-d", 
                       "stacksize" => "-s", 
@@ -562,27 +662,35 @@ sub writeBashModuleFile()
 
     #my $xml = $self->{configmachinesroot};
     my $parser = XML::LibXML->new(no_blanks => 1);
-    my $xml = $parser->parse_file($self->{'configmachinesfile'});
-
-    my @bashinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'bash\']");
-
-    die "no bash init path defined for this machine!" if !@bashinitnodes;
-    foreach my $node(@bashinitnodes)
+    my $xml;
+    if( -e $self->{machspecificfile})
     {
-        $self->{bashinitpath} = $node->textContent();
+        $xml = $parser->parse_file($self->{machspecificfile});
+    }
+    else
+    {
+        $xml = $parser->parse_file($self->{configmachinesfile});
     }
 
-    my $bash =<<"START";
-#!/usr/bin/env bash -f 
+    my @shinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'sh\']");
+
+    die "no sh init path defined for this machine!" if !@shinitnodes;
+    foreach my $node(@shinitnodes)
+    {
+        $self->{shinitpath} = $node->textContent();
+    }
+
+    my $sh =<<"START";
+#!/usr/bin/env sh -f 
 #===============================================================================
 # Automatically generated module settings for $self->{machine}
 #===============================================================================
 
-.  $self->{bashinitpath}
+.  $self->{shinitpath}
 START
 
-	my @allmodules = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/modules");
 	
+	my @allmodules = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
 	foreach my $mod(@allmodules)
 	{
 		if(! $mod->hasAttributes())
@@ -592,24 +700,26 @@ START
 			{
 				my $action = $child->getName();
 				my $actupon = $child->textContent();
-				$bash .= "module $action $actupon \n";
+				#$sh .= "module $action $actupon \n";
+                print "$self->{cmdpath}  $action $actupon \n";
+				$sh .= "$self->{cmdpath} $action $actupon \n";
 			}
 		}
 		else
 		{
 			my @attrs = $mod->attributes;
 			
-			$bash .= "if [ ";
+			$sh .= "if [ ";
 			while(@attrs)
 			{
 				my $attr = shift @attrs;
 				my $name = uc($attr->getName());
 				my $value = $attr->getValue();
-				$bash .= "\"\$$name\" = \"$value\"";
-				$bash .= " ] && [ " if (@attrs);
+				$sh .= "\"\$$name\" = \"$value\"";
+				$sh .= " ] && [ " if (@attrs);
 			}
-			$bash .= " ]\n";
-			$bash .= "then\n";
+			$sh .= " ]\n";
+			$sh .= "then\n";
 	
 			my @modchildren = $mod->getChildNodes();
 			foreach my $child(@modchildren)
@@ -618,37 +728,46 @@ START
 				my $actupon = $child->textContent();
 				if($action =~ /xmlchange/)
 				{
-					$bash .= "\t./$action $actupon\n";
+					$sh .= "\t./$action $actupon\n";
 				}
 				else
 				{
-					$bash .= "\tmodule $action $actupon\n";
+					$sh .= "\tmodule $action $actupon\n";
 				}
 			}
-			$bash .= "fi\n";
+			$sh .= "fi\n";
 		}
 	}
 
 
-    my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables/env");
+    my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables/env");
     foreach my $enode(@envnodes)
     {
         my $name = $enode->getAttribute('name');
         my $value = $enode->textContent();
-        $bash .= "export $name=$value\n";
+        $sh .= "export $name=$value\n";
     }
 
-    my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits/limit");
+    my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/limits/limit");
     foreach my $lnode(@limitnodes)
     {
         my $name = $lnode->getAttribute('name');
         my $value = $lnode->textContent();
-		my $bashname = $cshtobash{$name};
-        $bash .= "ulimit $bashname $value\n";
+		my $shname = $cshtosh{$name};
+        $sh .= "ulimit $shname $value\n";
     }
+    $self->{shmodulecode} = $sh;
+}
 
-	open my $BASHFILE, ">", "$self->{caseroot}/.env_mach_specific.bash" || die "could not open .env_mach_specific.bash, $!";
-	print $BASHFILE $bash;
-	close $BASHFILE;
+sub writeShModuleFile
+{
+    my $self = shift;
+    if(! defined $self->{shmodulecode})
+    {
+        $self->getShModulefile();
+    }
+	open my $SHFILE, ">", "$self->{caseroot}/.env_mach_specific.sh" || die "could not open .env_mach_specific.sh, $!";
+	print $SHFILE $self->{shmodulecode};
+	close $SHFILE;
 }
 1;
