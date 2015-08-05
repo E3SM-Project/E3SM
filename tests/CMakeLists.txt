@@ -5,5 +5,5 @@ add_subdirectory (general)
 #add_subdirectory (unit)
 #add_subdirectory (performance)
 
-#enable_testing()
+enable_testing()
 #add_test(...)
