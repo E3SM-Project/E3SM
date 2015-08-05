@@ -1,7 +1,7 @@
 #! /bin/csh -f
 
 #===============================================================================
-# Goldbach machine specific settings
+# Hobart machine specific settings
 #===============================================================================
 setenv PATH /home/jedwards/cmake-3.2.3/bin:$PATH
 cmake --version
@@ -37,6 +37,7 @@ if ( $COMPILER == "pgi" ) then
 endif
 
 if ( $COMPILER == "nag" ) then
+    setenv MACH hobart
     module load compiler/nag/6.0
     if( $MPILIB == "mvapich2" ) then
       ./xmlchange MPILIB=openmpi
