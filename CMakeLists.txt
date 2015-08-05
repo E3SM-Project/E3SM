@@ -14,3 +14,4 @@ option (ENABLE_TESTS   "Enable the testing builds"         OFF)
 #==============================================================================
      
 add_subdirectory (src)
+add_subdirectory (tests)
