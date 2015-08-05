@@ -501,7 +501,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
                enddo
 
-               deallocate(minBottomDepth,zMidZLevel)
+               deallocate(minBottomDepth,minBottomDepthMid,zMidZLevel)
 
             elseif (config_pbc_alteration_type .eq. 'full_cell') then
 
