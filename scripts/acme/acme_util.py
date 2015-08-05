@@ -161,7 +161,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir)
-    output, errput = proc.communicate()
+    output, errput = proc.communicate(input_str)
     stat = proc.wait()
 
     verbose_print("  stat: %d\n" % stat, verbose)
@@ -171,7 +171,11 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (ok_to_fail):
         return stat, output, errput
     else:
-        expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
+        if (arg_stderr is not None):
+            errput = errput if errput is not None else open(arg_stderr.name, "r").read()
+            expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
+        else:
+            expect(stat == 0, "Command: '%s' failed. See terminal output" % cmd)
         return output
 
 ###############################################################################
