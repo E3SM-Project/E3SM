@@ -144,7 +144,6 @@ sub loadModulesCshEval()
 sub moduleInit()
 {
 	my $self = shift;
-	#my $envfile = $self->{'modulepath'} . 
 	my $configmachinesfile = "$self->{machroot}/config_machines.xml";
 	my $machine = $self->{machine};
 	if(! -e $configmachinesfile)
@@ -205,6 +204,7 @@ sub moduleInit()
 
 }
 
+#Find the modules for the machine from config_machines.xml
 sub findModulesFromMachinesDir()
 {
 	my $self = shift;
@@ -277,12 +277,10 @@ sub findModulesFromMachinesDir()
 sub writeXMLFileForCase()
 {
 	my $self = shift;
-	#$self->moduleInit();
 	my $cmroot = $self->{configmachinesroot};
 	my $machine = $self->{machine};
     my @modulenodes;
     my $seqnum = 1;
-    #my @allmodulenodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system");	
     my @machinenodes = $cmroot->findnodes("/config_machines/machine[\@MACH=\'$machine\']");	
 	
 	my $machinenode = $machinenodes[0];
@@ -308,7 +306,6 @@ sub writeXMLFileForCase()
 		$newmachnode->addChild($lnode);
 	}
 
-	#print "new mach node: ", $newmachnode->toString();
 	my $newdom = XML::LibXML::Document->new("1.0");
 	$newdom->setDocumentElement($newmachnode);
 	my $filepath = $self->{caseroot} . "/mach_specific.xml";
@@ -323,21 +320,18 @@ sub findModulesForCase()
 	my $mpilib = $self->{mpilib};
 	my $debug = $self->{debug};
 
-	#my $cmroot = $self->{configmachinesroot};
-	#my $machspecificfile = $self->{'caseroot'} . "/mach_specific.xml";
-    print "machspecificfile: $self->{machspecificfile}\n";
 	if( ! -e $self->{machspecificfile})
 	{
 		die "$self->{machspecificfile} was not found!\n";
 	}
     my $parser = XML::LibXML->new(no_blanks => 1);
-    #my $xml = $parser->parse_file($self->{'configmachinesfile'});
 	my $casemoduleparser = $parser->parse_file($self->{machspecificfile});
 	my @allmodulenodes = $casemoduleparser->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
 
 	my @foundmodules = $self->findModules(\@allmodulenodes);
 	$self->{modulestoload} = \@foundmodules;
-	return @foundmodules; 
+	#return @foundmodules; 
+    
 }
 
 sub findModules()
@@ -355,7 +349,7 @@ sub findModules()
 		{
 			my @modchildren = $mod->getChildNodes();
 			
-			# for ever child node we find, 
+			# for every child node we find, 
 			# action is the module action to take, actupon is the module 
 			# we want to act upon, and the seqnum denotes the order in which the
 			# module will be loaded. 
@@ -424,8 +418,16 @@ sub loadModuleModules()
 	
 	if(! defined $self->{modulestoload})
 	{
-		die "no modules to load.. Aborting!";
+		$self->findModulesForCase();
 	}
+    if(! defined $self->{environmentvars})
+    {
+        $self->findEnvVars();
+    }
+    if(! defined $self->{limits})
+    {
+        $self->findLimits();
+    }
 	
 	my $modulestoload = $self->{modulestoload};
 	
@@ -450,7 +452,12 @@ sub loadModuleModules()
 			warn "module cmd $cmd died with $? $!\n";
 		}
 	}
-	#map { print "key: $_, value: $ENV{$_}\n" } sort keys %ENV;
+    my %moduleenv = %{$self->{environmentvars}};
+    foreach my $key(keys %moduleenv)
+    {
+        $ENV{$key} = $moduleenv{$key};
+    }
+
 	$self->writeCshModuleFile();
 	$self->writeShModuleFile();
 }
@@ -463,8 +470,6 @@ sub loadSoftModules()
     {
         $self->getShModuleCode();
     }
-    print "self shell module code: \n";
-    print "$self->{shmodulecode}\n";
 
     # Stash the old env here. 
     my %oldenv = %ENV;
@@ -494,34 +499,52 @@ sub loadSoftModules()
         {
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
-            #print "newenv: $k : $newenv{$k}\n";
         }
         if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
         { 
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
-            #print "newenv: $k : $newenv{$k}\n";
         }
     }
 	$self->writeCshModuleFile();
 	$self->writeShModuleFile();
 }
 
-sub getEnvironmentVars()
+sub findEnvVars()
 {
 	my $self = shift;
-    #my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/environment_variables/env");
-	#
-	#foreach my $enode(@envnodes)
-	#{
-	#	my $type = $enode->getAttribute('name');
-	#	my $value = $enode->getValue();
-	#}
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    my $xml = $parser->parse_file($self->{machspecificfile});
+    my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/environment_variables/env");
+	
+    my %envs;
+	foreach my $enode(@envnodes)
+	{
+		my $name = $enode->getAttribute('name');
+		my $value = $enode->getValue();
+        $envs{$name} = $value;
+	}
+    $self->{environmentvars} = \%envs;
+    
 }
 
-sub getLimits()
+sub findLimits()
 {
 	my $self = shift;
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    my $xml = $parser->parse_file($self->{machspecificfile});
+    my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/limits/limit");
+    
+    my %limits;
+    
+    foreach my $lnode(@limitnodes)
+    {
+        my $name = $lnode->getAttribute('name');
+        my $value = $lnode->getValue();
+        $limits{$name} = $value;
+    }
+    
+    $self->{limits}
 }
 
 sub getCshModuleCode()
@@ -540,8 +563,6 @@ sub getCshModuleCode()
         $xml = $parser->parse_file($self->{configmachinesfile});
     }
 
-	
-       #my @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");	
 	my @cshinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'csh\']");
 	
 	die "no csh init path defined for this machine!" if !@cshinitnodes;
@@ -640,7 +661,6 @@ sub writeCshModuleFile()
         $self->getCshModuleCode();
     }
 	open my $CSHFILE, ">", "$self->{caseroot}/.env_mach_specific.csh" || die " coult not open test.csh, $!";
-	print "writing csh file $self->{caseroot}/.env_mach_specific.csh\n";
 	print $CSHFILE $self->{cshmodulecode};
 	close $CSHFILE;
 }
