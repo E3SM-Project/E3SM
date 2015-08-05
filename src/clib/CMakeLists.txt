@@ -47,7 +47,7 @@ if (ENABLE_TIMING)
 endif ()
 
 #===== MPI =====
-find_package (MPI)
+find_package (MPI REQUIRED)
 target_include_directories (pioc 
     PUBLIC ${MPI_C_INCLUDE_PATH})
 target_compile_definitions (pioc 
@@ -55,21 +55,31 @@ target_compile_definitions (pioc
 target_link_libraries (pioc
     ${MPI_C_LIBRARIES})
 
-#===== NetCDF =====
-target_include_directories (pioc 
-    PUBLIC $ENV{NETCDF}/include)
-target_compile_definitions (pioc 
-    PRIVATE _NETCDF
-    PRIVATE _NETCDF4)
-target_link_libraries (pioc
-    $ENV{NETCDF}/lib/libnetcdf.a)
+#===== NetCDF-C =====
+find_package (NetCDF)
+if (NetCDF_C_FOUND)
+    target_include_directories (pioc 
+        PUBLIC ${NetCDF_C_INCLUDE_DIRS})
+    target_compile_definitions (pioc 
+        PRIVATE _NETCDF)
+    target_link_libraries (pioc
+        ${NetCDF_C_LIBRARIES})
+    if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
+        target_compile_definitions (pioc 
+            PRIVATE _NETCDF4)
+    endif ()
+else ()
+    target_compile_definitions (pioc 
+        PRIVATE _NONETCDF)
+endif ()
 
 #===== PnetCDF =====
+find_package (PnetCDF)
 target_include_directories (pioc 
-    PUBLIC $ENV{PNETCDF}/include)
+    PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
 target_compile_definitions (pioc 
     PRIVATE _PNETCDF
     PRIVATE USE_PNETCDF_VARN
     PRIVATE USE_PNETCDF_VARN_ON_READ)
 target_link_libraries (pioc
-    $ENV{PNETCDF}/lib/libpnetcdf.a)
+    ${PnetCDF_C_LIBRARIES})
