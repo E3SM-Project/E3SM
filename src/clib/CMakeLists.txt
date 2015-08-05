@@ -6,18 +6,18 @@ project (PIOC C)
 #==============================================================================
 
 set (PIO_C_SRCS topology.c
-               pio_nc.c
-               pio_file.c
-               pioc_support.c
-               pio_lists.c
-               pioc.c
-               pioc_sc.c
-               pio_spmd.c
-               pio_rearrange.c
-               pio_darray.c
-               pio_put_nc.c 
-               pio_get_nc.c
-               bget.c)
+                pio_nc.c
+                pio_file.c
+                pioc_support.c
+                pio_lists.c
+                pioc.c
+                pioc_sc.c
+                pio_spmd.c
+                pio_rearrange.c
+                pio_darray.c
+                pio_put_nc.c 
+                pio_get_nc.c
+                bget.c)
 
 add_library (pioc ${PIO_C_SRCS})
 
