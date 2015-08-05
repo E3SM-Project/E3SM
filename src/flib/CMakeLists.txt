@@ -59,19 +59,19 @@ target_link_libraries (piof
 
 #===== NetCDF =====
 target_include_directories (piof 
-    PUBLIC $ENV{HOME}/Software/installs/netcdf-fortran/include)
+    PUBLIC $ENV{NETCDF}/include)
 target_compile_definitions (piof 
     PUBLIC _NETCDF
     PUBLIC _NETCDF4)
 target_link_libraries (piof
-    $ENV{HOME}/Software/installs/netcdf-fortran/lib/libnetcdff.a)
+    $ENV{NETCDF}/lib/libnetcdff.a)
 
 #===== PnetCDF =====
 target_include_directories (piof 
-    PUBLIC $ENV{HOME}/Software/installs/pnetcdf/include)
+    PUBLIC $ENV{PNETCDF}/include)
 target_compile_definitions (piof 
     PUBLIC _PNETCDF
     PUBLIC USE_PNETCDF_VARN
     PUBLIC USE_PNETCDF_VARN_ON_READ)
 target_link_libraries (piof
-    $ENV{HOME}/Software/installs/pnetcdf/lib/libpnetcdf.a)
+    PUBLIC $ENV{PNETCDF}/lib/libpnetcdf.a)
