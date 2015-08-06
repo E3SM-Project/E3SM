@@ -80,7 +80,7 @@ sub loadModules()
 	#my $cmd = $cshenv . " " . $envfile;
 	#my $cmd = $cshenv . " " . $envfile . " && printenv";
 	my $cmd = $cshenv . " " . $envfile ;
-	#print "running command $cmd\n";
+	print "running command $cmd\n";
 	my @output;
 	eval { @output = qx($cmd);};
 	#eval { $out = `$cmd`;};
