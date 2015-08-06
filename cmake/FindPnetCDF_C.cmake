@@ -92,6 +92,7 @@ if (NOT BUILD_SHARED_LIBS)
 endif ()
 
 # Check library for varn functions
+include(CheckFunctionExists)
 if (PnetCDF_C_LIBRARY)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
     check_function_exists (ncmpi_get_varn PnetCDF_C_VARN)
