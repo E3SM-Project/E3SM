@@ -778,8 +778,12 @@ contains
     real(r8) :: total_mass_flux_infl_col(bounds%begc:bounds%endc)
     real(r8) :: total_mass_flux_dew_col(bounds%begc:bounds%endc)
     real(r8) :: total_mass_flux_drain_col(bounds%begc:bounds%endc)
+    real(r8) :: total_mass_flux_snowlyr_col(bounds%begc:bounds%endc)
+    real(r8) :: total_mass_flux_sub_col(bounds%begc:bounds%endc)
     real(r8) :: vsfm_mass_prev_col(bounds%begc:bounds%endc,1:nlevgrnd)
     real(r8) :: vsfm_dmass_col(bounds%begc:bounds%endc)
+    real(r8) :: mass_beg_col(bounds%begc:bounds%endc)
+    real(r8) :: mass_end_col(bounds%begc:bounds%endc)
     integer           :: ier                     ! error status
     !
 #ifdef USE_PETSC_LIB
@@ -799,6 +803,8 @@ contains
     PetscReal             :: total_mass_flux_infl
     PetscReal             :: total_mass_flux_dew
     PetscReal             :: total_mass_flux_drain
+    PetscReal             :: total_mass_flux_snowlyr
+    PetscReal             :: total_mass_flux_sub
     PetscReal             :: total_mass_flux
 #endif
 #endif
@@ -1063,12 +1069,19 @@ contains
       total_mass_flux_infl = 0.d0
       total_mass_flux_dew = 0.d0
       total_mass_flux_drain = 0.d0
+      total_mass_flux_snowlyr = 0.d0
+      total_mass_flux_sub = 0.d0
 
+      mass_beg_col(:)        = 0.d0
+      mass_end_col(:)        = 0.d0
       total_mass_flux_col(:) = 0.d0
       total_mass_flux_et_col(:) = 0.d0
       total_mass_flux_infl_col(:) = 0.d0
       total_mass_flux_dew_col(:) = 0.d0
       total_mass_flux_drain_col(:) = 0.d0
+      total_mass_flux_snowlyr_col(:) = 0.d0
+      total_mass_flux_sub_col(:) = 0.d0
+
 
       vsfm_mass_prev_col(:,:) = 0.d0
       vsfm_dmass_col(:) = 0.d0
@@ -1086,6 +1099,7 @@ contains
             total_mass_flux_drain_col(c) = total_mass_flux_drain_col(c) + mflx_drain_col_1d(idx)
 
             mass_beg = mass_beg + vsfm_mass_col_1d(idx)
+            mass_beg_col(c) = mass_beg_col(c) + vsfm_mass_col_1d(idx)
             vsfm_mass_prev_col(c,j) = vsfm_mass_col_1d(idx)
          end do
 
@@ -1096,9 +1110,19 @@ contains
          total_mass_flux_infl        = total_mass_flux_infl        + mflx_infl_col_1d(idx)
          total_mass_flux_infl_col(c) = total_mass_flux_infl_col(c) + mflx_infl_col_1d(idx)
 
-         total_mass_flux_col(c) = total_mass_flux_et_col(c) + total_mass_flux_infl_col(c) + total_mass_flux_dew_col(c) + total_mass_flux_drain_col(c)
+         total_mass_flux_snowlyr        = total_mass_flux_snowlyr        + mflx_snowlyr_col_1d(idx)
+         total_mass_flux_snowlyr_col(c) = total_mass_flux_snowlyr_col(c) + mflx_snowlyr_col_1d(idx)
+
+         total_mass_flux_sub        = total_mass_flux_sub        + mflx_sub_snow_col_1d(idx)
+         total_mass_flux_sub_col(c) = total_mass_flux_sub_col(c) + mflx_sub_snow_col_1d(idx)
+
+         total_mass_flux_col(c) = total_mass_flux_et_col(c) + total_mass_flux_infl_col(c) + total_mass_flux_dew_col(c) + total_mass_flux_drain_col(c) + &
+                                  total_mass_flux_snowlyr_col(c) + &
+                                  total_mass_flux_sub_col(c)
        end do
-       total_mass_flux        = total_mass_flux_et        + total_mass_flux_infl        + total_mass_flux_dew        + total_mass_flux_drain
+       total_mass_flux        = total_mass_flux_et        + total_mass_flux_infl        + total_mass_flux_dew        + total_mass_flux_drain + &
+                                total_mass_flux_snowlyr + &
+                                total_mass_flux_sub
 #endif
 
 
@@ -1144,6 +1168,7 @@ contains
 
 #if VSFM_DEBUG
             mass_end = mass_end + vsfm_mass_col_1d(idx)
+            mass_end_col(c) = mass_end_col(c) + vsfm_mass_col_1d(idx)
 #endif
             vsfm_dmass_col(c) = vsfm_dmass_col(c) + (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
 
@@ -1188,11 +1213,15 @@ contains
       write(*,*)'VSFM-DEBUG: infil_flux * dtime         = ',total_mass_flux_infl*dtime
       write(*,*)'VSFM-DEBUG: dew_flux   * dtime         = ',total_mass_flux_dew*dtime
       write(*,*)'VSFM-DEBUG: drain_flux * dtime         = ',total_mass_flux_drain*dtime
+      write(*,*)'VSFM-DEBUG: snow_flux  * dtime         = ',total_mass_flux_snowlyr*dtime
+      write(*,*)'VSFM-DEBUG: sub_flux   * dtime         = ',total_mass_flux_sub*dtime
       write(*,*)'VSFM-DEBUG: total_mass_flux            = ',total_mass_flux/flux_unit_conversion
       write(*,*)'VSFM-DEBUG: et_flux                    = ',total_mass_flux_et
       write(*,*)'VSFM-DEBUG: infil_flux                 = ',total_mass_flux_infl
       write(*,*)'VSFM-DEBUG: dew_flux                   = ',total_mass_flux_dew
       write(*,*)'VSFM-DEBUG: drain_flux                 = ',total_mass_flux_drain
+      write(*,*)'VSFM-DEBUG: snow_flux                  = ',total_mass_flux_snowlyr
+      write(*,*)'VSFM-DEBUG: sub_flux                   = ',total_mass_flux_sub
       write(*,*)''
 #endif
 
