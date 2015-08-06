@@ -11,13 +11,8 @@ find_path (LIBM_INCLUDE_DIR
            NAMES math.h)
 
 # Search for library file
-if (BUILD_SHARED_LIBS)
-    find_library (LIBM_LIBRARY
-                  NAMES m)
-else ()
-    find_library (LIBM_LIBRARY
-                  NAMES libm.a)
-endif ()
+find_library (LIBM_LIBRARY
+              NAMES m libm.a)
 
 # Set return variables
 set (LIBM_INCLUDE_DIRS ${LIBM_INCLUDE_DIR})
