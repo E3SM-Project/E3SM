@@ -63,7 +63,6 @@ target_link_libraries (piof
 #===== NetCDF-Fortran =====
 find_package (NetCDF_Fortran)
 if (NetCDF_Fortran_FOUND)
-    message ("NetCDF_Fortran_FOUND")
     target_include_directories (piof 
         PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
     target_compile_definitions (piof 
@@ -82,7 +81,6 @@ endif ()
 #===== PnetCDF =====
 find_package (PnetCDF_Fortran)
 if (PnetCDF_Fortran_FOUND)
-    message ("PnetCDF_Fortran_FOUND")
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
     target_compile_definitions (piof 

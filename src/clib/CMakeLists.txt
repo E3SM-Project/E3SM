@@ -60,7 +60,6 @@ target_link_libraries (pioc
 #===== NetCDF-C =====
 find_package (NetCDF_C)
 if (NetCDF_C_FOUND)
-    message ("NetCDF_C_FOUND")
     target_include_directories (pioc 
         PUBLIC ${NetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
@@ -79,7 +78,6 @@ endif ()
 #===== PnetCDF =====
 find_package (PnetCDF_C)
 if (PnetCDF_C_FOUND)
-    message ("PnetCDF_C_FOUND")
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
