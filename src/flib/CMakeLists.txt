@@ -55,8 +55,6 @@ target_include_directories (piof
     PUBLIC ${MPI_Fortran_INCLUDE_PATH})
 target_compile_definitions (piof 
     PRIVATE USEMPIIO)
-target_compile_options (piof
-    PRIVATE ${MPI_Fortran_COMPILE_FLAGS})
 target_link_libraries (piof
     ${MPI_Fortran_LIBRARIES})
 

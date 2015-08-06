@@ -52,8 +52,6 @@ target_include_directories (pioc
     PUBLIC ${MPI_C_INCLUDE_PATH})
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
-target_compile_options (pioc
-    PRIVATE ${MPI_C_COMPILE_FLAGS})
 target_link_libraries (pioc
     ${MPI_C_LIBRARIES})
 
@@ -81,8 +79,7 @@ if (PnetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
-        PRIVATE _PNETCDF
-        PRIVATE ${PnetCDF_C_DEFINITIONS})
+        PRIVATE _PNETCDF)
     target_link_libraries (pioc
         ${PnetCDF_C_LIBRARIES})
         
