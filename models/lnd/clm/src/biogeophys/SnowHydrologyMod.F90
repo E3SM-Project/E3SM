@@ -639,6 +639,7 @@ contains
           h2osoi_ice       => waterstate_vars%h2osoi_ice_col      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq       => waterstate_vars%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
           snw_rds          => waterstate_vars%snw_rds_col         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
+          mflx_snowlyr_col => waterflux_vars%mflx_snowlyr_col     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
           qflx_sl_top_soil => waterflux_vars%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
 
@@ -673,6 +674,7 @@ contains
 
           msn_old(c) = snl(c)
           qflx_sl_top_soil(c) = 0._r8
+          mflx_snowlyr_col(c) = 0._r8
        end do
 
        ! The following loop is NOT VECTORIZED
@@ -689,6 +691,7 @@ contains
 
                    if (j == 0) then
                       qflx_sl_top_soil(c) = (h2osoi_liq(c,j) + h2osoi_ice(c,j))/dtime
+                      mflx_snowlyr_col(c) = mflx_snowlyr_col(c) + qflx_sl_top_soil(c)
                    end if
 
                    if (j /= 0) dz(c,j+1) = dz(c,j+1) + dz(c,j)
@@ -807,6 +810,7 @@ contains
                 if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                    h2osoi_liq(c,0) = 0.0_r8
                    h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
+                   mflx_snowlyr_col(c) = mflx_snowlyr_col(c) + zwliq(c)/dtime
                 end if
                 if (ltype(l) == istwet) then             
                    h2osoi_liq(c,0) = 0.0_r8

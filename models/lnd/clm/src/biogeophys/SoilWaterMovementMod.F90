@@ -841,6 +841,7 @@ contains
          mflx_et_col_1d    =>    waterflux_vars%mflx_et_col_1d      , & ! Input:  [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
          mflx_snowlyr_col_1d =>  waterflux_vars%mflx_snowlyr_col_1d , & ! Input:  [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
          mflx_sub_snow_col_1d => waterflux_vars%mflx_sub_snow_col_1d, & ! Output: [real(r8) (:)   ]  mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+         mflx_snowlyr_col  =>    waterflux_vars%mflx_snowlyr_col    , & ! Input: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
          mflx_drain_col_1d =>    waterflux_vars%mflx_drain_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
          mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
 
@@ -918,6 +919,7 @@ contains
       mflx_dew_col_1d(:)     = 0.d0
       mflx_drain_col_1d(:)   = 0.d0
       mflx_sub_snow_col_1d(:)= 0.d0
+      mflx_snowlyr_col_1d(:) = 0.d0
       t_soil_col_1d(:)       = 298.15d0
 
       do fc = 1, num_hydrologyc
@@ -1001,6 +1003,12 @@ contains
            qflx_drain(c) = qflx_drain_tot
 
          endif
+
+         ! The mass flux associated with disapperance of snow layer over the
+         ! last time step.
+         idx = c-bounds%begc+1
+         mflx_snowlyr_col_1d(c-bounds%begc+1) = mflx_snowlyr_col(c)
+         mflx_snowlyr_col(c) = 0._r8
 
       end do
 
