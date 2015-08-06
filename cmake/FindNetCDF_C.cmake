@@ -113,12 +113,6 @@ if (NOT BUILD_SHARED_LIBS)
      
 endif ()
 
-# Remove duplicates from lists
-list (REMOVE_DUPLICATES NetCDF_C_INCLUDE_DIRS)
-list (REMOVE_DUPLICATES NetCDF_C_LIBRARIES)
-list (REMOVE_DUPLICATES NetCDF_C_DEFINITIONS)
-list (REMOVE_DUPLICATES NetCDF_C_OPTIONS)
-
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and 
 # set NetCDF_C_FOUND to TRUE if all listed variables are TRUE
