@@ -23,7 +23,7 @@ endif ()
 if (PnetCDF_C_DIR)
     list (APPEND PnetCDF_C_INCLUDE_HINTS ${PnetCDF_C_DIR}/include)
 endif ()
-if (ENV{PNETCDF})
+if (DEFINED ENV{PNETCDF})
     list (APPEND PnetCDF_C_INCLUDE_HINTS $ENV{PNETCDF}/include)
 endif ()
 
@@ -45,7 +45,7 @@ endif ()
 if (PnetCDF_C_DIR)
     list (APPEND PnetCDF_C_LIBRARY_HINTS ${PnetCDF_C_DIR}/lib)
 endif ()
-if (ENV{PNETCDF})
+if (DEFINED ENV{PNETCDF})
     list (APPEND PnetCDF_C_LIBRARY_HINTS $ENV{PNETCDF}/lib)
 endif ()
 
@@ -91,9 +91,15 @@ if (NOT BUILD_SHARED_LIBS)
 
 endif ()
 
+# Remove duplicates from lists
+list (REMOVE_DUPLICATES PnetCDF_C_INCLUDE_DIRS)
+list (REMOVE_DUPLICATES PnetCDF_C_LIBRARIES)
+list (REMOVE_DUPLICATES PnetCDF_C_DEFINITIONS)
+list (REMOVE_DUPLICATES PnetCDF_C_OPTIONS)
+
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and 
 # set PnetCDF_C_FOUND to TRUE if all listed variables are TRUE
-find_package_handle_standard_args (PnetCDF DEFAULT_MSG
+find_package_handle_standard_args (PnetCDF_C DEFAULT_MSG
                                    PnetCDF_C_LIBRARY PnetCDF_C_INCLUDE_DIR)
 mark_as_advanced (PnetCDF_C_INCLUDE_DIR PnetCDF_C_LIBRARY)

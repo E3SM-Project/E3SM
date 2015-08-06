@@ -23,7 +23,7 @@ endif ()
 if (NetCDF_DIR)
     list (APPEND NetCDF_C_INCLUDE_HINTS ${NetCDF_DIR}/include)
 endif ()
-if (ENV{NETCDF})
+if (DEFINED ENV{NETCDF})
     list (APPEND NetCDF_C_INCLUDE_HINTS $ENV{NETCDF}/include)
 endif ()
 
@@ -45,7 +45,7 @@ endif ()
 if (NetCDF_DIR)
     list (APPEND NetCDF_C_LIBRARY_HINTS ${NetCDF_DIR}/lib)
 endif ()
-if (ENV{NETCDF})
+if (DEFINED ENV{NETCDF})
     list (APPEND NetCDF_C_LIBRARY_HINTS $ENV{NETCDF}/lib)
 endif ()
 
@@ -112,6 +112,12 @@ if (NOT BUILD_SHARED_LIBS)
     endif ()
      
 endif ()
+
+# Remove duplicates from lists
+list (REMOVE_DUPLICATES NetCDF_C_INCLUDE_DIRS)
+list (REMOVE_DUPLICATES NetCDF_C_LIBRARIES)
+list (REMOVE_DUPLICATES NetCDF_C_DEFINITIONS)
+list (REMOVE_DUPLICATES NetCDF_C_OPTIONS)
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and 
