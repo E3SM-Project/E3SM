@@ -119,5 +119,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args (NetCDF_C DEFAULT_MSG
                                    NetCDF_C_LIBRARY NetCDF_C_INCLUDE_DIR)
 mark_as_advanced (NetCDF_C_INCLUDE_DIR NetCDF_C_LIBRARY)
-message ("NetCDF_C_FOUND = ${NetCDF_C_FOUND}")
-message ("NETCDF_C_FOUND = ${NETCDF_C_FOUND}")
+
+# HACK For bug in CMake v3.0:
+set (NetCDF_C_FOUND ${NETCDF_C_FOUND})

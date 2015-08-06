@@ -119,3 +119,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args (NetCDF_Fortran DEFAULT_MSG
                                    NetCDF_Fortran_LIBRARY NetCDF_Fortran_INCLUDE_DIR)
 mark_as_advanced (NetCDF_Fortran_INCLUDE_DIR NetCDF_Fortran_LIBRARY)
+
+# HACK For bug in CMake v3.0:
+set (NetCDF_Fortran_FOUND ${NETCDF_FORTRAN_FOUND})

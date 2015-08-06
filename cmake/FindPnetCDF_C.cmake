@@ -108,5 +108,6 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PnetCDF_C DEFAULT_MSG
                                    PnetCDF_C_LIBRARY PnetCDF_C_INCLUDE_DIR)
 mark_as_advanced (PnetCDF_C_INCLUDE_DIR PnetCDF_C_LIBRARY)
-message ("PnetCDF_C_FOUND = ${PnetCDF_C_FOUND}")
-message ("PNETCDF_C_FOUND = ${PNETCDF_C_FOUND}")
+
+# HACK For bug in CMake v3.0:
+set (PnetCDF_C_FOUND ${PNETCDF_C_FOUND})
