@@ -79,7 +79,7 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF_Fortran)
+find_package (PnetCDF)
 if (PnetCDF_Fortran_FOUND)
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
