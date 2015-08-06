@@ -56,7 +56,7 @@ target_link_libraries (pioc
     ${MPI_C_LIBRARIES})
 
 #===== NetCDF-C =====
-find_package (NetCDF)
+find_package (NetCDF_C)
 if (NetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${NetCDF_C_INCLUDE_DIRS})
@@ -74,7 +74,7 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF)
+find_package (PnetCDF_C)
 target_include_directories (pioc 
     PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
 target_compile_definitions (pioc 
