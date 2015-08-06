@@ -1092,6 +1092,7 @@ contains
     real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
     real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
     real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    real(r8), pointer     :: mflx_snowlyr_col(:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
     real(r8), pointer     :: soilp_col(:,:)
     real(r8), pointer     :: vsfm_soilp_col_1d(:)
     logical               :: restart_vsfm
@@ -1113,6 +1114,7 @@ contains
     vsfm_mass_col_1d  =>    waterstate_vars%vsfm_mass_col_1d   ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
     vsfm_smpl_col_1d  =>    waterstate_vars%vsfm_smpl_col_1d   ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
     mflx_snowlyr_col_1d  => waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    mflx_snowlyr_col  =>     waterflux_vars%mflx_snowlyr_col      ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
     vsfm_soilp_col_1d =>     waterstate_vars%vsfm_soilp_col_1d ! Output: [real(r8) (:)   ] 1D soil liquid pressure from VSFM [Pa]
     soilp_col         =>     waterstate_vars%soilp_col         ! Input:  [real(r8) (:)   ] col soil liquid pressure
 
@@ -1173,6 +1175,8 @@ contains
              idx = (c-bounds_proc%begc)*nlevgrnd + j
              vsfm_soilp_col_1d(idx) = soilp_col(c,j)
           end do
+          idx = c-bounds_proc%begc+1
+          mflx_snowlyr_col_1d(idx) = mflx_snowlyr_col(c)
        end do
 
        ! Set the initial conditions
@@ -1187,6 +1191,8 @@ contains
        !            SoE auxvar
        call vsfm_mpp%sysofeqns%PostSolve()
 
+    else
+       mflx_snowlyr_col_1d(:) = 0._r8
     end if
 
 
@@ -1239,8 +1245,6 @@ contains
                    smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
         endif
     end do
-
-    mflx_snowlyr_col_1d(:) = 0._r8
 
 #else
 
