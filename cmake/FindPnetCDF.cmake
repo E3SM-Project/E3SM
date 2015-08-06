@@ -9,6 +9,7 @@
 #
 # Once done, this will define:
 #
+#   PnetCDF_LIBRARY        (FILE) - the common PnetCDF library file
 #   PnetCDF_IS_SHARED      (BOOL) - whether the PnetCDF library is shared/dynamic
 #
 #   PnetCDF_C_FOUND        (BOOL) - system has PnetCDF
@@ -116,19 +117,6 @@ if (NOT PnetCDF_IS_SHARED)
         list (APPEND PnetCDF_Fortran_OPTIONS ${MPI_Fortran_COMPILE_FLAGS})
     endif ()
 
-endif ()
-
-# Check library for varn functions
-include(CheckFunctionExists)
-if (PnetCDF_LIBRARY)
-    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_LIBRARY})
-    check_function_exists (ncmpi_get_varn PnetCDF_VARN)
-    if (PnetCDF_VARN)
-        list (APPEND PnetCDF_C_DEFINITIONS USE_PNETCDF_VARN)
-        list (APPEND PnetCDF_C_DEFINITIONS USE_PNETCDF_VARN_ON_READ)
-        list (APPEND PnetCDF_Fortran_DEFINITIONS USE_PNETCDF_VARN)
-        list (APPEND PnetCDF_Fortran_DEFINITIONS USE_PNETCDF_VARN_ON_READ)
-    endif()  
 endif ()
 
 include(FindPackageHandleStandardArgs)

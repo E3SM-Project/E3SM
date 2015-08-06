@@ -85,6 +85,16 @@ if (PnetCDF_C_FOUND)
         PRIVATE ${PnetCDF_C_DEFINITIONS})
     target_link_libraries (pioc
         ${PnetCDF_C_LIBRARIES})
+        
+    # Check library for varn functions
+    include(CheckFunctionExists)
+    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_LIBRARY})
+    check_function_exists (ncmpi_get_varn PnetCDF_VARN)
+    if (PnetCDF_VARN)
+        target_compile_definitions(pioc
+            PRIVATE USE_PNETCDF_VARN
+            PRIVATE USE_PNETCDF_VARN_ON_READ)
+    endif()  
 else ()
     target_compile_definitions (pioc 
         PRIVATE _NOPNETCDF)

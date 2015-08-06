@@ -84,10 +84,19 @@ if (PnetCDF_Fortran_FOUND)
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
     target_compile_definitions (piof 
-        PRIVATE _PNETCDF
-        PRIVATE ${PnetCDF_Fortran_DEFINITIONS})
+        PRIVATE _PNETCDF)
     target_link_libraries (piof
         ${PnetCDF_Fortran_LIBRARIES})
+
+    # Check library for varn functions
+    include(CheckFunctionExists)
+    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_LIBRARY})
+    check_function_exists (ncmpi_get_varn PnetCDF_VARN)
+    if (PnetCDF_VARN)
+        target_compile_definitions(piof
+            PRIVATE USE_PNETCDF_VARN
+            PRIVATE USE_PNETCDF_VARN_ON_READ)
+    endif()  
 else ()
     target_compile_definitions (piof 
         PRIVATE _NOPNETCDF)
