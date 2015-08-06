@@ -75,7 +75,7 @@ contains
 !> \brief   Computes mixing coefficients using CVMix
 !> \author  Todd Ringler
 !> \date    04 February 2013
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers by calling CVMix routines.
 !
@@ -91,7 +91,7 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
-      
+
       integer, intent(in), optional :: timeLevelIn !< Input: time level for state pool
 
       !-----------------------------------------------------------------
@@ -126,7 +126,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, surfaceBuoyancyForcing, surfaceFrictionVelocity, fCell, &
         boundaryLayerDepth, ssh, indexBoundaryLayerDepth
-        
+
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
         zMid, zTop, density, displacedDensity, potentialDensity, &
@@ -145,7 +145,8 @@ contains
       integer :: k, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL
       integer, pointer :: nVertLevels, nCells
       real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop
-      real (kind=RKIND), dimension(:), allocatable :: sigma, Nsqr_iface, turbulentScalarVelocityScale, tmp
+      real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
+      real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, tmp
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
       logical :: bulkRichardsonFlag
 
@@ -154,11 +155,11 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing mixing-related fields
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   mixing fields have to be added/merged together
       !
       !-----------------------------------------------------------------
-      
+
       !
       ! assume no errors during initialization and set to 1 when error is encountered
       !
@@ -271,9 +272,7 @@ contains
       allocate(cvmix_variables % dzt(nVertLevels))
       allocate(cvmix_variables % kpp_Tnonlocal_iface(nVertLevels+1))
       allocate(cvmix_variables % kpp_Snonlocal_iface(nVertLevels+1))
-      allocate(cvmix_variables % BulkRichardson_cntr(nVertLevels))
 
-      allocate(sigma(nVertLevels))
       allocate(Nsqr_iface(nVertLevels+1))
       allocate(turbulentScalarVelocityScale(nVertLevels))
       allocate(tmp(nVertLevels+1))
@@ -296,7 +295,7 @@ contains
          do k=2,maxLevelCell(iCell)
             cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
             cvmix_variables % zt_cntr(k) = cvmix_variables %  zw_iface(k) - layerThickness(k,iCell)/2.0
-            cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zt_cntr(k) 
+            cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zt_cntr(k)
             cvmix_variables % dzt(k) = layerThickness(k,iCell)
          enddo
          k = maxLevelCell(iCell)+1
@@ -332,6 +331,7 @@ contains
          ! fill the intent(in) KPP
          cvmix_variables % SurfaceFriction = surfaceFrictionVelocity(iCell)
          cvmix_variables % SurfaceBuoyancyForcing = surfaceBuoyancyForcing(iCell)
+         cvmix_variables % BulkRichardson_cntr => bulkRichardsonNumber(:, iCell)
 
          ! call kpp ocean mixed layer scheme
          if (cvmixKPPOn) then
@@ -358,60 +358,46 @@ contains
               bulkRichardsonNumber(:,iCell) = bulkRichardsonNumberStop - 1.0
               kIndexOBL=1
               bulkRichardsonFlag = .false.
-              do while (.not.bulkRichardsonFlag)
+              do kIndexOBL = 1, maxLevelCell(iCell)
 
                  ! set OBL at bottome of kIndexOBL cell for computation of bulk Richardson number
                  cvmix_variables % BoundaryLayerDepth = cvmix_variables % zw_iface(kIndexOBL+1)
-   
-                 ! define sigma based on assumption of where OBL bottom resides
-                 do k=1,maxLevelCell(iCell)
-                    sigma(k) = -cvmix_variables % zt_cntr(k) / cvmix_variables % BoundaryLayerDepth
-                 enddo
-                 do k=maxLevelCell(iCell)+1,nVertLevels
-                    sigma(k) = sigma(maxLevelCell(iCell))
-                 enddo
-  
+
+                 sigma = -cvmix_variables % zt_cntr(kIndexOBL) / cvmix_variables % BoundaryLayerDepth
+
                  ! compute the turbulent scales in order to compute the bulk Richardson number
                  call cvmix_kpp_compute_turbulent_scales( &
-                      sigma_coord = sigma(1:nVertLevels), &
+                      sigma_coord = sigma, &
                       OBL_depth = cvmix_variables % BoundaryLayerDepth, &
                       surf_buoy_force = cvmix_variables % SurfaceBuoyancyForcing, &
                       surf_fric_vel = cvmix_variables % SurfaceFriction, &
-                      w_s = turbulentScalarVelocityScale(1:nVertLevels))
-  
-                 cvmix_variables % BulkRichardson_cntr  = cvmix_kpp_compute_bulk_Richardson( &
-                      zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), & 
-                      delta_buoy_cntr = bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
-                      delta_Vsqr_cntr = bulkRichardsonNumberShear(1:nVertLevels,iCell), &
-                      ws_cntr = turbulentScalarVelocityScale(:), &
-                      Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
-  
-                 unresolvedShear(:,iCell) = cvmix_kpp_compute_unresolved_shear( &
-                      zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), &
-                      ws_cntr = turbulentScalarVelocityScale(1:nVertLevels), &
-                      Nsqr_iface = Nsqr_iface(1:nVertLevels+1))
+                      w_s = turbulentScalarVelocityScale(kIndexOBL))
 
-                 ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
-                 bulkRichardsonNumber(kIndexOBL,iCell) = cvmix_variables % BulkRichardson_cntr(kIndexOBL)
-  
-                 ! test to see if search should be ended
-                 if(kIndexOBL.eq.maxLevelCell(iCell)) bulkRichardsonFlag=.true.
-                 if(bulkRichardsonNumber(kIndexOBL,iCell).gt.bulkRichardsonNumberStop) bulkRichardsonFlag=.true.
+              enddo ! do kIndexOBL
 
-                 ! move downward one level
-                 kIndexOBL = kIndexOBL + 1
+              cvmix_variables % bulkRichardson_cntr(:) = cvmix_kpp_compute_bulk_Richardson( &
+                   zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), &
+                   delta_buoy_cntr = bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
+                   delta_Vsqr_cntr = bulkRichardsonNumberShear(1:nVertLevels,iCell), &
+                   ws_cntr = turbulentScalarVelocityScale(:), &
+                   Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
 
-               enddo ! do while (.not.bulkRichardsonFlag)
+              ! each level of bulk Richardson is computed as if OBL resided at bottom of that level
 
-               call cvmix_kpp_compute_OBL_depth(  &
-                    Ri_bulk = bulkRichardsonNumber(1:nVertLevels,iCell), &
-                    zw_iface = cvmix_variables % zw_iface(1:nVertLevels+1), &
-                    OBL_depth = cvmix_variables % BoundaryLayerDepth, &
-                    kOBL_depth = cvmix_variables % kOBL_depth, &
-                    zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), & 
+              unresolvedShear(:,iCell) = cvmix_kpp_compute_unresolved_shear( &
+                   zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), &
+                   ws_cntr = turbulentScalarVelocityScale(1:nVertLevels), &
+                   Nsqr_iface = Nsqr_iface(1:nVertLevels+1))
+
+              call cvmix_kpp_compute_OBL_depth(  &
+                   Ri_bulk = bulkRichardsonNumber(1:nVertLevels,iCell), &
+                   zw_iface = cvmix_variables % zw_iface(1:nVertLevels+1), &
+                   OBL_depth = cvmix_variables % BoundaryLayerDepth, &
+                   kOBL_depth = cvmix_variables % kOBL_depth, &
+                   zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), &
                     surf_fric = cvmix_variables % SurfaceFriction, &
-                    surf_buoy = cvmix_variables % SurfaceBuoyancyForcing, &
-                    Coriolis = cvmix_variables % Coriolis)
+                   surf_buoy = cvmix_variables % SurfaceBuoyancyForcing, &
+                   Coriolis = cvmix_variables % Coriolis)
 
              endif  ! if (config_use_cvmix_fixed_boundary_layer) then
 
@@ -544,9 +530,7 @@ contains
       deallocate(cvmix_variables % zt_cntr)
       deallocate(cvmix_variables % dzt)
       deallocate(cvmix_variables % kpp_Tnonlocal_iface)
-      deallocate(cvmix_variables % BulkRichardson_cntr)
 
-      deallocate(sigma)
       deallocate(Nsqr_iface)
       deallocate(turbulentScalarVelocityScale)
       deallocate(tmp)
@@ -565,8 +549,8 @@ contains
 !> \ get and puts into CVMix
 !> \author  Todd Ringler
 !> \date    04 February 2013
-!> \details 
-!>  This routine initializes a variety of quantities related to 
+!> \details
+!>  This routine initializes a variety of quantities related to
 !>  vertical mixing in the ocean. Parameters are set by calling into CVMix
 !
 !-----------------------------------------------------------------------
