@@ -1,6 +1,6 @@
 # - Try to find PnetCDF C Libraries
 #
-# This can be controlled by setting the PnetCDF_C_DIR CMake variable, or the
+# This can be controlled by setting the PnetCDF_DIR CMake variable, or the
 # PNETCDF environment variable.  Alternately, the following CMake variables
 # can be set:
 #
@@ -20,8 +20,8 @@ set (PnetCDF_C_INCLUDE_HINTS)
 if (PnetCDF_C_INCLUDE_DIR)
     list (APPEND PnetCDF_C_INCLUDE_HINTS ${PnetCDF_C_INCLUDE_DIR})
 endif ()
-if (PnetCDF_C_DIR)
-    list (APPEND PnetCDF_C_INCLUDE_HINTS ${PnetCDF_C_DIR}/include)
+if (PnetCDF_DIR)
+    list (APPEND PnetCDF_C_INCLUDE_HINTS ${PnetCDF_DIR}/include)
 endif ()
 if (DEFINED ENV{PNETCDF})
     list (APPEND PnetCDF_C_INCLUDE_HINTS $ENV{PNETCDF}/include)
@@ -89,6 +89,16 @@ if (NOT BUILD_SHARED_LIBS)
         list (APPEND PnetCDF_C_OPTIONS ${MPI_C_COMPILE_FLAGS})
     endif ()
 
+endif ()
+
+# Check library for varn functions
+if (PnetCDF_C_LIBRARY)
+    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
+    check_function_exists (ncmpi_get_varn PnetCDF_C_VARN)
+    if (PnetCDF_C_VARN)
+      list (APPEND PnetCDF_C_DEFINITIONS -DUSE_PNETCDF_VARN)
+      list (APPEND PnetCDF_C_DEFINITIONS -DUSE_PNETCDF_VARN_ON_READ)
+    endif()  
 endif ()
 
 include(FindPackageHandleStandardArgs)
