@@ -50,7 +50,7 @@ if (ENABLE_TIMING)
 endif ()
 
 #===== MPI =====
-find_package (MPI)
+find_package (MPI REQUIRED)
 target_include_directories (piof 
     PUBLIC ${MPI_Fortran_INCLUDE_PATH})
 target_compile_definitions (piof 
@@ -58,21 +58,36 @@ target_compile_definitions (piof
 target_link_libraries (piof
     ${MPI_Fortran_LIBRARIES})
 
-#===== NetCDF =====
-target_include_directories (piof 
-    PUBLIC $ENV{NETCDF}/include)
-target_compile_definitions (piof 
-    PRIVATE _NETCDF
-    PRIVATE _NETCDF4)
-target_link_libraries (piof
-    $ENV{NETCDF}/lib/libnetcdff.a)
+#===== NetCDF-Fortran =====
+find_package (NetCDF_Fortran)
+if (NetCDF_Fortran_FOUND)
+    target_include_directories (piof 
+        PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
+    target_compile_definitions (piof 
+        PRIVATE _NETCDF)
+    target_link_libraries (piof
+        ${NetCDF_Fortran_LIBRARIES})
+    if (EXISTS ${NetCDF_Fortran_INCLUDE_DIR}/netcdf_par.h)
+        target_compile_definitions (piof
+            PRIVATE _NETCDF4)
+    endif ()
+else ()
+    target_compile_definitions (piof 
+        PRIVATE _NONETCDF)
+endif ()
 
 #===== PnetCDF =====
-target_include_directories (piof 
-    PUBLIC $ENV{PNETCDF}/include)
-target_compile_definitions (piof 
-    PRIVATE _PNETCDF
-    PRIVATE USE_PNETCDF_VARN
-    PRIVATE USE_PNETCDF_VARN_ON_READ)
-target_link_libraries (piof
-    $ENV{PNETCDF}/lib/libpnetcdf.a)
+find_package (PnetCDF_Fortran)
+if (PnetCDF_Fortran_FOUND)
+    target_include_directories (piof 
+        PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
+    target_compile_definitions (piof 
+        PRIVATE _PNETCDF
+        PRIVATE ${PnetCDF_Fortran_DEFINITIONS})
+    target_link_libraries (piof
+        ${PnetCDF_Fortran_LIBRARIES})
+else ()
+    target_compile_definitions (piof 
+        PRIVATE _NOPNETCDF)
+endif ()
+    

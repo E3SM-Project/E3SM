@@ -75,11 +75,15 @@ endif ()
 
 #===== PnetCDF =====
 find_package (PnetCDF_C)
-target_include_directories (pioc 
-    PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
-target_compile_definitions (pioc 
-    PRIVATE _PNETCDF
-    PRIVATE USE_PNETCDF_VARN
-    PRIVATE USE_PNETCDF_VARN_ON_READ)
-target_link_libraries (pioc
-    ${PnetCDF_C_LIBRARIES})
+if (PnetCDF_C_FOUND)
+    target_include_directories (pioc 
+        PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
+    target_compile_definitions (pioc 
+        PRIVATE _PNETCDF
+        PRIVATE ${PnetCDF_C_DEFINITIONS})
+    target_link_libraries (pioc
+        ${PnetCDF_C_LIBRARIES})
+else ()
+    target_compile_definitions (pioc 
+        PRIVATE _NOPNETCDF)
+endif ()
