@@ -136,11 +136,11 @@ include(FindPackageHandleStandardArgs)
 # set PnetCDF_C_FOUND to TRUE if all listed variables are TRUE
 find_package_handle_standard_args (PnetCDF_C DEFAULT_MSG
                                    PnetCDF_C_LIBRARY PnetCDF_C_INCLUDE_DIR)
-mark_as_advanced (PnetCDF_C_INCLUDE_DIR PnetCDF_C_LIBRARY)
+mark_as_advanced (PnetCDF_C_INCLUDE_DIR PnetCDF_LIBRARY)
 # set PnetCDF_Fortran_FOUND to TRUE if all listed variables are TRUE
 find_package_handle_standard_args (PnetCDF_Fortran DEFAULT_MSG
                                    PnetCDF_Fortran_LIBRARY PnetCDF_Fortran_INCLUDE_DIR)
-mark_as_advanced (PnetCDF_Fortran_INCLUDE_DIR PnetCDF_Fortran_LIBRARY)
+mark_as_advanced (PnetCDF_Fortran_INCLUDE_DIR PnetCDF_LIBRARY)
 
 # HACK For bug in CMake v3.0:
 set (PnetCDF_C_FOUND ${PNETCDF_C_FOUND})
