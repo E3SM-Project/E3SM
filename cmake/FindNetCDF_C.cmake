@@ -113,9 +113,13 @@ if (NOT BUILD_SHARED_LIBS)
      
 endif ()
 
+message ("NetCDF_C_INCLUDE_DIR = ${NetCDF_C_INCLUDE_DIR}")
+message ("NetCDF_C_LIBRARY = ${NetCDF_C_LIBRARY}")
+
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and 
 # set NetCDF_C_FOUND to TRUE if all listed variables are TRUE
 find_package_handle_standard_args (NetCDF_C DEFAULT_MSG
                                    NetCDF_C_LIBRARY NetCDF_C_INCLUDE_DIR)
 mark_as_advanced (NetCDF_C_INCLUDE_DIR NetCDF_C_LIBRARY)
+message ("NetCDF_C_FOUND = ${NetCDF_C_FOUND}")
