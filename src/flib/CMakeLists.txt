@@ -55,12 +55,15 @@ target_include_directories (piof
     PUBLIC ${MPI_Fortran_INCLUDE_PATH})
 target_compile_definitions (piof 
     PRIVATE USEMPIIO)
+target_compile_options (piof
+    PRIVATE ${MPI_Fortran_COMPILE_FLAGS})
 target_link_libraries (piof
     ${MPI_Fortran_LIBRARIES})
 
 #===== NetCDF-Fortran =====
 find_package (NetCDF_Fortran)
 if (NetCDF_Fortran_FOUND)
+    message ("NetCDF_Fortran_FOUND")
     target_include_directories (piof 
         PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
     target_compile_definitions (piof 
@@ -79,6 +82,7 @@ endif ()
 #===== PnetCDF =====
 find_package (PnetCDF_Fortran)
 if (PnetCDF_Fortran_FOUND)
+    message ("PnetCDF_Fortran_FOUND")
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
     target_compile_definitions (piof 
@@ -90,4 +94,8 @@ else ()
     target_compile_definitions (piof 
         PRIVATE _NOPNETCDF)
 endif ()
-    
+
+#===== Check for necessities =====
+if (NOT PnetCDF_Fortran_FOUND AND NOT NetCDF_Fortran_FOUND)
+    message (FATAL_ERROR "Must have PnetCDF and/or NetCDF Fortran libraries")
+endif ()

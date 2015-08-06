@@ -52,12 +52,15 @@ target_include_directories (pioc
     PUBLIC ${MPI_C_INCLUDE_PATH})
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
+target_compile_options (pioc
+    PRIVATE ${MPI_C_COMPILE_FLAGS})
 target_link_libraries (pioc
     ${MPI_C_LIBRARIES})
 
 #===== NetCDF-C =====
 find_package (NetCDF_C)
 if (NetCDF_C_FOUND)
+    message ("NetCDF_C_FOUND")
     target_include_directories (pioc 
         PUBLIC ${NetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
@@ -76,6 +79,7 @@ endif ()
 #===== PnetCDF =====
 find_package (PnetCDF_C)
 if (PnetCDF_C_FOUND)
+    message ("PnetCDF_C_FOUND")
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
@@ -86,4 +90,9 @@ if (PnetCDF_C_FOUND)
 else ()
     target_compile_definitions (pioc 
         PRIVATE _NOPNETCDF)
+endif ()
+
+#===== Check for necessities =====
+if (NOT PnetCDF_C_FOUND AND NOT NetCDF_C_FOUND)
+    message (FATAL_ERROR "Must have PnetCDF and/or NetCDF C libraries")
 endif ()
