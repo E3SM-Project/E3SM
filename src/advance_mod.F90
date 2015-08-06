@@ -296,9 +296,13 @@ contains
           stop '(tracer_advection_formulation=1)'
        endif   
     endif
-    if (limiter_option /= 0 .and. kmass==-1) then
-       print *,'Error: limiter can only be applied for advection tests with kmass>0'
-       stop 
+    if (kmass==-1) then
+       if (limiter_option ==0 .or. limiter_option==4) then
+          ! when we dont advect a seperate density, we only allow limiter=0 or 4
+       else
+          print *,'Error: limiter can only be applied for advection tests with kmass>0'
+          stop 
+       endif
     endif
 
     n0    = tl%n0
@@ -692,10 +696,14 @@ contains
           if (k.eq.1) qmin=0.0d0   ! lifted cosine bell
           if (k.eq.3) qmin=0.1d0   ! lifted slotted cylinder
        endif
-       if(k.ne.kmass)then
-	  Q(:,:,k)=Q(:,:,k)/Q(:,:,kmass)
-          call limiter2d_min_onelevel(Q(:,:,k),spheremp(:,:)*Q(:,:,kmass),qmin)
-          Q(:,:,k)=Q(:,:,k)*Q(:,:,kmass)
+       if (kmass==-1) then
+          call limiter2d_min_onelevel(Q(:,:,k),spheremp(:,:),qmin)
+       else
+          if(k.ne.kmass)then
+             Q(:,:,k)=Q(:,:,k)/Q(:,:,kmass)
+             call limiter2d_min_onelevel(Q(:,:,k),spheremp(:,:)*Q(:,:,kmass),qmin)
+             Q(:,:,k)=Q(:,:,k)*Q(:,:,kmass)
+          endif
        endif
     enddo
   end subroutine limiter2d_zero
