@@ -11,9 +11,6 @@ GRID naming convention
 The long grid name has the order atm,lnd,ocn/ice,river,mask,glc 
 The following shortname is used
    a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
-Note that the glc grid specifies the ***internal*** grid used by glimmer/cism
-From the point of view of coupling - the glc grid is assumed to be identical
-to the land
 The notation is 
    a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
 Each grid is associated with five names
@@ -377,6 +374,35 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <desc>mp120r10v1 is a MPAS grid:</desc>
 </gridhorz>
 
+<!-- GLC grids -->
+<!-- NOTE: desc MUST be the last field in each <gridhorz> -->
+
+<gridhorz name="gland20">
+   <nx>76</nx> <ny>141</ny>
+   <desc>20-km Greenland grid</desc>
+</gridhorz>
+
+<gridhorz name="gland10">
+   <nx>151</nx> <ny>281</ny>
+   <desc>10-km Greenland grid</desc>
+</gridhorz>
+
+<gridhorz name="gland5">
+   <nx>301</nx> <ny>561</ny>
+   <desc>5-km Greenland grid (OLD VERSION: Generally use gland5UM instead)</desc>
+</gridhorz>
+
+<gridhorz name="gland5UM">
+   <nx>301</nx> <ny>561</ny>
+   <desc>5-km Greenland grid (new version from U. Montana)</desc>
+</gridhorz>
+
+<gridhorz name="gland4">
+   <nx>376</nx> <ny>701</ny>
+   <desc>4-km Greenland grid, for use with the glissade dycore</desc>
+</gridhorz>
+
+
 <!-- WW3 grids-->
 <!-- NOTE: desc MUST be the last field in each <gridhorz> -->
 
@@ -448,6 +474,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <GLC2OCN_RMAPNAME>idmap</GLC2OCN_RMAPNAME>
 <GLC2ICE_RMAPNAME>idmap</GLC2ICE_RMAPNAME>
 
+<LND2GLC_FMAPNAME>idmap</LND2GLC_FMAPNAME>
+<LND2GLC_SMAPNAME>idmap</LND2GLC_SMAPNAME>
+<GLC2LND_FMAPNAME>idmap</GLC2LND_FMAPNAME>
+<GLC2LND_SMAPNAME>idmap</GLC2LND_SMAPNAME>
+
 <ATM2WAV_SMAPNAME>idmap</ATM2WAV_SMAPNAME>
 <OCN2WAV_SMAPNAME>idmap</OCN2WAV_SMAPNAME>
 <ICE2WAV_SMAPNAME>idmap</ICE2WAV_SMAPNAME>
@@ -472,8 +503,13 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <ROF2LND_FMAPTYPE>Y</ROF2LND_FMAPTYPE>
 <ROF2OCN_FMAPTYPE>Y</ROF2OCN_FMAPTYPE>
 <ROF2OCN_RMAPTYPE>Y</ROF2OCN_RMAPTYPE>
-<GLC2OCN_RMAPTYPE>X</GLC2OCN_RMAPTYPE>
-<GLC2ICE_RMAPTYPE>X</GLC2ICE_RMAPTYPE>
+<GLC2OCN_RMAPTYPE>Y</GLC2OCN_RMAPTYPE>
+<GLC2ICE_RMAPTYPE>Y</GLC2ICE_RMAPTYPE>
+
+<LND2GLC_FMAPTYPE>X</LND2GLC_FMAPTYPE>
+<LND2GLC_SMAPTYPE>X</LND2GLC_SMAPTYPE>
+<GLC2LND_FMAPTYPE>Y</GLC2LND_FMAPTYPE>
+<GLC2LND_SMAPTYPE>Y</GLC2LND_SMAPTYPE>
 
 <ATM2WAV_SMAPTYPE>Y</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE>Y</OCN2WAV_SMAPTYPE>
@@ -497,6 +533,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <ROF2OCN_RMAPTYPE BFBFLAG="TRUE">X</ROF2OCN_RMAPTYPE>
 <GLC2OCN_RMAPTYPE BFBFLAG="TRUE">X</GLC2OCN_RMAPTYPE>
 <GLC2ICE_RMAPTYPE BFBFLAG="TRUE">X</GLC2ICE_RMAPTYPE>
+
+<LND2GLC_FMAPTYPE BFBFLAG="TRUE">X</LND2GLC_FMAPTYPE>
+<LND2GLC_SMAPTYPE BFBFLAG="TRUE">X</LND2GLC_SMAPTYPE>
+<GLC2LND_FMAPTYPE BFBFLAG="TRUE">X</GLC2LND_FMAPTYPE>
+<GLC2LND_SMAPTYPE BFBFLAG="TRUE">X</GLC2LND_SMAPTYPE>
 
 <ATM2WAV_SMAPTYPE BFBFLAG="TRUE">X</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE BFBFLAG="TRUE">X</OCN2WAV_SMAPTYPE>
@@ -1252,6 +1293,187 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <gridmap rof_grid="r01" ocn_grid="gx1v6" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r01_to_gx1v6_120711.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+
+<!-- ======================================================== -->
+<!-- GRIDS: lnd to glc and glc to lnd mapping                 -->
+<!--                                                          -->
+<!-- Note that we use aave maps for GLC2LND_SMAPNAME, because -->
+<!-- glc is typically much higher resolution than lnd, which  -->
+<!-- means that area-conservative remapping is preferable.    -->
+<!-- ======================================================== -->
+
+<!-- ====================  -->
+<!-- GLC: gland4           -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="gland4" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland4km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="1.9x2.5" glc_grid="gland4" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland4km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland4km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="48x96" glc_grid="gland4" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland4km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland4km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<!-- ====================  -->
+<!-- GLC: gland5           -->
+<!-- Use same mapping files for gland5 and gland5UM, because they use the same grids -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="gland5" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland5km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="1.9x2.5" glc_grid="gland5" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland5km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="48x96" glc_grid="gland5" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland5km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<!-- ====================  -->
+<!-- GLC: gland5UM         -->
+<!-- Use same mapping files for gland5 and gland5UM, because they use the same grids -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="gland5UM" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland5km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="1.9x2.5" glc_grid="gland5UM" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland5km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="48x96" glc_grid="gland5UM" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland5km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<!-- ====================  -->
+<!-- GLC: gland10          -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="gland10" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland10km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland10km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland10km/map_gland10km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland10km/map_gland10km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="1.9x2.5" glc_grid="gland10" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland10km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland10km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland10km/map_gland10km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland10km/map_gland10km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="48x96" glc_grid="gland10" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland10km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland10km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland10km/map_gland10km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland10km/map_gland10km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<!-- ====================  -->
+<!-- GLC: gland20          -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="gland20" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland20km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland20km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv0.9x1.25_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="1.9x2.5" glc_grid="gland20" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland20km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_gland20km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv1.9x2.5_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="48x96" glc_grid="gland20" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland20km_aave.150514.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland20km_blin.150514.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<!-- ======================================================== -->
+<!-- GRIDS: glc to ocn mapping                                -->
+<!--                                                          -->
+<!-- Eventually we will also want glc to ice mapping files.   -->
+<!-- These will likely differ from the glc to ocn mapping     -->
+<!-- files in their degree of smoothing (or they may not be   -->
+<!-- smoothed at all). But for now we are only specifying     -->
+<!-- glc to ocn mapping files. (By default, glc to ice        -->
+<!-- mapping is turned off in the system.)                    -->
+<!-- ======================================================== -->
+
+<gridmap ocn_grid="gx1v6" glc_grid="gland4" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland4km/map_gland4km_to_gx1v6_nnsm_e1000r300_150512.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+<gridmap ocn_grid="gx3v7" glc_grid="gland4" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland4km/map_gland4km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+
+<gridmap ocn_grid="gx1v6" glc_grid="gland5" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland5km/map_gland5km_to_gx1v6_nnsm_e1000r300_150512.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+<gridmap ocn_grid="gx3v7" glc_grid="gland5" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+
+<gridmap ocn_grid="gx1v6" glc_grid="gland5UM" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland5km/map_gland5km_to_gx1v6_nnsm_e1000r300_150512.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+<gridmap ocn_grid="gx3v7" glc_grid="gland5UM" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland5km/map_gland5km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+
+<gridmap ocn_grid="gx1v6" glc_grid="gland10" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland10km/map_gland10km_to_gx1v6_nnsm_e1000r300_150512.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+<gridmap ocn_grid="gx3v7" glc_grid="gland10" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland10km/map_gland10km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+
+<gridmap ocn_grid="gx1v6" glc_grid="gland20" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland20km/map_gland20km_to_gx1v6_nnsm_e1000r300_150512.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+<gridmap ocn_grid="gx3v7" glc_grid="gland20" >
+   <GLC2OCN_RMAPNAME>cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
 </gridmap>
 
 </config_compset >

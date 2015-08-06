@@ -47,6 +47,14 @@
 <histaux_l2x    >.false.</histaux_l2x    >
 <histaux_r2x    >.false.</histaux_r2x    >
 <histaux_l2x1yr >.false.</histaux_l2x1yr >
+<histavg_atm    >.true.</histavg_atm    >
+<histavg_lnd    >.true.</histavg_lnd    >
+<histavg_ocn    >.true.</histavg_ocn    >
+<histavg_ice    >.true.</histavg_ice    >
+<histavg_rof    >.true.</histavg_rof    >
+<histavg_glc    >.true.</histavg_glc    >
+<histavg_wav    >.true.</histavg_wav    >
+<histavg_xao    >.true.</histavg_xao    >
 
 <budget_inst >0</budget_inst>
 <budget_daily>0</budget_daily> 
@@ -95,6 +103,7 @@
 <flux_albav>.$CPL_ALBAV.</flux_albav> 
 <wall_time_limit>-1.0</wall_time_limit> 
 <force_stop_at>month</force_stop_at> 
+<flux_diurnal>.false.</flux_diurnal> 
 
 <run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers> 
 <run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers> 
@@ -165,6 +174,10 @@
 <rof2ocn_fmapname>$ROF2OCN_FMAPNAME</rof2ocn_fmapname>
 <glc2ocn_rmapname>$GLC2OCN_RMAPNAME</glc2ocn_rmapname>
 <glc2ice_rmapname>$GLC2ICE_RMAPNAME</glc2ice_rmapname>
+<lnd2glc_fmapname>$LND2GLC_FMAPNAME</lnd2glc_fmapname>
+<lnd2glc_smapname>$LND2GLC_SMAPNAME</lnd2glc_smapname>
+<glc2lnd_fmapname>$GLC2LND_FMAPNAME</glc2lnd_fmapname>
+<glc2lnd_smapname>$GLC2LND_SMAPNAME</glc2lnd_smapname>
 <atm2wav_smapname>$ATM2WAV_SMAPNAME</atm2wav_smapname>
 <ocn2wav_smapname>$OCN2WAV_SMAPNAME</ocn2wav_smapname>
 <ice2wav_smapname>$ICE2WAV_SMAPNAME</ice2wav_smapname>
@@ -183,8 +196,12 @@
 <rof2lnd_fmaptype>Y</rof2lnd_fmaptype>
 <rof2ocn_fmaptype>Y</rof2ocn_fmaptype>
 <rof2ocn_rmaptype>Y</rof2ocn_rmaptype>
-<glc2ocn_rmaptype>X</glc2ocn_rmaptype>
-<glc2ice_rmaptype>X</glc2ice_rmaptype>
+<glc2ocn_rmaptype>Y</glc2ocn_rmaptype>
+<glc2ice_rmaptype>Y</glc2ice_rmaptype>
+<lnd2glc_fmaptype>X</lnd2glc_fmaptype>
+<lnd2glc_smaptype>X</lnd2glc_smaptype>
+<glc2lnd_fmaptype>Y</glc2lnd_fmaptype>
+<glc2lnd_smaptype>Y</glc2lnd_smaptype>
 <atm2wav_smaptype>Y</atm2wav_smaptype>
 <ocn2wav_smaptype>Y</ocn2wav_smaptype>
 <ice2wav_smaptype>Y</ice2wav_smaptype>
@@ -205,6 +222,10 @@
 <rof2ocn_rmaptype BFBFLAG="TRUE">X</rof2ocn_rmaptype>
 <glc2ocn_rmaptype BFBFLAG="TRUE">X</glc2ocn_rmaptype>
 <glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
+<lnd2glc_fmaptype BFBFLAG="TRUE">X</lnd2glc_fmaptype>
+<lnd2glc_smaptype BFBFLAG="TRUE">X</lnd2glc_smaptype>
+<glc2lnd_fmaptype BFBFLAG="TRUE">X</glc2lnd_fmaptype>
+<glc2lnd_smaptype BFBFLAG="TRUE">X</glc2lnd_smaptype>
 <atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
 <ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
