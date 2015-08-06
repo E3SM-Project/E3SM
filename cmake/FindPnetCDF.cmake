@@ -111,9 +111,9 @@ if (NOT PnetCDF_IS_SHARED)
         list (APPEND PnetCDF_C_OPTIONS ${MPI_C_COMPILE_FLAGS})
     endif ()
     if (MPI_Fortran_FOUND)
-        list (APPEND PnetCDF_Fortran_INCLUDE_DIRS ${MPI_C_INCLUDE_PATH})
-        list (APPEND PnetCDF_Fortran_LIBRARIES ${MPI_C_LIBRARIES})
-        list (APPEND PnetCDF_Fortran_OPTIONS ${MPI_C_COMPILE_FLAGS})
+        list (APPEND PnetCDF_Fortran_INCLUDE_DIRS ${MPI_Fortran_INCLUDE_PATH})
+        list (APPEND PnetCDF_Fortran_LIBRARIES ${MPI_Fortran_LIBRARIES})
+        list (APPEND PnetCDF_Fortran_OPTIONS ${MPI_Fortran_COMPILE_FLAGS})
     endif ()
 
 endif ()
@@ -135,11 +135,11 @@ include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and 
 # set PnetCDF_C_FOUND to TRUE if all listed variables are TRUE
 find_package_handle_standard_args (PnetCDF_C DEFAULT_MSG
-                                   PnetCDF_C_LIBRARY PnetCDF_C_INCLUDE_DIR)
+                                   PnetCDF_LIBRARY PnetCDF_C_INCLUDE_DIR)
 mark_as_advanced (PnetCDF_C_INCLUDE_DIR PnetCDF_LIBRARY)
 # set PnetCDF_Fortran_FOUND to TRUE if all listed variables are TRUE
 find_package_handle_standard_args (PnetCDF_Fortran DEFAULT_MSG
-                                   PnetCDF_Fortran_LIBRARY PnetCDF_Fortran_INCLUDE_DIR)
+                                   PnetCDF_LIBRARY PnetCDF_Fortran_INCLUDE_DIR)
 mark_as_advanced (PnetCDF_Fortran_INCLUDE_DIR PnetCDF_LIBRARY)
 
 # HACK For bug in CMake v3.0:
