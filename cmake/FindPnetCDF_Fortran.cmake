@@ -88,7 +88,6 @@ if (NOT PnetCDF_Fortran_IS_SHARED)
     if (MPI_Fortran_FOUND)
         list (APPEND PnetCDF_Fortran_INCLUDE_DIRS ${MPI_Fortran_INCLUDE_PATH})
         list (APPEND PnetCDF_Fortran_LIBRARIES ${MPI_Fortran_LIBRARIES})
-        list (APPEND PnetCDF_Fortran_OPTIONS ${MPI_Fortran_COMPILE_FLAGS})
     endif ()
 
 endif ()

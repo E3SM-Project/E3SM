@@ -71,7 +71,7 @@ set (NetCDF_C_DEFINITIONS)
 set (NetCDF_C_OPTIONS)
 
 # If static, look for dependencies
-if (NOT BUILD_SHARED_LIBS)
+if (NOT NetCDF_C_IS_SHARED)
 
     # Dependency find_package arguments
     set (find_args)
@@ -88,7 +88,6 @@ if (NOT BUILD_SHARED_LIBS)
         list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
         list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
                                         ${HDF5_HL_LIBRARIES})
-        list (APPEND NetCDF_C_OPTIONS ${HDF5_DEFINITIONS})
     endif ()
      
 endif ()

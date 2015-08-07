@@ -94,7 +94,6 @@ if (NOT PnetCDF_C_IS_SHARED)
     if (MPI_C_FOUND)
         list (APPEND PnetCDF_C_INCLUDE_DIRS ${MPI_C_INCLUDE_PATH})
         list (APPEND PnetCDF_C_LIBRARIES ${MPI_C_LIBRARIES})
-        list (APPEND PnetCDF_C_OPTIONS ${MPI_C_COMPILE_FLAGS})
     endif ()
 
 endif ()
