@@ -1,16 +1,15 @@
 # - Try to find NetCDF-C
 #
 # This can be controlled by setting the NetCDF_DIR CMake variable, or the
-# NETCDF environment variable.  Alternately, the following CMake variables
-# can be set:
-#
-#   NetCDF_C_INCLUDE_DIR  (PATH)
-#   NetCDF_C_LIBRARY      (FILE)
+# NETCDF environment variable.
 #
 # Once done, this will define:
 #
+#   NetCDF_C_IS_SHARED    (BOOL) - Whether library is shared/dynamic
 #   NetCDF_C_FOUND        (BOOL) - system has NetCDF
+#   NetCDF_C_INCLUDE_DIR  (PATH) - Location of the C header file
 #   NetCDF_C_INCLUDE_DIRS (LIST) - the NetCDF include directories
+#   NetCDF_C_LIBRARY      (FILE) - Path to the C library file
 #   NetCDF_C_LIBRARIES    (LIST) - link these to use NetCDF
 #   NetCDF_C_DEFINITIONS  (LIST) - preprocessor macros to use with NetCDF
 #   NetCDF_C_OPTIONS      (LIST) - compiler options to use NetCDF
@@ -50,10 +49,12 @@ if (DEFINED ENV{NETCDF})
 endif ()
 
 # Search for library file
-if (BUILD_SHARED_LIBS)
-    find_library (NetCDF_C_LIBRARY
-                  NAMES netcdf
-                  HINTS ${NetCDF_C_LIBRARY_HINTS})
+set (NetCDF_C_IS_SHARED FALSE)
+find_library (NetCDF_C_LIBRARY
+              NAMES netcdf
+              HINTS ${NetCDF_C_LIBRARY_HINTS})
+if (NetCDF_C_LIBRARY)
+    set (NetCDF_C_IS_SHARED TRUE)
 else ()
     find_library (NetCDF_C_LIBRARY
                   NAMES libnetcdf.a

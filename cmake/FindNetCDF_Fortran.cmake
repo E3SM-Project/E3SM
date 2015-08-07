@@ -1,16 +1,15 @@
 # - Try to find NetCDF-Fortran
 #
 # This can be controlled by setting the NetCDF_DIR CMake variable, or the
-# NETCDF environment variable.  Alternately, the following CMake variables
-# can be set:
-#
-#   NetCDF_Fortran_INCLUDE_DIR  (PATH)
-#   NetCDF_Fortran_LIBRARY      (FILE)
+# NETCDF environment variable.
 #
 # Once done, this will define:
 #
+#   NetCDF_Fortran_IS_SHARED    (BOOL) - Whether library is shared/dynamic
 #   NetCDF_Fortran_FOUND        (BOOL) - system has NetCDF
+#   NetCDF_Fortran_INCLUDE_DIR  (PATH) - Location of the Fortran include files
 #   NetCDF_Fortran_INCLUDE_DIRS (LIST) - the NetCDF include directories
+#   NetCDF_Fortran_LIBRARY      (FILE) - Path to the Fortran library file
 #   NetCDF_Fortran_LIBRARIES    (LIST) - link these to use NetCDF
 #   NetCDF_Fortran_DEFINITIONS  (LIST) - preprocessor macros to use with NetCDF
 #   NetCDF_Fortran_OPTIONS      (LIST) - compiler options to use NetCDF
@@ -50,10 +49,12 @@ if (DEFINED ENV{NETCDF})
 endif ()
 
 # Search for library file
-if (BUILD_SHARED_LIBS)
-    find_library (NetCDF_Fortran_LIBRARY
-                  NAMES netcdff
-                  HINTS ${NetCDF_Fortran_LIBRARY_HINTS})
+set (NetCDF_Fortran_IS_SHARED FALSE)
+find_library (NetCDF_Fortran_LIBRARY
+              NAMES netcdff
+              HINTS ${NetCDF_Fortran_LIBRARY_HINTS})
+if (NetCDF_Fortran_LIBRARY)
+    set (NetCDF_Fortran_IS_SHARED TRUE)
 else ()
     find_library (NetCDF_Fortran_LIBRARY
                   NAMES libnetcdff.a

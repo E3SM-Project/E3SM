@@ -74,7 +74,7 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF)
+find_package (PnetCDF_C)
 if (PnetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
@@ -85,7 +85,7 @@ if (PnetCDF_C_FOUND)
         
     # Check library for varn functions
     include(CheckFunctionExists)
-    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_LIBRARY})
+    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
     check_function_exists (ncmpi_get_varn PnetCDF_VARN)
     if (PnetCDF_VARN)
         target_compile_definitions(pioc
