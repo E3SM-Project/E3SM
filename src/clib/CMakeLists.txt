@@ -60,7 +60,7 @@ if (NetCDF_C_FOUND)
     target_compile_definitions (pioc 
         PRIVATE _NETCDF)
     target_link_libraries (pioc
-        PRIVATE ${NetCDF_C_LIBRARIES})
+        PUBLIC ${NetCDF_C_LIBRARIES})
     if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
         target_compile_definitions (pioc 
             PRIVATE _NETCDF4)
@@ -78,7 +78,7 @@ if (PnetCDF_C_FOUND)
     target_compile_definitions (pioc 
         PRIVATE _PNETCDF)
     target_link_libraries (pioc
-        PRIVATE ${PnetCDF_C_LIBRARIES})
+        PUBLIC ${PnetCDF_C_LIBRARIES})
         
     # Check library for varn functions
     include(CheckFunctionExists)

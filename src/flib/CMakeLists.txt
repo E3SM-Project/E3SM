@@ -63,7 +63,7 @@ if (NetCDF_Fortran_FOUND)
     target_compile_definitions (piof 
         PRIVATE _NETCDF)
     target_link_libraries (piof
-        PRIVATE ${NetCDF_Fortran_LIBRARIES})
+        PUBLIC ${NetCDF_Fortran_LIBRARIES})
     if (EXISTS ${NetCDF_Fortran_INCLUDE_DIR}/netcdf_par.h)
         target_compile_definitions (piof
             PRIVATE _NETCDF4)
@@ -81,7 +81,7 @@ if (PnetCDF_Fortran_FOUND)
     target_compile_definitions (piof 
         PRIVATE _PNETCDF)
     target_link_libraries (piof
-        PRIVATE ${PnetCDF_Fortran_LIBRARIES})
+        PUBLIC ${PnetCDF_Fortran_LIBRARIES})
 
     # Check library for varn functions
     include(CheckFunctionExists)
