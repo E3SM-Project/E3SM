@@ -49,15 +49,16 @@ if (DEFINED ENV{NETCDF})
 endif ()
 
 # Search for library file
-set (NetCDF_C_IS_SHARED FALSE)
-find_library (NetCDF_C_LIBRARY
+set (NetCDF_C_IS_SHARED TRUE)
+include (LibStaticSuffixes)
+find_static_library (NetCDF_C_LIBRARY
               NAMES netcdf
               HINTS ${NetCDF_C_LIBRARY_HINTS})
 if (NetCDF_C_LIBRARY)
-    set (NetCDF_C_IS_SHARED TRUE)
+    set (NetCDF_C_IS_SHARED FALSE)
 else ()
     find_library (NetCDF_C_LIBRARY
-                  NAMES libnetcdf.a
+                  NAMES netcdf
                   HINTS ${NetCDF_C_LIBRARY_HINTS})
 endif ()
 
@@ -65,29 +66,27 @@ endif ()
 unset (NetCDF_C_LIBRARY_HINTS)
 
 # Set return variables
-set (NetCDF_C_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIR} )
-set (NetCDF_C_LIBRARIES ${NetCDF_C_LIBRARY} )
+set (NetCDF_C_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIR})
+set (NetCDF_C_LIBRARIES ${NetCDF_C_LIBRARY})
 set (NetCDF_C_DEFINITIONS)
 set (NetCDF_C_OPTIONS)
 
-# If static, look for dependencies
+# If static, look for dependencies (REQUIRED)
 if (NOT NetCDF_C_IS_SHARED)
 
-    # Dependency find_package arguments
-    set (find_args)
-    if (NetCDF_C_FIND_REQUIRED)
-        list (APPEND find_args REQUIRED)
-    endif ()
-    if (NetCDF_C_FIND_QUIETLY)
-        list (APPEND find_args QUIET)
-    endif ()
-
     # DEPENDENCY: HDF5
-    find_package (HDF5 ${find_args})
+    find_package (HDF5 REQUIRED COMPONENTS C HL)
     if (HDF5_FOUND)
         list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
         list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
                                         ${HDF5_HL_LIBRARIES})
+    endif ()
+
+    # DEPENDENCY: CURL
+    find_package (CURL REQUIRED)
+    if (CURL_FOUND)
+        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
+        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
     endif ()
      
 endif ()

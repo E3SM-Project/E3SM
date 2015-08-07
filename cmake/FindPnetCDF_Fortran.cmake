@@ -49,16 +49,17 @@ if (DEFINED ENV{PNETCDF})
     list (APPEND PnetCDF_Fortran_LIBRARY_HINTS $ENV{PNETCDF}/lib)
 endif ()
 
-# Search for shared and static library files
-set (PnetCDF_Fortran_IS_SHARED FALSE)
-find_library (PnetCDF_Fortran_LIBRARY
+# Search for library file
+set (PnetCDF_Fortran_IS_SHARED TRUE)
+include (LibStaticSuffixes)
+find_static_library (PnetCDF_Fortran_LIBRARY
               NAMES pnetcdf
               HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
 if (PnetCDF_Fortran_LIBRARY)
-    set (PnetCDF_Fortran_IS_SHARED TRUE)
+    set (PnetCDF_Fortran_IS_SHARED FALSE)
 else ()
     find_library (PnetCDF_Fortran_LIBRARY
-                  NAMES libpnetcdf.a
+                  NAMES pnetcdf
                   HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
 endif ()
 
@@ -74,17 +75,8 @@ set (PnetCDF_Fortran_OPTIONS)
 # If static, look for dependencies
 if (NOT PnetCDF_Fortran_IS_SHARED)
 
-    # Dependency find_package arguments
-    set (find_args)
-    if (PnetCDF_Fortran_FIND_REQUIRED)
-        list (APPEND find_args REQUIRED)
-    endif ()
-    if (PnetCDF_Fortran_FIND_QUIETLY)
-        list (APPEND find_args QUIET)
-    endif ()
-
     # DEPENDENCY: MPI
-    find_package (MPI ${find_args})
+    find_package (MPI REQUIRED)
     if (MPI_Fortran_FOUND)
         list (APPEND PnetCDF_Fortran_INCLUDE_DIRS ${MPI_Fortran_INCLUDE_PATH})
         list (APPEND PnetCDF_Fortran_LIBRARIES ${MPI_Fortran_LIBRARIES})

@@ -49,18 +49,20 @@ if (DEFINED ENV{PNETCDF})
     list (APPEND PnetCDF_C_LIBRARY_HINTS $ENV{PNETCDF}/lib)
 endif ()
 
-# Search for shared and static library files
-set (PnetCDF_C_IS_SHARED FALSE)
-find_library (PnetCDF_C_LIBRARY
+# Search for library file
+set (PnetCDF_C_IS_SHARED TRUE)
+include (LibStaticSuffixes)
+find_static_library (PnetCDF_C_LIBRARY
               NAMES pnetcdf
               HINTS ${PnetCDF_C_LIBRARY_HINTS})
 if (PnetCDF_C_LIBRARY)
-    set (PnetCDF_C_IS_SHARED TRUE)
+    set (PnetCDF_C_IS_SHARED FALSE)
 else ()
     find_library (PnetCDF_C_LIBRARY
-                  NAMES libpnetcdf.a
+                  NAMES pnetcdf
                   HINTS ${PnetCDF_C_LIBRARY_HINTS})
 endif ()
+
 
 # Unset include search variables
 unset (PnetCDF_C_LIBRARY_HINTS)
@@ -80,17 +82,8 @@ set (PnetCDF_Fortran_OPTIONS)
 # If static, look for dependencies
 if (NOT PnetCDF_C_IS_SHARED)
 
-    # Dependency find_package arguments
-    set (find_args)
-    if (PnetCDF_C_FIND_REQUIRED)
-        list (APPEND find_args REQUIRED)
-    endif ()
-    if (PnetCDF_C_FIND_QUIETLY)
-        list (APPEND find_args QUIET)
-    endif ()
-
     # DEPENDENCY: MPI
-    find_package (MPI ${find_args})
+    find_package (MPI REQUIRED)
     if (MPI_C_FOUND)
         list (APPEND PnetCDF_C_INCLUDE_DIRS ${MPI_C_INCLUDE_PATH})
         list (APPEND PnetCDF_C_LIBRARIES ${MPI_C_LIBRARIES})
