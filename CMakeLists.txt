@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (PIO C)
 
+message ("CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}")
+
 #==============================================================================
 #  USER-DEFINED OPTIONS (set with "-DOPT=VAL" from command line)
 #==============================================================================
