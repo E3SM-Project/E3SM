@@ -52,13 +52,13 @@ endif ()
 # Search for shared and static library files
 set (PnetCDF_Fortran_IS_SHARED FALSE)
 find_library (PnetCDF_Fortran_LIBRARY
-              NAMES pnetcdff
+              NAMES pnetcdf
               HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
 if (PnetCDF_Fortran_LIBRARY)
     set (PnetCDF_Fortran_IS_SHARED TRUE)
 else ()
     find_library (PnetCDF_Fortran_LIBRARY
-                  NAMES libpnetcdff.a
+                  NAMES libpnetcdf.a
                   HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
 endif ()
 
