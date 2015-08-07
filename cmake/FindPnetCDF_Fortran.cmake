@@ -72,18 +72,6 @@ set (PnetCDF_Fortran_LIBRARIES ${PnetCDF_Fortran_LIBRARY})
 set (PnetCDF_Fortran_DEFINITIONS)
 set (PnetCDF_Fortran_OPTIONS)
 
-# If static, look for dependencies
-if (NOT PnetCDF_Fortran_IS_SHARED)
-
-    # DEPENDENCY: MPI
-    find_package (MPI REQUIRED)
-    if (MPI_Fortran_FOUND)
-        list (APPEND PnetCDF_Fortran_INCLUDE_DIRS ${MPI_Fortran_INCLUDE_PATH})
-        list (APPEND PnetCDF_Fortran_LIBRARIES ${MPI_Fortran_LIBRARIES})
-    endif ()
-
-endif ()
-
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and 
 # set PnetCDF_Fortran_FOUND to TRUE if all listed variables are TRUE
