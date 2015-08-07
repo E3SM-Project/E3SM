@@ -575,9 +575,7 @@ contains
          yEdge, &
          lonEdge, &
          latEdge, &
-         fCell, &
-         fVertex, &
-         fEdge
+         fVertex
 
     ! init variables
     call MPAS_pool_get_array(mesh, "xCell", xCell)
@@ -592,9 +590,7 @@ contains
     call MPAS_pool_get_array(mesh, "yEdge", yEdge)
     call MPAS_pool_get_array(mesh, "lonEdge", lonEdge)
     call MPAS_pool_get_array(mesh, "latEdge", latEdge)
-    call MPAS_pool_get_array(mesh, "fCell", fCell)
     call MPAS_pool_get_array(mesh, "fVertex", fVertex)
-    call MPAS_pool_get_array(mesh, "fEdge", fEdge)
 
     ! Cell
     xCell = xCell + dx
@@ -627,9 +623,7 @@ contains
     latEdge = latEdge / ciceRadiansToDegrees
 
     ! fvalues
-    fCell   = 2.0_RKIND * omega * sin(latCell)
     fVertex = 2.0_RKIND * omega * sin(latVertex)
-    fEdge   = 2.0_RKIND * omega * sin(latEdge)
 
   end subroutine square_test_correct_positions
 

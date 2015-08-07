@@ -47,7 +47,7 @@ contains
        clock, &
        dt)!{{{
 
-    use cice_mesh, only: cice_init_boundary
+    use cice_mesh, only: cice_init_mesh
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
     use cice_debug, only: cice_test_case_output
@@ -86,8 +86,8 @@ contains
        block => block % next
     end do
     
-    ! calculate boundary variables
-    call cice_init_boundary(domain)
+    ! mesh initialization
+    call cice_init_mesh(domain)
 
     ! init the basic column physics package
     call cice_init_column_physics_package_parameters(domain)

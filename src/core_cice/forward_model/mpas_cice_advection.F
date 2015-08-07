@@ -102,23 +102,7 @@ contains
          config_use_velocity_solver
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-         derivTwo
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorEdge
-
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         advCoefs, &
-         advCoefs3rd
-
-    integer, dimension(:), pointer :: &
-         nAdvCellsForEdge, &
-         maxLevelCell
-
-    integer, dimension(:,:), pointer :: &
-         advCellsForEdge, &
-         highOrderAdvectionMask, &
-         boundaryCell
 
     integer :: &
          err
@@ -133,38 +117,9 @@ contains
     call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
     call MPAS_pool_get_config(configs, "config_coef_3rd_order", config_coef_3rd_order)
 
-    call MPAS_pool_get_array(mesh, "derivTwo", derivTwo)
-    call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)
-    call MPAS_pool_get_array(mesh, "advCoefs3rd", advCoefs3rd)
-    call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)
-    call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)
-    call MPAS_pool_get_array(mesh, "maxLevelCell", maxLevelCell)
-    call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
-    call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
-
     call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
 
     err = 0
-
-    !call mpas_tracer_advection_coefficients(&
-    !     mesh, &
-    !     config_horiz_tracer_adv_order, &
-    !     derivTwo, &
-    !     advCoefs, &
-    !     advCoefs3rd, &
-    !     nAdvCellsForEdge, &
-    !     advCellsForEdge, &
-    !     err, &
-    !     maxLevelCell, &
-    !     highOrderAdvectionMask, &
-    !     boundaryCell)
-
-    !call mpas_tracer_advection_mono_init(&
-    !     3, &
-    !     config_horiz_tracer_adv_order, &
-    !     config_vert_tracer_adv_order, &
-    !     config_coef_3rd_order, &
-    !     .false., .true., err)
 
     call define_tracer_connectivities(&
          config_use_velocity_solver)
@@ -1154,13 +1109,8 @@ contains
          nCellsSolve, &
          nCategories
 
-    !integer, dimension(:), pointer :: &
-    !     nAdvCellsForEdge
-
     integer, dimension(:,:), pointer :: &
-         cellsOnEdge!, &
-         !advCellsForEdge, &
-         !highOrderAdvectionMask
+         cellsOnEdge
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
@@ -1168,10 +1118,6 @@ contains
     integer, dimension(:,:), pointer :: &
          cellsOnCell, &
          edgesOnCell
-
-    !real(kind=RKIND), dimension(:,:), pointer :: &
-    !     advCoefs, &
-    !     advCoefs3rd
 
     integer :: &
          iCell, &
@@ -1194,12 +1140,6 @@ contains
     call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)   
     call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)    
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
-
-    !call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)  
-    !call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)  
-    !call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)  
-    !call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)  
-    !call MPAS_pool_get_array(mesh, "advCoefs3rd", advCoefs3rd)
 
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
