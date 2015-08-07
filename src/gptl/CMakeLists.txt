@@ -41,8 +41,8 @@ if (MPI_C_FOUND AND MPI_Fortran_FOUND)
         PRIVATE ${MPI_C_INCLUDE_PATH}
         PRIVATE ${MPI_Fortran_INCLUDE_PATH})
     target_link_libraries (gptl
-        ${MPI_C_LIBRARIES}
-        ${MPI_Fortran_LIBRARIES})
+        PUBLIC ${MPI_C_LIBRARIES}
+        PUBLIC ${MPI_Fortran_LIBRARIES})
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
 endif ()
