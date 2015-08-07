@@ -49,12 +49,12 @@ endif ()
 
 #===== MPI =====
 find_package (MPI REQUIRED)
-target_include_directories (pioc 
-    PUBLIC ${MPI_C_INCLUDE_PATH})
+#target_include_directories (pioc 
+#    PUBLIC ${MPI_C_INCLUDE_PATH})
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
-target_link_libraries (pioc
-    PRIVATE ${MPI_C_LIBRARIES})
+#target_link_libraries (pioc
+#    PRIVATE ${MPI_C_LIBRARIES})
 
 #===== NetCDF-C =====
 find_package (NetCDF_C)
