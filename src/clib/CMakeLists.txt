@@ -44,7 +44,7 @@ if (ENABLE_TIMING)
     target_compile_definitions (pioc
         PRIVATE TIMING)
     target_link_libraries (pioc
-        PUBLIC gptl)
+        PRIVATE gptl)
 endif ()
 
 #===== MPI =====
@@ -54,7 +54,7 @@ target_include_directories (pioc
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
 target_link_libraries (pioc
-    PUBLIC ${MPI_C_LIBRARIES})
+    PRIVATE ${MPI_C_LIBRARIES})
 
 #===== NetCDF-C =====
 find_package (NetCDF_C)
@@ -64,7 +64,7 @@ if (NetCDF_C_FOUND)
     target_compile_definitions (pioc 
         PRIVATE _NETCDF)
     target_link_libraries (pioc
-        PUBLIC ${NetCDF_C_LIBRARIES})
+        PRIVATE ${NetCDF_C_LIBRARIES})
     if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
         target_compile_definitions (pioc 
             PRIVATE _NETCDF4)
@@ -82,7 +82,7 @@ if (PnetCDF_C_FOUND)
     target_compile_definitions (pioc 
         PRIVATE _PNETCDF)
     target_link_libraries (pioc
-        PUBLIC ${PnetCDF_C_LIBRARIES})
+        PRIVATE ${PnetCDF_C_LIBRARIES})
         
     # Check library for varn functions
     include(CheckFunctionExists)

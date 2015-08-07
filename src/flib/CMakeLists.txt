@@ -47,7 +47,7 @@ if (ENABLE_TIMING)
     target_compile_definitions (piof
         PRIVATE TIMING)
     target_link_libraries (piof 
-        PUBLIC gptl)
+        PRIVATE gptl)
 endif ()
 
 #===== MPI =====
@@ -57,7 +57,7 @@ target_include_directories (piof
 target_compile_definitions (piof 
     PRIVATE USEMPIIO)
 target_link_libraries (piof
-    PUBLIC ${MPI_Fortran_LIBRARIES})
+    PRIVATE ${MPI_Fortran_LIBRARIES})
 
 #===== NetCDF-Fortran =====
 find_package (NetCDF_Fortran)
@@ -67,7 +67,7 @@ if (NetCDF_Fortran_FOUND)
     target_compile_definitions (piof 
         PRIVATE _NETCDF)
     target_link_libraries (piof
-        PUBLIC ${NetCDF_Fortran_LIBRARIES})
+        PRIVATE ${NetCDF_Fortran_LIBRARIES})
     if (EXISTS ${NetCDF_Fortran_INCLUDE_DIR}/netcdf_par.h)
         target_compile_definitions (piof
             PRIVATE _NETCDF4)
@@ -85,7 +85,7 @@ if (PnetCDF_Fortran_FOUND)
     target_compile_definitions (piof 
         PRIVATE _PNETCDF)
     target_link_libraries (piof
-        PUBLIC ${PnetCDF_Fortran_LIBRARIES})
+        PRIVATE ${PnetCDF_Fortran_LIBRARIES})
 
     # Check library for varn functions
     include(CheckFunctionExists)
