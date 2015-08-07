@@ -1,7 +1,7 @@
 # - Try to find NetCDF-Fortran
 #
-# This can be controlled by setting the NetCDF_DIR CMake variable, or the
-# NETCDF environment variable.
+# This can be controlled by setting the NetCDF_DIR or NetCDF_Fortran_DIR
+# CMake variables, or the NETCDF environment variable.  
 #
 # Once done, this will define:
 #
@@ -18,6 +18,9 @@
 set (NetCDF_Fortran_INCLUDE_HINTS)
 if (NetCDF_Fortran_INCLUDE_DIR)
     list (APPEND NetCDF_Fortran_INCLUDE_HINTS ${NetCDF_Fortran_INCLUDE_DIR})
+endif ()
+if (NetCDF_Fortran_DIR)
+    list (APPEND NetCDF_Fortran_INCLUDE_HINTS ${NetCDF_Fortran_DIR}/include)
 endif ()
 if (NetCDF_DIR)
     list (APPEND NetCDF_Fortran_INCLUDE_HINTS ${NetCDF_DIR}/include)
@@ -37,9 +40,12 @@ unset (NetCDF_Fortran_INCLUDE_HINTS)
 # Determine library dir search order
 set (NetCDF_Fortran_LIBRARY_HINTS)
 if (NetCDF_Fortran_LIBRARY)
-    get_filename_component (netcdf_c_library_path ${NetCDF_Fortran_LIBRARY} PATH)
-    list (APPEND NetCDF_Fortran_LIBRARY_HINTS ${netcdf_c_library_path})
-    unset (netcdf_c_library_path)
+    get_filename_component (NetCDF_Fortran_library_path ${NetCDF_Fortran_LIBRARY} PATH)
+    list (APPEND NetCDF_Fortran_LIBRARY_HINTS ${NetCDF_Fortran_library_path})
+    unset (NetCDF_Fortran_library_path)
+endif ()
+if (NetCDF_Fortran_DIR)
+    list (APPEND NetCDF_Fortran_LIBRARY_HINTS ${NetCDF_Fortran_DIR}/lib)
 endif ()
 if (NetCDF_DIR)
     list (APPEND NetCDF_Fortran_LIBRARY_HINTS ${NetCDF_DIR}/lib)
@@ -49,19 +55,20 @@ if (DEFINED ENV{NETCDF})
 endif ()
 
 # Search for library file
-set (NetCDF_Fortran_IS_SHARED TRUE)
-include (LibStaticSuffixes)
-find_static_library (NetCDF_Fortran_LIBRARY
-              NAMES netcdff
-              HINTS ${NetCDF_Fortran_LIBRARY_HINTS})
+set (NetCDF_Fortran_IS_SHARED FALSE)
+include (LibFindLibraryMacros)
+find_shared_library (NetCDF_Fortran_LIBRARY
+                     NAMES netcdff
+                     HINTS ${NetCDF_Fortran_LIBRARY_HINTS}
+                     NO_DEFAULT_PATH)
 if (NetCDF_Fortran_LIBRARY)
-    set (NetCDF_Fortran_IS_SHARED FALSE)
+    set (NetCDF_Fortran_IS_SHARED TRUE)
 else ()
-    find_library (NetCDF_Fortran_LIBRARY
-                  NAMES netcdff
-                  HINTS ${NetCDF_Fortran_LIBRARY_HINTS})
+    find_static_library (NetCDF_Fortran_LIBRARY
+                         NAMES netcdff
+                         HINTS ${NetCDF_Fortran_LIBRARY_HINTS}
+                         NO_DEFAULT_PATH)
 endif ()
-
 
 # Unset include search variables
 unset (NetCDF_Fortran_LIBRARY_HINTS)

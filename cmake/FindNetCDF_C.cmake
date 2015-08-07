@@ -1,7 +1,7 @@
 # - Try to find NetCDF-C
 #
-# This can be controlled by setting the NetCDF_DIR CMake variable, or the
-# NETCDF environment variable.
+# This can be controlled by setting the NetCDF_DIR or NetCDF_C_DIR CMake 
+# variables (or the NETCDF environment variable)
 #
 # Once done, this will define:
 #
@@ -18,6 +18,9 @@
 set (NetCDF_C_INCLUDE_HINTS)
 if (NetCDF_C_INCLUDE_DIR)
     list (APPEND NetCDF_C_INCLUDE_HINTS ${NetCDF_C_INCLUDE_DIR})
+endif ()
+if (NetCDF_C_DIR)
+    list (APPEND NetCDF_C_INCLUDE_HINTS ${NetCDF_C_DIR}/include)
 endif ()
 if (NetCDF_DIR)
     list (APPEND NetCDF_C_INCLUDE_HINTS ${NetCDF_DIR}/include)
@@ -41,6 +44,9 @@ if (NetCDF_C_LIBRARY)
     list (APPEND NetCDF_C_LIBRARY_HINTS ${netcdf_c_library_path})
     unset (netcdf_c_library_path)
 endif ()
+if (NetCDF_C_DIR)
+    list (APPEND NetCDF_C_LIBRARY_HINTS ${NetCDF_C_DIR}/lib)
+endif ()
 if (NetCDF_DIR)
     list (APPEND NetCDF_C_LIBRARY_HINTS ${NetCDF_DIR}/lib)
 endif ()
@@ -49,17 +55,19 @@ if (DEFINED ENV{NETCDF})
 endif ()
 
 # Search for library file
-set (NetCDF_C_IS_SHARED TRUE)
-include (LibStaticSuffixes)
-find_static_library (NetCDF_C_LIBRARY
-              NAMES netcdf
-              HINTS ${NetCDF_C_LIBRARY_HINTS})
+set (NetCDF_C_IS_SHARED FALSE)
+include (LibFindLibraryMacros)
+find_shared_library (NetCDF_C_LIBRARY
+                     NAMES netcdf
+                     HINTS ${NetCDF_C_LIBRARY_HINTS}
+                     NO_DEFAULT_PATH)
 if (NetCDF_C_LIBRARY)
-    set (NetCDF_C_IS_SHARED FALSE)
+    set (NetCDF_C_IS_SHARED TRUE)
 else ()
-    find_library (NetCDF_C_LIBRARY
-                  NAMES netcdf
-                  HINTS ${NetCDF_C_LIBRARY_HINTS})
+    find_static_library (NetCDF_C_LIBRARY
+                         NAMES netcdf
+                         HINTS ${NetCDF_C_LIBRARY_HINTS}
+                         NO_DEFAULT_PATH)
 endif ()
 
 # Unset include search variables

@@ -50,17 +50,19 @@ if (DEFINED ENV{PNETCDF})
 endif ()
 
 # Search for library file
-set (PnetCDF_Fortran_IS_SHARED TRUE)
-include (LibStaticSuffixes)
-find_static_library (PnetCDF_Fortran_LIBRARY
-              NAMES pnetcdf
-              HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
+set (PnetCDF_Fortran_IS_SHARED FALSE)
+include (LibFindLibraryMacros)
+find_shared_library (PnetCDF_Fortran_LIBRARY
+                     NAMES pnetcdf
+                     HINTS ${PnetCDF_Fortran_LIBRARY_HINTS}
+                     NO_DEFAULT_PATH)
 if (PnetCDF_Fortran_LIBRARY)
-    set (PnetCDF_Fortran_IS_SHARED FALSE)
+    set (PnetCDF_Fortran_IS_SHARED TRUE)
 else ()
-    find_library (PnetCDF_Fortran_LIBRARY
-                  NAMES pnetcdf
-                  HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
+    find_static_library (PnetCDF_Fortran_LIBRARY
+                         NAMES pnetcdf
+                         HINTS ${PnetCDF_Fortran_LIBRARY_HINTS}
+                         NO_DEFAULT_PATH)
 endif ()
 
 # Unset include search variables
