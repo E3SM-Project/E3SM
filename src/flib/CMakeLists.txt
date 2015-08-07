@@ -47,7 +47,7 @@ if (ENABLE_TIMING)
     target_compile_definitions (piof
         PRIVATE TIMING)
     target_link_libraries (piof 
-        PRIVATE gptl)
+        PUBLIC gptl)
 endif ()
 
 #===== MPI =====
