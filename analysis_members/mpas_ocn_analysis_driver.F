@@ -35,7 +35,7 @@ module ocn_analysis_driver
    use ocn_meridional_heat_transport
    use ocn_test_compute_interval
    use ocn_high_frequency_output
-   use ocn_time_averages
+   use ocn_time_series_stats
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -146,7 +146,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'waterMassCensus', 1)
       call mpas_pool_add_config(analysisMemberList, 'zonalMean', 1)
       call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
-      call mpas_pool_add_config(analysisMemberList, 'timeAverages', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -742,8 +742,8 @@ contains
          call ocn_init_zonal_mean(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call ocn_init_high_frequency_output(domain, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeAverages' ) then
-         call ocn_init_time_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_init_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -793,8 +793,8 @@ contains
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call ocn_compute_high_frequency_output(domain, timeLevel, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeAverages' ) then
-         call ocn_compute_time_averages(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       end if
@@ -843,8 +843,8 @@ contains
          call ocn_restart_zonal_mean(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call ocn_restart_high_frequency_output(domain, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeAverages' ) then
-         call ocn_restart_time_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_restart_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       end if
@@ -893,8 +893,8 @@ contains
          call ocn_finalize_zonal_mean(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call ocn_finalize_high_frequency_output(domain, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeAverages' ) then
-         call ocn_finalize_time_averages(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_finalize_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       end if
