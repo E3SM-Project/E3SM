@@ -1,0 +1,113 @@
+	<nml_record name="AM_timeSeriesStats" mode="forward;analysis">
+		<nml_option name="config_AM_timeSeriesStats_enable" 
+					type="logical" 
+					default_value=".false." 
+					units="unitless"
+					description="If true, ocean analysis member time series stats is called."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_compute_on_startup" 
+					type="logical" 
+					default_value=".false."
+					units="unitless"
+					description="Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this analysis member because it will accumulate any state prior to time stepping."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_write_on_startup" 
+					type="logical" 
+					default_value=".false." 
+					units="unitless"
+					description="Logical flag determining if an analysis member output occurs on start-up."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_compute_interval" 
+					type="character" 
+					default_value="dt" 
+					units="unitless"
+					description="Interval that determines frequency of computation for the time series stats analysis member."
+					possible_values="Any valid time stamp or 'dt'. This must also be <= output_interval / 2 (at least two samples in a series)."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_stream_name" 
+					type="character" 
+					default_value="timeSeriesStatsOutput" 
+					units="unitless"
+					description="Name of stream the time series stats analysis member will average."
+					possible_values="An existing stream that will be modified (existing fields removed and new ones added) with time series stats outputs. Cannot be 'none', like other analysis members."
+		/>
+
+		<nml_option name="config_AM_timeSeriesStats_add_mesh" 
+					type="logical" 
+					default_value=".true."
+					units="unitless"
+					description="Add the mesh to the output stream."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_operation"
+					type="character"
+					default_value="avg"
+					units="unitless"
+					description="An operation describing the reduction operations to apply to the time series."
+					possible_values="An operation, where it can be 'avg', 'min', or 'max'."
+		/>
+
+		<nml_option name="config_AM_timeSeriesStats_initial_times"
+					type="character"
+					default_value="same_as_simulation"
+					units="unitless"
+					description="A list of absolute times describing when to start accumulating."
+					possible_values="A list of absolute times or 'initial_time's, separated by ;."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_duration_intervals"
+					type="character"
+					default_value="same_as_repeat"
+					units="unitless"
+					description="A list of time durations in d_h:m:s describing how long to accumulate."
+					possible_values="A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Must be >= compute_interval * 2. This can be larger than repeat_interval to allow for climatologies (every January, every spring, etc.)"
+		/>
+		<nml_option name="config_AM_timeSeriesStats_repeat_intervals"
+					type="character"
+					default_value="same_as_reset"
+					units="unitless"
+					description="A list of time durations in d_h:m:s describing the accumulation periodicity (how often to accumulate)."
+					positive_values="A list of time durations in d_h:m:s or 'reset_interval's, separated by ;. Must be <= reset_interval."
+		/>
+		<nml_option name="config_AM_timeSeriesStats_reset_intervals"
+					type="character"
+					default_value="00-01-00_00:00:00"
+					units="unitless"
+					description="A list of time durations in d_h:m:s describing the buffer reset periodicity (how often to reset accumulation). Ought to be >= output_interval (not verified by the analysis member)."
+					possible_values="A list of time durations in d_h:m:s, separated by ;."
+		/>
+
+	</nml_record>
+
+	<packages>
+		<package name="timeSeriesStatsAMPKG" description="This package includes variables required for the time series stats analysis member."/>
+	</packages>
+
+	<streams>
+		<stream name="timeSeriesStatsOutput" 
+				type="none"
+				mode="forward;analysis"
+				filename_template="analysis_members/timeSeriesStats.$Y-$M-$D.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				packages="timeSeriesStatsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file"/>
+
+	<var_array name="tracersSurfaceValue"/>
+	<var_array name="surfaceVelocity"/>
+	<var_array name="SSHGradient"/>
+	<var name="ssh"/>
+	<var name="normalVelocity"/>
+	<var name="velocityZonal"/>
+	<var name="velocityMeridional"/>
+	<var name="vertVelocityTop"/>
+	<var name="normalTransportVelocity"/>
+	<var name="transportVelocityZonal"/>
+	<var name="transportVelocityMeridional"/>
+	<var name="vertTransportVelocityTop"/>
+
+	</streams>
+
