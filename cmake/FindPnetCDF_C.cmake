@@ -5,8 +5,7 @@
 #
 # Once done, this will define:
 #
-#   PnetCDF_C_IS_SHARED    (BOOL) - whether the PnetCDF library is shared/dynamic
-#
+#   PnetCDF_C_IS_SHARED    (BOOL) - Whether library is shared/dynamic
 #   PnetCDF_C_FOUND        (BOOL) - system has PnetCDF
 #   PnetCDF_C_INCLUDE_DIR  (PATH) - Location of the PnetCDF C header
 #   PnetCDF_C_INCLUDE_DIRS (LIST) - the NetCDF include directories

@@ -5,8 +5,7 @@
 #
 # Once done, this will define:
 #
-#   PnetCDF_Fortran_IS_SHARED    (BOOL) - whether the PnetCDF library is shared/dynamic
-#
+#   PnetCDF_Fortran_IS_SHARED    (BOOL) - Whether library is shared/dynamic
 #   PnetCDF_Fortran_FOUND        (BOOL) - system has PnetCDF
 #   PnetCDF_Fortran_INCLUDE_DIR  (PATH) - Location of the PnetCDF Fortran header
 #   PnetCDF_Fortran_INCLUDE_DIRS (LIST) - the PnetCDF include directories
