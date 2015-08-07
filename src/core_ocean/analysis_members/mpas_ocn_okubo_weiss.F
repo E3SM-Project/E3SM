@@ -663,7 +663,7 @@ contains
       call mpas_timer_start("CC eddy stats", .false., CCStatsTimer)
       call ocn_compute_eddy_stats(dminfo, block, nVertLevels, nCells, nCellsSolve, nLocalCCs, &
                                   nEdgesOnCell, cellsOnCell, OW_cc_id, OW_thresh)
-      call mpas_timer_stop("CC local", CCStatsTimer)
+      call mpas_timer_stop("CC eddy stats", CCStatsTimer)
 
    end subroutine ocn_compute_OW_component_IDs!}}}
 

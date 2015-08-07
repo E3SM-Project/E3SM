@@ -499,8 +499,6 @@ contains
       real (KIND=RKIND) :: m
       integer i
 
-      call mpas_timer_start("tridiagonal_solve")
-      
       ! Use work variables for b and r
       bTemp(1) = b(1)
       rTemp(1) = r(1)
@@ -518,8 +516,6 @@ contains
          x(i) = (rTemp(i) - c(i)*x(i+1))/bTemp(i)
       end do
 
-      call mpas_timer_stop("tridiagonal_solve")
-      
    end subroutine tridiagonal_solve !}}}
 
 !***********************************************************************
