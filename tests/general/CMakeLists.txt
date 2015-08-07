@@ -35,9 +35,6 @@ target_link_libraries (pio_init_finalize piof pioc)
 add_executable (pio_file_simple_tests pio_file_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_file_simple_tests piof pioc)
-#if (ENABLE_TIMING)
-#    target_link_libraries (pio_file_simple_tests gptl)
-#endif ()
 
 #===== pio_file_fail =====
 add_executable (pio_file_fail pio_file_fail.F90
