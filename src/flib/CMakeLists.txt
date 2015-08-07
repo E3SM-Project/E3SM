@@ -52,12 +52,8 @@ endif ()
 
 #===== MPI =====
 find_package (MPI REQUIRED)
-#target_include_directories (piof
-#    PUBLIC ${MPI_Fortran_INCLUDE_PATH})
 target_compile_definitions (piof 
     PRIVATE USEMPIIO)
-#target_link_libraries (piof
-#    PRIVATE ${MPI_Fortran_LIBRARIES})
 
 #===== NetCDF-Fortran =====
 find_package (NetCDF_Fortran)

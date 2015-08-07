@@ -37,12 +37,6 @@ find_package (MPI REQUIRED)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
     target_compile_definitions (gptl 
         PRIVATE HAVE_MPI)
-#    target_include_directories (gptl
-#        PRIVATE ${MPI_C_INCLUDE_PATH}
-#        PRIVATE ${MPI_Fortran_INCLUDE_PATH})
-#    target_link_libraries (gptl
-#        PRIVATE ${MPI_C_LIBRARIES}
-#        PRIVATE ${MPI_Fortran_LIBRARIES})
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
 endif ()
