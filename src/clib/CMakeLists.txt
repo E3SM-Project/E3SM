@@ -60,11 +60,11 @@ target_compile_definitions (pioc
 find_package (NetCDF_C)
 if (NetCDF_C_FOUND)
     target_include_directories (pioc 
-        PUBLIC ${NetCDF_C_INCLUDE_DIR})
+        PUBLIC ${NetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
         PRIVATE _NETCDF)
     target_link_libraries (pioc
-        PRIVATE ${NetCDF_C_LIBRARY})
+        PRIVATE ${NetCDF_C_LIBRARIES})
     if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
         target_compile_definitions (pioc 
             PRIVATE _NETCDF4)
@@ -78,11 +78,11 @@ endif ()
 find_package (PnetCDF_C)
 if (PnetCDF_C_FOUND)
     target_include_directories (pioc 
-        PUBLIC ${PnetCDF_C_INCLUDE_DIR})
+        PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
     target_compile_definitions (pioc 
         PRIVATE _PNETCDF)
     target_link_libraries (pioc
-        PRIVATE ${PnetCDF_C_LIBRARY})
+        PRIVATE ${PnetCDF_C_LIBRARIES})
         
     # Check library for varn functions
     include(CheckFunctionExists)
