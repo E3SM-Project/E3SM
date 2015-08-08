@@ -33,19 +33,10 @@ module load python
 module load all-python-libs
 
 if ( $COMPILER == "intel") then
-  module load intel/15.0.1
+  module load intel/15.0.3
   module load mkl/11.1.2
 # Currently trilinos is only supported with the INTEL compiler
   module load trilinos/11.10.2
-
-# Currently netcdf-mpi is only supported for intel
-  if ( $MPILIB == "mpi-serial") then
-    module load netcdf/4.3.2
-  else
-# Currently netcdf-mpi is only supported for intel
-    module load netcdf-mpi/4.3.3-rc3
-    module load pnetcdf/1.6.0
-  endif
 
 # Currently esmf is only supported with the INTEL compiler
   module load esmf
@@ -64,26 +55,17 @@ if ( $COMPILER == "intel") then
   endif
 endif
 if ( $COMPILER == "pgi" ) then
-  module load pgi/14.7
-  module load netcdf/4.3.0
-if ( $MPILIB != "mpi-serial") then
-  module load pnetcdf/1.4.1
-endif
+  module load pgi/15.1
 endif
 if ( $COMPILER == "gnu" ) then
-  module load gnu/4.9.2
-  module load netcdf/4.3.0
-  set iotype = `./xmlquery PIO_TYPENAME `
-  if( "$iotype" =~ {*pnetcdf*} ) then
-       echo "Changing PIO_TYPENAME to netcdf for gnu compiler"
-       ./xmlchange -noecho PIO_TYPENAME=netcdf
-  endif
-  #setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${NETCDF}/lib
-
-if ( $MPILIB != "mpi-serial") then
-  module load pnetcdf/1.4.1
+  module load gnu/5.1.0
 endif
 
+if ( $MPILIB == "mpi-serial") then
+  module load netcdf/4.3.3.1
+else
+  module load netcdf-mpi/4.3.3.1
+  module load pnetcdf/1.6.0
 endif
 
 module load ncarcompilers/1.0
@@ -125,7 +107,6 @@ if ( $DEBUG == "TRUE" ) then
 else
   setenv MP_EUIDEVELOP min
 endif
-setenv MP_EAGER_LIMIT 0
 
 #
 #  We need to turn off system level job monitor if

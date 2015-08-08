@@ -55,6 +55,10 @@
       <lname>2000_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
     </COMPSET>
     <COMPSET>
+      <alias>FC5L45CN</alias>
+      <lname>2000_CAM5_CLM45%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+    </COMPSET>
+    <COMPSET>
       <alias>FAMIPCN</alias>         
       <lname>AMIP_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
     </COMPSET>
@@ -121,6 +125,10 @@
     <COMPSET>
       <alias>FSTRATSOA</alias>       
       <lname>2000_CAM4%SSOA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
+    </COMPSET>
+    <COMPSET>
+      <alias>FSTRATSOAL45BGC</alias>
+      <lname>2000_CAM4%SSOA_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</lname>
     </COMPSET>
     <COMPSET>
       <alias>F1850CNCHM</alias>      

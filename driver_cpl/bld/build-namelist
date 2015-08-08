@@ -406,6 +406,7 @@ if (defined $xmlvars{'CPL_EPBAL'}) {
 } else {
     add_default($nl, 'flux_epbal', 'val'=>"off");
 }
+add_default($nl, 'flux_diurnal');
 
 add_default($nl, 'info_debug');
 add_default($nl, 'cpl_decomp');
@@ -440,6 +441,14 @@ add_default($nl, 'histaux_a2x24hr');
 add_default($nl, 'histaux_l2x');
 add_default($nl, 'histaux_r2x');
 add_default($nl, 'histaux_l2x1yr');
+add_default($nl, 'histavg_atm');
+add_default($nl, 'histavg_lnd');
+add_default($nl, 'histavg_ocn');
+add_default($nl, 'histavg_ice');
+add_default($nl, 'histavg_rof');
+add_default($nl, 'histavg_glc');
+add_default($nl, 'histavg_wav');
+add_default($nl, 'histavg_xao');
 
 add_default($nl, 'vect_map');
 add_default($nl, 'eps_frac');
@@ -724,6 +733,10 @@ add_default($nl, 'rof2ocn_fmapname');
 add_default($nl, 'rof2ocn_rmapname');
 add_default($nl, 'glc2ocn_rmapname');
 add_default($nl, 'glc2ice_rmapname');
+add_default($nl, 'lnd2glc_fmapname');
+add_default($nl, 'lnd2glc_smapname');
+add_default($nl, 'glc2lnd_fmapname');
+add_default($nl, 'glc2lnd_smapname');
 add_default($nl, 'atm2wav_smapname');
 add_default($nl, 'ocn2wav_smapname');
 add_default($nl, 'ice2wav_smapname');
@@ -755,6 +768,10 @@ add_default($nl, 'rof2ocn_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'rof2ocn_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'glc2ocn_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'glc2ice_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'lnd2glc_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'lnd2glc_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'glc2lnd_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'glc2lnd_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'atm2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'ocn2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'ice2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");

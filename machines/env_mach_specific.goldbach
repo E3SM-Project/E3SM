@@ -24,6 +24,7 @@ endif
 
 if ( $COMPILER == "nag" ) then
     module load compiler/nag/5.3.1-907
+    #module load compiler/nag/6.0-test
 endif
 
 if ( $COMPILER == "gnu" ) then

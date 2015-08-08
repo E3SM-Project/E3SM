@@ -131,71 +131,71 @@ sub doPreRunChecks()
     {
         $ENV{'MP_MPILIB'} = $mpilib;
     }
-    $config{'MPILIB'} = $mpilib;
-    
-    print "build complete? $config{'BUILD_COMPLETE'}\n";
-    if($config{'BUILD_COMPLETE'} ne 'TRUE')
-    {
-	print "BUILD_COMPLETE is not true\n";
-	print "Please rebuild the model interactively\n";
-	exit(-2);
-    }
-    
-    $ENV{'LBQUERY'} = "TRUE";
-    if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
-    {
-	$ENV{'LBQUERY'} = "FALSE";
-	$ENV{'BATCHQUERY'} = "undefined";
-    }
-    
-    elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
-    {
-	$ENV{'LBSUBMIT'} = "FALSE";
-	$ENV{'BATCHSUBMIT'} = "undefined";
-    }
-    
-    ## Create the timing directories, optionally cleaning them if needed. 
-    if(! -d $config{'RUNDIR'})
-    {
-	mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
-    }
-    if(-d "$config{'RUNDIR'}/timing")
-    {
-	rmtree("$config{'RUNDIR'}/timing");
-    }
-    # Now make the timing and timing/checkpoints directories..
-    mkpath("$config{'RUNDIR'}/timing/checkpoints");
-    
-    # Now set up the LID and sdate? strings
-    $LID = strftime("%y%m%d-%H%M%S", localtime);
-    my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
-    $ENV{'LID'} = $LID;
-    $ENV{'sdate'} = $sdate;
-    
-    open my $CS, ">", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
-    print $CS "run started $sdate\n";
-    close $CS;
-    
-    print "-------------------------------------------------------------------------\n";
-    print " BUILDNML SCRIPT STARTING\n";
-    print " - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}\n";
-    
-    # Run preview namelists.. should turn this into a module at some point..
-    my @previewoutput = qx("./preview_namelists");
-    map { print $_ } @previewoutput;
-    
-    if($?)
-    {
-	print "ERROR from preview namelist - EXITING\n";
-	exit(-1);
-    }
-    
-    print " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY\n";
-    print "-------------------------------------------------------------------------\n\n";
-    print "-------------------------------------------------------------------------\n";
-    print " PRESTAGE SCRIPT STARTING\n";
-    print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
-    print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
+        $config{'MPILIB'} = $mpilib;
+	
+	print "build complete? $config{'BUILD_COMPLETE'}\n";
+	if($config{'BUILD_COMPLETE'} ne 'TRUE')
+	{
+		print "BUILD_COMPLETE is not true\n";
+		print "Please rebuild the model interactively\n";
+		exit(-2);
+	}
+	
+	$ENV{'LBQUERY'} = "TRUE";
+	if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
+	{
+		$ENV{'LBQUERY'} = "FALSE";
+		$ENV{'BATCHQUERY'} = "undefined";
+	}
+	
+	elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
+	{
+		$ENV{'LBSUBMIT'} = "FALSE";
+		$ENV{'BATCHSUBMIT'} = "undefined";
+	}
+	
+	## Create the timing directories, optionally cleaning them if needed. 
+	if(! -d $config{'RUNDIR'})
+	{
+		mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
+	}
+	if(-d "$config{'RUNDIR'}/timing")
+	{
+		rmtree("$config{'RUNDIR'}/timing");
+	}
+	# Now make the timing and timing/checkpoints directories..
+	mkpath("$config{'RUNDIR'}/timing/checkpoints");
+	
+	# Now set up the LID and sdate? strings
+	$LID = strftime("%y%m%d-%H%M%S", localtime);
+	my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
+	$ENV{'LID'} = $LID;
+	$ENV{'sdate'} = $sdate;
+	
+	open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
+	print $CS "run started $sdate\n";
+	close $CS;
+	
+	print "-------------------------------------------------------------------------\n";
+	print " BUILDNML SCRIPT STARTING\n";
+	print " - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}\n";
+	
+	# Run preview namelists.. should turn this into a module at some point..
+	my @previewoutput = qx("./preview_namelists");
+	map { print $_ } @previewoutput;
+	
+	if($?)
+	{
+		print "ERROR from preview namelist - EXITING\n";
+		exit(-1);
+	}
+	
+	print " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY\n";
+	print "-------------------------------------------------------------------------\n\n";
+	print "-------------------------------------------------------------------------\n";
+	print " PRESTAGE SCRIPT STARTING\n";
+	print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
+	print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
 }
 
 # -------------------------------------------------------------------------

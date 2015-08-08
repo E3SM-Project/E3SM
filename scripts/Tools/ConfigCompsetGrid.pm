@@ -72,12 +72,12 @@ sub setCompsetGrid {
 
     my %compgrid;
     $grid_longname =~ /(a%)(.+)(_l%)/ ; $compgrid{'atm'}  = $2;
-    $grid_longname =~ /(l%)(.+)(_oi%)/; $compgrid{'lnd'}  = $2; $compgrid{'glc'} = $2;
+    $grid_longname =~ /(l%)(.+)(_oi%)/; $compgrid{'lnd'}  = $2;
     $grid_longname =~ /(oi%)(.+)(_r%)/; $compgrid{'ocn'}  = $2; $compgrid{'ice'} = $2;
     $grid_longname =~ /(r%)(.+)(_m%)/ ; $compgrid{'rof'}  = $2; 
-    $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2; 
-    $grid_longname =~ /(g%)(.+)(_w%)/ ; $compgrid{'cism'} = $2; 
+    $grid_longname =~ /(g%)(.+)(_w%)/ ; $compgrid{'glc'}  = $2; 
     $grid_longname =~ /(w%)(.+)$/     ; $compgrid{'wav'}  = $2; 
+    $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2; 
 
     # ========================================================
     # set grid component domains and related variables
@@ -285,10 +285,11 @@ sub _setGridDomain
 	}
 	
     }
-    
-    if ($$compgrid_ref{'cism'} ne 'null') {
-	$cfg_ref->set('CISM_GRID',$$compgrid_ref{'cism'});
-    }
+
+# TODO - does this still need to be here ???    
+#    if ($$compgrid_ref{'cism'} ne 'null') {
+#	$cfg_ref->set('CISM_GRID',$$compgrid_ref{'cism'});
+#    }
 }
 
 #-------------------------------------------------------------------------------
@@ -649,9 +650,6 @@ sub _printGridCompsetInfo
     my $wav_grid  = $cfg_ref->get('WAV_GRID');
     push (@grids, $wav_grid);
 
-    my $cism_grid = $cfg_ref->get('CISM_GRID');
-    push (@grids, $cism_grid);
-
     my $mask_grid = $cfg_ref->get('MASK_GRID');
     push (@grids, $mask_grid);
 
@@ -731,13 +729,8 @@ sub _printGridCompsetInfo
 	    print $fhandle "  ROF_GRID = $rof_grid  NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
 	    print $fhandle "  GLC_GRID = $glc_grid  NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
 	    print $fhandle "  WAV_GRID = $wav_grid  NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
-	    # TODO - the following is CESM specific
-	    if ($compset_longname =~ /CISM/) {
-		my $cism_grid = $cfg_ref->get('CISM_GRID');
-		print $fhandle "  CISM_GRID = $cism_grid \n";
-	    }
 	    print $fhandle "Grid Description: \n";
-	    print $fhandle " $desc_grid \n";
+	    print $fhandle "  $desc_grid \n";
 	    print $fhandle "Non-Default Options: \n";
 	    my @ids = keys %$newxml;
 	    foreach my $id (sort @ids) {
