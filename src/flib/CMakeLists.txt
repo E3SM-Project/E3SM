@@ -99,7 +99,7 @@ if ("${MPI_Fortran_LIBRARIES}" MATCHES "libpnetcdf")
     set (PnetCDF_Fortran_FOUND TRUE)
     target_compile_definitions (piof 
         PRIVATE _PNETCDF)
-    set (PnetCDF_C_LIBRARY ${MPI_Fortran_LIBRARIES})
+    set (PnetCDF_Fortran_LIBRARY ${MPI_Fortran_LIBRARIES})
 else ()
     find_package (PnetCDF COMPONENTS Fortran)
     if (PnetCDF_Fortran_FOUND)
@@ -114,7 +114,7 @@ endif ()
 if (PnetCDF_Fortran_FOUND)
     # Check library for varn functions
     include(CheckFunctionExists)
-    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_LIBRARY})
+    set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_Fortran_LIBRARY})
     check_function_exists (ncmpi_get_varn PnetCDF_VARN)
     if (PnetCDF_VARN)
         target_compile_definitions(piof
