@@ -56,10 +56,15 @@ endif ()
 #===== MPI =====
 if (CMAKE_C_COMPILER MATCHES "mpicc")
     set (PIOC_USING_MPI_WRAPPER TRUE)
+else ()
+    set (PIOC_USING_MPI_WRAPPER FALSE)
 endif ()
 find_package (MPI REQUIRED)
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
+
+message ("CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
+message ("MPI_C_COMPILER = ${MPI_C_COMPILER}")
 
 #===== NetCDF-C =====
 find_package (NetCDF COMPONENTS C)
