@@ -60,6 +60,7 @@ target_compile_definitions (pioc
 
 #===== NetCDF-C =====
 if ("${MPI_C_LIBRARIES}" MATCHES "libnetcdf")
+    message (STATUS "NetCDF_C found in MPI_C wrapper")
     set (NetCDF_C_FOUND TRUE)
     target_compile_definitions (pioc 
         PRIVATE _NETCDF)
@@ -91,6 +92,7 @@ endif ()
 
 #===== PnetCDF-C =====
 if ("${MPI_C_LIBRARIES}" MATCHES "libpnetcdf")
+    message (STATUS "PnetCDF_C found in MPI_C wrapper")
     set (PnetCDF_C_FOUND TRUE)
     target_compile_definitions (pioc 
         PRIVATE _PNETCDF)

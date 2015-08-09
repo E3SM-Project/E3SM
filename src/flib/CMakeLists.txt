@@ -62,33 +62,56 @@ target_compile_definitions (piof
     PRIVATE USEMPIIO)
 
 #===== NetCDF-Fortran =====
-find_package (NetCDF COMPONENTS Fortran)
-if (NetCDF_Fortran_FOUND)
-    target_include_directories (piof 
-        PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
+if ("${MPI_Fortran_LIBRARIES}" MATCHES "libnetcdf")
+    message (STATUS "NetCDF_Fortran found in MPI_Fortran wrapper")
+    set (NetCDF_Fortran_FOUND TRUE)
     target_compile_definitions (piof 
         PRIVATE _NETCDF)
-    target_link_libraries (piof
-        PUBLIC ${NetCDF_Fortran_LIBRARIES})
-    if (EXISTS ${NetCDF_Fortran_INCLUDE_DIR}/netcdf_par.h)
+    find_path (NetCDF_Fortran_IN_MPI_INCLUDES
+               NAMES netcdf_par.h
+               PATHS ${MPI_Fortran_INCLUDE_PATH})
+    if (NetCDF_Fortran_IN_MPI_INCLUDES)
         target_compile_definitions (piof
             PRIVATE _NETCDF4)
     endif ()
 else ()
-    target_compile_definitions (piof 
-        PRIVATE _NONETCDF)
+    find_package (NetCDF COMPONENTS Fortran)
+    if (NetCDF_Fortran_FOUND)
+        target_include_directories (piof 
+            PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
+        target_compile_definitions (piof 
+            PRIVATE _NETCDF)
+        target_link_libraries (piof
+            PUBLIC ${NetCDF_Fortran_LIBRARIES})
+        if (EXISTS ${NetCDF_Fortran_INCLUDE_DIR}/netcdf_par.h)
+            target_compile_definitions (piof
+                PRIVATE _NETCDF4)
+        endif ()
+    else ()
+        target_compile_definitions (piof 
+            PRIVATE _NONETCDF)
+    endif ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF COMPONENTS Fortran)
-if (PnetCDF_Fortran_FOUND)
-    target_include_directories (piof 
-        PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
+if ("${MPI_Fortran_LIBRARIES}" MATCHES "libpnetcdf")
+    message (STATUS "PnetCDF_Fortran found in MPI_Fortran wrapper")
+    set (PnetCDF_Fortran_FOUND TRUE)
     target_compile_definitions (piof 
         PRIVATE _PNETCDF)
-    target_link_libraries (piof
-        PUBLIC ${PnetCDF_Fortran_LIBRARIES})
-
+    set (PnetCDF_C_LIBRARY ${MPI_Fortran_LIBRARIES})
+else ()
+    find_package (PnetCDF COMPONENTS Fortran)
+    if (PnetCDF_Fortran_FOUND)
+        target_include_directories (piof 
+            PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
+        target_compile_definitions (piof 
+            PRIVATE _PNETCDF)
+        target_link_libraries (piof
+            PUBLIC ${PnetCDF_Fortran_LIBRARIES})
+    endif ()
+endif ()
+if (PnetCDF_Fortran_FOUND)
     # Check library for varn functions
     include(CheckFunctionExists)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_LIBRARY})
