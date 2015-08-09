@@ -79,7 +79,6 @@ else ()
             PRIVATE _NETCDF)
         target_link_libraries (pioc
             PUBLIC ${NetCDF_C_LIBRARIES})
-        endif ()
         if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
             target_compile_definitions (pioc 
                 PRIVATE _NETCDF4)
