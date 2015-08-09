@@ -54,46 +54,60 @@ if (ENABLE_TIMING)
 endif ()
 
 #===== MPI =====
-if (CMAKE_C_COMPILER MATCHES "mpicc")
-    set (PIOC_USING_MPI_WRAPPER TRUE)
-else ()
-    set (PIOC_USING_MPI_WRAPPER FALSE)
-endif ()
 find_package (MPI REQUIRED)
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
 
-message ("CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
-message ("MPI_C_COMPILER = ${MPI_C_COMPILER}")
-
 #===== NetCDF-C =====
-find_package (NetCDF COMPONENTS C)
-if (NetCDF_C_FOUND)
-    target_include_directories (pioc 
-        PUBLIC ${NetCDF_C_INCLUDE_DIRS})
+if ("${MPI_C_LIBRARIES}" MATCHES "libnetcdf")
+    set (NetCDF_C_FOUND TRUE)
     target_compile_definitions (pioc 
         PRIVATE _NETCDF)
-    target_link_libraries (pioc
-        PUBLIC ${NetCDF_C_LIBRARIES})
-    if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
+    find_path (NetCDF_C_IN_MPI_INCLUDES
+               NAMES netcdf_par.h
+               PATHS ${MPI_C_INCLUDE_PATH})
+    if (NetCDF_C_IN_MPI_INCLUDES)
         target_compile_definitions (pioc 
             PRIVATE _NETCDF4)
     endif ()
 else ()
-    target_compile_definitions (pioc 
-        PRIVATE _NONETCDF)
+    find_package (NetCDF COMPONENTS C)
+    if (NetCDF_C_FOUND)
+        target_include_directories (pioc 
+            PUBLIC ${NetCDF_C_INCLUDE_DIRS})
+        target_compile_definitions (pioc 
+            PRIVATE _NETCDF)
+        target_link_libraries (pioc
+            PUBLIC ${NetCDF_C_LIBRARIES})
+        endif ()
+        if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
+            target_compile_definitions (pioc 
+                PRIVATE _NETCDF4)
+        endif ()
+    else ()
+        target_compile_definitions (pioc 
+            PRIVATE _NONETCDF)
+    endif ()
 endif ()
 
-#===== PnetCDF =====
-find_package (PnetCDF COMPONENTS C)
-if (PnetCDF_C_FOUND)
-    target_include_directories (pioc 
-        PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
+#===== PnetCDF-C =====
+if ("${MPI_C_LIBRARIES}" MATCHES "libpnetcdf")
+    set (PnetCDF_C_FOUND TRUE)
     target_compile_definitions (pioc 
         PRIVATE _PNETCDF)
-    target_link_libraries (pioc
-        PUBLIC ${PnetCDF_C_LIBRARIES})
-        
+    set (PnetCDF_C_LIBRARY ${MPI_C_LIBRARIES})
+else ()
+    find_package (PnetCDF COMPONENTS C)
+    if (PnetCDF_C_FOUND)
+        target_include_directories (pioc 
+            PUBLIC ${PnetCDF_C_INCLUDE_DIRS})
+        target_compile_definitions (pioc 
+            PRIVATE _PNETCDF)
+        target_link_libraries (pioc
+            PUBLIC ${PnetCDF_C_LIBRARIES})
+    endif ()
+endif ()
+if (PnetCDF_C_FOUND)
     # Check library for varn functions
     include(CheckFunctionExists)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
