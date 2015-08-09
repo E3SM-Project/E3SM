@@ -2,6 +2,12 @@ cmake_minimum_required (VERSION 3.0.0)
 project (PIOC C)
 
 #==============================================================================
+#  APPEND TO CMAKE MODULE PATH
+#==============================================================================
+
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+#==============================================================================
 #  DEFINE THE TARGET
 #==============================================================================
 
@@ -48,12 +54,15 @@ if (ENABLE_TIMING)
 endif ()
 
 #===== MPI =====
+if (CMAKE_C_COMPILER MATCHES "mpicc")
+    set (PIOC_USING_MPI_WRAPPER TRUE)
+endif ()
 find_package (MPI REQUIRED)
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
 
 #===== NetCDF-C =====
-find_package (NetCDF_C)
+find_package (NetCDF COMPONENTS C)
 if (NetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${NetCDF_C_INCLUDE_DIRS})
@@ -71,7 +80,7 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF_C)
+find_package (PnetCDF COMPONENTS C)
 if (PnetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})

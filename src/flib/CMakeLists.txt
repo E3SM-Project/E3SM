@@ -2,6 +2,12 @@ cmake_minimum_required (VERSION 3.0.0)
 project (PIOF Fortran)
 
 #==============================================================================
+#  APPEND TO CMAKE MODULE PATH
+#==============================================================================
+
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+#==============================================================================
 #  DEFINE THE TARGET
 #==============================================================================
 
@@ -56,7 +62,7 @@ target_compile_definitions (piof
     PRIVATE USEMPIIO)
 
 #===== NetCDF-Fortran =====
-find_package (NetCDF_Fortran)
+find_package (NetCDF COMPONENTS Fortran)
 if (NetCDF_Fortran_FOUND)
     target_include_directories (piof 
         PUBLIC ${NetCDF_Fortran_INCLUDE_DIRS})
@@ -74,7 +80,7 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF_Fortran)
+find_package (PnetCDF COMPONENTS Fortran)
 if (PnetCDF_Fortran_FOUND)
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
