@@ -18,6 +18,11 @@
 # The available COMPONENTS are: C, CXX, CXX4, Fortran
 # If no components are specified, it assumes only C
 
+# Default to C component if no components specified
+if (NOT NetCDF_FIND_COMPONENTS)
+    set (NetCDF_FIND_COMPONENTS C)
+endif ()
+
 # COMPONENT: C
 if (";${NetCDF_FIND_COMPONENTS};" MATCHES ";C;")
 
@@ -139,7 +144,7 @@ if (";${NetCDF_FIND_COMPONENTS};" MATCHES ";CXX;")
     
     # Search for include file
     find_path (NetCDF_CXX_INCLUDE_DIR
-               NAMES netcdfcpp.h
+               NAMES netcdf
                HINTS ${NetCDF_CXX_INCLUDE_HINTS})
                
     # Unset include search variables
@@ -223,7 +228,7 @@ if (";${NetCDF_FIND_COMPONENTS};" MATCHES ";CXX4;")
     
     # Search for include file
     find_path (NetCDF_CXX4_INCLUDE_DIR
-               NAMES netcdfcpp.h
+               NAMES netcdf
                HINTS ${NetCDF_CXX4_INCLUDE_HINTS})
                
     # Unset include search variables
