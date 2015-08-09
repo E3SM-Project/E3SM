@@ -242,13 +242,13 @@ if (";${PnetCDF_FIND_COMPONENTS};" MATCHES ";Fortran;")
         endif ()
     else ()
         find_static_library (PnetCDF_Fortran_LIBRARY
-                             NAMES netcdf
+                             NAMES pnetcdf
                              HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
         if (PnetCDF_Fortran_LIBRARY)
             set (PnetCDF_Fortran_IS_SHARED FALSE)
         else ()
             find_shared_library (PnetCDF_Fortran_LIBRARY
-                                 NAMES netcdf
+                                 NAMES pnetcdf
                                  HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
         endif ()
     endif ()
