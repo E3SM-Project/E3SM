@@ -33,26 +33,35 @@ module TopounitType
     real(r8), pointer :: emissivity (:)   => null() ! mean surface emissivity
     real(r8), pointer :: surfalb_dir(:,:) => null() ! (topunit,numrad) mean surface albedo (direct)
     real(r8), pointer :: surfalb_dif(:,:) => null() ! (topunit,numrad) mean surface albedo (diffuse)
-    
-    contains
+  contains
     procedure, public :: Init  => init_top_pp
     procedure, public :: Clean => clean_top_pp  
   end type topounit_properties
     
   type, public :: topounit_energy_state
-    real(r8), pointer :: forc_t     (:)   => null() ! temperature of air at atmospheric forcing height (K)
-    real(r8), pointer :: forc_th    (:)   => null() ! potential temperature of air at atmospheric forcing height (K)
+    real(r8), pointer :: t_atm      (:)   => null() ! temperature of air at atmospheric forcing height (K)
+    real(r8), pointer :: th_atm     (:)   => null() ! potential temperature of air at atmospheric forcing height (K)
     real(r8), pointer :: t_ref2m    (:)   => null() ! mean temperature of air at 2m above surface (K)
     real(r8), pointer :: t_rad      (:)   => null() ! mean radiative temperature of land surface (K)
-    
   contains
     procedure, public :: Init  => init_top_es
     procedure, public :: Clean => clean_top_es
   end type topounit_energy_state
   
-  ! declare the public instances
+  type, public :: topounit_water_state
+    real(r8), pointer :: vp_atm     (:)   => null() ! vapor pressure of air at atmospheric forcing height (Pa)
+    real(r8), pointer :: q_atm      (:)   => null() ! specific humidity of air at atmopspheric forcing height (kg H2O/ kg dry air)
+    real(r8), pointer :: rh_atm     (:)   => null() ! relative humidity of air at atmospheric forcing height (0 to 1)
+    ! glacier ice mass here? 
+  contains
+    procedure, public :: Init   => init_top_ws
+    procedure, public :: Clean  => clean_top_ws
+  end type topounit_water_state
+
+  ! declare the public instances of topounit types
   type(topounit_properties) , public, target :: top_pp
   type(topounit_energy_state), public, target :: top_es
+  type(topounit_water_state), public, target :: top_ws
   
   contains
   
@@ -100,9 +109,9 @@ module TopounitType
     class(topounit_energy_state) :: this
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
-    
-    allocate(this%forc_t  (begt:endt)) ; this%forc_t  (:) = nan
-    allocate(this%forc_th (begt:endt)) ; this%forc_th (:) = nan
+
+    allocate(this%t_atm   (begt:endt)) ; this%t_atm   (:) = nan
+    allocate(this%th_atm  (begt:endt)) ; this%th_atm  (:) = nan
     allocate(this%t_ref2m (begt:endt)) ; this%t_ref2m (:) = nan
     allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
   end subroutine init_top_es
@@ -112,10 +121,30 @@ module TopounitType
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
     
-    deallocate(this%forc_t)
-    deallocate(this%forc_th)
+    deallocate(this%t_atm)
+    deallocate(this%th_atm)
     deallocate(this%t_ref2m)
     deallocate(this%t_rad)
   end subroutine clean_top_es
+  
+  subroutine init_top_ws(this, begt, endt)
+    class(topounit_water_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+
+    allocate(this%vp_atm  (begt:endt))  ; this%vp_atm   (:) = nan
+    allocate(this%q_atm   (begt:endt))  ; this%q_atm    (:) = nan
+    allocate(this%rh_atm  (begt:endt))  ; this%rh_atm   (:) = nan
+  end subroutine init_top_ws
+  
+  subroutine clean_top_ws(this, begt, endt)
+    class(topounit_water_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+    
+    deallocate(this%vp_atm)
+    deallocate(this%q_atm)
+    deallocate(this%rh_atm)
+  end subroutine clean_top_ws
     
 end module TopounitType
