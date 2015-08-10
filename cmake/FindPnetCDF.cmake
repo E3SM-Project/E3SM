@@ -17,6 +17,7 @@
 #
 # The available COMPONENTS are: C, CXX, Fortran
 # If no components are specified, it assumes only C
+include (LibFindLibraryMacros)
 
 set (PnetCDF_VALID_COMPONENTS C CXX Fortran)
 
@@ -43,6 +44,7 @@ foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
     find_package_component(PnetCDF COMPONENT ${comp}
                            INCLUDE_NAMES ${PnetCDF_${comp}_INCLUDE_NAMES}
-                           LIBRARY_NAMES ${PnetCDF_${comp}_LIBRARY_NAMES})
+                           LIBRARY_NAMES ${PnetCDF_${comp}_LIBRARY_NAMES}
+                           PRE_SEARCH_HINTS ${MPI_${comp}_INCLUDE_PATH})
     
 endforeach ()
