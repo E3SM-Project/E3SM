@@ -16,260 +16,33 @@
 #   PnetCDF_<lang>_OPTIONS      (LIST) - compiler options to use PnetCDF
 #
 # The available COMPONENTS are: C, CXX, Fortran
+# If no components are specified, it assumes only C
 
-# Default to C component if no components specified
+set (PnetCDF_VALID_COMPONENTS C CXX Fortran)
+
 if (NOT PnetCDF_FIND_COMPONENTS)
     set (PnetCDF_FIND_COMPONENTS C)
 endif ()
 
-# COMPONENT: C
-if (";${PnetCDF_FIND_COMPONENTS};" MATCHES ";C;")
+set (PnetCDF_FIND_VALID_COMPONENTS)
+foreach (comp IN LISTS PnetCDF_FIND_COMPONENTS)
+    if (";${PnetCDF_VALID_COMPONENTS};" MATCHES ";${comp};")
+        list (APPEND PnetCDF_FIND_VALID_COMPONENTS ${comp})
+    endif ()
+endforeach ()
 
-    # Determine include dir search order
-    set (PnetCDF_C_INCLUDE_HINTS)
-    if (PnetCDF_C_DIR)
-        list (APPEND PnetCDF_C_INCLUDE_HINTS ${PnetCDF_C_DIR}/include)
-    endif ()
-    if (PnetCDF_DIR)
-        list (APPEND PnetCDF_C_INCLUDE_HINTS ${PnetCDF_DIR}/include)
-    endif ()
-    if (DEFINED ENV{PNETCDF})
-        list (APPEND PnetCDF_C_INCLUDE_HINTS $ENV{PNETCDF}/include)
-    endif ()
-    
-    # Search for include file
-    find_path (PnetCDF_C_INCLUDE_DIR
-               NAMES pnetcdf.h
-               HINTS ${PnetCDF_C_INCLUDE_HINTS})
-               
-    # Unset include search variables
-    unset (PnetCDF_C_INCLUDE_HINTS)
-    
-    # Determine library dir search order
-    set (PnetCDF_C_LIBRARY_HINTS)
-    if (PnetCDF_C_DIR)
-        list (APPEND PnetCDF_C_LIBRARY_HINTS ${PnetCDF_C_DIR}/lib)
-    endif ()
-    if (PnetCDF_DIR)
-        list (APPEND PnetCDF_C_LIBRARY_HINTS ${PnetCDF_DIR}/lib)
-    endif ()
-    if (DEFINED ENV{PNETCDF})
-        list (APPEND PnetCDF_C_LIBRARY_HINTS $ENV{PNETCDF}/lib)
-    endif ()
-    
-    # Search for library file
-    include (LibFindLibraryMacros)
-    set (PnetCDF_C_IS_SHARED TRUE)
-    if (PREFER_SHARED)
-        find_shared_library (PnetCDF_C_LIBRARY
-                             NAMES pnetcdf
-                             HINTS ${PnetCDF_C_LIBRARY_HINTS})
-        if (NOT PnetCDF_C_LIBRARY)
-            find_static_library (PnetCDF_C_LIBRARY
-                                 NAMES pnetcdf
-                                 HINTS ${PnetCDF_C_LIBRARY_HINTS})
-            if (PnetCDF_C_LIBRARY)
-                set (PnetCDF_C_IS_SHARED FALSE)
-            endif ()
-        endif ()
-    else ()
-        find_static_library (PnetCDF_C_LIBRARY
-                             NAMES pnetcdf
-                             HINTS ${PnetCDF_C_LIBRARY_HINTS})
-        if (PnetCDF_C_LIBRARY)
-            set (PnetCDF_C_IS_SHARED FALSE)
-        else ()
-            find_shared_library (PnetCDF_C_LIBRARY
-                                 NAMES pnetcdf
-                                 HINTS ${PnetCDF_C_LIBRARY_HINTS})
-        endif ()
-    endif ()
-    
-    # Unset include search variables
-    unset (PnetCDF_C_LIBRARY_HINTS)
-    
-    # Set return variables
-    set (PnetCDF_C_INCLUDE_DIRS ${PnetCDF_C_INCLUDE_DIR})
-    set (PnetCDF_C_LIBRARIES ${PnetCDF_C_LIBRARY})
-    set (PnetCDF_C_DEFINITIONS)
-    set (PnetCDF_C_OPTIONS)
-    
-    include(FindPackageHandleStandardArgs)
-    # handle the QUIETLY and REQUIRED arguments and 
-    # set PnetCDF_C_FOUND to TRUE if all listed variables are TRUE
-    find_package_handle_standard_args (PnetCDF_C DEFAULT_MSG
-                                       PnetCDF_C_LIBRARY PnetCDF_C_INCLUDE_DIR)
-    mark_as_advanced (PnetCDF_C_INCLUDE_DIR PnetCDF_C_LIBRARY)
-    
-    # HACK For bug in CMake v3.0:
-    set (PnetCDF_C_FOUND ${PNETCDF_C_FOUND})
+set (PnetCDF_C_INCLUDE_NAMES pnetcdf.h)
+set (PnetCDF_CXX_INCLUDE_NAMES pnetcdf)
+set (PnetCDF_Fortran_INCLUDE_NAMES pnetcdf.mod pnetcdf.inc)
 
-endif ()
+set (PnetCDF_C_LIBRARY_NAMES pnetcdf)
+set (PnetCDF_CXX_LIBRARY_NAMES pnetcdf)
+set (PnetCDF_Fortran_LIBRARY_NAMES pnetcdf)
 
-# COMPONENT: CXX
-if (";${PnetCDF_FIND_COMPONENTS};" MATCHES ";CXX;")
+foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
-    # Determine include dir search order
-    set (PnetCDF_CXX_INCLUDE_HINTS)
-    if (PnetCDF_CXX_DIR)
-        list (APPEND PnetCDF_CXX_INCLUDE_HINTS ${PnetCDF_CXX_DIR}/include)
-    endif ()
-    if (PnetCDF_DIR)
-        list (APPEND PnetCDF_CXX_INCLUDE_HINTS ${PnetCDF_DIR}/include)
-    endif ()
-    if (DEFINED ENV{PNETCDF})
-        list (APPEND PnetCDF_CXX_INCLUDE_HINTS $ENV{PNETCDF}/include)
-    endif ()
+    find_package_component(PnetCDF COMPONENT ${comp}
+                           INCLUDE_NAMES ${PnetCDF_${comp}_INCLUDE_NAMES}
+                           LIBRARY_NAMES ${PnetCDF_${comp}_LIBRARY_NAMES})
     
-    # Search for include file
-    find_path (PnetCDF_CXX_INCLUDE_DIR
-               NAMES pnetcdf
-               HINTS ${PnetCDF_CXX_INCLUDE_HINTS})
-               
-    # Unset include search variables
-    unset (PnetCDF_CXX_INCLUDE_HINTS)
-    
-    # Determine library dir search order
-    set (PnetCDF_CXX_LIBRARY_HINTS)
-    if (PnetCDF_CXX_DIR)
-        list (APPEND PnetCDF_CXX_LIBRARY_HINTS ${PnetCDF_CXX_DIR}/lib)
-    endif ()
-    if (PnetCDF_DIR)
-        list (APPEND PnetCDF_CXX_LIBRARY_HINTS ${PnetCDF_DIR}/lib)
-    endif ()
-    if (DEFINED ENV{PNETCDF})
-        list (APPEND PnetCDF_CXX_LIBRARY_HINTS $ENV{PNETCDF}/lib)
-    endif ()
-    
-    # Search for library file
-    include (LibFindLibraryMacros)
-    set (PnetCDF_CXX_IS_SHARED TRUE)
-    if (PREFER_SHARED)
-        find_shared_library (PnetCDF_CXX_LIBRARY
-                             NAMES pnetcdf
-                             HINTS ${PnetCDF_CXX_LIBRARY_HINTS})
-        if (NOT PnetCDF_CXX_LIBRARY)
-            find_static_library (PnetCDF_CXX_LIBRARY
-                                 NAMES pnetcdf
-                                 HINTS ${PnetCDF_CXX_LIBRARY_HINTS})
-            if (PnetCDF_CXX_LIBRARY)
-                set (PnetCDF_CXX_IS_SHARED FALSE)
-            endif ()
-        endif ()
-    else ()
-        find_static_library (PnetCDF_CXX_LIBRARY
-                             NAMES pnetcdf
-                             HINTS ${PnetCDF_CXX_LIBRARY_HINTS})
-        if (PnetCDF_CXX_LIBRARY)
-            set (PnetCDF_CXX_IS_SHARED FALSE)
-        else ()
-            find_shared_library (PnetCDF_CXX_LIBRARY
-                                 NAMES pnetcdf
-                                 HINTS ${PnetCDF_CXX_LIBRARY_HINTS})
-        endif ()
-    endif ()
-    
-    # Unset include search variables
-    unset (PnetCDF_CXX_LIBRARY_HINTS)
-    
-    # Set return variables
-    set (PnetCDF_CXX_INCLUDE_DIRS ${PnetCDF_CXX_INCLUDE_DIR})
-    set (PnetCDF_CXX_LIBRARIES ${PnetCDF_CXX_LIBRARY})
-    set (PnetCDF_CXX_DEFINITIONS)
-    set (PnetCDF_CXX_OPTIONS)
-        
-    include(FindPackageHandleStandardArgs)
-    # handle the QUIETLY and REQUIRED arguments and 
-    # set PnetCDF_CXX_FOUND to TRUE if all listed variables are TRUE
-    find_package_handle_standard_args (PnetCDF_CXX DEFAULT_MSG
-                                       PnetCDF_CXX_LIBRARY PnetCDF_CXX_INCLUDE_DIR)
-    mark_as_advanced (PnetCDF_CXX_INCLUDE_DIR PnetCDF_CXX_LIBRARY)
-    
-    # HACK For bug in CMake v3.0:
-    set (PnetCDF_CXX_FOUND ${PNETCDF_CXX_FOUND})
-
-endif ()
-
-# COMPONENT: Fortran
-if (";${PnetCDF_FIND_COMPONENTS};" MATCHES ";Fortran;")
-
-    # Determine include dir search order
-    set (PnetCDF_Fortran_INCLUDE_HINTS)
-    if (PnetCDF_Fortran_DIR)
-        list (APPEND PnetCDF_Fortran_INCLUDE_HINTS ${PnetCDF_Fortran_DIR}/include)
-    endif ()
-    if (PnetCDF_DIR)
-        list (APPEND PnetCDF_Fortran_INCLUDE_HINTS ${PnetCDF_DIR}/include)
-    endif ()
-    if (DEFINED ENV{PNETCDF})
-        list (APPEND PnetCDF_Fortran_INCLUDE_HINTS $ENV{PNETCDF}/include)
-    endif ()
-    
-    # Search for include file
-    find_path (PnetCDF_Fortran_INCLUDE_DIR
-               NAMES pnetcdf.mod pnetcdf.inc
-               HINTS ${PnetCDF_Fortran_INCLUDE_HINTS})
-               
-    # Unset include search variables
-    unset (PnetCDF_Fortran_INCLUDE_HINTS)
-    
-    # Determine library dir search order
-    set (PnetCDF_Fortran_LIBRARY_HINTS)
-    if (PnetCDF_Fortran_DIR)
-        list (APPEND PnetCDF_Fortran_LIBRARY_HINTS ${PnetCDF_Fortran_DIR}/lib)
-    endif ()
-    if (PnetCDF_DIR)
-        list (APPEND PnetCDF_Fortran_LIBRARY_HINTS ${PnetCDF_DIR}/lib)
-    endif ()
-    if (DEFINED ENV{PNETCDF})
-        list (APPEND PnetCDF_Fortran_LIBRARY_HINTS $ENV{PNETCDF}/lib)
-    endif ()
-    
-    # Search for library file
-    include (LibFindLibraryMacros)
-    set (PnetCDF_Fortran_IS_SHARED TRUE)
-    if (PREFER_SHARED)
-        find_shared_library (PnetCDF_Fortran_LIBRARY
-                             NAMES pnetcdf
-                             HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
-        if (NOT PnetCDF_Fortran_LIBRARY)
-            find_static_library (PnetCDF_Fortran_LIBRARY
-                                 NAMES pnetcdf
-                                 HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
-            if (PnetCDF_Fortran_LIBRARY)
-                set (PnetCDF_Fortran_IS_SHARED FALSE)
-            endif ()
-        endif ()
-    else ()
-        find_static_library (PnetCDF_Fortran_LIBRARY
-                             NAMES pnetcdf
-                             HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
-        if (PnetCDF_Fortran_LIBRARY)
-            set (PnetCDF_Fortran_IS_SHARED FALSE)
-        else ()
-            find_shared_library (PnetCDF_Fortran_LIBRARY
-                                 NAMES pnetcdf
-                                 HINTS ${PnetCDF_Fortran_LIBRARY_HINTS})
-        endif ()
-    endif ()
-    
-    # Unset include search variables
-    unset (PnetCDF_Fortran_LIBRARY_HINTS)
-    
-    # Set return variables
-    set (PnetCDF_Fortran_INCLUDE_DIRS ${PnetCDF_Fortran_INCLUDE_DIR})
-    set (PnetCDF_Fortran_LIBRARIES ${PnetCDF_Fortran_LIBRARY})
-    set (PnetCDF_Fortran_DEFINITIONS)
-    set (PnetCDF_Fortran_OPTIONS)
-    
-    include(FindPackageHandleStandardArgs)
-    # handle the QUIETLY and REQUIRED arguments and 
-    # set PnetCDF_Fortran_FOUND to TRUE if all listed variables are TRUE
-    find_package_handle_standard_args (PnetCDF_Fortran DEFAULT_MSG
-                                       PnetCDF_Fortran_LIBRARY PnetCDF_Fortran_INCLUDE_DIR)
-    mark_as_advanced (PnetCDF_Fortran_INCLUDE_DIR PnetCDF_Fortran_LIBRARY)
-    
-    # HACK For bug in CMake v3.0:
-    set (PnetCDF_Fortran_FOUND ${NETCDF_FORTRAN_FOUND})
-
-endif ()
+endforeach ()

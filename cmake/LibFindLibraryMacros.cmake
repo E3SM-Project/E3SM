@@ -21,83 +21,100 @@ endmacro ()
 #
 # - Basic find package macro for a specific component
 #
-macro (find_package_component PKG COMP)
+include (CMakeParseArguments)
+include(FindPackageHandleStandardArgs)
+macro (find_package_component PKG)
 
     # Parse the input arguments
-    
+    set(options)
+    set(oneValueArgs COMPONENT)
+    set(multiValueArgs INCLUDE_NAMES LIBRARY_NAMES)
+    cmake_parse_arguments(${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
 
     # Determine include dir search order
-    set (${PKG}_${COMP}_INCLUDE_HINTS)
-    if (MPI_${COMP}_FOUND)
-        list (APPEND ${PKG}_${COMP}_INCLUDE_HINTS ${MPI_${COMP}_INCLUDE_PATH})
+    set (${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS)
+    if (MPI_${${PKG}_COMPONENT}_FOUND)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS ${MPI_${${PKG}_COMPONENT}_INCLUDE_PATH})
     endif ()
-    if (${PKG}_${COMP}_DIR)
-        list (APPEND ${PKG}_${COMP}_INCLUDE_HINTS ${${PKG}_${COMP}_DIR}/include)
+    if (${PKG}_${${PKG}_COMPONENT}_DIR)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS ${${PKG}_${${PKG}_COMPONENT}_DIR}/include)
     endif ()
     if (${PKG}_DIR)
-        list (APPEND ${PKG}_${COMP}_INCLUDE_HINTS ${${PKG}_DIR}/include)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS ${${PKG}_DIR}/include)
     endif ()
     if (DEFINED ENV{NETCDF})
-        list (APPEND ${PKG}_${COMP}_INCLUDE_HINTS $ENV{NETCDF}/include)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS $ENV{NETCDF}/include)
     endif ()
     
     # Search for include file
-    find_path (${PKG}_${COMP}_INCLUDE_DIR
-               NAMES netcdf.h
-               HINTS ${${PKG}_${COMP}_INCLUDE_HINTS})
+    find_path (${PKG}_${${PKG}_COMPONENT}_INCLUDE_DIR
+               NAMES ${${PKG}_${${PKG}_COMPONENT}_INCLUDE_NAMES}
+               HINTS ${${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS})
                
     # Unset include search variables
-    unset (${PKG}_${COMP}_INCLUDE_HINTS)
+    unset (${PKG}_${${PKG}_COMPONENT}_INCLUDE_HINTS)
     
     # Determine library dir search order
-    set (${PKG}_${COMP}_LIBRARY_HINTS)
-    if (MPI_${COMP}_FOUND)
-        list (APPEND ${PKG}_${COMP}_LIBRARY_HINTS ${MPI_${COMP}_LIBRARIES})
+    set (${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS)
+    if (MPI_${${PKG}_COMPONENT}_FOUND)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS ${MPI_${${PKG}_COMPONENT}_LIBRARIES})
     endif ()
-    if (${PKG}_${COMP}_DIR)
-        list (APPEND ${PKG}_${COMP}_LIBRARY_HINTS ${${PKG}_${COMP}_DIR}/lib)
+    if (${PKG}_${${PKG}_COMPONENT}_DIR)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS ${${PKG}_${${PKG}_COMPONENT}_DIR}/lib)
     endif ()
     if (${PKG}_DIR)
-        list (APPEND ${PKG}_${COMP}_LIBRARY_HINTS ${${PKG}_DIR}/lib)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS ${${PKG}_DIR}/lib)
     endif ()
     if (DEFINED ENV{NETCDF})
-        list (APPEND ${PKG}_${COMP}_LIBRARY_HINTS $ENV{NETCDF}/lib)
+        list (APPEND ${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS $ENV{NETCDF}/lib)
     endif ()
     
     # Search for library file
     include (LibFindLibraryMacros)
-    set (${PKG}_${COMP}_IS_SHARED TRUE)
+    set (${PKG}_${${PKG}_COMPONENT}_IS_SHARED TRUE)
     if (PREFER_SHARED)
-        find_shared_library (${PKG}_${COMP}_LIBRARY
-                             NAMES netcdf
-                             HINTS ${${PKG}_${COMP}_LIBRARY_HINTS})
-        if (NOT ${PKG}_${COMP}_LIBRARY)
-            find_static_library (${PKG}_${COMP}_LIBRARY
-                                 NAMES netcdf
-                                 HINTS ${${PKG}_${COMP}_LIBRARY_HINTS})
-            if (${PKG}_${COMP}_LIBRARY)
-                set (${PKG}_${COMP}_IS_SHARED FALSE)
+        find_shared_library (${PKG}_${${PKG}_COMPONENT}_LIBRARY
+                             NAMES ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_NAMES}
+                             HINTS ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS})
+        if (NOT ${PKG}_${${PKG}_COMPONENT}_LIBRARY)
+            find_static_library (${PKG}_${${PKG}_COMPONENT}_LIBRARY
+                                 NAMES ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_NAMES}
+                                 HINTS ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS})
+            if (${PKG}_${${PKG}_COMPONENT}_LIBRARY)
+                set (${PKG}_${${PKG}_COMPONENT}_IS_SHARED FALSE)
             endif ()
         endif ()
     else ()
-        find_static_library (${PKG}_${COMP}_LIBRARY
-                             NAMES netcdf
-                             HINTS ${${PKG}_${COMP}_LIBRARY_HINTS})
-        if (${PKG}_${COMP}_LIBRARY)
-            set (${PKG}_${COMP}_IS_SHARED FALSE)
+        find_static_library (${PKG}_${${PKG}_COMPONENT}_LIBRARY
+                             NAMES ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_NAMES}
+                             HINTS ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS})
+        if (${PKG}_${${PKG}_COMPONENT}_LIBRARY)
+            set (${PKG}_${${PKG}_COMPONENT}_IS_SHARED FALSE)
         else ()
-            find_shared_library (${PKG}_${COMP}_LIBRARY
-                                 NAMES netcdf
-                                 HINTS ${${PKG}_${COMP}_LIBRARY_HINTS})
+            find_shared_library (${PKG}_${${PKG}_COMPONENT}_LIBRARY
+                                 NAMES ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_NAMES}
+                                 HINTS ${${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS})
         endif ()
     endif ()
     
     # Unset include search variables
-    unset (${PKG}_${COMP}_LIBRARY_HINTS)
+    unset (${PKG}_${${PKG}_COMPONENT}_LIBRARY_HINTS)
+
+    # handle the QUIETLY and REQUIRED arguments and 
+    # set NetCDF_C_FOUND to TRUE if all listed variables are TRUE
+    find_package_handle_standard_args (${PKG}_${${PKG}_COMPONENT} DEFAULT_MSG
+                                       ${PKG}_${${PKG}_COMPONENT}_LIBRARY 
+                                       ${PKG}_${${PKG}_COMPONENT}_INCLUDE_DIR)
+    mark_as_advanced (${PKG}_${${PKG}_COMPONENT}_INCLUDE_DIR ${PKG}_${${PKG}_COMPONENT}_LIBRARY)
     
+    # HACK For bug in CMake v3.0:
+    set (NetCDF_C_FOUND ${NETCDF_C_FOUND})
+
     # Set return variables
-    set (${PKG}_${COMP}_INCLUDE_DIRS ${${PKG}_${COMP}_INCLUDE_DIR})
-    set (${PKG}_${COMP}_LIBRARIES ${${PKG}_${COMP}_LIBRARY})
-    set (${PKG}_${COMP}_DEFINITIONS)
-    set (${PKG}_${COMP}_OPTIONS)
+    if (${PKG}_${${PKG}_COMPONENT}_FOUND)
+        set (${PKG}_${${PKG}_COMPONENT}_INCLUDE_DIRS ${${PKG}_${${PKG}_COMPONENT}_INCLUDE_DIR})
+        set (${PKG}_${${PKG}_COMPONENT}_LIBRARIES ${${PKG}_${${PKG}_COMPONENT}_LIBRARY})
+        set (${PKG}_${${PKG}_COMPONENT}_DEFINITIONS)
+        set (${PKG}_${${PKG}_COMPONENT}_OPTIONS)
+    endif ()
 endmacro ()
