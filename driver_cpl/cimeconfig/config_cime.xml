@@ -1145,6 +1145,28 @@
     <desc>grid mask - DO NOT EDIT (for experts only)</desc>
   </entry>
 
+  <entry id="PTS_MODE"> 
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values> 
+    <default_value>FALSE</default_value> 
+    <group>run_domain</group>
+    <desc>Operate on only a single point of the global grid  - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="PTS_LAT"> 
+    <type>real(1)</type>
+    <default_value>-999.99</default_value> 
+    <group>run_domain</group>
+    <desc>Latitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
+  </entry>
+
+  <entry id="PTS_LON"> 
+    <type>real(1)</type>
+    <default_value>-999.99</default_value> 
+    <group>run_domain</group>
+    <desc>Longitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
+  </entry>
+
   <!-- ======================================================================= -->
   <!--  DOMAIN FILES (drv)                                          -->
   <!-- ======================================================================= -->
@@ -2039,6 +2061,9 @@
   <entry id="NTASKS_GLC"> 
     <type>integer</type>
     <default_value>0</default_value>
+    <values>
+      <value compset="_CISM1">1</value>
+    </values>
     <group>mach_pes_glc</group>
     <file>env_mach_pes.xml</file>
     <desc>number of glc mpi tasks</desc>
@@ -2047,6 +2072,9 @@
   <entry id="NTHRDS_GLC"> 
     <type>integer</type>
     <default_value>0</default_value>
+    <values>
+      <value compset="_CISM1">1</value>
+    </values>
     <group>mach_pes_glc</group>
     <file>env_mach_pes.xml</file>
     <desc>number of glc mpi threads</desc>
@@ -2919,6 +2947,54 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
+
+  <entry id="CPL_ALBAV"> 
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>false</default_value> 
+    <values>
+      <value compset="DATM.+POP">true</value>
+      <value compset="DATM.+DOCN%IAF">true</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>
+      Only used for compsets with DATM and POP (currently C and G): 
+      If true, compute albedos to work with daily avg SW down
+      If false (default), albedos are computed with the assumption that downward
+      solar radiation from the atm component has a diurnal cycle and zenith-angle 
+      dependence. This is normally the case when using an active atm component
+      If true, albedos are computed with the assumption that downward
+      solar radiation from the atm component is a daily average quantity and
+      does not have a zenith-angle dependence. This is often the case when
+      using a data atm component. Only used for compsets with DATM and POP (currently C and G)
+    </desc>
+  </entry>
+
+  <entry id="CPL_EPBAL"> 
+    <type>char</type>
+    <valid_values>off,ocn</valid_values>
+    <default_value>off</default_value> 
+    <values>
+      <value compset="DATM.+POP">ocn</value>
+    </values>
+    <group>run_component_pop</group>
+    <file>env_run.xml</file>
+    <desc>
+      Only used for compsets with DATM and POP (currently C and G): 
+      If ocn, ocn provides EP balance factor for precipitation.
+      Provides EP balance factor for precip for POP. A factor computed by
+      POP is applied to precipitation so that precipitation balances
+      evaporation and ocn global salinity does not drift. This is intended
+      for use when coupling POP to a DATM. Only used for C and G compsets.
+      Default is off
+    </desc>
+  </entry>
+
+  <!-- ===================================================================== -->
+  <!-- history / restart frequencies -->
+  <!-- ===================================================================== -->
+
   <entry id="HIST_OPTION"> 
     <type>char</type>
     <valid_values></valid_values>  
@@ -2957,6 +3033,9 @@
     <type>char</type>
     <valid_values></valid_values>  
     <default_value>never</default_value> 
+    <values>
+      <value compset="_DOCN%IAF">nmonths</value>
+    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver average history file frequency (like REST_OPTION)</desc>
@@ -2966,6 +3045,9 @@
     <type>char</type>
     <valid_values></valid_values>  
     <default_value>-999</default_value> 
+    <values>
+      <value compset="_DOCN%IAF">1</value>
+    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver average history file frequency (like REST_N)</desc>

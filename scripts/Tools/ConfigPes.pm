@@ -60,11 +60,8 @@ sub setPes {
 
 	} else {
 
-	    # Determine target grid
-	    my $target_grid = ConfigCESM::setTargetGridMatch($primary_component, $config );
-
 	    # Determine pe layout settings
-	    _setPESsettings($target_grid, $pesize_opts, $config);
+	    _setPESsettings($pesize_opts, $config);
 	}
     }
 }
@@ -126,13 +123,12 @@ sub _setPESmatch2
 sub _setPESsettings
 {
     # Read xml file and obtain NTASKS, NTHRDS, ROOTPE and NINST for each component
-    my ($target_grid, $pesize_opts, $config) = @_; 
-
+    my ($pesize_opts, $config) = @_; 
 
     my $mach		= $config->get('MACH');
+    my $grid_longname   = $config->get('GRID');
     my $compset_name	= $config->get('COMPSET');
     my $pes_file	= $config->get('PES_SPEC_FILE');
-    my $override_file	= $config->get('OVERRIDE_SPEC_FILE');
 
     # temporary hash
     my %decomp;
@@ -164,22 +160,8 @@ sub _setPESsettings
     $decomp{'ROOTPE_CPL'} = 0;
 
     # --------------------------------------
-    # look for target_grid / target_machine
+    # look for model grid / model machine match
     # --------------------------------------
-
-    # Before looking for grid match, determine if there is any grid translation that has to be done
-    # to match on the grid name
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($override_file);
-    my @nodes = $xml->findnodes("//pes_grid_translation/grid");
-    if (defined @nodes) {
-	foreach my $node (@nodes) {
-	    my $attr  = $node->getAttribute('name');
-	    my $value = $node->textContent();
-	    if ($target_grid =~ /$attr/) {
-		$target_grid = $value;
-	    }
-	}
-    }
 
     # Parse the pes xml file
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
@@ -209,18 +191,42 @@ sub _setPESsettings
     }
 
     # Set the match variables $mach_set and $grid_set
-    # Determine if there are any settings for target grid AND target_machine
-    # If not, look for match for target_grid and 'any' machine
-    # If not, look for match for 'any' grid and target_machine
-    # If not, look for match for 'any' grid and 'any' machine
+    # Determine possible matches in following order:
+    # - model grid and model machine
+    # - model grid and 'any' machine
+    # - 'any' grid and model machine
+    # - 'any' grid and 'any' machine
     
     my $mach_set = $mach; 
-    my $grid_set = $target_grid;
-    my @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_set\")]/mach[contains(\@name,\"$mach_set\")]/pes");
+    my $grid_set;
+
+    my @grid_matches;
+    $grid_longname =~ /(a%)(.+)(_l%)/ ; push (@grid_matches, $2);
+    $grid_longname =~ /(l%)(.+)(_oi%)/; push (@grid_matches, $2);
+    $grid_longname =~ /(oi%)(.+)(_r%)/; push (@grid_matches, $2);
+    $grid_longname =~ /(r%)(.+)(_m%)/ ; push (@grid_matches, $2);
+    $grid_longname =~ /(g%)(.+)(_w%)/ ; push (@grid_matches, $2);
+    $grid_longname =~ /(w%)(.+)$/     ; push (@grid_matches, $2);
+    $grid_longname =~ /(m%)(.+)(_g%)/ ; push (@grid_matches, $2);
+
+    my @pes;
+    foreach my $grid_match (@grid_matches) {
+	@pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_match\")]/mach[contains(\@name,\"$mach_set\")]/pes");
+	if (@pes) {
+	    $grid_set = $grid_match;
+	    last;
+	}
+    }      
     if (! @pes) 
     {
 	$mach_set = 'any';
-	$grid_set = $target_grid;
+	foreach my $grid_match (@grid_matches) {
+	    @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_match\")]/mach[contains(\@name,\"$mach_set\")]/pes");
+	    if (@pes) {
+		$grid_set = $grid_match;
+		last;
+	    }
+	}      
 	@pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_set\")]/mach[\@name='any']/pes");
 	if (! @pes) 
 	{
@@ -244,9 +250,8 @@ sub _setPESsettings
 	    }
 	}
     }
-    print "ConfigPES: target grid match is $target_grid \n";
-    print "ConfigPES: grid match is $grid_set \n";
     print "ConfigPES: machine match is $mach_set\n";
+    print "ConfigPES: grid match    is $grid_set \n";
 
     if (($mach_set ne 'any') || ($grid_set ne 'any')) {
 	# Now search the pes
@@ -317,42 +322,6 @@ sub _setPESsettings
 	}
     }
 
-    # --------------------------------------
-    # override pes settings
-    # --------------------------------------
-    
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($override_file);
-    foreach my $node_grid ($xml->findnodes(".//pes_override/*")) 
-    {
-	my $gridname = $node_grid->getAttribute('name');
-	if (($gridname eq 'any') || ($gridname =~ /$grid_set/ )) 
-	{
-	    foreach my $node_mach ($node_grid->findnodes("./mach")) 
-	    {
-		my $machname = $node_mach->getAttribute('name');
-		foreach my $node_pes ($node_mach->findnodes("./pes")) 
-		{
-		    my $pesize  = $node_pes->getAttribute('pesize');
-		    my $compset = $node_pes->getAttribute('compset');
-		    if (($pesize eq 'any' && $compset eq 'any') ||
-			($pesize eq 'any' && $compset_name =~ /$compset/)) 
-		    {
-			foreach my $pes ($node_pes->findnodes("./ntasks"), 
-					 $node_pes->findnodes("./nthrds"), 
-					 $node_pes->findnodes("./rootpe")) {
-			    my @children = $pes ->childNodes();
-			    foreach my $child (@children) {
-				my $name  = uc $child->nodeName(); 
-				my $value =    $child->textContent();
-				$decomp{$name}  = $value;
-			    }
-			}
-		    }
-		}
-	    }
-	}
-    }
-    
     foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL") {
 	my $ntasks = _clean($decomp{"NTASKS_$comp"});
 	my $nthrds = _clean($decomp{"NTHRDS_$comp"});

@@ -334,25 +334,6 @@ sub queryPes
 	    }
 	}
     }
-    foreach my $node_override_grid ($xml->findnodes(".//override/grid")) {
-	my $gridname = $node_override_grid->getAttribute('name');
-
-	if (($gridname eq 'any') || ($gridname =~ /$grid/ )) {
-	    foreach my $node_mach ($node_override_grid->findnodes("./mach")) {
-		my $machname = $node_mach->getAttribute('name');
-		if ($machname eq 'any' || $machname =~ /$opts{'machine'}/ ) {
-		    foreach my $node_pes ($node_override_grid->findnodes("./pes")) {
-			my $pesize  = $node_pes>getAttribute('pesize');
-			my $compset = $node_pes>getAttribute('compset');
-			if ( ($pesize eq 'any') && ($compset eq 'any') ) {
-			    # TODO - fill this in
-			}
-		    }
-		}
-	    }
-	}
-    }
-
     formattedOutput($xml);
 }
 

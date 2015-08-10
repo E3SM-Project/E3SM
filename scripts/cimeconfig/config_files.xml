@@ -107,23 +107,6 @@
     Any grid and compset specific values are then specified in config_pio.xml (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="OVERRIDE_SPEC_FILE">
-    <type>char</type>
-    <default_value>unset</default_value>
-    <values>
-      <value component="drv"      >$CIMEROOT/driver_cpl/cimeconfig/config_override.xml</value>
-      <value component="allactive">$CIMEROOT/scripts/cimeconfig/allactive/config_override.xml</value>
-      <value component="cam"      >$CIMEROOT/scripts/cimeconfig/cam/config_override.xml</value>
-      <value component="cism"     >$CIMEROOT/scripts/cimeconfig/cism/config_override.xml</value>
-      <value component="clm"      >$CIMEROOT/scripts/cimeconfig/clm/config_override.xml</value>
-      <value component="cice"     >$CIMEROOT/scripts/cimeconfig/cice/config_override.xml</value>
-      <value component="pop"      >$CIMEROOT/scripts/cimeconfig/pop/config_override.xml</value>
-    </values>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
-  </entry>
-
   <entry id="TESTS_SPEC_FILE">
     <type>char</type>
     <default_value>unset</default_value>

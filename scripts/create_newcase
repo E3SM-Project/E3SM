@@ -294,8 +294,7 @@ $config->add_config_variables($cimeconfig_file, $srcroot, $cimeroot);
 my $compsets_file;
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$files_spec_file");
 
-foreach my $id ('COMPSETS_SPEC_FILE', 'PES_SPEC_FILE', 'PIO_SPEC_FILE', 'OVERRIDE_SPEC_FILE', 
-		'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
+foreach my $id ('COMPSETS_SPEC_FILE', 'PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
     my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$primary_component\"]");
     if (@nodes) {
 	my $value = $nodes[0]->textContent();
@@ -311,7 +310,8 @@ print "Component that specifies possible compsets, pelayouts and non-default pio
 print "File that specifies possible compsets is $compsets_file \n";
 
 # Determine the compset longname
-my ($compset_longname, $support_level) = ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
+my ($compset_longname, $support_level) = 
+    ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
 $config->set('COMPSET', "$compset_longname");
 
 # Given compset longname, determine the compset components
@@ -395,7 +395,7 @@ if ($opts{'testlist'}) {
 }    
 
 #------------------------------------------------------------------------------------------
-# *** Determine grid longname 
+# *** Determine grid settings
 #------------------------------------------------------------------------------------------
 # First determine the grid longname and alias 
 my ($grid_longname, $grid_shortname, $grid_aliasname, $compset_match ) = 
@@ -410,16 +410,80 @@ if ($compset_match) {
     }
 }
 
-#------------------------------------------------------------------------------------------
-# *** Determine the config variables for the specified compset and grid  ***
-#------------------------------------------------------------------------------------------
-# this will overwrite default values
-ConfigCompsetGrid::setCompsetGrid($print, $config);
+my $grids_file = $config->get('GRIDS_SPEC_FILE');
+
+# set grid component domains and related variables
+ConfigCompsetGrid::setGridDomain($grids_file, $config);
+
+# set grid mapping variables
+ConfigCompsetGrid::setGridMaps($grids_file, $config);
 
 #------------------------------------------------------------------------------------------
-# *** Set compset general vars
+# *** Determine compset component configurations 
 #------------------------------------------------------------------------------------------
+# Loop over the component files (i.e. definitions_component.xml files)
+# determined by the compsets of the primary component
 
+my @setup_comp_files;
+foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE', 
+		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
+    my $file = $config->get($name);	
+    $config->add_config_variables($file, $srcroot, $cimeroot);
+    ConfigCompsetGrid::setComponent($file, $config);
+}
+
+#------------------------------------------------------------------------------------------
+# *** Determine machines file specifying set of out-of-the box machines and then
+#     set the machine parameters, including compilers
+#------------------------------------------------------------------------------------------
+ConfigMachine::setMachineValues($cimeconfig_file, $primary_component, $machine, $compiler, $print, $config);
+
+#------------------------------------------------------------------------------------------
+# *** Set the case pe-layout
+#------------------------------------------------------------------------------------------
+ConfigPes::setPes($pecount, $primary_component, \%opts, $config);
+
+#------------------------------------------------------------------------------------------
+# *** Determine all <value> settings in driver_cpl/cimeconfig/config_cime.xml
+#------------------------------------------------------------------------------------------
+# Note -this needs to come AFTER call to setPES since it might override some of the settings
+# e.g. this effectively works like an override mechanism for NTASKS_GLC and NTHRDS_GLC
+# which must be set to 1 when GLC is CISM1
+
+my $file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml"; #TODO - get this from $config
+ConfigCompsetGrid::setComponent($file, $config); 
+
+#------------------------------------------------------------------------------------------
+# Determine <entry> settings in config_compsets.xml
+#------------------------------------------------------------------------------------------
+# This determines cime_config.xml settings that are compset specific
+# and also check that compset is supported for target grid
+# Note- this needs to come last since it will overwrite any values set above 
+
+ConfigCompsetGrid::setCompsetGeneralVars($config); 
+
+# Special case - if land and river grids are different AND there is no mapping file
+# between land and river then set the river mode  to null if the river component is rtm
+my $rof_comp = $config->get('COMP_ROF');
+if ($rof_comp eq 'rtm') {
+    my $lnd_grid    = $config->get('LND_GRID');
+    my $rof_grid    = $config->get('ROF_GRID');
+    my $map_lnd2rof = $config->get('LND2ROF_FMAPNAME');
+    
+    if (($lnd_grid ne $rof_grid) && ($map_lnd2rof eq 'idmap')) {
+	print "No lnd2rof_fmapname exists - RTM mode set to null \n";
+	$config->set('RTM_MODE', 'NULL');     
+    }
+}
+
+# Print compset/grid info
+ConfigCompsetGrid::printGridCompsetInfo($grids_file, $print, $config );
+
+if ($print >= 2) { 
+    my $compset = $config->get('COMPSET');
+    print "Compset specifier: $compset.\n"; 
+    print "Grid is valid for this compset. \n"; 
+}
 
 #------------------------------------------------------------------------------------------
 # *** Inform the user of the current support level for the compset they are attempting to run.
@@ -444,12 +508,6 @@ if ( defined($support_level) ) {
 }
 print "$testsforcase\n";
 # print "$banner\n";
-
-#------------------------------------------------------------------------------------------
-# *** Determine machines file specifying set of out-of-the box machines and then
-#     set the machine parameters, including compilers
-#------------------------------------------------------------------------------------------
-ConfigMachine::setMachineValues($cimeconfig_file, $primary_component, $machine, $compiler, $print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the testname parameters
@@ -486,11 +544,6 @@ if (ProjectTools::set_project($project)) {
 } 
 
 #------------------------------------------------------------------------------------------
-# *** Set the case pe-layout
-#------------------------------------------------------------------------------------------
-ConfigPes::setPes($pecount, $primary_component, \%opts, $config);
-
-#------------------------------------------------------------------------------------------
 # *** Set the mpi library and the repotag
 #------------------------------------------------------------------------------------------
 _set_mpi_library($mpilib, $config);
@@ -506,7 +559,6 @@ if (defined $opts{'sharedlibroot'}) {
 #------------------------------------------------------------------------------------------
 # *** Create the caseroot directory tree and all caseroot required files
 #------------------------------------------------------------------------------------------
-
 # create the caseroot directory and necessary subdirectories
 _create_caseroot($caseroot, $cimeroot, $config);
 
