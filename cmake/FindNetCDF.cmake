@@ -54,7 +54,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         if (comp STREQUAL C)
         
             # DEPENDENCY: HDF5
-            find_package (HDF5 REQUIRED COMPONENTS C HL)
+            find_package (HDF5 COMPONENTS C HL)
             if (HDF5_FOUND)
                 list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
                 list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
@@ -62,7 +62,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             endif ()
         
             # DEPENDENCY: CURL
-            find_package (CURL REQUIRED)
+            find_package (CURL)
             if (CURL_FOUND)
                 list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
                 list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
