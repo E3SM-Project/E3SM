@@ -470,7 +470,7 @@ contains
 
        type (field1DInteger), pointer :: cullStackField, touchedCellField, oceanCellField
 
-       real, dimension(:), pointer :: latCell, lonCell, bottomDepth
+       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth
        integer, dimension(:), pointer :: stack, oceanMask, touchMask
        integer, pointer :: stackSize
 
