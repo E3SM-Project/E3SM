@@ -44,26 +44,23 @@ sub getPrimaryComponent
 	# match longname
 	if ($compset =~ m/_DATM/ && $compset =~ m/_DLND/ && $compset =~ m/_DICE/  && $compset =~ m/_DOCN/) {
 	    $primary_component = 'drv';
-	}
-	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_POP/){
+	} elsif ($compset =~ m/_SATM/ && $compset =~ m/_SLND/ && $compset =~ m/_SICE/  && $compset =~ m/_SOCN/) {
+	    $primary_component = 'drv';
+	} elsif ($compset =~ m/_XATM/ && $compset =~ m/_XLND/ && $compset =~ m/_XICE/  && $compset =~ m/_XOCN/) {
+	    $primary_component = 'drv';
+	} elsif ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_POP/){
 	    $primary_component = 'allactive';
-	}
-	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN%SOM/){
+	} elsif ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN%SOM/){
 	    $primary_component = 'allactive';
-	}
-	if ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN%DOM/){
+	} elsif ($compset =~ m/_CAM/ && $compset =~ m/_CLM/ && $compset =~ m/_CICE/ && $compset =~ m/_DOCN%DOM/){
 	    $primary_component = 'cam';
-	}
-	if ($compset =~ m/_DATM/ && $compset =~ m/_CLM/ && $compset =~ m/_SICE/ && $compset =~ m/_SOCN/){
+	} elsif ($compset =~ m/_DATM/ && $compset =~ m/_CLM/ && $compset =~ m/_SICE/ && $compset =~ m/_SOCN/){
 	    $primary_component = 'clm';
-	}
-	if ($compset =~ m/_DATM/ && $compset =~ m/_SLND/ && $compset =~ m/_POP/ ) {
+	} elsif ($compset =~ m/_DATM/ && $compset =~ m/_SLND/ && $compset =~ m/_POP/ ) {
 	    $primary_component = 'pop';
-	}
-	if ($compset =~ m/_DATM/ && $compset =~ m/_SLND/ && $compset =~ m/_CICE/  && $compset =~ m/_DOCN/) {
+	} elsif ($compset =~ m/_DATM/ && $compset =~ m/_SLND/ && $compset =~ m/_CICE/  && $compset =~ m/_DOCN/) {
 	    $primary_component = 'cice';
-	}
-	if ($compset =~ m/_SATM/ && $compset =~ m/_DLND/ &&$compset =~ m/_SICE/  && $compset =~ m/_SOCN/ && $compset =~ m/_CISM/) {
+	} elsif ($compset =~ m/_SATM/ && $compset =~ m/_DLND/ &&$compset =~ m/_SICE/  && $compset =~ m/_SOCN/ && $compset =~ m/_CISM/) {
 	    $primary_component = 'cism';
 	}
 	if (! defined $primary_component) {
@@ -75,26 +72,19 @@ sub getPrimaryComponent
 	# match alias
 	if ($compset =~ m/^[AXS].*/  ) {
 	    $primary_component = 'drv';
-	}
-	if ($compset =~ m/^B.*/) {
+	} elsif ($compset =~ m/^B.*/) {
 	    $primary_component = 'allactive';
-	}
-	if ($compset =~ m/^E.*/) {
+	} elsif ($compset =~ m/^E.*/) {
 	    $primary_component = 'allactive';
-	}
-	if ($compset =~ m/^F.*/ || $compset =~ m/^P*/) {
+	} elsif ($compset =~ m/^[FP].*/) {
 	    $primary_component = 'cam';
-	}
-	if ($compset =~ m/^I.*/) {
+	} elsif ($compset =~ m/^I.*/) {
 	    $primary_component = 'clm';
-	}
-	if ($compset =~ m/^[CG].*/) {
+	} elsif ($compset =~ m/^[CG].*/) {
 	    $primary_component = 'pop';
-	}
-	if ($compset =~ m/^D.*/) {
+	} elsif ($compset =~ m/^D.*/) {
 	    $primary_component = 'cice';
-	}
-	if ($compset =~ m/^T.*/) {
+	} elsif ($compset =~ m/^T.*/) {
 	    $primary_component = 'cism';
 	}
 	if (! defined $primary_component) {

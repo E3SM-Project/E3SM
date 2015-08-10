@@ -13,4 +13,8 @@
     <desc>Name of wave component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SWAV">Stub wave component</desc>
+  </description>
+
 </definitions_variables> 

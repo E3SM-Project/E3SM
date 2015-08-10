@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+  <help>
+    =========================================
+    compset naming convention 
+    =========================================
+    The compset longname below has the specified order 
+    atm, lnd, ice, ocn, river, glc wave cesm-options
+
+    The notation for the compset longname is
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_BGC%phys]
+    Where for the CAM specific compsets below the following is supported
+    TIME = Time period (e.g. 2000, HIST, RCP8...)
+    ATM  = [CAM4, CAM5]
+    LND  = [CLM40, CLM45, CLM50, SLND]
+    ICE  = [CICE, DICE, SICE]
+    OCN  = [DOCN, ,AQUAP, SOCN]
+    ROF  = [RTM, SROF]
+    GLC  = [CISM1, CISM2, SGLC]
+    WAV  = [SWAV]
+    BGC  = optional BGC scenario 
+
+    The OPTIONAL %phys attributes specify submodes of the given system
+    For example DOCN%DOM is the data ocean model for DOCN
+    ALL the possible %phys choices for each component are listed 
+    with the -list command for create_newcase
+    ALL data models must have a %phys option that corresponds to the data  model mode 
+
+    Each compset node is associated with the following elements
+    - lname      
+    - alias        
+    - support  (optional description of the support level for this compset)
+    Each compset node can also have the following attributes
+    - grid  (optional regular expression match for grid to work with the compset)
+  </help>
+
+  <!---TG compsets -->
+  <compset>
+    <alias>TG</alias>
+    <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TG1850</alias>
+    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TGHIST</alias>     
+    <lname>HIST_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TGRCP85</alias>    
+    <lname>RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TGIS2</alias>      
+    <lname>2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TG1850IS</alias>  
+    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TG1850IS2</alias>  
+    <lname>1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TGHISTIS2</alias>  
+    <lname>HIST_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>TGRCP85IS2</alias> 
+    <lname>RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2_SWAV</lname>
+  </compset>
+
+  <entries>
+    <entry id="RUN_STARTDATE"> 
+      <values>
+	<value compset="2000.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</value>
+	<value compset="1850.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</value>
+	<value compset="HIST.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1850-01-01</value>
+	<value compset="RCP8.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2006-01-01</value>
+      </values>
+    </entry>
+    <entry id="STOP_OPTION"> 
+      <values>
+	<value compset="_DLND.*_CISM" grid="any">nyears</value>
+      </values>
+    </entry>
+    <entry id="STOP_N"> 
+      <values>
+	<value compset="_DLND.*_CISM" grid="any">5</value>
+      </values>
+    </entry>
+  </entries>
+
+</compsets>

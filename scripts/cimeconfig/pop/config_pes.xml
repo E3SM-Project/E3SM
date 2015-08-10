@@ -152,7 +152,7 @@
   </grid>
   <grid name="oi%tx0.1">
     <mach name="any">
-      <pes pecount="any">
+      <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>48</ntasks_atm> 

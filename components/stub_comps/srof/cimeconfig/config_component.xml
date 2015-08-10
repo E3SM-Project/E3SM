@@ -13,4 +13,8 @@
     <desc>Name of river component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SROF">Stub river component</desc>
+  </description>
+
 </definitions_variables> 

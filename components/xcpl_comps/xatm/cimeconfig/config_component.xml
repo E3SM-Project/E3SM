@@ -13,5 +13,9 @@
     <desc>Name of atmosphere component</desc>
   </entry>
 
+  <description>
+    <desc compset="_XATM">Dead atm component</desc>
+  </description>
+
 </definitions_variables> 
 

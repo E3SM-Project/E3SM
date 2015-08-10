@@ -13,4 +13,8 @@
     <desc>Name of sea-ice component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SICE">Stub ice component</desc>
+  </description>
+
 </definitions_variables> 

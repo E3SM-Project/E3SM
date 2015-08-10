@@ -6,6 +6,16 @@
 # This utility allows the users to specify configuration
 # options via a commandline interface.
 #
+# A few notes for clarification:
+# - All possible compset components will contain a cimeconfig directory containing 
+# a file "config_component.xml" specifying the xml variable definitions for that component 
+# - If the atmopsheric component was datm, then $file would be
+#     $cimeroot/components/data_comps/datm/cimeconfig/config_component.xml
+# note that for CESM, the only primary components are
+#     cam, clm, cice, cism, pop, drv, allactive
+# so the directories for the primary components will contain the additional two files:
+#     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'  
+#
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -249,7 +259,8 @@ if ($user_mods_dir) {
 # *** Set master config file ***
 #------------------------------------------------------------------------------------------
 # The following specifies all necessary files that will be used to configure the case
-my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
+my $cimeconfig_file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml";
+my $files_spec_file =  "$cimeroot/scripts/cimeconfig/config_files.xml";
 
 #------------------------------------------------------------------------------------------
 # *** Create config object ***
@@ -261,32 +272,86 @@ my $config = ConfigCase->new("");
 my $srcroot  = "$cimeroot/../"; #TODO - this needs to be generalized
 my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
 
-# Read the general specification file and add to $config each variable in that file
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-my @nodes = $xml->findnodes(".//files_case/entry"); # *** note the element search ***
-if (! @nodes) {
-    die "ERROR create_newcase: no variable elements in file $file_config \n"; 
+# First determine primary component (for now this is only CESM specific)
+# Each primary component is responsible for defining the compsets that turn of the
+# appropriate feedbacks for development of that component
+my $primary_component;
+if (! $opts{'compset'}) {
+    die "ERROR: must set the -compset option to create_newcase \n";
 }
-foreach my $node (@nodes) {
-    my $id = $node->getAttribute('id');
-    foreach my $child ($node->childNodes()) {
-	my $name  = $child->nodeName();
-	my $value = $child->textContent();
-	$config->add_to_id($id, $name, $value, $cimeroot, $srcroot, $caseroot);
+$primary_component = ConfigCESM::getPrimaryComponent($compset);
+
+# Add all the elements of the config_files.xml to $config
+$config->add_config_variables($files_spec_file, $srcroot, $cimeroot);
+
+# Add all the elements of the cime_config.xml to $config
+$config->add_config_variables($cimeconfig_file, $srcroot, $cimeroot);
+
+# Now given the primary component, determine the full pathname of the file that
+# defines the compsets for this primary component
+# Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
+# file containing the possible out of the box compsets that can be used by create_newcase
+my $compsets_file;
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$files_spec_file");
+
+foreach my $id ('COMPSETS_SPEC_FILE', 'PES_SPEC_FILE', 'PIO_SPEC_FILE', 'OVERRIDE_SPEC_FILE', 
+		'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
+    my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$primary_component\"]");
+    if (@nodes) {
+	my $value = $nodes[0]->textContent();
+	$value =~ s/\$CIMEROOT/$cimeroot/;
+	$value =~ s/\$SRCROOT/$srcroot/;
+	(-e $value) or die  "ERROR: $value cannot be found on disk \n";
+	$config->set($id, $value);
     }
 }
+my $compsets_file = $config->get('COMPSETS_SPEC_FILE');
 
-# Determine the non-component specific variables in $config
-my $file = $config->get('CIMECONFIG_FILE');
-$config->add_config_variables($file);
+print "Component that specifies possible compsets, pelayouts and non-default pio settings is $primary_component \n";
+print "File that specifies possible compsets is $compsets_file \n";
 
-# Determine the component specific variables in $config
-# for each $config variable that points to a file that has a "CONFIG_" prefix,
-# open that file and add all of those variables to $config
-foreach my $id (keys %$config) {
-    if ($id =~ m/^CONFIG_/) {
-	my $file = $config->get($id);
-	$config->add_config_variables($file);
+# Determine the compset longname
+my ($compset_longname, $support_level) = ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
+$config->set('COMPSET', "$compset_longname");
+
+# Given compset longname, determine the compset components
+my @compset_components;
+$compset_longname =~ m/(^\w\w\w\w\w)(.+)/; # remove the first date specified from the compset
+my $components = $2;
+my @elements = split /_/, $components;
+foreach my $element (@elements) {
+    my @element_components = split /%/, $element;
+    my $component = lc $element_components[0];
+    if ($component =~ m/\d+/) {
+	$component =~ s/\d//g;
+    }
+    push (@compset_components, $component);
+}
+
+# Given the compset components, determine the full pathname of each component definition file
+# (all have the generic name config_component.xml) and the directories each component's buildlib and buildnml files
+foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV') { 
+    FOUND1: foreach my $component (@compset_components) {
+	my $name = "CONFIG_" . $model . "_FILE";
+	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
+	if (@nodes) {
+	    my $value = $nodes[0]->textContent();
+	    $value =~ s/\$CIMEROOT/$cimeroot/;
+	    $value =~ s/\$SRCROOT/$srcroot/;
+	    $config->set($name, $value);
+	    last FOUND1;
+	}
+    }
+    FOUND2: foreach my $component (@compset_components) {
+	my $name = "BLD_" . $model . "_DIR";
+	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
+	if (@nodes) {
+	    my $value = $nodes[0]->textContent();
+	    $value =~ s/\$CIMEROOT/$cimeroot/;
+	    $value =~ s/\$SRCROOT/$srcroot/;
+	    $config->set($name, $value);
+	    last FOUND2;
+	}
     }
 }
 
@@ -330,121 +395,6 @@ if ($opts{'testlist'}) {
 }    
 
 #------------------------------------------------------------------------------------------
-# *** Read the file that determines the possible compsets 
-#------------------------------------------------------------------------------------------
-# The following file now replaces what used to be config_compsets.xml
-# Each primary component is responsible for defining the compsets that turn of the
-# appropriate feedbacks for development of that component
-
-# First determine primary component (for now this is only CESM specific)
-my $primary_component;
-if (! $opts{'compset'}) {
-    die "ERROR: must set the -compset option to create_newcase \n";
-}
-$primary_component = ConfigCESM::getPrimaryComponent($compset);
-
-# Now given the primary component, read the xml file that determines the full pathname
-# of the file that defines the compsets for this primary component
-# Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
-# file containing the possible out of the box compsets that can be used by create_newcase
-
-# Read the file_compsets block in config_files.xml and add each element to $config
-# This adds the following to $config:
-#     COMPSETS_SPEC_FILE, PES_SPEC_FILE, PIO_SPEC_FILE, TESTS_SPEC_FILE and TEST_MODS_DIR
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-my @nodes = $xml->findnodes(".//files_compsets/entry"); # *** note the element search ***
-if (! defined @nodes) {
-    die "ERROR create_newcase: no file_compsets/entry elements in $file_config \n"; 
-} else {
-    foreach my $node (@nodes) {
-	my $id = $node->getAttribute('id');
-	foreach my $child ($node->childNodes()) {
-	    my $name = $child->nodeName();
-	    if ($name eq 'values') {
-		foreach my $grandchild ($child->findnodes("./value")) {
-		    my $component = $grandchild->getAttribute('component');
-		    if ($component eq $primary_component) {
-			my $value = $grandchild->textContent();
-			$config->add_to_id($id, 'value', $value, $cimeroot, $srcroot, $caseroot);
-			last;
-		    }
-		}
-	    } else {
-		my $value = $child->textContent();
-		$config->add_to_id($id, $name, $value, $cimeroot, $srcroot, $caseroot);
-	    }
-	}
-    }
-}
-my $compsets_file = $config->get('COMPSETS_SPEC_FILE');
-print "Component that specifies possible compsets, pelayouts and non-default pio settings is $primary_component \n";
-print "File that specifies possible compsets is $compsets_file \n";
-
-#------------------------------------------------------------------------------------------
-# *** Determine the full pathnames of each config_component.xml file for each compset component
-#------------------------------------------------------------------------------------------
-# A few notes for clarification:
-# all possible compset components will contain the file 
-#      'definitions_component.xml
-# that specify the xml variable definitions for that component 
-# to obtain the directory containing the definitions_variable.xml file 
-# for the atmospheric component you would use
-#     my $file = $config->get('CONFIG_ATM_FILE');
-# if the atmopsheric component was datm, then $file would be
-#     $cimeroot/components/data_comps/datm/cimeconfig/config_component.xml
-# note that for CESM, the only primary components are
-#     cam, clm, cice, cism, pop, drv, allactive
-# so the directories for the primary components will contain the additional two files:
-#     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'  
-
-# First determine compset longname TODO: remove redundancy of support level
-my ($compset_longname, $compset_aliasname, $support_level) = 
-    ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
-$config->set('COMPSET', "$compset_longname"); 
-
-# Next determine compset components given compset longname
-my @compset_components = ('drv');
-$compset_longname =~ m/(^\w\w\w\w\w)(.+)/; # remove the first date specified from the compset
-my $components = $2;
-my @elements = split /_/, $components;
-foreach my $element (@elements) {
-    my @element_components = split /%/, $element;
-    my $component = lc $element_components[0];
-    if ($component =~ m/\d+/) {
-	$component =~ s/\d//g;
-    }
-    push (@compset_components, $component);
-}
-
-# Finally, given the compset components, determine the full pathname of each compset
-# component xml variable definition file (all have the generic name config_component.xml
-# and the directories each component's buildlib and buildnml files
-my @nodes = XML::LibXML->new( no_blanks => 1)->parse_file($file_config)->findnodes(".//files_components/entry"); 
-if (! @nodes) {
-   die "ERROR create_newcase: no variable elements in file $file for block files_components \n"; 
-} else {
-    foreach my $node (@nodes) {
-	foreach my $child ($node->childNodes()) {
-	    my $id   = $node->getAttribute('id');
-	    my $name = $child->nodeName();
-	    if ($name eq 'values') {
-		foreach my $grandchild ($child->findnodes("./value")) {
-		    my $component = $grandchild->getAttribute('component');
-		    if( $component ~~ @compset_components ) {
-			my $value = $grandchild->textContent();
-			$config->add_to_id($id, 'value', $value, $cimeroot, $srcroot, $caseroot);
-			last;
-		    }
-		}
-	    } else {
-		my $value = $child->textContent();
-		$config->add_to_id($id, $name, $value, $cimeroot, $srcroot, $caseroot);
-	    }
-	}
-    }
-}
-
-#------------------------------------------------------------------------------------------
 # *** Determine grid longname 
 #------------------------------------------------------------------------------------------
 # First determine the grid longname and alias 
@@ -465,6 +415,11 @@ if ($compset_match) {
 #------------------------------------------------------------------------------------------
 # this will overwrite default values
 ConfigCompsetGrid::setCompsetGrid($print, $config);
+
+#------------------------------------------------------------------------------------------
+# *** Set compset general vars
+#------------------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------------------
 # *** Inform the user of the current support level for the compset they are attempting to run.
@@ -494,7 +449,7 @@ print "$testsforcase\n";
 # *** Determine machines file specifying set of out-of-the box machines and then
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
-ConfigMachine::setMachineValues($file_config, $primary_component, $machine, $compiler, $print, $config);
+ConfigMachine::setMachineValues($cimeconfig_file, $primary_component, $machine, $compiler, $print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the testname parameters
@@ -533,7 +488,7 @@ if (ProjectTools::set_project($project)) {
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
-ConfigPes::setPes($file_config, $pecount, $primary_component, \%opts, $config);
+ConfigPes::setPes($pecount, $primary_component, \%opts, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the mpi library and the repotag

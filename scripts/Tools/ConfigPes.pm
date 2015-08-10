@@ -33,7 +33,7 @@ sub setPes {
 
     # Set the parameters for the pe layout.    
 
-    my($file_config, $pesize_opts, $primary_component, $opts_ref, $config) = @_;
+    my($pesize_opts, $primary_component, $opts_ref, $config) = @_;
 
     if (defined $$opts_ref{'pes_file'}) {
 
@@ -60,19 +60,11 @@ sub setPes {
 
 	} else {
 
-	    my $cimeroot = $config->get('CIMEROOT');
-
-	    # Determine pes setup files
-	    my $pes_file = _setPesSetupFile($file_config, $cimeroot, $primary_component);
-
-	    # Determine pes override file
-	    my $override_file = _setPesOverrideFile($file_config, $cimeroot, $primary_component);
-
 	    # Determine target grid
 	    my $target_grid = ConfigCESM::setTargetGridMatch($primary_component, $config );
 
 	    # Determine pe layout settings
-	    _setPESsettings($pes_file, $override_file, $target_grid, $pesize_opts, $config);
+	    _setPESsettings($target_grid, $pesize_opts, $config);
 	}
     }
 }
@@ -80,36 +72,6 @@ sub setPes {
 #-----------------------------------------------------------------------------------------------
 #                               Private routines
 #-----------------------------------------------------------------------------------------------
-sub _setPesSetupFile
-{
-    my ($file_config, $cimeroot, $primary_component) = @_;
-
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-    my @files = $xml->findnodes(".//entry[\@id=\"PES_SPEC_FILE\"]/values/value[\@component=\"$primary_component\"]");
-    if (! @files) {
-	die " ERROR ConfigPes::_setPesSetupFile: no pes specification file found for $primary_component \n";
-    }
-    my $file = $files[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    return ($file);
-}
-
-#-------------------------------------------------------------------------------
-sub _setPesOverrideFile
-{
-    my ($file_config, $cimeroot, $primary_component) = @_;
-
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-    my @files = $xml->findnodes(".//entry[\@id=\"OVERRIDE_SPEC_FILE\"]/values/value[\@component=\"$primary_component\"]");
-    if (! @files) {
-	die " ERROR: no pes specification file found for $primary_component \n";
-    }
-    my $file = $files[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    return ($file);
-}
-
-#-------------------------------------------------------------------------------
 sub _setPESmatch1
 {
     my ($pesize_opts, $config) = @_; 
@@ -164,10 +126,13 @@ sub _setPESmatch2
 sub _setPESsettings
 {
     # Read xml file and obtain NTASKS, NTHRDS, ROOTPE and NINST for each component
-    my ($pes_file, $override_file, $target_grid, $pesize_opts, $config) = @_; 
+    my ($target_grid, $pesize_opts, $config) = @_; 
 
-    my $mach = $config->get('MACH');
-    my $compset_name = $config->get('COMPSET');
+
+    my $mach		= $config->get('MACH');
+    my $compset_name	= $config->get('COMPSET');
+    my $pes_file	= $config->get('PES_SPEC_FILE');
+    my $override_file	= $config->get('OVERRIDE_SPEC_FILE');
 
     # temporary hash
     my %decomp;
@@ -294,7 +259,6 @@ sub _setPESsettings
 	  if (defined @nodes) {
 	      foreach my $node (@nodes) {
 		  my $compset_attr = $node->getAttribute('compset');
-		  print "DEBUG: i am HERE2 with compset_attr of $compset_attr \n";
 		  if ($compset_name =~ m/$compset_attr/) {
 		      $pe_select = $node;
 		      $pesize_match = $pesize_opts;

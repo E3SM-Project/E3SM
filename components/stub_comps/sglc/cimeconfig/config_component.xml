@@ -13,4 +13,8 @@
     <desc>Name of land-ice component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SGLC">Stub glc component</desc>
+  </description>
+
 </definitions_variables> 

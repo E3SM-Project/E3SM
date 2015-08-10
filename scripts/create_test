@@ -689,11 +689,12 @@ sub checkOptions
     my $machines_file;
     if( defined $opts{'nlcompareonly'})
     {
+	#TODO - the arguments here are wrong
 	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, 'yellowstone', $file_config);
     }
     else
     {
-	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, $machine, $file_config);
+	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, $file_config);
     }
 
     # Determine baselineroot for comparisons and full pathname of cprnc
@@ -1308,10 +1309,10 @@ sub writeEnvTestXML
     my ($test) = @_;
     my $caseroot = "$opts{'testroot'}/$test->{'case'}";
 
-    my $file = "$cimeroot/scripts/cimeconfig/config_cime.xml"; #TODO - read config_file for this
+    my $file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml"; 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my $config = ConfigCase->new("");
-    $config->add_config_variables($file);
+    $config->add_config_variables($file, $srcroot, $cimeroot);
 
     &Debug( eval {Dumper $test} );
 

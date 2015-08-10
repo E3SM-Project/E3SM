@@ -13,4 +13,8 @@
     <desc>Name of atmosphere component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SATM">Stub atm component</desc>
+  </description>
+
 </definitions_variables> 

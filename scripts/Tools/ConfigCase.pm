@@ -105,27 +105,12 @@ sub new
     return $cfg;
 }
 
-
-#-----------------------------------------------------------------------------------------------
-sub add_to_id
-{
-    # define variables in $cfg_ref from xml file
-
-    my ($self, $id, $name, $value, $cimeroot, $srcroot, $caseroot) = @_;
-
-    $value =~ s/\$CIMEROOT/$cimeroot/;
-    $value =~ s/\$SRCROOT/$srcroot/;
-    $value =~ s/\$CASEROOT/$caseroot/; 
-
-    $self->{$id}->{$name} = $value;
-}
-
 #-----------------------------------------------------------------------------------------------
 sub add_config_variables
 {
     # define variables in $cfg_ref from xml file
 
-    my ($self, $file) = @_;
+    my ($self, $file, $srcroot, $cimeroot) = @_;
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my @nodes = $xml->findnodes(".//entry");
@@ -139,7 +124,11 @@ sub add_config_variables
 	{
 	    my $node_name  = $define_node->nodeName();
 	    my $node_value = $define_node->textContent();
+
 	    if (defined $node_value) {
+		$node_value =~ s/\$CIMEROOT/$cimeroot/;
+		$node_value =~ s/\$SRCROOT/$srcroot/;
+
 		# now set the initial value to the default value - this can get overwritten
 		if ($node_name eq 'default_value') {
 		    $self->{$id}->{'value'} = $node_value;

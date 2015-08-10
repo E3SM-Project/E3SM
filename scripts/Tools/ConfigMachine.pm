@@ -32,24 +32,22 @@ END
 #-----------------------------------------------------------------------------------------------
 sub setMachineFile
 {
-    my ($machine, $cimeroot, $srcroot, $input_file) = @_;
+    my ($machine, $cimeroot, $input_file) = @_;
 
     # Determine the machines specificaiton file and see if the
     # target machine is supported
 
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml = $parser->parse_file($input_file);
-    my @nodes = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/value");
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($input_file);
+    my @nodes = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/default_value");
     my $machines_file = $nodes[0]->textContent();
     $machines_file =~ s/\$CIMEROOT/$cimeroot/;
-    $machines_file =~ s/\$SRCROOT/$srcroot/;
     (-f "$machines_file")  or  die "*** Cannot find supported machines file $machines_file ***\n";
 
     if ($machine =~ /(.*)_(.*)/){
 	$machine = $1;
     }
 
-    my $xml = $parser->parse_file($machines_file);
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
     my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]");
     if (@nodes) {
 	print "Found machine \"$machine\" in $machines_file \n";
@@ -66,9 +64,9 @@ sub setMachineFile
 sub setMachineValues
 {
     # Set the parameters for the specified machine.  
-    my ($file_config, $primary_component, $machine, $compiler, $print_flag, $cfg_ref) = @_;
+    my ($file_config, $primary_component, $machine, $compiler, $print_flag, $config) = @_;
 
-    my $machines_file = $cfg_ref->get('MACHINES_SPEC_FILE');
+    my $machines_file = $config->get('MACHINES_SPEC_FILE');
     (-f "$machines_file")  or  die "*** Cannot find supported machines file $machines_file ***\n";
     my $machines_dir  = dirname($machines_file);
 
@@ -89,24 +87,24 @@ sub setMachineValues
 	die "Exiting \n";
     }	    
 
-    $cfg_ref->set('COMPILER'     , "$compiler");
-    $cfg_ref->set('MACH'         ,  $machine);
-    $cfg_ref->set('MACHINES_FILE', "$machines_file");
-    $cfg_ref->set('MACHDIR'      , "$machines_dir");
+    $config->set('COMPILER'     , "$compiler");
+    $config->set('MACH'         ,  $machine);
+    $config->set('MACHINES_FILE', "$machines_file");
+    $config->set('MACHDIR'      , "$machines_dir");
 
     # Set the machine values obtained from the $machines_file
-    _set_machine_values($print_flag, $cfg_ref);
+    _set_machine_values($print_flag, $config);
 
     # Check that compiler request for target machine matches a supported value
     # Or set default compiler - if not provided compiler request
-    _check_machine_compilers($print_flag, $cfg_ref);
+    _check_machine_compilers($print_flag, $config);
 
     if ($print_flag >= 2) { print "Machine specifier: $machine.\n"; }
 
     # Determine pio settings for target machine
     # Note that any pio settings that are grid or compset dependent will be overwritten
     # by the config_pio.xml settings for the primary component
-    _setPIOsettings($file_config, $primary_component, $cfg_ref);
+    _setPIOsettings($file_config, $primary_component, $config);
 
     if ($print_flag >= 2) { print "Set pio settings for $machine.\n"; }
 }
@@ -140,10 +138,10 @@ sub listMachines
 sub _set_machine_values
 {
     # open the specified xml file
-    my ($print_flag, $cfg_ref) = @_;
+    my ($print_flag, $config) = @_;
 
-    my $machine       = $cfg_ref->get('MACH'); 
-    my $machines_file = $cfg_ref->get('MACHINES_FILE');
+    my $machine       = $config->get('MACH'); 
+    my $machines_file = $config->get('MACHINES_FILE');
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
     my @machine_nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/*");
@@ -152,15 +150,15 @@ sub _set_machine_values
 	foreach my $node (@machine_nodes) {
 	    my $name  = $node->nodeName();
 	    my $value = $node->textContent();
-	    if ( ! $cfg_ref->is_valid_name($name) ) { 
+	    if ( ! $config->is_valid_name($name) ) { 
 		die "set_machine: invalid id $name in machine $machine file $machines_file exiting\n"; 
 	    }
 	    # allow for environment variables in the config_machines.xml file using $ENV{variablename} syntax
 	    if ($value =~/^(.*)\$ENV{(.*)}(.*)$/){
 		$value = $1.$ENV{$2}.$3;
 	    }
-	    $cfg_ref->set($name, $value);
-	    print "cfg_ref: $name set to ".$cfg_ref->get($name)."  $value\n" if($print_flag==2);
+	    $config->set($name, $value);
+	    print "config: $name set to ".$config->get($name)."  $value\n" if($print_flag==2);
 	}
     } 
     else 
@@ -176,17 +174,17 @@ sub _check_machine_compilers
     # Check that compiler request for target machine matches a supported value
     # Or set default compiler - if not provided compiler request
 
-    my ($print_flag, $cfg_ref) = @_;
+    my ($print_flag, $config) = @_;
 
-    my $machine   = $cfg_ref->get('MACH'); 
-    my $caseroot  = $cfg_ref->get('CASEROOT');
-    my $compiler  = $cfg_ref->get('COMPILER');
+    my $machine   = $config->get('MACH'); 
+    my $caseroot  = $config->get('CASEROOT');
+    my $compiler  = $config->get('COMPILER');
 
     my $compilers;
     if ($machine =~ /userdefined/){
-	$cfg_ref->set('COMPILER', "USERDEFINED_required_build");
+	$config->set('COMPILER', "USERDEFINED_required_build");
     } else { 
-	$compilers = $cfg_ref->get('COMPILERS');
+	$compilers = $config->get('COMPILERS');
 	my @compilers = split ",", $compilers, -1;
 	if ($compiler) {
 	    if (! ($machine =~ "generic")){
@@ -202,11 +200,11 @@ sub _check_machine_compilers
 		    die "ERROR: compiler setting of $compiler does not match supported values of $compilers \n";
 		}
 	    }
-	    $cfg_ref->set('COMPILER', "$compiler");
+	    $config->set('COMPILER', "$compiler");
 	    if ($print_flag >= 2) { print "Machine compiler specifier: $compiler\n"; }
 	} else {
 	    $compiler = $compilers[0];   
-	    $cfg_ref->set('COMPILER', "$compiler");
+	    $config->set('COMPILER', "$compiler");
 	    if ($print_flag >= 2) { print "Machine compiler specifier: $compiler\n"; }
 	}
     }
@@ -217,12 +215,12 @@ sub _setPIOsettings
 {
     # Set pio settings from config_machines.xml and config_pio.xml file
 
-    my ($file_config, $primary_component, $cfg_ref) = @_; 
+    my ($file_config, $primary_component, $config) = @_; 
 
-    my $mach = $cfg_ref->get('MACH');
-    my $machines_file = $cfg_ref->get('MACHINES_FILE');
-    my $cimeroot = $cfg_ref->get('CIMEROOT');
-    my $grid = $cfg_ref->get('GRID');
+    my $mach = $config->get('MACH');
+    my $machines_file = $config->get('MACHINES_FILE');
+    my $cimeroot = $config->get('CIMEROOT');
+    my $grid = $config->get('GRID');
 
     # First Read the machines file for any non-default machine specific pio settings
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
@@ -231,21 +229,13 @@ sub _setPIOsettings
 	foreach my $node (@nodes) {
 	    my $name  = $node->nodeName();
 	    my $value = $node->textContent();
-	    $cfg_ref->set($name, $value);
+	    $config->set($name, $value);
 	}
     }
 
     # Second, determine the filename for grid and/or compset specific pio settings
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-    my @files = $xml->findnodes(".//entry[\@id=\"PIO_SPEC_FILE\"]/values/value[\@component=\"$primary_component\"]");
-    if (! defined @files) {
-	die " ERROR ConfigMachine::_setPIOsettings: no pio specification file found for $primary_component \n";
-    }
-    my $file = $files[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-
-    # Third, set non-default grid and/or compsets specific settings
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
+    my $pio_spec_file = $config->get('PIO_SPEC_FILE');
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pio_spec_file);
     my @nodes = $xml->findnodes(".//mach[\@name=\"$mach\"]");
     my %pio_settings;
     foreach my $node (@nodes) {
@@ -255,11 +245,11 @@ sub _setPIOsettings
 	    my $grid_attr = $child->getAttribute('grid');
 	    if (! defined $pio_settings{$name}) {
 		$pio_settings{$name} = $value;
-		$cfg_ref->set($name, $pio_settings{$name});
+		$config->set($name, $pio_settings{$name});
 	    } else {		
 		if ((defined $grid_attr) && ($grid =~ m/$grid_attr/)) {
 		    $pio_settings{$name} = $value;
-		    $cfg_ref->set($name, $pio_settings{$name});
+		    $config->set($name, $pio_settings{$name});
 		}
 	    }
 	}

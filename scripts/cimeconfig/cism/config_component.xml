@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 
-<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
-
-<definitions_variables> 
+<entries>
 
   <entry id="COMP_GLC"> 
     <type>char</type>
@@ -69,4 +67,17 @@
     <desc>true => do surface mass balance, false => PDD, nec_glc is set to 1</desc>
   </entry>
 
-</definitions_variables> 
+  <description>
+    <desc compset="_CISM1">cism1:</desc>
+    <desc compset="_CISM2">cism2:</desc>
+  </description>
+
+  <help>
+    =========================================
+    CISM naming conventions in compset name
+    =========================================
+    CISM1  => cism1 (default, serial only)
+    CISM2  => cism2 (higher-order, can run in parallel)
+  </help>
+
+</entries>

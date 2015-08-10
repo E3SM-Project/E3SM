@@ -2,7 +2,7 @@
 
 <?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
 
-<case_files>
+<files>
 
   <file name="env_case.xml">
     <header>
@@ -106,4 +106,4 @@
     <header>These are the variables specific to a test case.</header>
   </file>
 
-</case_files>
+</files>
