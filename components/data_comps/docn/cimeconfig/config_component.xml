@@ -22,7 +22,7 @@
       <value compset="_DOCN%DOM" >prescribed</value>
       <value compset="_DOCN%SOM" >som</value>
       <value compset="_DOCN%US20">us20</value>
-      <value compset="_DOCN%IAF">interannuall</value>
+      <value compset="_DOCN%IAF">interannual</value>
       <value compset="_DOCN%COPY">copyall</value>
     </values>
     <group>run_component_docn</group>
