@@ -1,8 +1,44 @@
 <?xml version="1.0"?>
 
 <config_pes>
-  <pes_layout>
-    <!-- This will always default to $MAX_PES_PER_NODE in ConfigPes::_setPESsettings -->
-  </pes_layout>
+
+  <grid name="oi%gx1v6">
+    <mach name="yellowstone|pronghorn">
+      <pes pesize="any" compset="any">
+	<comment>none</comment>
+	<ntasks>
+	  <ntasks_atm>60</ntasks_atm>
+	  <ntasks_rof>60</ntasks_rof>
+	  <ntasks_ocn>60</ntasks_ocn> 
+	  <ntasks_ice>60</ntasks_ice>
+	  <ntasks_cpl>60</ntasks_cpl>
+	  <ntasks_lnd>60</ntasks_lnd> 
+	  <ntasks_glc>60</ntasks_glc>
+	  <ntasks_wav>60</ntasks_wav>
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>2</nthrds_atm>                   
+	  <nthrds_lnd>2</nthrds_lnd> 
+	  <nthrds_rof>2</nthrds_rof> 
+	  <nthrds_ice>2</nthrds_ice> 
+	  <nthrds_ocn>2</nthrds_ocn> 
+	  <nthrds_glc>2</nthrds_glc> 
+	  <nthrds_wav>2</nthrds_wav> 
+	  <nthrds_cpl>2</nthrds_cpl> 
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>0</rootpe_atm> 
+	  <rootpe_rof>0</rootpe_rof> 
+	  <rootpe_ice>0</rootpe_ice>    
+	  <rootpe_ocn>0</rootpe_ocn>
+	  <rootpe_cpl>0</rootpe_cpl>                         
+	  <rootpe_lnd>0</rootpe_lnd> 
+	  <rootpe_glc>0</rootpe_glc> 
+	  <rootpe_wav>0</rootpe_wav> 
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
+
 </config_pes>
 

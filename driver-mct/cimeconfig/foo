@@ -1,0 +1,13 @@
+  <entries>
+    <entry name="AVGHIST_OPTION">
+      <values>
+	<value compset="_DOCN%IAF">nmonths</value>
+      </values>
+    </entry>
+    <entry name="AVGHIST_N">
+      <values>
+	<value compset="_DOCN%IAF">1</value>
+      </values>
+    </entry>
+  </entries>
+
