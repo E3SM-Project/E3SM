@@ -10,6 +10,13 @@ option (ENABLE_TIMING  "Enable GPTL timing"                 ON)
 option (ENABLE_TESTS   "Enable the testing builds"          ON)
 option (PREFER_SHARED  "Prefer the use of shared libraries" OFF)
 
+
+#==============================================================================
+#  APPEND TO CMAKE MODULE PATH
+#==============================================================================
+
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
 #==============================================================================

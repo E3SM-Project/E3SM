@@ -18,32 +18,10 @@
 # The available COMPONENTS are: C, CXX, CXX4, Fortran
 # If no components are specified, it assumes only C
 
-set (NetCDF_VALID_COMPONENTS C CXX CXX4 Fortran)
-
+# Default to C component if no components specified
 if (NOT NetCDF_FIND_COMPONENTS)
     set (NetCDF_FIND_COMPONENTS C)
 endif ()
-
-set (NetCDF_FIND_VALID_COMPONENTS)
-foreach (comp IN LISTS NetCDF_FIND_COMPONENTS)
-    if (";${NetCDF_VALID_COMPONENTS};" MATCHES ";${comp};")
-        list (APPEND NetCDF_FIND_VALID_COMPONENTS ${comp})
-    endif ()
-endforeach ()
-
-set (NetCDF_C_INCLUDE_NAMES netcdf.h)
-set (NetCDF_CXX_INCLUDE_NAMES netcdf)
-set (NetCDF_CXX4_INCLUDE_NAMES netcdf)
-set (NetCDF_Fortran_INCLUDE_NAMES netcdf.mod netcdf.inc)
-
-set (NetCDF_C_LIBRARY_NAMES netcdf)
-set (NetCDF_CXX_LIBRARY_NAMES netcdf_c++)
-set (NetCDF_CXX4_LIBRARY_NAMES netcdf_c++4)
-set (NetCDF_Fortran_LIBRARY_NAMES netcdff)
-
-foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
-endforeach ()
-
 
 # COMPONENT: C
 if (";${NetCDF_FIND_COMPONENTS};" MATCHES ";C;")
