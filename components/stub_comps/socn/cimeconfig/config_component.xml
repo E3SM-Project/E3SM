@@ -13,4 +13,8 @@
     <desc>Name of ocean component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SOCN">Stub ocn component</desc>
+  </description>
+
 </definitions_variables> 

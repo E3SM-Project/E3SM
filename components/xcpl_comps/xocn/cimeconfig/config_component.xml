@@ -13,4 +13,8 @@
     <desc>Name of ocean component</desc>
   </entry>
 
+  <description>
+    <desc compset="_XOCN">Dead ocean component</desc>
+  </description>
+
 </definitions_variables> 

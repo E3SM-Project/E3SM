@@ -26,4 +26,8 @@
     <desc>mode for xrof flood feature, NULL means xrof flood is turned off</desc>
   </entry>
 
+  <description>
+    <desc compset="_XROF">Dead river component</desc>
+  </description>
+
 </definitions_variables> 

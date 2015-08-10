@@ -15,13 +15,14 @@
 
   <entry id="DOCN_MODE"> 
     <type>char</type>
-    <valid_values>prescribed,som,copyall,null</valid_values>
+    <valid_values>prescribed,som,copyall,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values>
       <value compset="_DOCN%NULL">null</value>
       <value compset="_DOCN%DOM" >prescribed</value>
       <value compset="_DOCN%SOM" >som</value>
       <value compset="_DOCN%US20">us20</value>
+      <value compset="_DOCN%IAF">interannuall</value>
       <value compset="_DOCN%COPY">copyall</value>
     </values>
     <group>run_component_docn</group>
@@ -209,6 +210,7 @@
     <desc compset="_DOCN%DOM" >docn data mode:</desc>
     <desc compset="_DOCN%US20">docn us20 mode:</desc>
     <desc compset="_DOCN%COPY">docn copy mode:</desc>
+    <desc compset="_DOCN%IAF" >docn interannual mode:</desc>
   </description>
 
   <help>

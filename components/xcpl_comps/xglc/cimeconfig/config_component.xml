@@ -13,4 +13,8 @@
     <desc>Name of land-ice component</desc>
   </entry>
 
+  <description>
+    <desc compset="_XGLC">Dead land-ice component</desc>
+  </description>
+
 </definitions_variables> 

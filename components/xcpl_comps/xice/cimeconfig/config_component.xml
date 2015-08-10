@@ -13,4 +13,8 @@
     <desc>Name of sea-ice component</desc>
   </entry>
 
+  <description>
+    <desc compset="_XICE">Dead ice component</desc>
+  </description>
+
 </definitions_variables> 

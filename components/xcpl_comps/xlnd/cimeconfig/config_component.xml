@@ -13,4 +13,8 @@
     <desc>Name of land component</desc>
   </entry>
 
+  <description>
+    <desc compset="_XLND">Dead land component</desc>
+  </description>
+
 </definitions_variables> 

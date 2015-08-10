@@ -13,4 +13,8 @@
     <desc>Name of land component</desc>
   </entry>
 
+  <description>
+    <desc compset="_SLND">Stub lnd component</desc>
+  </description>
+
 </definitions_variables> 

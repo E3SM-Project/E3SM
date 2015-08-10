@@ -13,4 +13,8 @@
     <desc>Name of wave component</desc>
   </entry>
 
+  <description>
+    <desc compset="_XWAV">Dead wave component</desc>
+  </description>
+
 </definitions_variables> 
