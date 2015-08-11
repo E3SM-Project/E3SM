@@ -60,13 +60,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
                                                 ${HDF5_HL_LIBRARIES})
             endif ()
-        
-            # DEPENDENCY: CURL
-            find_package (CURL)
-            if (CURL_FOUND)
-                list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
-                list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
-            endif ()
             
         elseif (comp STREQUAL CXX OR comp STREQUAL Fortran)
         
