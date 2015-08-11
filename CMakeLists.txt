@@ -9,7 +9,7 @@ option (PIO_ENABLE_FORTRAN   "Enable the Fortran library builds"  ON)
 option (PIO_ENABLE_TIMING    "Enable GPTL timing"                 ON)
 option (PIO_ENABLE_TESTS     "Enable the testing builds"          ON)
 
-option (USE_STATIC_LIBRARIES "Use static libraries for linking"   ON)
+option (USE_STATIC_LIBRARIES "Use static libraries for linking"   OFF)
 
 #==============================================================================
 #  APPEND TO CMAKE MODULE PATH

@@ -102,7 +102,11 @@ target_link_libraries (pioc
 target_compile_options (pioc
     PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
 target_compile_definitions (pioc
-    PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
+    PUBLIC ${PIO_C_EXTRA_COMPILE_DEFINITIONS})
+if (PIO_C_EXTRA_LINK_FLAGS)
+    set_target_properties(pioc PROPERTIES 
+        LINK_FLAGS ${PIO_C_EXTRA_LINK_FLAGS})
+endif ()
 
 #===== Check for necessities =====
 if (NOT PnetCDF_C_FOUND AND NOT NetCDF_C_FOUND)

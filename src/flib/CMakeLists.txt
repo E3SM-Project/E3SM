@@ -106,7 +106,11 @@ target_link_libraries (piof
 target_compile_options (piof
     PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
 target_compile_definitions (piof
-    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
+    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_DEFINITIONS})
+if (PIO_Fortran_EXTRA_LINK_FLAGS)
+    set_target_properties(piof PROPERTIES 
+        LINK_FLAGS ${PIO_Fortran_EXTRA_LINK_FLAGS})
+endif ()
 
 #===== Check for necessities =====
 if (NOT PnetCDF_Fortran_FOUND AND NOT NetCDF_Fortran_FOUND)
