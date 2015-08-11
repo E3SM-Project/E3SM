@@ -330,6 +330,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    integer :: ncol                     ! number of active columns in the chunk
    integer :: nmodes
    integer :: nspec
+   integer :: istat
 
    real(r8) :: mass(pcols,pver)        ! layer mass
    real(r8) :: air_density(pcols,pver) ! (kg/m3)
@@ -483,6 +484,11 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, &
    else
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes
+      allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
+               qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
+      if (istat > 0) then
+         call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
+      end if
       call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
@@ -938,6 +944,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    integer :: ncol                     ! number of active columns in the chunk
    integer :: nmodes
    integer :: nspec
+   integer :: istat
 
    real(r8), pointer :: dgnumwet(:,:)  ! wet number mode diameter (m)
    real(r8), pointer :: qaerwat(:,:)   ! aerosol water (g/g)
@@ -1001,6 +1008,11 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    else
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes
+      allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
+               qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
+      if (istat > 0) then
+         call endrun('modal_aero_lw: allocation FAILURE: arrays for diagnostic calcs')
+      end if
       call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
