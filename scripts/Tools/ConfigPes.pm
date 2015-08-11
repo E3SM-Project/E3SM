@@ -7,7 +7,6 @@ use IO::File;
 use XML::LibXML;
 use Data::Dumper;
 use ConfigCase;
-use ConfigCESM;
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
 # If not found, print a warning message then exit.
@@ -197,7 +196,7 @@ sub _setPESsettings
     # - 'any' grid and model machine
     # - 'any' grid and 'any' machine
     
-    my $mach_set = $mach; 
+    my $mach_set;
     my $grid_set;
 
     my @grid_matches;
@@ -209,43 +208,45 @@ sub _setPESsettings
     $grid_longname =~ /(w%)(.+)$/     ; push (@grid_matches, $2);
     $grid_longname =~ /(m%)(.+)(_g%)/ ; push (@grid_matches, $2);
 
+
+    # First determine $grid_set - the element of the grid that is matched by any attribute in the file
     my @pes;
-    foreach my $grid_match (@grid_matches) {
+    FOUND: foreach my $grid_match (@grid_matches) {
+	$mach_set = $mach;
+	if ($grid_match =~ /\dx\d(.+)/) {
+	    $grid_match =~ s/$1//;
+	}
 	@pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_match\")]/mach[contains(\@name,\"$mach_set\")]/pes");
 	if (@pes) {
 	    $grid_set = $grid_match;
-	    last;
-	}
-    }      
-    if (! @pes) 
-    {
-	$mach_set = 'any';
-	foreach my $grid_match (@grid_matches) {
-	    @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_match\")]/mach[contains(\@name,\"$mach_set\")]/pes");
-	    if (@pes) {
-		$grid_set = $grid_match;
-		last;
-	    }
-	}      
-	@pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_set\")]/mach[\@name='any']/pes");
-	if (! @pes) 
-	{
-	    $mach_set = $mach;
-	    $grid_set = 'any';
-	    @pes = $xml->findnodes(".//grid[\@name='any']/mach[contains(\@name,\"$mach_set\")]/pes");
-	    if (! @pes) 
-	    {
-		$mach_set = 'any';
-		$grid_set = 'any';
-		my $max_tasks_per_node = $config->get('MAX_TASKS_PER_NODE');
-		foreach my $name ('NTASKS_ATM','NTASKS_LND','NTASKS_ROF','NTASKS_ICE','NTASKS_OCN','NTASKS_GLC','NTASKS_GLC','NTASKS_WAV','NTASKS_CPL') {
-		    $decomp{$name} = $max_tasks_per_node;
-		}
-		foreach my $name ('NTHRDS_ATM','NTHRDS_LND','NTHRDS_ROF','NTHRDS_ICE','NTHRDS_OCN','NTHRDS_GLC','NTHRDS_GLC','NTHRDS_WAV','NTHRDS_CPL') {
-		    $decomp{$name} = 1;
-		}
-		foreach my $name ('ROOTPE_ATM','ROOTPE_LND','ROOTPE_ROF','ROOTPE_ICE','ROOTPE_OCN','ROOTPE_GLC','ROOTPE_GLC','ROOTPE_WAV','ROOTPE_CPL') {
-		    $decomp{$name} = 0;
+	    last FOUND;
+	} else {
+	    $mach_set = 'any';
+	    foreach my $grid_match (@grid_matches) {
+		@pes = $xml->findnodes(".//grid[contains(\@name,\"$grid_match\")]/mach[contains(\@name,\"$mach_set\")]/pes");
+		if (@pes) {
+		    $grid_set = $grid_match;
+		    last FOUND;
+		} else {
+		    $mach_set = $mach;
+		    $grid_set = 'any';
+		    @pes = $xml->findnodes(".//grid[\@name='any']/mach[contains(\@name,\"$mach_set\")]/pes");
+		    if (@pes) {
+			last FOUND;
+		    } else {
+			$mach_set = 'any';
+			$grid_set = 'any';
+			my $max_tasks_per_node = $config->get('MAX_TASKS_PER_NODE');
+			foreach my $name ('NTASKS_ATM','NTASKS_LND','NTASKS_ROF','NTASKS_ICE','NTASKS_OCN','NTASKS_GLC','NTASKS_GLC','NTASKS_WAV','NTASKS_CPL') {
+			    $decomp{$name} = $max_tasks_per_node;
+			}
+			foreach my $name ('NTHRDS_ATM','NTHRDS_LND','NTHRDS_ROF','NTHRDS_ICE','NTHRDS_OCN','NTHRDS_GLC','NTHRDS_GLC','NTHRDS_WAV','NTHRDS_CPL') {
+			    $decomp{$name} = 1;
+			}
+			foreach my $name ('ROOTPE_ATM','ROOTPE_LND','ROOTPE_ROF','ROOTPE_ICE','ROOTPE_OCN','ROOTPE_GLC','ROOTPE_GLC','ROOTPE_WAV','ROOTPE_CPL') {
+			    $decomp{$name} = 0;
+			}
+		    }
 		}
 	    }
 	}
@@ -271,9 +272,8 @@ sub _setPESsettings
 		      last SEARCH;
 		  }
 	      }
-	  }
-	  if ((! defined @nodes) || (! defined $pe_select)) {
-              @nodes = $pe->findnodes("./*[\@pesize='any' and not(contains(\@compset,'any'))]");
+	  } else {
+              my @nodes = $pe->findnodes("./*[\@pesize='any' and not(contains(\@compset,'any'))]");
 	      if (defined @nodes) {
 		  foreach my $node (@nodes) {
 		      my $compset_attr = $node->getAttribute('compset');
@@ -284,14 +284,12 @@ sub _setPESsettings
 			  last SEARCH;
 		      }
 		  }
-	      }
-	      if ((! defined @nodes) || (! defined $pe_select)) {
-		  @nodes = $pe->findnodes("./*[\@pesize=\"$pesize_opts\" and \@compset='any']");
+	      } else {
+		  my @nodes = $pe->findnodes("./*[\@pesize=\"$pesize_opts\" and \@compset='any']");
 		  if (defined @nodes) {
 		      $pe_select = $nodes[0];
-		  }
-		  if ((! defined @nodes) || (! defined $pe_select)) {
-		      @nodes = $pe->findnodes("./*[\@pesize='any' and \@compset='any']");
+		  } else {
+		      my @nodes = $pe->findnodes("./*[\@pesize='any' and \@compset='any']");
 		      if (defined @nodes) {
 			  $pesize_match = 'any';
 			  $compset_match = 'any';

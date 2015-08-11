@@ -570,7 +570,7 @@
   </grid>
   <grid name="l%ne30np4" >
     <mach name="yellowstone|pronghorn">
-      <pes pesize="any" compset="RCP">
+      <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>900</ntasks_atm> 

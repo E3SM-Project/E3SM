@@ -217,12 +217,13 @@ sub _setPIOsettings
 
     my ($file_config, $primary_component, $config) = @_; 
 
-    my $mach = $config->get('MACH');
-    my $machines_file = $config->get('MACHINES_FILE');
-    my $cimeroot = $config->get('CIMEROOT');
-    my $grid = $config->get('GRID');
+    my $mach		 = $config->get('MACH');
+    my $machines_file	 = $config->get('MACHINES_FILE');
+    my $cimeroot	 = $config->get('CIMEROOT');
+    my $grid_longname	 = $config->get('GRID');
+    my $compset_longname = $config->get('COMPSET');
 
-    # First Read the machines file for any non-default machine specific pio settings
+    # First read the machines file for any non-default machine specific pio settings
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
     my @nodes = $xml->findnodes(".//machine[\@MACH=\"$mach\"]/pio/*");
     if (defined @nodes) {
@@ -233,27 +234,38 @@ sub _setPIOsettings
 	}
     }
 
-    # Second, determine the filename for grid and/or compset specific pio settings
-    my $pio_spec_file = $config->get('PIO_SPEC_FILE');
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pio_spec_file);
-    my @nodes = $xml->findnodes(".//mach[\@name=\"$mach\"]");
-    my %pio_settings;
-    foreach my $node (@nodes) {
-	foreach my $child ($node->childNodes()) {
-	    my $name  = $child->nodeName(); 
-	    my $value = $child->textContent();
-	    my $grid_attr = $child->getAttribute('grid');
-	    if (! defined $pio_settings{$name}) {
-		$pio_settings{$name} = $value;
-		$config->set($name, $pio_settings{$name});
-	    } else {		
-		if ((defined $grid_attr) && ($grid =~ m/$grid_attr/)) {
-		    $pio_settings{$name} = $value;
-		    $config->set($name, $pio_settings{$name});
+    # Second, read the PIO_SPEC_FILE file for grid and/or compset specific pio settings
+    my $file = $config->get('PIO_SPEC_FILE');
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+    foreach my $node ($xml->findnodes(".//entry")) {
+	foreach my $child ($node->findnodes("./values/value")) {
+	    my $compset_match = $child->getAttribute('compset');
+	    my $grid_match    = $child->getAttribute('grid');
+	    my $match = 'no'; 
+	    if ($compset_match && $grid_match) {
+		if  (($compset_longname =~ /$compset_match/) && ($grid_longname =~ /$grid_match/)) {
+		    $match = 'yes';
 		}
+	    } elsif ($compset_match) {
+		if  ($compset_longname =~ /$compset_match/) {
+		    $match = 'yes';
+		}
+	    } elsif ($grid_match) {
+		if  ($grid_longname =~ /$grid_match/) {
+		    $match = 'yes';
+		}
+	    }
+	    
+	    if ($match eq 'yes') {
+		my $name = $node->getAttribute('id');
+		if (! $config->is_valid_name($name)) {
+		    die "ERROR ConfigCompsetGrid::setComponent: $name is not a valid name \n";
+		}
+		my $new_val = $child->textContent();
+		$config->set($name, $new_val);
 	    }
 	}
     }
-}    
+}
 
 1; # to make use or require happy

@@ -87,6 +87,7 @@
     <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>                 
     <GMAKE_J>1</GMAKE_J>
     <MAX_TASKS_PER_NODE>USERDEFINED_required_build</MAX_TASKS_PER_NODE>
+    <PIO_TYPENAME>netcdf</PIO_TYPENAME> 
   </machine>
 
   <machine MACH="babbage">
@@ -108,8 +109,6 @@
     <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>srinathv-at-ucar-dot-edu</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
     <batch_system type="pbs" version="x.y">
       <queues>
 	<queue walltimemax="10:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
@@ -126,6 +125,11 @@
 	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
       </arguments>
     </mpirun>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>16</PES_PER_NODE>
+    <PIO_TYPENAME>pnetcdf</PIO_TYPENAME> 
+    <PIO_STRIDE>16</PIO_STRIDE>
+    <PIO_NUMTASKS>-1</PIO_NUMTASKS>
   </machine>
 
   <machine MACH="babbageKnc">
@@ -191,7 +195,6 @@
     <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>jedwards -at- ucar.edu</SUPPORTED_BY>
     <GMAKE_J> 8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <batch_system type="pbs" version="x.y">
       <queues>
 	<queue default="true">normal</queue>
@@ -209,6 +212,7 @@
 	<arg name="thread_count"> -d {{ thread_count }}</arg>
       </arguments>
     </mpirun>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PIO_TYPENAME>pnetcdf</PIO_TYPENAME>
     <PIO_STRIDE>32</PIO_STRIDE> 
     <PIO_NUMTASKS>-1</PIO_NUMTASKS>
@@ -233,7 +237,6 @@
     <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
     <GMAKE_J>1</GMAKE_J>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
     <batch_system type="pbs" version="x.y">
       <queues>
 	<queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
@@ -258,6 +261,10 @@
     <mpirun mpilib="mpi-serial">
       <executable></executable>
     </mpirun>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <PIO_TYPENAME>pnetcdf</PIO_TYPENAME>
+    <PIO_STRIDE>32</PIO_STRIDE> 
+    <PIO_NUMTASKS>-1</PIO_NUMTASKS>
   </machine>
 
   <machine MACH="eastwind">
@@ -1114,8 +1121,6 @@
     <BATCHREDIRECT>&lt; </BATCHREDIRECT>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <batch_system type="lsf" version="9.1">
       <queues>
@@ -1143,8 +1148,10 @@
     <mpirun compiler="gnu">
       <executable>mpirun.lsf </executable>
     </mpirun>
-    <PIO_TYPENAME>netcdf</PIO_TYPENAME> 
-    <PIO_STRIDE>16</PIO_STRIDE>
+    <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>16</PES_PER_NODE>
+    <PIO_TYPENAME>pnetcdf</PIO_TYPENAME> 
+    <PIO_STRIDE>15</PIO_STRIDE>
     <PIO_NUMTASKS>-1</PIO_NUMTASKS>
   </machine>
 

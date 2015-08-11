@@ -37,56 +37,98 @@ my $desc_comp = "";
 sub getCompsetLongname
 {
     # Determine compset longname, alias and support level
-    my ($compsets_file, $compset_input,  $user_compset) = @_;
+    my ($input_file, $input_compset, $config) = @_;
 
+    # Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
+    # file containing the possible out of the box compsets that can be used by create_newcase
+
+    # TODO: add logic for determining support level
+    # TODO: Add support level to $config rather than an argument
+
+    my $support_level;
+    my $primary_component;
+
+    my $cimeroot = $config->get('CIMEROOT');
+    my $srcroot  = $config->get('SRCROOT');
     my $compset_longname;
     my $compset_aliasname;
-    my $support;
 
-    my $xml_compsets = XML::LibXML->new( no_blanks => 1)->parse_file($compsets_file);
+    # First determine primary component (for now this is only CESM specific)
+    # Each primary component is responsible for defining the compsets that turn of the
+    # appropriate feedbacks for development of that component
 
-    if ($user_compset) {
-	$compset_aliasname = ' ';
-    } else {
-	my $found = 0;
-	my @nodes;
-	if (! $found) {
-	    @nodes = $xml_compsets->findnodes(".//compset[lname=\"$compset_input\"]");
-	    if (@nodes) {
-		if ($#nodes > 1) {
-		    die "ERROR: more than one node was found with compset name $compset_input \n";
+    my $compsets_file;
+    my $compset_longname;
+
+    $input_compset =~ s/^\s+//; # strip any leading whitespace 
+    $input_compset =~ s/\s+$//; # strip any trailing whitespace
+    my $primary_component;
+    my $xml1 = XML::LibXML->new( no_blanks => 1)->parse_file("$input_file");
+    my @nodes = $xml1->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value");
+    foreach my $node_file (@nodes) {
+	my $file = $node_file->textContent();
+	$file =~ s/\$CIMEROOT/$cimeroot/;
+	$file =~ s/\$SRCROOT/$srcroot/;
+	my $xml2 = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
+
+	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
+	if (@alias_nodes) {
+	    if ($#alias_nodes > 0) {
+		die "ERROR create_newcase: more than one match for alias element in file $file \n";
+	    } else {
+		my @name_nodes = $alias_nodes[0]->childNodes();
+		foreach my $name_node (@name_nodes) {
+		    my $debug = $name_node->nodeName();
+		    if ($name_node->nodeName() eq 'lname') {
+			$compset_longname = $name_node->textContent();
+		    }		    
 		}
-		$found = 1;
 	    }
-	}
-	if (! $found) {
-	    @nodes = $xml_compsets->findnodes(".//compset[alias=\"$compset_input\"]");
-	    if (@nodes) {
-		if ($#nodes > 1) {
-		    die "ERROR: more than one node was found with compset name $compset_input \n";
-		}
-		$found = 1;
-	    }
-	}
-	unless ($found) { 
-	    print "ERROR getCompsetLongname: no match for compset $compset_input \n";
-	    print "  to see supported compsets issue \n";
-	    print "  ./manage_case -list compsets -compsets_setby <target component name>\n";
-	    die "setCompset: exiting\n"; 
-	}
-	my @lname_nodes = $nodes[0]->findnodes("./lname");
-	my $lname = $lname_nodes[0]->textContent();
+	    $primary_component = $node_file->getAttribute('component');
+	    $compsets_file = $file;
+	    $config->set('COMPSETS_SPEC_FILE', $compsets_file);
+	    $config->set('COMPSET', "$compset_longname");
+	    last;
+	} 
 
-	my $support;
-	my @support_nodes = $nodes[0]->findnodes("./support");
-	if (@support_nodes) {
-	    $support = $support_nodes[0]->textContent();
-	}	
-	if ( $support ) {$support .= "Compset: $support\n"; }
-	
-	return ($lname, $support);
+	my @lname_nodes = $xml2->findnodes(".//compset[lname=\"$input_compset\"]");
+	if (@lname_nodes) {
+	    if ($#lname_nodes > 0) {
+		die "ERROR create_newcase: more than one match for lname element in file $file \n";
+	    } else {
+		my @name_nodes = $lname_nodes[0]->childNodes();
+		foreach my $name_node (@name_nodes) {
+		    my $debug = $name_node->nodeName();
+		    if ($name_node->nodeName() eq 'lname') {
+			$compset_longname = $name_node->textContent();
+		    }		    
+		}
+	    }
+	    $primary_component = $node_file->getAttribute('component');
+	    $compsets_file = $file;
+	    $config->set('COMPSETS_SPEC_FILE', "$compsets_file");
+	    $config->set('COMPSET', "$compset_longname");
+	    last;
+	} 
+
     }
+    if (! defined $primary_component) {
+	print "ERROR create_newcase: no compset match was found in any of the following files \n";
+	foreach my $node_file (@nodes) {
+	    my $file = $node_file->textContent();
+	    print " $file \n";
+	}
+	die;
+    } else {
+	print "\n";
+	print "File specifying possible compsets: $compsets_file \n";
+	print "Primary component (specifies possible compsets, pelayouts and pio settings): $primary_component \n";
+	print "Compset: $compset_longname \n";
+    }   
+
+    return ($primary_component, $support_level);
 }
+
 
 #-------------------------------------------------------------------------------
 sub getGridLongname
@@ -320,8 +362,12 @@ sub setCompsetGeneralVars
 	      my $compset_match = $child->getAttribute('compset');
 	      my $grid_match    = $child->getAttribute('grid');
 	      
-	      if ($compset_match eq 'any') {$compset_match = $compset_longname;}
-	      if ($grid_match    eq 'any') {$grid_match    = $grid_longname;}
+	      if (! defined $compset_match) {
+		  $compset_match = $compset_longname;
+	      }
+	      if (! defined $grid_match) {
+		  $grid_match    = $grid_longname;
+	      }
 	      
 	      if ($compset_longname =~ m/$compset_match/ && $grid_longname =~ m/$grid_match/) {	    
 		  my $new_val =  $child->textContent();

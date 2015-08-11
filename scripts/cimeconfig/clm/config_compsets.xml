@@ -403,7 +403,7 @@
       </values>
     </entry>
 
-    <entry id="STOP_OPTION"> 
+    <entry id="STOP_N"> 
       <values>
 	<value grid="a%1x1_mexicocityMEX" compset="any">158</value> 
 	<value grid="a%1x1_vancouverCAN"  compset="any">331</value> 

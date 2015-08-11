@@ -3272,26 +3272,28 @@
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
     <desc compset="POP2%ECO">ECO in POP:</desc>
-    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS: </desc> 
+    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc> 
     <desc compset="1850_">pre-industrial:</desc>
     <desc compset="2000_">present day:</desc>
-    <desc compset="HIST_">Historical 1850 to 2000 transient: </desc> 
-    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient: </desc> 
-    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient: </desc> 
-    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient: </desc> 
-    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient: </desc> 
-    <desc compset="C2R8_">RCP8.5 future scenario: </desc>
-    <desc compset="C2R6_">RCP6.0 future scenario: </desc>
-    <desc compset="C2R4_">RCP4.5 future scenario: </desc>
-    <desc compset="5505_">1955 to 2005 transient: </desc> 
-    <desc compset="RCP8_">RCP8.5 future scenario: </desc>
-    <desc compset="RCP6_">RCP6.0 future scenario: </desc>
-    <desc compset="RCP4_">RCP4.5 future scenario: </desc>
-    <desc compset="RCP2_">RCP2.6 future scenario: </desc>
-    <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study): </desc>
-    <desc compset="9205_CAM">1992 to 2005 transient: </desc>
-    <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam     </desc> 
-    <desc compset="HIST_CLM4[05]%CN">CLM transient land use: </desc>
+    <desc compset="HIST_">Historical 1850 to 2000 transient:</desc> 
+    <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
+    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc> 
+    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc> 
+    <desc compset="4804_">1948 to 2004 transient:</desc> 
+    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient:</desc> 
+    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient:</desc> 
+    <desc compset="C2R8_">RCP8.5 future scenario:</desc>
+    <desc compset="C2R6_">RCP6.0 future scenario:</desc>
+    <desc compset="C2R4_">RCP4.5 future scenario:</desc>
+    <desc compset="5505_">1955 to 2005 transient:</desc> 
+    <desc compset="RCP8_">RCP8.5 future scenario:</desc>
+    <desc compset="RCP6_">RCP6.0 future scenario:</desc>
+    <desc compset="RCP4_">RCP4.5 future scenario:</desc>
+    <desc compset="RCP2_">RCP2.6 future scenario:</desc>
+    <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
+    <desc compset="9205_CAM">1992 to 2005 transient:</desc>
+    <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam</desc> 
+    <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
       -----------------------------WARNING ------------------------------------------------

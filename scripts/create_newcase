@@ -208,7 +208,6 @@ require ConfigCompsetGrid;
 require ConfigPes;
 require ConfigMachine;
 require ConfigTests;
-require ConfigCESM;
 require ProjectTools;
 require UserModsTools;
 require Testing::TestLists; 
@@ -247,20 +246,25 @@ if ($print>=2) { print "Setting configuration directory to $cfgdir\n"; }
 _check_input_options (\%opts);
 
 #------------------------------------------------------------------------------------------
-# *** Determine user_mods_dir
+# *** Determine user_mods_dir ***
 #------------------------------------------------------------------------------------------
 my $user_mods_dir = $opts{'user_mods_dir'};
 if ($user_mods_dir) {
     (-d "$user_mods_dir") or  die "** Cannot find user_mods_dir directory $user_mods_dir **"
 }
 
+#------------------------------------------------------------------------------------------
+# *** Set hard-wired paths ***
+#------------------------------------------------------------------------------------------
+my $srcroot  = "$cimeroot/../"; #TODO - this needs to be generalized
+my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
 
 #------------------------------------------------------------------------------------------
 # *** Set master config file ***
 #------------------------------------------------------------------------------------------
 # The following specifies all necessary files that will be used to configure the case
 my $cimeconfig_file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml";
-my $files_spec_file =  "$cimeroot/scripts/cimeconfig/config_files.xml";
+my $files_spec_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
 #------------------------------------------------------------------------------------------
 # *** Create config object ***
@@ -268,33 +272,35 @@ my $files_spec_file =  "$cimeroot/scripts/cimeconfig/config_files.xml";
 # First create empty config object
 my $config = ConfigCase->new("");
 
-# Create all values in $config that are not component specific
-my $srcroot  = "$cimeroot/../"; #TODO - this needs to be generalized
-my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
-
-# First determine primary component (for now this is only CESM specific)
-# Each primary component is responsible for defining the compsets that turn of the
-# appropriate feedbacks for development of that component
-my $primary_component;
-if (! $opts{'compset'}) {
-    die "ERROR: must set the -compset option to create_newcase \n";
-}
-$primary_component = ConfigCESM::getPrimaryComponent($compset);
-
 # Add all the elements of the config_files.xml to $config
 $config->add_config_variables($files_spec_file, $srcroot, $cimeroot);
 
-# Add all the elements of the cime_config.xml to $config
+# Add all the elements of the driver_cpl/cimeconfig/cime_config.xml to $config
 $config->add_config_variables($cimeconfig_file, $srcroot, $cimeroot);
+
+$config->set('CIMEROOT', $cimeroot); 
+$config->set('SRCROOT' , $srcroot); 
+
+# Determine compset longname and primary component
+# For user_compset, still need a primary component to determine config_pes and config_pio
+# TODO: Just for the user_compset would seem to need the CESM specification but just for the longname ???
+if (! $opts{'compset'}) {
+    die "ERROR: must set the -compset option to create_newcase \n";
+}
+my ($primary_component, $compsets_file, $compset_longname, $support_level);
+if ($opts{'user_compset'}) {
+    #TODO - set the primary component 
+} else {
+    #TODO - add support_level to config and query it here
+    ($primary_component, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
+    $compsets_file    = $config->get('COMPSETS_SPEC_FILE');
+    $compset_longname = $config->get('COMPSET');
+}
 
 # Now given the primary component, determine the full pathname of the file that
 # defines the compsets for this primary component
-# Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
-# file containing the possible out of the box compsets that can be used by create_newcase
-my $compsets_file;
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$files_spec_file");
-
-foreach my $id ('COMPSETS_SPEC_FILE', 'PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
+foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
     my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$primary_component\"]");
     if (@nodes) {
 	my $value = $nodes[0]->textContent();
@@ -304,15 +310,6 @@ foreach my $id ('COMPSETS_SPEC_FILE', 'PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_S
 	$config->set($id, $value);
     }
 }
-my $compsets_file = $config->get('COMPSETS_SPEC_FILE');
-
-print "Component that specifies possible compsets, pelayouts and non-default pio settings is $primary_component \n";
-print "File that specifies possible compsets is $compsets_file \n";
-
-# Determine the compset longname
-my ($compset_longname, $support_level) = 
-    ConfigCompsetGrid::getCompsetLongname($compsets_file, $compset, $opts{'user_compset'});  
-$config->set('COMPSET', "$compset_longname");
 
 # Given compset longname, determine the compset components
 my @compset_components;
@@ -1012,7 +1009,7 @@ sub _create_caseroot_buildconf
 	$sysmod = "cp -p $bld_dir/*.buildnml $buildconf/.";
 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	
-	# TODO: the following is CESM specific and should be move to the ConfigCESM.pm module
+	# TODO: the following is CESM specific and should be moved
 	if ($bld_dir =~ /cism/) {
 	    $sysmod = "cp -p $bld_dir/cism.template $buildconf/.";
 	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
