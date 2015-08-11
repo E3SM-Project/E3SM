@@ -42,6 +42,7 @@ module init_atm_core_interface
       core % get_mesh_stream => init_atm_get_mesh_stream
       core % setup_immutable_streams => init_atm_setup_immutable_streams
       core % setup_derived_dimensions => init_atm_setup_derived_dimensions
+      core % setup_decomposed_dimensions => init_atm_setup_decomposed_dimensions
       core % setup_block => init_atm_setup_block
       core % setup_namelist => init_atm_setup_namelists
 

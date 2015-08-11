@@ -859,7 +859,7 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 
 	fortprintf(fd, "\n\n");
 
-	fortprintf(fd, "   subroutine mpas_setup%sdecomposed_dimensions(block, manager, readDimensions, dimensionPool, totalBlocks)\n", core_string);
+	fortprintf(fd, "   function %s_setup_decomposed_dimensions(block, manager, readDimensions, dimensionPool, totalBlocks) result(iErr)\n", core_string);
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_decomp\n");
@@ -890,7 +890,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	}
 
 	fortprintf(fd, "\n");
-	fortprintf(fd, "write(stderrUnit,\'(a)\') \'Processing decomposed dimensions ...\'\n\n");
+	fortprintf(fd, "      iErr = 0\n");
+	fortprintf(fd, "      write(stderrUnit,\'(a)\') \'Processing decomposed dimensions ...\'\n\n");
 
 	/* Retrieve dimension integers */
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next) {
@@ -929,13 +930,13 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 		}
 	}
 
-	fortprintf(fd, "write(stderrUnit,*) \' '\n");
-	fortprintf(fd, "write(stderrUnit,\'(a)\') \' ----- done processing decomposed dimensions -----\'\n");
-	fortprintf(fd, "write(stderrUnit,*) \' '\n");
-	fortprintf(fd, "write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "      write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "      write(stderrUnit,\'(a)\') \' ----- done processing decomposed dimensions -----\'\n");
+	fortprintf(fd, "      write(stderrUnit,*) \' '\n");
+	fortprintf(fd, "      write(stderrUnit,*) \' '\n");
 
 	fortprintf(fd, "\n");
-	fortprintf(fd, "   end subroutine mpas_setup%sdecomposed_dimensions\n", core_string);
+	fortprintf(fd, "   end function %s_setup_decomposed_dimensions\n", core_string);
 
 	fclose(fd);
 

@@ -1231,6 +1231,11 @@ module mpas_block_creator
        end do
        call mpas_pool_set_error_level(err_level)
 
+       iErr = block_ptr % domain % core % setup_decomposed_dimensions(block_ptr, stream_manager, readableDimensions, block_ptr % dimensions, total_blocks)
+       if ( iErr /= 0 ) then
+          call mpas_dmpar_global_abort('ERROR: Decomposed dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
+       end if
+
        iErr = block_ptr % domain % core % setup_derived_dimensions(readableDimensions, block_ptr % dimensions, block_ptr % configs)
        if ( iErr /= 0 ) then
           call mpas_dmpar_global_abort('ERROR: Derived dimension setup failed for core ' // trim(block_ptr % domain % core % coreName))
