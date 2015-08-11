@@ -5,11 +5,11 @@ project (PIO C)
 #  USER-DEFINED OPTIONS (set with "-DOPT=VAL" from command line)
 #==============================================================================
 
-option (PIO_ENABLE_FORTRAN "Enable the Fortran library builds"  ON)
-option (PIO_ENABLE_TIMING  "Enable GPTL timing"                 ON)
-option (PIO_ENABLE_TESTS   "Enable the testing builds"          ON)
+option (PIO_ENABLE_FORTRAN   "Enable the Fortran library builds"  ON)
+option (PIO_ENABLE_TIMING    "Enable GPTL timing"                 ON)
+option (PIO_ENABLE_TESTS     "Enable the testing builds"          ON)
 
-option (USE_SHARED_LIBRARIES  "Use shared libraries for linking"   OFF)
+option (USE_STATIC_LIBRARIES "Use static libraries for linking"   ON)
 
 #==============================================================================
 #  APPEND TO CMAKE MODULE PATH
