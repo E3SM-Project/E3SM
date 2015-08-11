@@ -31,17 +31,21 @@ macro (find_package_component PKG)
     set (multiValueArgs INCLUDE_NAMES INCLUDE_HINTS LIBRARY_NAMES LIBRARY_HINTS)
     cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
     set (COMP ${${PKG}_COMPONENT})
+    if (COMP)
+        set (PKGCOMP ${PKG}_${COMP})
+    else ()
+        set (PKGCOMP ${PKG})
+    endif ()
     string (TOUPPER ${PKG} PKGUP)
-    string (TOUPPER ${COMP} COMPUP)
-    
+    string (TOUPPER ${PKGCOMP} PKGCOMPUP)
     
     # Determine include dir search order
     set (INCLUDE_HINTS)
     if (${PKG}_INCLUDE_HINTS)
         list (APPEND INCLUDE_HINTS ${${PKG}_INCLUDE_HINTS})
     endif ()
-    if (${PKG}_${COMP}_DIR)
-        list (APPEND INCLUDE_HINTS ${${PKG}_${COMP}_DIR}/include)
+    if (${PKGCOMP}_DIR)
+        list (APPEND INCLUDE_HINTS ${${PKGCOMP}_DIR}/include)
     endif ()
     if (${PKG}_DIR)
         list (APPEND INCLUDE_HINTS ${${PKG}_DIR}/include)
@@ -51,7 +55,7 @@ macro (find_package_component PKG)
     endif ()
     
     # Search for include file
-    find_path (${PKG}_${COMP}_INCLUDE_DIR
+    find_path (${PKGCOMP}_INCLUDE_DIR
                NAMES ${${PKG}_INCLUDE_NAMES}
                HINTS ${INCLUDE_HINTS})
                
@@ -63,8 +67,8 @@ macro (find_package_component PKG)
     if (${PKG}_LIBRARY_HINTS)
         list (APPEND LIBRARY_HINTS ${${PKG}_LIBRARY_HINTS})
     endif ()
-    if (${PKG}_${COMP}_DIR)
-        list (APPEND LIBRARY_HINTS ${${PKG}_${COMP}_DIR}/lib)
+    if (${PKGCOMP}_DIR)
+        list (APPEND LIBRARY_HINTS ${${PKGCOMP}_DIR}/lib)
     endif ()
     if (${PKG}_DIR)
         list (APPEND LIBRARY_HINTS ${${PKG}_DIR}/lib)
@@ -75,27 +79,27 @@ macro (find_package_component PKG)
     
     # Search for library file
     include (LibFindLibraryMacros)
-    set (${PKG}_${COMP}_IS_SHARED TRUE)
+    set (${PKGCOMP}_IS_SHARED TRUE)
     if (PREFER_SHARED)
-        find_shared_library (${PKG}_${COMP}_LIBRARY
+        find_shared_library (${PKGCOMP}_LIBRARY
                              NAMES ${${PKG}_LIBRARY_NAMES}
                              HINTS ${LIBRARY_HINTS})
-        if (NOT ${PKG}_${COMP}_LIBRARY)
-            find_static_library (${PKG}_${COMP}_LIBRARY
+        if (NOT ${PKGCOMP}_LIBRARY)
+            find_static_library (${PKGCOMP}_LIBRARY
                                  NAMES ${${PKG}_LIBRARY_NAMES}
                                  HINTS ${LIBRARY_HINTS})
-            if (${PKG}_${COMP}_LIBRARY)
-                set (${PKG}_${COMP}_IS_SHARED FALSE)
+            if (${PKGCOMP}_LIBRARY)
+                set (${PKGCOMP}_IS_SHARED FALSE)
             endif ()
         endif ()
     else ()
-        find_static_library (${PKG}_${COMP}_LIBRARY
+        find_static_library (${PKGCOMP}_LIBRARY
                              NAMES ${${PKG}_LIBRARY_NAMES}
                              HINTS ${LIBRARY_HINTS})
-        if (${PKG}_${COMP}_LIBRARY)
-            set (${PKG}_${COMP}_IS_SHARED FALSE)
+        if (${PKGCOMP}_LIBRARY)
+            set (${PKGCOMP}_IS_SHARED FALSE)
         else ()
-            find_shared_library (${PKG}_${COMP}_LIBRARY
+            find_shared_library (${PKGCOMP}_LIBRARY
                                  NAMES ${${PKG}_LIBRARY_NAMES}
                                  HINTS ${LIBRARY_HINTS})
         endif ()
@@ -106,24 +110,24 @@ macro (find_package_component PKG)
 
     # handle the QUIETLY and REQUIRED arguments and 
     # set NetCDF_C_FOUND to TRUE if all listed variables are TRUE
-    find_package_handle_standard_args (${PKG}_${COMP} DEFAULT_MSG
-                                       ${PKG}_${COMP}_LIBRARY 
-                                       ${PKG}_${COMP}_INCLUDE_DIR)
-    mark_as_advanced (${PKG}_${COMP}_INCLUDE_DIR ${PKG}_${COMP}_LIBRARY)
+    find_package_handle_standard_args (${PKGCOMP} DEFAULT_MSG
+                                       ${PKGCOMP}_LIBRARY 
+                                       ${PKGCOMP}_INCLUDE_DIR)
+    mark_as_advanced (${PKGCOMP}_INCLUDE_DIR ${PKGCOMP}_LIBRARY)
     
     # HACK For bug in CMake v3.0:
-    set (${PKG}_${COMP}_FOUND ${${PKGUP}_${COMPUP}_FOUND})
+    set (${PKGCOMP}_FOUND ${${PKGCOMPUP}_FOUND})
 
     # Set return variables
-    if (${PKG}_${COMP}_FOUND)
-        set (${PKG}_${COMP}_INCLUDE_DIRS ${${PKG}_${COMP}_INCLUDE_DIR})
-        set (${PKG}_${COMP}_LIBRARIES ${${PKG}_${COMP}_LIBRARY})
-        set (${PKG}_${COMP}_DEFINITIONS)
-        set (${PKG}_${COMP}_OPTIONS)
+    if (${PKGCOMP}_FOUND)
+        set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIR})
+        set (${PKGCOMP}_LIBRARIES ${${PKGCOMP}_LIBRARY})
+        set (${PKGCOMP}_DEFINITIONS)
+        set (${PKGCOMP}_OPTIONS)
     endif ()
     
     unset (COMP)
-    unset (COMPUP)
+    unset (PKGCOMPUP)
     unset (PKGUP)
 
 endmacro ()

@@ -63,7 +63,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         
             if (comp STREQUAL C)
             
-                # DEPENDENCY: HDF5
                 find_package (HDF5 COMPONENTS C HL)
                 if (HDF5_FOUND)
                     list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
@@ -73,12 +72,11 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 
             elseif (comp STREQUAL Fortran)
                             
-                # DEPENDENCY: HDF5
-                find_package (HDF5 COMPONENTS Fortran Fortran_HL)
+                # DEPENDENCY: NetCDF
+                find_package (NetCDF COMPONENTS C)
                 if (NetCDF_C_FOUND)
-                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${HDF5_Fortran_INCLUDE_DIRS})
-                    list (APPEND NetCDF_Fortran_LIBRARIES ${HDF5_Fortran_LIBRARIES}
-                                                          ${HDF5_Fortran_HL_LIBRARIES})
+                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
+                    list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
                 endif ()
     
             endif ()
