@@ -15,11 +15,11 @@
 #   PnetCDF_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with PnetCDF
 #   PnetCDF_<lang>_OPTIONS      (LIST) - compiler options to use PnetCDF
 #
-# The available COMPONENTS are: C, CXX, Fortran
+# The available COMPONENTS are: C, Fortran
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
-set (PnetCDF_VALID_COMPONENTS C CXX Fortran)
+set (PnetCDF_VALID_COMPONENTS C Fortran)
 
 if (NOT PnetCDF_FIND_COMPONENTS)
     set (PnetCDF_FIND_COMPONENTS C)
@@ -33,18 +33,31 @@ foreach (comp IN LISTS PnetCDF_FIND_COMPONENTS)
 endforeach ()
 
 set (PnetCDF_C_INCLUDE_NAMES pnetcdf.h)
-set (PnetCDF_CXX_INCLUDE_NAMES pnetcdf)
 set (PnetCDF_Fortran_INCLUDE_NAMES pnetcdf.mod pnetcdf.inc)
 
 set (PnetCDF_C_LIBRARY_NAMES pnetcdf)
-set (PnetCDF_CXX_LIBRARY_NAMES pnetcdf)
 set (PnetCDF_Fortran_LIBRARY_NAMES pnetcdf)
 
 foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
-    find_package_component(PnetCDF COMPONENT ${comp}
-                           INCLUDE_NAMES ${PnetCDF_${comp}_INCLUDE_NAMES}
-                           LIBRARY_NAMES ${PnetCDF_${comp}_LIBRARY_NAMES}
-                           PRE_SEARCH_HINTS ${MPI_${comp}_INCLUDE_PATH})
+    if (NOT PnetCDF_${comp}_FOUND)
+
+        if (MPI_${comp}_FOUND)
+            set (PnetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
+            set (PnetCDF_${comp}_LIBRARY_HINTS)
+            foreach (lib IN LISTS ${MPI_${comp}_LIBRARIES})
+                get_filename_component (libdir ${lib} PATH)
+                list (APPEND PnetCDF_${comp}_LIBRARY_HINTS ${libdir})
+                unset (libdir)
+            endforeach ()
+        endif ()
+        
+        find_package_component(PnetCDF COMPONENT ${comp}
+                               INCLUDE_NAMES ${PnetCDF_${comp}_INCLUDE_NAMES}
+                               INCLUDE_HINTS ${PnetCDF_${comp}_INCLUDE_HINTS}
+                               LIBRARY_NAMES ${PnetCDF_${comp}_LIBRARY_NAMES}
+                               LIBRARY_HINTS ${PnetCDF_${comp}_LIBRARY_HINTS})
+    
+    endif ()
     
 endforeach ()

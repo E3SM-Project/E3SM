@@ -28,7 +28,7 @@ macro (find_package_component PKG)
     # Parse the input arguments
     set (options)
     set (oneValueArgs COMPONENT)
-    set (multiValueArgs INCLUDE_NAMES PRE_SEARCH_HINTS POST_SEARCH_HINTS LIBRARY_NAMES)
+    set (multiValueArgs INCLUDE_NAMES INCLUDE_HINTS LIBRARY_NAMES LIBRARY_HINTS)
     cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
     set (COMP ${${PKG}_COMPONENT})
     string (TOUPPER ${PKG} PKGUP)
@@ -37,10 +37,8 @@ macro (find_package_component PKG)
     
     # Determine include dir search order
     set (INCLUDE_HINTS)
-    if (${PKG}_PRE_SEARCH_HINTS)
-        foreach (hint IN LISTS ${PKG}_PRE_SEARCH_HINTS)
-            list (APPEND INCLUDE_HINTS ${hint}/include)
-        endforeach ()
+    if (${PKG}_INCLUDE_HINTS)
+        list (APPEND INCLUDE_HINTS ${${PKG}_INCLUDE_HINTS})
     endif ()
     if (${PKG}_${COMP}_DIR)
         list (APPEND INCLUDE_HINTS ${${PKG}_${COMP}_DIR}/include)
@@ -50,11 +48,6 @@ macro (find_package_component PKG)
     endif ()
     if (DEFINED ENV{${PKGUP}})
         list (APPEND INCLUDE_HINTS $ENV{${PKGUP}}/include)
-    endif ()
-    if (${PKG}_POST_SEARCH_HINTS)
-        foreach (hint IN LISTS ${PKG}_POST_SEARCH_HINTS)
-            list (APPEND INCLUDE_HINTS ${hint}/include)
-        endforeach ()
     endif ()
     
     # Search for include file
@@ -67,10 +60,8 @@ macro (find_package_component PKG)
     
     # Determine library dir search order
     set (LIBRARY_HINTS)
-    if (${PKG}_PRE_SEARCH_HINTS)
-        foreach (hint IN LISTS ${PKG}_PRE_SEARCH_HINTS)
-            list (APPEND INCLUDE_HINTS ${hint}/lib)
-        endforeach ()
+    if (${PKG}_LIBRARY_HINTS)
+        list (APPEND LIBRARY_HINTS ${${PKG}_LIBRARY_HINTS})
     endif ()
     if (${PKG}_${COMP}_DIR)
         list (APPEND LIBRARY_HINTS ${${PKG}_${COMP}_DIR}/lib)
@@ -80,11 +71,6 @@ macro (find_package_component PKG)
     endif ()
     if (DEFINED ENV{${PKGUP}})
         list (APPEND LIBRARY_HINTS $ENV{${PKGUP}}/lib)
-    endif ()
-    if (${PKG}_POST_SEARCH_HINTS)
-        foreach (hint IN LISTS ${PKG}_POST_SEARCH_HINTS)
-            list (APPEND INCLUDE_HINTS ${hint}/lib)
-        endforeach ()
     endif ()
     
     # Search for library file
@@ -141,3 +127,6 @@ macro (find_package_component PKG)
     unset (PKGUP)
 
 endmacro ()
+
+
+

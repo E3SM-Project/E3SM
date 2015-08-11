@@ -15,11 +15,11 @@
 #   NetCDF_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with NetCDF
 #   NetCDF_<lang>_OPTIONS      (LIST) - compiler options to use NetCDF
 #
-# The available COMPONENTS are: C, CXX, CXX4, Fortran
+# The available COMPONENTS are: C, Fortran
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
-set (NetCDF_VALID_COMPONENTS C CXX Fortran)
+set (NetCDF_VALID_COMPONENTS C Fortran)
 
 if (NOT NetCDF_FIND_COMPONENTS)
     set (NetCDF_FIND_COMPONENTS C)
@@ -33,46 +33,57 @@ foreach (comp IN LISTS NetCDF_FIND_COMPONENTS)
 endforeach ()
 
 set (NetCDF_C_INCLUDE_NAMES netcdf.h)
-set (NetCDF_CXX_INCLUDE_NAMES netcdf)
-set (NetCDF_CXX4_INCLUDE_NAMES netcdf)
 set (NetCDF_Fortran_INCLUDE_NAMES netcdf.mod netcdf.inc)
 
 set (NetCDF_C_LIBRARY_NAMES netcdf)
-set (NetCDF_CXX_LIBRARY_NAMES netcdf_c++4 netcdf_c++)
 set (NetCDF_Fortran_LIBRARY_NAMES netcdff)
 
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
-    find_package_component(NetCDF COMPONENT ${comp}
-                           INCLUDE_NAMES ${NetCDF_${comp}_INCLUDE_NAMES}
-                           LIBRARY_NAMES ${NetCDF_${comp}_LIBRARY_NAMES}
-                           PRE_SEARCH_HINTS ${MPI_${comp}_INCLUDE_PATH})
-    
-    # Handle Dependencies, if static
-    if (NOT NetCDF_${comp}_IS_SHARED)
-    
-        if (comp STREQUAL C)
-        
-            # DEPENDENCY: HDF5
-            set (HDF5_USE_STATIC_LIBRARIES ${USE_STATIC_LIBRARIES})
-            find_package (HDF5 COMPONENTS C HL)
-            if (HDF5_FOUND)
-                list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
-                list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
-                                                ${HDF5_HL_LIBRARIES})
-            endif ()
-            
-        elseif (comp STREQUAL CXX OR comp STREQUAL Fortran)
-        
-            # DEPENDENCY: NetCDF_C
-            find_package (NetCDF REQUIRED COMPONENTS C)
-            if (NetCDF_C_FOUND)
-                list (APPEND NetCDF_CXX_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
-                list (APPEND NetCDF_CXX_LIBRARIES ${NetCDF_C_LIBRARIES})
-            endif ()
+    if (NOT NetCDF_${comp}_FOUND)
 
+        if (MPI_${comp}_FOUND)
+            set (NetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
+            set (NetCDF_${comp}_LIBRARY_HINTS)
+            foreach (lib IN LISTS ${MPI_${comp}_LIBRARIES})
+                get_filename_component (libdir ${lib} PATH)
+                list (APPEND NetCDF_${comp}_LIBRARY_HINTS ${libdir})
+                unset (libdir)
+            endforeach ()
         endif ()
-
+    
+        find_package_component(NetCDF COMPONENT ${comp}
+                               INCLUDE_NAMES ${NetCDF_${comp}_INCLUDE_NAMES}
+                               INCLUDE_HINTS ${NetCDF_${comp}_INCLUDE_HINTS}
+                               LIBRARY_NAMES ${NetCDF_${comp}_LIBRARY_NAMES}
+                               LIBRARY_HINTS ${NetCDF_${comp}_LIBRARY_HINTS})
+        
+        # Handle Dependencies, if static
+        if (NOT NetCDF_${comp}_IS_SHARED)
+        
+            if (comp STREQUAL C)
+            
+                # DEPENDENCY: HDF5
+                find_package (HDF5 COMPONENTS C HL)
+                if (HDF5_FOUND)
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
+                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
+                                                    ${HDF5_HL_LIBRARIES})
+                endif ()
+                
+            elseif (comp STREQUAL Fortran)
+            
+                # DEPENDENCY: NetCDF-C
+                find_package (NetCDF REQUIRED COMPONENTS C)
+                if (NetCDF_C_FOUND)
+                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
+                    list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
+                endif ()
+    
+            endif ()
+    
+        endif ()
+        
     endif ()
     
 endforeach ()
