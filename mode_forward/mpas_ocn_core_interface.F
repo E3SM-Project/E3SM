@@ -42,6 +42,7 @@ module ocn_core_interface
       core % get_mesh_stream => ocn_get_mesh_stream
       core % setup_immutable_streams => ocn_setup_immutable_streams
       core % setup_derived_dimensions => ocn_setup_derived_dimensions
+      core % setup_decomposed_dimensions => ocn_setup_decomposed_dimensions
       core % setup_block => ocn_setup_block
       core % setup_namelist => ocn_setup_namelists
 
