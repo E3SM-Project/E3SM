@@ -54,6 +54,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         if (comp STREQUAL C)
         
             # DEPENDENCY: HDF5
+            set (HDF5_USE_STATIC_LIBRARIES ${USE_STATIC_LIBRARIES})
             find_package (HDF5 COMPONENTS C HL)
             if (HDF5_FOUND)
                 list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
