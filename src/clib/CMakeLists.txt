@@ -35,6 +35,16 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
         PRIVATE -std=c99)
 endif()
 
+# Initialize with extras
+target_include_directories (pioc
+    PUBLIC ${PIO_C_EXTRA_INCLUDE_DIRS})
+target_link_libraries (pioc
+    PUBLIC ${PIO_C_EXTRA_LIBRARIES})
+target_compile_options (pioc
+    PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
+target_compile_definitions (pioc
+    PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
+
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
