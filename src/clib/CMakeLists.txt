@@ -24,7 +24,7 @@ add_library (pioc ${PIO_C_SRCS})
 target_include_directories (pioc
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pioc
         PRIVATE -std=c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
