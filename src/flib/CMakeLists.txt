@@ -38,16 +38,6 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
         PRIVATE -ffree-line-length-none)
 endif()
 
-# Initialize with extras
-target_include_directories (piof
-    PUBLIC ${PIO_Fortran_EXTRA_INCLUDE_DIRS})
-target_link_libraries (piof
-    PUBLIC ${PIO_Fortran_EXTRA_LIBRARIES})
-target_compile_options (piof
-    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
-target_compile_definitions (piof
-    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
-
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
@@ -106,6 +96,17 @@ else ()
     target_compile_definitions (piof 
         PRIVATE _NOPNETCDF)
 endif ()
+
+
+#===== Add EXTRAs =====
+target_include_directories (piof
+    PUBLIC ${PIO_Fortran_EXTRA_INCLUDE_DIRS})
+target_link_libraries (piof
+    PUBLIC ${PIO_Fortran_EXTRA_LIBRARIES})
+target_compile_options (piof
+    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
+target_compile_definitions (piof
+    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
 
 #===== Check for necessities =====
 if (NOT PnetCDF_Fortran_FOUND AND NOT NetCDF_Fortran_FOUND)
