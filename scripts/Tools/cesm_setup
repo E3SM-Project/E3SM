@@ -149,9 +149,12 @@ if (! $clean ) {
     }
 
     my $ninst_fail = 0;    
+    my $build_threaded = $xmlvars{BUILD_THREADED};
+
     foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
 	my $ninst = "NINST_".$comp;
 	my $ntasks = "NTASKS_".$comp;
+	my $nthrds = "NTHRDS_".$comp;
 	if ($xmlvars{$ninst} > $xmlvars{$ntasks}) {
 	    if($xmlvars{$ntasks}==1){
 		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
@@ -160,7 +163,14 @@ if (! $clean ) {
 		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
 	    }
 	}
+	if($xmlvars{$nthrds} > 1){
+	    $build_threaded = "TRUE";
+	}
     }
+
+    my $sysmod = "./xmlchange BUILD_THREADED=$build_threaded";
+    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
 
     if (-f "$caseroot/$case.run") {
 	print "Machine/Decomp/Pes configuration has already been done ...skipping$eol ";

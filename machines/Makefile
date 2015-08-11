@@ -109,23 +109,30 @@ ifeq ($(compile_threaded), true)
 endif
 
 ifeq (,$(EXEROOT))
-	EXEROOT = $(shell ./xmlquery EXEROOT -value)
+  EXEROOT = $(shell ./xmlquery EXEROOT -value)
 endif
+ifeq (,$(BUILD_THREADED))
+  BUILD_THREADED = $(shell ./xmlquery BUILD_THREADED -value)
+endif
+
 ifeq (,$(LIBROOT))
-	LIBROOT = $(shell ./xmlquery LIBROOT -value)
+  LIBROOT = $(shell ./xmlquery LIBROOT -value)
 endif
 ifeq (,$(SHAREDLIBROOT))
-	SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
+  SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
 endif
 ifeq (,$(COMPILER))
-	COMPILER = $(shell ./xmlquery COMPILER -value)
+  COMPILER = $(shell ./xmlquery COMPILER -value)
+endif
+ifeq (,$(NINST_VALUE))
+  NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
 endif
 ifeq (,$(MPILIB))
-	MPILIB = $(shell ./xmlquery MPILIB -value)
+  MPILIB = $(shell ./xmlquery MPILIB -value)
 endif
 
 ifeq (,$(SHAREDPATH))
-	SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
+  SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
 endif
 
 include $(CASEROOT)/Macros
@@ -518,7 +525,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)" 
 else
-        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE
+        CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
