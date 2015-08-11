@@ -239,7 +239,6 @@ sub findModulesFromMachinesDir()
 			my @modchildren = $mod->getChildNodes();
 			foreach my $child(@modchildren)
 			{
-				#my $action = $child->getName();	
 				my $action = $child->getAttribute('name');	
 				my $actupon = $child->textContent();
 				my $modhash = {action => $action, actupon => $actupon, seqnum => $seqnum};
@@ -258,6 +257,27 @@ sub findModulesFromMachinesDir()
 					#print "mod attribute: ", $mod->getAttribute($qualifier), "\n";
 					#print "self qualifier: ", $self->{$qualifier}, "\n";
 					$attrmatch = 1;
+				}
+				elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) =~ /^\!/)
+				{
+					my $negatedattr = $mod->getAttribute($qualifier);
+					$negatedattr =~ s/!//g;
+					print "negated attr is: $negatedattr\n";
+					print "mod attr is ", $mod->getAttribute($qualifier), "\n";
+					print "self attr is ", $self->{$qualifier}, "\n";
+					if($negatedattr ne $self->{$qualifier})
+					{
+						print "negated attributes do not match, this is a match\n";
+						$attrmatch = 1;
+						next;
+					}
+					else
+					{
+						print "negated attributes do match, this is NOT a match\n";
+						$attrmatch = 0;
+						last;
+					}
+
 				}
 				elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) ne $self->{$qualifier})
 				{
@@ -390,6 +410,27 @@ sub findModules()
 				{
 					$attrmatch = 1;
 				}
+                elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) =~ /^\!/)
+                {
+                    my $negatedattr = $mod->getAttribute($qualifier);
+                    $negatedattr =~ s/!//g;
+                    print "negated attr is: $negatedattr\n";
+                    print "mod attr is ", $mod->getAttribute($qualifier), "\n";
+                    print "self attr is ", $self->{$qualifier}, "\n";
+                    if($negatedattr ne $self->{$qualifier})
+                    {
+                        print "negated attributes do not match, this is a match\n";
+                        $attrmatch = 1;
+                        next;
+                    }
+                    else
+                    {
+                        print "negated attributes do match, this is NOT a match\n";
+                        $attrmatch = 0;
+                        last;
+                    }
+
+                }
 				# if the qualifier exists as an attribute but doesn't match, skip the entire block. 
 				elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) ne $self->{$qualifier})
 				{
@@ -534,7 +575,7 @@ sub findEnvVars()
 	my $machine = $self->{machine};
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $xml = $parser->parse_file($self->{machspecificfile});
-    my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/environment_variables/env");
+    my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/environment_variables/env");
 	
     my %envs;
 	foreach my $enode(@envnodes)
@@ -554,7 +595,7 @@ sub findLimits()
 	my $machine = $self->{machine};
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $xml = $parser->parse_file($self->{machspecificfile});
-    my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/limits/limit");
+    my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/limits/limit");
     
     my %limits;
     
@@ -565,7 +606,7 @@ sub findLimits()
         $limits{$name} = $value;
     }
     
-    $self->{limits}
+    #$self->{limits}
 }
 
 sub getCshModuleCode()
@@ -640,7 +681,15 @@ START
 				my $attr = shift @attrs;
 				my $name = uc($attr->getName());
 				my $value = $attr->getValue();
-				$csh .= "\$$name == \"$value\"";
+		        if($value =~ /^\!/)
+				{
+					$value =~ s/\!//g;
+					$csh .= "\$$name != \"$value\"";
+				}
+				else
+				{
+					$csh .= "\$$name == \"$value\"";
+				}
 				$csh .= " && " if(@attrs);
 			}
 			$csh .= " ) then\n";
@@ -665,7 +714,7 @@ START
 		}
 	}
 	
-	my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/environment_variables/env");
+    my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables/env");
     foreach my $enode(@envnodes)
     {
         my $name = $enode->getAttribute('name');
@@ -673,7 +722,7 @@ START
 		$csh .= "setenv $name $value\n";
     }
 
-	my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/limits/limit");
+	my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/limits/limit");
 	foreach my $lnode(@limitnodes)
 	{
 		my $name = $lnode->getAttribute('name');
@@ -773,7 +822,17 @@ START
 				my $attr = shift @attrs;
 				my $name = uc($attr->getName());
 				my $value = $attr->getValue();
-				$sh .= "\"\$$name\" = \"$value\"";
+                if($value =~ /^\!/)
+                {
+                    $value =~ s/\!//g;
+                    #$sh .= "\$$name != \"$value\"";
+				    $sh .= "\"\$$name\" != \"$value\"";
+                }
+                else
+                {
+                    #$csh .= "\$$name == \"$value\"";
+				    $sh .= "\"\$$name\" = \"$value\"";
+                }
 				$sh .= " ] && [ " if (@attrs);
 			}
 			$sh .= " ]\n";
