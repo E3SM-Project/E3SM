@@ -39,14 +39,14 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 # Initialize with extras
-target_include_directories (pioc
-    PUBLIC ${PIO_C_EXTRA_INCLUDE_DIRS})
-target_link_libraries (pioc
-    PUBLIC ${PIO_C_EXTRA_LIBRARIES})
-target_compile_options (pioc
-    PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
-target_compile_definitions (pioc
-    PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
+target_include_directories (piof
+    PUBLIC ${PIO_Fortran_EXTRA_INCLUDE_DIRS})
+target_link_libraries (piof
+    PUBLIC ${PIO_Fortran_EXTRA_LIBRARIES})
+target_compile_options (piof
+    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
+target_compile_definitions (piof
+    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
