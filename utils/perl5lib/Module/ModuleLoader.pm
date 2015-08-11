@@ -192,7 +192,16 @@ sub moduleInit()
 		die "the module init path could not be found for the machine $machine\n";
 	}
 
-	my @cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path");
+	#my @cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path");
+    my @cmdnodes;
+	if($self->{modulesystemtype} eq 'soft')
+	{
+		@cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'sh\']");
+	}
+	elsif($self->{modulesystemtype} eq 'module')
+	{
+		@cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'perl\']");
+	}
 	foreach my $cmdnode(@cmdnodes)
 	{
 		$self->{cmdpath} = $cmdnode->textContent();
@@ -201,6 +210,8 @@ sub moduleInit()
 	{
 		die "the module cmd path could not be found for the machine $machine\n";
 	}
+	#print "self modulesystemtype: $self->{modulesystemtype}\n";
+	#print "self cmdpath: $self->{cmdpath}\n";
 
 }
 
@@ -228,7 +239,8 @@ sub findModulesFromMachinesDir()
 			my @modchildren = $mod->getChildNodes();
 			foreach my $child(@modchildren)
 			{
-				my $action = $child->getName();	
+				#my $action = $child->getName();	
+				my $action = $child->getAttribute('name');	
 				my $actupon = $child->textContent();
 				my $modhash = {action => $action, actupon => $actupon, seqnum => $seqnum};
 				push(@modulenodes, $modhash);
@@ -261,7 +273,8 @@ sub findModulesFromMachinesDir()
 				my @modchildren = $mod->getChildNodes();
 				foreach my $child(@modchildren)
 				{
-					my $action = $child->getName();
+					#my $action = $child->getName();
+					my $action = $child->getAttribute('name');
 					my $actupon = $child->textContent();	
 					my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum };
 					push(@modulenodes, $modhash);
@@ -330,7 +343,8 @@ sub findModulesForCase()
 
 	my @foundmodules = $self->findModules(\@allmodulenodes);
 	$self->{modulestoload} = \@foundmodules;
-	#return @foundmodules; 
+	#print Dumper $self->{modulestoload};
+	return @foundmodules; 
     
 }
 
@@ -355,7 +369,8 @@ sub findModules()
 			# module will be loaded. 
 			foreach my $child(@modchildren)
 			{
-				my $action = $child->getName();
+				#my $action = $child->getName();
+				my $action = $child->getAttribute('name');
 				my $actupon = $child->textContent();
 				my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum} ;
 				push(@foundmodules, $modhash);
@@ -387,7 +402,8 @@ sub findModules()
 				my @modchildren = $mod->getChildNodes();
 				foreach my $child(@modchildren)
 				{
-					my $action = $child->getName();
+					#my $action = $child->getName();
+					my $action = $child->getAttribute('name');
 					my $actupon = $child->textContent();	
 					my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum };
 					push(@foundmodules, $modhash);
@@ -396,6 +412,7 @@ sub findModules()
 			}
 		}
 	}
+	#print Dumper \@foundmodules;
 	return @foundmodules;
 }
 
@@ -433,9 +450,9 @@ sub loadModuleModules()
 	
 	foreach my $mod(@$modulestoload)
 	{
-		#print "mod seqnum: $mod->{seqnum}\n";
-		#print "mod action: $mod->{action}\n";
-		#print "mod actupon: $mod->{actupon}\n";
+		print "mod seqnum: $mod->{seqnum}\n";
+		print "mod action: $mod->{action}\n";
+		print "mod actupon: $mod->{actupon}\n";
 		my $cmd;
 		if($mod->{action} =~ /xmlchange/)
 		{
@@ -453,6 +470,7 @@ sub loadModuleModules()
 		}
 	}
     my %moduleenv = %{$self->{environmentvars}};
+	print Dumper \%moduleenv;
     foreach my $key(keys %moduleenv)
     {
         $ENV{$key} = $moduleenv{$key};
@@ -513,6 +531,7 @@ sub loadSoftModules()
 sub findEnvVars()
 {
 	my $self = shift;
+	my $machine = $self->{machine};
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $xml = $parser->parse_file($self->{machspecificfile});
     my @envnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/environment_variables/env");
@@ -524,6 +543,7 @@ sub findEnvVars()
 		my $value = $enode->getValue();
         $envs{$name} = $value;
 	}
+	
     $self->{environmentvars} = \%envs;
     
 }
@@ -531,6 +551,7 @@ sub findEnvVars()
 sub findLimits()
 {
 	my $self = shift;
+	my $machine = $self->{machine};
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $xml = $parser->parse_file($self->{machspecificfile});
     my @limitnodes = $xml->findnodes("/config_machines/machine[\@MACH=\'$machine\']/module_system/limits/limit");
@@ -570,6 +591,13 @@ sub getCshModuleCode()
 	{
 		$self->{cshinitpath} = $node->textContent();
 	}
+
+	my @cshcmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'csh\']");
+	die "no c shell ccmd_path defined for this machine!" if ! @cshcmdnodes;
+	foreach my $node(@cshcmdnodes)
+	{
+		$self->{cshcmdpath} = $node->textContent();
+	}
 	
 	
 
@@ -596,9 +624,10 @@ START
 			my @modchildren = $mod->getChildNodes();
 			foreach my $child(@modchildren)
 			{
-				my $action = $child->getName();
+				#my $action = $child->getName();
+                my $action = $child->getAttribute('name');
 				my $actupon = $child->textContent();
-				$csh .= "$self->{cmdpath} $action $actupon\n";
+				$csh .= "$self->{cshcmdpath} $action $actupon\n";
 			}
 		}
 		else
@@ -620,7 +649,8 @@ START
 			foreach my $child(@modchildren)
 			{
 				
-				my $action = $child->getName();
+				#my $action = $child->getName();
+				my $action = $child->getAttribute('name');
 				my $actupon = $child->textContent();
 				if($action =~ /xmlchange/)
 				{
@@ -628,7 +658,7 @@ START
 				}
 				else
 				{
-					$csh .= "\t$self->{cmdpath} $action $actupon\n";
+					$csh .= "\t$self->{cshcmdpath} $action $actupon\n";
 				}
 			}
 			$csh .= "endif\n";
@@ -700,6 +730,13 @@ sub getShModuleCode()
         $self->{shinitpath} = $node->textContent();
     }
 
+    my @shcmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'sh\']");
+    die "no c shell ccmd_path defined for this machine!" if ! @shcmdnodes;
+    foreach my $node(@shcmdnodes)
+    {
+        $self->{shcmdpath} = $node->textContent();
+    }
+
     my $sh =<<"START";
 #!/usr/bin/env sh -f 
 #===============================================================================
@@ -718,11 +755,12 @@ START
 			my @modchildren = $mod->getChildNodes();
 			foreach my $child(@modchildren)
 			{
-				my $action = $child->getName();
+				#my $action = $child->getName();
+				my $action = $child->getAttribute('name');
 				my $actupon = $child->textContent();
 				#$sh .= "module $action $actupon \n";
-                print "$self->{cmdpath}  $action $actupon \n";
-				$sh .= "$self->{cmdpath} $action $actupon \n";
+                print "$self->{shcmdpath}  $action $actupon \n";
+				$sh .= "$self->{shcmdpath} $action $actupon \n";
 			}
 		}
 		else
@@ -744,7 +782,8 @@ START
 			my @modchildren = $mod->getChildNodes();
 			foreach my $child(@modchildren)
 			{
-                my $action = $child->getName();
+                #my $action = $child->getName();
+                my $action = $child->getAttribute('name');
 				my $actupon = $child->textContent();
 				if($action =~ /xmlchange/)
 				{
@@ -752,7 +791,7 @@ START
 				}
 				else
 				{
-					$sh .= "\tmodule $action $actupon\n";
+					$sh .= "\t$self->{shcmdpath} $action $actupon\n";
 				}
 			}
 			$sh .= "fi\n";
@@ -784,7 +823,7 @@ sub writeShModuleFile
     my $self = shift;
     if(! defined $self->{shmodulecode})
     {
-        $self->getShModulefile();
+        $self->getShModuleCode();
     }
 	open my $SHFILE, ">", "$self->{caseroot}/.env_mach_specific.sh" || die "could not open .env_mach_specific.sh, $!";
 	print $SHFILE $self->{shmodulecode};

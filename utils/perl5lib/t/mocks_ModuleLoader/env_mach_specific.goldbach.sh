@@ -1,9 +1,9 @@
-#!/usr/bin/env bash -f 
+#!/usr/bin/env sh -f 
 #===============================================================================
 # Automatically generated module settings for goldbach
 #===============================================================================
 
-.  /usr/share/Modules/init/bash
+.  /usr/share/Modules/init/sh
 module purge  
 if [ "$COMPILER" = "intel" ]
 then

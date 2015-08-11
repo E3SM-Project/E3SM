@@ -3,31 +3,33 @@
   <module_system type="module">
     <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
     <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-    <init_path lang="bash">/usr/share/Modules/init/bash</init_path>
+    <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
     <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
     <modules>
-      <purge/>
+      <command name="purge"/>
     </modules>
     <modules compiler="intel">
-      <load>compiler/intel/15.0.2.164</load>
+      <command name="load">compiler/intel/15.0.2.164</command>
     </modules>
     <modules compiler="intel" mpilib="mvapich2">
-      <unload>mpi/intel/openmpi-1.8.1-qlc</unload>
-      <load>mpi/intel/mvapich2-1.8.1-qlc</load>
+      <command name="unload">mpi/intel/openmpi-1.8.1-qlc</command>
+      <command name="load">mpi/intel/mvapich2-1.8.1-qlc</command>
     </modules>
     <modules compiler="pgi">
-      <load>compiler/pgi/15.1</load>
+      <command name="load">compiler/pgi/15.1</command>
     </modules>
     <modules compiler="pgi" mpilib="mvapich2">
-      <unload>mpi/pgi/openmpi-1.8.1-qlc</unload>
-      <load>mpi/pgi/mvapich2-1.8.1-qlc</load>
+      <command name="unload">mpi/pgi/openmpi-1.8.1-qlc</command>
+      <command name="load">mpi/pgi/mvapich2-1.8.1-qlc</command>
     </modules>
     <modules compiler="nag">
-      <load>compiler/nag/6.0</load>
-      <xmlchange>MPILIB=openmpi</xmlchange>
+      <command name="load">compiler/nag/6.0</command>
+      <command name="xmlchange">MPILIB=openmpi</command>
     </modules>
     <modules compiler="gnu">
-      <load>compiler/gnu/4.8.3</load>
+      <command name="load">compiler/gnu/4.8.3</command>
     </modules>
   </module_system>
   <environment_variables>

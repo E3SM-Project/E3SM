@@ -130,31 +130,35 @@
          </mpirun>
          <module_system type="module">
            <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-           <cmd_path>/usr/bin/modulecmd perl</cmd_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <unload>intel</unload>
-             <unload>impi</unload>
-             <unload>hdf5</unload>
-             <unload>netcdf</unload>
+             <command name="unload">intel</command>
+             <command name="unload">impi</command>
+             <command name="unload">hdf5</command>
+             <command name="unload">netcdf</command>
            </modules>
            <modules compiler="intel">
-             <load>intel/13.1.2</load>
+             <command name="load">intel/13.1.2</command>
            </modules>
            <modules compiler="intel14">
-             <load>intel/14.0.3</load>
+             <command name="load">intel/14.0.3</command>
            </modules>
            <modules compiler="intel15">
-             <load>intel/15.0.0</load>
+             <command name="load">intel/15.0.0</command>
            </modules>
 
            <modules mpilib="impi">
-             <load>impi/4.1.1</load>
+             <command name="load">impi/4.1.1</command>
            </modules>
            <modules mpilib="impi4.1.3">
-             <load>impi/4.1.3</load>
+             <command name="load">impi/4.1.3</command>
            </modules>
            <modules mpilib="impi5.0.1">
-             <load>impi/5.0.1</load>
+             <command name="load">impi/5.0.1</command>
            </modules>
          </module_system>
          <environment_variables>
@@ -208,36 +212,40 @@
          </mpirun>
          <module_system type="module">
            <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-           <cmd_path>/usr/bin/modulecmd perl</cmd_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <unload>intel</unload>
-             <unload>impi</unload>
-             <unload>netcdf</unload>
+             <command name="unload">intel</command>
+             <command name="unload">impi</command>
+             <command name="unload">netcdf</command>
            </modules>
            <modules compiler="intel13">
-             <load>intel/13.1.2</load> 
+             <command name="load">intel/13.1.2</command> 
            </modules>
            <modules compiler="intel14">
-             <load>intel/14.0.3</load> 
+             <command name="load">intel/14.0.3</command> 
            </modules>
            <modules compiler="intel15">
-             <load>intel/15.0.0</load> 
+             <command name="load">intel/15.0.0</command> 
            </modules>
 
            <modules mpilib="impi">
-             <load>impi/4.1.1</load>
+             <command name="load">impi/4.1.1</command>
            </modules>
            <modules mpilib="impi4.1.3">
-             <load>impi/4.1.3</load>
+             <command name="load">impi/4.1.3</command>
            </modules>
            <modules mpilib="impi5.0.1">
-             <load>impi/5.0.1</load>
+             <command name="load">impi/5.0.1</command>
            </modules>
          
            <modules>
-             <load>cmake</load>
-             <load>netcdf/mic-4.1.3</load>
-             <load>pnetcdf/mic-1.5.0</load>
+             <command name="load">cmake</command>
+             <command name="load">netcdf/mic-4.1.3</command>
+             <command name="load">pnetcdf/mic-1.5.0</command>
            </modules>
          </module_system>
          <environment_variables>
@@ -289,38 +297,42 @@
          </mpirun>
          <module_system type="module">
            <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
-           <cmd_path>/opt/modules/3.2.10.3/bin/modulecmd perl</cmd_path>
+           <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+           <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+           <cmd_path lang="perl">/opt/modules/3.2.10.3/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <rm>PrgEnv-pgi</rm>
-             <rm>PrgEnv-cray</rm>
-             <rm>PrgEnv-gnu</rm>
-             <rm>pgi</rm>
-             <rm>cray</rm>
+             <command name="rm">PrgEnv-pgi</command>
+             <command name="rm">PrgEnv-cray</command>
+             <command name="rm">PrgEnv-gnu</command>
+             <command name="rm">pgi</command>
+             <command name="rm">cray</command>
            </modules>
            <modules compiler="pgi">
-             <load>PrgEnv-pgi</load>
-             <switch>pgi pgi/14.2.0</switch>
+             <command name="load">PrgEnv-pgi</command>
+             <command name="switch">pgi pgi/14.2.0</command>
            </modules>
            <modules compiler="gnu">
-             <load>PrgEnv-gnu/4.2.84</load>
-             <switch>gcc gcc/4.8.2</switch>
+             <command name="load">PrgEnv-gnu/4.2.84</command>
+             <command name="switch">gcc gcc/4.8.2</command>
            </modules>
            <modules compiler="cray">
-             <load>PrgEnv-cray/4.2.34</load>
-             <switch>cce cce/8.2.6</switch>
+             <command name="load">PrgEnv-cray/4.2.34</command>
+             <command name="switch">cce cce/8.2.6</command>
            </modules>
            <modules>
-             <load>papi/5.3.2</load>
-             <switch> cray-mpich cray-mpich/7.0.3</switch>
-             <switch> cray-libsci cray-libsci/12.2.0</switch>
-             <load>torque/5.0.1</load>
-             <load>cray-netcdf-hdf5parallel/4.3.2</load>
-             <load>cray-parallel-netcdf/1.5.0</load>
+             <command name="load">papi/5.3.2</command>
+             <command name="switch"> cray-mpich cray-mpich/7.0.3</command>
+             <command name="switch"> cray-libsci cray-libsci/12.2.0</command>
+             <command name="load">torque/5.0.1</command>
+             <command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="load">cray-parallel-netcdf/1.5.0</command>
            </modules>
            <modules mpilib="mpi-serial">
-             <unload>cray-netcdf-hdf5parallel/4.3.2</unload>
-             <unload>cray-parallel-netcdf/1.5.0</unload>
-             <load>cray-netcdf/4.3.2</load>
+             <command name="unload">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="unload">cray-parallel-netcdf/1.5.0</command>
+             <command name="load">cray-netcdf/4.3.2</command>
            </modules>
            
          </module_system>
@@ -372,8 +384,12 @@
          </mpirun>
          <module_system type="module">
            <init_path lang="perl">/etc/profile.d/modules.perl</init_path>
+           <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+           <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
            <!-- This is a guess!! -->
-           <cmd_path>/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
          </module_system>
 </machine>
 
@@ -637,22 +653,24 @@
          <module_system type="module">
            <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path> 
            <init_path lang="csh">/usr/share/Modules/init/csh</init_path> 
-           <init_path lang="bash">/usr/share/Modules/init/bash</init_path> 
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path> 
            <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <purge></purge>
+             <command name="purge"></command>
            </modules>
            <modules compiler="intel">
-             <load>compiler/intel/14.0.2</load>
+             <command name="load">compiler/intel/14.0.2</command>
            </modules>
            <modules compiler="pgi">
-             <load>compiler/pgi/14.10</load>
+             <command name="load">compiler/pgi/14.10</command>
            </modules>
            <modules compiler="nag">
-             <load>compiler/nag/5.3.1-907</load>
+             <command name="load">compiler/nag/5.3.1-907</command>
            </modules>
            <modules compiler="gnu">
-             <load>compiler/gnu/4.4.7</load>
+             <command name="load">compiler/gnu/4.4.7</command>
            </modules>
          </module_system>
          <environment_variables>
@@ -706,31 +724,33 @@
          <module_system type="module">
            <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
            <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-           <init_path lang="bash">/usr/share/Modules/init/bash</init_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
            <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
            <modules>
-             <purge></purge>
+             <command name="purge"></command>
            </modules>
            <modules compiler="intel">
-             <load>compiler/intel/15.0.2.164</load>
+             <command name="load">compiler/intel/15.0.2.164</command>
            </modules>
            <modules compiler="intel" mpilib="mvapich2">
-             <unload>mpi/intel/openmpi-1.8.1-qlc</unload>
-             <load>mpi/intel/mvapich2-1.8.1-qlc</load>
+             <command name="unload">mpi/intel/openmpi-1.8.1-qlc</command>
+             <command name="load">mpi/intel/mvapich2-1.8.1-qlc</command>
            </modules>
            <modules compiler="pgi">
-             <load>compiler/pgi/15.1</load>
+             <command name="load">compiler/pgi/15.1</command>
            </modules>
            <modules compiler="pgi" mpilib="mvapich2">
-             <unload>mpi/pgi/openmpi-1.8.1-qlc</unload>
-             <load>mpi/pgi/mvapich2-1.8.1-qlc</load>
+             <command name="unload">mpi/pgi/openmpi-1.8.1-qlc</command>
+             <command name="load">mpi/pgi/mvapich2-1.8.1-qlc</command>
            </modules>
            <modules compiler="nag">
-             <load>compiler/nag/6.0</load>
-             <xmlchange>MPILIB=openmpi</xmlchange>
+             <command name="load">compiler/nag/6.0</command>
+             <command name="xmlchange">MPILIB=openmpi</command>
            </modules>
            <modules compiler="gnu">
-             <load>compiler/gnu/4.8.3</load>
+             <command name="load">compiler/gnu/4.8.3</command>
            </modules>
          </module_system>
          <environment_variables>
@@ -993,10 +1013,10 @@
            <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
            <cmd_path lang="sh">soft</cmd_path>
            <modules>
-               <add>+mpiwrapper-xl</add>
-               <add>@ibm-compilers-2015-02</add>
-               <add>+cmake</add>
-               <add>+python</add>
+               <command name="add">+mpiwrapper-xl</command>
+               <command name="add">@ibm-compilers-2015-02</command>
+               <command name="add">+cmake</command>
+               <command name="add">+python</command>
            </modules>
          </module_system>
          <environment_variables>
@@ -1344,66 +1364,66 @@
       <module_system type="module">
       <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>
       <init_path lang="csh">/glade/apps/opt/lmod/lmod/init/csh</init_path>
-      <init_path lang="bash">/glade/apps/opt/lmod/lmod/init/bash</init_path>
-      <cmd_path>/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
+      <init_path lang="sh">/glade/apps/opt/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
       <modules>
-	    <purge></purge>
-        <load>ncarenv/1.0</load>
-        <load>ncarbinlibs/1.1</load>
-        <load>perlmods</load>
-        <load>gmake/4.1</load>
-        <load>python</load>
-        <load>all-python-libs</load>
+	    <command name="purge"></command>
+        <command name="load">ncarenv/1.0</command>
+        <command name="load">ncarbinlibs/1.1</command>
+        <command name="load">perlmods</command>
+        <command name="load">gmake/4.1</command>
+        <command name="load">python</command>
+        <command name="load">all-python-libs</command>
       </modules>
         
       <modules compiler="intel">
-        <load>intel/15.0.1</load>
-        <load>mkl/11.1.2</load>
-        <load>netcdf-mpi/4.3.3-rc3</load>
-        <load>pnetcdf/1.6.0</load>
-        <load>esmf</load>
+        <command name="load">intel/15.0.1</command>
+        <command name="load">mkl/11.1.2</command>
+        <command name="load">esmf</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
-        <unload>netcdf-mpi/4.3.3-rc3</unload>
-        <unload>pnetcdf/1.6.0</unload>
-        <load>netcdf/4.3.2</load>
+        <command name="unload">netcdf-mpi/4.3.3-rc3</command>
+        <command name="unload">pnetcdf/1.6.0</command>
+        <command name="load">netcdf/4.3.2</command>
       </modules>
       <modules compiler="intel" debug="true">
-        <load>esmf-6.3.0rp1-defio-mpi-g</load>
+        <command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
       </modules>
       <modules compiler="intel" debug="false">
-        <load>esmf-6.3.0rp1-defio-mpi-O</load>
+        <command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
       </modules>
 
       <modules compiler="intel" mpilib="mpi-serial" debug="true">
-        <unload>esmf-6.3.0rp1-defio-mpi-g</unload>
-        <load>esmf-6.3.0rp1-defio-uni-g</load>
+        <command name="unload">esmf-6.3.0rp1-defio-mpi-g</command>
+        <command name="load">esmf-6.3.0rp1-defio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" debug="false">
-        <unload> esmf-6.3.0rp1-defio-mpi-O</unload>
-        <load> esmf-6.3.0rp1-defio-uni-O</load>
+        <command name="unload"> esmf-6.3.0rp1-defio-mpi-O</command>
+        <command name="load"> esmf-6.3.0rp1-defio-uni-O</command>
       </modules>
       
       <modules compiler="pgi">
-        <load>pgi/14.7</load>
-        <load>netcdf/4.3.0</load>
-        <load>pnetcdf/1.4.1</load>
+        <command name="load">pgi/14.7</command>
+        <command name="load">netcdf/4.3.0</command>
+        <command name="load">pnetcdf/1.4.1</command>
       </modules>
       <modules compiler="pgi" mpilib="mpi-serial">
-        <unload>pnetcdf/1.4.1</unload>
+        <command name="unload">pnetcdf/1.4.1</command>
       </modules>
       <modules compiler="gnu">
-        <load>gnu/4.9.2</load>
-        <load>netcdf/4.3.0</load>
-        <load>pnetcdf/1.4.1</load>
+        <command name="load">gnu/4.9.2</command>
+        <command name="load">netcdf/4.3.0</command>
+        <command name="load">pnetcdf/1.4.1</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
-        <unload>pnetcdf/1.4.1</unload>
+        <command name="unload">pnetcdf/1.4.1</command>
       </modules>
 
       <modules>
-        <load>ncarcompilers/1.0</load>
-        <load>cmake/2.8.10.2</load>
+        <command name="load">ncarcompilers/1.0</command>
+        <command name="load">cmake/2.8.10.2</command>
       </modules>
       </module_system>
       
