@@ -19,29 +19,28 @@
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
-set (PnetCDF_VALID_COMPONENTS C Fortran)
+# Define PnetCDF C Component
+define_package_component (PnetCDF DEFAULT
+                          COMPONENT C
+                          INCLUDE_NAMES pnetcdf.h
+                          LIBRARY_NAMES pnetcdf)
 
-if (NOT PnetCDF_FIND_COMPONENTS)
-    set (PnetCDF_FIND_COMPONENTS C)
-endif ()
+# Define PnetCDF Fortran Component
+define_package_component (PnetCDF
+                          COMPONENT Fortran
+                          INCLUDE_NAMES pnetcdf.mod pnetcdf.inc
+                          LIBRARY_NAMES pnetcdf)
 
-set (PnetCDF_FIND_VALID_COMPONENTS)
-foreach (comp IN LISTS PnetCDF_FIND_COMPONENTS)
-    if (";${PnetCDF_VALID_COMPONENTS};" MATCHES ";${comp};")
-        list (APPEND PnetCDF_FIND_VALID_COMPONENTS ${comp})
-    endif ()
-endforeach ()
+# Search for list of valid components requested
+find_valid_components (PnetCDF)
 
-set (PnetCDF_C_INCLUDE_NAMES pnetcdf.h)
-set (PnetCDF_Fortran_INCLUDE_NAMES pnetcdf.mod pnetcdf.inc)
-
-set (PnetCDF_C_LIBRARY_NAMES pnetcdf)
-set (PnetCDF_Fortran_LIBRARY_NAMES pnetcdf)
-
+# SEARCH FOR VALIDATED COMPONENTS
 foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
+    # If not found already, search...
     if (NOT PnetCDF_${comp}_FOUND)
 
+        # Manually add the MPI include and library dirs to search paths
         if (MPI_${comp}_FOUND)
             set (PnetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
             set (PnetCDF_${comp}_LIBRARY_HINTS)
@@ -52,6 +51,7 @@ foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
             endforeach ()
         endif ()
         
+        # Search for the package component
         find_package_component(PnetCDF COMPONENT ${comp}
                                INCLUDE_NAMES ${PnetCDF_${comp}_INCLUDE_NAMES}
                                INCLUDE_HINTS ${PnetCDF_${comp}_INCLUDE_HINTS}

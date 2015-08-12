@@ -19,23 +19,28 @@
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
+# Define NetCDF C Component
 define_package_component (NetCDF DEFAULT
                           COMPONENT C
                           INCLUDE_NAMES netcdf.h
                           LIBRARY_NAMES netcdf)
 
+# Define NetCDF Fortran Component
 define_package_component (NetCDF
                           COMPONENT Fortran
                           INCLUDE_NAMES netcdf.mod netcdf.inc
                           LIBRARY_NAMES netcdff)
                        
+# Search for list of valid components requested
 find_valid_components (NetCDF)
 
-# SEARCH FOR COMPONENTS
+# SEARCH FOR VALIDATED COMPONENTS
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
+    # If not found already, search...
     if (NOT NetCDF_${comp}_FOUND)
 
+        # Manually add the MPI include and library dirs to search paths
         if (MPI_${comp}_FOUND)
             set (NetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
             set (NetCDF_${comp}_LIBRARY_HINTS)
@@ -45,16 +50,27 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 unset (libdir)
             endforeach ()
         endif ()
-    
+
+        # Search for the package component    
         find_package_component(NetCDF COMPONENT ${comp}
                                INCLUDE_NAMES ${NetCDF_${comp}_INCLUDE_NAMES}
                                INCLUDE_HINTS ${NetCDF_${comp}_INCLUDE_HINTS}
                                LIBRARY_NAMES ${NetCDF_${comp}_LIBRARY_NAMES}
                                LIBRARY_HINTS ${NetCDF_${comp}_LIBRARY_HINTS})
         
-        # SEARCH FOR DEPENDENCIES
-        if (NetCDF_${comp}_FOUND AND NOT NetCDF_${COMP}_IS_SHARED)
+    endif ()
+    
+endforeach ()
+
+# SEARCH FOR DEPENDENCIES (only if SHARED libraries were found)
+foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+
+    # If the component was found, and it is a static library...
+    if (NetCDF_${comp}_FOUND AND NOT NetCDF_${comp}_IS_SHARED)
         
+        # Search only if dependencies for this component were not already found
+        if (NOT NetCDF_${comp}_DEPENDENCIES_SEARCHED)
+
             # COMPONENT: C
             if (comp STREQUAL C)
         
@@ -99,21 +115,15 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 endif ()
         
                 # DEPENDENCY: HDF5
-                find_package (HDF5 COMPONENTS C HL)
+                find_package (HDF5 COMPONENTS HL C)
                 if (HDF5_C_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
+                                                       ${HDF5_HL_INCLUDE_DIRS})
                     list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
                                                     ${HDF5_HL_LIBRARIES})
                 endif ()
-                
-                # DEPENDENCY: LIBZ LIBDL Math
-                find_package (LIBZ)
-                if (LIBZ_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${LIBZ_LIBRARIES} -ldl -lm)
-                endif ()
-        
-                # DEPENDENCY: CURL
+
+                # DEPENDENCY: CURL (If DAP enabled)
                 if (NetCDF_C_HAS_DAP)
                     find_package (CURL)
                     if (CURL_FOUND)
@@ -122,7 +132,10 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                                                         ${CURL_LIBRARIES})
                     endif ()
                 endif ()
-                
+                                
+                # DEPENDENCY: LIBDL Math
+                list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
+        
             # COMPONENT: Fortran
             elseif (comp STREQUAL Fortran)
                             
@@ -134,6 +147,8 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 endif ()
         
             endif ()
+            
+            set (NetCDF_${comp}_DEPENDENCIES_SEARCHED TRUE)
             
         endif ()
         

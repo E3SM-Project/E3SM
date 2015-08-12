@@ -16,11 +16,15 @@
 #
 include (LibFindLibraryMacros)
 
-set (LIBZ_INCLUDE_NAMES zlib.h)
-set (LIBZ_LIBRARY_NAMES z)
+# Define LIBZ package
+define_package_component (LIBZ
+                          INCLUDE_NAMES zlib.h
+                          LIBRARY_NAMES z)
 
+# SEARCH FOR PACKAGE
 if (NOT LIBZ_FOUND)
 
+    # Manually add the MPI include and library dirs to search paths
     if (MPI_C_FOUND)
         set (LIBZ_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
         set (LIBZ_LIBRARY_HINTS)
@@ -31,6 +35,7 @@ if (NOT LIBZ_FOUND)
         endforeach ()
     endif ()
     
+    # Search for the package
     find_package_component(LIBZ
                            INCLUDE_NAMES ${LIBZ_INCLUDE_NAMES}
                            INCLUDE_HINTS ${LIBZ_INCLUDE_HINTS}

@@ -19,33 +19,40 @@
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
-set (HDF5_VALID_COMPONENTS C HL Fortran Fortran_HL)
+# Define HDF5 C Component
+define_package_component (HDF5 DEFAULT
+                          COMPONENT C
+                          INCLUDE_NAMES hdf5.h
+                          LIBRARY_NAMES hdf5)
 
-if (NOT HDF5_FIND_COMPONENTS)
-    set (HDF5_FIND_COMPONENTS C)
-endif ()
+# Define HDF5 HL Component
+define_package_component (HDF5
+                          COMPONENT HL
+                          INCLUDE_NAMES hdf5_hl.h
+                          LIBRARY_NAMES hdf5_hl)
 
-set (HDF5_FIND_VALID_COMPONENTS)
-foreach (comp IN LISTS HDF5_FIND_COMPONENTS)
-    if (";${HDF5_VALID_COMPONENTS};" MATCHES ";${comp};")
-        list (APPEND HDF5_FIND_VALID_COMPONENTS ${comp})
-    endif ()
-endforeach ()
+# Define HDF5 Fortran Component
+define_package_component (HDF5
+                          COMPONENT Fortran
+                          INCLUDE_NAMES hdf5.mod
+                          LIBRARY_NAMES hdf5_fortran)
 
-set (HDF5_C_INCLUDE_NAMES hdf5.h)
-set (HDF5_HL_INCLUDE_NAMES hdf5_hl.h)
-set (HDF5_Fortran_INCLUDE_NAMES hdf5.mod)
-set (HDF5_Fortran_HL_INCLUDE_NAMES hdf5.mod)
+# Define HDF5 Fortran_HL Component
+define_package_component (HDF5
+                          COMPONENT Fortran_HL
+                          INCLUDE_NAMES hdf5.mod
+                          LIBRARY_NAMES hdf5hl_fortran)
 
-set (HDF5_C_LIBRARY_NAMES hdf5)
-set (HDF5_HL_LIBRARY_NAMES hdf5_hl)
-set (HDF5_Fortran_LIBRARY_NAMES hdf5_fortran)
-set (HDF5_Fortran_HL_LIBRARY_NAMES hdf5hl_fortran)
+# Search for list of valid components requested
+find_valid_components (HDF5)
 
+# SEARCH FOR VALIDATED COMPONENTS
 foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
 
+    # If not found already, search...
     if (NOT HDF5_${comp}_FOUND)
 
+        # Manually add the MPI include and library dirs to search paths
         if (MPI_${comp}_FOUND)
             set (HDF5_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
             set (HDF5_${comp}_LIBRARY_HINTS)
@@ -56,15 +63,27 @@ foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
             endforeach ()
         endif ()
     
+        # Search for the package component
         find_package_component(HDF5 COMPONENT ${comp}
                                INCLUDE_NAMES ${HDF5_${comp}_INCLUDE_NAMES}
                                INCLUDE_HINTS ${HDF5_${comp}_INCLUDE_HINTS}
                                LIBRARY_NAMES ${HDF5_${comp}_LIBRARY_NAMES}
                                LIBRARY_HINTS ${HDF5_${comp}_LIBRARY_HINTS})
         
-        # Handle Dependencies, if static
-        if (NOT HDF5_${comp}_IS_SHARED)
+    endif ()
+    
+endforeach ()
+
+# SEARCH FOR DEPENDENCIES (only if SHARED libraries were found)
+foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
+
+    # If the component was found, and it is a static library...
+    if (HDF5_${comp}_FOUND AND NOT HDF5_${comp}_IS_SHARED)
         
+        # Search only if dependencies for this component were not already found
+        if (NOT HDF5_${comp}_DEPENDENCIES_SEARCHED)
+
+            # COMPONENT: C
             if (comp STREQUAL C)
 
                 # DEPENDENCY: LIBZ
@@ -84,6 +103,8 @@ foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                 endif ()
     
             endif ()
+            
+            set (HDF5_${comp}_DEPENDENCIES_SEARCHED TRUE)
     
         endif ()
         
