@@ -203,6 +203,11 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     else ()
                         message (STATUS "Found NetCDF_Fortran version ${NetCDF_Fortran_VERSION}")
                     endif ()
+
+                else ()
+
+                    message (WARNING "Could not find NetCDF_Fortran version")
+                
                 endif ()
 
             endif ()
