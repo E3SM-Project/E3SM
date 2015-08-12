@@ -38,8 +38,6 @@ find_valid_components (NetCDF)
 # SEARCH FOR VALIDATED COMPONENTS
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
-    message ("NetCDF: comp = ${comp}") 
-
     # If not found already, search...
     if (NOT NetCDF_${comp}_FOUND)
 
@@ -65,8 +63,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: C
         if (comp STREQUAL C AND NOT NetCDF_C_FINISHED)
-
-            message ("NetCDF_C_FINISHED = ${NetCDF_C_FINISHED}")
 
             find_path (NetCDF_C_META_DIR
                        NAMES netcdf_meta.h
@@ -169,13 +165,9 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             set (NetCDF_C_FINISHED TRUE 
                  CACHE BOOL "NetCDF_C Module Fully Found")
 
-            message ("NetCDF_C_FINISHED = ${NetCDF_C_FINISHED}")
-
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: Fortran
         elseif (comp STREQUAL Fortran AND NOT NetCDF_Fortran_FINISHED)
-        
-            message ("NetCDF_Fortran_FINISHED = ${NetCDF_Fortran_FINISHED}") 
 
             # Get dependencies
             if (NOT NetCDF_Fortran_IS_SHARED)
@@ -217,8 +209,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             # Checks and dependencies finished
             set (NetCDF_Fortran_FINISHED TRUE
                  CACHE BOOL "NetCDF_Fortran Module Fully Found")
-
-            message ("NetCDF_Fortran_FINISHED = ${NetCDF_Fortran_FINISHED}") 
 
         endif ()
 
