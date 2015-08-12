@@ -25,6 +25,25 @@ macro (find_shared_library)
 endmacro ()
 
 
+#===========================================================
+# - Function to determine type (SHARED or STATIC) of library
+#
+#   Input:
+#     LIB             (FILE)
+#
+#   Returns:
+#     RETURN_VAR      (BOOL)
+#
+function (is_shared_library LIB RETURN_VAR)
+    get_filename_component(libext ${LIB} EXT)
+    if (${libext} MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
+        set (${RETURN_VAR} TRUE)
+    else ()
+        set (${RETURN_VAR} FALSE)
+    endif ()
+endfunction ()
+
+
 #===============================================
 # - Function to define a valid package component
 #
@@ -164,32 +183,24 @@ function (find_package_component PKG)
     endif ()
     
     # Search for library file
-    set (${PKGCOMP}_IS_SHARED TRUE)
-    if (PREFER_SHARED)
-        find_shared_library (${PKGCOMP}_LIBRARY
-                             NAMES ${${PKGCOMP}_LIBRARY_NAMES}
-                             HINTS ${LIBRARY_HINTS})
-        if (NOT ${PKGCOMP}_LIBRARY)
-            find_static_library (${PKGCOMP}_LIBRARY
+    find_library (${PKGCOMP}_LIBRARY
+                  NAMES ${${PKGCOMP}_LIBRARY_NAMES}
+                  HINTS ${LIBRARY_HINTS})
+    if (${PKGCOMP}_LIBRARY)
+        is_shared_library (${PKGCOMP}_LIBRARY ${PKGCOMP}_IS_SHARED)
+        
+        if (PREFER_SHARED AND NOT ${PKGCOMP}_IS_SHARED)
+            find_shared_library (${PKGCOMP}_SHARED_LIBRARY
                                  NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                                  HINTS ${LIBRARY_HINTS})
-            if (${PKGCOMP}_LIBRARY)
-                set (${PKGCOMP}_IS_SHARED FALSE)
+            if (${PKGCOMP}_SHARED_LIBRARY)
+                set (${PKGCOMP}_LIBRARY ${${PKGCOMP}_SHARED_LIBRARY})
+                set (${PKGCOMP}_IS_SHARED TRUE)
             endif ()
         endif ()
-    else ()
-        find_static_library (${PKGCOMP}_LIBRARY
-                             NAMES ${${PKGCOMP}_LIBRARY_NAMES}
-                             HINTS ${LIBRARY_HINTS})
-        if (${PKGCOMP}_LIBRARY)
-            set (${PKGCOMP}_IS_SHARED FALSE)
-        else ()
-            find_shared_library (${PKGCOMP}_LIBRARY
-                                 NAMES ${${PKGCOMP}_LIBRARY_NAMES}
-                                 HINTS ${LIBRARY_HINTS})
-        endif ()
+        
     endif ()
-    
+
     # Unset include search variables
     unset (LIBRARY_HINTS)
 
