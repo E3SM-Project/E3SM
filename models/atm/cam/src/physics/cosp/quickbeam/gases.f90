@@ -1,3 +1,5 @@
+! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
+! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/quickbeam/gases.f90 $
   function gases(PRES_mb,T,RH,f)
   implicit none
   
@@ -29,6 +31,9 @@
             bf, be, term4, npp
   real*8, dimension(nbands_o2) :: v0, a1, a2, a3, a4, a5, a6
   real*8, dimension(nbands_h2o) :: v1, b1, b2, b3
+  real*8 :: e_th,one_th,pth3,eth35,aux1,aux2,aux3,aux4
+  real*8 :: gm,delt,x,y,gm2
+  real*8 :: fpp_o2,fpp_h2o,s_o2,s_h2o
   integer :: i
   
 ! // table1 parameters  v0, a1, a2, a3, a4, a5, a6  
@@ -112,12 +117,26 @@
   th = 300./T       ! unitless
   e = (RH*th**5)/(41.45*10**(9.834*th-10))   ! kPa
   p = PRES_mb/10.-e ! kPa
+  e_th = e*th
+  one_th = 1 - th
+  pth3 = p*th**(3)
+  eth35 = e*th**(3.5)
 
 ! // term1
   sumo = 0.
+  aux1 = 1.1*e_th
   do i=1,nbands_o2
-    sumo = sumo + fpp_o2(p,th,e,a3(i),a4(i),a5(i),a6(i),f,v0(i)) &
-           * s_o2(p,th,a1(i),a2(i))
+    aux2 = f/v0(i)
+    aux3 = v0(i)-f
+    aux4 = v0(i)+f
+    gm = a3(i)*(p*th**(0.8-a4(i))+aux1)
+    gm2 = gm**2
+    delt = a5(i)*p*th**a6(i)
+    x = aux3**2+gm2
+    y = aux4**2+gm2
+    fpp_o2 = (((1./x)+(1./y))*(gm*aux2) - (delt*aux2)*((aux3/(x))-(aux4/(x))))
+    s_o2 = a1(i)*pth3*exp(a2(i)*one_th)
+    sumo = sumo + fpp_o2 * s_o2
   enddo
   term1 = sumo
 
@@ -130,9 +149,19 @@
 
 ! // term3
   sumo = 0.
+  aux1 = 4.8*e_th
   do i=1,nbands_h2o
-    sumo = sumo + fpp_h2o(p,th,e,b3(i),f,v1(i)) &
-           * s_h2o(th,e,b1(i),b2(i))
+    aux2 = f/v1(i)
+    aux3 = v1(i)-f
+    aux4 = v1(i)+f
+    gm = b3(i)*(p*th**(0.8)+aux1)
+    gm2 = gm**2
+    x = aux3**2+gm2
+    y = aux4**2+gm2
+    !delt = 0.
+    fpp_h2o = ((1./x)+(1./y))*(gm*aux2) ! - (delt*aux2)*((aux3/(x))-(aux4/(x)))
+    s_h2o = b1(i)*eth35*exp(b2(i)*one_th)
+    sumo = sumo + fpp_h2o * s_h2o
   enddo
   term3 = sumo
 
@@ -145,38 +174,4 @@
   npp = term1 + term2 + term3 + term4
   gases = 0.182*f*npp
 
-! ----- SUB FUNCTIONS -----
-    
-  contains
-  
-  function fpp_o2(p,th,e,a3,a4,a5,a6,f,v0)
-  real*8 :: fpp_o2,p,th,e,a3,a4,a5,a6,f,v0
-  real*8 :: gm, delt, x, y
-  gm = a3*(p*th**(0.8-a4)+1.1*e*th)
-  delt = a5*p*th**(a6)
-  x = (v0-f)**2+gm**2
-  y = (v0+f)**2+gm**2
-  fpp_o2 = ((1./x)+(1./y))*(gm*f/v0) - (delt*f/v0)*(((v0-f)/(x))-((v0+f)/(x)))  
-  end function fpp_o2
-  
-  function fpp_h2o(p,th,e,b3,f,v0)
-  real*8 :: fpp_h2o,p,th,e,b3,f,v0
-  real*8 :: gm, delt, x, y
-  gm = b3*(p*th**(0.8)+4.8*e*th)
-  delt = 0.
-  x = (v0-f)**2+gm**2
-  y = (v0+f)**2+gm**2
-  fpp_h2o = ((1./x)+(1./y))*(gm*f/v0) - (delt*f/v0)*(((v0-f)/(x))-((v0+f)/(x)))
-  end function fpp_h2o
-  
-  function s_o2(p,th,a1,a2)
-  real*8 :: s_o2,p,th,a1,a2
-  s_o2 = a1*p*th**(3)*exp(a2*(1-th))
-  end function s_o2
-
-  function s_h2o(th,e,b1,b2)
-  real*8 :: s_h2o,th,e,b1,b2
-  s_h2o = b1*e*th**(3.5)*exp(b2*(1-th))
-  end function s_h2o
-  
   end function gases

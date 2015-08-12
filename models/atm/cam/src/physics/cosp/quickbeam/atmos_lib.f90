@@ -1,3 +1,5 @@
+! $Revision: 23 $, $Date: 2011-03-31 07:41:37 -0600 (Thu, 31 Mar 2011) $
+! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/quickbeam/atmos_lib.f90 $
 ! ATMOS_LIB: Atmospheric science procedures for F90
 ! Compiled/Modified:
 !   07/01/06  John Haynes (haynes@atmos.colostate.edu)

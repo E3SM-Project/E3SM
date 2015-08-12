@@ -1,5 +1,7 @@
 ! Copyright (c) 2009, Centre National de la Recherche Scientifique
 ! All rights reserved.
+! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
+! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/actsim/lidar_simulator.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -27,9 +29,8 @@
                 , pres, presf, temp &
                 , q_lsliq, q_lsice, q_cvliq, q_cvice &
                 , ls_radliq, ls_radice, cv_radliq, cv_radice &
-                , frac_out, ice_type &
-                , pmol, pnorm, tautot, refl &
-                , ls_radsnow, q_lssnow, prec_frac )   !modified by ZYY
+                , ice_type, pmol, pnorm, pnorm_perp_tot,tautot, refl &
+		, ls_radsnow, q_lssnow, prec_frac ) !+JEK+ZYY
 !
 !---------------------------------------------------------------------------------
 ! Purpose: To compute lidar signal from model-simulated profiles of cloud water
@@ -76,14 +77,21 @@
 ! - Bug fix in computation of pmol and pnorm, thanks to Masaki Satoh: a factor 2 
 ! was missing. This affects the ATB values but not the cloud fraction. 
 !
+! January 2013, G. Cesana and H. Chepfer:
+! - Add the perpendicular component of the backscattered signal (pnorm_perp_tot) in the arguments
+! - Add the temperature for each levels (temp) in the arguments
+! - Add the computation of the perpendicular component of the backscattered lidar signal 
+! Reference: Cesana G. and H. Chepfer (2013): Evaluation of the cloud water phase
+! in a climate model using CALIPSO-GOCCP, J. Geophys. Res., doi: 10.1002/jgrd.50376
+!
 !---------------------------------------------------------------------------------
 !
 ! Inputs:
 !  npoints  : number of horizontal points
 !  nlev : number of vertical levels
-!  npart: numberb of cloud meteors (stratiform_liq, stratiform_ice, conv_liq, conv_ice).
-!         (stratiform_snow).  !modified by ZYY
-!        Currently npart must be 4 or 5
+!  npart: numberb of cloud meteors (stratiform_liq, stratiform_ice, conv_liq, conv_ice). 
+!        (stratiform snow). !+JEK+ZYY
+!        Currently npart must be 4 or 5 !+JEK+ZYY
 !  nrefl: number of solar zenith angles for parasol reflectances
 !  pres : pressure in the middle of atmospheric layers (full levels): Pa
 !  presf: pressure in the interface of atmospheric layers (half levels): Pa
@@ -93,20 +101,20 @@
 !  q_lsice: LS sub-column ice water mixing ratio (kg/kg)
 !  q_cvliq: CONV sub-column liquid water mixing ratio (kg/kg)
 !  q_cvice: CONV sub-column ice water mixing ratio (kg/kg)
-!  q_lssnow:LS sub-column snow mixing ratio (kg/kg) !modified by ZYY
+!  q_lssnow: LS sub-column snow mixing ratio (kg/kg) !+JEK+ZYY
 !  ls_radliq: effective radius of LS liquid particles (meters)
 !  ls_radice: effective radius of LS ice particles (meters)
 !  cv_radliq: effective radius of CONV liquid particles (meters)
 !  cv_radice: effective radius of CONV ice particles (meters)
-!  ls_radsnow:effective radius of LS snow particles (meters) !modified by ZYY
-!  frac_out : cloud cover in each sub-column of the gridbox (output from scops)
-!  prec_frac: precip cover in each sub-column of the gridbox (output from prec_scops)
+!  ls_radsnow:effective radius of LS snow particles (meters) !+JEK+ZYY
+!  prec_frac: precip cover in each sub-column of the gridbox (output from prec_scops) !+JEK+ZYY
 !  ice_type : ice particle shape hypothesis (ice_type=0 for spheres, ice_type=1 
 !             for non spherical particles)
 !
 ! Outputs:
 !  pmol : molecular attenuated backscatter lidar signal power (m^-1.sr^-1)
 !  pnorm: total attenuated backscatter lidar signal power (m^-1.sr^-1)
+!  pnorm_perp_tot: perpendicular attenuated backscatter lidar signal power (m^-1.sr^-1)
 !  tautot: optical thickess integrated from top to level z
 !  refl : parasol(polder) reflectance
 !
@@ -126,23 +134,21 @@
 
       INTEGER i, k
       
-      INTEGER INDX_LSLIQ,INDX_LSICE,INDX_CVLIQ,INDX_CVICE, INDX_LSSNOW !modified by ZYY
-      PARAMETER (INDX_LSLIQ=1,INDX_LSICE=2,INDX_CVLIQ=3,INDX_CVICE=4,INDX_LSSNOW=5) !modified by ZYY
+      INTEGER INDX_LSLIQ,INDX_LSICE,INDX_CVLIQ,INDX_CVICE,INDX_LSSNOW  !+JEK+ZYY
+      PARAMETER (INDX_LSLIQ=1,INDX_LSICE=2,INDX_CVLIQ=3,INDX_CVICE=4,INDX_LSSNOW=5) !+JEK+ZYY
 ! inputs:
       INTEGER npoints,nlev,npart,ice_type
       INTEGER nrefl
       real undef                 ! undefined value
       REAL pres(npoints,nlev)    ! pressure full levels
       REAL presf(npoints,nlev+1) ! pressure half levels
-      REAL temp(npoints,nlev)
       REAL q_lsliq(npoints,nlev), q_lsice(npoints,nlev)
       REAL q_cvliq(npoints,nlev), q_cvice(npoints,nlev)
       REAL ls_radliq(npoints,nlev), ls_radice(npoints,nlev)
       REAL cv_radliq(npoints,nlev), cv_radice(npoints,nlev)
-      REAL frac_out(npoints,nlev)
-      REAL ls_radsnow(npoints,nlev) !modified by ZYY
-      REAL q_lssnow(npoints,nlev) !modified by ZYY
-      REAL prec_frac(npoints,nlev) !modified by ZYY
+      REAL ls_radsnow(npoints,nlev)  !+JEK+ZYY
+      REAL q_lssnow(npoints,nlev)    !+JEK+ZYY
+      REAL prec_frac(npoints,nlev)   !+JEK+ZYY
 
 ! outputs (for each subcolumn):
 
@@ -175,7 +181,6 @@
       REAL kp_part(npoints,nlev,npart)
 
 !   sub-column variables:
-      REAL frac_sub(npoints,nlev)
       REAL qpart(npoints,nlev,npart) ! mixing ratio particles in each subcolumn
       REAL alpha_part(npoints,nlev,npart)
       REAL tau_mol_lay(npoints)  ! temporary variable, moL. opt. thickness of layer k
@@ -184,18 +189,69 @@
       REAL betatot(npoints,nlev)
       REAL tautot_lay(npoints)   ! temporary variable, total opt. thickness of layer k
 !     Optical thickness from TOA to surface for Parasol
-      REAL tautot_S_liq(npoints),tautot_S_ice(npoints)     ! for liq and ice clouds
+     REAL tautot_S_liq(npoints),tautot_S_ice(npoints)     ! for liq and ice clouds
 
+
+! Local variables
+      REAL Alpha, Beta, Gamma  ! Polynomial coefficient for ATBperp computation
+      REAL temp(npoints,nlev)                   ! temperature of layer k
+      REAL betatot_ice(npoints,nlev)    ! backscatter coefficient for ice particles
+      REAL beta_perp_ice(npoints,nlev)  ! perpendicular backscatter coefficient for ice
+      REAL betatot_liq(npoints,nlev)    ! backscatter coefficient for liquid particles
+      REAL beta_perp_liq(npoints,nlev)  ! perpendicular backscatter coefficient for liq
+      REAL tautot_ice(npoints,nlev)     ! total optical thickness of ice
+      REAL tautot_liq(npoints,nlev)     ! total optical thickness of liq
+      REAL tautot_lay_ice(npoints)    ! total optical thickness of ice in the layer k
+      REAL tautot_lay_liq(npoints)    ! total optical thickness of liq in the layer k
+      REAL pnorm_liq(npoints,nlev)    ! lidar backscattered signal power for liquid
+      REAL pnorm_ice(npoints,nlev)    ! lidar backscattered signal power for ice
+      REAL pnorm_perp_ice(npoints,nlev) ! perpendicular lidar backscattered signal power for ice
+      REAL pnorm_perp_liq(npoints,nlev) ! perpendicular lidar backscattered signal power for liq
+
+! Output variable
+      REAL pnorm_perp_tot (npoints,nlev) ! perpendicular lidar backscattered signal power
+
+!------------------------------------------------------------
+!---- 0. Initialisation :
+!------------------------------------------------------------
+betatot_ice(:,:)=0
+betatot_liq(:,:)=0
+beta_perp_ice(:,:)=0
+beta_perp_liq(:,:)=0
+tautot_ice(:,:)=0
+tautot_liq(:,:)=0
+tautot_lay_ice(:)=0;
+tautot_lay_liq(:)=0;
+pnorm_liq(:,:)=0
+pnorm_ice(:,:)=0
+pnorm_perp_ice(:,:)=0
+pnorm_perp_liq(:,:)=0
+pnorm_perp_tot(:,:)=0
+
+
+! Polynomial coefficients (Alpha, Beta, Gamma) which allow to compute the ATBperpendicular
+! as a function of the ATB for ice or liquid cloud particles derived from CALIPSO-GOCCP
+! observations at 120m vertical grid (Cesana and Chepfer, JGR, 2013).
+!
+! Relationship between ATBice and ATBperp,ice for ice particles
+!  ATBperp,ice = Alpha*ATBice 
+         Alpha = 0.2904
+
+! Relationship between ATBice and ATBperp,ice for liquid particles
+!  ATBperp,ice = Beta*ATBice^2 + Gamma*ATBice
+         Beta = 0.4099
+         Gamma = 0.009
 
 !------------------------------------------------------------
 !---- 1. Preliminary definitions and calculations :
 !------------------------------------------------------------
 
+!! commented out for snow by +JEK+ZYY
 !      if ( npart .ne. 4 ) then
 !        print *,'Error in lidar_simulator, npart should be 4, not',npart
 !        stop
 !      endif
-!
+
       pi = dacos(-1.D0)
 
 ! Polynomial coefficients for spherical liq/ice particles derived from Mie theory.
@@ -205,14 +261,14 @@
 
 ! We repeat the same coefficients for LS and CONV cloud to make code more readable
 !*     LS Liquid water coefficients:
-         polpart(INDX_LSLIQ,1) =  2.6980e-8     
+         polpart(INDX_LSLIQ,1) =  2.6980e-8
          polpart(INDX_LSLIQ,2) = -3.7701e-6
          polpart(INDX_LSLIQ,3) =  1.6594e-4
          polpart(INDX_LSLIQ,4) = -0.0024
          polpart(INDX_LSLIQ,5) =  0.0626
 !*     LS Ice coefficients: 
       if (ice_type.eq.0) then     
-         polpart(INDX_LSICE,1) = -1.0176e-8   
+         polpart(INDX_LSICE,1) = -1.0176e-8
          polpart(INDX_LSICE,2) =  1.7615e-6
          polpart(INDX_LSICE,3) = -1.0480e-4
          polpart(INDX_LSICE,4) =  0.0019
@@ -220,21 +276,27 @@
       endif
 !*     LS Ice NS coefficients: 
       if (ice_type.eq.1) then 
-         polpart(INDX_LSICE,1) = 1.3615e-8  
-         polpart(INDX_LSICE,2) = -2.04206e-6 
+         polpart(INDX_LSICE,1) = 1.3615e-8
+         polpart(INDX_LSICE,2) = -2.04206e-6
          polpart(INDX_LSICE,3) = 7.51799e-5
          polpart(INDX_LSICE,4) = 0.00078213
          polpart(INDX_LSICE,5) = 0.0182131
       endif
+!*     LS SNOW coefficients: !+JEK+ZYY
+         polpart(INDX_LSSNOW,1) = 1.3615e-8   !+JEK+ZYY
+         polpart(INDX_LSSNOW,2) = -2.04206e-6 !+JEK+ZYY
+         polpart(INDX_LSSNOW,3) = 7.51799e-5  !+JEK+ZYY
+         polpart(INDX_LSSNOW,4) = 0.00078213  !+JEK+ZYY
+         polpart(INDX_LSSNOW,5) = 0.0182131   !+JEK+ZYY
 !*     CONV Liquid water coefficients:
-         polpart(INDX_CVLIQ,1) =  2.6980e-8     
+         polpart(INDX_CVLIQ,1) =  2.6980e-8
          polpart(INDX_CVLIQ,2) = -3.7701e-6
          polpart(INDX_CVLIQ,3) =  1.6594e-4
          polpart(INDX_CVLIQ,4) = -0.0024
          polpart(INDX_CVLIQ,5) =  0.0626
 !*     CONV Ice coefficients: 
       if (ice_type.eq.0) then 
-         polpart(INDX_CVICE,1) = -1.0176e-8   
+         polpart(INDX_CVICE,1) = -1.0176e-8
          polpart(INDX_CVICE,2) =  1.7615e-6
          polpart(INDX_CVICE,3) = -1.0480e-4
          polpart(INDX_CVICE,4) =  0.0019
@@ -247,12 +309,6 @@
          polpart(INDX_CVICE,4) = 0.00078213
          polpart(INDX_CVICE,5) = 0.0182131
       endif
-!*     LS SNOW coefficients:  !modified by ZYY -- Mar 10
-         polpart(INDX_LSSNOW,1) = 1.3615e-8 !modified by ZYY -- Mar 10
-         polpart(INDX_LSSNOW,2) = -2.04206e-6 !modified by ZYY -- Mar 10
-         polpart(INDX_LSSNOW,3) = 7.51799e-5 !modified by ZYY -- Mar 10
-         polpart(INDX_LSSNOW,4) = 0.00078213 !modified by ZYY -- Mar 10
-         polpart(INDX_LSSNOW,5) = 0.0182131 !modified by ZYY -- Mar 10
 
 ! density:
 !*    clear-sky air:
@@ -263,18 +319,18 @@
       rhopart(INDX_LSICE) = rhoice
       rhopart(INDX_CVLIQ) = rholiq
       rhopart(INDX_CVICE) = rhoice
-      rhopart(INDX_LSSNOW) = rhoice/2. !modified by ZYY on Apr
+      rhopart(INDX_LSSNOW) = rhoice/2. !+JEK+ZYY
 
 ! effective radius particles:
       rad_part(:,:,INDX_LSLIQ) = ls_radliq(:,:)
       rad_part(:,:,INDX_LSICE) = ls_radice(:,:)
       rad_part(:,:,INDX_CVLIQ) = cv_radliq(:,:)
       rad_part(:,:,INDX_CVICE) = cv_radice(:,:)
-      rad_part(:,:,INDX_LSSNOW) = ls_radsnow(:,:) !modified by ZYY
+      rad_part(:,:,INDX_LSSNOW) = ls_radsnow(:,:) !+JEK+ZYY
       rad_part(:,:,:)=MAX(rad_part(:,:,:),0.)
       rad_part(:,:,:)=MIN(rad_part(:,:,:),70.0e-6)
-      ls_radsnow(:,:)=MAX(ls_radsnow(:,:),0.) !modified by ZYY in Mar 2013
-      ls_radsnow(:,:)=MIN(ls_radsnow(:,:),1000.e-6) !modified by ZYY in Mar 2013
+      ls_radsnow(:,:)=MAX(ls_radsnow(:,:),0.) !+JEK+ZYY
+      ls_radsnow(:,:)=MIN(ls_radsnow(:,:),1000.e-6) !+JEK+ZYY
 
 ! altitude at half pressure levels:
       zheight(:,1) = 0.0
@@ -282,10 +338,6 @@
         zheight(:,k) = zheight(:,k-1) &
                   -(presf(:,k)-presf(:,k-1))/(rhoair(:,k-1)*9.81)
       enddo
-
-! cloud fraction (0 or 1) in each sub-column:
-! (if frac_out=1or2 -> frac_sub=1; if frac_out=0 -> frac_sub=0)
-      frac_sub = MIN( frac_out, 1.0 )
 
 !------------------------------------------------------------
 !---- 2. Molecular alpha and beta:
@@ -317,10 +369,10 @@
           qpart(:,:,INDX_LSICE) = q_lsice(:,:) ! oct08
           qpart(:,:,INDX_CVLIQ) = q_cvliq(:,:) ! oct08
           qpart(:,:,INDX_CVICE) = q_cvice(:,:) ! oct08
-          qpart(:,:,INDX_LSSNOW) = q_lssnow(:,:) ! feb11 !modified by ZYY
+          qpart(:,:,INDX_LSSNOW) = q_lssnow(:,:) !+JEK+ZYY
 
 ! alpha of particles in each subcolumn:
-      do i = 1, npart-1
+      do i = 1, npart-1  !!+JEK+ZYY
         where ( rad_part(:,:,i).gt.0.0)
           alpha_part(:,:,i) = 3.0/4.0 * Qscat &
                  * rhoair(:,:) * qpart(:,:,i) &
@@ -329,16 +381,18 @@
           alpha_part(:,:,i) = 0.
         endwhere
       enddo
-        where ( ls_radsnow(:,:).gt.0.0)      !modified by ZYY in Mar 2013
-          alpha_part(:,:,5) = 3.0/4.0 * Qscat &
+
+        where ( ls_radsnow(:,:).gt.0.0)      !+JEK+ZYY
+          alpha_part(:,:,5) = 3.0/4.0 * Qscat & 
                  * rhoair(:,:) * qpart(:,:,5) &
-                 / (rhopart(5) * ls_radsnow(:,:) )
+                 / (rhopart(5) * ls_radsnow(:,:) ) !+JEK+ZYY
         elsewhere
-          alpha_part(:,:,5) = 0.
-        endwhere
+          alpha_part(:,:,5) = 0. !+JEK+ZYY
+        endwhere !+JEK+ZYY
+
 
 !------------------------------------------------------------
-!---- 4. Backscatter signal:
+!---- 4.1 Total Backscatter signal:
 !------------------------------------------------------------
 
 ! optical thickness (molecular):
@@ -378,8 +432,9 @@
           pmol(:,k) = beta_mol(:,k) * EXP(-2.0*tau_mol(:,k+1))
         END WHERE
       END DO
-!
+
 ! Total signal (molecular + particules):
+!
 !
 ! For performance reason on vector computers, the 2 following lines should not be used
 ! and should be replace by the later one.
@@ -395,18 +450,155 @@
 !     Upper layer 
       pnorm(:,nlev) = betatot(:,nlev) / (2.*tautot(:,nlev)) &
             & * (1.-exp(-2.0*tautot(:,nlev)))
+
 !     Other layers
       DO k= nlev-1, 1, -1
-        tautot_lay(:) = tautot(:,k)-tautot(:,k+1) ! optical thickness of layer k
+          tautot_lay(:) = tautot(:,k)-tautot(:,k+1) ! optical thickness of layer k
         WHERE (tautot_lay(:).GT.0.)
-       pnorm(:,k) = betatot(:,k) * EXP(-2.0*tautot(:,k+1)) / (2.*tautot_lay(:)) &
-!correc          pnorm(:,k) = betatot(:,k) * EXP(-2.0*tautot(:,k+1)) & ! correc Satoh
-!correc               &               / (2.0*tautot_lay(:)) &          ! correc Satoh
+          pnorm(:,k) = betatot(:,k) * EXP(-2.0*tautot(:,k+1)) / (2.*tautot_lay(:)) &
                & * (1.-EXP(-2.0*tautot_lay(:)))
         ELSEWHERE
 !         This must never happend, but just in case, to avoid div. by 0
           pnorm(:,k) = betatot(:,k) * EXP(-2.0*tautot(:,k+1))
         END WHERE
+      END DO
+
+!------------------------------------------------------------
+!---- 4.2 Ice/Liq Backscatter signal:
+!------------------------------------------------------------
+
+! Contribution of the molecular to beta
+      betatot_ice(:,:) = beta_mol(:,:)
+      betatot_liq(:,:) = beta_mol(:,:)
+
+      tautot_ice(:,:) = tau_mol(:,:)
+      tautot_liq(:,:) = tau_mol(:,:)
+
+      DO i = 2, npart,2
+           betatot_ice(:,:) = betatot_ice(:,:)+ kp_part(:,:,i)*alpha_part(:,:,i)
+           tautot_ice(:,:) = tautot_ice(:,:)  + tau_part(:,:,i)
+      ENDDO ! i
+      DO i = 1, npart,2
+           betatot_liq(:,:) = betatot_liq(:,:)+ kp_part(:,:,i)*alpha_part(:,:,i)
+           tautot_liq(:,:) = tautot_liq(:,:)  + tau_part(:,:,i)
+      ENDDO ! i
+
+
+! Computation of the ice and liquid lidar backscattered signal (ATBice and ATBliq)
+!     Ice only
+!     Upper layer
+      pnorm_ice(:,nlev) = betatot_ice(:,nlev) / (2.*tautot_ice(:,nlev)) &
+            & * (1.-exp(-2.0*tautot_ice(:,nlev)))
+
+      DO k= nlev-1, 1, -1
+          tautot_lay_ice(:) = tautot_ice(:,k)-tautot_ice(:,k+1) 
+        WHERE (tautot_lay_ice(:).GT.0.)
+         pnorm_ice(:,k)=betatot_ice(:,k)*EXP(-2.0*tautot_ice(:,k+1))/(2.*tautot_lay_ice(:)) &
+               & * (1.-EXP(-2.0*tautot_lay_ice(:)))
+        ELSEWHERE
+         pnorm_ice(:,k)=betatot_ice(:,k)*EXP(-2.0*tautot_ice(:,k+1))
+        END WHERE
+      ENDDO
+
+!     Liquid only
+!     Upper layer
+      pnorm_liq(:,nlev) = betatot_liq(:,nlev) / (2.*tautot_liq(:,nlev)) &
+            & * (1.-exp(-2.0*tautot_liq(:,nlev)))
+
+      DO k= nlev-1, 1, -1
+          tautot_lay_liq(:) = tautot_liq(:,k)-tautot_liq(:,k+1) 
+        WHERE (tautot_lay_liq(:).GT.0.)
+          pnorm_liq(:,k)=betatot_liq(:,k)*EXP(-2.0*tautot_liq(:,k+1))/(2.*tautot_lay_liq(:)) &
+               & * (1.-EXP(-2.0*tautot_lay_liq(:)))
+        ELSEWHERE
+          pnorm_liq(:,k)=betatot_liq(:,k)*EXP(-2.0*tautot_liq(:,k+1))
+        END WHERE
+      ENDDO
+
+
+! Computation of ATBperp,ice/liq from ATBice/liq including the multiple scattering 
+! contribution (Cesana and Chepfer 2013, JGR)
+!  ATBperp,ice = Alpha*ATBice 
+!  ATBperp,liq = Beta*ATBliq^2 + Gamma*ATBliq
+
+      DO k= nlev, 1, -1
+	      pnorm_perp_ice(:,k) = Alpha * pnorm_ice(:,k) ! Ice particles
+	      pnorm_perp_liq(:,k) = 1000*Beta * pnorm_liq(:,k)**2 + Gamma * pnorm_liq(:,k) ! Liquid particles
+      ENDDO
+
+! Computation of beta_perp_ice/liq using the lidar equation
+!     Ice only
+!     Upper layer 
+      beta_perp_ice(:,nlev) = pnorm_perp_ice(:,nlev) * (2.*tautot_ice(:,nlev)) &
+            & / (1.-exp(-2.0*tautot_ice(:,nlev)))
+
+      DO k= nlev-1, 1, -1
+        tautot_lay_ice(:) = tautot_ice(:,k)-tautot_ice(:,k+1)
+        WHERE (tautot_lay_ice(:).GT.0.)
+         beta_perp_ice(:,k) = pnorm_perp_ice(:,k)/ EXP(-2.0*tautot_ice(:,k+1)) * (2.*tautot_lay_ice(:)) &
+            & / (1.-exp(-2.0*tautot_lay_ice(:)))
+
+        ELSEWHERE
+         beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
+        END WHERE
+      ENDDO
+
+!     Liquid only
+!     Upper layer 
+      beta_perp_liq(:,nlev) = pnorm_perp_liq(:,nlev) * (2.*tautot_liq(:,nlev)) &
+            & / (1.-exp(-2.0*tautot_liq(:,nlev)))
+
+      DO k= nlev-1, 1, -1
+          tautot_lay_liq(:) = tautot_liq(:,k)-tautot_liq(:,k+1) 
+        WHERE (tautot_lay_liq(:).GT.0.)
+         beta_perp_liq(:,k) = pnorm_perp_liq(:,k)/ EXP(-2.0*tautot_liq(:,k+1)) * (2.*tautot_lay_liq(:)) &
+            & / (1.-exp(-2.0*tautot_lay_liq(:)))
+
+        ELSEWHERE
+         beta_perp_liq(:,k)=pnorm_perp_liq(:,k)/EXP(-2.0*tautot_liq(:,k+1))
+        END WHERE
+      ENDDO
+
+
+
+!------------------------------------------------------------
+!---- 4.3 Perpendicular Backscatter signal:
+!------------------------------------------------------------
+
+! Computation of the total perpendicular lidar signal (ATBperp for liq+ice)
+!     Upper layer 
+    WHERE(tautot(:,nlev).GT.0)
+          pnorm_perp_tot(:,nlev) = &
+              (beta_perp_ice(:,nlev)+beta_perp_liq(:,nlev)-(beta_mol(:,nlev)/(1+1/0.0284))) / (2.*tautot(:,nlev)) &
+              & * (1.-exp(-2.0*tautot(:,nlev)))
+    ELSEWHERE
+    pnorm_perp_tot(:,nlev) = 0.
+    ENDWHERE
+
+!     Other layers
+      DO k= nlev-1, 1, -1
+          tautot_lay(:) = tautot(:,k)-tautot(:,k+1) ! optical thickness of layer k
+
+          ! The perpendicular component of the molecular backscattered signal (Betaperp) has been 
+          ! taken into account two times (once for liquid and once for ice). 
+          ! We remove one contribution using 
+          ! Betaperp=beta_mol(:,k)/(1+1/0.0284)) [bodhaine et al. 1999] in the following equations:
+            WHERE (pnorm(:,k).eq.0)
+                  pnorm_perp_tot(:,k)=0.
+                  ELSEWHERE
+                    WHERE (tautot_lay(:).GT.0.)
+                      pnorm_perp_tot(:,k) = &
+                          (beta_perp_ice(:,k)+beta_perp_liq(:,k)-(beta_mol(:,k)/(1+1/0.0284))) * &
+                          EXP(-2.0*tautot(:,k+1)) / (2.*tautot_lay(:)) &
+                          & * (1.-EXP(-2.0*tautot_lay(:)))
+                    ELSEWHERE
+          !         This must never happen, but just in case, to avoid div. by 0
+                      pnorm_perp_tot(:,k) = &
+                           (beta_perp_ice(:,k)+beta_perp_liq(:,k)-(beta_mol(:,k)/(1+1/0.0284))) * &
+                          EXP(-2.0*tautot(:,k+1))
+                    END WHERE
+            ENDWHERE
+
       END DO
 
 !-------- End computation Lidar --------------------------
@@ -431,7 +623,7 @@
          + tau_part(:,1,1) + tau_part(:,1,3)
       tautot_S_ice(:) = tautot_S_ice(:) &
          + tau_part(:,1,2) + tau_part(:,1,4) &
-         + tau_part(:,1,5) !modified by ZYY
+         + tau_part(:,1,5) !+JEK+ZYY
 
       call parasol(npoints,nrefl,undef  &
                  ,tautot_S_liq,tautot_S_ice &
