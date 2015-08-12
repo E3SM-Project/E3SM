@@ -190,7 +190,7 @@ sub test_findModulesFromMachinesDir_goldbach() : Test(3):
                                                  debug => 'FALSE', cimeroot => "../../", caseroot => '.');
 	$moduleloader->moduleInit();
 	my @actualintelmodules = $moduleloader->findModulesFromMachinesDir();
-	#print Dumper \@actualintelmodules;
+
 	is_deeply(\@expectedintelmodules, \@actualintelmodules);
 
 	my @expectedpgimodules = ( { action => 'purge', actupon => '' , seqnum => 1 },
@@ -214,13 +214,13 @@ sub test_writeXMLFileForCase_goldbach() : Test(3):
     open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
     #my $expected = <$EXPECTED>;
 	my $expected = do { local $/; <$EXPECTED> };
-    #close $EXPECTED;
+    close $EXPECTED;
 
-    my $actualfile = "./mach_specific.xml";
+    my $actualfile = "./env_mach_specific.xml";
     open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
     my $actual = do { local $/; <$ACTUAL> };
     close $actual;
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 
@@ -234,13 +234,10 @@ sub test_findModulesForCase_goldbach() : Test(1):
 	$moduleloader->moduleInit();
 	$moduleloader->writeXMLFileForCase();
 	my @actualmodules = $moduleloader->findModulesForCase();
-	print Dumper \@actualmodules;
-	print Dumper $moduleloader->{modulestoload};
 	
 	my @expectedmodules = ( {action => 'purge', actupon => '', seqnum => 1},
                             { action => 'load', actupon => 'compiler/intel/14.0.2', seqnum => 2} );
 	is_deeply(\@expectedmodules, \@actualmodules);
-	#is_deeply(\@expectedmodules, @{$moduleloader->{modulestoload}});
 }
 
 #sub test_loadModules_goldbach()  : Test(1):
@@ -280,7 +277,7 @@ sub test_writeCshModuleFile_goldbach() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeShModuleFile_goldbach() : Test(1):
@@ -306,7 +303,7 @@ sub test_writeShModuleFile_goldbach() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_moduleInit_hobart() : Test(2)
@@ -372,7 +369,7 @@ sub test_writeXMLFileForCase_hobart() : Test(3):
     my $expected = do { local $/; <$EXPECTED> };
     close $EXPECTED;
 
-    my $actualfile = "./mach_specific.xml";
+    my $actualfile = "./env_mach_specific.xml";
     open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
     binmode $ACTUAL;
     my $actual = do { local $/; <$ACTUAL> } ;
@@ -391,7 +388,7 @@ sub test_findModulesForCase_hobart() : Test(1):
     $moduleloader->moduleInit();
     $moduleloader->writeXMLFileForCase();
     my @actualmodules = $moduleloader->findModulesForCase();
-    print Dumper \@actualmodules;
+    #print Dumper \@actualmodules;
     #print Dumper $moduleloader->{modulestoload};
 
     my @expectedmodules = ( {action => 'purge', actupon => '', seqnum => 1},
@@ -491,8 +488,8 @@ sub test_findModulesFromMachinesDir_yellowstone() : Test(3):
                                                  debug => 'false', cimeroot => "../../", caseroot => '.');
 	$moduleloader->moduleInit();
 	my @actualintelmpichmodules = $moduleloader->findModulesFromMachinesDir();
-    print Dumper \@expectedintelmpichmodules;
-	print Dumper \@actualintelmpichmodules;
+    #print Dumper \@expectedintelmpichmodules;
+	#print Dumper \@actualintelmpichmodules;
 	#print "expected: ", ref $expectedintelmpichmodules[0], "\n";
 	#print "actual: ", ref $actualintelmpichmodules[0], "\n";
 	is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules, "do modules match");
@@ -556,7 +553,7 @@ sub test_writeXMLFileForCase_yellowstone() : Test(3):
 	my $expected = do { local $/; <$EXPECTED> };
 	close $EXPECTED;
 
-	my $actualfile = "./mach_specific.xml";
+	my $actualfile = "./env_mach_specific.xml";
 	open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
 	binmode $ACTUAL;
 	my $actual = do { local $/; <$ACTUAL> } ;
@@ -565,38 +562,40 @@ sub test_writeXMLFileForCase_yellowstone() : Test(3):
 	#unlink $actualfile; 
 }
 
-#sub test_findModulesForCase_yellowstone() : Test(1):
-#{
-#	my $self = shift;
-#	
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#
-#    $moduleloader->moduleInit();
-#	$moduleloader->writeXMLFileForCase();
-#	my @actualintelmpichmodules = $moduleloader->findModulesForCase();
-#    my @expectedintelmpichmodules = (
-#                            { action => 'purge', actupon => '', seqnum => 1},
-#                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
-#                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
-#                            { action => 'load', actupon => 'perlmods', seqnum => 4},
-#                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
-#                            { action => 'load', actupon => 'python', seqnum => 6},
-#                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
-#                            { action => 'load', actupon => 'intel/15.0.1', seqnum => 8},
-#                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
-#                            { action => 'load', actupon => 'netcdf-mpi/4.3.3-rc3', seqnum => 10},
-#                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 11},
-#                            { action => 'load', actupon => 'esmf', seqnum => 12},
-#                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-mpi-O', seqnum => 13},
-#                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 14},
-#                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 15},
-#                          );
-#
-#	#print Dumper \@expectedintelmpichmodules;
-#	#print Dumper \@actualintelmpichmodules;
-#    is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules);
-#}
+sub test_findModulesForCase_yellowstone() : Test(1):
+{
+	my $self = shift;
+	
+	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+	$moduleloader->writeXMLFileForCase();
+	my @actualintelmpichmodules = $moduleloader->findModulesForCase();
+
+    my @expectedintelmpichmodules = (
+                            { action => 'purge', actupon => '', seqnum => 1},
+                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
+                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
+                            { action => 'load', actupon => 'perlmods', seqnum => 4},
+                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
+                            { action => 'load', actupon => 'python', seqnum => 6},
+                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
+                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
+                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
+                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
+                            { action => 'load', actupon => 'esmf', seqnum => 11},
+                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-mpi-O', seqnum => 12},
+                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 13},
+                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 14},
+                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 15},
+                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 16},
+                          );
+
+	#print Dumper \@expectedintelmpichmodules;
+	#print Dumper \@actualintelmpichmodules;
+    is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules);
+}
 
 sub test_writeCshModuleFile_yellowstone() : Test(1):
 {
