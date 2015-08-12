@@ -52,9 +52,6 @@ find_package (MPI REQUIRED)
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
     
-message ("MPI_C_INCLUDE_PATH = ${MPI_C_INCLUDE_PATH}")
-message ("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
-
 #===== NetCDF-C =====
 find_package (NetCDF COMPONENTS C)
 if (NetCDF_C_FOUND)

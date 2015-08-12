@@ -50,6 +50,8 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 unset (libdir)
             endforeach ()
         endif ()
+        
+        message ("NetCDF_${comp}_LIBRARY_HINTS = ${NetCDF_${comp}_LIBRARY_HINTS}")
 
         # Search for the package component    
         find_package_component(NetCDF COMPONENT ${comp}
