@@ -315,7 +315,7 @@ subroutine init_restart_dynamics(File, hdimids, dyn_out)
 
 
     do t=1,ptimelevels
-       time = ndcur+(real(nscur,kind=r8)+ (t-2)*dtime)/86400_r8
+       time = ndcur+(real(nscur,kind=r8)+ (t-2)*dtime)/86400._r8
        ierr = pio_put_var(File,timedesc%varid, (/int(t)/), time)
     end do
     do i=1,restartvarcnt
