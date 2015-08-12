@@ -40,6 +40,8 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
     # If not found already, search...
     if (NOT NetCDF_${comp}_FOUND)
 
+        message ("MPI_${comp}_FOUND = ${MPI_${comp}_FOUND}") 
+
         # Manually add the MPI include and library dirs to search paths
         if (MPI_${comp}_FOUND)
             set (NetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
