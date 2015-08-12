@@ -15,7 +15,7 @@
 #   NetCDF_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with NetCDF
 #   NetCDF_<lang>_OPTIONS      (LIST) - compiler options to use NetCDF
 #
-# The available COMPONENTS are: C, Fortran
+# The available COMPONENTS are: C Fortran
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
@@ -65,6 +65,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             if (comp STREQUAL C)
 
                 # Look in netcdf_meta.h include file
+                message ("Found NetCDF_C library!!!!")            
                 find_path (NetCDF_META_DIR
                            NAMES netcdf_meta.h
                            HINTS NetCDF_C_INCLUDE_DIRS)
@@ -94,6 +95,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     else ()
                         message (STATUS "NetCDF_C does not have parallel support")
                     endif ()
+                    
                 endif ()
 
                 # DEPENDENCY: HDF5
@@ -134,8 +136,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
     
             endif ()
     
-        else ()
-            message ("Found shared NetCDF_C library")
         endif ()
         
     endif ()
