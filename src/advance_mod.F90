@@ -1654,6 +1654,7 @@ contains
   use edge_mod, only : edgevpack, edgevunpack
   use edgetype_mod, only : EdgeBuffer_t
   use bndry_mod, only : bndry_exchangev
+  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   implicit none
 
   type (hybrid_t)      , intent(in) :: hybrid
@@ -1679,7 +1680,7 @@ contains
   real (kind=real_kind) ::  v1,v2
   real (kind=real_kind) ::  vtens1,vtens2
 
-
+  call t_startf('compute_and_apply_rhs')
 
 
   ! ===================================
@@ -1790,6 +1791,7 @@ contains
      end do
      endif
   end do
+  call t_stopf('compute_and_apply_rhs')
   end subroutine compute_and_apply_rhs
   
 

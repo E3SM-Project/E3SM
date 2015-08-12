@@ -514,8 +514,6 @@ contains
     n0 = tl%n0
     call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
 
-    call derivinit(deriv)
-
 !    if (0==piofs%io_rank) write(*,'(a,i4,a,i1)') &
 !         "lat/lon interp movie output: ios=",ios," interpolation type=",&
 !         get_interp_parameter("itype")
@@ -844,6 +842,8 @@ contains
              if(nf_selectedvar('hypervis', output_varnames)) then
                 if (hybrid%par%masterproc) print *,'writing hypervis...'
                 allocate(datall(ncnt,nlev), var3d(np,np,nlev,nets:nete))
+
+                call derivinit(deriv)
 
                 do ie=nets,nete
                    do k=1,nlev
