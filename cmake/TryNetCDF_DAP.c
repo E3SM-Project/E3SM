@@ -5,7 +5,7 @@
 
 int main()
 {
-#ifdef NC_HAS_DAP
+#if NC_HAS_DAP==1
 	return 0;
 #else
 	XXX;

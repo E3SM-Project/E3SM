@@ -5,7 +5,7 @@
 
 int main()
 {
-#ifdef NC_HAS_PARALLEL
+#if NC_HAS_PARALLEL==1
 	return 0;
 #else
 	XXX;
