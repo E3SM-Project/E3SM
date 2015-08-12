@@ -89,7 +89,7 @@ foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
 
     # If the component was found, and it is a static library...
     if (HDF5_${comp}_FOUND AND NOT HDF5_${comp}_IS_SHARED)
-        
+    
         # Search only if dependencies for this component were not already found
         if (NOT HDF5_${comp}_DEPENDENCIES_SEARCHED)
 

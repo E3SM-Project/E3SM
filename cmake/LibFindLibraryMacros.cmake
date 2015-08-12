@@ -34,12 +34,12 @@ endmacro ()
 #   Returns:
 #     RETURN_VAR      (BOOL)
 #
-function (is_shared_library LIB RETURN_VAR)
+function (is_shared_library RETURN_VAR LIB)
     get_filename_component(libext ${LIB} EXT)
-    if (${libext} MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
-        set (${RETURN_VAR} TRUE)
+    if (libext MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
+        set (${RETURN_VAR} TRUE PARENT_SCOPE)
     else ()
-        set (${RETURN_VAR} FALSE)
+        set (${RETURN_VAR} FALSE PARENT_SCOPE)
     endif ()
 endfunction ()
 
@@ -187,7 +187,7 @@ function (find_package_component PKG)
                   NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                   HINTS ${LIBRARY_HINTS})
     if (${PKGCOMP}_LIBRARY)
-        is_shared_library (${PKGCOMP}_LIBRARY ${PKGCOMP}_IS_SHARED)
+        is_shared_library (${PKGCOMP}_IS_SHARED ${${PKGCOMP}_LIBRARY})
         
         if (PREFER_SHARED AND NOT ${PKGCOMP}_IS_SHARED)
             find_shared_library (${PKGCOMP}_SHARED_LIBRARY
