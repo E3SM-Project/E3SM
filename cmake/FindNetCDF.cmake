@@ -38,6 +38,7 @@ set (NetCDF_Fortran_INCLUDE_NAMES netcdf.mod netcdf.inc)
 set (NetCDF_C_LIBRARY_NAMES netcdf)
 set (NetCDF_Fortran_LIBRARY_NAMES netcdff)
 
+# SEARCH FOR COMPONENTS
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
     if (NOT NetCDF_${comp}_FOUND)
@@ -58,45 +59,52 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                                LIBRARY_NAMES ${NetCDF_${comp}_LIBRARY_NAMES}
                                LIBRARY_HINTS ${NetCDF_${comp}_LIBRARY_HINTS})
         
-        # Handle Dependencies, if static
-        if (NOT NetCDF_${comp}_IS_SHARED)
+        # SEARCH FOR DEPENDENCIES
+        if (NetCDF_${comp}_FOUND AND NOT NetCDF_${COMP}_IS_SHARED)
         
             # COMPONENT: C
             if (comp STREQUAL C)
-
+        
                 # Look in netcdf_meta.h include file
-                find_path (NetCDF_META_DIR
-                           NAMES netcdf_meta.h
-                           HINTS ${NetCDF_C_INCLUDE_DIRS})
-                message (STATUS "NetCDF_META_DIR = ${NetCDF_META_DIR}")
-                if (NetCDF_META_DIR)
+                if (NOT NetCDF_C_META_DIR)
                 
-                    # Test for DAP support (requires CURL)
-                    try_compile(NetCDF_C_HAS_DAP 
-                                ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_DAP
-                                SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_DAP.c
-                                COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
-                                OUTPUT_VARIABLE TryNetCDF_OUT)
-                    if (NetCDF_C_HAS_DAP)
-                        message (STATUS "NetCDF_C has DAP support")
+                    find_path (NetCDF_C_META_DIR
+                               NAMES netcdf_meta.h
+                               HINTS ${NetCDF_C_INCLUDE_DIRS})
+                    if (NetCDF_C_META_DIR)
+                    
+                        # Test for DAP support (requires CURL)
+                        try_compile(NetCDF_C_HAS_DAP 
+                                    ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_DAP
+                                    SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_DAP.c
+                                    COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
+                                    OUTPUT_VARIABLE TryNetCDF_OUT)
+                        if (NetCDF_C_HAS_DAP)
+                            message (STATUS "NetCDF_C has DAP support")
+                        else ()
+                            message (STATUS "NetCDF_C does not have DAP support")
+                        endif ()
+            
+                        # Test for PARALLEL support
+                        try_compile(NetCDF_C_HAS_PARALLEL 
+                                    ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PARALLEL
+                                    SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PARALLEL.c
+                                    COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
+                                    OUTPUT_VARIABLE TryNetCDF_OUT)
+                        if (NetCDF_C_HAS_PARALLEL)
+                            message (STATUS "NetCDF_C has parallel support")
+                        else ()
+                            message (STATUS "NetCDF_C does not have parallel support")
+                        endif ()
+                        
                     else ()
-                        message (STATUS "NetCDF_C does not have DAP support")
-                    endif ()
-
-                    # Test for PARALLEL support
-                    try_compile(NetCDF_C_HAS_PARALLEL 
-                                ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PARALLEL
-                                SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PARALLEL.c
-                                COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
-                                OUTPUT_VARIABLE TryNetCDF_OUT)
-                    if (NetCDF_C_HAS_PARALLEL)
-                        message (STATUS "NetCDF_C has parallel support")
-                    else ()
-                        message (STATUS "NetCDF_C does not have parallel support")
+                    
+                        message (WARNING "Could not find netcdf_meta.h")
+                         
                     endif ()
                     
                 endif ()
-
+        
                 # DEPENDENCY: HDF5
                 find_package (HDF5 COMPONENTS C HL)
                 if (HDF5_C_FOUND)
@@ -105,14 +113,13 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                                                     ${HDF5_HL_LIBRARIES})
                 endif ()
                 
-                # DEPENDENCY: LIBZ
+                # DEPENDENCY: LIBZ LIBDL Math
                 find_package (LIBZ)
                 if (LIBZ_FOUND)
                     list (APPEND NetCDF_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${LIBZ_LIBRARIES}
-                                                    ${LIBZ_LIBRARIES})
+                    list (APPEND NetCDF_C_LIBRARIES ${LIBZ_LIBRARIES} -ldl -lm)
                 endif ()
-
+        
                 # DEPENDENCY: CURL
                 if (NetCDF_C_HAS_DAP)
                     find_package (CURL)
@@ -123,9 +130,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     endif ()
                 endif ()
                 
-                # DEPENDENCY: LIBDL
-                list (APPEND NetCDF_C_LIBRARIES -ldl)
-                
             # COMPONENT: Fortran
             elseif (comp STREQUAL Fortran)
                             
@@ -135,11 +139,11 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
                     list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
                 endif ()
-    
+        
             endif ()
-    
+            
         endif ()
         
     endif ()
-    
+
 endforeach ()
