@@ -326,15 +326,22 @@ sub find_dependencies {
     my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
     ($name, $path, $suffix) = fileparse($file, @suffixes);
     $target = "$name.o";
-
+    my $include; 
     while ( <FH> ) {
 	# Search for "#include" and strip filename when found.
 	if ( /^#include\s+[<"](.*)[>"]/ ) {
-	     push @incs, $1;
-	 } 
+	    $include = $1;
+	} 
 	# Search for Fortran include dependencies.
 	elsif ( /^\s*include\s+['"](.*)['"]/ ) {                   #" for emacs fontlock
-	     push @incs, $1;
+	    $include = $1;
+	}
+	if(defined($include)){
+	    if($include =~ /shr_assert.h/){
+		push @mods, "$obj_dir".mangle_modfile("shr_assert_mod");
+	    }
+	    push @incs, $include;
+	    undef $include;
 	}
 	# Search for module dependencies.
 	elsif ( /^\s*USE(?:\s+|\s*\:\:\s*|\s*,\s*non_intrinsic\s*\:\:\s*)(\w+)/i ) {
