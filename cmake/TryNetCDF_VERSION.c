@@ -1,5 +1,5 @@
 /*
- * NetCDF C Test for DAP Support
+ * NetCDF C Test for version string
  */
 #include <stdio.h>
 #include "netcdf_meta.h"

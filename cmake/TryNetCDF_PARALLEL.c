@@ -1,5 +1,5 @@
 /*
- * NetCDF C Test for Parallel Support
+ * NetCDF C Test for parallel Support
  */
 #include "netcdf_meta.h"
 

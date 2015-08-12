@@ -61,6 +61,63 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 endforeach ()
 
 
+# SEARCH FOR DEPENDENCIES (only if SHARED libraries were found)
+foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+
+    # If the component was found, and it is a static library...
+    if (NetCDF_${comp}_FOUND AND NOT NetCDF_${comp}_IS_SHARED)
+        
+        # Search only if dependencies for this component were not already found
+        if (NOT NetCDF_${comp}_DEPENDENCIES_SEARCHED)
+
+            # COMPONENT: C
+            if (comp STREQUAL C)
+
+                # DEPENDENCY: HDF5
+                find_package (HDF5 COMPONENTS HL C)
+                if (HDF5_C_FOUND)
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
+                                                       ${HDF5_HL_INCLUDE_DIRS})
+                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
+                                                    ${HDF5_HL_LIBRARIES})
+                endif ()
+
+                # DEPENDENCY: CURL (If DAP enabled)
+                if (NetCDF_C_HAS_DAP)
+                    find_package (CURL)
+                    if (CURL_FOUND)
+                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
+                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES}
+                                                        ${CURL_LIBRARIES})
+                    endif ()
+                endif ()
+                                
+                # DEPENDENCY: LIBDL Math
+                list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
+        
+            # COMPONENT: Fortran
+            elseif (comp STREQUAL Fortran)
+                            
+                # DEPENDENCY: NetCDF -- CAREFUL!  This is recursive!
+                set (orig_comps ${NetCDF_FIND_VALID_COMPONENTS})
+                find_package (NetCDF COMPONENTS C)
+                set (NetCDF_FIND_VALID_COMPONENTS ${orig_comps})
+                if (NetCDF_C_FOUND)
+                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
+                    list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
+                endif ()
+        
+            endif ()
+            
+            set (NetCDF_${comp}_DEPENDENCIES_SEARCHED TRUE)
+            
+        endif ()
+        
+    endif ()
+
+endforeach ()
+
+
 # ANALYZE FOUND COMPONENTS
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
@@ -78,7 +135,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 
                     # Get version string
                     try_run (NetCDF_C_VERSION_RUNVAR NetCDF_C_VERSION_COMPVAR
-                             ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_VERSION
+                             ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_C_VERSION
                              ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_VERSION.c
                              COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
                              COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
@@ -123,63 +180,35 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 
             endif ()
             
+        elseif (comp STREQUAL Fortran)
+
+            # Look in NetCDF Fortran version
+            if (NOT NetCDF_Fortran_VERSION)
+            
+                # Get version string
+                try_run (NetCDF_Fortran_VERSION_RUNVAR
+                         NetCDF_Fortran_VERSION_COMPVAR
+                         ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_Fortran_VERSION
+                         ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_VERSION.f90
+                         COMPILE_DEFINITIONS -I${NetCDF_Fortran_INCLUDE_DIR}
+                         LINK_LIBRARIES ${NetCDF_Fortran_LIBRARIES}
+                         COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
+                         RUN_OUTPUT_VARIABLE NetCDF_Fortran_VERSION)
+                if (NetCDF_Fortran_VERSION)
+                    string (STRIP "${NetCDF_Fortran_VERSION}" NetCDF_Fortran_VERSION)
+                    string (REPLACE " " ";" NetCDF_Fortran_VERSION ${NetCDF_Fortran_VERSION})
+                    list (GET NetCDF_Fortran_VERSION 0 NetCDF_Fortran_VERSION)
+                    if (NetCDF_Fortran_VERSION VERSION_LESS NetCDF_FIND_VERSION)
+                        message (FATAL_ERROR "NetCDF_Fortan version insufficient")
+                    else ()
+                        message (STATUS "Found NetCDF_Fortran version ${NetCDF_Fortran_VERSION}")
+                    endif ()
+                endif ()
+
+            endif ()
+            
         endif ()
 
     endif ()
                 
-endforeach ()
-
-
-# SEARCH FOR DEPENDENCIES (only if SHARED libraries were found)
-foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
-
-    # If the component was found, and it is a static library...
-    if (NetCDF_${comp}_FOUND AND NOT NetCDF_${comp}_IS_SHARED)
-        
-        # Search only if dependencies for this component were not already found
-        if (NOT NetCDF_${comp}_DEPENDENCIES_SEARCHED)
-
-            # COMPONENT: C
-            if (comp STREQUAL C)
-
-                # DEPENDENCY: HDF5
-                find_package (HDF5 COMPONENTS HL C)
-                if (HDF5_C_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
-                                                       ${HDF5_HL_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
-                                                    ${HDF5_HL_LIBRARIES})
-                endif ()
-
-                # DEPENDENCY: CURL (If DAP enabled)
-                if (NetCDF_C_HAS_DAP)
-                    find_package (CURL)
-                    if (CURL_FOUND)
-                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
-                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES}
-                                                        ${CURL_LIBRARIES})
-                    endif ()
-                endif ()
-                                
-                # DEPENDENCY: LIBDL Math
-                list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
-        
-            # COMPONENT: Fortran
-            elseif (comp STREQUAL Fortran)
-                            
-                # DEPENDENCY: NetCDF
-                find_package (NetCDF COMPONENTS C)
-                if (NetCDF_C_FOUND)
-                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
-                    list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
-                endif ()
-        
-            endif ()
-            
-            set (NetCDF_${comp}_DEPENDENCIES_SEARCHED TRUE)
-            
-        endif ()
-        
-    endif ()
-
 endforeach ()
