@@ -62,12 +62,62 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         if (NOT NetCDF_${comp}_IS_SHARED)
         
             if (comp STREQUAL C)
-            
+
+                # Look in netcdf_meta.h include file
+                find_path (NetCDF_META_DIR
+                           NAMES netcdf_meta.h 
+                           HINTS NetCDF_C_INCLUDE_DIRS)
+                if (NetCDF_META_DIR)
+                
+                    # Test for DAP support (requires CURL)
+                    try_compile(NetCDF_C_HAS_DAP 
+                                ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_DAP
+                                SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_DAP.c
+                                COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
+                                OUTPUT_VARIABLE TryNetCDF_OUT)
+                    if (NetCDF_C_HAS_DAP)
+                        message (STATUS "NetCDF_C has DAP support")
+                    else ()
+                        message (STATUS "NetCDF_C does not have DAP support")
+                    endif ()
+
+                    # Test for PARALLEL support
+                    try_compile(NetCDF_C_HAS_PARALLEL 
+                                ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PARALLEL
+                                SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PARALLEL.c
+                                COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
+                                OUTPUT_VARIABLE TryNetCDF_OUT)
+                    if (NetCDF_C_HAS_PARALLEL)
+                        message (STATUS "NetCDF_C has parallel support")
+                    else ()
+                        message (STATUS "NetCDF_C does not have parallel support")
+                    endif ()
+                endif ()
+
+                # DEPENDENCY: HDF5
                 find_package (HDF5 COMPONENTS C HL)
-                if (HDF5_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_INCLUDE_DIRS})
+                if (HDF5_C_FOUND)
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
                     list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
                                                     ${HDF5_HL_LIBRARIES})
+                endif ()
+                
+                # DEPENDENCY: LIBZ
+                find_package (LIBZ)
+                if (LIBZ_FOUND)
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
+                    list (APPEND NetCDF_C_LIBRARIES ${LIBZ_LIBRARIES}
+                                                    ${LIBZ_LIBRARIES})
+                endif ()
+
+                # DEPENDENCY: CURL
+                if (NetCDF_C_HAS_DAP)
+                    find_package (CURL)
+                    if (CURL_FOUND)
+                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
+                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES}
+                                                        ${CURL_LIBRARIES})
+                    endif ()
                 endif ()
                 
             elseif (comp STREQUAL Fortran)
