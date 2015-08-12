@@ -61,6 +61,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         # Handle Dependencies, if static
         if (NOT NetCDF_${comp}_IS_SHARED)
         
+            # COMPONENT: C
             if (comp STREQUAL C)
 
                 # Look in netcdf_meta.h include file
@@ -121,6 +122,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     endif ()
                 endif ()
                 
+            # COMPONENT: Fortran
             elseif (comp STREQUAL Fortran)
                             
                 # DEPENDENCY: NetCDF
@@ -132,6 +134,8 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
     
             endif ()
     
+        else ()
+            message ("Found shared NetCDF_C library")
         endif ()
         
     endif ()
