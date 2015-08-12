@@ -60,6 +60,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
     
 endforeach ()
 
+
 # ANALYZE FOUND COMPONENTS
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
@@ -82,8 +83,6 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                              COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
                              COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
                              RUN_OUTPUT_VARIABLE NetCDF_C_VERSION)
-                    message ("NetCDF_C_VERSION = ${NetCDF_C_VERSION}")
-                    message ("NetCDF_FIND_VERSION = ${NetCDF_FIND_VERSION}")
                     if (NetCDF_C_VERSION)
                         if (NetCDF_C_VERSION VERSION_LESS NetCDF_FIND_VERSION)
                             message (FATAL_ERROR "NetCDF_C version insufficient")
