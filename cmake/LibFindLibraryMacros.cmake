@@ -1,7 +1,7 @@
 include (CMakeParseArguments)
 include(FindPackageHandleStandardArgs)
 
-#
+#====================================================
 # - Wrapper for finding static libraries ONLY
 #
 macro (find_static_library)
@@ -12,7 +12,8 @@ macro (find_static_library)
     unset (_CMAKE_FIND_LIBRARY_SUFFIXES)
 endmacro ()
 
-#
+
+#====================================================
 # - Wrapper for finding shared/dynamic libraries ONLY
 #
 macro (find_shared_library)
@@ -23,7 +24,8 @@ macro (find_shared_library)
     unset (_CMAKE_FIND_LIBRARY_SUFFIXES)
 endmacro ()
 
-#================================================
+
+#===============================================
 # - Function to define a valid package component
 #
 #   Input:
@@ -65,7 +67,8 @@ function (define_package_component PKG)
 
 endfunction ()
 
-#================================================
+
+#============================================
 # - Function to find valid package components
 #
 #   Assumes pre-defined variables: 
@@ -93,15 +96,25 @@ function (find_valid_components PKG)
     
 endfunction ()
 
-#
+
+#====================================================
 # - Basic find package macro for a specific component
+#
+# Assumes pre-defined variables:
+#   ${PKG}_${COMP}_INCLUDE_NAMES or ${PKG}_INCLUDE_NAMES
+#   ${PKG}_${COMP}_LIBRARY_NAMES or ${PKG}_LIBRARY_NAMES
+#
+# Input:
+#   ${PKG}_COMPONENT
+#   ${PKG}_INCLUDE_HINTS
+#   ${PKG}_LIBRARY_HINTS
 #
 function (find_package_component PKG)
 
     # Parse the input arguments
     set (options)
     set (oneValueArgs COMPONENT)
-    set (multiValueArgs INCLUDE_NAMES INCLUDE_HINTS LIBRARY_NAMES LIBRARY_HINTS)
+    set (multiValueArgs INCLUDE_HINTS LIBRARY_HINTS)
     cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
     set (COMP ${${PKG}_COMPONENT})
     if (COMP)
@@ -129,7 +142,7 @@ function (find_package_component PKG)
     
     # Search for include file
     find_path (${PKGCOMP}_INCLUDE_DIR
-               NAMES ${${PKG}_INCLUDE_NAMES}
+               NAMES ${${PKGCOMP}_INCLUDE_NAMES}
                HINTS ${INCLUDE_HINTS})
                
     # Unset include search variables
@@ -154,11 +167,11 @@ function (find_package_component PKG)
     set (${PKGCOMP}_IS_SHARED TRUE)
     if (PREFER_SHARED)
         find_shared_library (${PKGCOMP}_LIBRARY
-                             NAMES ${${PKG}_LIBRARY_NAMES}
+                             NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                              HINTS ${LIBRARY_HINTS})
         if (NOT ${PKGCOMP}_LIBRARY)
             find_static_library (${PKGCOMP}_LIBRARY
-                                 NAMES ${${PKG}_LIBRARY_NAMES}
+                                 NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                                  HINTS ${LIBRARY_HINTS})
             if (${PKGCOMP}_LIBRARY)
                 set (${PKGCOMP}_IS_SHARED FALSE)
@@ -166,13 +179,13 @@ function (find_package_component PKG)
         endif ()
     else ()
         find_static_library (${PKGCOMP}_LIBRARY
-                             NAMES ${${PKG}_LIBRARY_NAMES}
+                             NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                              HINTS ${LIBRARY_HINTS})
         if (${PKGCOMP}_LIBRARY)
             set (${PKGCOMP}_IS_SHARED FALSE)
         else ()
             find_shared_library (${PKGCOMP}_LIBRARY
-                                 NAMES ${${PKG}_LIBRARY_NAMES}
+                                 NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                                  HINTS ${LIBRARY_HINTS})
         endif ()
     endif ()

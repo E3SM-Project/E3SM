@@ -15,33 +15,22 @@
 #   HDF5_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with HDF5
 #   HDF5_<lang>_OPTIONS      (LIST) - compiler options to use HDF5
 #
-# The available COMPONENTS are: C HL Fortran Fortran_HL
+# The available COMPONENTS are: C Fortran
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
 # Define HDF5 C Component
 define_package_component (HDF5 DEFAULT
                           COMPONENT C
-                          INCLUDE_NAMES hdf5.h
-                          LIBRARY_NAMES hdf5)
+                          INCLUDE_NAMES hdf5_hl.h hdf5.h
+                          LIBRARY_NAMES hdf5_hl hdf5)
 
-# Define HDF5 HL Component
-define_package_component (HDF5
-                          COMPONENT HL
-                          INCLUDE_NAMES hdf5_hl.h
-                          LIBRARY_NAMES hdf5_hl)
 
 # Define HDF5 Fortran Component
 define_package_component (HDF5
                           COMPONENT Fortran
                           INCLUDE_NAMES hdf5.mod
-                          LIBRARY_NAMES hdf5_fortran)
-
-# Define HDF5 Fortran_HL Component
-define_package_component (HDF5
-                          COMPONENT Fortran_HL
-                          INCLUDE_NAMES hdf5.mod
-                          LIBRARY_NAMES hdf5hl_fortran)
+                          LIBRARY_NAMES hdf5hl_fortran hdf5_fortran)
 
 # Search for list of valid components requested
 find_valid_components (HDF5)
