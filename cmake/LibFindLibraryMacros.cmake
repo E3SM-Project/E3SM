@@ -9,6 +9,7 @@ macro (find_static_library)
     set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
     find_library(${ARGN})
     set (CMAKE_FIND_LIBRARY_SUFFIXES ${_CMAKE_FIND_LIBRARY_SUFFIXES})
+    unset (_CMAKE_FIND_LIBRARY_SUFFIXES)
 endmacro ()
 
 #
@@ -19,12 +20,49 @@ macro (find_shared_library)
     set (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_SHARED_LIBRARY_SUFFIX})
     find_library(${ARGN})
     set (CMAKE_FIND_LIBRARY_SUFFIXES ${_CMAKE_FIND_LIBRARY_SUFFIXES})
+    unset (_CMAKE_FIND_LIBRARY_SUFFIXES)
 endmacro ()
 
 #
-# - Basic find package macro for a specific COMPonent
+# - Function to find valid package components
 #
-macro (find_package_component PKG)
+#   Assumes pre-defined variables: 
+#     ${PKG}_FIND_COMPONENTS        (LIST)
+#
+#   Input:
+#     ${PKG}_DEFAULT                (STRING)
+#     ${PKG}_VALID_COMPONENTS       (LIST)
+#
+#   Returns:
+#     ${PKG}_FIND_VALID_COMPONENTS  (LIST)
+#
+function (find_valid_components PKG)
+
+    # Parse the input arguments
+    set (options)
+    set (oneValueArgs DEFAULT)
+    set (multiValueArgs VALID_COMPONENTS)
+    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
+
+    if (NOT ${PKG}_FIND_COMPONENTS)
+        set (${PKG}_FIND_COMPONENTS ${${PKG}_DEFAULT})
+    endif ()
+    
+    set (FIND_VALID_COMPONENTS)
+    foreach (comp IN LISTS ${PKG}_FIND_COMPONENTS)
+        if (";${${PKG}_VALID_COMPONENTS};" MATCHES ";${comp};")
+            list (APPEND FIND_VALID_COMPONENTS ${comp})
+        endif ()
+    endforeach ()
+
+    set (${PKG}_FIND_VALID_COMPONENTS ${FIND_VALID_COMPONENTS} PARENT_SCOPE)
+    
+endfunction ()
+
+#
+# - Basic find package macro for a specific component
+#
+function (find_package_component PKG)
 
     # Parse the input arguments
     set (options)
@@ -126,11 +164,17 @@ macro (find_package_component PKG)
         set (${PKGCOMP}_OPTIONS)
     endif ()
     
-    unset (COMP)
-    unset (PKGCOMPUP)
-    unset (PKGUP)
+    # Return all variables to the parent scope
+    set (${PKGCOMP}_FOUND        ${${PKGCOMP}_FOUND}        PARENT_SCOPE) 
+    set (${PKGCOMP}_INCLUDE_DIR  ${${PKGCOMP}_INCLUDE_DIR}  PARENT_SCOPE) 
+    set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIRS} PARENT_SCOPE)
+    set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}      PARENT_SCOPE)
+    set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}    PARENT_SCOPE)
+    set (${PKGCOMP}_DEFINITIONS  ${${PKGCOMP}_DEFINITIONS}  PARENT_SCOPE)
+    set (${PKGCOMP}_OPTIONS      ${${PKGCOMP}_OPTIONS}      PARENT_SCOPE)
+    set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}    PARENT_SCOPE)
 
-endmacro ()
+endfunction ()
 
 
 
