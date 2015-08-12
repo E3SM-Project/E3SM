@@ -168,7 +168,10 @@ sub doPreRunChecks()
 	$ENV{'LID'} = $LID;
 	$ENV{'sdate'} = $sdate;
 	
+#pw++ from cesm1_4_beta06
 	open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
+#pw--
+#pw	open my $CS, ">", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
 	print $CS "run started $sdate\n";
 	close $CS;
 	
@@ -305,15 +308,26 @@ sub checkInputData()
 # -------------------------------------------------------------------------
 sub runCESM()
 {
+#pw++
+        system("$config{'CASEROOT'}/Tools/cesm_prerun -machine $config{'MACH'} -compiler $config{'COMPILER'} -case $config{'CASE'} -cesmid $LID -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'} -sampling $config{'SYSLOG_N'} &");
+#pw--
 	chdir $config{'RUNDIR'};
 	
-	system("sleep 10");
+#pw	system("sleep 10");
+#pw++
+	sleep 10;
+        sleep 1 while not -e 'cesm_prerun_done';
+        unlink 'cesm_prerun_done';
+#pw--
 	my $localtime = localtime;
 	print "$localtime CESM EXECUTION BEGINS HERE\n";
 	# Run the model
 	{{ mpirun }}
 	$localtime = localtime;
 	print "$localtime CESM EXECUTION HAS FINISHED\n";
+#pw++
+        qx($config{'CASEROOT'}/Tools/cesm_postrun -case $config{'CASE'} -cesmid $LID -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'});
+#pw--
 }
 
 
@@ -415,13 +429,18 @@ sub postRun()
         print "gzipping timing stats..\n";
         qx( gzip timing/cesm_timing_stats.$LID );
     }
-	chdir $owd;
 
     # Save the timing files if desired
     if($config{'SAVE_TIMING'} eq 'TRUE')
     {
         move( "$config{'RUNDIR'}/timing",  "$config{'RUNDIR'}/timing.$LID");
     }
+
+#pw++
+        qx($config{'CASEROOT'}/Tools/cesm_postrun2 -case $config{'CASE'} -cesmid $LID -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -exedir $config{'EXEROOT'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'});
+#pw--
+	chdir $owd;
+
 }
 sub appendCaseStatus
 {

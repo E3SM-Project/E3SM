@@ -57,13 +57,14 @@ if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.8.0
 endif    
+
 module load papi/5.3.2
 module swap craype craype/2.1.1
 module load craype-ivybridge
 if( $COMPILER != "intel" ) then
   module load cray-libsci/13.0.1
 endif
-module load cray-mpich/7.1.1
+module load cray-mpich/7.2.1
 module load pmi/5.0.6-1.0000.10439.140.2.ari
 
 if ( $MPILIB == "mpi-serial") then
@@ -77,18 +78,22 @@ endif
 
 module load perl/5.20.0
 module load cmake/2.8.11.2
+module list >& software_environment.txt
 
 
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
 
-setenv MPICH_ENV_DISPLAY 1
-setenv MPICH_VERSION_DISPLAY 1
-setenv PERL5LIB /global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0
-
 limit coredumpsize unlimited
 limit stacksize unlimited
+
+# Capture logical to physics PE assignment and active environment variable 
+# settings
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv MPICH_CPUMASK_DISPLAY 1
+setenv PERL5LIB /global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0
 
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.  
