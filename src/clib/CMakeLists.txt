@@ -51,6 +51,9 @@ endif ()
 find_package (MPI REQUIRED)
 target_compile_definitions (pioc 
     PRIVATE USEMPIIO)
+    
+message ("MPI_C_INCLUDE_PATH = ${MPI_C_INCLUDE_PATH}")
+message ("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 
 #===== NetCDF-C =====
 find_package (NetCDF COMPONENTS C)
@@ -61,7 +64,7 @@ if (NetCDF_C_FOUND)
         PRIVATE _NETCDF)
     target_link_libraries (pioc
         PUBLIC ${NetCDF_C_LIBRARIES})
-    if (EXISTS ${NetCDF_C_INCLUDE_DIR}/netcdf_par.h)
+    if (${NetCDF_C_HAS_PARALLEL})
         target_compile_definitions (pioc 
             PRIVATE _NETCDF4)
     endif ()
