@@ -23,14 +23,54 @@ macro (find_shared_library)
     unset (_CMAKE_FIND_LIBRARY_SUFFIXES)
 endmacro ()
 
+#================================================
+# - Function to define a valid package component
 #
+#   Input:
+#     ${PKG}_DEFAULT             (BOOL)
+#     ${PKG}_COMPONENT           (STRING)
+#     ${PKG}_INCLUDE_NAMES       (LIST)
+#     ${PKG}_LIBRARY_NAMES       (LIST)
+#
+#   Returns:
+#     ${PKG}_DEFAULT_COMPONENT           (STRING)
+#     ${PKG}_VALID_COMPONENTS            (LIST)
+#     ${PKG}_${COMPONENT}_INCLUDE_NAMES  (LIST)
+#     ${PKG}_${COMPONENT}_LIBRARY_NAMES  (LIST)
+#
+function (define_package_component PKG)
+
+    # Parse the input arguments
+    set (options DEFAULT)
+    set (oneValueArgs COMPONENT)
+    set (multiValueArgs INCLUDE_NAMES LIBRARY_NAMES)
+    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    if (${PKG}_COMPONENT)
+        set (PKGCOMP ${PKG}_${${PKG}_COMPONENT})
+    else ()
+        set (PKGCOMP ${PKG})
+    endif ()
+    
+    # Set return values
+    if (${PKG}_COMPONENT)
+        if (${PKG}_DEFAULT)
+            set (${PKG}_DEFAULT_COMPONENT ${${PKG}_COMPONENT} PARENT_SCOPE)
+        endif ()
+        set (VALID_COMPONENTS ${${PKG}_VALID_COMPONENTS})
+        list (APPEND VALID_COMPONENTS ${${PKG}_COMPONENT})
+        set (${PKG}_VALID_COMPONENTS ${VALID_COMPONENTS} PARENT_SCOPE)
+    endif ()
+    set (${PKGCOMP}_INCLUDE_NAMES ${${PKG}_INCLUDE_NAMES} PARENT_SCOPE)
+    set (${PKGCOMP}_LIBRARY_NAMES ${${PKG}_LIBRARY_NAMES} PARENT_SCOPE)
+
+endfunction ()
+
+#================================================
 # - Function to find valid package components
 #
 #   Assumes pre-defined variables: 
 #     ${PKG}_FIND_COMPONENTS        (LIST)
-#
-#   Input:
-#     ${PKG}_DEFAULT                (STRING)
+#     ${PKG}_DEFAULT_COMPONENT      (STRING)
 #     ${PKG}_VALID_COMPONENTS       (LIST)
 #
 #   Returns:
@@ -38,14 +78,8 @@ endmacro ()
 #
 function (find_valid_components PKG)
 
-    # Parse the input arguments
-    set (options)
-    set (oneValueArgs DEFAULT)
-    set (multiValueArgs VALID_COMPONENTS)
-    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
-
     if (NOT ${PKG}_FIND_COMPONENTS)
-        set (${PKG}_FIND_COMPONENTS ${${PKG}_DEFAULT})
+        set (${PKG}_FIND_COMPONENTS ${${PKG}_DEFAULT_COMPONENT})
     endif ()
     
     set (FIND_VALID_COMPONENTS)

@@ -19,14 +19,17 @@
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
 
-find_valid_components (NetCDF DEFAULT C
-                       VALID_COMPONENTS C Fortran)
+define_package_component (NetCDF DEFAULT
+                          COMPONENT C
+                          INCLUDE_NAMES netcdf.h
+                          LIBRARY_NAMES netcdf)
 
-set (NetCDF_C_INCLUDE_NAMES netcdf.h)
-set (NetCDF_Fortran_INCLUDE_NAMES netcdf.mod netcdf.inc)
-
-set (NetCDF_C_LIBRARY_NAMES netcdf)
-set (NetCDF_Fortran_LIBRARY_NAMES netcdff)
+define_package_component (NetCDF
+                          COMPONENT Fortran
+                          INCLUDE_NAMES netcdf.mod netcdf.inc
+                          LIBRARY_NAMES netcdff)
+                       
+find_valid_components (NetCDF)
 
 # SEARCH FOR COMPONENTS
 foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
