@@ -950,28 +950,16 @@ contains
          idx = c-bounds%begc+1
          mflx_infl_col_1d(idx) = qflx_infl(c)*flux_unit_conversion
 
-         ! Dew source term
-         if (lun%itype(col%landunit(c)) == istsoil .or. lun%itype(col%landunit(c))==istcrop) then
-            if (snl(c) >= 0) then
-               mflx_dew_col_1d(idx)       = (qflx_dew_snow(c) + qflx_dew_grnd(c))*       &
-                                            (1._r8 - frac_h2osfc(c))*                    &
-                                            flux_unit_conversion
+         ! Dew and snow sublimation source/sink term
+         if (snl(c) >= 0) then
+            mflx_dew_col_1d(idx)       = (qflx_dew_snow(c) + qflx_dew_grnd(c))*       &
+                                         (1._r8 - frac_h2osfc(c))*                    &
+                                         flux_unit_conversion
 
-               mflx_sub_snow_col_1d(idx)  = -qflx_sub_snow(c)*          &
-                                             (1._r8 - frac_h2osfc(c))*  &
-                                             flux_unit_conversion
-            end if
-         else
-            if (snl(c) >= 0) then
-               mflx_dew_col_1d(idx)       = (qflx_dew_snow(c) + qflx_dew_grnd(c))*       &
-                                            (1._r8 - frac_h2osfc(c))*                    &
-                                            flux_unit_conversion
-
-               mflx_sub_snow_col_1d(idx)  = -qflx_sub_snow(c)*          &
-                                             (1._r8 - frac_h2osfc(c))*  &
-                                             flux_unit_conversion
-            end if
-         endif
+            mflx_sub_snow_col_1d(idx)  = -qflx_sub_snow(c)*          &
+                                          (1._r8 - frac_h2osfc(c))*  &
+                                          flux_unit_conversion
+         end if
 
 
          if (qflx_drain(c) > 0.d0) then
