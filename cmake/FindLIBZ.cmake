@@ -37,9 +37,7 @@ if (NOT LIBZ_FOUND)
     
     # Search for the package
     find_package_component(LIBZ
-                           INCLUDE_NAMES ${LIBZ_INCLUDE_NAMES}
                            INCLUDE_HINTS ${LIBZ_INCLUDE_HINTS}
-                           LIBRARY_NAMES ${LIBZ_LIBRARY_NAMES}
                            LIBRARY_HINTS ${LIBZ_LIBRARY_HINTS})
 
 endif ()

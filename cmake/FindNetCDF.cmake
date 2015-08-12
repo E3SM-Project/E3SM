@@ -53,9 +53,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         
         # Search for the package component    
         find_package_component(NetCDF COMPONENT ${comp}
-                               INCLUDE_NAMES ${NetCDF_${comp}_INCLUDE_NAMES}
                                INCLUDE_HINTS ${NetCDF_${comp}_INCLUDE_HINTS}
-                               LIBRARY_NAMES ${NetCDF_${comp}_LIBRARY_NAMES}
                                LIBRARY_HINTS ${NetCDF_${comp}_LIBRARY_HINTS})
         
     endif ()

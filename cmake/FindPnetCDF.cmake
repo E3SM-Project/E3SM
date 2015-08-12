@@ -53,9 +53,7 @@ foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
         
         # Search for the package component
         find_package_component(PnetCDF COMPONENT ${comp}
-                               INCLUDE_NAMES ${PnetCDF_${comp}_INCLUDE_NAMES}
                                INCLUDE_HINTS ${PnetCDF_${comp}_INCLUDE_HINTS}
-                               LIBRARY_NAMES ${PnetCDF_${comp}_LIBRARY_NAMES}
                                LIBRARY_HINTS ${PnetCDF_${comp}_LIBRARY_HINTS})
     
     endif ()

@@ -54,9 +54,7 @@ foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
     
         # Search for the package component
         find_package_component(HDF5 COMPONENT ${comp}
-                               INCLUDE_NAMES ${HDF5_${comp}_INCLUDE_NAMES}
                                INCLUDE_HINTS ${HDF5_${comp}_INCLUDE_HINTS}
-                               LIBRARY_NAMES ${HDF5_${comp}_LIBRARY_NAMES}
                                LIBRARY_HINTS ${HDF5_${comp}_LIBRARY_HINTS})
         
     endif ()
