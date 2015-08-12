@@ -1,3 +1,6 @@
+include (CMakeParseArguments)
+include(FindPackageHandleStandardArgs)
+
 #
 # - Wrapper for finding static libraries ONLY
 #
@@ -21,8 +24,6 @@ endmacro ()
 #
 # - Basic find package macro for a specific COMPonent
 #
-include (CMakeParseArguments)
-include(FindPackageHandleStandardArgs)
 macro (find_package_component PKG)
 
     # Parse the input arguments
@@ -78,7 +79,6 @@ macro (find_package_component PKG)
     endif ()
     
     # Search for library file
-    include (LibFindLibraryMacros)
     set (${PKGCOMP}_IS_SHARED TRUE)
     if (PREFER_SHARED)
         find_shared_library (${PKGCOMP}_LIBRARY
