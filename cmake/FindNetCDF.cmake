@@ -65,9 +65,10 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
                 # Look in netcdf_meta.h include file
                 find_path (NetCDF_META_DIR
-                           NAMES netcdf_meta.h 
+                           NAMES netcdf_meta.h
                            HINTS NetCDF_C_INCLUDE_DIRS)
                 if (NetCDF_META_DIR)
+                    message (STATUS "NetCDF_META was found")
                 
                     # Test for DAP support (requires CURL)
                     try_compile(NetCDF_C_HAS_DAP 
