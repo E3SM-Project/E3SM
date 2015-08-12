@@ -22,15 +22,26 @@ include (LibFindLibraryMacros)
 # Define HDF5 C Component
 define_package_component (HDF5 DEFAULT
                           COMPONENT C
-                          INCLUDE_NAMES hdf5_hl.h hdf5.h
-                          LIBRARY_NAMES hdf5_hl hdf5)
+                          INCLUDE_NAMES hdf5.h
+                          LIBRARY_NAMES hdf5)
 
+# Define HDF5 HL Component
+define_package_component (HDF5
+                          COMPONENT HL
+                          INCLUDE_NAMES hdf5_hl.h
+                          LIBRARY_NAMES hdf5_hl)
 
 # Define HDF5 Fortran Component
 define_package_component (HDF5
                           COMPONENT Fortran
                           INCLUDE_NAMES hdf5.mod
-                          LIBRARY_NAMES hdf5hl_fortran hdf5_fortran)
+                          LIBRARY_NAMES hdf5_fortran)
+
+# Define HDF5 Fortran_HL Component
+define_package_component (HDF5
+                          COMPONENT Fortran_HL
+                          INCLUDE_NAMES hdf5.mod
+                          LIBRARY_NAMES hdf5hl_fortran)
 
 # Search for list of valid components requested
 find_valid_components (HDF5)
@@ -42,16 +53,28 @@ foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
     if (NOT HDF5_${comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (MPI_${comp}_FOUND)
-            set (HDF5_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
-            set (HDF5_${comp}_LIBRARY_HINTS)
-            foreach (lib IN LISTS MPI_${comp}_LIBRARIES)
-                get_filename_component (libdir ${lib} PATH)
-                list (APPEND HDF5_${comp}_LIBRARY_HINTS ${libdir})
-                unset (libdir)
-            endforeach ()
+        if (comp STREQUAL C OR comp STREQUAL HL)
+            if (MPI_C_FOUND)
+                set (HDF5_${comp}_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
+                set (HDF5_${comp}_LIBRARY_HINTS)
+                foreach (lib IN LISTS MPI_C_LIBRARIES)
+                    get_filename_component (libdir ${lib} PATH)
+                    list (APPEND HDF5_${comp}_LIBRARY_HINTS ${libdir})
+                    unset (libdir)
+                endforeach ()
+            endif ()
+        else ()
+            if (MPI_Fortran_FOUND)
+                set (HDF5_${comp}_INCLUDE_HINTS ${MPI_Fortran_INCLUDE_PATH})
+                set (HDF5_${comp}_LIBRARY_HINTS)
+                foreach (lib IN LISTS MPI_Fortran_LIBRARIES)
+                    get_filename_component (libdir ${lib} PATH)
+                    list (APPEND HDF5_${comp}_LIBRARY_HINTS ${libdir})
+                    unset (libdir)
+                endforeach ()
+            endif ()
         endif ()
-    
+
         # Search for the package component
         find_package_component(HDF5 COMPONENT ${comp}
                                INCLUDE_HINTS ${HDF5_${comp}_INCLUDE_HINTS}
