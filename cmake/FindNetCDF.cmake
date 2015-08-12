@@ -123,6 +123,9 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                     endif ()
                 endif ()
                 
+                # DEPENDENCY: LIBDL
+                list (APPEND NetCDF_C_LIBRARIES -ldl)
+                
             # COMPONENT: Fortran
             elseif (comp STREQUAL Fortran)
                             
