@@ -36,33 +36,33 @@ find_valid_components (NetCDF)
 
 #==============================================================================
 # SEARCH FOR VALIDATED COMPONENTS
-foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
     # If not found already, search...
-    if (NOT NetCDF_${comp}_FOUND)
+    if (NOT NetCDF_${NetCDF_comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (MPI_${comp}_FOUND)
-            set (NetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
-            set (NetCDF_${comp}_LIBRARY_HINTS)
-            foreach (lib IN LISTS MPI_${comp}_LIBRARIES)
+        if (MPI_${NetCDF_comp}_FOUND)
+            set (NetCDF_${NetCDF_comp}_INCLUDE_HINTS ${MPI_${NetCDF_comp}_INCLUDE_PATH})
+            set (NetCDF_${NetCDF_comp}_LIBRARY_HINTS)
+            foreach (lib IN LISTS MPI_${NetCDF_comp}_LIBRARIES)
                 get_filename_component (libdir ${lib} PATH)
-                list (APPEND NetCDF_${comp}_LIBRARY_HINTS ${libdir})
+                list (APPEND NetCDF_${NetCDF_comp}_LIBRARY_HINTS ${libdir})
                 unset (libdir)
             endforeach ()
         endif ()
         
         # Search for the package component    
-        find_package_component(NetCDF COMPONENT ${comp}
-                               INCLUDE_HINTS ${NetCDF_${comp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${NetCDF_${comp}_LIBRARY_HINTS})
+        find_package_component(NetCDF COMPONENT ${NetCDF_comp}
+                               INCLUDE_HINTS ${NetCDF_${NetCDF_comp}_INCLUDE_HINTS}
+                               LIBRARY_HINTS ${NetCDF_${NetCDF_comp}_LIBRARY_HINTS})
                                
         # Continue only if found
-        if (NetCDF_${comp}_FOUND)
+        if (NetCDF_${NetCDF_comp}_FOUND)
 
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: C
-        if (comp STREQUAL C AND NOT NetCDF_C_FINISHED)
+        if (NetCDF_comp STREQUAL C AND NOT NetCDF_C_FINISHED)
 
             find_path (NetCDF_C_META_DIR
                        NAMES netcdf_meta.h
@@ -167,7 +167,7 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: Fortran
-        elseif (comp STREQUAL Fortran AND NOT NetCDF_Fortran_FINISHED)
+        elseif (NetCDF_comp STREQUAL Fortran AND NOT NetCDF_Fortran_FINISHED)
 
             # Get dependencies
             if (NOT NetCDF_Fortran_IS_SHARED)

@@ -47,54 +47,47 @@ define_package_component (HDF5
 find_valid_components (HDF5)
 
 # SEARCH FOR VALIDATED COMPONENTS
-foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
+foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
 
     # If not found already, search...
-    if (NOT HDF5_${comp}_FOUND)
+    if (NOT HDF5_${HDF5_comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (comp STREQUAL C OR comp STREQUAL HL)
+        if (HDF5_comp STREQUAL C OR HDF5_comp STREQUAL HL)
             if (MPI_C_FOUND)
-                set (HDF5_${comp}_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
-                set (HDF5_${comp}_LIBRARY_HINTS)
+                set (HDF5_${HDF5_comp}_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
+                set (HDF5_${HDF5_comp}_LIBRARY_HINTS)
                 foreach (lib IN LISTS MPI_C_LIBRARIES)
                     get_filename_component (libdir ${lib} PATH)
-                    list (APPEND HDF5_${comp}_LIBRARY_HINTS ${libdir})
+                    list (APPEND HDF5_${HDF5_comp}_LIBRARY_HINTS ${libdir})
                     unset (libdir)
                 endforeach ()
             endif ()
         else ()
             if (MPI_Fortran_FOUND)
-                set (HDF5_${comp}_INCLUDE_HINTS ${MPI_Fortran_INCLUDE_PATH})
-                set (HDF5_${comp}_LIBRARY_HINTS)
+                set (HDF5_${HDF5_comp}_INCLUDE_HINTS ${MPI_Fortran_INCLUDE_PATH})
+                set (HDF5_${HDF5_comp}_LIBRARY_HINTS)
                 foreach (lib IN LISTS MPI_Fortran_LIBRARIES)
                     get_filename_component (libdir ${lib} PATH)
-                    list (APPEND HDF5_${comp}_LIBRARY_HINTS ${libdir})
+                    list (APPEND HDF5_${HDF5_comp}_LIBRARY_HINTS ${libdir})
                     unset (libdir)
                 endforeach ()
             endif ()
         endif ()
 
         # Search for the package component
-        find_package_component(HDF5 COMPONENT ${comp}
-                               INCLUDE_HINTS ${HDF5_${comp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${HDF5_${comp}_LIBRARY_HINTS})
+        find_package_component(HDF5 COMPONENT ${HDF5_comp}
+                               INCLUDE_HINTS ${HDF5_${HDF5_comp}_INCLUDE_HINTS}
+                               LIBRARY_HINTS ${HDF5_${HDF5_comp}_LIBRARY_HINTS})
         
-    endif ()
-    
-endforeach ()
+        # Only continue if found
+        if (HDF5_${HDF5_comp}_FOUND)
 
-# SEARCH FOR DEPENDENCIES (only if SHARED libraries were found)
-foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
+        #----------------------------------------------------------------------
+        # Check & Dependencies for COMPONENT: C
+        if (HDF5_comp STREQUAL C AND NOT HDF5_C_FINISHED)
 
-    # If the component was found, and it is a static library...
-    if (HDF5_${comp}_FOUND AND NOT HDF5_${comp}_IS_SHARED)
-    
-        # Search only if dependencies for this component were not already found
-        if (NOT HDF5_${comp}_DEPENDENCIES_SEARCHED)
-
-            # COMPONENT: C
-            if (comp STREQUAL C)
+            if (NOT HDF5_C_IS_SHARED)
 
                 # DEPENDENCY: LIBZ
                 find_package (LIBZ)
@@ -103,19 +96,29 @@ foreach (comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                     list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
                 endif ()
 
-            else ()
+            endif ()
+            
+            set (HDF5_C_FINISHED TRUE
+                 CACHE BOOL "HDF5_C fully found")
+                 
+        elseif (NOT HDF5_${HDF5_comp}_FINISHED)
 
+            if (NOT HDF5_${HDF5_comp}_IS_SHARED)
+            
                 # DEPENDENCY: HDF5
                 find_package (HDF5 COMPONENTS C)
                 if (HDF5_C_FOUND)
-                    list (APPEND HDF5_${comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
-                    list (APPEND HDF5_${comp}_LIBRARIES ${HDF5_C_LIBRARIES})
+                    list (APPEND HDF5_${HDF5_comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
+                    list (APPEND HDF5_${HDF5_comp}_LIBRARIES ${HDF5_C_LIBRARIES})
                 endif ()
-    
+                
             endif ()
-            
-            set (HDF5_${comp}_DEPENDENCIES_SEARCHED TRUE)
-    
+
+            set (HDF5_${HDF5_comp}_FINISHED TRUE
+                 CACHE BOOL "HDF5_${HDF5_comp} fully found")
+
+        endif ()
+
         endif ()
         
     endif ()

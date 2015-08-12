@@ -35,26 +35,26 @@ define_package_component (PnetCDF
 find_valid_components (PnetCDF)
 
 # SEARCH FOR VALIDATED COMPONENTS
-foreach (comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
+foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
     # If not found already, search...
-    if (NOT PnetCDF_${comp}_FOUND)
+    if (NOT PnetCDF_${PnetCDF_comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (MPI_${comp}_FOUND)
-            set (PnetCDF_${comp}_INCLUDE_HINTS ${MPI_${comp}_INCLUDE_PATH})
-            set (PnetCDF_${comp}_LIBRARY_HINTS)
-            foreach (lib IN LISTS MPI_${comp}_LIBRARIES)
+        if (MPI_${PnetCDF_comp}_FOUND)
+            set (PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS ${MPI_${PnetCDF_comp}_INCLUDE_PATH})
+            set (PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS)
+            foreach (lib IN LISTS MPI_${PnetCDF_comp}_LIBRARIES)
                 get_filename_component (libdir ${lib} PATH)
-                list (APPEND PnetCDF_${comp}_LIBRARY_HINTS ${libdir})
+                list (APPEND PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS ${libdir})
                 unset (libdir)
             endforeach ()
         endif ()
         
         # Search for the package component
-        find_package_component(PnetCDF COMPONENT ${comp}
-                               INCLUDE_HINTS ${PnetCDF_${comp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${PnetCDF_${comp}_LIBRARY_HINTS})
+        find_package_component(PnetCDF COMPONENT ${PnetCDF_comp}
+                               INCLUDE_HINTS ${PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS}
+                               LIBRARY_HINTS ${PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS})
     
     endif ()
     
