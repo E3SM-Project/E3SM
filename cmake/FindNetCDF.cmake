@@ -65,12 +65,11 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             if (comp STREQUAL C)
 
                 # Look in netcdf_meta.h include file
-                message ("Found NetCDF_C library!!!!")            
                 find_path (NetCDF_META_DIR
                            NAMES netcdf_meta.h
-                           HINTS NetCDF_C_INCLUDE_DIRS)
+                           HINTS ${NetCDF_C_INCLUDE_DIRS})
+                message (STATUS "NetCDF_META_DIR = ${NetCDF_META_DIR}")
                 if (NetCDF_META_DIR)
-                    message (STATUS "NetCDF_META was found")
                 
                     # Test for DAP support (requires CURL)
                     try_compile(NetCDF_C_HAS_DAP 
