@@ -80,6 +80,23 @@ foreach (comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                                HINTS ${NetCDF_C_INCLUDE_DIRS})
                     if (NetCDF_C_META_DIR)
                     
+                        # Get version string
+                        try_run (NetCDF_C_VERSION_RUNVAR NetCDF_C_VERSION_COMPVAR
+                                 ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_VERSION
+                                 ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_VERSION.c
+                                 COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
+                                 COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
+                                 RUN_OUTPUT_VARIABLE NetCDF_C_VERSION)
+                        message ("NetCDF_C_VERSION = ${NetCDF_C_VERSION}")
+                        message ("NetCDF_FIND_VERSION = ${NetCDF_FIND_VERSION}")
+                        if (NetCDF_C_VERSION)
+                            if (NetCDF_C_VERSION VERSION_LESS NetCDF_FIND_VERSION)
+                                message (FATAL_ERROR "NetCDF_C version insufficient")
+                            else ()
+                                message (STATUS "Found NetCDF_C version ${NetCDF_C_VERSION}")
+                            endif ()
+                        endif ()
+                        
                         # Test for DAP support (requires CURL)
                         try_compile(NetCDF_C_HAS_DAP 
                                     ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_DAP
