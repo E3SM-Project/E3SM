@@ -53,7 +53,7 @@ target_compile_definitions (pioc
     PRIVATE USEMPIIO)
     
 #===== NetCDF-C =====
-find_package (NetCDF "4.3" COMPONENTS C)
+find_package (NetCDF "4.3.3" COMPONENTS C)
 if (NetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${NetCDF_C_INCLUDE_DIRS})
