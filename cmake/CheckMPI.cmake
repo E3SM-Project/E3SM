@@ -44,7 +44,7 @@ function (check_MPIMOD SEARCH_DIRS)
         
         message (STATUS "Checking whether MPI Fortran module is supported")
         find_file (TryMPIMOD_FILE
-                   NAMES TryMPIMOD.f90
+                   NAMES TryMPIMod.f90
                    HINTS ${SEARCH_DIRS})
         if (TryMPIMOD_FILE)
             try_compile (COMPILE_RESULT
