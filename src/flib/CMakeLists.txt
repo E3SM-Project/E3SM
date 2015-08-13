@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (PIOF Fortran)
 include (ExternalProject)
+include (CheckFortranCompiler)
 
 #==============================================================================
 #  DEFINE THE TARGET
@@ -29,8 +30,30 @@ target_include_directories (piof
 
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
-        PRIVATE -ffree-line-length-none)
+        PUBLIC -ffree-line-length-none)
 endif()
+
+# Look for c_sizeof capability
+check_Fortran_csizeof ()
+if (Fortran_CSIZEOF)
+    target_compile_definitions (piof
+        PRIVATE NO_C_SIZEOF)
+endif()
+
+# Look for filesystem hints
+if (PIO_FILESYSTEM_HINTS)
+    if (PIO_FILESYSTEM_HINTS STREQUAL lustre)
+        message (STATUS "PIO will use lustre filesystem hints")
+        target_compile_definitions (piof
+            PRIVATE PIO_LUSTRE_HINTS)
+    elseif (PIO_FILESYSTEM_HINTS STREQUAL gpfs)
+        message (STATUS "PIO will use gpfs filesystem hints")
+        target_compile_definitions (piof
+            PRIVATE PIO_GPFS_HINTS)
+    else ()
+        message (WARNING "${PIO_FILESYSTEM_HINTS} not valid option for PIO_FILESYSTEM_HINTS; use gpfs or lustre.")
+    endif ()
+endif ()
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
