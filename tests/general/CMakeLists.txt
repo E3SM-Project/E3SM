@@ -23,7 +23,7 @@ foreach (SRC_FILE IN LISTS GENERATED_SRCS)
 endforeach ()
 
 #==============================================================================
-#  DEFINE THE TARGETS
+#  DEFINE THE TARGETS AND TESTS
 #==============================================================================
 
 #===== pio_init_finalize =====
