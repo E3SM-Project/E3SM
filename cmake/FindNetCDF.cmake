@@ -182,11 +182,15 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             endif ()
 
             # Get version string
+            set (COMP_DEFS)
+            foreach (incdir IN LISTS NetCDF_Fortran_INCLUDE_DIRS)
+                list (APPEND COMP_DEFS "-I${incdir}")
+            endforeach ()
             try_run (NetCDF_Fortran_VERSION_RUNVAR
                      NetCDF_Fortran_VERSION_COMPVAR
                      ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_Fortran_VERSION
                      ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_VERSION.f90
-                     COMPILE_DEFINITIONS -I${NetCDF_Fortran_INCLUDE_DIR}
+                     COMPILE_DEFINITIONS ${COMP_DEFS}
                      LINK_LIBRARIES ${NetCDF_Fortran_LIBRARIES}
                      COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
                      RUN_OUTPUT_VARIABLE NetCDF_Fortran_VERSION)

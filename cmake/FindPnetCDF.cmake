@@ -89,10 +89,14 @@ foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
         elseif (PnetCDF_comp STREQUAL Fortran AND NOT PnetCDF_Fortran_FINISHED)
 
             # Get version string
+            set (COMP_DEFS)
+            foreach (incdir IN LISTS PnetCDF_Fortran_INCLUDE_DIRS)
+                list (APPEND COMP_DEFS "-I${incdir}")
+            endforeach ()
             try_run (PnetCDF_Fortran_VERSION_RUNVAR PnetCDF_Fortran_VERSION_COMPVAR
                      ${CMAKE_CURRENT_BINARY_DIR}/tryPnetCDF_Fortran_VERSION
                      ${CMAKE_SOURCE_DIR}/cmake/TryPnetCDF_VERSION.f90
-                     COMPILE_DEFINITIONS -I${PnetCDF_Fortran_INCLUDE_DIR}
+                     COMPILE_DEFINITIONS ${COMP_DEFS}
                      LINK_LIBRARIES ${PnetCDF_Fortran_LIBRARIES}
                      COMPILE_OUTPUT_VARIABLE TryPnetCDF_OUT
                      RUN_OUTPUT_VARIABLE PnetCDF_Fortran_VERSION)
