@@ -1,22 +1,13 @@
-SET(SRC pioperformance.F90)
-ADD_DEFINITIONS(${PIO_DEFINITIONS})
+#==============================================================================
+#  DEFINE THE TARGETS AND TESTS
+#==============================================================================
 
-# Use to trace hdf5 errors with a special netcdf build
-OPTION(HDF5_LOGGING "Turn on hdf5 logging (requires instrumented netcdf4)" OFF)
-if(HDF5_LOGGING) 
-  ADD_DEFINITIONS(-DLOGGING)
-endif()
+set (SRC pioperformance.F90)
 
-INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS} )
-LINK_DIRECTORIES(${PIO_LIB_DIR} )
+add_executable (pio_perf_test ${SRC})
+target_link_libraries (pio_perf_test piof pioc gptl)
 
-
-
-if(PIO_BUILD_TIMING) 
-  ADD_EXECUTABLE(pioperf ${SRC})
-  TARGET_LINK_LIBRARIES(pioperf piof pioc timing)
-else()
-  MESSAGE("Cannot build performance test without gptl timing library")
-endif()
-
-#ADD_TEST(pioperformance)
+if (PIO_HDF5_LOGGING) 
+    target_compile_definitions (pio_perf_test 
+        PRIVATE LOGGING)
+endif ()

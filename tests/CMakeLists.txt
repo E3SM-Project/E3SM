@@ -9,4 +9,6 @@ include (CTest)
 
 add_subdirectory (unit)
 add_subdirectory (general)
-#add_subdirectory (performance)
+if (PIO_ENABLE_TIMING)
+    add_subdirectory (performance)
+endif ()
