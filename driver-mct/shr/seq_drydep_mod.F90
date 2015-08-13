@@ -29,7 +29,7 @@ module seq_drydep_mod
 
   ! !PUBLIC MEMBER FUNCTIONS
 
-  public :: seq_drydep_read         ! Read namelist
+  public :: seq_drydep_readnl       ! Read namelist
   public :: seq_drydep_init         ! Initialization of drydep data
   public :: seq_drydep_setHCoeff    ! Calculate Henry's law coefficients
 
@@ -437,7 +437,7 @@ CONTAINS
 
 !====================================================================================
 
-  subroutine seq_drydep_read(NLFilename, seq_drydep_fields)
+  subroutine seq_drydep_readnl(NLFilename, ID, seq_drydep_fields)
 
     !========================================================================
     ! reads drydep_inparm namelist and sets up CCSM driver list of fields for 
@@ -449,10 +449,13 @@ CONTAINS
     
     use shr_file_mod,only : shr_file_getUnit, shr_file_freeUnit
     use shr_log_mod, only : s_logunit => shr_log_Unit
+    use seq_comm_mct,only : seq_comm_iamroot, seq_comm_setptrs
+    use shr_mpi_mod, only : shr_mpi_bcast
 
     implicit none
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
+    integer         , intent(in)  :: ID         ! seq_comm ID
     character(len=*), intent(out) :: seq_drydep_fields	
 
     !----- local -----
@@ -461,6 +464,7 @@ CONTAINS
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
     character(len=8) :: token   ! dry dep field name to add
+    integer :: mpicom           ! MPI communicator
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_drydep_read) ' 
@@ -478,22 +482,27 @@ CONTAINS
     if ( len_trim(NLFilename) == 0  )then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
-    inquire( file=trim(NLFileName), exist=exists)
-    if ( exists ) then
-       unitn = shr_file_getUnit()
-       open( unitn, file=trim(NLFilename), status='old' )
-       if ( s_loglev > 0 ) write(s_logunit,F00) &
-            'Read in drydep_inparm namelist from: ', trim(NLFilename)
-       ierr = 1
-       do while ( ierr /= 0 )
-          read(unitn, drydep_inparm, iostat=ierr)
-          if (ierr < 0) then
-             call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
-          endif
-       end do
-       close( unitn )
-       call shr_file_freeUnit( unitn )
+    call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
+       inquire( file=trim(NLFileName), exist=exists)
+       if ( exists ) then
+          unitn = shr_file_getUnit()
+          open( unitn, file=trim(NLFilename), status='old' )
+          if ( s_loglev > 0 ) write(s_logunit,F00) &
+               'Read in drydep_inparm namelist from: ', trim(NLFilename)
+          ierr = 1
+          do while ( ierr /= 0 )
+             read(unitn, drydep_inparm, iostat=ierr)
+             if (ierr < 0) then
+                call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
+             endif
+          end do
+          close( unitn )
+          call shr_file_freeUnit( unitn )
+       end if
     end if
+    call shr_mpi_bcast( drydep_list, mpicom )
+    call shr_mpi_bcast( drydep_method, mpicom )
 
     n_drydep = 0
 
@@ -537,7 +546,7 @@ CONTAINS
     ! Need to explicitly add Sl_ based on naming convention
 333 format ('Sl_dd',i3.3)
 
-  end subroutine seq_drydep_read
+  end subroutine seq_drydep_readnl
 
 !====================================================================================
 
