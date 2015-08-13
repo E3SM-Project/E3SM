@@ -49,8 +49,6 @@ endif ()
 
 #===== MPI =====
 find_package (MPI REQUIRED)
-target_compile_definitions (pioc 
-    PRIVATE USEMPIIO)
     
 #===== NetCDF-C =====
 find_package (NetCDF "4.3.3" COMPONENTS C)

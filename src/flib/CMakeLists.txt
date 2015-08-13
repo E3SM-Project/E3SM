@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.0.0)
 project (PIOF Fortran)
 include (ExternalProject)
 include (CheckFortranCompiler)
+include (CheckMPI)
 
 #==============================================================================
 #  DEFINE THE TARGET
@@ -34,7 +35,7 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 # Look for c_sizeof capability
-check_Fortran_csizeof ()
+check_Fortran_csizeof (${CMAKE_UTILS_DIR})
 if (Fortran_CSIZEOF)
     target_compile_definitions (piof
         PRIVATE NO_C_SIZEOF)
@@ -96,8 +97,19 @@ endif ()
 
 #===== MPI =====
 find_package (MPI REQUIRED)
-target_compile_definitions (piof 
-    PRIVATE USEMPIIO)
+if (PIO_ENABLE_MPIIO)
+    check_MPIIO (${CMAKE_UTILS_DIR})
+    if (${MPIIO_DETECTED})
+        message (STATUS "MPIIO detected and enabled.")
+    else ()
+        message (STATUS "MPIIO not detected and therefore disabled.")
+        set (PIO_ENABLE_MPIIO FALSE)
+    endif ()
+endif ()
+if (${PIO_ENABLE_MPIIO}) 
+    target_compile_definitions (piof
+        PRIVATE USEMPIIO)
+endif ()
 
 #===== NetCDF-Fortran =====
 find_package (NetCDF "4.3.3" COMPONENTS Fortran)
