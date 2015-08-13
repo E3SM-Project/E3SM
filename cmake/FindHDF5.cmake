@@ -18,7 +18,6 @@
 # The available COMPONENTS are: C HL Fortran Fortran_HL
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
-include (CheckHDF5)
 
 # Define HDF5 C Component
 define_package_component (HDF5 DEFAULT
