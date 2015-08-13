@@ -106,11 +106,3 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
     endif ()
     
 endforeach ()
-
-#==============================================================================
-# CHECKS AND DEPENDENCIES
-foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
-    if (HDF5_comp STREQUAL C)
-        check_HDF5_C ()
-    endif ()
-endforeach ()
