@@ -192,6 +192,8 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             foreach (incdir IN LISTS NetCDF_Fortran_INCLUDE_DIRS)
                 list (APPEND COMP_DEFS "-I${incdir}")
             endforeach ()
+            message ("COMP_DEFS = ${COMP_DEFS}")
+            message ("NetCDF_Fortran_LIBRARIES = ${NetCDF_Fortran_LIBRARIES}")
             try_run (NetCDF_Fortran_VERSION_RUNVAR
                      NetCDF_Fortran_VERSION_COMPVAR
                      ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_Fortran_VERSION
