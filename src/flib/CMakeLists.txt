@@ -57,10 +57,10 @@ add_dependencies (piof genf90)
 
 #===== Fortran Source Generation with GenF90 =====
 foreach (SRC_FILE IN LISTS PIO_GenF90_SRCS)
-add_custom_command (OUTPUT ${SRC_FILE}
-                    COMMAND ${GENF90_DIR}/genf90.pl
-                            ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${SRC_FILE}
-                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
+    add_custom_command (OUTPUT ${SRC_FILE}
+        COMMAND ${GENF90_DIR}/genf90.pl
+                ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${SRC_FILE}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
 endforeach ()
 
 #===== GPTL =====
