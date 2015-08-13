@@ -334,7 +334,7 @@ def get_test_results(test_paths, no_wait=False, check_throughput=False, check_me
         t.start()
 
     while threading.active_count() > 1:
-        time.sleep(SLEEP_INTERVAL_SEC)
+        time.sleep(1)
 
     test_results = dict()
     completed_test_paths = []
