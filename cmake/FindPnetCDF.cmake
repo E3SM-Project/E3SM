@@ -18,6 +18,7 @@
 # The available COMPONENTS are: C, Fortran
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
+include (CheckPnetCDF)
 
 # Define PnetCDF C Component
 define_package_component (PnetCDF DEFAULT
@@ -63,68 +64,9 @@ endforeach ()
 #==============================================================================
 # CHECKS AND DEPENDENCIES
 foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
-
-    # Only do checks if found and not finished checking
-    if (PnetCDF_${PnetCDF_comp}_FOUND AND NOT PnetCDF_${PnetCDF_comp}_FINISHED)
-
-        #----------------------------------------------------------------------
-        # Checks & Dependencies for COMPONENT: C
-        if (PnetCDF_comp STREQUAL C)
-
-            # Get version string
-            try_run (PnetCDF_C_VERSION_RUNVAR PnetCDF_C_VERSION_COMPVAR
-                     ${CMAKE_CURRENT_BINARY_DIR}/tryPnetCDF_C_VERSION
-                     ${CMAKE_SOURCE_DIR}/cmake/TryPnetCDF_VERSION.c
-                     COMPILE_DEFINITIONS -I${PnetCDF_C_INCLUDE_DIR}
-                     COMPILE_OUTPUT_VARIABLE TryPnetCDF_OUT
-                     RUN_OUTPUT_VARIABLE PnetCDF_C_VERSION)
-            if (PnetCDF_C_VERSION)
-                if (PnetCDF_C_VERSION VERSION_LESS PnetCDF_FIND_VERSION)
-                    message (FATAL_ERROR "PnetCDF_C version insufficient")
-                else ()
-                    message (STATUS "Found PnetCDF_C version ${PnetCDF_C_VERSION}")
-                endif ()
-            else ()
-                message (STATUS "Could not find PnetCDF_C version")
-            endif ()
-
-            # Checks and dependencies finished
-            set (PnetCDF_C_FINISHED TRUE
-                 CACHE BOOL "PnetCDF_C finished with checks")
-
-        #----------------------------------------------------------------------
-        # Checks & Dependencies for COMPONENT: Fortran
-        elseif (PnetCDF_comp STREQUAL Fortran)
-
-            # Get version string
-            set (COMP_DEFS)
-            foreach (incdir IN LISTS PnetCDF_Fortran_INCLUDE_DIRS)
-                list (APPEND COMP_DEFS "-I${incdir}")
-            endforeach ()
-            try_run (PnetCDF_Fortran_VERSION_RUNVAR PnetCDF_Fortran_VERSION_COMPVAR
-                     ${CMAKE_CURRENT_BINARY_DIR}/tryPnetCDF_Fortran_VERSION
-                     ${CMAKE_SOURCE_DIR}/cmake/TryPnetCDF_VERSION.f90
-                     COMPILE_DEFINITIONS ${COMP_DEFS}
-                     LINK_LIBRARIES ${PnetCDF_Fortran_LIBRARIES}
-                     COMPILE_OUTPUT_VARIABLE TryPnetCDF_OUT
-                     RUN_OUTPUT_VARIABLE PnetCDF_Fortran_VERSION)
-            if (PnetCDF_Fortran_VERSION)
-                string (STRIP ${PnetCDF_Fortran_VERSION} PnetCDF_Fortran_VERSION)
-                if (PnetCDF_Fortran_VERSION VERSION_LESS PnetCDF_FIND_VERSION)
-                    message (FATAL_ERROR "PnetCDF_Fortran version insufficient")
-                else ()
-                    message (STATUS "Found PnetCDF_Fortran version ${PnetCDF_Fortran_VERSION}")
-                endif ()
-            else ()
-                message (STATUS "Could not find PnetCDF_Fortran version")
-            endif ()
-
-            # Checks and dependencies finished
-            set (PnetCDF_Fortran_FINISHED TRUE
-                 CACHE BOOL "PnetCDF_Fortran finished with checks")
-
-        endif ()
-        
-    endif ()
-    
+    if (PnetCDF_comp STREQUAL C)
+        check_PnetCDF_C ()
+    elseif (PnetCDF_comp STREQUAL Fortran)
+        check_PnetCDF_Fortran ()
+    endif ()    
 endforeach ()

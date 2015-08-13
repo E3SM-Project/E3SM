@@ -15,9 +15,10 @@
 #   HDF5_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with HDF5
 #   HDF5_<lang>_OPTIONS      (LIST) - compiler options to use HDF5
 #
-# The available COMPONENTS are: C Fortran
+# The available COMPONENTS are: C HL Fortran Fortran_HL
 # If no components are specified, it assumes only C
 include (LibFindLibraryMacros)
+include (CheckHDF5)
 
 # Define HDF5 C Component
 define_package_component (HDF5 DEFAULT
@@ -81,6 +82,27 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                                INCLUDE_HINTS ${HDF5_${HDF5_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${HDF5_${HDF5_comp}_LIBRARY_HINTS})
 
+        # Dependencies
+        if (HDF5_comp STREQUAL C AND NOT HDF5_C_IS_SHARED)
+        
+            # DEPENDENCY: LIBZ
+            find_package (LIBZ)
+            if (LIBZ_FOUND)
+                list (APPEND HDF5_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
+                list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
+            endif ()
+            
+        elseif (NOT HDF5_${HDF5_comp}_IS_SHARED)
+
+            # DEPENDENCY: HDF5
+            find_package (HDF5 COMPONENTS C)
+            if (HDF5_C_FOUND)
+                list (APPEND HDF5_${HDF5_comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
+                list (APPEND HDF5_${HDF5_comp}_LIBRARIES ${HDF5_C_LIBRARIES})
+            endif ()
+
+        endif ()
+
     endif ()
     
 endforeach ()
@@ -88,48 +110,7 @@ endforeach ()
 #==============================================================================
 # CHECKS AND DEPENDENCIES
 foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
-
-    # Only continue if found and not finished checking
-    if (HDF5_${HDF5_comp}_FOUND AND NOT HDF5_${HDF5_comp}_FINISHED)
-
-        #----------------------------------------------------------------------
-        # Check & Dependencies for COMPONENT: C
-        if (HDF5_comp STREQUAL C)
-
-            if (NOT HDF5_C_IS_SHARED)
-
-                # DEPENDENCY: LIBZ
-                find_package (LIBZ)
-                if (LIBZ_FOUND)
-                    list (APPEND HDF5_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
-                    list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
-                endif ()
-
-            endif ()
-            
-            set (HDF5_C_FINISHED TRUE
-                 CACHE BOOL "HDF5_C finished with checks")
-
-        #----------------------------------------------------------------------
-        # All other components
-        else ()
-
-            if (NOT HDF5_${HDF5_comp}_IS_SHARED)
-            
-                # DEPENDENCY: HDF5
-                find_package (HDF5 COMPONENTS C)
-                if (HDF5_C_FOUND)
-                    list (APPEND HDF5_${HDF5_comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
-                    list (APPEND HDF5_${HDF5_comp}_LIBRARIES ${HDF5_C_LIBRARIES})
-                endif ()
-                
-            endif ()
-
-            set (HDF5_${HDF5_comp}_FINISHED TRUE
-                 CACHE BOOL "HDF5_${HDF5_comp} finished with checks")
-
-        endif ()
-
+    if (HDF5_comp STREQUAL C)
+        check_HDF5_C ()
     endif ()
-    
 endforeach ()
