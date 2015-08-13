@@ -179,7 +179,7 @@ class TestWaitForTests(unittest.TestCase):
 
         make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS")
 
-        run_thread.join(timeout=30)
+        run_thread.join(timeout=130)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
@@ -199,7 +199,7 @@ class TestWaitForTests(unittest.TestCase):
 
         kill_python_subprocesses(signal.SIGTERM, expected_num_killed=1, tester=self)
 
-        run_thread.join(timeout=30)
+        run_thread.join(timeout=130)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
@@ -213,7 +213,7 @@ class TestWaitForTests(unittest.TestCase):
         run_thread.daemon = True
         run_thread.start()
 
-        run_thread.join(timeout=30)
+        run_thread.join(timeout=130)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
@@ -233,7 +233,7 @@ class TestWaitForTests(unittest.TestCase):
 
         kill_python_subprocesses(signal.SIGTERM, expected_num_killed=1, tester=self)
 
-        run_thread.join(timeout=30)
+        run_thread.join(timeout=130)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
@@ -344,7 +344,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
 
         kill_subprocesses(sig=signal.SIGTERM)
 
-        run_thread.join(timeout=30)
+        run_thread.join(timeout=130)
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
         self.assert_no_sentinel()
