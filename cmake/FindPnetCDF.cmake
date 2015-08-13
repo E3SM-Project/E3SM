@@ -57,6 +57,7 @@ foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
         find_package_component(PnetCDF COMPONENT ${PnetCDF_comp}
                                INCLUDE_HINTS ${PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS})
+                               
     endif ()
     
 endforeach ()
@@ -64,9 +65,9 @@ endforeach ()
 #==============================================================================
 # CHECKS AND DEPENDENCIES
 foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
-    if (PnetCDF_comp STREQUAL C)
+    if (PnetCDF_comp STREQUAL C AND PnetCDF_C_FOUND)
         check_PnetCDF_C ()
-    elseif (PnetCDF_comp STREQUAL Fortran)
+    elseif (PnetCDF_comp STREQUAL Fortran AND PnetCDF_Fortran_FOUND)
         check_PnetCDF_Fortran ()
     endif ()    
 endforeach ()

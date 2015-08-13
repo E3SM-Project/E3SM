@@ -111,9 +111,9 @@ endforeach ()
 #==============================================================================
 # CHECKS AND DEPENDENCIES
 foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
-    if (NetCDF_comp STREQUAL C)
+    if (NetCDF_comp STREQUAL C AND NetCDF_C_FOUND)
         check_NetCDF_C ()
-    elseif (NetCDF_comp STREQUAL Fortran)
+    elseif (NetCDF_comp STREQUAL Fortran AND NetCDF_Fortran_FOUND)
         check_NetCDF_Fortran ()
     endif ()
 endforeach ()

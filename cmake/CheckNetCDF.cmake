@@ -69,6 +69,15 @@ function (check_NetCDF_C)
             endif ()
             set (NetCDF_C_HAS_PNETCDF ${NetCDF_C_HAS_PNETCDF} PARENT_SCOPE)
             
+            # If PNETCDF support, then need to add PnetCDF to includes/libraries
+            find_package(PnetCDF COMPONENT C)
+            if (PnetCDF_C_FOUND)
+                set (temp ${NetCDF_C_INCLUDE_DIRS} ${PnetCDF_C_INCLUDE_DIRS})
+                set (NetCDF_C_INCLUDE_DIRS ${temp} PARENT_SCOPE)
+                set (temp ${NetCDF_C_LIBRARIES} ${PnetCDF_C_LIBRARIES})
+                set (NetCDF_C_LIBRARIES ${temp} PARENT_SCOPE)
+            endif ()
+            
         else ()
             message (WARNING "Could not find netcdf_meta.h")
         endif ()
