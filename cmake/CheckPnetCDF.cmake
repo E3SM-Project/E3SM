@@ -7,7 +7,7 @@
 #
 function (check_PnetCDF_VERSION INC_DIR)
 
-    if (NOT PnetCDF_VERSION)
+    if (NOT DEFINED PnetCDF_VERSION)
     
         # Get version string
         try_run (RUN_RESULT COMPILE_RESULT

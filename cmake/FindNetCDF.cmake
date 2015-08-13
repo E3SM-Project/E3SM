@@ -69,26 +69,7 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
             
             # Dependencies
             if (NCDFcomp STREQUAL C AND NOT NetCDF_C_IS_SHARED)            
-            
-                # DEPENDENCY: HDF5
-                find_package (HDF5 COMPONENTS HL C)
-                if (HDF5_C_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
-                                                       ${HDF5_HL_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
-                                                    ${HDF5_HL_LIBRARIES})
-                endif ()
-    
-                # DEPENDENCY: CURL (If DAP enabled)
-                check_NetCDF_HAS_DAP (${NetCDF_C_INCLUDE_DIRS})
-                if (NetCDF_C_HAS_DAP)
-                    find_package (CURL)
-                    if (CURL_FOUND)
-                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
-                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
-                    endif ()
-                endif ()
-    
+
                 # DEPENDENCY: PnetCDF (if PnetCDF enabled)
                 check_NetCDF_HAS_PNETCDF (${NetCDF_C_INCLUDE_DIRS})
                 if (NetCDF_C_HAS_PNETCDF)
@@ -98,7 +79,26 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                         list (APPEND NetCDF_C_LIBRARIES ${PnetCDF_C_LIBRARIES})
                     endif ()
                 endif ()
-                                
+
+                # DEPENDENCY: CURL (If DAP enabled)
+                check_NetCDF_HAS_DAP (${NetCDF_C_INCLUDE_DIRS})
+                if (NetCDF_C_HAS_DAP)
+                    find_package (CURL)
+                    if (CURL_FOUND)
+                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
+                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
+                    endif ()
+                endif ()
+                                    
+                # DEPENDENCY: HDF5
+                find_package (HDF5 COMPONENTS HL C)
+                if (HDF5_C_FOUND)
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
+                                                       ${HDF5_HL_INCLUDE_DIRS})
+                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
+                                                    ${HDF5_HL_LIBRARIES})
+                endif ()
+    
                 # DEPENDENCY: LIBDL Math
                 list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
     

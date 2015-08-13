@@ -8,7 +8,7 @@
 #
 function (check_NetCDF_VERSION META_HINTS)
 
-    if (NOT NetCDF_VERSION)
+    if (NOT DEFINED NetCDF_VERSION)
     
         find_path (NetCDF_META_DIR
                    NAMES netcdf_meta.h
@@ -47,7 +47,7 @@ endfunction ()
 #
 function (check_NetCDF_HAS_DAP META_HINTS)
 
-    if (NOT NetCDF_HAS_DAP)
+    if (NOT DEFINED NetCDF_HAS_DAP)
     
         find_path (NetCDF_META_DIR
                    NAMES netcdf_meta.h
@@ -63,7 +63,7 @@ function (check_NetCDF_HAS_DAP META_HINTS)
             if (COMPILE_RESULT)
                 message (STATUS "NetCDF has DAP support")
             else ()
-                message (STATUS "NetCDF_C does not have DAP support")
+                message (STATUS "NetCDF does not have DAP support")
             endif ()            
             set (NetCDF_HAS_DAP ${COMPILE_RESULT}
                  CACHE BOOL "Whether NetCDF has DAP support enabled")
@@ -81,7 +81,7 @@ endfunction ()
 #
 function (check_NetCDF_HAS_PARALLEL META_HINTS)
 
-    if (NOT NetCDF_HAS_PARALLEL)
+    if (NOT DEFINED NetCDF_HAS_PARALLEL)
     
         find_path (NetCDF_META_DIR
                    NAMES netcdf_meta.h
@@ -115,7 +115,7 @@ endfunction ()
 #
 function (check_NetCDF_HAS_PNETCDF META_HINTS)
 
-    if (NOT NetCDF_HAS_PNETCDF)
+    if (NOT DEFINED NetCDF_HAS_PNETCDF)
     
         find_path (NetCDF_META_DIR
                    NAMES netcdf_meta.h
