@@ -71,7 +71,7 @@ else ()
 endif ()
 
 #===== PnetCDF-C =====
-find_package (PnetCDF COMPONENTS C)
+find_package (PnetCDF "1.6" COMPONENTS C)
 if (PnetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})

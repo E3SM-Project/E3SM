@@ -191,19 +191,14 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                      COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
                      RUN_OUTPUT_VARIABLE NetCDF_Fortran_VERSION)
             if (NetCDF_Fortran_VERSION)
-                string (STRIP "${NetCDF_Fortran_VERSION}" NetCDF_Fortran_VERSION)
-                string (REPLACE " " ";" NetCDF_Fortran_VERSION ${NetCDF_Fortran_VERSION})
-                list (GET NetCDF_Fortran_VERSION 0 NetCDF_Fortran_VERSION)
+                string (STRIP ${NetCDF_Fortran_VERSION} NetCDF_Fortran_VERSION)
                 if (NetCDF_Fortran_VERSION VERSION_LESS NetCDF_FIND_VERSION)
                     message (FATAL_ERROR "NetCDF_Fortan version insufficient")
                 else ()
                     message (STATUS "Found NetCDF_Fortran version ${NetCDF_Fortran_VERSION}")
                 endif ()
-
             else ()
-
                 message (STATUS "Could not find NetCDF_Fortran version")
-            
             endif ()
 
             # Checks and dependencies finished

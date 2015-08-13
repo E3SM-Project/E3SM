@@ -56,6 +56,65 @@ foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
                                INCLUDE_HINTS ${PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS})
     
+        # Continue only if found
+        if (PnetCDF_${PnetCDF_comp}_FOUND)
+
+        #----------------------------------------------------------------------
+        # Checks & Dependencies for COMPONENT: C
+        if (PnetCDF_comp STREQUAL C AND NOT PnetCDF_C_FINISHED)
+
+            # Get version string
+            try_run (PnetCDF_C_VERSION_RUNVAR PnetCDF_C_VERSION_COMPVAR
+                     ${CMAKE_CURRENT_BINARY_DIR}/tryPnetCDF_C_VERSION
+                     ${CMAKE_SOURCE_DIR}/cmake/TryPnetCDF_VERSION.c
+                     COMPILE_DEFINITIONS -I${PnetCDF_C_INCLUDE_DIR}
+                     COMPILE_OUTPUT_VARIABLE TryPnetCDF_OUT
+                     RUN_OUTPUT_VARIABLE PnetCDF_C_VERSION)
+            if (PnetCDF_C_VERSION)
+                if (PnetCDF_C_VERSION VERSION_LESS PnetCDF_FIND_VERSION)
+                    message (FATAL_ERROR "PnetCDF_C version insufficient")
+                else ()
+                    message (STATUS "Found PnetCDF_C version ${PnetCDF_C_VERSION}")
+                endif ()
+            else ()
+                message (STATUS "Could not find PnetCDF_C version")
+            endif ()
+
+            # Checks and dependencies finished
+            set (PnetCDF_C_FINISHED TRUE
+                 CACHE BOOL "PnetCDF C fully found")
+
+        #----------------------------------------------------------------------
+        # Checks & Dependencies for COMPONENT: Fortran
+        elseif (PnetCDF_comp STREQUAL Fortran AND NOT PnetCDF_Fortran_FINISHED)
+
+            # Get version string
+            try_run (PnetCDF_Fortran_VERSION_RUNVAR PnetCDF_Fortran_VERSION_COMPVAR
+                     ${CMAKE_CURRENT_BINARY_DIR}/tryPnetCDF_Fortran_VERSION
+                     ${CMAKE_SOURCE_DIR}/cmake/TryPnetCDF_VERSION.f90
+                     COMPILE_DEFINITIONS -I${PnetCDF_Fortran_INCLUDE_DIR}
+                     LINK_LIBRARIES ${PnetCDF_Fortran_LIBRARIES}
+                     COMPILE_OUTPUT_VARIABLE TryPnetCDF_OUT
+                     RUN_OUTPUT_VARIABLE PnetCDF_Fortran_VERSION)
+            if (PnetCDF_Fortran_VERSION)
+                string (STRIP ${PnetCDF_Fortran_VERSION} PnetCDF_Fortran_VERSION)
+                if (PnetCDF_Fortran_VERSION VERSION_LESS PnetCDF_FIND_VERSION)
+                    message (FATAL_ERROR "PnetCDF_Fortran version insufficient")
+                else ()
+                    message (STATUS "Found PnetCDF_Fortran version ${PnetCDF_Fortran_VERSION}")
+                endif ()
+            else ()
+                message (STATUS "Could not find PnetCDF_Fortran version")
+            endif ()
+
+            # Checks and dependencies finished
+            set (PnetCDF_Fortran_FINISHED TRUE
+                 CACHE BOOL "PnetCDF Fortran fully found")
+
+        endif ()
+
+        endif ()
+        
     endif ()
     
 endforeach ()
