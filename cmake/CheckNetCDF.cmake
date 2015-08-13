@@ -1,144 +1,145 @@
 #
 # - Functions to check/validate the NetCDF package(s) that were found
+#   These functions should be used from withing the FindNetCDF module.
 #
 
 #
-# - Check NetCDF_C
+# - Check NetCDF Version
 #
-function (check_NetCDF_C)
+function (check_NetCDF_VERSION META_HINTS)
 
-    if (NOT NetCDF_C_CHECKED)
+    if (NOT NetCDF_VERSION)
     
-        find_path (NetCDF_C_META_DIR
+        find_path (NetCDF_META_DIR
                    NAMES netcdf_meta.h
-                   HINTS ${NetCDF_C_INCLUDE_DIRS})
-        if (NetCDF_C_META_DIR)
+                   HINTS ${META_HINTS})
+        if (NetCDF_META_DIR)
         
             # Get version string
-            try_run (NetCDF_C_VERSION_RUNVAR NetCDF_C_VERSION_COMPVAR
-                     ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_C_VERSION
+            try_run (RUN_RESULT COMPILE_RESULT
+                     ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_VERSION
                      ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_VERSION.c
-                     COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
+                     COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
                      COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
-                     RUN_OUTPUT_VARIABLE NetCDF_C_VERSION)
-            if (NetCDF_C_VERSION)
-                if (NetCDF_C_VERSION VERSION_LESS NetCDF_FIND_VERSION)
-                    message (FATAL_ERROR "NetCDF_C version insufficient")
+                     RUN_OUTPUT_VARIABLE NetCDF_VERSION)
+            if (COMPILE_RESULT AND NOT RUN_RESULT STREQUAL FAILED_TO_RUN)
+                if (NetCDF_VERSION VERSION_LESS NetCDF_FIND_VERSION)
+                    message (FATAL_ERROR "NetCDF version insufficient")
                 else ()
-                    message (STATUS "Found NetCDF_C version ${NetCDF_C_VERSION}")
+                    message (STATUS "Found NetCDF version ${NetCDF_VERSION}")
                 endif ()
-            endif ()
-            set (NetCDF_C_VERSION ${NetCDF_C_VERSION} PARENT_SCOPE)
-            
-            # Test for DAP support (requires CURL)
-            try_compile(NetCDF_C_HAS_DAP 
-                        ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_DAP
-                        SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_DAP.c
-                        COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
-                        OUTPUT_VARIABLE TryNetCDF_OUT)
-            if (NetCDF_C_HAS_DAP)
-                message (STATUS "NetCDF_C has DAP support")
+                set (NetCDF_VERSION ${NetCDF_VERSION}
+                     CACHE STRING "NetCDF version string")
             else ()
-                message (STATUS "NetCDF_C does not have DAP support")
-            endif ()
-            set (NetCDF_C_HAS_DAP ${NetCDF_C_HAS_DAP} PARENT_SCOPE)
-    
-            # Test for PARALLEL support
-            try_compile(NetCDF_C_HAS_PARALLEL 
-                        ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PARALLEL
-                        SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PARALLEL.c
-                        COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
-                        OUTPUT_VARIABLE TryNetCDF_OUT)
-            if (NetCDF_C_HAS_PARALLEL)
-                message (STATUS "NetCDF_C has parallel support")
-            else ()
-                message (STATUS "NetCDF_C does not have parallel support")
-            endif ()
-            set (NetCDF_C_HAS_PARALLEL ${NetCDF_C_HAS_PARALLEL} PARENT_SCOPE)
-                
-            # Test for PNETCDF support
-            try_compile(NetCDF_C_HAS_PNETCDF
-                        ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PNETCDF
-                        SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PNETCDF.c
-                        COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
-                        OUTPUT_VARIABLE TryNetCDF_OUT)
-            if (NetCDF_C_HAS_PNETCDF)
-                message (STATUS "NetCDF_C requires PnetCDF")
-            else ()
-                message (STATUS "NetCDF_C does not require PnetCDF")
-            endif ()
-            set (NetCDF_C_HAS_PNETCDF ${NetCDF_C_HAS_PNETCDF} PARENT_SCOPE)
-            
-            if (NetCDF_C_HAS_PNETCDF AND NOT NetCDF_C_IS_SHARED)                 
-                find_package(PnetCDF COMPONENTS C)
-                if (PnetCDF_C_FOUND)
-                    set (temp ${NetCDF_C_INCLUDE_DIRS})
-                    list (APPEND temp ${PnetCDF_C_INCLUDE_DIRS})
-                    set (NetCDF_C_INCLUDE_DIRS ${temp} PARENT_SCOPE)
-                    set (temp ${NetCDF_C_LIBRARIES})
-                    list (APPEND temp ${PnetCDF_C_LIBRARIES})
-                    set (NetCDF_C_LIBRARIES ${temp} PARENT_SCOPE)
-                endif ()
+                message (STATUS "NetCDF version could not be found")
             endif ()
                         
         else ()
-            message (WARNING "Could not find netcdf_meta.h")
+            unset (NetCDF_META_DIR CACHE)
         endif ()
-        
-        set (NetCDF_C_CHECKED TRUE CACHE BOOL "NetCDF_C checked")
         
     endif ()
         
 endfunction ()
 
 #
-# - Check NetCDF_Fortran
+# - Check if NetCDF has DAP support
 #
-function (check_NetCDF_Fortran)
+function (check_NetCDF_HAS_DAP META_HINTS)
 
-    if (NOT NetCDF_Fortran_CHECKED)
+    if (NOT NetCDF_HAS_DAP)
     
-        # Check NetCDF_C if it needs PnetCDF
-        if (NetCDF_C_HAS_PNETCDF AND NOT NetCDF_C_IS_SHARED)
-            find_package(PnetCDF COMPONENTS Fortran)
-            if (PnetCDF_Fortran_FOUND)
-                set (temp ${NetCDF_Fortran_INCLUDE_DIRS})
-                list (APPEND temp ${PnetCDF_Fortran_INCLUDE_DIRS})
-                set (NetCDF_Fortran_INCLUDE_DIRS ${temp} PARENT_SCOPE)
-                set (temp ${NetCDF_Fortran_LIBRARIES})
-                list (APPEND temp ${PnetCDF_Fortran_LIBRARIES})
-                set (NetCDF_Fortran_LIBRARIES ${temp} PARENT_SCOPE)
-            endif ()
-        endif ()
-    
-        # Get version string
-        set (COMP_DEFS)
-        foreach (incdir IN LISTS NetCDF_Fortran_INCLUDE_DIRS)
-            list (APPEND COMP_DEFS "-I${incdir}")
-        endforeach ()
-        message ("COMP_DEFS = ${COMP_DEFS}")
-        message ("NetCDF_Fortran_LIBRARIES = ${NetCDF_Fortran_LIBRARIES}")
-        try_run (NetCDF_Fortran_VERSION_RUNVAR
-                 NetCDF_Fortran_VERSION_COMPVAR
-                 ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_Fortran_VERSION
-                 ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_VERSION.f90
-                 COMPILE_DEFINITIONS ${COMP_DEFS}
-                 LINK_LIBRARIES ${NetCDF_Fortran_LIBRARIES}
-                 COMPILE_OUTPUT_VARIABLE TryNetCDF_OUT
-                 RUN_OUTPUT_VARIABLE NetCDF_Fortran_VERSION)
-        if (NetCDF_Fortran_VERSION)
-            string (STRIP ${NetCDF_Fortran_VERSION} NetCDF_Fortran_VERSION)
-            if (NetCDF_Fortran_VERSION VERSION_LESS NetCDF_FIND_VERSION)
-                message (FATAL_ERROR "NetCDF_Fortan version insufficient")
+        find_path (NetCDF_META_DIR
+                   NAMES netcdf_meta.h
+                   HINTS ${META_HINTS})
+        if (NetCDF_META_DIR)
+
+            # Test for DAP support (requires CURL)
+            try_compile(COMPILE_RESULT 
+                        ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_DAP
+                        SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_DAP.c
+                        COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
+                        OUTPUT_VARIABLE TryNetCDF_OUT)
+            if (COMPILE_RESULT)
+                message (STATUS "NetCDF has DAP support")
             else ()
-                message (STATUS "Found NetCDF_Fortran version ${NetCDF_Fortran_VERSION}")
-            endif ()
-        else ()
-            message (STATUS "Could not find NetCDF_Fortran version")
-        endif ()
-        set (NetCDF_Fortran_VERSION ${NetCDF_Fortran_VERSION} PARENT_SCOPE)
+                message (STATUS "NetCDF_C does not have DAP support")
+            endif ()            
+            set (NetCDF_HAS_DAP ${COMPILE_RESULT}
+                 CACHE BOOL "Whether NetCDF has DAP support enabled")
 
-        set (NetCDF_Fortran_CHECKED TRUE CACHE BOOL "NetCDF_Fortran checked")
+        else ()
+            unset (NetCDF_META_DIR CACHE)
+        endif ()
+    
+    endif ()
+    
+endfunction ()
+
+#
+# - Check if NetCDF has parallel support
+#
+function (check_NetCDF_HAS_PARALLEL META_HINTS)
+
+    if (NOT NetCDF_HAS_PARALLEL)
+    
+        find_path (NetCDF_META_DIR
+                   NAMES netcdf_meta.h
+                   HINTS ${META_HINTS})
+        if (NetCDF_META_DIR)
+
+            # Test for PARALLEL support
+            try_compile(COMPILE_RESULT 
+                        ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PARALLEL
+                        SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PARALLEL.c
+                        COMPILE_DEFINITIONS -I${NetCDF_META_DIR}
+                        OUTPUT_VARIABLE TryNetCDF_OUT)
+            if (COMPILE_RESULT)
+                message (STATUS "NetCDF has parallel support enabled")
+            else ()
+                message (STATUS "NetCDF has parallel support disabled")
+            endif ()
+            set (NetCDF_HAS_PARALLEL ${COMPILE_RESULT}
+                 CACHE BOOL "Whether NetCDF has parallel support enabled")
+
+        else ()
+            unset (NetCDF_META_DIR CACHE)
+        endif ()
+    
+    endif ()
+    
+endfunction ()
+
+#
+# - Check if NetCDF has PnetCDF support
+#
+function (check_NetCDF_HAS_PNETCDF META_HINTS)
+
+    if (NOT NetCDF_HAS_PNETCDF)
+    
+        find_path (NetCDF_META_DIR
+                   NAMES netcdf_meta.h
+                   HINTS ${META_HINTS})
+        if (NetCDF_META_DIR)
+
+            # Test for PNETCDF support
+            try_compile(COMPILE_RESULT
+                        ${CMAKE_CURRENT_BINARY_DIR}/tryNetCDF_PNETCDF
+                        SOURCES ${CMAKE_SOURCE_DIR}/cmake/TryNetCDF_PNETCDF.c
+                        COMPILE_DEFINITIONS -I${NetCDF_C_META_DIR}
+                        OUTPUT_VARIABLE TryNetCDF_OUT)
+            if (COMPILE_RESULT)
+                message (STATUS "NetCDF requires PnetCDF")
+            else ()
+                message (STATUS "NetCDF does not require PnetCDF")
+            endif ()
+            
+            set (NetCDF_HAS_PNETCDF ${COMPILE_RESULT}
+                 CACHE BOOL "Whether NetCDF was build with PnetCDF support")
+
+        else ()
+            unset (NetCDF_META_DIR CACHE)
+        endif ()
     
     endif ()
     

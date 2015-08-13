@@ -37,37 +37,35 @@ find_valid_components (PnetCDF)
 
 #==============================================================================
 # SEARCH FOR VALIDATED COMPONENTS
-foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
+foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
     # If not found already, search...
-    if (NOT PnetCDF_${PnetCDF_comp}_FOUND)
+    if (NOT PnetCDF_${PNCDFcomp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (MPI_${PnetCDF_comp}_FOUND)
-            set (PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS ${MPI_${PnetCDF_comp}_INCLUDE_PATH})
-            set (PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS)
-            foreach (lib IN LISTS MPI_${PnetCDF_comp}_LIBRARIES)
+        if (MPI_${PNCDFcomp}_FOUND)
+            set (PnetCDF_${PNCDFcomp}_INCLUDE_HINTS ${MPI_${PNCDFcomp}_INCLUDE_PATH})
+            set (PnetCDF_${PNCDFcomp}_LIBRARY_HINTS)
+            foreach (lib IN LISTS MPI_${PNCDFcomp}_LIBRARIES)
                 get_filename_component (libdir ${lib} PATH)
-                list (APPEND PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS ${libdir})
+                list (APPEND PnetCDF_${PNCDFcomp}_LIBRARY_HINTS ${libdir})
                 unset (libdir)
             endforeach ()
         endif ()
         
         # Search for the package component
-        find_package_component(PnetCDF COMPONENT ${PnetCDF_comp}
-                               INCLUDE_HINTS ${PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS})
-                               
+        find_package_component(PnetCDF COMPONENT ${PNCDFcomp}
+                               INCLUDE_HINTS ${PnetCDF_${PNCDFcomp}_INCLUDE_HINTS}
+                               LIBRARY_HINTS ${PnetCDF_${PNCDFcomp}_LIBRARY_HINTS})
+
+        # Continue only if component found
+        if (PnetCDF_${PNCDFcomp}_FOUND)
+        
+            # Check version
+            check_PnetCDF_VERSION (${PnetCDF_${PNCDFcomp}_INCLUDE_DIRS})
+            
+        endif ()
+            
     endif ()
     
-endforeach ()
-
-#==============================================================================
-# CHECKS AND DEPENDENCIES
-foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
-    if (PnetCDF_comp STREQUAL C AND PnetCDF_C_FOUND)
-        check_PnetCDF_C ()
-    elseif (PnetCDF_comp STREQUAL Fortran AND PnetCDF_Fortran_FOUND)
-        check_PnetCDF_Fortran ()
-    endif ()    
 endforeach ()

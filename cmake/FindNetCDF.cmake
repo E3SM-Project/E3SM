@@ -37,83 +37,88 @@ find_valid_components (NetCDF)
 
 #==============================================================================
 # SEARCH FOR VALIDATED COMPONENTS
-foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
     # If not found already, search...
-    if (NOT NetCDF_${NetCDF_comp}_FOUND)
+    if (NOT NetCDF_${NCDFcomp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (MPI_${NetCDF_comp}_FOUND)
-            set (NetCDF_${NetCDF_comp}_INCLUDE_HINTS ${MPI_${NetCDF_comp}_INCLUDE_PATH})
-            set (NetCDF_${NetCDF_comp}_LIBRARY_HINTS)
-            foreach (lib IN LISTS MPI_${NetCDF_comp}_LIBRARIES)
+        if (MPI_${NCDFcomp}_FOUND)
+            set (NetCDF_${NCDFcomp}_INCLUDE_HINTS ${MPI_${NCDFcomp}_INCLUDE_PATH})
+            set (NetCDF_${NCDFcomp}_LIBRARY_HINTS)
+            foreach (lib IN LISTS MPI_${NCDFcomp}_LIBRARIES)
                 get_filename_component (libdir ${lib} PATH)
-                list (APPEND NetCDF_${NetCDF_comp}_LIBRARY_HINTS ${libdir})
+                list (APPEND NetCDF_${NCDFcomp}_LIBRARY_HINTS ${libdir})
                 unset (libdir)
             endforeach ()
         endif ()
         
         # Search for the package component    
-        find_package_component(NetCDF COMPONENT ${NetCDF_comp}
-                               INCLUDE_HINTS ${NetCDF_${NetCDF_comp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${NetCDF_${NetCDF_comp}_LIBRARY_HINTS})
+        find_package_component(NetCDF COMPONENT ${NCDFcomp}
+                               INCLUDE_HINTS ${NetCDF_${NCDFcomp}_INCLUDE_HINTS}
+                               LIBRARY_HINTS ${NetCDF_${NCDFcomp}_LIBRARY_HINTS})
 
-        # Dependencies
-        if (NetCDF_comp STREQUAL C AND NOT NetCDF_C_IS_SHARED)
+        # Continue only if component found
+        if (NetCDF_${NCDFcomp}_FOUND)
         
-            # DEPENDENCY: HDF5
-            find_package (HDF5 COMPONENTS HL C)
-            if (HDF5_C_FOUND)
-                list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
-                                                   ${HDF5_HL_INCLUDE_DIRS})
-                list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
-                                                ${HDF5_HL_LIBRARIES})
+            # Check version
+            check_NetCDF_VERSION (${NetCDF_${NCDFcomp}_INCLUDE_DIRS})
+    
+            # Check for parallel support
+            check_NetCDF_HAS_PARALLEL (${NetCDF_${NCDFcomp}_INCLUDE_DIRS})
+            
+            # Dependencies
+            if (NCDFcomp STREQUAL C AND NOT NetCDF_C_IS_SHARED)            
+            
+                # DEPENDENCY: HDF5
+                find_package (HDF5 COMPONENTS HL C)
+                if (HDF5_C_FOUND)
+                    list (APPEND NetCDF_C_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS}
+                                                       ${HDF5_HL_INCLUDE_DIRS})
+                    list (APPEND NetCDF_C_LIBRARIES ${HDF5_C_LIBRARIES}
+                                                    ${HDF5_HL_LIBRARIES})
+                endif ()
+    
+                # DEPENDENCY: CURL (If DAP enabled)
+                check_NetCDF_HAS_DAP (${NetCDF_C_INCLUDE_DIRS})
+                if (NetCDF_C_HAS_DAP)
+                    find_package (CURL)
+                    if (CURL_FOUND)
+                        list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
+                        list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
+                    endif ()
+                endif ()
+    
+                # DEPENDENCY: PnetCDF (if PnetCDF enabled)
+                check_NetCDF_HAS_PNETCDF (${NetCDF_C_INCLUDE_DIRS})
+                if (NetCDF_C_HAS_PNETCDF)
+                    find_package (PnetCDF COMPONENTS C)
+                    if (CURL_FOUND)
+                        list (APPEND NetCDF_C_INCLUDE_DIRS ${PnetCDF_C_INCLUDE_DIRS})
+                        list (APPEND NetCDF_C_LIBRARIES ${PnetCDF_C_LIBRARIES})
+                    endif ()
+                endif ()
+                                
+                # DEPENDENCY: LIBDL Math
+                list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
+    
+            elseif (NCDFcomp STREQUAL Fortran AND NOT NetCDF_Fortran_IS_SHARED)
+            
+                # DEPENDENCY: NetCDF
+                set (orig_comp ${NCDFcomp})
+                set (orig_comps ${NetCDF_FIND_VALID_COMPONENTS})
+                find_package (NetCDF COMPONENTS C)
+                set (NetCDF_FIND_VALID_COMPONENTS ${orig_comps})
+                set (NCDFcomp ${orig_comp})
+                if (NetCDF_C_FOUND)
+                    list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
+                    list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
+                endif ()
+                
             endif ()
 
-            # DEPENDENCY: CURL (If DAP enabled)
-            if (NetCDF_C_HAS_DAP)
-                find_package (CURL)
-                if (CURL_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${CURL_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${CURL_LIBRARIES})
-                endif ()
-            endif ()
-            
-            # DEPENDENCY: PnetCDF (if PnetCDF enabled)
-            if (NetCDF_C_HAS_PNETCDF)
-                find_package (PnetCDF COMPONENTS C)
-                if (CURL_FOUND)
-                    list (APPEND NetCDF_C_INCLUDE_DIRS ${PnetCDF_C_INCLUDE_DIRS})
-                    list (APPEND NetCDF_C_LIBRARIES ${PnetCDF_C_LIBRARIES})
-                endif ()
-            endif ()
-                            
-            # DEPENDENCY: LIBDL Math
-            list (APPEND NetCDF_C_LIBRARIES -ldl -lm)
-
-        elseif (NetCDF_comp STREQUAL Fortran AND NOT NetCDF_Fortran_IS_SHARED)
-        
-            # DEPENDENCY: NetCDF
-            set (orig_comps ${NetCDF_FIND_VALID_COMPONENTS})
-            find_package (NetCDF COMPONENTS C)
-            set (NetCDF_FIND_VALID_COMPONENTS ${orig_comps})
-            if (NetCDF_C_FOUND)
-                list (APPEND NetCDF_Fortran_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
-                list (APPEND NetCDF_Fortran_LIBRARIES ${NetCDF_C_LIBRARIES})
-            endif ()
-            
         endif ()
 
     endif ()
     
-endforeach ()
-
-#==============================================================================
-# CHECKS AND DEPENDENCIES
-foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
-    if (NetCDF_comp STREQUAL C AND NetCDF_C_FOUND)
-        check_NetCDF_C ()
-    elseif (NetCDF_comp STREQUAL Fortran AND NetCDF_Fortran_FOUND)
-        check_NetCDF_Fortran ()
-    endif ()
 endforeach ()

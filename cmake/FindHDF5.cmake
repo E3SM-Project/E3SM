@@ -81,23 +81,28 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                                INCLUDE_HINTS ${HDF5_${HDF5_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${HDF5_${HDF5_comp}_LIBRARY_HINTS})
 
-        # Dependencies
-        if (HDF5_comp STREQUAL C AND NOT HDF5_C_IS_SHARED)
-        
-            # DEPENDENCY: LIBZ
-            find_package (LIBZ)
-            if (LIBZ_FOUND)
-                list (APPEND HDF5_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
-                list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
-            endif ()
-            
-        elseif (NOT HDF5_${HDF5_comp}_IS_SHARED)
+        # Continue only if found
+        if (HDF5_${HDF5_comp}_FOUND)
 
-            # DEPENDENCY: HDF5
-            find_package (HDF5 COMPONENTS C)
-            if (HDF5_C_FOUND)
-                list (APPEND HDF5_${HDF5_comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
-                list (APPEND HDF5_${HDF5_comp}_LIBRARIES ${HDF5_C_LIBRARIES})
+            # Dependencies
+            if (HDF5_comp STREQUAL C AND NOT HDF5_C_IS_SHARED)
+            
+                # DEPENDENCY: LIBZ
+                find_package (LIBZ)
+                if (LIBZ_FOUND)
+                    list (APPEND HDF5_C_INCLUDE_DIRS ${LIBZ_INCLUDE_DIRS})
+                    list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
+                endif ()
+                
+            elseif (NOT HDF5_${HDF5_comp}_IS_SHARED)
+    
+                # DEPENDENCY: HDF5
+                find_package (HDF5 COMPONENTS C)
+                if (HDF5_C_FOUND)
+                    list (APPEND HDF5_${HDF5_comp}_INCLUDE_DIRS ${HDF5_C_INCLUDE_DIRS})
+                    list (APPEND HDF5_${HDF5_comp}_LIBRARIES ${HDF5_C_LIBRARIES})
+                endif ()
+    
             endif ()
 
         endif ()
