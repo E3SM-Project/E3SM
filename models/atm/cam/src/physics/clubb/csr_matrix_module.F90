@@ -1,7 +1,7 @@
 !-----------------------------------------------------------------------
-! $Id: csr_matrix_class_3array.F90 5529 2011-11-29 19:49:15Z connork@uwm.edu $
+! $Id: csr_matrix_module.F90 7012 2014-07-07 14:18:31Z schemena@uwm.edu $
 !===============================================================================
-module csr_matrix_class
+module csr_matrix_module
 
   ! Description:
   ! This module contains some of the matrix description arrays required by
@@ -66,7 +66,7 @@ module csr_matrix_class
   public :: csr_tridiag_ia, csr_tridiag_ja, &
             csr_banddiag5_135_ia, csr_banddiag5_135_ja, &
             csr_banddiag5_12345_ia, csr_banddiag5_12345_ja, &
-            initialize_csr_class, &
+            initialize_csr_matrix, &
             ia_size, tridiag_ja_size, band12345_ja_size, band135_ja_size, &
             csr_intlc_s3b_f5b_ia, csr_intlc_s3b_f5b_ja, &
             csr_intlc_trid_5b_ia, csr_intlc_trid_5b_ja, &
@@ -109,20 +109,20 @@ module csr_matrix_class
     intlc_5d_5d_ja_size, & ! Size of the interlaced 5-diag+5-diag ja arrays.
     intlc_td_5d_ja_size  ! Size of the interlaced tridiag+5-diag ja arrays.
 
-!$omp threadprivate( csr_tridiag_ia, csr_tridiag_ja)
-!$omp threadprivate(csr_banddiag5_135_ia, csr_banddiag5_135_ja)
-!$omp threadprivate(csr_banddiag5_12345_ia, csr_banddiag5_12345_ja)
-!$omp threadprivate(ia_size, tridiag_ja_size, band12345_ja_size, band135_ja_size)
-!$omp threadprivate(csr_intlc_s3b_f5b_ia, csr_intlc_s3b_f5b_ja)
-!$omp threadprivate(csr_intlc_trid_5b_ia, csr_intlc_trid_5b_ja)
-!$omp threadprivate(csr_intlc_5b_5b_ia, csr_intlc_5b_5b_ja)
-!$omp threadprivate(intlc_ia_size, intlc_s3d_5d_ja_size, intlc_5d_5d_ja_size)
-!$omp threadprivate(intlc_td_5d_ja_size)
+!$omp threadprivate (csr_tridiag_ia, csr_tridiag_ja)
+!$omp threadprivate (csr_banddiag5_135_ia, csr_banddiag5_135_ja)
+!$omp threadprivate (csr_banddiag5_12345_ia, csr_banddiag5_12345_ja)
+!$omp threadprivate (ia_size, tridiag_ja_size, band12345_ja_size, band135_ja_size)
+!$omp threadprivate (csr_intlc_s3b_f5b_ia, csr_intlc_s3b_f5b_ja)
+!$omp threadprivate (csr_intlc_trid_5b_ia, csr_intlc_trid_5b_ja)
+!$omp threadprivate (csr_intlc_5b_5b_ia, csr_intlc_5b_5b_ja)
+!$omp threadprivate (intlc_ia_size, intlc_s3d_5d_ja_size, intlc_5d_5d_ja_size)
+!$omp threadprivate (intlc_td_5d_ja_size)
 
   contains
 
   !============================================================================
-  subroutine initialize_csr_class
+  subroutine initialize_csr_matrix
 
     ! Description:
     ! PARDISO matrix array initialization
@@ -527,6 +527,6 @@ module csr_matrix_class
       end do
     end if ! l_print_ia_ja
 
-  end subroutine initialize_csr_class
+  end subroutine initialize_csr_matrix
 
-end module csr_matrix_class
+end module csr_matrix_module

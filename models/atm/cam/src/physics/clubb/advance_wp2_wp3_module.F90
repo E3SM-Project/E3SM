@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------
-! $Id: advance_wp2_wp3_module.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: advance_wp2_wp3_module.F90 7380 2014-11-11 20:34:25Z schemena@uwm.edu $
 !===============================================================================
 module advance_wp2_wp3_module
 
@@ -41,9 +41,9 @@ module advance_wp2_wp3_module
   subroutine advance_wp2_wp3( dt, sfc_elevation, sigma_sqd_w, wm_zm, wm_zt, &
                               a3, a3_zt, wp3_on_wp2, &
                               wpthvp, wp2thvp, um, vm, upwp, vpwp, &
-                              up2, vp2, Kh_zm, Kh_zt, tau_zm, tau_zt, &
+                              up2, vp2, Kh_zm, Kh_zt, tau_zm, tau_zt, tau_C1_zm, &
                               Skw_zm, Skw_zt, rho_ds_zm, rho_ds_zt, &
-                              invrs_rho_ds_zm, invrs_rho_ds_zt, &
+                              invrs_rho_ds_zm, invrs_rho_ds_zt, radf, &
                               thv_ds_zm, thv_ds_zt, mixt_frac, &
                               wp2, wp3, wp3_zm, wp2_zt, err_code )
 
@@ -76,36 +76,35 @@ module advance_wp2_wp3_module
         c_K1,  & 
         c_K8
 
-    use stats_type, only: & 
+    use stats_type_utilities, only: & 
         stat_update_var
 
     use stats_variables, only: &
         iC1_Skw_fnc, &
         iC11_Skw_fnc, &
-        zm, &
-        zt, &
+        stats_zm, &
+        stats_zt, &
         l_stats_samp
 
     use constants_clubb, only:  & 
         fstderr    ! Variable(s)
 
-    use model_flags, only: &
-        l_hyper_dfsn ! Variable(s)
-
     use clubb_precision, only:  & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
     use error_code, only:  & 
         fatal_error,  & ! Procedure(s)
         clubb_at_least_debug_level
+
+    use error_code, only: &
+      clubb_var_out_of_range ! Constant(s)
 
     implicit none
 
     intrinsic :: exp
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Model timestep                            [s]
 
     real( kind = core_rknd ), intent(in) ::  &
@@ -130,12 +129,14 @@ module advance_wp2_wp3_module
       Kh_zt,           & ! Eddy diffusivity on thermodynamic levels  [m^2/s]
       tau_zm,          & ! Time-scale tau on momentum levels         [s]
       tau_zt,          & ! Time-scale tau on thermodynamic levels    [s]
+      tau_C1_zm,       & ! Tau values used for the C1 (dp1) term in wp2 [s]
       Skw_zm,          & ! Skewness of w on momentum levels          [-]
       Skw_zt,          & ! Skewness of w on thermodynamic levels     [-]
       rho_ds_zm,       & ! Dry, static density on momentum levels    [kg/m^3]
       rho_ds_zt,       & ! Dry, static density on thermo. levels     [kg/m^3]
       invrs_rho_ds_zm, & ! Inv. dry, static density @ momentum levs. [m^3/kg]
       invrs_rho_ds_zt, & ! Inv. dry, static density @ thermo. levs.  [m^3/kg]
+      radf,            & ! Buoyancy production at the CL top         [m^2/s^3]
       thv_ds_zm,       & ! Dry, base-state theta_v on momentum levs. [K]
       thv_ds_zt,       & ! Dry, base-state theta_v on thermo. levs.  [K]
       mixt_frac          ! Weight of 1st normal distribution         [-]
@@ -216,10 +217,6 @@ module advance_wp2_wp3_module
       C11_Skw_fnc(1:gr%nz) = C11b
     end if
 
-#ifdef CLUBB_CAM
-      C11_Skw_fnc(1:gr%nz) = 0.65_core_rknd   
-#endif
-
     ! The if..then here is only for computational efficiency -dschanen 2 Sept 08
     if ( C1 /= C1b ) then
       C1_Skw_fnc(1:gr%nz) =  & 
@@ -231,9 +228,18 @@ module advance_wp2_wp3_module
     !C11_Skw_fnc = C11
     !C1_Skw_fnc = C1
 
+    if ( clubb_at_least_debug_level( 2 ) ) then
+      ! Assertion check for C11_Skw_fnc
+      if ( any( C11_Skw_fnc(:) > 1._core_rknd ) .or. any( C11_Skw_fnc(:) < 0._core_rknd ) ) then
+        write(fstderr,*) "The C11_Skw_fnc is outside the valid range for this variable"
+        err_code = clubb_var_out_of_range
+        return
+      end if
+    end if
+
     if ( l_stats_samp ) then
-      call stat_update_var( iC11_Skw_fnc, C11_Skw_fnc, zt )
-      call stat_update_var( iC1_Skw_fnc, C1_Skw_fnc, zm )
+      call stat_update_var( iC11_Skw_fnc, C11_Skw_fnc, stats_zt )
+      call stat_update_var( iC1_Skw_fnc, C1_Skw_fnc, stats_zm )
     endif
 
     ! Define the Coefficent of Eddy Diffusivity for the wp2 and wp3.
@@ -252,26 +258,19 @@ module advance_wp2_wp3_module
 
     enddo
 
-    ! Declare the number of subdiagonals and superdiagonals in the LHS matrix.
-    if ( l_hyper_dfsn ) then
-       ! There are nine overall diagonals (including four subdiagonals
-       ! and four superdiagonals).
-       nsub = 4
-       nsup = 4
-    else
-       ! There are five overall diagonals (including two subdiagonals
-       ! and two superdiagonals).
-       nsub = 2
-       nsup = 2
-    endif
+    ! There are five overall diagonals (including two subdiagonals
+    ! and two superdiagonals).
+    nsub = 2
+    nsup = 2
+
 
     ! Solve semi-implicitly
     call wp23_solve( dt, sfc_elevation, sigma_sqd_w, wm_zm, wm_zt, & ! Intent(in)
                      a3, a3_zt, wp3_on_wp2, &  ! Intent(in)
                      wpthvp, wp2thvp, um, vm, upwp, vpwp,    & ! Intent(in)
-                     up2, vp2, Kw1, Kw8, Kh_zt, Skw_zt, tau_zm, tauw3t,    & ! Intent(in)
+                     up2, vp2, Kw1, Kw8, Kh_zt, Skw_zt, tau_zm, tauw3t, tau_C1_zm,   & ! Intent(in)
                      C1_Skw_fnc, C11_Skw_fnc, rho_ds_zm, rho_ds_zt, & ! Intent(in)
-                     invrs_rho_ds_zm, invrs_rho_ds_zt, thv_ds_zm,   & ! Intent(in)
+                     invrs_rho_ds_zm, invrs_rho_ds_zt, radf, thv_ds_zm,   & ! Intent(in)
                      thv_ds_zt, nsub, nsup,                         & ! Intent(in)
                      wp2, wp3, wp3_zm, wp2_zt, wp2_wp3_err_code     ) ! Intent(inout)
 
@@ -324,9 +323,9 @@ module advance_wp2_wp3_module
   subroutine wp23_solve( dt, sfc_elevation, sigma_sqd_w, wm_zm, wm_zt, &
                          a3, a3_zt, wp3_on_wp2, &
                          wpthvp, wp2thvp, um, vm, upwp, vpwp, &
-                         up2, vp2, Kw1, Kw8, Kh_zt, Skw_zt, tau1m, tauw3t, &
+                         up2, vp2, Kw1, Kw8, Kh_zt, Skw_zt, tau1m, tauw3t, tau_C1_zm, &
                          C1_Skw_fnc, C11_Skw_fnc, rho_ds_zm, rho_ds_zt, &
-                         invrs_rho_ds_zm, invrs_rho_ds_zt, thv_ds_zm, &
+                         invrs_rho_ds_zm, invrs_rho_ds_zt, radf, thv_ds_zm, &
                          thv_ds_zt, nsub, nsup, &
                          wp2, wp3, wp3_zm, wp2_zt, err_code )
 
@@ -347,41 +346,37 @@ module advance_wp2_wp3_module
 
     use constants_clubb, only: & 
         w_tol_sqd,      & ! Variables(s)
-        eps,           &
-        zero_threshold, &
-        fstderr
+        zero_threshold
 
     use model_flags, only:  & 
         l_tke_aniso,  & ! Variable(s)
-        l_hyper_dfsn, &
         l_hole_fill,  &
         l_gmres
 
     use clubb_precision, only:  & 
-        time_precision, &  ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
     use lapack_wrap, only:  & 
         band_solve,  & ! Procedure(s) 
         band_solvex
 
     use fill_holes, only: & 
-        fill_holes_driver
+        fill_holes_vertical
 
     use clip_explicit, only: &
         clip_variance, & ! Procedure(s)
         clip_skewness
 
-    use stats_type, only: & 
+    use stats_type_utilities, only: & 
         stat_begin_update,  & ! Procedure(s)
         stat_update_var_pt, &
         stat_end_update,  &
         stat_end_update_pt
 
     use stats_variables, only:  & 
-        zm,         & ! Variable(s)
-        zt, & 
-        sfc, & 
+        stats_zm,         & ! Variable(s)
+        stats_zt, & 
+        stats_sfc, & 
         l_stats_samp, & 
         iwp2_ta, & 
         iwp2_ma, & 
@@ -391,7 +386,6 @@ module advance_wp2_wp3_module
         iwp2_dp2, & 
         iwp2_pr1, & 
         iwp2_pr2, &
-        iwp2_4hd, &
         iwp3_ta, & 
         iwp3_ma, & 
         iwp3_tp, & 
@@ -399,7 +393,6 @@ module advance_wp2_wp3_module
         iwp3_dp1, & 
         iwp3_pr1, &
         iwp3_pr2, &
-        iwp3_4hd, &
         iwp23_matrix_condt_num
 
     use stats_variables, only:  & 
@@ -415,13 +408,10 @@ module advance_wp2_wp3_module
         zmscr10, &
         zmscr11, &
         zmscr12, &
-        zmscr13, &
-        zmscr14, &
-        zmscr15, &
-        zmscr16, &
-        zmscr17, &
         ztscr01, &
-        ztscr02, &
+        ztscr02
+
+    use stats_variables, only: &
         ztscr03, &
         ztscr04, &
         ztscr05, &
@@ -435,12 +425,7 @@ module advance_wp2_wp3_module
         ztscr13, &
         ztscr14, &
         ztscr15, &
-        ztscr16, &
-        ztscr17, &
-        ztscr18, &
-        ztscr19, &
-        ztscr20, &
-        ztscr21
+        ztscr16
 
     implicit none
 
@@ -452,7 +437,7 @@ module advance_wp2_wp3_module
       nrhs = 1      ! Number of RHS vectors
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Timestep                                  [s]
 
     real( kind = core_rknd ), intent(in) ::  &
@@ -479,12 +464,14 @@ module advance_wp2_wp3_module
       Skw_zt,          & ! Skewness of w on thermodynamic levels     [-]
       tau1m,           & ! Time-scale tau on momentum levels         [s]
       tauw3t,          & ! Time-scale tau on thermodynamic levels    [s]
+      tau_C1_zm,       & ! Tau values used for the C1 (dp1) term in wp2 [s]
       C1_Skw_fnc,      & ! C_1 parameter with Sk_w applied           [-]
       C11_Skw_fnc,     & ! C_11 parameter with Sk_w applied          [-]
       rho_ds_zm,       & ! Dry, static density on momentum levels    [kg/m^3]
       rho_ds_zt,       & ! Dry, static density on thermo. levels     [kg/m^3]
       invrs_rho_ds_zm, & ! Inv. dry, static density @ momentum levs. [m^3/kg]
       invrs_rho_ds_zt, & ! Inv. dry, static density @ thermo. levs.  [m^3/kg]
+      radf,            & ! Buoyancy production at CL top             [m^2/s^3]
       thv_ds_zm,       & ! Dry, base-state theta_v on momentum levs. [K]
       thv_ds_zt          ! Dry, base-state theta_v on thermo. levs.  [K]
 
@@ -525,7 +512,7 @@ module advance_wp2_wp3_module
       rcond  ! Est. of the reciprocal of the condition #
 
     ! Array indices
-    integer :: k, km1, km2, kp1, kp2, k_wp2, k_wp3
+    integer :: k, km1, kp1, k_wp2, k_wp3
 
     ! Set logical to true for Crank-Nicholson diffusion scheme
     ! or to false for completely implicit diffusion scheme.
@@ -552,15 +539,15 @@ module advance_wp2_wp3_module
     call wp23_rhs( dt, wp2, wp3, a1, a1_zt, &
                    a3, a3_zt, wp3_on_wp2, wpthvp, wp2thvp, um, vm,  & 
                    upwp, vpwp, up2, vp2, Kw1, Kw8, Kh_zt,  & 
-                   Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
-                   C11_Skw_fnc, rho_ds_zm, invrs_rho_ds_zt, &
+                   Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
+                   C11_Skw_fnc, rho_ds_zm, invrs_rho_ds_zt, radf, &
                    thv_ds_zm, thv_ds_zt, l_crank_nich_diff, &
                    rhs )
 
     if (l_gmres) then
       call wp23_gmres( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt, &
                        wp3_on_wp2, &
-                       Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                       Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                        C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                        invrs_rho_ds_zt, l_crank_nich_diff, nsup, nsub, nrhs, &
                        rhs, &
@@ -570,7 +557,7 @@ module advance_wp2_wp3_module
       ! Build the left-hand side matrix.
       call wp23_lhs( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt,  &
                      wp3_on_wp2, &
-                     Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                     Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                      C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                      invrs_rho_ds_zt, l_crank_nich_diff, nsub, nsup,  & 
                      lhs )
@@ -584,7 +571,7 @@ module advance_wp2_wp3_module
                           lhs, rhs, solut, rcond, err_code )
 
         ! Est. of the condition number of the w'^2/w^3 LHS matrix
-        call stat_update_var_pt( iwp23_matrix_condt_num, 1, 1.0_core_rknd / rcond, sfc )
+        call stat_update_var_pt( iwp23_matrix_condt_num, 1, 1.0_core_rknd / rcond, stats_sfc )
 
       else
         ! Perform LU decomp and solve system (LAPACK)
@@ -611,21 +598,19 @@ module advance_wp2_wp3_module
 
     end do
 
-    if (l_stats_samp) then
+    if ( l_stats_samp ) then
 
       ! Finalize implicit contributions for wp2
 
       do k = 2, gr%nz-1
 
         km1 = max( k-1, 1 )
-        km2 = max( k-2, 1 )
         kp1 = min( k+1, gr%nz )
-        kp2 = min( k+2, gr%nz )
 
         ! w'^2 term dp1 has both implicit and explicit components;
         ! call stat_end_update_pt.
         call stat_end_update_pt( iwp2_dp1, k, & 
-           zmscr01(k) * wp2(k), zm )
+           zmscr01(k) * wp2(k), stats_zm )
 
         ! w'^2 term dp2 has both implicit and explicit components (if the
         ! Crank-Nicholson scheme is selected); call stat_end_update_pt.  
@@ -635,50 +620,41 @@ module advance_wp2_wp3_module
            call stat_end_update_pt( iwp2_dp2, k, &
               zmscr02(k) * wp2(km1) & 
             + zmscr03(k) * wp2(k) & 
-            + zmscr04(k) * wp2(kp1), zm )
+            + zmscr04(k) * wp2(kp1), stats_zm )
         else
            call stat_update_var_pt( iwp2_dp2, k, &
               zmscr02(k) * wp2(km1) & 
             + zmscr03(k) * wp2(k) & 
-            + zmscr04(k) * wp2(kp1), zm )
+            + zmscr04(k) * wp2(kp1), stats_zm )
         endif
 
         ! w'^2 term ta is completely implicit; call stat_update_var_pt.
         call stat_update_var_pt( iwp2_ta, k, & 
            zmscr05(k) * wp3(k) & 
-         + zmscr06(k) * wp3(kp1), zm )
+         + zmscr06(k) * wp3(kp1), stats_zm )
 
         ! w'^2 term ma is completely implicit; call stat_update_var_pt.
         call stat_update_var_pt( iwp2_ma, k, & 
            zmscr07(k) * wp2(km1) & 
          + zmscr08(k) * wp2(k) & 
-         + zmscr09(k) * wp2(kp1), zm )
+         + zmscr09(k) * wp2(kp1), stats_zm )
 
         ! w'^2 term ac is completely implicit; call stat_update_var_pt.
         call stat_update_var_pt( iwp2_ac, k,  & 
-           zmscr10(k) * wp2(k), zm )
+           zmscr10(k) * wp2(k), stats_zm )
 
         ! w'^2 term pr1 has both implicit and explicit components;
         ! call stat_end_update_pt.
         if ( l_tke_aniso ) then
           call stat_end_update_pt( iwp2_pr1, k, & 
-             zmscr12(k) * wp2(k), zm )
+             zmscr12(k) * wp2(k), stats_zm )
         endif
 
         ! w'^2 term pr2 has both implicit and explicit components;
         ! call stat_end_update_pt.
         call stat_end_update_pt( iwp2_pr2, k, & 
-           zmscr11(k) * wp2(k), zm )
+           zmscr11(k) * wp2(k), stats_zm )
 
-        ! w'^2 term 4hd is completely implicit; call stat_update_var_pt.
-        if ( l_hyper_dfsn ) then
-           call stat_update_var_pt( iwp2_4hd, k, &
-              zmscr13(k) * wp2(km2) &
-            + zmscr14(k) * wp2(km1) &
-            + zmscr15(k) * wp2(k) &
-            + zmscr16(k) * wp2(kp1) &
-            + zmscr17(k) * wp2(kp2), zm )
-        endif
       enddo
 
       ! Finalize implicit contributions for wp3
@@ -686,14 +662,12 @@ module advance_wp2_wp3_module
       do k = 2, gr%nz-1, 1
 
         km1 = max( k-1, 1 )
-        km2 = max( k-2, 1 )
         kp1 = min( k+1, gr%nz )
-        kp2 = min( k+2, gr%nz )
 
         ! w'^3 term pr1 has both implicit and explicit components; 
         ! call stat_end_update_pt.
         call stat_end_update_pt( iwp3_pr1, k, & 
-           ztscr01(k) * wp3(k), zt )
+           ztscr01(k) * wp3(k), stats_zt )
 
         ! w'^3 term dp1 has both implicit and explicit components (if the
         ! Crank-Nicholson scheme is selected); call stat_end_update_pt.  
@@ -703,12 +677,12 @@ module advance_wp2_wp3_module
            call stat_end_update_pt( iwp3_dp1, k, & 
               ztscr02(k) * wp3(km1) & 
             + ztscr03(k) * wp3(k) & 
-            + ztscr04(k) * wp3(kp1), zt )
+            + ztscr04(k) * wp3(kp1), stats_zt )
         else
            call stat_update_var_pt( iwp3_dp1, k, & 
               ztscr02(k) * wp3(km1) & 
             + ztscr03(k) * wp3(k) & 
-            + ztscr04(k) * wp3(kp1), zt )
+            + ztscr04(k) * wp3(kp1), stats_zt )
         endif
 
         ! w'^3 term ta has both implicit and explicit components; 
@@ -718,38 +692,29 @@ module advance_wp2_wp3_module
          + ztscr06(k) * wp2(km1) & 
          + ztscr07(k) * wp3(k) & 
          + ztscr08(k) * wp2(k) & 
-         + ztscr09(k) * wp3(kp1), zt )
+         + ztscr09(k) * wp3(kp1), stats_zt )
 
         ! w'^3 term tp has both implicit and explicit components; 
         ! call stat_end_update_pt.
         call stat_end_update_pt( iwp3_tp, k,  & 
            ztscr10(k) * wp2(km1) & 
-         + ztscr11(k) * wp2(k), zt )
+         + ztscr11(k) * wp2(k), stats_zt )
 
         ! w'^3 term ma is completely implicit; call stat_update_var_pt.
         call stat_update_var_pt( iwp3_ma, k, & 
            ztscr12(k) * wp3(km1) & 
          + ztscr13(k) * wp3(k) & 
-         + ztscr14(k) * wp3(kp1), zt )
+         + ztscr14(k) * wp3(kp1), stats_zt )
 
         ! w'^3 term ac is completely implicit; call stat_update_var_pt.
         call stat_update_var_pt( iwp3_ac, k, & 
-           ztscr15(k) * wp3(k), zt )
+           ztscr15(k) * wp3(k), stats_zt )
 
         ! w'^3 term pr2 has both implicit and explicit components; 
         ! call stat_end_update_pt.
         call stat_end_update_pt( iwp3_pr2, k, & 
-           ztscr16(k) * wp3(k), zt )
+           ztscr16(k) * wp3(k), stats_zt )
 
-        ! w'^3 term 4hd is completely implicit; call stat_update_var_pt.
-        if ( l_hyper_dfsn ) then
-           call stat_update_var_pt( iwp3_4hd, k, &
-              ztscr17(k) * wp3(km2) &
-            + ztscr18(k) * wp3(km1) &
-            + ztscr19(k) * wp3(k) &
-            + ztscr20(k) * wp3(kp1) &
-            + ztscr21(k) * wp3(kp2), zt )
-        endif
       enddo
 
     endif ! l_stats_samp
@@ -757,15 +722,15 @@ module advance_wp2_wp3_module
 
     if ( l_stats_samp ) then
       ! Store previous value for effect of the positive definite scheme
-      call stat_begin_update( iwp2_pd, wp2 / real( dt, kind = core_rknd ), zm )
+      call stat_begin_update( iwp2_pd, wp2 / dt, stats_zm )
     endif
 
     if ( l_hole_fill .and. any( wp2 < w_tol_sqd ) ) then
 
       ! Use a simple hole filling algorithm
-      call fill_holes_driver( 2, w_tol_sqd, "zm", &
-                              rho_ds_zt, rho_ds_zm, &
-                              wp2 )
+      call fill_holes_vertical( 2, w_tol_sqd, "zm", &
+                                rho_ds_zt, rho_ds_zm, &
+                                wp2 )
 
     endif ! wp2
 
@@ -777,7 +742,7 @@ module advance_wp2_wp3_module
 
     if ( l_stats_samp ) then
       ! Store updated value for effect of the positive definite scheme
-      call stat_end_update( iwp2_pd, wp2 / real( dt, kind = core_rknd ), zm )
+      call stat_end_update( iwp2_pd, wp2 / dt, stats_zm )
     endif
 
 
@@ -800,7 +765,7 @@ module advance_wp2_wp3_module
 
   subroutine wp23_gmres( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt, &
                          wp3_on_wp2, &
-                         Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                         Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                          C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                          invrs_rho_ds_zt, l_crank_nich_diff, nsup, nsub, nrhs, &
                          rhs, &
@@ -817,8 +782,7 @@ module advance_wp2_wp3_module
         gr  ! Variable(s) 
 
     use clubb_precision, only:  & 
-        time_precision, &  ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
 #ifdef MKL
     use error_code, only: &
@@ -827,7 +791,7 @@ module advance_wp2_wp3_module
     use stats_variables, only:  & 
         iwp23_matrix_condt_num, & ! Variable(s)
         l_stats_samp, & 
-        sfc
+        stats_sfc
 
     use constants_clubb, only: & 
         fstderr         ! Variable(s)
@@ -836,10 +800,10 @@ module advance_wp2_wp3_module
         band_solve,  & ! Procedure(s) 
         band_solvex
 
-    use stats_type, only: & 
+    use stats_type_utilities, only: & 
         stat_update_var_pt ! Procedure(s)
 
-    use csr_matrix_class, only: &
+    use csr_matrix_module, only: &
         csr_intlc_5b_5b_ia, & ! Variables
         csr_intlc_5b_5b_ja, &
         intlc_5d_5d_ja_size
@@ -860,7 +824,7 @@ module advance_wp2_wp3_module
     implicit none
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Timestep                                  [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  & 
@@ -879,6 +843,7 @@ module advance_wp2_wp3_module
       Skw_zt,          & ! Skewness of w on thermodynamic levels     [-]
       tau1m,           & ! Time-scale tau on momentum levels         [s]
       tauw3t,          & ! Time-scale tau on thermodynamic levels    [s]
+      tau_C1_zm,       & ! Tau values used for the C1 (dp1) term in wp2 [s]
       C1_Skw_fnc,      & ! C_1 parameter with Sk_w applied           [-]
       C11_Skw_fnc,     & ! C_11 parameter with Sk_w applied          [-]
       rho_ds_zm,       & ! Dry, static density on momentum levels    [kg/m^3]
@@ -922,14 +887,9 @@ module advance_wp2_wp3_module
 
     ! Begin code
 
-    if (nsup > 2) then
-      write (fstderr, *) "WARNING: CSR-format solvers currently do not", &
-                         "support solving with hyper diffusion", &
-                         "at this time. l_hyper_dfsn ignored."
-    end if
     call wp23_lhs_csr( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt,  &
                        wp3_on_wp2, &
-                       Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                       Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                        C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                        invrs_rho_ds_zt, l_crank_nich_diff, & 
                        lhs_a_csr )
@@ -937,7 +897,7 @@ module advance_wp2_wp3_module
     if ( .not. l_gmres_soln_ok(gmres_idx_wp2wp3) ) then
       call wp23_lhs( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt,  &
                      wp3_on_wp2, &
-                     Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                     Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                      C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                      invrs_rho_ds_zt, l_crank_nich_diff, nsub, nsup,  & 
                      lhs )
@@ -969,7 +929,7 @@ module advance_wp2_wp3_module
       ! Generate the LHS in LAPACK format
       call wp23_lhs( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt,  &
                      wp3_on_wp2, &
-                     Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                     Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                      C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                      invrs_rho_ds_zt, l_crank_nich_diff, nsub, nsup,  & 
                      lhs )
@@ -985,7 +945,7 @@ module advance_wp2_wp3_module
                           lhs, rhs, solut, rcond, err_code )
 
         ! Est. of the condition number of the w'^2/w^3 LHS matrix
-        call stat_update_var_pt( iwp23_matrix_condt_num, 1, 1.0_core_rknd / rcond, sfc )
+        call stat_update_var_pt( iwp23_matrix_condt_num, 1, 1.0_core_rknd / rcond, stats_sfc )
 
       else
         ! Perform LU decomp and solve system (LAPACK)
@@ -1016,6 +976,7 @@ module advance_wp2_wp3_module
     solut(1:gr%nz) = Skw_zt
     solut(1:gr%nz) = tau1m
     solut(1:gr%nz) = tauw3t
+    solut(1:gr%nz) = tau_C1_zm
     solut(1:gr%nz) = wm_zt
     solut(1:gr%nz) = wm_zm
     solut(1:gr%nz) = wp2
@@ -1032,7 +993,7 @@ module advance_wp2_wp3_module
   !=============================================================================
   subroutine wp23_lhs( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt,  &
                        wp3_on_wp2, &
-                       Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                       Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                        C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                        invrs_rho_ds_zt, l_crank_nich_diff, nsub, nsup,  & 
                        lhs )
@@ -1059,17 +1020,14 @@ module advance_wp2_wp3_module
         C8b, & 
         C12, & 
         nu1_vert_res_dep, & 
-        nu8_vert_res_dep, &
-        nu_hd_vert_res_dep
+        nu8_vert_res_dep
 
     use constants_clubb, only:  & 
-        eps,          & ! Variable(s)
         three_halves, &
         gamma_over_implicit_ts
 
     use model_flags, only: & 
-        l_tke_aniso, & ! Variable(s)
-        l_hyper_dfsn
+        l_tke_aniso   ! Variable(s)
 
     use diffusion, only: & 
         diffusion_zm_lhs,  & ! Procedures
@@ -1079,12 +1037,7 @@ module advance_wp2_wp3_module
         term_ma_zm_lhs,  & ! Procedures
         term_ma_zt_lhs
 
-    use hyper_diffusion_4th_ord, only:  &
-        hyper_dfsn_4th_ord_zm_lhs,  &
-        hyper_dfsn_4th_ord_zt_lhs
-
     use clubb_precision, only: &
-        time_precision, &
         core_rknd
 
     use stats_variables, only: & 
@@ -1100,13 +1053,10 @@ module advance_wp2_wp3_module
         zmscr11,    & 
         zmscr10,    & 
         zmscr12,    &
-        zmscr13,    &
-        zmscr14,    &
-        zmscr15,    &
-        zmscr16,    &
-        zmscr17,    &
         ztscr01,    &
-        ztscr02,    &
+        ztscr02
+
+    use stats_variables, only: &
         ztscr03,    &
         ztscr04,    &
         ztscr05,    &
@@ -1120,12 +1070,7 @@ module advance_wp2_wp3_module
         ztscr13,    &
         ztscr14,    &
         ztscr15,    &
-        ztscr16,    &
-        ztscr17,    &
-        ztscr18,    &
-        ztscr19,    &
-        ztscr20,    &
-        ztscr21
+        ztscr16
 
     use stats_variables, only: & 
         l_stats_samp, & 
@@ -1136,15 +1081,13 @@ module advance_wp2_wp3_module
         iwp2_ac, & 
         iwp2_pr2, & 
         iwp2_pr1, &
-        iwp2_4hd, &
         iwp3_ta, & 
         iwp3_tp, & 
         iwp3_ma, & 
         iwp3_ac, & 
         iwp3_pr2, & 
         iwp3_pr1, & 
-        iwp3_dp1, &
-        iwp3_4hd
+        iwp3_dp1
 
     use advance_helper_module, only: set_boundary_conditions_lhs ! Procedure(s)
 
@@ -1154,31 +1097,27 @@ module advance_wp2_wp3_module
     ! Left-hand side matrix diagonal identifiers for
     ! momentum-level variable, w'^2.
     integer, parameter ::  &
-      m_kp2_mdiag = 1, & ! Momentum super-super diagonal index for w'^2.
      !m_kp2_tdiag = 2, & ! Thermodynamic super-super diagonal index for w'^2.
       m_kp1_mdiag = 3, & ! Momentum super diagonal index for w'^2.
       m_kp1_tdiag = 4, & ! Thermodynamic super diagonal index for w'^2.
       m_k_mdiag   = 5, & ! Momentum main diagonal index for w'^2.
       m_k_tdiag   = 6, & ! Thermodynamic sub diagonal index for w'^2.
-      m_km1_mdiag = 7, & ! Momentum sub diagonal index for w'^2.
+      m_km1_mdiag = 7    ! Momentum sub diagonal index for w'^2.
      !m_km1_tdiag = 8, & ! Thermodynamic sub-sub diagonal index for w'^2.
-      m_km2_mdiag = 9    ! Momentum sub-sub diagonal index for w'^2.
 
     ! Left-hand side matrix diagonal identifiers for
     ! thermodynamic-level variable, w'^3.
     integer, parameter ::  &
-      t_kp2_tdiag = 1, & ! Thermodynamic super-super diagonal index for w'^3.
      !t_kp1_mdiag = 2, & ! Momentum super-super diagonal index for w'^3.
       t_kp1_tdiag = 3, & ! Thermodynamic super diagonal index for w'^3.
      !t_k_mdiag   = 4, & ! Momentum super diagonal index for w'^3.
       t_k_tdiag   = 5, & ! Thermodynamic main diagonal index for w'^3.
      !t_km1_mdiag = 6, & ! Momentum sub diagonal index for w'^3.
-      t_km1_tdiag = 7, & ! Thermodynamic sub diagonal index for w'^3.
+      t_km1_tdiag = 7    ! Thermodynamic sub diagonal index for w'^3.
      !t_km2_mdiag = 8, & ! Momentum sub-sub diagonal index for w'^3.
-      t_km2_tdiag = 9    ! Thermodynamic sub-sub diagonal index for w'^3.
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Timestep length                            [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  & 
@@ -1195,6 +1134,7 @@ module advance_wp2_wp3_module
       Skw_zt,          & ! Skewness of w on thermodynamic levels      [-]
       tau1m,           & ! Time-scale tau on momentum levels          [s]
       tauw3t,          & ! Time-scale tau on thermodynamic levels     [s]
+      tau_C1_zm,       & ! Tau values used for the C1 (dp1) term in wp2 [s]
       C1_Skw_fnc,      & ! C_1 parameter with Sk_w applied            [-]
       C11_Skw_fnc,     & ! C_11 parameter with Sk_w applied           [-]
       rho_ds_zm,       & ! Dry, static density on momentum levels     [kg/m^3]
@@ -1208,7 +1148,6 @@ module advance_wp2_wp3_module
     integer, intent(in) :: &
       nsub,   & ! Number of subdiagonals in the LHS matrix.
       nsup      ! Number of superdiagonals in the LHS matrix.
-
     ! Output Variable
     real( kind = core_rknd ), dimension(5-nsup:5+nsub,2*gr%nz), intent(out) ::  & 
       lhs ! Implicit contributions to wp2/wp3 (band diag. matrix)
@@ -1216,7 +1155,7 @@ module advance_wp2_wp3_module
     ! Local Variables
 
     ! Array indices
-    integer :: k, km1, km2, kp1, kp2, k_wp2, k_wp3, k_wp2_low, k_wp2_high, &
+    integer :: k, km1, kp1, k_wp2, k_wp3, k_wp2_low, k_wp2_high, &
                k_wp3_low, k_wp3_high
 
     real( kind = core_rknd ), dimension(5) :: tmp
@@ -1230,9 +1169,7 @@ module advance_wp2_wp3_module
       ! Define indices
 
       km1 = max( k-1, 1 )
-      km2 = max( k-2, 1 )
       kp1 = min( k+1, gr%nz )
-      kp2 = min( k+2, gr%nz )
 
       k_wp3 = 2*k - 1
       k_wp2 = 2*k
@@ -1260,10 +1197,9 @@ module advance_wp2_wp3_module
       !         [ x wp3(k+2,<t+1>) ]
       ! Momentum super-super diagonal (lhs index: m_kp2_mdiag)
       !         [ x wp2(k+2,<t+1>) ]
-
       ! LHS time tendency.
       lhs(m_k_mdiag,k_wp2) & 
-      = + 1.0_core_rknd / real( dt, kind = core_rknd )
+      = + 1.0_core_rknd / dt
 
       ! LHS mean advection (ma) term.
       lhs((/m_kp1_mdiag,m_k_mdiag,m_km1_mdiag/),k_wp2) & 
@@ -1289,7 +1225,7 @@ module advance_wp2_wp3_module
       lhs(m_k_mdiag,k_wp2)  & 
       = lhs(m_k_mdiag,k_wp2)  &
       + gamma_over_implicit_ts  & 
-      * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau1m(k) )
+      * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau_C1_zm(k) )
 
       ! LHS eddy diffusion term: dissipation term 2 (dp2).
       if ( l_crank_nich_diff ) then
@@ -1322,19 +1258,6 @@ module advance_wp2_wp3_module
         * wp2_term_pr1_lhs( C4, tau1m(k) )
       endif
 
-      ! LHS 4th-order hyper-diffusion (4hd).
-      if ( l_hyper_dfsn ) then
-         ! Note:  w'^2 uses fixed-point boundary conditions.
-         lhs( (/m_kp2_mdiag,m_kp1_mdiag,m_k_mdiag,m_km1_mdiag,m_km2_mdiag/), &
-              k_wp2 )  &
-         = lhs( (/m_kp2_mdiag,m_kp1_mdiag,m_k_mdiag,m_km1_mdiag,m_km2_mdiag/), &
-                k_wp2 )  &
-         + hyper_dfsn_4th_ord_zm_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzm(k),  &
-                                      gr%invrs_dzt(kp1), gr%invrs_dzt(k),     &
-                                      gr%invrs_dzm(kp1), gr%invrs_dzm(km1),   &
-                                      gr%invrs_dzt(kp2), gr%invrs_dzt(km1), k )
-      endif
-
       if ( l_stats_samp ) then
 
         ! Statistics: implicit contributions for wp2.
@@ -1346,7 +1269,7 @@ module advance_wp2_wp3_module
         if ( iwp2_dp1 > 0 ) then
           zmscr01(k)  &
           = - gamma_over_implicit_ts  &
-            * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau1m(k) )
+            * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau_C1_zm(k) )
         endif
 
         if ( iwp2_dp2 > 0 ) then
@@ -1412,19 +1335,6 @@ module advance_wp2_wp3_module
             * wp2_term_pr1_lhs( C4, tau1m(k) )
         endif
 
-        if ( iwp2_4hd > 0 .and. l_hyper_dfsn ) then
-          tmp(1:5) = &
-          hyper_dfsn_4th_ord_zm_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzm(k),  &
-                                     gr%invrs_dzt(kp1), gr%invrs_dzt(k),     &
-                                     gr%invrs_dzm(kp1), gr%invrs_dzm(km1),   &
-                                     gr%invrs_dzt(kp2), gr%invrs_dzt(km1), k )
-          zmscr13(k) = -tmp(5)
-          zmscr14(k) = -tmp(4)
-          zmscr15(k) = -tmp(3)
-          zmscr16(k) = -tmp(2)
-          zmscr17(k) = -tmp(1)
-        endif
-
       endif
 
 
@@ -1454,7 +1364,7 @@ module advance_wp2_wp3_module
 
       ! LHS time tendency.
       lhs(t_k_tdiag,k_wp3) & 
-      =  + 1.0_core_rknd / real( dt, kind = core_rknd )
+      =  + 1.0_core_rknd / dt
 
       ! LHS mean advection (ma) term.
       lhs((/t_kp1_tdiag,t_k_tdiag,t_km1_tdiag/),k_wp3) & 
@@ -1518,19 +1428,6 @@ module advance_wp2_wp3_module
         * diffusion_zt_lhs( Kw8(k), Kw8(km1), nu8_vert_res_dep, & 
                             gr%invrs_dzm(km1), gr%invrs_dzm(k), &
                             gr%invrs_dzt(k), k )
-      endif
-
-      ! LHS 4th-order hyper-diffusion (4hd).
-      if ( l_hyper_dfsn ) then
-         ! Note:  w'^3 uses fixed-point boundary conditions.
-         lhs( (/t_kp2_tdiag,t_kp1_tdiag,t_k_tdiag,t_km1_tdiag,t_km2_tdiag/), &
-              k_wp3 )  &
-         = lhs( (/t_kp2_tdiag,t_kp1_tdiag,t_k_tdiag,t_km1_tdiag,t_km2_tdiag/), &
-                k_wp3 )  &
-         + hyper_dfsn_4th_ord_zt_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzt(k),  &
-                                      gr%invrs_dzm(k), gr%invrs_dzm(km1),     &
-                                      gr%invrs_dzt(kp1), gr%invrs_dzt(km1),   &
-                                      gr%invrs_dzm(kp1), gr%invrs_dzm(km2), k )
       endif
 
       if ( l_stats_samp ) then
@@ -1643,19 +1540,6 @@ module advance_wp2_wp3_module
 
         endif
 
-        if ( iwp3_4hd > 0 .and. l_hyper_dfsn ) then
-          tmp(1:5) = &
-          hyper_dfsn_4th_ord_zt_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzt(k),  &
-                                     gr%invrs_dzm(k), gr%invrs_dzm(km1),     &
-                                     gr%invrs_dzt(kp1), gr%invrs_dzt(km1),   &
-                                     gr%invrs_dzm(kp1), gr%invrs_dzm(km2), k )
-          ztscr17(k) = -tmp(5)
-          ztscr18(k) = -tmp(4)
-          ztscr19(k) = -tmp(3)
-          ztscr20(k) = -tmp(2)
-          ztscr21(k) = -tmp(1)
-        endif
-
       endif
 
     enddo ! k = 2, gr%nz-1, 1
@@ -1701,7 +1585,7 @@ module advance_wp2_wp3_module
   !=============================================================================
   subroutine wp23_lhs_csr( dt, wp2, wm_zm, wm_zt, a1, a1_zt, a3, a3_zt,  &
                            wp3_on_wp2, &
-                           Kw1, Kw8, Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
+                           Kw1, Kw8, Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
                            C11_Skw_fnc, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &
                            invrs_rho_ds_zt, l_crank_nich_diff, & 
                            lhs_a_csr )
@@ -1730,8 +1614,7 @@ module advance_wp2_wp3_module
         C8b, & 
         C12, & 
         nu1_vert_res_dep, & 
-        nu8_vert_res_dep, &
-        nu_hd_vert_res_dep
+        nu8_vert_res_dep
 
     use constants_clubb, only:  & 
         eps,          & ! Variable(s)
@@ -1739,8 +1622,7 @@ module advance_wp2_wp3_module
         gamma_over_implicit_ts
 
     use model_flags, only: & 
-        l_tke_aniso, & ! Variable(s)
-        l_hyper_dfsn
+        l_tke_aniso    ! Variable(s)
 
     use diffusion, only: & 
         diffusion_zm_lhs,  & ! Procedures
@@ -1750,12 +1632,7 @@ module advance_wp2_wp3_module
         term_ma_zm_lhs,  & ! Procedures
         term_ma_zt_lhs
 
-    use hyper_diffusion_4th_ord, only:  &
-        hyper_dfsn_4th_ord_zm_lhs,  &
-        hyper_dfsn_4th_ord_zt_lhs
-
     use clubb_precision, only: &
-        time_precision, &
         core_rknd
 
     use stats_variables, only: & 
@@ -1771,13 +1648,10 @@ module advance_wp2_wp3_module
         zmscr11,    & 
         zmscr10,    & 
         zmscr12,    &
-        zmscr13,    &
-        zmscr14,    &
-        zmscr15,    &
-        zmscr16,    &
-        zmscr17,    &
         ztscr01,    &
-        ztscr02,    &
+        ztscr02
+
+    use stats_variables, only: &
         ztscr03,    &
         ztscr04,    &
         ztscr05,    &
@@ -1791,12 +1665,7 @@ module advance_wp2_wp3_module
         ztscr13,    &
         ztscr14,    &
         ztscr15,    &
-        ztscr16,    &
-        ztscr17,    &
-        ztscr18,    &
-        ztscr19,    &
-        ztscr20,    &
-        ztscr21
+        ztscr16
 
     use stats_variables, only: & 
         l_stats_samp, & 
@@ -1807,17 +1676,15 @@ module advance_wp2_wp3_module
         iwp2_ac, & 
         iwp2_pr2, & 
         iwp2_pr1, &
-        iwp2_4hd, &
         iwp3_ta, & 
         iwp3_tp, & 
         iwp3_ma, & 
         iwp3_ac, & 
         iwp3_pr2, & 
         iwp3_pr1, & 
-        iwp3_dp1, &
-        iwp3_4hd
+        iwp3_dp1
 
-    use csr_matrix_class, only: &
+    use csr_matrix_module, only: &
         intlc_5d_5d_ja_size ! Variable
 
     implicit none
@@ -1853,7 +1720,7 @@ module advance_wp2_wp3_module
      !t_km2_tdiag    ! Thermodynamic sub-sub diagonal index for w'^3.
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Timestep length                            [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  & 
@@ -1870,6 +1737,7 @@ module advance_wp2_wp3_module
       Skw_zt,          & ! Skewness of w on thermodynamic levels      [-]
       tau1m,           & ! Time-scale tau on momentum levels          [s]
       tauw3t,          & ! Time-scale tau on thermodynamic levels     [s]
+      tau_C1_zm,       & ! Tau values used for the C1 (dp1) term in wp2 [s]
       C1_Skw_fnc,      & ! C_1 parameter with Sk_w applied            [-]
       C11_Skw_fnc,     & ! C_11 parameter with Sk_w applied           [-]
       rho_ds_zm,       & ! Dry, static density on momentum levels     [kg/m^3]
@@ -1891,7 +1759,7 @@ module advance_wp2_wp3_module
     ! Local Variables
 
     ! Array indices
-    integer :: k, km1, km2, kp1, kp2, k_wp2, k_wp3, wp2_cur_row, wp3_cur_row
+    integer :: k, km1, kp1, k_wp2, k_wp3, wp2_cur_row, wp3_cur_row
 
     real( kind = core_rknd ), dimension(5) :: tmp
 
@@ -1904,9 +1772,7 @@ module advance_wp2_wp3_module
       ! Define indices
 
       km1 = max( k-1, 1 )
-      km2 = max( k-2, 1 )
       kp1 = min( k+1, gr%nz )
-      kp2 = min( k+2, gr%nz )
 
       k_wp3 = 2*k - 1
       k_wp2 = 2*k
@@ -1996,7 +1862,7 @@ module advance_wp2_wp3_module
       lhs_a_csr(m_k_mdiag)  & 
       = lhs_a_csr(m_k_mdiag)  &
       + gamma_over_implicit_ts  & 
-      * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau1m(k) )
+      * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau_C1_zm(k) )
 
       ! LHS eddy diffusion term: dissipation term 2 (dp2).
       if ( l_crank_nich_diff ) then
@@ -2029,21 +1895,6 @@ module advance_wp2_wp3_module
         * wp2_term_pr1_lhs( C4, tau1m(k) )
       endif
 
-      ! LHS 4th-order hyper-diffusion (4hd).
-      ! NOTE: 4th-order hyper-diffusion is not yet supported in CSR-format.
-      ! As such, this needs to remain commented out.
-      !if ( l_hyper_dfsn ) then
-      !   ! Note:  w'^2 uses fixed-point boundary conditions.
-      !   lhs( (/m_kp2_mdiag,m_kp1_mdiag,m_k_mdiag,m_km1_mdiag,m_km2_mdiag/), &
-      !        k_wp2) &
-      !   = lhs( (/m_kp2_mdiag,m_kp1_mdiag,m_k_mdiag,m_km1_mdiag,m_km2_mdiag/), &
-      !          k_wp2) &
-      !   + hyper_dfsn_4th_ord_zm_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzm(k),  &
-      !                                gr%invrs_dzt(kp1), gr%invrs_dzt(k),     &
-      !                                gr%invrs_dzm(kp1), gr%invrs_dzm(km1),   &
-      !                                gr%invrs_dzt(kp2), gr%invrs_dzt(km1), k )
-      !endif
-
       if ( l_stats_samp ) then
 
         ! Statistics: implicit contributions for wp2.
@@ -2055,7 +1906,7 @@ module advance_wp2_wp3_module
         if ( iwp2_dp1 > 0 ) then
           zmscr01(k)  &
           = - gamma_over_implicit_ts  &
-            * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau1m(k) )
+            * wp2_term_dp1_lhs( C1_Skw_fnc(k), tau_C1_zm(k) )
         endif
 
         if ( iwp2_dp2 > 0 ) then
@@ -2119,19 +1970,6 @@ module advance_wp2_wp3_module
           zmscr12(k)  &
           = - gamma_over_implicit_ts  &
             * wp2_term_pr1_lhs( C4, tau1m(k) )
-        endif
-
-        if ( iwp2_4hd > 0 .and. l_hyper_dfsn ) then
-          tmp(1:5) = &
-          hyper_dfsn_4th_ord_zm_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzm(k),  &
-                                     gr%invrs_dzt(kp1), gr%invrs_dzt(k), &
-                                     gr%invrs_dzm(kp1), gr%invrs_dzm(km1), &
-                                     gr%invrs_dzt(kp2), gr%invrs_dzt(km1), k )
-          zmscr13(k) = -tmp(5)
-          zmscr14(k) = -tmp(4)
-          zmscr15(k) = -tmp(3)
-          zmscr16(k) = -tmp(2)
-          zmscr17(k) = -tmp(1)
         endif
 
       endif
@@ -2260,20 +2098,6 @@ module advance_wp2_wp3_module
                             gr%invrs_dzt(k), k )
       endif
 
-      ! LHS 4th-order hyper-diffusion (4hd).
-      ! NOTE: 4th-order hyper-diffusion is not yet supported in CSR-format.
-      ! As such, this needs to remain commented out.
-      !if ( l_hyper_dfsn ) then
-      !   ! Note:  w'^3 uses fixed-point boundary conditions.
-      !   lhs( (/t_kp2_tdiag,t_kp1_tdiag,t_k_tdiag,t_km1_tdiag,t_km2_tdiag/), &
-      !        k_wp3) &
-      !   = lhs( (/t_kp2_tdiag,t_kp1_tdiag,t_k_tdiag,t_km1_tdiag,t_km2_tdiag/), &
-      !          k_wp3) &
-      !   + hyper_dfsn_4th_ord_zt_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzt(k),  &
-      !                                gr%invrs_dzm(k), gr%invrs_dzm(km1),     &
-      !                                gr%invrs_dzt(kp1), gr%invrs_dzt(km1),   &
-      !                                gr%invrs_dzm(kp1), gr%invrs_dzm(km2), k )
-      !endif
 
       if (l_stats_samp) then
 
@@ -2385,19 +2209,6 @@ module advance_wp2_wp3_module
 
         endif
 
-        if ( iwp3_4hd > 0 .and. l_hyper_dfsn ) then
-          tmp(1:5) = &
-          hyper_dfsn_4th_ord_zt_lhs( 'fixed-point', nu_hd_vert_res_dep, gr%invrs_dzt(k),  &
-                                     gr%invrs_dzm(k), gr%invrs_dzm(km1),     &
-                                     gr%invrs_dzt(kp1), gr%invrs_dzt(km1),   &
-                                     gr%invrs_dzm(kp1), gr%invrs_dzm(km2), k )
-          ztscr17(k) = -tmp(5)
-          ztscr18(k) = -tmp(4)
-          ztscr19(k) = -tmp(3)
-          ztscr20(k) = -tmp(2)
-          ztscr21(k) = -tmp(1)
-        endif
-
       endif
 
     enddo ! k = 2, gr%nz-1, 1
@@ -2472,8 +2283,8 @@ module advance_wp2_wp3_module
   subroutine wp23_rhs( dt, wp2, wp3, a1, a1_zt, &
                        a3, a3_zt, wp3_on_wp2, wpthvp, wp2thvp, um, vm,  & 
                        upwp, vpwp, up2, vp2, Kw1, Kw8, Kh_zt, & 
-                       Skw_zt, tau1m, tauw3t, C1_Skw_fnc, &
-                       C11_Skw_fnc, rho_ds_zm, invrs_rho_ds_zt, &
+                       Skw_zt, tau1m, tauw3t, tau_C1_zm, C1_Skw_fnc, &
+                       C11_Skw_fnc, rho_ds_zm, invrs_rho_ds_zt, radf, &
                        thv_ds_zm, thv_ds_zt, l_crank_nich_diff, &
                        rhs )
 
@@ -2503,7 +2314,6 @@ module advance_wp2_wp3_module
 
     use constants_clubb, only: & 
         w_tol_sqd,     & ! Variable(s)
-        eps,          &
         three_halves, &
         gamma_over_implicit_ts
 
@@ -2515,15 +2325,14 @@ module advance_wp2_wp3_module
         diffusion_zt_lhs
 
     use clubb_precision, only:  & 
-        time_precision, & ! Variable
-        core_rknd
+        core_rknd ! Variable
 
     use stats_variables, only:  & 
-        l_stats_samp, iwp2_dp1, iwp2_dp2, zm, iwp2_bp,   & ! Variable(s)
-        iwp2_pr1, iwp2_pr2, iwp2_pr3, iwp3_ta, zt, & 
+        l_stats_samp, iwp2_dp1, iwp2_dp2, stats_zm, iwp2_bp,   & ! Variable(s)
+        iwp2_pr1, iwp2_pr2, iwp2_pr3, iwp3_ta, stats_zt, & 
         iwp3_tp, iwp3_bp1, iwp3_pr2, iwp3_pr1, iwp3_dp1, iwp3_bp2
 
-    use stats_type, only:  &
+    use stats_type_utilities, only:  &
         stat_update_var_pt,  & ! Procedure(s)
         stat_begin_update_pt,  &
         stat_modify_pt
@@ -2538,7 +2347,7 @@ module advance_wp2_wp3_module
       l_wp3_2nd_buoyancy_term = .true.
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Timestep length                           [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) ::  & 
@@ -2563,10 +2372,12 @@ module advance_wp2_wp3_module
       Skw_zt,          & ! Skewness of w on thermodynamic levels     [-]
       tau1m,           & ! Time-scale tau on momentum levels         [s]
       tauw3t,          & ! Time-scale tau on thermodynamic levels    [s]
+      tau_C1_zm,       & ! Tau values used for the C1 (dp1) term in wp2 [s]
       C1_Skw_fnc,      & ! C_1 parameter with Sk_w applied           [-]
       C11_Skw_fnc,     & ! C_11 parameter with Sk_w applied          [-]
       rho_ds_zm,       & ! Dry, static density on momentum levels    [kg/m^3]
       invrs_rho_ds_zt, & ! Inv. dry, static density @ thermo. levs.  [m^3/kg]
+      radf,            & ! Buoyancy production at the CL top         [m^2/s^3]
       thv_ds_zm,       & ! Dry, base-state theta_v on momentum levs. [K]
       thv_ds_zt          ! Dry, base-state theta_v on thermo. levs.  [K]
 
@@ -2630,12 +2441,15 @@ module advance_wp2_wp3_module
 
       ! RHS time tendency.
       rhs(k_wp2) & 
-      = + ( 1.0_core_rknd / real( dt, kind = core_rknd ) ) * wp2(k)
+      = + ( 1.0_core_rknd / dt ) * wp2(k)
 
       ! RHS buoyancy production (bp) term and pressure term 2 (pr2).
       rhs(k_wp2) & 
       = rhs(k_wp2) & 
       + wp2_terms_bp_pr2_rhs( C5, thv_ds_zm(k), wpthvp(k) )
+
+      ! RHS buoyancy production at CL top due to LW radiative cooling
+      rhs(k_wp2) = rhs(k_wp2) + radf(k) 
 
       ! RHS pressure term 3 (pr3).
       rhs(k_wp2) & 
@@ -2646,7 +2460,7 @@ module advance_wp2_wp3_module
       ! RHS dissipation term 1 (dp1).
       rhs(k_wp2) &
       = rhs(k_wp2) &
-      + wp2_term_dp1_rhs( C1_Skw_fnc(k), tau1m(k), w_tol_sqd )
+      + wp2_term_dp1_rhs( C1_Skw_fnc(k), tau_C1_zm(k), w_tol_sqd )
 
       ! RHS contribution from "over-implicit" weighted time step
       ! for LHS dissipation term 1 (dp1).
@@ -2656,7 +2470,7 @@ module advance_wp2_wp3_module
       !        more numerically stable (see note below for w'^3 RHS turbulent
       !        advection (ta) and turbulent production (tp) terms).
       lhs_fnc_output(1)  &
-      = wp2_term_dp1_lhs( C1_Skw_fnc(k), tau1m(k) )
+      = wp2_term_dp1_lhs( C1_Skw_fnc(k), tau_C1_zm(k) )
       rhs(k_wp2)  &
       = rhs(k_wp2)  &
       + ( 1.0_core_rknd - gamma_over_implicit_ts )  &
@@ -2714,21 +2528,21 @@ module advance_wp2_wp3_module
           call stat_begin_update_pt( iwp2_dp2, k, & 
             rhs_diff(3) * wp2(km1) & 
           + rhs_diff(2) * wp2(k) & 
-          + rhs_diff(1) * wp2(kp1), zm )
+          + rhs_diff(1) * wp2(kp1), stats_zm )
         endif
 
         ! w'^2 term bp is completely explicit; call stat_update_var_pt.
         ! Note:  To find the contribution of w'^2 term bp, substitute 0 for the
         !        C_5 input to function wp2_terms_bp_pr2_rhs.
         call stat_update_var_pt( iwp2_bp, k, & 
-          wp2_terms_bp_pr2_rhs( 0.0_core_rknd, thv_ds_zm(k), wpthvp(k) ), zm )
+          wp2_terms_bp_pr2_rhs( 0.0_core_rknd, thv_ds_zm(k), wpthvp(k) ), stats_zm )
 
         ! w'^2 term pr1 has both implicit and explicit components; call
         ! stat_begin_update_pt.  Since stat_begin_update_pt automatically
         ! subtracts the value sent in, reverse the sign on wp2_term_pr1_rhs.
         if ( l_tke_aniso ) then
           call stat_begin_update_pt( iwp2_pr1, k, & 
-            -wp2_term_pr1_rhs( C4, up2(k), vp2(k), tau1m(k) ), zm )
+            -wp2_term_pr1_rhs( C4, up2(k), vp2(k), tau1m(k) ), stats_zm )
 
           ! Note:  An "over-implicit" weighted time step is applied to this
           !        term.  A weighting factor of greater than 1 may be used to
@@ -2739,7 +2553,7 @@ module advance_wp2_wp3_module
           = wp2_term_pr1_lhs( C4, tau1m(k) )
           call stat_modify_pt( iwp2_pr1, k, &
                                + ( 1.0_core_rknd - gamma_over_implicit_ts )  &
-                               * ( - lhs_fnc_output(1) * wp2(k) ), zm )
+                               * ( - lhs_fnc_output(1) * wp2(k) ), stats_zm )
         endif
 
         ! w'^2 term pr2 has both implicit and explicit components; call
@@ -2748,29 +2562,29 @@ module advance_wp2_wp3_module
         ! Note:  To find the contribution of w'^2 term pr2, add 1 to the
         !        C_5 input to function wp2_terms_bp_pr2_rhs.
         call stat_begin_update_pt( iwp2_pr2, k, & 
-          -wp2_terms_bp_pr2_rhs( (1.0_core_rknd+C5), thv_ds_zm(k), wpthvp(k) ), zm )
+          -wp2_terms_bp_pr2_rhs( (1.0_core_rknd+C5), thv_ds_zm(k), wpthvp(k) ), stats_zm )
 
         ! w'^2 term dp1 has both implicit and explicit components; call
         ! stat_begin_update_pt.  Since stat_begin_update_pt automatically
         ! subtracts the value sent in, reverse the sign on wp2_term_dp1_rhs.
         call stat_begin_update_pt( iwp2_dp1, k, &
-          -wp2_term_dp1_rhs( C1_Skw_fnc(k), tau1m(k), w_tol_sqd ), zm )
+          -wp2_term_dp1_rhs( C1_Skw_fnc(k), tau_C1_zm(k), w_tol_sqd ), stats_zm )
 
         ! Note:  An "over-implicit" weighted time step is applied to this term.
         !        A weighting factor of greater than 1 may be used to make the
         !        term more numerically stable (see note below for w'^3 RHS
         !        turbulent advection (ta) and turbulent production (tp) terms).
         lhs_fnc_output(1)  &
-        = wp2_term_dp1_lhs( C1_Skw_fnc(k), tau1m(k) )
+        = wp2_term_dp1_lhs( C1_Skw_fnc(k), tau_C1_zm(k) )
         call stat_modify_pt( iwp2_dp1, k, &
                              + ( 1.0_core_rknd - gamma_over_implicit_ts )  &
-                             * ( - lhs_fnc_output(1) * wp2(k) ), zm )
+                             * ( - lhs_fnc_output(1) * wp2(k) ), stats_zm )
 
         ! w'^2 term pr3 is completely explicit; call stat_update_var_pt.
         call stat_update_var_pt( iwp2_pr3, k, & 
           wp2_term_pr3_rhs( C5, thv_ds_zm(k), wpthvp(k), upwp(k), um(kp1), &
                             um(k), vpwp(k), vm(kp1), vm(k), gr%invrs_dzm(k) ), &
-                                 zm )
+                                 stats_zm )
 
       endif
 
@@ -2782,7 +2596,7 @@ module advance_wp2_wp3_module
 
       ! RHS time tendency.
       rhs(k_wp3) = & 
-      + ( 1.0_core_rknd / real( dt, kind = core_rknd ) * wp3(k) )
+      + ( 1.0_core_rknd / dt * wp3(k) )
 
       ! RHS turbulent advection (ta) and turbulent production (tp) terms.
 !     rhs(k_wp3)  & 
@@ -2896,8 +2710,8 @@ module advance_wp2_wp3_module
 !                               invrs_rho_ds_zt(k),  &
 !                               0.0_core_rknd,  &
 !                               gr%invrs_dzt(k) ),  &
-!                                  zt )
-        call stat_begin_update_pt( iwp3_ta, k, 0.0_core_rknd, zt )
+!                                  stats_zt )
+        call stat_begin_update_pt( iwp3_ta, k, 0.0_core_rknd, stats_zt )
 
         ! Note:  An "over-implicit" weighted time step is applied to this term.
         !        A weighting factor of greater than 1 may be used to make the
@@ -2919,7 +2733,7 @@ module advance_wp2_wp3_module
                                  - lhs_fnc_output(2) * wp2(k)  &
                                  - lhs_fnc_output(3) * wp3(k)  &
                                  - lhs_fnc_output(4) * wp2(km1)  &
-                                 - lhs_fnc_output(5) * wp3(km1) ), zt )
+                                 - lhs_fnc_output(5) * wp3(km1) ), stats_zt )
 
         ! w'^3 term tp has both implicit and explicit components; call 
         ! stat_begin_update_pt.  Since stat_begin_update_pt automatically 
@@ -2938,8 +2752,8 @@ module advance_wp2_wp3_module
 !                               invrs_rho_ds_zt(k),  &
 !                               three_halves,  &
 !                               gr%invrs_dzt(k) ),  &
-!                                  zt )
-        call stat_begin_update_pt( iwp3_tp, k,  0.0_core_rknd, zt )
+!                                  stats_zt )
+        call stat_begin_update_pt( iwp3_tp, k,  0.0_core_rknd, stats_zt )
 
         ! Note:  An "over-implicit" weighted time step is applied to this term.
         !        A weighting factor of greater than 1 may be used to make the
@@ -2958,13 +2772,13 @@ module advance_wp2_wp3_module
         call stat_modify_pt( iwp3_tp, k,  &
                              + ( 1.0_core_rknd - gamma_over_implicit_ts )  &
                              * ( - lhs_fnc_output(2) * wp2(k)  &
-                                 - lhs_fnc_output(4) * wp2(km1) ), zt )
+                                 - lhs_fnc_output(4) * wp2(km1) ), stats_zt )
 
         ! w'^3 term bp is completely explicit; call stat_update_var_pt.
         ! Note:  To find the contribution of w'^3 term bp, substitute 0 for the
         !        C_11 skewness function input to function wp3_terms_bp1_pr2_rhs.
         call stat_update_var_pt( iwp3_bp1, k, & 
-          wp3_terms_bp1_pr2_rhs( 0.0_core_rknd, thv_ds_zt(k), wp2thvp(k) ), zt )
+          wp3_terms_bp1_pr2_rhs( 0.0_core_rknd, thv_ds_zt(k), wp2thvp(k) ), stats_zt )
 
         ! w'^3 term pr2 has both implicit and explicit components; call
         ! stat_begin_update_pt.  Since stat_begin_update_pt automatically
@@ -2974,14 +2788,14 @@ module advance_wp2_wp3_module
         call stat_begin_update_pt( iwp3_pr2, k, & 
           -wp3_terms_bp1_pr2_rhs( (1.0_core_rknd+C11_Skw_fnc(k)), thv_ds_zt(k), &
                                  wp2thvp(k) ), & 
-                                   zt )
+                                   stats_zt )
 
         ! w'^3 term pr1 has both implicit and explicit components; call 
         ! stat_begin_update_pt.  Since stat_begin_update_pt automatically 
         ! subtracts the value sent in, reverse the sign on wp3_term_pr1_rhs.
         call stat_begin_update_pt( iwp3_pr1, k, & 
           -wp3_term_pr1_rhs( C8, C8b, tauw3t(k), Skw_zt(k), wp3(k) ), & 
-                                   zt )
+                                   stats_zt )
 
         ! Note:  An "over-implicit" weighted time step is applied to this term.
         !        A weighting factor of greater than 1 may be used to make the
@@ -2991,7 +2805,7 @@ module advance_wp2_wp3_module
         = wp3_term_pr1_lhs( C8, C8b, tauw3t(k), Skw_zt(k) )
         call stat_modify_pt( iwp3_pr1, k,  &
                              + ( 1.0_core_rknd - gamma_over_implicit_ts )  &
-                             * ( - lhs_fnc_output(1) * wp3(k) ), zt )
+                             * ( - lhs_fnc_output(1) * wp3(k) ), stats_zt )
 
         ! w'^3 term dp1 has both implicit and explicit components (if the
         ! Crank-Nicholson scheme is selected); call stat_begin_update_pt.  
@@ -3003,7 +2817,7 @@ module advance_wp2_wp3_module
           call stat_begin_update_pt( iwp3_dp1, k, & 
               rhs_diff(3) * wp3(km1) & 
             + rhs_diff(2) * wp3(k) & 
-            + rhs_diff(1) * wp3(kp1), zt )
+            + rhs_diff(1) * wp3(kp1), stats_zt )
         endif
                   
         if ( l_wp3_2nd_buoyancy_term ) then
@@ -3011,7 +2825,7 @@ module advance_wp2_wp3_module
                                    dum_dz(k), dum_dz(km1), dvm_dz(k), dvm_dz(km1), &
                                    upwp(k), upwp(km1), vpwp(k), vpwp(km1), &
                                    thv_ds_zt(k), gr%invrs_dzt(k) )
-          call stat_update_var_pt( iwp3_bp2, k, temp, zt )
+          call stat_update_var_pt( iwp3_bp2, k, temp, stats_zt )
         end if
 
       endif ! l_stats_samp
@@ -3693,9 +3507,6 @@ module advance_wp2_wp3_module
 
     use grid_class, only:  &
         gr ! Variable gr%weights_zt2zm
-
-    use constants_clubb, only:  &
-        w_tol_sqd
 
     use model_flags, only:  &
         l_standard_term_ta

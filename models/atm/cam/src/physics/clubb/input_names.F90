@@ -1,4 +1,6 @@
-!$Id: input_names.F90 5378 2011-08-22 20:19:16Z connork@uwm.edu $
+!-----------------------------------------------------------------------
+!$Id: input_names.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
+!===============================================================================
 module input_names
 !
 !  Description: This module contains all of the strings used to define the

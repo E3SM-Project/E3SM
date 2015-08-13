@@ -14,6 +14,7 @@ module shr_log_mod
 ! !USES:
 
   use shr_kind_mod
+  use shr_strconvert_mod, only: toString
 
   use, intrinsic :: iso_fortran_env, only: output_unit
 
@@ -27,6 +28,7 @@ module shr_log_mod
 ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: shr_log_errMsg
+  public :: shr_log_OOBMsg
 
 ! !PUBLIC DATA MEMBERS:
 
@@ -71,5 +73,27 @@ function shr_log_errMsg(file, line)
   write(shr_log_errMsg, '(a, a, a, i0)') 'ERROR in ', trim(file), ' at line ', line
 
 end function shr_log_errMsg
+
+! Create a message for an out of bounds error.
+pure function shr_log_OOBMsg(operation, bounds, idx) result(OOBMsg)
+
+  ! A name for the operation being attempted when the bounds error
+  ! occurred. A string containing the subroutine name is ideal, but more
+  ! generic descriptions such as "read", "modify", or "insert" could be used.
+  character(len=*), intent(in) :: operation
+
+  ! Upper and lower bounds allowed for the operation.
+  integer, intent(in) :: bounds(2)
+
+  ! Index at which access was attempted.
+  integer, intent(in) :: idx
+
+  ! Output message
+  character(len=:), allocatable :: OOBMsg
+
+  allocate(OOBMsg, source=(operation//": "//toString(idx)//" not in range ["//&
+       toString(bounds(1))//", "//toString(bounds(2))//"]."))
+
+end function shr_log_OOBMsg
 
 end module shr_log_mod

@@ -6,20 +6,19 @@ module microp_driver
 !
 !-------------------------------------------------------------------------------------------------------
 
-use shr_kind_mod,  only: r8 => shr_kind_r8
-use ppgrid,        only: pver
-use physics_types, only: physics_state, physics_ptend, physics_tend,  &
-                         physics_ptend_copy, physics_ptend_sum
-use physics_buffer,only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
-use phys_control,  only: phys_getopts
+use shr_kind_mod,   only: r8 => shr_kind_r8
+use ppgrid,         only: pver
+use physics_types,  only: physics_state, physics_ptend, physics_tend,  &
+                          physics_ptend_copy, physics_ptend_sum
+use physics_buffer, only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
+use phys_control,   only: phys_getopts
 
-use cldwat2m_macro,only: ini_macro
-use micro_mg_cam,  only: micro_mg_cam_readnl, micro_mg_cam_register, &
-                         micro_mg_cam_implements_cnst, micro_mg_cam_init_cnst, &
-                         micro_mg_cam_init, micro_mg_cam_tend
-use cam_logfile,   only: iulog
-use cam_abortutils,    only: endrun
-use perf_mod,      only: t_startf, t_stopf
+use micro_mg_cam,   only: micro_mg_cam_readnl, micro_mg_cam_register, &
+                          micro_mg_cam_implements_cnst, micro_mg_cam_init_cnst, &
+                          micro_mg_cam_init, micro_mg_cam_tend
+use cam_logfile,    only: iulog
+use cam_abortutils, only: endrun
+use perf_mod,       only: t_startf, t_stopf
 
 implicit none
 private
@@ -138,8 +137,6 @@ subroutine microp_driver_init(pbuf2d)
 
    ! Initialize the microphysics parameterizations
    !-----------------------------------------------------------------------
-
-   call ini_macro()
 
    select case (microp_scheme)
    case ('MG')

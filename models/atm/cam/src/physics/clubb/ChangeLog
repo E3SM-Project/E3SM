@@ -1,27 +1,389 @@
 ===============================================================
 
-Tag name: clubb01_03
+Tag name: clubb_dev_n11_01_07
 Originator(s): Cheryl Craig
-Date: 6/21/13
-One-line Summary: Added missing omp threadprivate variables
+Date: 04/22/15
+One-line Summary: add in missing threadprivates
 
 Purpose of changes:
-  - Added missing omp threadprivate variables
 
-
-Files modified:
-M       variables_prognostic_module.F90
+Files Modified: 
 M       saturation.F90
-M       csr_matrix_class_3array.F90
-M       parameters_model.F90
-M       ChangeLog
-M       parameters_radiation.F90
-M       parameters_microphys.F90
-M       gmres_cache.F90
+M       csr_matrix_module.F90
 M       model_flags.F90
 M       sponge_layer_damping.F90
+M       variables_prognostic_module.F90
+M       parameters_model.F90
+M       mt95.f90
+M       gmres_cache.F90
 M       stats_variables.F90
+
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n02_01_07
+Originator(s): Peter Bogenschutz
+Date: 03/14/13
+One-line Summary: update NCAR mods to new CLUBB 
+
+Purpose of changes:
+  - update NCAR mods to get new CLUBB
+
+Files Modified: 
+M       advance_clubb_core_module.F90
 M       parameters_tunable.F90
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n01_01_07
+Originator(s): Peter Bogenschutz
+Date: 03/14/13
+One-line Summary: get new CLUBB 
+
+Purpose of changes:
+  - get new CLUBB
+
+Files Modified: 
+A       Nc_Ncn_eqns.F90
+A       advance_clubb_core_module.F90
+D       corr_matrix_module.F90
+D       stats_LH_zt.F90
+D       stats_zm.F90
+M       grid_class.F90
+A       csr_matrix_module.F90
+D       csr_matrix_class_3array.F90
+M       ChangeLog
+A       stats_sfc_module.F90
+D       stats_rad_zt.F90
+A       pdf_utilities.F90
+M       array_index.F90
+M       model_flags.F90
+M       pos_definite_module.F90
+M       pdf_parameter_module.F90
+M       fill_holes.F90
+M       sponge_layer_damping.F90
+M       hydromet_pdf_parameter_module.F90
+M       numerical_check.F90
+M       stat_file_module.F90
+M       output_netcdf.F90
+M       advance_wp2_wp3_module.F90
+M       stats_type.F90
+M       advance_helper_module.F90
+M       gmres_wrap.F90
+A       stats_rad_zt_module.F90
+M       advance_xp2_xpyp_module.F90
+M       output_grads.F90
+M       variables_diagnostic_module.F90
+M       index_mapping.F90
+M       constants_clubb.F90
+M       variables_prognostic_module.F90
+M       interpolation.F90
+M       clip_explicit.F90
+M       mono_flux_limiter.F90
+M       mixing_length.F90
+M       matrix_operations.F90
+M       pdf_closure_module.F90
+D       stats_zt.F90
+M       parameter_indices.F90
+D       hyper_diffusion_4th_ord.F90
+A       stats_zt_module.F90
+M       error_code.F90
+M       parameters_model.F90
+A       clubb_api_module.F90
+D       stats_rad_zm.F90
+A       stats_type_utilities.F90
+D       parameters_radiation.F90
+D       parameters_microphys.F90
+M       recl.inc
+D       hydrostatic_module.F90
+M       anl_erf.F90
+M       calendar.F90
+D       stats_LH_sfc.F90
+M       advance_windm_edsclrm_module.F90
+M       diagnose_correlations_module.F90
+M       stats_variables.F90
+D       stats_subs.F90
+A       stats_rad_zm_module.F90
+M       setup_clubb_pdf_params.F90
+D       PDF_utilities.F90
+D       variables_radiation_module.F90
+A       corr_varnce_module.F90
+A       stats_lh_sfc_module.F90
+M       advance_xm_wpxp_module.F90
+D       stats_sfc.F90
+D       extrapolation.F90
+M       surface_varnce_module.F90
+M       clip_semi_implicit.F90
+D       clubb_core.F90
+A       stats_clubb_utilities.F90
+A       stats_lh_zt_module.F90
+A       stats_zm_module.F90
+M       parameters_tunable.F90
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n09_01_02
+Originator(s): Peter Bogenschutz
+Date: 03/14/13
+One-line Summary: bug fix
+
+Purpose of changes:
+  - bug fix
+
+Files Modified: 
+M       clubb_core.F90
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n08_01_02
+Originator(s): Peter Bogenschutz
+Date: 03/14/13
+One-line Summary: Update CLUBB to allow option of explicit diffusion
+      and update tunable parameter for best cut simulation 
+      (camclubb_b09_bamip14_nt16 simulation).
+
+Purpose of changes:
+  - Update code for best cut simulation
+
+Files Modified: 
+M       clubb_core.F90
+M       parameters_tunable.F90
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n07_01_02
+Originator(s): Peter Bogenschutz
+Date: 03/14/13
+One-line Summary: let CLUBB have variable mu
+
+Purpose of changes:
+  - Let CLUBB have variable mu (entrainment rate) per column if the
+      user desires.  Code does not change answers, otherwise
+
+
+
+Files Modified: 
+M       clubb_core.F90
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n06_01_02
+Originator(s): Peter Bogenschutz
+Date: 11/21/13
+One-line Summary: Update to newest CLUBB 
+
+Purpose of changes:
+  - update to newest CLUBB
+
+
+
+Files Modified: 
+M       corr_matrix_module.F90
+M       stats_LH_zt.F90
+M       stats_zm.F90
+M       matrix_operations.F90
+M       pdf_closure_module.F90
+M       stats_zt.F90
+M       parameter_indices.F90
+M       error_code.F90
+M       stats_rad_zm.F90
+M       ChangeLog
+M       parameters_microphys.F90
+M       stats_rad_zt.F90
+M       array_index.F90
+M       model_flags.F90
+M       stats_LH_sfc.F90
+M       stats_variables.F90
+M       stats_subs.F90
+M       setup_clubb_pdf_params.F90
+M       PDF_utilities.F90
+M       stat_file_module.F90
+M       stats_sfc.F90
+M       clubb_core.F90
+M       stats_type.F90
+M       parameters_tunable.F90
+M       advance_xp2_xpyp_module.F90
+
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n05_01_02
+Originator(s): Peter Bogenschutz
+Date: 11/21/13
+One-line Summary: NCAR mods to CLUBB 
+
+Purpose of changes:
+  - NCAR mods to CLUBB
+
+
+
+Files Modified: 
+M       clubb_core.F90
+
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n04_01_02
+Originator(s): Peter Bogenschutz
+Date: 9/26/13
+One-line Summary: NCAR mods to CLUBB 
+
+Purpose of changes:
+  - NCAR mods to CLUBB
+
+
+
+Files Modified: 
+none
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n03_01_02
+Originator(s): Peter Bogenschutz
+Date: 9/26/13
+One-line Summary: Update to newest CLUBB  
+
+Purpose of changes:
+  - Updated to newest CLUBB
+
+
+
+Files Modified: 
+none
+
+===============================================================
+===============================================================
+
+Tag name: clubb_dev_n01_01_02
+Originator(s): Peter Bogenschutz
+Date: 9/26/13
+One-line Summary: Creation of CLUBB branch for development 
+
+Purpose of changes:
+  - Creation of CLUBB branch for multi-purpose development.  Starting with the
+    Silhs_clubb_01_02 branch
+
+
+
+Files Modified: 
+none
+
+===============================================================
+===============================================================
+
+Tag name: silhs03_clubb_01_02
+Originator(s): Peter Bogenschutz
+Date: 5/21/13
+One-line Summary: Move SILHS to CLUBB_core directory
+
+Purpose of changes:
+  - Move files in Latin_hypercube (SILHS) directory up one level to CLUBB_core
+
+Files Added:
+A       permute_height_time_module.F90
+A       latin_hypercube_arrays.F90
+A       math_utilities.F90
+A       estimate_lh_micro_module.F90
+A       latin_hypercube_driver_module.F90
+A       output_2D_samples_module.F90
+A       estimate_scm_microphys_module.F90
+A       generate_lh_sample_module.F90
+
+Files deleted:
+D       Latin_hypercube
+
+Files Modified: 
+none
+
+===============================================================
+===============================================================
+
+Tag name: silhs02_clubb_01_02
+Originator(s): Peter Bogenschutz
+Date: 5/21/13
+One-line Summary: Merge CAM-CLUBB tunings
+
+Purpose of changes:
+  - Merge CAM-CLUBB tunings into SILHS development 
+
+Files modified:
+M       pdf_closure_module.F90
+M       advance_wp2_wp3_module.F90
+M       clubb_core.F90
+M       parameters_tunable.F90
+
+===============================================================
+===============================================================
+
+Tag name: silhs01_clubb_01_02
+Originator(s): Peter Bogenschutz
+Date: 5/21/13
+One-line Summary: Create branch for SILHS deveopment
+
+Purpose of changes:
+  - Create CLUBB branch for SILHS deveopment 
+
+Files modified:
+M       constants_clubb.F90
+M       variables_prognostic_module.F90
+M       saturation.F90
+M       mono_flux_limiter.F90
+M       mixing_length.F90
+M       stats_zm.F90
+M       grid_class.F90
+M       pdf_closure_module.F90
+M       stats_zt.F90
+M       parameter_indices.F90
+M       input_reader.F90
+M       parameters_model.F90
+M       error_code.F90
+M       ChangeLog
+M       mt95.f90
+M       parameters_microphys.F90
+M       stats_rad_zt.F90
+M       array_index.F90
+M       calendar.F90
+M       model_flags.F90
+M       advance_windm_edsclrm_module.F90
+M       pdf_parameter_module.F90
+M       stats_variables.F90
+M       stats_subs.F90
+M       variables_radiation_module.F90
+M       advance_wp2_wp3_module.F90
+M       advance_xm_wpxp_module.F90
+M       stats_sfc.F90
+M       clubb_core.F90
+M       Skw_module.F90
+M       parameters_tunable.F90
+M       advance_xp2_xpyp_module.F90
+M       output_grads.F90
+M       variables_diagnostic_module.F90
+
+Files added: 
+A       corr_matrix_module.F90
+A       stats_LH_zt.F90
+A       matrix_operations.F90
+A       Latin_hypercube
+A       Latin_hypercube/generate_lh_sample_module.F90
+A       Latin_hypercube/math_utilities.F90
+A       Latin_hypercube/microphys_interface.inc
+A       Latin_hypercube/estimate_lh_micro_module.F90
+A       Latin_hypercube/permute_height_time_module.F90
+A       Latin_hypercube/latin_hypercube_driver_module.F90
+A       Latin_hypercube/latin_hypercube_arrays.F90
+A       Latin_hypercube/output_2D_samples_module.F90
+A       Latin_hypercube/estimate_scm_microphys_module.F90
+A       stats_LH_sfc.F90
+A       diagnose_correlations_module.f90
 
 ===============================================================
 ===============================================================

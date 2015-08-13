@@ -1,5 +1,6 @@
 !-------------------------------------------------------------------------------
-! $Id: parameter_indices.F90 5560 2011-12-14 23:37:49Z vondeyle@uwm.edu $
+! $Id: parameter_indices.F90 7361 2014-11-04 21:51:02Z bmg2@uwm.edu $
+!===============================================================================
 module parameter_indices
 
 ! Description:
@@ -25,7 +26,7 @@ module parameter_indices
   private ! Default Scope
 
   integer, parameter, public ::  & 
-    nparams = 59 ! Total tunable parameters
+    nparams = 67 ! Total tunable parameters
 
 !***************************************************************
 !                    ***** IMPORTANT *****
@@ -86,21 +87,29 @@ module parameter_indices
     ic_K9             = 44, & 
     inu9              = 45, & 
     inu10             = 46, &
-    ic_Krrainm        = 47, & 
-    inu_r             = 48, & 
-    inu_hd            = 49
+    ic_K_hm           = 47, & 
+    ic_K_hmb          = 48, & 
+    iK_hm_min_coef    = 49, & 
+    inu_hm            = 50 
 
   integer, parameter, public :: & 
-    igamma_coef       = 50, & 
-    igamma_coefb      = 51, & 
-    igamma_coefc      = 52, & 
-    imu               = 53, & 
-    ibeta             = 54, & 
-    ilmin_coef        = 55, & 
-    itaumin           = 56, & 
-    itaumax           = 57, &
-    iLscale_mu_coef   = 58, &
-    iLscale_pert_coef = 59
+    igamma_coef                  = 51, & 
+    igamma_coefb                 = 52, & 
+    igamma_coefc                 = 53, & 
+    imu                          = 54, & 
+    ibeta                        = 55, & 
+    ilmin_coef                   = 56, &
+    icoef_hm_1_hm_2_corr_adj     = 57, & 
+    imult_coef                   = 58, &
+    itaumin                      = 59, & 
+    itaumax                      = 60, &
+    iLscale_mu_coef              = 61, &
+    iLscale_pert_coef            = 62, &
+    ialpha_corr                  = 63, &
+    iSkw_denom_coef              = 64, &
+    ic_K10                       = 65, &
+    ithlp2_rad_coef              = 66, &
+    ithlp2_rad_cloud_frac_thresh = 67
 
 end module parameter_indices
 !-----------------------------------------------------------------------

@@ -345,6 +345,7 @@ contains
    use microp_aero,         only: microp_aero_readnl
    use subcol,              only: subcol_readnl
    use cloud_fraction,      only: cldfrc_readnl
+   use cldfrc2m,            only: cldfrc2m_readnl
    use cldwat,              only: cldwat_readnl
    use zm_conv,             only: zmconv_readnl
    use hk_conv,             only: hkconv_readnl
@@ -357,6 +358,7 @@ contains
    use rad_constituents,    only: rad_cnst_readnl
    use radiation_data,      only: rad_data_readnl
    use modal_aer_opt,       only: modal_aer_opt_readnl
+   use clubb_intr,          only: clubb_readnl
    use chemistry,           only: chem_readnl
    use prescribed_volcaero, only: prescribed_volcaero_readnl
    use aerodep_flx,         only: aerodep_flx_readnl
@@ -372,6 +374,7 @@ contains
    use vertical_diffusion,  only: vd_readnl
    use cam_history_support, only: fieldname_len, fieldname_lenp2
    use cam_diagnostics,     only: diag_readnl
+   use nudging,             only: nudging_readnl
    use radheat,             only: radheat_readnl
 #if ( defined OFFLINE_DYN )
    use metdata,             only: metdata_readnl
@@ -738,8 +741,10 @@ contains
    call macrop_driver_readnl(nlfilename)
    call microp_driver_readnl(nlfilename)
    call microp_aero_readnl(nlfilename)
+   call clubb_readnl(nlfilename)
    call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
+   call cldfrc2m_readnl(nlfilename)
    call zmconv_readnl(nlfilename)
    call cldwat_readnl(nlfilename)
    call hkconv_readnl(nlfilename)
@@ -767,6 +772,7 @@ contains
    call cospsimulator_intr_readnl(nlfilename)
    call sat_hist_readnl(nlfilename, hfilename_spec, mfilt, fincl, nhtfrq, avgflag_pertape)
    call diag_readnl(nlfilename)
+   call nudging_readnl(nlfilename)
    call radheat_readnl(nlfilename)
    call vd_readnl(nlfilename)
 #if ( defined OFFLINE_DYN )

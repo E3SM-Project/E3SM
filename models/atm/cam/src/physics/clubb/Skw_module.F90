@@ -1,5 +1,6 @@
-!$Id: Skw_module.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
-!-------------------------------------------------------------------------------
+!-------------------------------------------------------------------------
+!$Id: Skw_module.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
+!===============================================================================
 module Skw_module
 
   implicit none
@@ -28,12 +29,16 @@ module Skw_module
     use clubb_precision, only: &
       core_rknd ! Variable(s)
 
+    use parameters_tunable, only: &
+      Skw_denom_coef
+
     implicit none
 
     ! External
     intrinsic :: min, max
 
     ! Parameter Constants
+    ! Whether to apply clipping to the final result
     logical, parameter ::  & 
       l_clipping_kluge = .false.
 
@@ -41,15 +46,6 @@ module Skw_module
     real( kind = core_rknd ), intent(in) :: & 
       wp2,  & ! w'^2    [m^2/s^2]
       wp3     ! w'^3    [m^3/s^3]
-
-    real( kind = core_rknd ), parameter :: &
-
-#ifdef CLUBB_CAM
-      Skw_denom_coef = 0.0_core_rknd ! want this as zero if running CAM-CLUBB
-#else
-      Skw_denom_coef = 8.0_core_rknd  ! Factor to decrease sensitivity in the denominator
-                                     ! of Skw calculation
-#endif				 
 
     ! Output Variable
     real( kind = core_rknd ) :: & 
@@ -60,9 +56,9 @@ module Skw_module
     !Skw = wp3 / ( max( wp2, w_tol_sqd ) )**1.5_core_rknd
     ! Calculation of skewness to help reduce the sensitivity of this value to
     ! small values of wp2.
-    Skw = wp3 / ( ( wp2 + Skw_denom_coef * w_tol_sqd ) )**1.5_core_rknd
+    Skw = wp3 / ( wp2 + Skw_denom_coef * w_tol_sqd )**1.5_core_rknd
 
-    ! This is no longer need since clipping is already
+    ! This is no longer needed since clipping is already
     ! imposed on wp2 and wp3 elsewhere in the code
     if ( l_clipping_kluge ) then
       Skw = min( max( Skw, -Skw_max_mag ), Skw_max_mag )

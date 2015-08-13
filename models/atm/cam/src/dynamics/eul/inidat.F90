@@ -337,6 +337,7 @@ contains
     use carma_intr,   only: carma_implements_cnst, carma_init_cnst
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
+    use clubb_intr  , only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,      only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver, only: microp_driver_implements_cnst, microp_driver_init_cnst
     use phys_control,  only: phys_getopts
@@ -509,6 +510,9 @@ contains
            if (microp_driver_implements_cnst(cnst_name(m_cnst))) then
               call microp_driver_init_cnst(cnst_name(m_cnst),arr3d_a(:,:,j) , gcid)
               if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "microp_driver_init_cnst"'
+           else if (clubb_implements_cnst(cnst_name(m_cnst))) then
+              call clubb_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
+              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "clubb_init_cnst"'
            else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
               call stratiform_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
               if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "stratiform_init_cnst"'

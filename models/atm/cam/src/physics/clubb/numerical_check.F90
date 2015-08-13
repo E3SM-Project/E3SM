@@ -1,5 +1,6 @@
 !------------------------------------------------------------------------
-! $Id: numerical_check.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: numerical_check.F90 7309 2014-09-20 17:06:28Z betlej@uwm.edu $
+!===============================================================================
 module numerical_check
 
   implicit none
@@ -82,10 +83,10 @@ module numerical_check
                           wp2thlp, cloud_frac, rcm, wpthvp, wp2thvp, & 
                           rtpthvp, thlpthvp, wprcp, wp2rcp, & 
                           rtprcp, thlprcp, rcp2, wprtpthlp, & 
-                          crt1, crt2, cthl1, cthl2, pdf_params, &
-                          err_code,  & 
+                          crt_1, crt_2, cthl_1, cthl_2, pdf_params, &
                           sclrpthvp, sclrprcp, wpsclrp2, & 
-                          wpsclrprtp, wpsclrpthlp, wp2sclrp )
+                          wpsclrprtp, wpsclrpthlp, wp2sclrp, &
+                          err_code )
 
 ! Description: This subroutine determines if any of the output
 !   variables for the pdf_closure subroutine carry values that
@@ -135,8 +136,8 @@ module numerical_check
       thlprcp,         & ! th_l' r_c'            [(K kg)/kg]
       rcp2,            & ! r_c'^2                [(kg^2)/(kg^2)]
       wprtpthlp,       & ! w' r_t' th_l'         [(m kg K)/(s kg)]
-      crt1, crt2,  & 
-      cthl1, cthl2
+      crt_1, crt_2,  & 
+      cthl_1, cthl_2
 
     type(pdf_parameter), intent(in) ::  & 
       pdf_params        ! PDF parameters          [units vary]
@@ -175,35 +176,35 @@ module numerical_check
     call check_nan( thlprcp, "thlprcp", proc_name, err_code )
     if ( ircp2 >  0 ) call check_nan( rcp2, "rcp2", proc_name, err_code)
     if ( iwprtpthlp > 0 ) call check_nan( wprtpthlp, "wprtpthlp", proc_name, err_code )
-    call check_nan( crt1, "crt1", proc_name, err_code )
-    call check_nan( crt2, "crt2", proc_name, err_code )
-    call check_nan( cthl1, "cthl1", proc_name, err_code )
-    call check_nan( cthl2, "cthl2", proc_name, err_code )
+    call check_nan( crt_1, "crt_1", proc_name, err_code )
+    call check_nan( crt_2, "crt_2", proc_name, err_code )
+    call check_nan( cthl_1, "cthl_1", proc_name, err_code )
+    call check_nan( cthl_2, "cthl_2", proc_name, err_code )
     ! Check each PDF parameter at the grid level sent in.
-    call check_nan( pdf_params%w1, "pdf_params%w1", proc_name, err_code )
-    call check_nan( pdf_params%w2, "pdf_params%w2", proc_name, err_code )
-    call check_nan( pdf_params%varnce_w1, "pdf_params%varnce_w1", proc_name, err_code )
-    call check_nan( pdf_params%varnce_w2, "pdf_params%varnce_w2", proc_name, err_code )
-    call check_nan( pdf_params%rt1, "pdf_params%rt1", proc_name, err_code )
-    call check_nan( pdf_params%rt2, "pdf_params%rt2", proc_name, err_code )
-    call check_nan( pdf_params%varnce_rt1, "pdf_params%varnce_rt1", proc_name, err_code )
-    call check_nan( pdf_params%varnce_rt2, "pdf_params%varnce_rt2", proc_name, err_code )
-    call check_nan( pdf_params%thl1, "pdf_params%thl1", proc_name, err_code )
-    call check_nan( pdf_params%thl2, "pdf_params%thl2", proc_name, err_code )
-    call check_nan( pdf_params%varnce_thl1, "pdf_params%varnce_thl1", proc_name, err_code )
-    call check_nan( pdf_params%varnce_thl2, "pdf_params%varnce_thl2", proc_name, err_code )
+    call check_nan( pdf_params%w_1, "pdf_params%w_1", proc_name, err_code )
+    call check_nan( pdf_params%w_2, "pdf_params%w_2", proc_name, err_code )
+    call check_nan( pdf_params%varnce_w_1, "pdf_params%varnce_w_1", proc_name, err_code )
+    call check_nan( pdf_params%varnce_w_2, "pdf_params%varnce_w_2", proc_name, err_code )
+    call check_nan( pdf_params%rt_1, "pdf_params%rt_1", proc_name, err_code )
+    call check_nan( pdf_params%rt_2, "pdf_params%rt_2", proc_name, err_code )
+    call check_nan( pdf_params%varnce_rt_1, "pdf_params%varnce_rt_1", proc_name, err_code )
+    call check_nan( pdf_params%varnce_rt_2, "pdf_params%varnce_rt_2", proc_name, err_code )
+    call check_nan( pdf_params%thl_1, "pdf_params%thl_1", proc_name, err_code )
+    call check_nan( pdf_params%thl_2, "pdf_params%thl_2", proc_name, err_code )
+    call check_nan( pdf_params%varnce_thl_1, "pdf_params%varnce_thl_1", proc_name, err_code )
+    call check_nan( pdf_params%varnce_thl_2, "pdf_params%varnce_thl_2", proc_name, err_code )
     call check_nan( pdf_params%mixt_frac, "pdf_params%mixt_frac", proc_name, err_code )
     call check_nan( pdf_params%rrtthl, "pdf_params%rrtthl", proc_name, err_code )
-    call check_nan( pdf_params%rc1, "pdf_params%rc1", proc_name, err_code )
-    call check_nan( pdf_params%rc2, "pdf_params%rc2", proc_name, err_code )
-    call check_nan( pdf_params%rsl1, "pdf_params%rsl1", proc_name, err_code )
-    call check_nan( pdf_params%rsl2, "pdf_params%rsl2", proc_name, err_code )
-    call check_nan( pdf_params%cloud_frac1, "pdf_params%cloud_frac1", proc_name, err_code )
-    call check_nan( pdf_params%cloud_frac2, "pdf_params%cloud_frac2", proc_name, err_code )
-    call check_nan( pdf_params%s1, "pdf_params%s1", proc_name, err_code )
-    call check_nan( pdf_params%s2, "pdf_params%s2", proc_name, err_code )
-    call check_nan( pdf_params%stdev_s1, "pdf_params%stdev_s1", proc_name, err_code )
-    call check_nan( pdf_params%stdev_s2, "pdf_params%stdev_s2", proc_name, err_code )
+    call check_nan( pdf_params%rc_1, "pdf_params%rc_1", proc_name, err_code )
+    call check_nan( pdf_params%rc_2, "pdf_params%rc_2", proc_name, err_code )
+    call check_nan( pdf_params%rsatl_1, "pdf_params%rsatl_1", proc_name, err_code )
+    call check_nan( pdf_params%rsatl_2, "pdf_params%rsatl_2", proc_name, err_code )
+    call check_nan( pdf_params%cloud_frac_1, "pdf_params%cloud_frac_1", proc_name, err_code )
+    call check_nan( pdf_params%cloud_frac_2, "pdf_params%cloud_frac_2", proc_name, err_code )
+    call check_nan( pdf_params%chi_1, "pdf_params%chi_1", proc_name, err_code )
+    call check_nan( pdf_params%chi_2, "pdf_params%chi_2", proc_name, err_code )
+    call check_nan( pdf_params%stdev_chi_1, "pdf_params%stdev_chi_1", proc_name, err_code )
+    call check_nan( pdf_params%stdev_chi_2, "pdf_params%stdev_chi_2", proc_name, err_code )
     call check_nan( pdf_params%alpha_thl, "pdf_params%alpha_thl", proc_name, err_code )
     call check_nan( pdf_params%alpha_rt, "pdf_params%alpha_rt", proc_name, err_code )
 
@@ -431,8 +432,9 @@ module numerical_check
 
 !-----------------------------------------------------------------------
   subroutine surface_varnce_check( wp2_sfc, up2_sfc, vp2_sfc, thlp2_sfc, & 
-           rtp2_sfc, rtpthlp_sfc, err_code, & 
-           sclrp2_sfc, sclrprtp_sfc, sclrpthlp_sfc )
+           rtp2_sfc, rtpthlp_sfc, &
+           sclrp2_sfc, sclrprtp_sfc, sclrpthlp_sfc, &
+           err_code )
 !
 !       Description:This subroutine determines if any of the output
 !       variables for the surface_varnce subroutine carry values that
@@ -500,15 +502,12 @@ module numerical_check
   end subroutine surface_varnce_check
 
 !-----------------------------------------------------------------------
-  subroutine rad_check( thlm, rcm, rtm, ricem,  & 
+  subroutine rad_check( thlm, rcm, rtm, rim,  & 
                         cloud_frac, p_in_Pa, exner, rho_zm )
 ! Description:
 !   Checks radiation input variables. If they are < 0 it reports
 !   to the console.
 !------------------------------------------------------------------------
-
-    use constants_clubb, only:  & 
-        fstderr ! Variable
 
     use grid_class, only: & 
         gr ! Variable
@@ -527,7 +526,7 @@ module numerical_check
       thlm,           & ! Liquid Water Potential Temperature   [K/s]
       rcm,            & ! Liquid Water Mixing Ratio            [kg/kg]
       rtm,            & ! Total Water Mixing Ratio             [kg/kg]
-      ricem,          & ! Ice Water Mixing Ratio               [kg/kg]
+      rim,          & ! Ice Water Mixing Ratio               [kg/kg]
       cloud_frac,     & ! Cloud Fraction                       [-]
       p_in_Pa,        & ! Pressure                             [Pa]
       exner,          & ! Exner Function                       [-]
@@ -544,7 +543,7 @@ module numerical_check
     call check_negative( rcm, gr%nz ,"rcm", proc_name )
     call check_negative( rtm, gr%nz ,"rtm", proc_name )
     call check_negative( rvm, gr%nz ,"rvm", proc_name )
-    call check_negative( ricem, gr%nz ,"ricem", proc_name )
+    call check_negative( rim, gr%nz ,"rim", proc_name )
     call check_negative( cloud_frac, gr%nz ,"cloud_frac", proc_name )
     call check_negative( p_in_Pa, gr%nz ,"p_in_Pa", proc_name )
     call check_negative( exner, gr%nz ,"exner", proc_name )
@@ -593,7 +592,7 @@ module numerical_check
       edsclr_dim, &
       hydromet_dim
 
-    use parameters_microphys, only: &
+    use array_index, only: &
       hydromet_list ! Variable(s)
 
     implicit none

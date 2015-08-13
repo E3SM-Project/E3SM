@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: clip_semi_implicit.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: clip_semi_implicit.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
 !===============================================================================
 module clip_semi_implicit
 
@@ -200,8 +200,7 @@ module clip_semi_implicit
   !-----------------------------------------------------------------------
 
   use clubb_precision, only:  & 
-    time_precision, & ! Variable(s)
-    core_rknd
+    core_rknd ! Variable(s)
 
   implicit none
 
@@ -229,7 +228,7 @@ module clip_semi_implicit
   !                       timestep, dt.  The smaller the value of dt_clip_coef,
   !                       the smaller the value of dt_clip, and the larger the
   !                       magnitude of (df/dt)_clipping.
-  real(kind=time_precision), parameter :: dt_clip_coef = 1.0_time_precision
+  real(kind=core_rknd), parameter :: dt_clip_coef = 1.0_core_rknd
 
   contains
 
@@ -276,7 +275,7 @@ module clip_semi_implicit
     implicit none
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt  ! Model timestep.  [s]
 
     real( kind = core_rknd ), intent(in) :: & 
@@ -292,7 +291,7 @@ module clip_semi_implicit
     real( kind = core_rknd ) :: lhs
 
     ! Local Variables
-    real(kind=time_precision) ::  & 
+    real( kind = core_rknd ) ::  & 
       dt_clip       ! Time scale for semi-implicit clipping term.                [s]
 
     real( kind = core_rknd ) :: & 
@@ -391,7 +390,7 @@ module clip_semi_implicit
     implicit none
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd), intent(in) ::  & 
       dt_clip ! Time scale for semi-implicit clipping term.        [s]
 
     real( kind = core_rknd ), intent(in) :: & 
@@ -403,7 +402,7 @@ module clip_semi_implicit
 
     ! Main diagonal: [ x f_unclipped(k,<t+1>) ]
     lhs_contribution & 
-    = + (1.0_core_rknd/real( dt_clip, kind = core_rknd ) * B_fnc )
+    = + (1.0_core_rknd/dt_clip * B_fnc )
 
 
   end function compute_clip_lhs
@@ -447,7 +446,7 @@ module clip_semi_implicit
     implicit none
 
     ! Input Variables
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt                 ! Model timestep.                                    [s]
 
     real( kind = core_rknd ), intent(in) :: & 
@@ -463,7 +462,7 @@ module clip_semi_implicit
     real( kind = core_rknd ) :: rhs
 
     ! Local Variables
-    real(kind=time_precision) ::  & 
+    real( kind = core_rknd) ::  & 
       dt_clip       ! Time scale for semi-implicit clipping term.                [s]
 
     real( kind = core_rknd ) :: & 
@@ -495,7 +494,7 @@ module clip_semi_implicit
       ! Compute the explicit (RHS) contribution from clipping for the upper
       ! threshold.
       rhs_upper  & 
-      = + (1.0_core_rknd/real( dt_clip, kind = core_rknd )  & 
+      = + (1.0_core_rknd/dt_clip  & 
           * ( A_fnc - B_fnc * f_diff + B_fnc * upper_threshold ) )
 
     else
@@ -522,7 +521,7 @@ module clip_semi_implicit
       ! Compute the explicit (RHS) contribution from clipping for the lower
       ! threshold.
       rhs_lower  & 
-      = - (1.0_core_rknd/ real( dt_clip, kind = core_rknd ))  & 
+      = - (1.0_core_rknd/ dt_clip)  & 
           * ( A_fnc - B_fnc * f_diff - B_fnc * lower_threshold )
 
     else
