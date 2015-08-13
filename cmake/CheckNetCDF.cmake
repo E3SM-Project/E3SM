@@ -94,6 +94,17 @@ function (check_NetCDF_Fortran)
 
     if (NOT NetCDF_Fortran_CHECKED)
     
+        # Check NetCDF_C if it needs PnetCDF
+        if (NetCDF_C_HAS_PNETCDF)
+            find_package(PnetCDF COMPONENTS C)
+            if (PnetCDF_C_FOUND)
+                set (temp ${NetCDF_Fortran_INCLUDE_DIRS} ${PnetCDF_C_INCLUDE_DIRS})
+                set (NetCDF_Fortran_INCLUDE_DIRS ${temp} PARENT_SCOPE)
+                set (temp ${NetCDF_Fortran_LIBRARIES} ${PnetCDF_C_LIBRARIES})
+                set (NetCDF_Fortran_LIBRARIES ${temp} PARENT_SCOPE)
+            endif ()
+        endif ()
+    
         # Get version string
         set (COMP_DEFS)
         foreach (incdir IN LISTS NetCDF_Fortran_INCLUDE_DIRS)
