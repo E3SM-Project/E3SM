@@ -130,8 +130,6 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
 
         endif ()
 
-        endif ()
-        
     endif ()
     
 endforeach ()
