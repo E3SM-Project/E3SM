@@ -56,13 +56,21 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         find_package_component(NetCDF COMPONENT ${NetCDF_comp}
                                INCLUDE_HINTS ${NetCDF_${NetCDF_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${NetCDF_${NetCDF_comp}_LIBRARY_HINTS})
-                               
-        # Continue only if found
-        if (NetCDF_${NetCDF_comp}_FOUND)
+
+    endif ()
+    
+endforeach ()
+
+#==============================================================================
+# CHECKS AND DEPENDENCIES
+foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
+
+    # Continue only if found and not finished checking
+    if (NetCDF_${NetCDF_comp}_FOUND AND NOT NetCDF_${NetCDF_comp}_FINISHED)
 
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: C
-        if (NetCDF_comp STREQUAL C AND NOT NetCDF_C_FINISHED)
+        if (NetCDF_comp STREQUAL C)
 
             find_path (NetCDF_C_META_DIR
                        NAMES netcdf_meta.h
@@ -121,9 +129,7 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 endif ()
                 
             else ()
-            
                 message (WARNING "Could not find netcdf_meta.h")
-                 
             endif ()
             
             # Dependencies
@@ -163,11 +169,11 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
             # Checks and dependecies finished
             set (NetCDF_C_FINISHED TRUE 
-                 CACHE BOOL "NetCDF_C Module Fully Found")
+                 CACHE BOOL "NetCDF_C finished with checks")
 
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: Fortran
-        elseif (NetCDF_comp STREQUAL Fortran AND NOT NetCDF_Fortran_FINISHED)
+        elseif (NetCDF_comp STREQUAL Fortran)
 
             # Get dependencies
             if (NOT NetCDF_Fortran_IS_SHARED)
@@ -207,9 +213,7 @@ foreach (NetCDF_comp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
             # Checks and dependencies finished
             set (NetCDF_Fortran_FINISHED TRUE
-                 CACHE BOOL "NetCDF_Fortran Module Fully Found")
-
-        endif ()
+                 CACHE BOOL "NetCDF_Fortran finished with checks")
 
         endif ()
         

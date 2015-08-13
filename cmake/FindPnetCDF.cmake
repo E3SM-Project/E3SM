@@ -34,6 +34,7 @@ define_package_component (PnetCDF
 # Search for list of valid components requested
 find_valid_components (PnetCDF)
 
+#==============================================================================
 # SEARCH FOR VALIDATED COMPONENTS
 foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
@@ -55,13 +56,20 @@ foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
         find_package_component(PnetCDF COMPONENT ${PnetCDF_comp}
                                INCLUDE_HINTS ${PnetCDF_${PnetCDF_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${PnetCDF_${PnetCDF_comp}_LIBRARY_HINTS})
+    endif ()
     
-        # Continue only if found
-        if (PnetCDF_${PnetCDF_comp}_FOUND)
+endforeach ()
+
+#==============================================================================
+# CHECKS AND DEPENDENCIES
+foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
+
+    # Only do checks if found and not finished checking
+    if (PnetCDF_${PnetCDF_comp}_FOUND AND NOT PnetCDF_${PnetCDF_comp}_FINISHED)
 
         #----------------------------------------------------------------------
         # Checks & Dependencies for COMPONENT: C
-        if (PnetCDF_comp STREQUAL C AND NOT PnetCDF_C_FINISHED)
+        if (PnetCDF_comp STREQUAL C)
 
             # Get version string
             try_run (PnetCDF_C_VERSION_RUNVAR PnetCDF_C_VERSION_COMPVAR
@@ -82,11 +90,11 @@ foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
             # Checks and dependencies finished
             set (PnetCDF_C_FINISHED TRUE
-                 CACHE BOOL "PnetCDF C fully found")
+                 CACHE BOOL "PnetCDF_C finished with checks")
 
         #----------------------------------------------------------------------
         # Checks & Dependencies for COMPONENT: Fortran
-        elseif (PnetCDF_comp STREQUAL Fortran AND NOT PnetCDF_Fortran_FINISHED)
+        elseif (PnetCDF_comp STREQUAL Fortran)
 
             # Get version string
             set (COMP_DEFS)
@@ -113,9 +121,7 @@ foreach (PnetCDF_comp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
 
             # Checks and dependencies finished
             set (PnetCDF_Fortran_FINISHED TRUE
-                 CACHE BOOL "PnetCDF Fortran fully found")
-
-        endif ()
+                 CACHE BOOL "PnetCDF_Fortran finished with checks")
 
         endif ()
         

@@ -46,6 +46,7 @@ define_package_component (HDF5
 # Search for list of valid components requested
 find_valid_components (HDF5)
 
+#==============================================================================
 # SEARCH FOR VALIDATED COMPONENTS
 foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
 
@@ -79,13 +80,21 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
         find_package_component(HDF5 COMPONENT ${HDF5_comp}
                                INCLUDE_HINTS ${HDF5_${HDF5_comp}_INCLUDE_HINTS}
                                LIBRARY_HINTS ${HDF5_${HDF5_comp}_LIBRARY_HINTS})
-        
-        # Only continue if found
-        if (HDF5_${HDF5_comp}_FOUND)
+
+    endif ()
+    
+endforeach ()
+
+#==============================================================================
+# CHECKS AND DEPENDENCIES
+foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
+
+    # Only continue if found and not finished checking
+    if (HDF5_${HDF5_comp}_FOUND AND NOT HDF5_${HDF5_comp}_FINISHED)
 
         #----------------------------------------------------------------------
         # Check & Dependencies for COMPONENT: C
-        if (HDF5_comp STREQUAL C AND NOT HDF5_C_FINISHED)
+        if (HDF5_comp STREQUAL C)
 
             if (NOT HDF5_C_IS_SHARED)
 
@@ -99,9 +108,11 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
             endif ()
             
             set (HDF5_C_FINISHED TRUE
-                 CACHE BOOL "HDF5_C fully found")
-                 
-        elseif (NOT HDF5_${HDF5_comp}_FINISHED)
+                 CACHE BOOL "HDF5_C finished with checks")
+
+        #----------------------------------------------------------------------
+        # All other components
+        else ()
 
             if (NOT HDF5_${HDF5_comp}_IS_SHARED)
             
@@ -115,7 +126,7 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
             endif ()
 
             set (HDF5_${HDF5_comp}_FINISHED TRUE
-                 CACHE BOOL "HDF5_${HDF5_comp} fully found")
+                 CACHE BOOL "HDF5_${HDF5_comp} finished with checks")
 
         endif ()
 
