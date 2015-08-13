@@ -130,7 +130,7 @@ NightlyStartTime: %s UTC
 
     # Make tag file
     tag_fd = open("Testing/TAG", "w")
-    tag_fd.write("%s\nNightly" % subdir_name)
+    tag_fd.write("%s\nACME_Latest" % subdir_name)
     tag_fd.close()
 
     #
@@ -140,7 +140,7 @@ NightlyStartTime: %s UTC
     site_elem = xmlet.Element("Site")
 
     site_elem.attrib["BuildName"] = cdash_build_name
-    site_elem.attrib["BuildStamp"] = "%s-Nightly" % subdir_name
+    site_elem.attrib["BuildStamp"] = "%s-ACME_Latest" % subdir_name
     site_elem.attrib["Name"] = hostname
     site_elem.attrib["OSName"] = "Linux"
     site_elem.attrib["Hostname"] = hostname
