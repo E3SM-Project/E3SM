@@ -3,8 +3,8 @@ ifeq "$(ROOT_DIR)" ""
 endif
 EXE_NAME=landice_model
 NAMELIST_SUFFIX=landice
-FCINCLUDES += -I$(ROOT_DIR)/core_landice
+FCINCLUDES += -I$(ROOT_DIR)/core_landice/forward_model -I$(ROOT_DIR)/core_landice/shared
 override CPPFLAGS += -DCORE_LANDICE
 
 report_builds:
-	@echo "CORE=landice"
+    @echo "CORE=landice"

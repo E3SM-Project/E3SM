@@ -41,29 +41,30 @@ override CPPFLAGS += $(EXTERNAL_DYCORE_FLAG)
 
 .SUFFIXES: .F .o .cpp
 
-OBJS = 	mpas_li_core.o \
-	mpas_li_core_interface.o \
-	mpas_li_time_integration.o \
-	mpas_li_time_integration_fe.o \
-	mpas_li_diagnostic_vars.o \
-	mpas_li_tendency.o \
-	mpas_li_setup.o \
-	mpas_li_statistics.o \
-	mpas_li_velocity.o \
-	mpas_li_sia.o \
-	mpas_li_mask.o \
-	mpas_li_velocity_external.o
+#OBJS = 	mpas_li_core.o \
+#	mpas_li_core_interface.o \
+#	mpas_li_time_integration.o \
+#	mpas_li_time_integration_fe.o \
+#	mpas_li_diagnostic_vars.o \
+#	mpas_li_tendency.o \
+#	mpas_li_setup.o \
+#	mpas_li_statistics.o \
+#	mpas_li_velocity.o \
+#	mpas_li_sia.o \
+#	mpas_li_mask.o \
+#	mpas_li_velocity_external.o
+#
+#ifeq "$(BUILD_INTERFACE)" "true"
+#	OBJS += Interface_velocity_solver.o
+#endif
 
-ifeq "$(BUILD_INTERFACE)" "true"
-	OBJS += Interface_velocity_solver.o
-endif
 
 
-
-all: core_landice
+all: core_landice shared mode_forward
 
 core_landice: $(OBJS)
-	ar -ru libdycore.a $(OBJS)
+	ar -ru libdycore.a mode_forward/*.o
+	ar -ru libdycore.a shared/*.o
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -83,48 +84,9 @@ post_build:
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
-mpas_li_core_interface.o: mpas_li_core.o
+shared: (cd shared; $(MAKE))
 
-mpas_li_core.o: mpas_li_time_integration.o \
-                     mpas_li_setup.o \
-                     mpas_li_velocity.o \
-                     mpas_li_diagnostic_vars.o \
-                     mpas_li_statistics.o \
-                     mpas_li_mask.o
-
-mpas_li_setup.o:
-
-mpas_li_time_integration.o: mpas_li_time_integration_fe.o
-
-mpas_li_time_integration_fe.o: mpas_li_velocity.o \
-                               mpas_li_tendency.o \
-                               mpas_li_diagnostic_vars.o \
-                               mpas_li_setup.o
-
-mpas_li_tendency.o: mpas_li_setup.o
-
-mpas_li_diagnostic_vars.o: mpas_li_mask.o \
-                           mpas_li_velocity.o \
-                           mpas_li_constants.o
-
-mpas_li_velocity.o: mpas_li_sia.o \
-                    mpas_li_setup.o \
-                    mpas_li_velocity_external.o
-
-mpas_li_sia.o: mpas_li_mask.o \
-               mpas_li_setup.o
-
-mpas_li_statistics.o: mpas_li_mask.o \
-                      mpas_li_setup.o \
-                      mpas_li_constants.o
-
-mpas_li_mask.o: mpas_li_setup.o
-
-mpas_li_constants.o:
-
-mpas_li_velocity_external.o:
-
-Interface_velocity_solver.o:
+mode_forward: (cd mode_forward; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
