@@ -46,7 +46,7 @@
     <values>
       <value grid="l%1x1">netcdf</value>
       <value grid="l%5x5">netcdf</value>
-      <value grid="l%5x5">netcdf</value>
+      <value grid="l%CLM_USRDAT">netcdf</value>
     </values>
   </entry> 
 

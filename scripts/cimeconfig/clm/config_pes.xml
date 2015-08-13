@@ -679,7 +679,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="l%clm_usrdat">
+  <grid name="l%CLM_USRDAT">
     <mach name="any">
       <pes pesize="any" compset="any">
 	<comment>none</comment>

@@ -581,14 +581,14 @@
 
     <entry id="RUN_STARTDATE"> 
       <values>
-	<value grid="any" compset="1850_"     >0001-01-01</value> 
-	<value grid="any" compset="2000_"     >0001-01-01</value>
-	<value grid="any" compset="HIST_"     >1850-01-01</value> 
-	<value grid="any" compset="C2R[68]_"  >1950-01-01</value> 
-	<value grid="any" compset="C2R4_"     >2004-01-01</value>
-	<value grid="any" compset="5505_"     >1955-01-01</value> 
-	<value grid="any" compset="RCP[2468]_">2005-01-01</value>
-	<value grid="any" compset="2013_"     >2013-01-01</value> 
+	<value compset="1850_"     >0001-01-01</value> 
+	<value compset="2000_"     >0001-01-01</value>
+	<value compset="HIST_"     >1850-01-01</value> 
+	<value compset="C2R[68]_"  >1950-01-01</value> 
+	<value compset="C2R4_"     >2004-01-01</value>
+	<value compset="5505_"     >1955-01-01</value> 
+	<value compset="RCP[2468]_">2005-01-01</value>
+	<value compset="2013_"     >2013-01-01</value> 
       </values>
     </entry>
   </entries>

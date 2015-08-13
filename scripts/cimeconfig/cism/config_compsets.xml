@@ -93,12 +93,12 @@
     </entry>
     <entry id="STOP_OPTION"> 
       <values>
-	<value compset="_DLND.*_CISM" grid="any">nyears</value>
+	<value compset="_DLND.*_CISM">nyears</value>
       </values>
     </entry>
     <entry id="STOP_N"> 
       <values>
-	<value compset="_DLND.*_CISM" grid="any">5</value>
+	<value compset="_DLND.*_CISM">5</value>
       </values>
     </entry>
   </entries>

@@ -384,30 +384,30 @@
   <entries>
     <entry id="RUN_STARTDATE"> 
       <values>
-	<value grid="any"			compset="RCP[2468]"		  >2005-01-01</value> 
-	<value grid="any"			compset="HIST_"			  >1850-01-01</value> 
-	<value grid="any"			compset="4804_"			  >0001-01-01</value> 
-	<value grid="any"			compset="CLM[45].*_CISM.*_TEST"	  >1980-01-15</value> 
-	<value grid="any"			compset="CLM[45]%[^_]*CNDV.*_TEST">1997-12-31</value> 
-	<value grid="a%1x1_mexicocityMEX"	compset="any"			  >1993-12-01</value> 
-	<value grid="a%1x1_vancouverCAN"	compset="any"			  >1992-08-12</value> 
-	<value grid="a%1x1_urbanc_alpha"	compset="any"			  >0001-08-12</value>   
+	<value compset="RCP[2468]"		  >2005-01-01</value> 
+	<value compset="HIST_"			  >1850-01-01</value> 
+	<value compset="4804_"			  >0001-01-01</value> 
+	<value compset="CLM[45].*_CISM.*_TEST"	  >1980-01-15</value> 
+	<value compset="CLM[45]%[^_]*CNDV.*_TEST" >1997-12-31</value> 
+	<value grid="a%1x1_mexicocityMEX"	  >1993-12-01</value> 
+	<value grid="a%1x1_vancouverCAN"	  >1992-08-12</value> 
+	<value grid="a%1x1_urbanc_alpha"	  >0001-08-12</value>   
       </values>
     </entry>
 
     <entry id="STOP_OPTION"> 
       <values>
-	<value grid="a%1x1_mexicocityMEX" compset="any" >nsteps</value> 
-	<value grid="a%1x1_vancouverCAN"  compset="any" >nsteps</value> 
-	<value grid="a%1x1_urbanc_alpha"  compset="any" >nsteps</value> 
+	<value grid="a%1x1_mexicocityMEX">nsteps</value> 
+	<value grid="a%1x1_vancouverCAN" >nsteps</value> 
+	<value grid="a%1x1_urbanc_alpha" >nsteps</value> 
       </values>
     </entry>
 
     <entry id="STOP_N"> 
       <values>
-	<value grid="a%1x1_mexicocityMEX" compset="any">158</value> 
-	<value grid="a%1x1_vancouverCAN"  compset="any">331</value> 
-	<value grid="a%1x1_urbanc_alpha"  compset="any">22772</value> 
+	<value grid="a%1x1_mexicocityMEX">158</value> 
+	<value grid="a%1x1_vancouverCAN" >331</value> 
+	<value grid="a%1x1_urbanc_alpha" >22772</value> 
       </values>
     </entry>
 

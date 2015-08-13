@@ -42,13 +42,11 @@
   </entry>
   -->
 
-  <!--- uncomment and fill in relevant sections 
   <entry id="PIO_TYPENAME">
     <values>
-      <value></value>
+      <value grid="oi%tx0.1v2">netcdf4p</value>
     </values>
   </entry> 
-  -->
 
   <!--- uncomment and fill in relevant sections 
   <entry id="PIO_DEBUG_LEVEL">
