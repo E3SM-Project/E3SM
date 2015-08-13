@@ -1,4 +1,5 @@
 include (CMakeParseArguments)
+
 #
 # - Functions for parallel testing with CTest
 #
@@ -12,13 +13,13 @@ function (add_mpi_test TESTNAME)
     set (options)
     set (oneValueArgs NUMPROCS TIMEOUT)
     set (multiValueArgs COMMANDS)
-    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    cmake_parse_arguments (${TESTNAME} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     
     # Store parsed arguments for convenience
-    num_procs = ${${TESTNAME}_NUMPROCS}
-    timeout = ${${TESTNAME}_TIMEOUT}
-    exe_cmds = ${${TESTNAME}_COMMANDS}
-
+    set (exe_cmds ${${TESTNAME}_COMMANDS})
+    set (num_procs ${${TESTNAME}_NUMPROCS})
+    set (timeout ${${TESTNAME}_TIMEOUT})
+    
     # UCAR LSF execution
     if (PLATFORM STREQUAL "ucar" )
         ###

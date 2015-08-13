@@ -1,13 +1,9 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (PIOTests C Fortran)
-enable_testing()
-include (CTest)
-include (CheckPlatform)
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
 #==============================================================================
-check_platform ()
 
 add_subdirectory (unit)
 add_subdirectory (general)

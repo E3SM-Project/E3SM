@@ -1,3 +1,8 @@
+include (CheckPlatform)
+include (LibCTestMPI)
+
+check_platform ()
+
 #==============================================================================
 #  PREPARE FOR TESTING
 #==============================================================================
@@ -20,8 +25,11 @@ set (SRCS basic_tests.F90
 add_executable (pio_unit_test ${SRCS})
 target_link_libraries (pio_unit_test piof pioc)
 
-add_mpi_test(piotest
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/piotest
+# Test Timeout (4 min = 240 sec)
+set (DEFAULT_TEST_TIMEOUT 240)
+
+add_mpi_test(pio_unit_test
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_unit_test
     NUMPROCS 4
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 

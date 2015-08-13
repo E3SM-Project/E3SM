@@ -1,3 +1,8 @@
+include (CheckPlatform)
+include (LibCTestMPI)
+
+check_platform ()
+
 #==============================================================================
 #  GENERATE TARGET SOURCES
 #==============================================================================
@@ -25,7 +30,6 @@ endforeach ()
 #==============================================================================
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================
-include(mpiexec)
 
 # Test Timeout (4 min = 240 sec)
 set (DEFAULT_TEST_TIMEOUT 240)
@@ -46,7 +50,9 @@ add_mpi_test(init_finialize_2_proc
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
              
 add_mpi_test(init_finalize_2_proc_with_args
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize 
+             "--pio-tf-stride=2"
+             "--pio-tf-num-aggregators=2"
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
@@ -123,37 +129,47 @@ add_mpi_test(pio_decomp_tests_3p
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 add_mpi_test(pio_decomp_tests_4p_1agg
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-aggregators=1
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             "--pio-tf-num-aggregators=1"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_2agg
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-aggregators=2
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             "--pio-tf-num-aggregators=2"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_3agg
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-aggregators=3
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+             "--pio-tf-num-aggregators=3"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 add_mpi_test(pio_decomp_tests_4p_1iop
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-io-tasks=1
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             "--pio-tf-num-io-tasks=1"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_2iop
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-io-tasks=2
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             "--pio-tf-num-io-tasks=2"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_3iop
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-io-tasks=3
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             "--pio-tf-num-io-tasks=3"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 add_mpi_test(pio_decomp_tests_4p_2iop_2str
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             "--pio-tf-num-io-tasks=2"
+             "--pio-tf-stride=2"
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_2iop_1agg
-    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1
+    COMMANDS ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+             --pio-tf-num-io-tasks=2
+             --pio-tf-num-aggregators=1
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 

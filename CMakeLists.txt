@@ -52,5 +52,7 @@ list (APPEND CMAKE_MODULE_PATH ${CMAKE_UTILS_DIR})
      
 add_subdirectory (src)
 if (PIO_ENABLE_TESTS)
+    enable_testing()
+    include (CTest)
     add_subdirectory (tests)
 endif ()
