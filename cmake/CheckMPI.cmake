@@ -34,3 +34,36 @@ function (check_MPIIO SEARCH_DIRS)
     endif ()
             
 endfunction ()
+
+#
+# - Check for MPI Fortran Module
+#
+function (check_MPIMOD SEARCH_DIRS)
+    
+    if (NOT DEFINED MPIMOD_DETECTED)
+        
+        message (STATUS "Checking whether MPI Fortran module is supported")
+        find_file (TryMPIMOD_FILE
+                   NAMES TryMPIMOD.f90
+                   HINTS ${SEARCH_DIRS})
+        if (TryMPIMOD_FILE)
+            try_compile (COMPILE_RESULT
+                         ${CMAKE_CURRENT_BINARY_DIR}/tryMPIMOD
+                         SOURCES ${TryMPIMOD_FILE}
+                         OUTPUT_VARIABLE TryFortran_OUT)
+            if (COMPILE_RESULT)
+                message (STATUS "Checking whether MPI Fortran module is supported - yes")
+            else ()
+                message (STATUS "Checking whether MPI Fortran module is supported - no")
+            endif ()
+            
+            set (MPIMOD_DETECTED ${COMPILE_RESULT}
+                 CACHE BOOL "Whether MPI Fortran module is supported")
+                 
+        else ()
+            message (STATUS "Checking whether MPI Fortran module is supported - failed")
+        endif ()
+     
+    endif ()
+            
+endfunction ()

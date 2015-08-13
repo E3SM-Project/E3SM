@@ -97,6 +97,8 @@ endif ()
 
 #===== MPI =====
 find_package (MPI REQUIRED)
+
+# Check MPI I/O capabilities
 if (PIO_ENABLE_MPIIO)
     check_MPIIO (${CMAKE_UTILS_DIR})
     if (${MPIIO_DETECTED})
@@ -109,6 +111,16 @@ endif ()
 if (${PIO_ENABLE_MPIIO}) 
     target_compile_definitions (piof
         PRIVATE USEMPIIO)
+endif ()
+
+# Check for MPI Fortran module
+check_MPIMOD (${CMAKE_UTILS_DIR})
+if (${MPIMOD_DETECTED})
+    message (STATUS "MPI Fortran module detected and enabled.")
+else ()
+    message (STATUS "MPI Fortran module not detected and therefore disabled.")
+    target_compile_definitions (piof
+        PRIVATE NO_MPIMOD)
 endif ()
 
 #===== NetCDF-Fortran =====
