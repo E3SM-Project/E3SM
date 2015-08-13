@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (PIOF Fortran)
+include (ExternalProject)
 
 #==============================================================================
 #  DEFINE THE TARGET
@@ -16,13 +17,6 @@ set (PIO_GenF90_SRCS pionfatt_mod.F90
                      pionfput_mod.F90
                      pionfget_mod.F90
                      piodarray.F90)
-
-foreach (SRC_FILE IN LISTS PIO_GenF90_SRCS)
-add_custom_command (OUTPUT ${SRC_FILE}
-                    COMMAND ${GENF90_DIR}/genf90.pl
-                            ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${SRC_FILE}
-                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in)
-endforeach ()
 
 add_library (piof ${PIO_Fortran_SRCS} ${PIO_GenF90_SRCS})
 if (NOT PIO_ENABLE_FORTRAN)
@@ -41,6 +35,33 @@ endif()
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
+
+#===== genf90 =====
+if (DEFINED GENF90_DIR)
+    add_custom_target(genf90
+        DEPENDS ${GENF90_DIR}/genf90.pl)
+else ()
+    ExternalProject_Add (genf90
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/genf90
+        GIT_REPOSITORY https://github.com/PARALLELIO/genf90
+        GIT_TAG genf90_140121
+        UPDATE_COMMAND ""
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND "")
+    ExternalProject_Get_Property (genf90 SOURCE_DIR)
+    set (GENF90_DIR ${SOURCE_DIR})
+    unset (SOURCE_DIR)
+endif ()
+add_dependencies (piof genf90)
+
+#===== Fortran Source Generation with GenF90 =====
+foreach (SRC_FILE IN LISTS PIO_GenF90_SRCS)
+add_custom_command (OUTPUT ${SRC_FILE}
+                    COMMAND ${GENF90_DIR}/genf90.pl
+                            ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in > ${SRC_FILE}
+                    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
+endforeach ()
 
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
