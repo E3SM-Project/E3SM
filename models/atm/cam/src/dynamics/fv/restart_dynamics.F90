@@ -323,7 +323,7 @@ CONTAINS
 
     ierr = pio_put_var(File, tmass0desc, (/tmass0/))
 
-    time = ndcur+(real(nscur,kind=r8))/86400_r8
+    time = ndcur+(real(nscur,kind=r8))/86400._r8
     ierr = pio_put_var(File,timedesc%varid, time)
 
     do i=1,restartvarcnt

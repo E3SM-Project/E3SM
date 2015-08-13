@@ -127,7 +127,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    type(physics_buffer_desc),   pointer       :: pbuf(:)        ! physics buffer
 
    integer,  optional,          intent(in)    :: list_idx_in
-   real(r8), optional, target,  intent(in)    :: dgnumdry_m(:,:,:)
+   real(r8), optional,          pointer       :: dgnumdry_m(:,:,:)
    real(r8), optional,          pointer       :: dgnumwet_m(:,:,:)
    real(r8), optional,          pointer       :: qaerwat_m(:,:,:)
    real(r8), optional,          pointer       :: wetdens_m(:,:,:)
@@ -194,10 +194,17 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       list_idx = list_idx_in
 
       ! check that all optional args are present
-      if (.not. present(dgnumdry_m)   .or. .not. present(dgnumwet_m) .or. &
-          .not. present(qaerwat_m) .or. .not. present(wetdens_m)) then
+      if (.not. present(dgnumdry_m) .or. .not. present(dgnumwet_m) .or. &
+          .not. present(qaerwat_m)  .or. .not. present(wetdens_m)) then
          call endrun('modal_aero_wateruptake_dr called for'// &
                      'diagnostic list but required args not present')
+      end if
+
+      ! arrays for diagnostic calculations must be associated
+      if (.not. associated(dgnumdry_m) .or. .not. associated(dgnumwet_m) .or. &
+          .not. associated(qaerwat_m)  .or. .not. associated(wetdens_m)) then
+         call endrun('modal_aero_wateruptake_dr called for'// &
+                     'diagnostic list but required args not associated')
       end if
    end if
 
@@ -223,9 +230,15 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
 
    if (list_idx == 0) then
-      call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
+      call pbuf_get_field(pbuf, dgnum_idx,      dgncur_a )
+      call pbuf_get_field(pbuf, dgnumwet_idx,   dgncur_awet )
+      call pbuf_get_field(pbuf, wetdens_ap_idx, wetdens)
+      call pbuf_get_field(pbuf, qaerwat_idx,    qaerwat)
    else
-      dgncur_a => dgnumdry_m
+      dgncur_a    => dgnumdry_m
+      dgncur_awet => dgnumwet_m
+      qaerwat     => qaerwat_m
+      wetdens     => wetdens_m
    end if
 
    do m = 1, nmodes
@@ -329,19 +342,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       hygro, rh, dryvol, wetrad, wetvol,           &
       wtrvol)
 
-   if (list_idx == 0) then
-      call pbuf_get_field(pbuf, dgnumwet_idx,   dgncur_awet)
-      call pbuf_get_field(pbuf, wetdens_ap_idx, wetdens)
-      call pbuf_get_field(pbuf, qaerwat_idx,    qaerwat)
-   else
-      allocate(dgncur_awet(pcols,pver,nmodes), wetdens(pcols,pver,nmodes), &
-               qaerwat(pcols,pver,nmodes), stat=stat)
-      if (stat > 0) then
-         call endrun('modal_aero_wateruptake_dr: allocation FAILURE')
-      end if
-
-   end if
-
    do m = 1, nmodes
 
       do k = top_lev, pver
@@ -370,13 +370,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          call outfld( 'dgnd_a'//trnum(2:3), dgncur_a(:,:,m),    pcols, lchnk)
          call outfld( 'dgnw_a'//trnum(2:3), dgncur_awet(:,:,m), pcols, lchnk)
       end do
-
-   else
-
-      ! for diagnostic calcs just return results
-      dgnumwet_m => dgncur_awet
-      qaerwat_m  => qaerwat
-      wetdens_m  => wetdens
 
    end if
 

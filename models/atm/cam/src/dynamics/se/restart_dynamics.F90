@@ -182,7 +182,7 @@ CONTAINS
 
     tl = timelevel%n0
     call TimeLevel_Qdp(timelevel, qsplit, tlQdp)
-    time = ndcur+real(nscur,kind=r8)/86400_r8
+    time = ndcur+real(nscur,kind=r8)/86400._r8
 
     ierr = pio_put_var(File,timedesc%varid, (/int(t)/), time)
 
