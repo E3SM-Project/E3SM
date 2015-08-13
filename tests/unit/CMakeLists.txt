@@ -1,7 +1,4 @@
-include (CheckPlatform)
 include (LibCTestMPI)
-
-check_platform ()
 
 #==============================================================================
 #  PREPARE FOR TESTING

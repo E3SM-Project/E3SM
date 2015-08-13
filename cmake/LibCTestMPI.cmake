@@ -1,4 +1,6 @@
 include (CMakeParseArguments)
+include (CheckPlatform)
+check_platform ()
 
 #
 # - Functions for parallel testing with CTest
@@ -23,12 +25,10 @@ function (add_mpi_test TESTNAME)
     # UCAR LSF execution
     if (PLATFORM STREQUAL "ucar" )
         ###
-        ### note: no space between -n and num_proc for mpirun.lsf on
+        ### note: no space between -n and num_procs for mpirun.lsf on
         ### yellowstone
         ###
-        set (MPIEXEC_NPF -n${num_procs})
-        set (EXE_CMD execca ${MPIEXEC} ${MPIEXEC_PREFLAGS} 
-                     ${exe_cmds} ${MPIEXEC_NPF})
+        set (EXE_CMD execca mpirun.lsf ${exe_cmds} -n${num_procs})
         
     # Argonne COBALT execution
     elseif (PLATFORM STREQUAL "alcf" )
