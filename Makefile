@@ -44,11 +44,10 @@ BUILD_INTERFACE=false  # This will become true if any of the external libraries 
 all: core_landice shared mode_forward
 
 core_landice: 
-#	ar -ru libdycore.a mode_forward/*.o
-#	ar -ru libdycore.a shared/*.o
+	ar -ru libdycore.a mode_forward/*.o
 
-#core_reg:
-#	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
