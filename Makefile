@@ -23,6 +23,7 @@ xlf:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
  
 ftn:
@@ -40,6 +41,7 @@ ftn:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 titan-cray:
@@ -54,6 +56,7 @@ titan-cray:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi:
@@ -75,6 +78,7 @@ pgi:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
@@ -92,6 +96,7 @@ pgi-nersc:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-llnl:
@@ -109,6 +114,7 @@ pgi-llnl:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort:
@@ -130,6 +136,7 @@ ifort:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort-gcc:
@@ -151,6 +158,7 @@ ifort-gcc:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gfortran:
@@ -172,6 +180,7 @@ gfortran:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 g95:
@@ -189,6 +198,7 @@ g95:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pathscale-nersc:
@@ -206,6 +216,7 @@ pathscale-nersc:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 cray-nersc:
@@ -223,6 +234,7 @@ cray-nersc:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gnu-nersc:
@@ -245,6 +257,7 @@ gnu-nersc:
 	"DEBUG = $(DEBUG)" \
 	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
 intel-nersc:
@@ -262,6 +275,7 @@ intel-nersc:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 bluegene:
@@ -283,6 +297,7 @@ bluegene:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_GPTL = $(USE_GPTL)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES = 
@@ -380,6 +395,15 @@ ifeq "$(USE_PAPI)" "true"
 else # USE_PAPI IF
 	PAPI_MESSAGE="Papi libraries are off."
 endif # USE_PAPI IF
+
+ifeq "$(USE_GPTL)" "true"
+	CPPINCLUDES += -I$(GPTL)/include -D_GPTL
+	FCINCLUDES += -I$(GPTL)/include
+	LIBS += -L$(GPTL)/lib -lgptl
+	GPTL_MESSAGE="GPTL libraries are enabled."
+else
+	GPTL_MESSAGE="GPTL libraries are disabled."
+endif
 
 ifeq "$(TAU)" "true"
 	LINKER=tau_f90.sh
@@ -511,6 +535,7 @@ endif
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
 	@echo $(PAPI_MESSAGE)
+	@echo $(GPTL_MESSAGE)
 	@echo $(TAU_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
@@ -583,11 +608,12 @@ errmsg:
 	@echo "Available Options:"
 	@echo "    DEBUG=true    - builds debug version. Default is optimized version."
 	@echo "    USE_PAPI=true - builds version using PAPI for timers. Default is off."
+	@echo "    USE_GPTL=true - builds version that initialized GPTL library. Default is off."
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
 	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
 	@echo "    GEN_F90=true  - Generates intermediate .f90 files through CPP, and builds with them."
 	@echo ""
-	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
+	@echo "Ensure that NETCDF, PNETCDF, PIO, PAPI (if USE_PAPI=true), and GPTL (if USE_GTPL=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
 	@echo ""
 ifdef CORE
