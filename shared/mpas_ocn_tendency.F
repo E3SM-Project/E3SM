@@ -398,7 +398,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         tracerGroup, tracerGroupTend, vertNonLocalFlux
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringTimeScale, tracerGroupInteriorRestoringValue
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
 
       !
       ! Field pointers
@@ -531,6 +531,7 @@ contains
                !
                if (config_use_tracerGroup_surface_bulk_forcing) then
                   call mpas_timer_start("bulk_" // trim(groupItr % memberName), .false.)
+                  write(6,*) 'yes: ', "bulk_" // trim(groupItr % memberName)
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("bulk_" // trim(groupItr % memberName))
                end if
@@ -539,12 +540,17 @@ contains
                ! ocean surface restoring
                !
                  if (config_use_tracerGroup_surface_restoring) then 
+                     call mpas_timer_start("surface_restoring_" // trim(groupItr % memberName), .false.)
                      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "PistonVelocity"
                      call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, trim(modifiedGroupName), tracerGroupPistonVelocity)
                      modifiedGroupName = trim(groupItr % memberName) // "SurfaceRestoringValue"
                      call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, trim(modifiedGroupName), tracerGroupSurfaceRestoringValue)
+                     write(6,*) 'yes: ', "surface_restoring_" // trim(groupItr % memberName)
+                     write(6,*) trim(groupItr % memberName) // "SurfaceRestoringValue"
+                     write(6,*) maxval(tracerGroupSurfaceRestoringValue), size(tracerGroupSurfaceRestoringValue)
                      call ocn_tracer_surface_restoring_compute(nTracerGroup, nCellsSolve, tracerGroup, tracerGroupPistonVelocity, tracerGroupSurfaceRestoringValue, tracerGroupSurfaceFlux, err)
+                     call mpas_timer_stop("surface_restoring_" // trim(groupItr % memberName))
                  endif
 
                ! land-ice / ocean interface flux
@@ -565,13 +571,18 @@ contains
                ! interior restoring forcing tendency
                !
                 if (config_use_tracerGroup_interior_restoring) then
+                     call mpas_timer_start("interior_restoring_" // trim(groupItr % memberName), .false.)
                      call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-                     modifiedGroupName = trim(groupItr % memberName) // "InteriorRestoringTimeScale"
-                     call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, trim(modifiedGroupName), tracerGroupInteriorRestoringTimeScale)
+                     modifiedGroupName = trim(groupItr % memberName) // "InteriorRestoringRate"
+                     call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, trim(modifiedGroupName), tracerGroupInteriorRestoringRate)
                      modifiedGroupName = trim(groupItr % memberName) // "InteriorRestoringValue"
                      call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, trim(modifiedGroupName),tracerGroupInteriorRestoringValue)
+                     write(6,*) 'yes: ', "interior_restoring_" // trim(groupItr % memberName)
+                     write(6,*) trim(groupItr % memberName) // "InteriorRestoringValue"
+                     write(6,*) maxval(tracerGroupInteriorRestoringValue), size(tracerGroupInteriorRestoringValue)
                      call ocn_tracer_interior_restoring_compute(nTracerGroup, nCellsSolve, maxLevelCell, layerThickness, &
-                        tracerGroup, tracerGroupInteriorRestoringTimeScale, tracerGroupInteriorRestoringValue, tracerGroupTend, err)
+                        tracerGroup, tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue, tracerGroupTend, err)
+                     call mpas_timer_stop("interior_restoring_" // trim(groupItr % memberName))
                 endif
 
                !
