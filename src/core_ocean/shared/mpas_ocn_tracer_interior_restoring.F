@@ -66,7 +66,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_interior_restoring_compute(nTracers, nCellsSolve, maxLevelCell, layerThickness, &
-                  tracers, tracersInteriorRestoringTimeScale, tracersInteriorRestoringValue, tracer_tend, err)!{{{
+                  tracers, tracersInteriorRestoringRate, tracersInteriorRestoringValue, tracer_tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -85,7 +85,7 @@ contains
       ! three dimensional arrays
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          tracers, &
-         tracersInteriorRestoringTimeScale, &
+         tracersInteriorRestoringRate, &
          tracersInteriorRestoringValue
 
       ! scalars
@@ -124,7 +124,7 @@ contains
              tracer_tend(iTracer, iLevel, iCell) =   tracer_tend(iTracer, iLevel, iCell)  &
                                                    - layerThickness(iLevel,iCell) * & 
                                                      (tracers(iTracer, iLevel, iCell) - tracersInteriorRestoringValue(iTracer, iLevel, iCell))  &
-                                                   / tracersInteriorRestoringTimeScale(iTracer, iLevel, iCell)
+                                                   * tracersInteriorRestoringRate(iTracer, iLevel, iCell)
           enddo
         enddo
       enddo
