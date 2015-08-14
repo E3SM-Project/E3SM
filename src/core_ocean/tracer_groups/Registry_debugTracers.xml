@@ -80,14 +80,14 @@
                         </var_array>
                 </var_struct>
                <var_struct name="tracersInteriorRestoringFields" time_levs="1">
-                        <var_array name="debugTracersInteriorRestoringTimeScale" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
-                                <var name="tracer1InteriorRestoringTimeScale" array_group="debugGRP" units="s"
+                        <var_array name="debugTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
+                                <var name="tracer1InteriorRestoringRate" array_group="debugGRP" units="{s}^-1"
                                          description="A non-negative field controlling the rate at which tracer1 is restored to tracer1InteriorRestoringValue"
                                 />
                         </var_array>
                         <var_array name="debugTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
                                 <var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
-                                         description="tracer1 is restored toward this field at a rate controlled by tracer1InteriorRestoringTimeScale."
+                                         description="tracer1 is restored toward this field at a rate controlled by tracer1InteriorRestoringRate."
                                 />
                         </var_array>
                 </var_struct>
