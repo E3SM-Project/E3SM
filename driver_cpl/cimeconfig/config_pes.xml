@@ -4,7 +4,7 @@
 
   <grid name="a%">
     <mach name="any">
-      <pes pesize="any" compset="XATM">
+      <pes pesize="any" compset="[DX]ATM">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>16</ntasks_atm>
@@ -42,7 +42,7 @@
 
   <grid name="a%">
     <mach name="hobart">
-      <pes pesize="any" compset="XATM">
+      <pes pesize="any" compset="[DX]ATM">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>48</ntasks_atm>
@@ -80,7 +80,7 @@
 
   <grid name="a%">
     <mach name="any">
-      <pes pesize="T" compset="XATM">
+      <pes pesize="T" compset="[DX]ATM">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>48</ntasks_atm>

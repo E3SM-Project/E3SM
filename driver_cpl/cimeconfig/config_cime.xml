@@ -1774,7 +1774,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_desc</group>
-    <file>env_case.xml</file>
+    <file>env_run.xml</file>
     <desc>
       The directory where the executable will be run. 
       By default this is set to EXEROOT/../run. 

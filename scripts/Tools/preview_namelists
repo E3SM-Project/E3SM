@@ -17,6 +17,7 @@ SYNOPSIS
 OPTIONS
   -verbose       If this is set, components (POP for now) will write out 
                  more verbose output regarding its namelist creation
+  -dryrun    Do not attempt to load modules or create directories
 
   -help [or -h]  Print usage to STDOUT (optional).
 EOF
@@ -26,6 +27,7 @@ my %opts = ( verbose => undef);
 
 GetOptions(
     "verbose" => \$opts{'verbose'},
+    "dryrun" => \$opts{dryrun},
     "h|help"  => \$opts{'help'},
     )  or usage();
 
@@ -37,7 +39,6 @@ if (@ARGV) {
     print "ERROR: unrecognized arguments: @ARGV\n";
     usage();
 }
-
 my $EXEROOT		= `./xmlquery  EXEROOT		-value`;
 my $LIBROOT		= `./xmlquery  LIBROOT		-value`;
 my $INCROOT		= `./xmlquery  INCROOT		-value`;
@@ -59,49 +60,71 @@ my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
 my $MACH             	        = `./xmlquery  MACH		-value`;
 my $MPILIB             	= `./xmlquery  MPILIB		-value`;
 my $DEBUG             	= `./xmlquery  DEBUG		-value`;
+my $TESTCASE;
+$TESTCASE                     = `./xmlquery  TESTCASE		-value`  if(-e "env_test.xml");
+
+my $dryrun = $opts{dryrun};
+$dryrun = 1 if ($TESTCASE eq 'SBN');
+
+
+if($dryrun){
+#
+# DO not load modules, only create rundir 
+#
+    print "RUNDIR = $RUNDIR\n";
+    my $sysmod = "mkdir -p $RUNDIR";
+    if(system($sysmod) != 0) {
+	warn "Not able to create $RUNDIR, trying a subdirectory of $CASEROOT";
+	$RUNDIR = $CASEROOT."/".$RUNDIR;
+	$sysmod = "mkdir -p $RUNDIR";
+	if(system($sysmod) == 0){
+	    print "Success! Setting RUNDIR=$RUNDIR\n";
+	    system("./xmlchange -file env_run.xml -id RUNDIR -val $RUNDIR");
+	}else{
+	    die "Could not create $RUNDIR";
+	}
+    }
+
+}else{
 # ------------------------------------------
 #  Load Modules
 # ------------------------------------------
+    my $perl5lib = "$CIMEROOT/utils/perl5lib";
+    push(@INC, $perl5lib);
+    require Module::ModuleLoader;
 
-
-my $perl5lib = "$CIMEROOT/utils/perl5lib";
-push(@INC, $perl5lib);
-require Module::ModuleLoader;
-
-my $moduleloader = new Module::ModuleLoader(machine => "$MACH", compiler => "$COMPILER",
-	                                    mpilib => $MPILIB, debug => $DEBUG, 
-	                                    scriptsroot => "$CIMEROOT/scripts", caseroot => "$CASEROOT");
-$moduleloader->loadModules();
-
-
+    my $moduleloader = new Module::ModuleLoader(machine => "$MACH", compiler => "$COMPILER",
+						mpilib => $MPILIB, debug => $DEBUG, 
+						scriptsroot => "$CIMEROOT/scripts", caseroot => "$CASEROOT");
+    $moduleloader->loadModules();
 
 
 # -------------------------------------------------------------------------
 # Make necessary directories
 # -------------------------------------------------------------------------
 
-my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
-foreach my $dir (@dirs) {
-    if (! -d $dir) {
-	my $sysmod = "mkdir -p $dir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+    my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
+    foreach my $dir (@dirs) {
+	if (! -d $dir) {
+	    my $sysmod = "mkdir -p $dir";
+	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	}
+    }
+    
+    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
+    foreach my $model ( @models ){
+	my $objdir = "$EXEROOT/$model/obj"; 
+	if (! -d $objdir) {
+	    my $sysmod = "mkdir -p $objdir";
+	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	}
+	my $libdir = "$EXEROOT/$model";
+	if (! -d libdir) {
+	    my $sysmod = "mkdir -p $libdir";
+	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	}
     }
 }
-
-my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
-foreach my $model ( @models ){
-    my $objdir = "$EXEROOT/$model/obj"; 
-    if (! -d $objdir) {
-	my $sysmod = "mkdir -p $objdir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    }
-    my $libdir = "$EXEROOT/$model";
-    if (! -d libdir) {
-	my $sysmod = "mkdir -p $libdir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    }
-}
-
 # -------------------------------------------------------------------------
 # Create namelists
 # -------------------------------------------------------------------------

@@ -46,6 +46,7 @@ OPTIONS
      -atm_grid             ATM_GRID variable
      -lnd_grid             LND_GRID variable 
      -ocn_grid             OCN_GRID variable
+     
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -304,8 +305,8 @@ foreach my $file (@files) {
     }
 }
 my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
+** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
