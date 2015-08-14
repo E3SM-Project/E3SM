@@ -322,7 +322,7 @@ my $ICE_DOMAIN_PATH = $xmlvars{'ICE_DOMAIN_PATH'};
 my $ICE_GRID        = $xmlvars{'ICE_GRID'};
 my $DICE_MODE       = $xmlvars{'DICE_MODE'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
+(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
 ** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
 if ($print>=2) { 
