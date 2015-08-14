@@ -52,6 +52,10 @@ module mpas_subdriver
  
       implicit none
 
+#ifdef _GPTL
+      include 'gptl.inc'
+#endif
+
       integer :: iArg, nArgs
       logical :: readNamelistArg, readStreamsArg
       character(len=StrKIND) :: argument, namelistFile, streamsFile
@@ -104,6 +108,12 @@ module mpas_subdriver
 
       readNamelistArg = .false.
       readStreamsArg = .false.
+
+#ifdef _GPTL
+      ierr = gptlsetoption(gptlabort_on_error, 1)
+      ierr = gptlsetutr(gptlnanotime)
+      ierr = gptlinitialize()
+#endif
 
       nArgs = command_argument_count()
       iArg = 1
@@ -343,6 +353,10 @@ module mpas_subdriver
    
       implicit none
 
+#ifdef _GPTL
+      include 'gptl.inc'
+#endif
+
       integer :: iErr
 
 
@@ -372,6 +386,11 @@ module mpas_subdriver
 
       deallocate(corelist % domainlist)
       deallocate(corelist)
+
+#ifdef _GPTL
+      ierr = gptlpr(domain_ptr % dminfo % my_proc_id)
+      ierr = gptlfinalize()
+#endif
 
    end subroutine mpas_finalize
 
