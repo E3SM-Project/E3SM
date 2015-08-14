@@ -3,71 +3,52 @@
 
 BUILD_INTERFACE=false  # This will become true if any of the external libraries are being used.
 
-# LifeV can solve L1L2 or FO
-ifeq "$(LIFEV)" "true"
-	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_L1L2
-	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_FIRSTORDER
-	BUILD_INTERFACE = true
-endif # LIFEV IF
+## LifeV can solve L1L2 or FO
+#ifeq "$(LIFEV)" "true"
+#	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_L1L2
+#	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_FIRSTORDER
+#	BUILD_INTERFACE = true
+#endif # LIFEV IF
+#
+## Albany can only solve FO at present
+#ifeq "$(ALBANY)" "true"
+#	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_FIRSTORDER
+#	BUILD_INTERFACE = true
+#endif # ALBANY IF
+#
+## Currently LifeV AND Albany is not allowed
+#ifeq "$(LIFEV)" "true"
+#ifeq "$(ALBANY)" "true"
+#	$(error Compiling with both LifeV and Albany is not allowed at this time.)
+#endif
+#endif
+#
+## PHG currently requires LifeV
+#ifeq "$(PHG)" "true"
+#ifneq "$(LIFEV)" "true"
+#	$(error Compiling with PHG requires LifeV at this time.)
+#endif
+#endif
+## PHG can only Stokes at present
+#ifeq "$(PHG)" "true"
+#	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_STOKES
+#	BUILD_INTERFACE = true
+#endif # PHG IF
 
-# Albany can only solve FO at present
-ifeq "$(ALBANY)" "true"
-	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_FIRSTORDER
-	BUILD_INTERFACE = true
-endif # ALBANY IF
-
-# Currently LifeV AND Albany is not allowed
-ifeq "$(LIFEV)" "true"
-ifeq "$(ALBANY)" "true"
-	$(error Compiling with both LifeV and Albany is not allowed at this time.)
-endif
-endif
-
-# PHG currently requires LifeV
-ifeq "$(PHG)" "true"
-ifneq "$(LIFEV)" "true"
-	$(error Compiling with PHG requires LifeV at this time.)
-endif
-endif
-# PHG can only Stokes at present
-ifeq "$(PHG)" "true"
-	EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_STOKES
-	BUILD_INTERFACE = true
-endif # PHG IF
-
-override CPPFLAGS += $(EXTERNAL_DYCORE_FLAG)
+#override CPPFLAGS += $(EXTERNAL_DYCORE_FLAG)
 # ===================================
 
-
 .SUFFIXES: .F .o .cpp
-
-#OBJS = 	mpas_li_core.o \
-#	mpas_li_core_interface.o \
-#	mpas_li_time_integration.o \
-#	mpas_li_time_integration_fe.o \
-#	mpas_li_diagnostic_vars.o \
-#	mpas_li_tendency.o \
-#	mpas_li_setup.o \
-#	mpas_li_statistics.o \
-#	mpas_li_velocity.o \
-#	mpas_li_sia.o \
-#	mpas_li_mask.o \
-#	mpas_li_velocity_external.o
-#
-#ifeq "$(BUILD_INTERFACE)" "true"
-#	OBJS += Interface_velocity_solver.o
-#endif
-
-
+.PHONY: mode_forward shared
 
 all: core_landice shared mode_forward
 
-core_landice: $(OBJS)
-	ar -ru libdycore.a mode_forward/*.o
-	ar -ru libdycore.a shared/*.o
+core_landice: 
+#	ar -ru libdycore.a mode_forward/*.o
+#	ar -ru libdycore.a shared/*.o
 
-core_reg:
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+#core_reg:
+#	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
@@ -84,12 +65,16 @@ post_build:
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
-shared: (cd shared; $(MAKE))
+shared: 
+	(cd shared; $(MAKE))
 
-mode_forward: (cd mode_forward; $(MAKE))
+mode_forward: 
+	(cd mode_forward; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
+	$(cd shared; $(MAKE) clean)
+	$(cd mode_forward; $(MAKE) clean)
 	$(RM) Registry_processed.xml
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
