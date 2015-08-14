@@ -5,6 +5,17 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
+
+#ifdef _GPTL
+#define MPAS_GPTL_START(T) call gptlstart(T)
+#define MPAS_GPTL_STOP(T) call gptlstop(T)
+#define MPAS_GPTL_PRINT(T) call gptlpr(T)
+#else
+#define MPAS_GPTL_START(T) !!! call gptlstart(T)
+#define MPAS_GPTL_STOP(T) !!! call gptlstop(T)
+#define MPAS_GPTL_PRINT(T) !!! call gptlpr(T)
+#endif
+
 module atm_time_integration
 
    use mpas_derived_types
@@ -90,7 +101,9 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_time_integration', config_time_integration)
 
       if (trim(config_time_integration) == 'SRK3') then
+         MPAS_GPTL_START('atm_srk3')
          call atm_srk3(domain, dt, itimestep)
+         MPAS_GPTL_STOP('atm_srk3')
       else
          write(0,*) 'Unknown time integration option '//trim(config_time_integration)
          write(0,*) 'Currently, only ''SRK3'' is supported.'
