@@ -63,12 +63,10 @@ mpas_li_velocity_external.o:
 Interface_velocity_solver.o:
 
 clean:
-	$(RM) *.o *.mod *.f90 libdycore.a
-	$(RM) Registry_processed.xml
+	$(RM) *.o *.mod *.f90
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
 	$(RM) *.i
-	$(RM) -r default_inputs
 
 .F.o:
 	$(RM) $@ $*.mod
