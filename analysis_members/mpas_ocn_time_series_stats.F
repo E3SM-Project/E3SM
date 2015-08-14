@@ -102,230 +102,6 @@ contains
 
 
 !***********************************************************************
-!  routine walk_string
-!
-!> \brief   Walk a semicolon delimited string to find substrings
-!> \author  Jon Woodring
-!> \date    March 2, 2015
-!> \details 
-!>  Walk a string delimited by semicolons and return the first substring
-!>  from start index, and modify start to point at the next candidate.
-!-----------------------------------------------------------------------
-   subroutine walk_string(next, substr, ok)!{{{
-      ! input variables
-      !-----------------------------------------------------------------
-
-      ! input/output variables
-      !-----------------------------------------------------------------
-      character (len=StrKIND), intent(inout) :: next
-
-      ! output variables
-      !-----------------------------------------------------------------
-      character (len=StrKIND), intent(out) :: substr
-      logical, intent(out) :: ok
-
-      ! local variables
-      !-----------------------------------------------------------------
-      integer :: i
-      character (len=StrKIND) :: copy
-
-      ! make a copy
-      copy = trim(next)
-
-      ! if there's anything in it other than whitespace, pass through
-      i = verify(copy, ' ')
-      ok = i .gt. 0
-      if (.not. ok) then
-         return
-      end if 
-      copy = trim(next(i:))
- 
-      ! find the first semicolon and split
-      i = scan(copy, ';')
-      
-      ! return that substring and the remainder
-      if (i .gt. 0) then
-         substr = trim(copy(1:i-1))
-         next = trim(copy(i+1:))
-      else
-         substr = trim(copy)
-         next = ''
-      end if
-         
- 
-   end subroutine walk_string!}}}
-
-!***********************************************************************
-!  routine set_times
-!
-!> \brief   Set a list of times
-!> \author  Jon Woodring
-!> \date    March 2, 2015
-!> \details 
-!>  Walk a list of times delimited by spaces and set the time info
-!>  for the buffer structure so that alarms can be set.
-!-----------------------------------------------------------------------
-   subroutine set_times(buffers, number_of_buffers, clock, &
-                        which, config_str, ok, err)
-      ! input variables
-      !-----------------------------------------------------------------
-      integer, intent(in) :: number_of_buffers, which
-      character (len=StrKIND), pointer, intent(in) :: config_str
-
-      ! input/output variables
-      !-----------------------------------------------------------------
-      type (time_buffer_type), dimension(:), intent(inout) :: buffers
-      type (MPAS_Clock_type), intent(inout) :: clock
-
-      ! output variables
-      !-----------------------------------------------------------------
-      logical, intent(out) :: ok
-      integer, intent(out) :: err 
-
-      ! local variables
-      !-----------------------------------------------------------------
-      character (len=StrKIND) :: next_str, time_str
-      integer :: b 
-
-      ! find the first time in the list
-      next_str = config_str
-      b = 0
-      call walk_string(next_str, time_str, ok)
-
-      ! while the time string is ok
-      do while (ok)
-         ! exit if we went over
-         b = b + 1
-         if (b .gt. number_of_buffers) then
-           exit
-         end if
-
-         ! set the time
-         if (which .eq. START_TIMES) then
-            if (time_str .eq. 'initial_time') then
-               buffers(b) % start_time = mpas_get_clock_time(clock, &
-                  MPAS_NOW, err)
-            else
-               call mpas_set_time(buffers(b) % start_time, &
-                    dateTimeString=time_str, ierr=err)
-            end if
-         else if (which .eq. DURATION_INTERVALS) then
-            if (time_str .eq. 'repeat_interval') then
-               buffers(b) % duration_interval = buffers(b) % repeat_interval
-            else
-               call mpas_set_timeInterval(buffers(b) % duration_interval, &
-                    timeString=time_str, ierr=err)
-            end if
-         else if (which .eq. REPEAT_INTERVALS) then
-            if (time_str .eq. 'reset_interval') then
-               buffers(b) % repeat_interval = buffers(b) % reset_interval
-            else
-               call mpas_set_timeInterval(buffers(b) % repeat_interval, &
-                    timeString=time_str, ierr=err)
-            end if
-         else
-            call mpas_set_timeInterval(buffers(b) % reset_interval, &
-                 timeString=time_str, ierr=err)
-         end if 
-
-         ! get the next time string
-         call walk_string(next_str, time_str, ok)
-      end do
-
-      ! only ok if we parsed out as many as there are number of buffers
-      ok = number_of_buffers .eq. b
-    end subroutine set_times
-
-
-
-!***********************************************************************
-!  routine add_new_field
-!
-!> \brief   Function to create a new field from an existing field
-!> \author  Jon Woodring
-!> \date    March 2, 2015
-!> \details 
-!>  This routine conducts all initializations required for
-!>  duplicating a field and adding it to the allFields pool.
-!-----------------------------------------------------------------------
-   subroutine add_new_field(info, inname, prefix, pool)!{{{
-      ! input variables
-      !-----------------------------------------------------------------
-      type (mpas_pool_field_info_type), intent(in) :: info
-      character (len=StrKIND), intent(in) :: inname, prefix
-
-      ! input/output variables
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: pool 
-
-      ! output variables
-      !-----------------------------------------------------------------
-
-      ! local variables
-      !-----------------------------------------------------------------
-      type (field0DReal), pointer :: r0i, or0
-      type (field1DReal), pointer :: r1i, or1
-      type (field2DReal), pointer :: r2i, or2
-      type (field3DReal), pointer :: r3i, or3
-      type (field4DReal), pointer :: r4i, or4
-      type (field5DReal), pointer :: r5i, or5
-      type (field0DInteger), pointer :: i0i, oi0
-      type (field1DInteger), pointer :: i1i, oi1
-      type (field2DInteger), pointer :: i2i, oi2
-      type (field3DInteger), pointer :: i3i, oi3
-      integer :: i
-
-      ! start procedure
-      !-----------------------------------------------------------------
-
-! macro
-#define COPY_FIELDS(SRC, DST) \
-call mpas_pool_get_field(pool, inname, SRC, 1) ;\
-call mpas_duplicate_field(SRC, DST) ;\
-DST % fieldName = trim(prefix) // DST % fieldName ;\
-if (DST % isVarArray) then ;\
-   do i = 1, size(DST % constituentNames) ;\
-      DST % constituentNames(i) = trim(prefix) // \
-         DST % constituentNames(i) ;\
-   end do ;\
-end if ;\
-call mpas_pool_add_field(pool, DST % fieldName, DST)
-! end macro
-
-      ! duplicate field and add new field to pool
-      if (info % fieldType .eq. MPAS_POOL_REAL) then
-         if (info % nDims .eq. 0) then
-            COPY_FIELDS(r0i, or0)
-         else if (info % nDims .eq. 1) then
-            COPY_FIELDS(r1i, or1)
-         else if (info % nDims .eq. 2) then
-            COPY_FIELDS(r2i, or2)
-         else if (info % nDims .eq. 3) then
-            COPY_FIELDS(r3i, or3)
-         else if (info % nDims .eq. 4) then
-            COPY_FIELDS(r4i, or4)
-         else
-            COPY_FIELDS(r5i, or5)
-         end if
-      else
-         if (info % nDims .eq. 0) then
-            COPY_FIELDS(i0i, oi0)
-         else if (info % nDims .eq. 1) then
-            COPY_FIELDS(i1i, oi1)
-         else if (info % nDims .eq. 2) then
-            COPY_FIELDS(i2i, oi2)
-         else
-            COPY_FIELDS(i3i, oi3)
-         end if
-      end if
-
-   end subroutine add_new_field!}}}
-
-#undef COPY_FIELDS
-
-
-
-!***********************************************************************
 !  routine ocn_init_time_series_stats
 !
 !> \brief   Initialize MPAS-Ocean analysis member
@@ -623,352 +399,6 @@ call mpas_pool_add_field(pool, DST % fieldName, DST)
 
 
 !***********************************************************************
-!  routine timer_checking 
-!
-!> \brief   Timer functions to determine when to run
-!> \author  Jon Woodring
-!> \date    March 2, 2015
-!> \details 
-!>  This routine conducts timer checking to determine if it 
-!>  needs to run at this particular time. 
-!-----------------------------------------------------------------------
-   subroutine timer_checking(domain, err)!{{{
-      ! input variables
-      !-----------------------------------------------------------------
-
-      ! input/output variables
-      !-----------------------------------------------------------------
-      type (domain_type), intent(inout) :: domain
-
-      ! output variables
-      !-----------------------------------------------------------------
-      integer, intent(out) :: err
-
-      ! local variables
-      !-----------------------------------------------------------------
-      integer :: b
-
-      ! start procedure
-      !-----------------------------------------------------------------
-      err = 0
-
-      do b = 1, size(buffers)
-         ! see if the started alarm is ringing
-         if (mpas_is_alarm_ringing(domain % clock, &
-               buffers(b) % start_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(domain % clock, &
-               buffers(b) % start_alarm_ID, ierr=err)
-            buffers(b) % started_flag = .true. 
-            buffers(b) % accumulate_flag = .true.
-
-            ! TODO only reset if not restart
-            buffers(b) % reset_flag = .true.
-         end if
-
-         ! if we aren't started, continue to next buffer
-         if (.not. buffers(b) % started_flag) then
-            continue
-         end if
-
-         ! check various other alarms
-         ! see if we need to reset
-         if(mpas_is_alarm_ringing(domain % clock, &
-            buffers(b) % reset_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(domain % clock, &
-               buffers(b) % reset_alarm_ID, ierr=err)
-            buffers(b) % reset_flag = .true.
-            buffers(b) % delay_reset_flag = .true.
-         end if
-
-         ! turn off accumulation
-         !
-         ! duration needs to be >= 2 * compute_interval 
-         ! (a series can only be 2 or more)
-         if (mpas_is_alarm_ringing(domain % clock, &
-               buffers(b) % duration_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(domain % clock, &
-               buffers(b) % duration_alarm_ID, ierr=err)
-            buffers(b) % duration_over_flag = .true.
-         end if
-
-         ! turn on accumulation 
-         ! (this is second, in case the duration and repeat
-         !  overlaps on the same timer)
-         if (mpas_is_alarm_ringing(domain % clock, &
-               buffers(b) % repeat_alarm_ID, ierr=err)) then
-            call mpas_reset_clock_alarm(domain % clock, &
-               buffers(b) % repeat_alarm_ID, ierr=err)
-            buffers(b) % accumulate_flag = .true.
-            buffers(b) % duration_over_flag = .false.
-         end if
-
-      end do
-
-   end subroutine timer_checking!}}}
-
-!***********************************************************************
-!  macro OPERATE
-!
-!> \brief   A macro to support operations on different run-time types
-!> \author  Jon Woodring
-!> \date    March 2, 2015
-!> \details 
-!>  This macro encapsulates the different opertions that can occur
-!>  based on the run-time types. It is written as a macro to cut down
-!>  on copy-pasting and duplication errors. (This would likely be
-!>  instantiated generics/templates in other languages.)
-!-----------------------------------------------------------------------
-
-! first half of the macro
-#define FIRST_HALF(SUBNAME) \
-subroutine operate ## SUBNAME (start_block, tvar) ;\
-type (block_type), pointer, intent(in) :: start_block ;\
-\
-type (time_variable_type), intent(inout) :: tvar ;\
-\
-integer :: b ;\
-type (block_type), pointer :: block ;
-
-! second half of the macro
-#define SECOND_HALF \
-block => start_block ;\
-do while (associated(block)) ;\
-   call mpas_pool_get_array(block % allFields, \
-      tvar % input_name, in_array, 1) ;\
-\
-   do b = 1, size(buffers) ;\
-      if (buffers(b) % reset_flag .and. \
-          (.not. buffers(b) % delay_reset_flag)) then ;\
-         call mpas_pool_get_array(block % allFields, \
-              tvar % output_names(b), out_array, 1) ;\
-         out_array = in_array ;\
-      else if (buffers(b) % accumulate_flag) then ;\
-         call mpas_pool_get_array(block % allFields, \
-              tvar % output_names(b), out_array, 1) ;
-
-! averaging is done by multiplying out and dividing such that
-! the average state is always in a normalized form -- while
-! this could (will) cause more error in the long run, it does
-! mean that other AMs will be able to use this data and it will
-! always be prenormalized (it also means that we don't have to
-! have a special case of normalizing the data before writing it
-! to disk)
-#define AVG_MAC \
-         out_array = (out_array * \
-                     (buffers(b) % total_accum - 1) + in_array) \
-                     / buffers(b) % total_accum ;
-
-#define MIN_MAC \
-         out_array = min(out_array, in_array) ;
-
-#define MAX_MAC \
-         out_array = max(out_array, in_array) ;
-
-#define END_CAP(SUBNAME) \
-      end if ;\
-   end do ;\
-\
-   block => block % next ;\
-end do ;\
-\
-end subroutine operate ## SUBNAME ;
-
-! had to create this as a two part macro because of the comma differences
-! and type declaration in 0d vs nd data
-! (fpp doesn't seem to like to parse "," correctly as an argument even
-!  if you "#define COMMA ,". It was only able to do the commas in the middle
-!  of dimension(...) because the , are in a (). Therefore to have two
-!  different types of functions, I had to separate them into two macros
-!  with different arguments, i.e., I wasn't able to pass one argument
-!  to the macro to expand the type definition, because fpp wasn't
-!  able to figure out that it was one argument due to ","s. Also,
-!  I wasn't able to pass a macro function with an argument for the same
-!  reason, as the preprocessor would expand it and get confused by
-!  the commas. Quite frequently, I would get an empty argument.)
-#define OPERATE_MULTI_AVG(S, A, B) \
-FIRST_HALF(S) A, B, pointer :: in_array, out_array ; \
-SECOND_HALF AVG_MAC END_CAP(S)
-#define OPERATE_SCALAR_AVG(S, A) \
-FIRST_HALF(S) A, pointer :: in_array, out_array ; \
-SECOND_HALF AVG_MAC END_CAP(S)
-#define OPERATE_MULTI_MIN(S, A, B) \
-FIRST_HALF(S) A, B, pointer :: in_array, out_array ; \
-SECOND_HALF MIN_MAC END_CAP(S)
-#define OPERATE_SCALAR_MIN(S, A) \
-FIRST_HALF(S) A, pointer :: in_array, out_array ; \
-SECOND_HALF MIN_MAC END_CAP(S)
-#define OPERATE_MULTI_MAX(S, A, B) \
-FIRST_HALF(S) A, B, pointer :: in_array, out_array ; \
-SECOND_HALF MAX_MAC END_CAP(S)
-#define OPERATE_SCALAR_MAX(S, A) \
-FIRST_HALF(S) A, pointer :: in_array, out_array ; \
-SECOND_HALF MAX_MAC END_CAP(S)
-
-! here are all the instantiations
-OPERATE_SCALAR_AVG(0r_avg, real(kind=RKIND))
-OPERATE_MULTI_AVG(1r_avg, real(kind=RKIND), dimension(:))
-OPERATE_MULTI_AVG(2r_avg, real(kind=RKIND), dimension(:, :))
-OPERATE_MULTI_AVG(3r_avg, real(kind=RKIND), dimension(:, :, :))
-OPERATE_MULTI_AVG(4r_avg, real(kind=RKIND), dimension(:, :, :, :))
-OPERATE_MULTI_AVG(5r_avg, real(kind=RKIND), dimension(:, :, :, :, :))
-OPERATE_SCALAR_AVG(0i_avg, integer)
-OPERATE_MULTI_AVG(1i_avg, integer, dimension(:))
-OPERATE_MULTI_AVG(2i_avg, integer, dimension(:, :))
-OPERATE_MULTI_AVG(3i_avg, integer, dimension(:, :, :))
-
-OPERATE_SCALAR_MIN(0r_min, real(kind=RKIND))
-OPERATE_MULTI_MIN(1r_min, real(kind=RKIND), dimension(:))
-OPERATE_MULTI_MIN(2r_min, real(kind=RKIND), dimension(:, :))
-OPERATE_MULTI_MIN(3r_min, real(kind=RKIND), dimension(:, :, :))
-OPERATE_MULTI_MIN(4r_min, real(kind=RKIND), dimension(:, :, :, :))
-OPERATE_MULTI_MIN(5r_min, real(kind=RKIND), dimension(:, :, :, :, :))
-OPERATE_SCALAR_MIN(0i_min, integer)
-OPERATE_MULTI_MIN(1i_min, integer, dimension(:))
-OPERATE_MULTI_MIN(2i_min, integer, dimension(:, :))
-OPERATE_MULTI_MIN(3i_min, integer, dimension(:, :, :))
-
-OPERATE_SCALAR_MAX(0r_max, real(kind=RKIND))
-OPERATE_MULTI_MAX(1r_max, real(kind=RKIND), dimension(:))
-OPERATE_MULTI_MAX(2r_max, real(kind=RKIND), dimension(:, :))
-OPERATE_MULTI_MAX(3r_max, real(kind=RKIND), dimension(:, :, :))
-OPERATE_MULTI_MAX(4r_max, real(kind=RKIND), dimension(:, :, :, :))
-OPERATE_MULTI_MAX(5r_max, real(kind=RKIND), dimension(:, :, :, :, :))
-OPERATE_SCALAR_MAX(0i_max, integer)
-OPERATE_MULTI_MAX(1i_max, integer, dimension(:))
-OPERATE_MULTI_MAX(2i_max, integer, dimension(:, :))
-OPERATE_MULTI_MAX(3i_max, integer, dimension(:, :, :))
-
-#undef FIRST_HALF
-#undef SECOND_HALF
-#undef AVG
-#undef MIN
-#undef MAX
-#undef END_CAP
-#undef OPERATE_MULTI_AVG
-#undef OPERATE_SCALAR_AVG
-#undef OPERATE_MULTI_MIN
-#undef OPERATE_SCALAR_MIN
-#undef OPERATE_MULTI_MAX
-#undef OPERATE_SCALAR_MAX
-
-
-
-!***********************************************************************
-!  routine typed_operate
-!
-!> \brief   Do the operation, but switch on run-time type
-!> \author  Jon Woodring
-!> \date    March 2, 2015
-!> \details 
-!>  Since we don't know the type of the array, we need to do some
-!>  run-time type switching based on the type of the array.
-!-----------------------------------------------------------------------
-   subroutine typed_operate(block, tvar, operation)!{{{
-      ! input variables
-      !-----------------------------------------------------------------
-      type (block_type), pointer, intent(in) :: block
-      integer, intent(in) :: operation
-
-      ! input/output variables
-      !-----------------------------------------------------------------
-      type (time_variable_type), intent(inout) :: tvar
-
-      ! output variables
-      !-----------------------------------------------------------------
-
-      ! local variables
-      !-----------------------------------------------------------------
-
-      ! switch based on the type, dimensionality, and operation
-      if (tvar % info % fieldType == MPAS_POOL_REAL) then
-         if (tvar % info % nDims  == 0) then
-            if (operation .eq. AVG_OP) then
-               call operate0r_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate0r_min(block, tvar)
-            else
-               call operate0r_max(block, tvar)
-            end if 
-         else if (tvar % info % nDims == 1) then
-            if (operation .eq. AVG_OP) then
-               call operate1r_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate1r_min(block, tvar)
-            else
-               call operate1r_max(block, tvar)
-            end if 
-         else if (tvar % info % nDims == 2) then
-            if (operation .eq. AVG_OP) then
-               call operate2r_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate2r_min(block, tvar)
-            else
-               call operate2r_max(block, tvar)
-            end if 
-         else if (tvar % info % nDims == 3) then
-            if (operation .eq. AVG_OP) then
-               call operate3r_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate3r_min(block, tvar)
-            else
-               call operate3r_max(block, tvar)
-            end if 
-         else if (tvar % info % nDims == 4) then
-            if (operation .eq. AVG_OP) then
-               call operate4r_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate4r_min(block, tvar)
-            else
-               call operate4r_max(block, tvar)
-            end if 
-         else
-            if (operation .eq. AVG_OP) then
-               call operate5r_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate5r_min(block, tvar)
-            else
-               call operate5r_max(block, tvar)
-            end if 
-         end if
-      else 
-         if (tvar % info % nDims == 0) then
-            if (operation .eq. AVG_OP) then
-               call operate0i_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate0i_min(block, tvar)
-            else
-               call operate0i_max(block, tvar)
-            end if 
-         else if (tvar % info % nDims == 1) then
-            if (operation .eq. AVG_OP) then
-               call operate1i_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate1i_min(block, tvar)
-            else
-               call operate1i_max(block, tvar)
-            end if 
-         else if (tvar % info % nDims == 2) then
-            if (operation .eq. AVG_OP) then
-               call operate2i_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate2i_min(block, tvar)
-            else
-               call operate2i_max(block, tvar)
-            end if 
-         else
-            if (operation .eq. AVG_OP) then
-               call operate3i_avg(block, tvar)
-            else if (operation .eq. MIN_OP) then
-               call operate3i_min(block, tvar)
-            else
-               call operate3i_max(block, tvar)
-            end if 
-         end if
-      end if
-
-   end subroutine typed_operate!}}}
-
-!***********************************************************************
 !  routine ocn_compute_time_series_stats
 !
 !> \brief   Compute MPAS-Ocean analysis member
@@ -1118,7 +548,1743 @@ OPERATE_MULTI_MAX(3i_max, integer, dimension(:, :, :))
 
    end subroutine ocn_finalize_time_series_stats!}}}
 
+!
+! local subroutines
+!
 
+!***********************************************************************
+!  routine walk_string
+!
+!> \brief   Walk a semicolon delimited string to find substrings
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  Walk a string delimited by semicolons and return the first substring
+!>  from start index, and modify start to point at the next candidate.
+!-----------------------------------------------------------------------
+   subroutine walk_string(next, substr, ok)!{{{
+      ! input variables
+      !-----------------------------------------------------------------
+
+      ! input/output variables
+      !-----------------------------------------------------------------
+      character (len=StrKIND), intent(inout) :: next
+
+      ! output variables
+      !-----------------------------------------------------------------
+      character (len=StrKIND), intent(out) :: substr
+      logical, intent(out) :: ok
+
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: i
+      character (len=StrKIND) :: copy
+
+      ! make a copy
+      copy = trim(next)
+
+      ! if there's anything in it other than whitespace, pass through
+      i = verify(copy, ' ')
+      ok = i .gt. 0
+      if (.not. ok) then
+         return
+      end if 
+      copy = trim(next(i:))
+ 
+      ! find the first semicolon and split
+      i = scan(copy, ';')
+      
+      ! return that substring and the remainder
+      if (i .gt. 0) then
+         substr = trim(copy(1:i-1))
+         next = trim(copy(i+1:))
+      else
+         substr = trim(copy)
+         next = ''
+      end if
+         
+ 
+   end subroutine walk_string!}}}
+
+
+
+!***********************************************************************
+!  routine set_times
+!
+!> \brief   Set a list of times
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  Walk a list of times delimited by spaces and set the time info
+!>  for the buffer structure so that alarms can be set.
+!-----------------------------------------------------------------------
+   subroutine set_times(buffers, number_of_buffers, clock, &
+                        which, config_str, ok, err)
+      ! input variables
+      !-----------------------------------------------------------------
+      integer, intent(in) :: number_of_buffers, which
+      character (len=StrKIND), pointer, intent(in) :: config_str
+
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (time_buffer_type), dimension(:), intent(inout) :: buffers
+      type (MPAS_Clock_type), intent(inout) :: clock
+
+      ! output variables
+      !-----------------------------------------------------------------
+      logical, intent(out) :: ok
+      integer, intent(out) :: err 
+
+      ! local variables
+      !-----------------------------------------------------------------
+      character (len=StrKIND) :: next_str, time_str
+      integer :: b 
+
+      ! find the first time in the list
+      next_str = config_str
+      b = 0
+      call walk_string(next_str, time_str, ok)
+
+      ! while the time string is ok
+      do while (ok)
+         ! exit if we went over
+         b = b + 1
+         if (b .gt. number_of_buffers) then
+           exit
+         end if
+
+         ! set the time
+         if (which .eq. START_TIMES) then
+            if (time_str .eq. 'initial_time') then
+               buffers(b) % start_time = mpas_get_clock_time(clock, &
+                  MPAS_NOW, err)
+            else
+               call mpas_set_time(buffers(b) % start_time, &
+                    dateTimeString=time_str, ierr=err)
+            end if
+         else if (which .eq. DURATION_INTERVALS) then
+            if (time_str .eq. 'repeat_interval') then
+               buffers(b) % duration_interval = buffers(b) % repeat_interval
+            else
+               call mpas_set_timeInterval(buffers(b) % duration_interval, &
+                    timeString=time_str, ierr=err)
+            end if
+         else if (which .eq. REPEAT_INTERVALS) then
+            if (time_str .eq. 'reset_interval') then
+               buffers(b) % repeat_interval = buffers(b) % reset_interval
+            else
+               call mpas_set_timeInterval(buffers(b) % repeat_interval, &
+                    timeString=time_str, ierr=err)
+            end if
+         else
+            call mpas_set_timeInterval(buffers(b) % reset_interval, &
+                 timeString=time_str, ierr=err)
+         end if 
+
+         ! get the next time string
+         call walk_string(next_str, time_str, ok)
+      end do
+
+      ! only ok if we parsed out as many as there are number of buffers
+      ok = number_of_buffers .eq. b
+    end subroutine set_times
+
+
+
+!***********************************************************************
+!  routine add_new_field
+!
+!> \brief   Function to create a new field from an existing field
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  This routine conducts all initializations required for
+!>  duplicating a field and adding it to the allFields pool.
+!-----------------------------------------------------------------------
+   subroutine add_new_field(info, inname, prefix, pool)!{{{
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_field_info_type), intent(in) :: info
+      character (len=StrKIND), intent(in) :: inname, prefix
+
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: pool 
+
+      ! output variables
+      !-----------------------------------------------------------------
+
+      ! local variables
+      !-----------------------------------------------------------------
+
+      ! start procedure
+      !-----------------------------------------------------------------
+
+      ! duplicate field and add new field to pool
+      if (info % fieldType .eq. MPAS_POOL_REAL) then
+         if (info % nDims .eq. 0) then
+            call copy_field_0r(inname, pool, prefix)
+         else if (info % nDims .eq. 1) then
+            call copy_field_1r(inname, pool, prefix)
+         else if (info % nDims .eq. 2) then
+            call copy_field_2r(inname, pool, prefix)
+         else if (info % nDims .eq. 3) then
+            call copy_field_3r(inname, pool, prefix)
+         else if (info % nDims .eq. 4) then
+            call copy_field_4r(inname, pool, prefix)
+         else
+            call copy_field_5r(inname, pool, prefix)
+         end if
+      else
+         if (info % nDims .eq. 0) then
+            call copy_field_0i(inname, pool, prefix)
+         else if (info % nDims .eq. 1) then
+            call copy_field_1i(inname, pool, prefix)
+         else if (info % nDims .eq. 2) then
+            call copy_field_2i(inname, pool, prefix)
+         else
+            call copy_field_3i(inname, pool, prefix)
+         end if
+      end if
+
+   end subroutine add_new_field!}}}
+
+
+
+!***********************************************************************
+!  routine timer_checking 
+!
+!> \brief   Timer functions to determine when to run
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  This routine conducts timer checking to determine if it 
+!>  needs to run at this particular time. 
+!-----------------------------------------------------------------------
+   subroutine timer_checking(domain, err)!{{{
+      ! input variables
+      !-----------------------------------------------------------------
+
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain
+
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err
+
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: b
+
+      ! start procedure
+      !-----------------------------------------------------------------
+      err = 0
+
+      do b = 1, size(buffers)
+         ! see if the started alarm is ringing
+         if (mpas_is_alarm_ringing(domain % clock, &
+               buffers(b) % start_alarm_ID, ierr=err)) then
+            call mpas_reset_clock_alarm(domain % clock, &
+               buffers(b) % start_alarm_ID, ierr=err)
+            buffers(b) % started_flag = .true. 
+            buffers(b) % accumulate_flag = .true.
+
+            ! TODO only reset if not restart
+            buffers(b) % reset_flag = .true.
+         end if
+
+         ! if we aren't started, continue to next buffer
+         if (.not. buffers(b) % started_flag) then
+            continue
+         end if
+
+         ! check various other alarms
+         ! see if we need to reset
+         if(mpas_is_alarm_ringing(domain % clock, &
+            buffers(b) % reset_alarm_ID, ierr=err)) then
+            call mpas_reset_clock_alarm(domain % clock, &
+               buffers(b) % reset_alarm_ID, ierr=err)
+            buffers(b) % reset_flag = .true.
+            buffers(b) % delay_reset_flag = .true.
+         end if
+
+         ! turn off accumulation
+         !
+         ! duration needs to be >= 2 * compute_interval 
+         ! (a series can only be 2 or more)
+         if (mpas_is_alarm_ringing(domain % clock, &
+               buffers(b) % duration_alarm_ID, ierr=err)) then
+            call mpas_reset_clock_alarm(domain % clock, &
+               buffers(b) % duration_alarm_ID, ierr=err)
+            buffers(b) % duration_over_flag = .true.
+         end if
+
+         ! turn on accumulation 
+         ! (this is second, in case the duration and repeat
+         !  overlaps on the same timer)
+         if (mpas_is_alarm_ringing(domain % clock, &
+               buffers(b) % repeat_alarm_ID, ierr=err)) then
+            call mpas_reset_clock_alarm(domain % clock, &
+               buffers(b) % repeat_alarm_ID, ierr=err)
+            buffers(b) % accumulate_flag = .true.
+            buffers(b) % duration_over_flag = .false.
+         end if
+
+      end do
+
+   end subroutine timer_checking!}}}
+
+
+
+!***********************************************************************
+!  routine typed_operate
+!
+!> \brief   Do the operation, but switch on run-time type
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  Since we don't know the type of the array, we need to do some
+!>  run-time type switching based on the type of the array.
+!-----------------------------------------------------------------------
+   subroutine typed_operate(block, tvar, operation)!{{{
+      ! input variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer, intent(in) :: block
+      integer, intent(in) :: operation
+
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (time_variable_type), intent(inout) :: tvar
+
+      ! output variables
+      !-----------------------------------------------------------------
+
+      ! local variables
+      !-----------------------------------------------------------------
+
+      ! switch based on the type, dimensionality, and operation
+      if (tvar % info % fieldType == MPAS_POOL_REAL) then
+         if (tvar % info % nDims  == 0) then
+            if (operation .eq. AVG_OP) then
+               call operate0r_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate0r_min(block, tvar)
+            else
+               call operate0r_max(block, tvar)
+            end if 
+         else if (tvar % info % nDims == 1) then
+            if (operation .eq. AVG_OP) then
+               call operate1r_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate1r_min(block, tvar)
+            else
+               call operate1r_max(block, tvar)
+            end if 
+         else if (tvar % info % nDims == 2) then
+            if (operation .eq. AVG_OP) then
+               call operate2r_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate2r_min(block, tvar)
+            else
+               call operate2r_max(block, tvar)
+            end if 
+         else if (tvar % info % nDims == 3) then
+            if (operation .eq. AVG_OP) then
+               call operate3r_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate3r_min(block, tvar)
+            else
+               call operate3r_max(block, tvar)
+            end if 
+         else if (tvar % info % nDims == 4) then
+            if (operation .eq. AVG_OP) then
+               call operate4r_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate4r_min(block, tvar)
+            else
+               call operate4r_max(block, tvar)
+            end if 
+         else
+            if (operation .eq. AVG_OP) then
+               call operate5r_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate5r_min(block, tvar)
+            else
+               call operate5r_max(block, tvar)
+            end if 
+         end if
+      else 
+         if (tvar % info % nDims == 0) then
+            if (operation .eq. AVG_OP) then
+               call operate0i_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate0i_min(block, tvar)
+            else
+               call operate0i_max(block, tvar)
+            end if 
+         else if (tvar % info % nDims == 1) then
+            if (operation .eq. AVG_OP) then
+               call operate1i_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate1i_min(block, tvar)
+            else
+               call operate1i_max(block, tvar)
+            end if 
+         else if (tvar % info % nDims == 2) then
+            if (operation .eq. AVG_OP) then
+               call operate2i_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate2i_min(block, tvar)
+            else
+               call operate2i_max(block, tvar)
+            end if 
+         else
+            if (operation .eq. AVG_OP) then
+               call operate3i_avg(block, tvar)
+            else if (operation .eq. MIN_OP) then
+               call operate3i_min(block, tvar)
+            else
+               call operate3i_max(block, tvar)
+            end if 
+         end if
+      end if
+
+   end subroutine typed_operate!}}}
+
+
+
+!***********************************************************************
+!  routine copy_field_X 
+!
+!> \brief   Functions to create a new field from an existing field
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  This routine conducts initializations required for
+!>  duplicating a field and adding it to the allFields pool based on type.
+!-----------------------------------------------------------------------
+
+subroutine copy_field_0r(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field0DReal), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_0r!}}}
+
+subroutine copy_field_1r(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field1DReal), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_1r!}}}
+
+subroutine copy_field_2r(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field2DReal), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_2r!}}}
+
+subroutine copy_field_3r(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field3DReal), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_3r!}}}
+
+subroutine copy_field_4r(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field4DReal), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_4r!}}}
+
+subroutine copy_field_5r(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field5DReal), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_5r!}}}
+
+subroutine copy_field_0i(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field0DInteger), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_0i!}}}
+
+subroutine copy_field_1i(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field1DInteger), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_1i!}}}
+
+subroutine copy_field_2i(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field2DInteger), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_2i!}}}
+
+subroutine copy_field_3i(inname, pool, prefix)!{{{
+   character (len=StrKIND), intent(in) :: inname, prefix
+   type (mpas_pool_type), intent(inout) :: pool
+
+   type (field3DInteger), pointer :: src, dst
+   integer :: i
+
+   call mpas_pool_get_field(pool, inname, src, 1)
+   call mpas_duplicate_field(src, dst)
+
+   dst % fieldName = trim(prefix) // dst % fieldName
+
+   if (dst % isVarArray) then
+      do i = 1, size(dst % constituentNames)
+         dst % constituentNames(i) = trim(prefix) // &
+            dst % constituentNames(i)
+      end do
+   end if
+
+   call mpas_pool_add_field(pool, dst % fieldName, dst)
+end subroutine copy_field_3i!}}}
+
+
+!***********************************************************************
+!  routine operateX_Y
+!
+!> \brief   Series of subroutines to support operations on run-time types
+!> \author  Jon Woodring
+!> \date    March 2, 2015
+!> \details 
+!>  These subroutines encapsulate the different opertions that can occur
+!>  based on the run-time types. (This would likely be
+!>  instantiated generics/templates in other languages.)
+!>
+!>  Averaging is done by multiplying out and dividing such that
+!>  the average state is always in a normalized form -- while
+!>  this could (will) cause more error in the long run, it does
+!>  mean that other AMs will be able to use this data and it will
+!>  always be prenormalized (it also means that we don't have to
+!>  have a special case of normalizing the data before writing it
+!>  to disk).
+!-----------------------------------------------------------------------
+
+subroutine operate0r_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate0r_avg
+
+subroutine operate1r_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate1r_avg
+
+subroutine operate2r_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate2r_avg
+
+subroutine operate3r_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate3r_avg
+
+subroutine operate4r_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate4r_avg
+
+subroutine operate5r_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate5r_avg
+
+subroutine operate0i_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate0i_avg
+
+subroutine operate1i_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate1i_avg
+
+subroutine operate2i_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate2i_avg
+
+subroutine operate3i_avg (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+            out_array = (out_array * \
+                        (buffers(b) % total_accum - 1) + in_array) \
+                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate3i_avg
+
+subroutine operate0r_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate0r_min
+
+subroutine operate1r_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate1r_min
+
+subroutine operate2r_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate2r_min
+
+subroutine operate3r_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate3r_min
+
+subroutine operate4r_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate4r_min
+
+subroutine operate5r_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate5r_min
+
+subroutine operate0i_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate0i_min
+
+subroutine operate1i_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate1i_min
+
+subroutine operate2i_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate2i_min
+
+subroutine operate3i_min (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+            out_array = min(out_array, in_array) ;
+!            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate3i_min
+
+subroutine operate0r_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate0r_max
+
+subroutine operate1r_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate1r_max
+
+subroutine operate2r_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate2r_max
+
+subroutine operate3r_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate3r_max
+
+subroutine operate4r_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate4r_max
+
+subroutine operate5r_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate5r_max
+
+subroutine operate0i_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate0i_max
+
+subroutine operate1i_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate1i_max
+
+subroutine operate2i_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate2i_max
+
+subroutine operate3i_max (start_block, tvar)
+   type (block_type), pointer, intent(in) :: start_block
+   type (time_variable_type), intent(inout) :: tvar
+
+   integer, dimension(:,:,:), pointer :: in_array, out_array
+   integer :: b
+   type (block_type), pointer :: block 
+
+   block => start_block
+   do while (associated(block))
+      call mpas_pool_get_array(block % allFields, &
+         tvar % input_name, in_array, 1)
+
+      do b = 1, size(buffers)
+         if (buffers(b) % reset_flag .and. &
+             (.not. buffers(b) % delay_reset_flag)) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1)
+            out_array = in_array
+         else if (buffers(b) % accumulate_flag) then
+            call mpas_pool_get_array(block % allFields, &
+                 tvar % output_names(b), out_array, 1) 
+
+!            out_array = (out_array * \
+!                        (buffers(b) % total_accum - 1) + in_array) \
+!                        / buffers(b) % total_accum ;
+!            out_array = min(out_array, in_array) ;
+            out_array = max(out_array, in_array) ;
+
+         end if 
+      end do 
+
+      block => block % next 
+   end do 
+end subroutine operate3i_max
 
 end module ocn_time_series_stats
 ! vim: foldmethod=marker
