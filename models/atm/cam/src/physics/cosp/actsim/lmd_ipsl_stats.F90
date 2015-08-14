@@ -1,5 +1,7 @@
 ! Copyright (c) 2009, Centre National de la Recherche Scientifique
 ! All rights reserved.
+! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
+! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/actsim/lmd_ipsl_stats.F90 $
 !
 ! Redistribution and use in source and binary forms, with or without modification, are permitted
 ! provided that the following conditions are met:
@@ -32,15 +34,16 @@ MODULE MOD_LMD_IPSL_STATS
 
 CONTAINS
       SUBROUTINE diag_lidar(npoints,ncol,llm,max_bin,nrefl &
-                  ,pnorm,pmol,refl,land,pplay,undef,ok_lidar_cfad &
-                  ,cfad2,srbval &
-                  ,ncat,lidarcld,cldlayer,parasolrefl)
+                  ,tmp,pnorm,pnorm_perp,pmol,refl,land,pplay,undef,ok_lidar_cfad &
+                  ,cfad2,srbval,ncat,lidarcld,lidarcldphase,cldlayer,cldlayerphase &
+                  ,lidarcldtmp,parasolrefl)
 !
 ! -----------------------------------------------------------------------------------
 ! Lidar outputs :
 !
-! Diagnose cloud fraction (3D cloud fraction + low/middle/high/total cloud fraction
-! from the lidar signals (ATB and molecular ATB) computed from model outputs
+! Diagnose cloud fraction (3D cloud fraction + low/middle/high/total cloud fraction)
+! and phase cloud fraction (3D, low/mid/high/total and 3D temperature)
+! from the lidar signals (ATB, ATBperp and molecular ATB) computed from model outputs
 !      +
 ! Compute CFADs of lidar scattering ratio SR and of depolarization index
 !
@@ -59,12 +62,18 @@ CONTAINS
 ! June 2010, T. Yokohata, T. Nishimura and K. Ogochi
 ! Optimisation of COSP_CFAD_SR
 !
-! Version 1.0 (June 2007)
-! Version 1.1 (May 2008)
-! Version 1.2 (June 2008)
-! Version 2.0 (October 2008)
-! Version 2.1 (December 2008)
-! c------------------------------------------------------------------------------------
+! January 2013, G. Cesana, H. Chepfer:
+! - Add the perpendicular component of the backscattered signal (pnorm_perp) in the arguments
+! - Add the temperature (tmp) in the arguments
+! - Add the 3D Phase cloud fraction (lidarcldphase) in the arguments
+! - Add the Phase low mid high cloud fraction (cldlayerphase) in the arguments
+! - Add the 3D Phase cloud fraction as a function of temperature (lidarcldtmp) in the arguments
+! - Modification of the phase diagnosis within the COSP_CLDFRAC routine to integrate the phase
+!   diagnosis (3D, low/mid/high, 3D temperature)
+! Reference: Cesana G. and H. Chepfer (2013): Evaluation of the cloud water phase
+! in a climate model using CALIPSO-GOCCP, J. Geophys. Res., doi: 10.1002/jgrd.50376
+!
+! ------------------------------------------------------------------------------------
 
 ! c inputs :
       integer npoints
@@ -81,10 +90,14 @@ CONTAINS
       real pplay(npoints,llm)       ! pressure on model levels (Pa)
       logical ok_lidar_cfad         ! true if lidar CFAD diagnostics need to be computed
       real refl(npoints,ncol,nrefl) ! subgrid parasol reflectance ! parasol
+      real tmp(npoints,llm)         ! temp at each levels
+      real pnorm_perp(npoints,ncol,llm)  ! lidar perpendicular ATB
 
 ! c outputs :
       real lidarcld(npoints,llm)     ! 3D "lidar" cloud fraction
-      real cldlayer(npoints,ncat)    ! "lidar" cloud fraction (low, mid, high, total)
+      real sub(npoints,llm)     ! 3D "lidar" indice
+      real cldlayer(npoints,ncat)    ! "lidar" cloud layer fraction (low, mid, high, total)
+
       real cfad2(npoints,max_bin,llm) ! CFADs of SR
       real srbval(max_bin)           ! SR bins in CFADs
       real parasolrefl(npoints,nrefl)! grid-averaged parasol reflectance
@@ -93,35 +106,38 @@ CONTAINS
       real S_clr
       parameter (S_clr = 1.2)
       real S_cld
-!      parameter (S_cld = 3.0)  ! Previous thresold for cloud detection
-      parameter (S_cld = 5.0)  ! New (dec 2008) thresold for cloud detection
+      parameter (S_cld = 5.0)  ! Thresold for cloud detection
       real S_att
       parameter (S_att = 0.01)
 
 ! c local variables :
-      integer ic,k
+      integer ic,k,i,j
       real x3d(npoints,ncol,llm)
       real x3d_c(npoints,llm),pnorm_c(npoints,llm)
       real xmax
+
+! Output variables
+      integer,parameter :: nphase = 6 ! nb of cloud layer phase types (ice,liquid,undefined,false ice,false liquid,Percent of ice)
+      real lidarcldphase(npoints,llm,nphase)   ! 3D "lidar" phase cloud fraction
+      real lidarcldtmp(npoints,40,5)          ! 3D "lidar" phase cloud fraction as a function of temp
+      real cldlayerphase(npoints,ncat,nphase)  ! "lidar" phase low mid high cloud fraction 
+
+! SR detection threshold
+      real, parameter  ::  S_cld_att = 30. ! New threshold for undefine cloud phase detection	
+
+
 !
 ! c -------------------------------------------------------
 ! c 0- Initializations
 ! c -------------------------------------------------------
 !
-
 !  Should be modified in future version
       xmax=undef-1.0
 
 ! c -------------------------------------------------------
 ! c 1- Lidar scattering ratio :
 ! c -------------------------------------------------------
-!
-!       where ((pnorm.lt.xmax) .and. (pmol.lt.xmax) .and. (pmol.gt. 0.0 ))
-!          x3d = pnorm/pmol
-!       elsewhere
-!           x3d = undef
-!       end where
-! A.B-S: pmol reduced to 2D (npoints,llm) (Dec 08)
+
       do ic = 1, ncol
         pnorm_c = pnorm(:,ic,:)
         where ((pnorm_c.lt.xmax) .and. (pmol.lt.xmax) .and. (pmol.gt. 0.0 ))
@@ -129,7 +145,7 @@ CONTAINS
         elsewhere
             x3d_c = undef
         end where
-        x3d(:,ic,:) = x3d_c
+         x3d(:,ic,:) = x3d_c
       enddo
 
 ! c -------------------------------------------------------
@@ -137,9 +153,9 @@ CONTAINS
 ! c from subgrid-scale lidar scattering ratios :
 ! c -------------------------------------------------------
 
-      CALL COSP_CLDFRAC(npoints,ncol,llm,ncat,  &
-              x3d,pplay, S_att,S_cld,undef,lidarcld, &
-              cldlayer)
+    CALL COSP_CLDFRAC(npoints,ncol,llm,ncat,nphase,  &
+              tmp,x3d,pnorm,pnorm_perp,pplay, S_att,S_cld,S_cld_att,undef,lidarcld, &
+              cldlayer,lidarcldphase,sub,cldlayerphase,lidarcldtmp)
 
 ! c -------------------------------------------------------
 ! c 3- CFADs
@@ -241,7 +257,6 @@ CONTAINS
 ! c -------------------------------------------------------
 ! c c- Compute CFAD
 ! c -------------------------------------------------------
-
       do j = 1, Nlevels
          do ib = 1, Nbins
             do k = 1, Ncolumns
@@ -263,31 +278,72 @@ CONTAINS
       RETURN
       END SUBROUTINE COSP_CFAD_SR
 
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !-------------------- SUBROUTINE COSP_CLDFRAC -------------------
 ! c Purpose: Cloud fraction diagnosed from lidar measurements
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      SUBROUTINE COSP_CLDFRAC(Npoints,Ncolumns,Nlevels,Ncat, &
-                  x,pplay,S_att,S_cld,undef,lidarcld, &
-                  cldlayer)
+      SUBROUTINE COSP_CLDFRAC(Npoints,Ncolumns,Nlevels,Ncat,Nphase, &
+                  tmp,x,ATB,ATBperp,pplay,S_att,S_cld,S_cld_att,undef,lidarcld, &
+                  cldlayer,lidarcldphase,nsub,cldlayerphase,lidarcldtemp)
+
+
       IMPLICIT NONE
 ! Input arguments
       integer Npoints,Ncolumns,Nlevels,Ncat
       real x(Npoints,Ncolumns,Nlevels)
+
+
+! Local parameters
+      integer nphase ! nb of cloud layer phase types 
+                                      ! (ice,liquid,undefined,false ice,false liquid,Percent of ice)
+      integer,parameter  ::  Ntemp=40 ! indice of the temperature vector
+      integer ip, k, iz, ic, ncol, nlev, i, itemp  ! loop indice
+      real  S_cld_att ! New threshold for undefine cloud phase detection (SR=30)	
+      integer toplvlsat  ! level of the first cloud with SR>30
+      real alpha50, beta50, gamma50, delta50, epsilon50, zeta50 ! Polynomial Coef of the phase
+                                                                ! discrimination line   
+
+! Input variables
+      real tmp(Npoints,Nlevels)			! temperature
+      real ATB(Npoints,Ncolumns,Nlevels) ! 3D Attenuated backscatter
+      real ATBperp(Npoints,Ncolumns,Nlevels) ! 3D perpendicular attenuated backscatter
       real pplay(Npoints,Nlevels)
       real S_att,S_cld
       real undef
-! Output :
+
+! Output variables
+      real lidarcldtemp(Npoints,Ntemp,5) ! 3D Temperature 1=tot,2=ice,3=liq,4=undef,5=ice/ice+liq
+      real tempmod(Ntemp+1)     ! temperature bins
+      real lidarcldphase(Npoints,Nlevels,Nphase)    ! 3D cloud phase fraction
+      real cldlayerphase(Npoints,Ncat,Nphase) ! low, middle, high, total cloud fractions for ice liquid and undefine phase
       real lidarcld(Npoints,Nlevels) ! 3D cloud fraction
       real cldlayer(Npoints,Ncat)    ! low, middle, high, total cloud fractions
+
 ! Local variables
-      integer ip, k, iz, ic
+      real tmpi(Npoints,Ncolumns,Nlevels)	! temperature of ice cld
+      real tmpl(Npoints,Ncolumns,Nlevels)	! temperature of liquid cld
+      real tmpu(Npoints,Ncolumns,Nlevels)	! temperature of undef cld
+
+      real checktemp, ATBperp_tmp ! temporary variable
+      real checkcldlayerphase, checkcldlayerphase2 ! temporary variable
+      real sumlidarcldtemp(Npoints,Ntemp) ! temporary variable
+
+      real cldlayphase(Npoints,Ncolumns,Ncat,Nphase) ! subgrided low mid high phase cloud fraction
+      real cldlayerphasetmp(Npoints,Ncat) ! temporary variable
+      real cldlayerphasesum(Npoints,Ncat) ! temporary variable
+      real lidarcldtempind(Npoints,Ntemp) ! 3D Temperature indice
+      real lidarcldphasetmp(Npoints,Nlevels)  ! 3D sum of ice and liquid cloud occurences
+
+
+! Local variables
       real p1
       real cldy(Npoints,Ncolumns,Nlevels)
       real srok(Npoints,Ncolumns,Nlevels)
       real cldlay(Npoints,Ncolumns,Ncat)
       real nsublay(Npoints,Ncolumns,Ncat), nsublayer(Npoints,Ncat)
       real nsub(Npoints,Nlevels)
+
 #ifdef SYS_SX
       real cldlay1(Npoints,Ncolumns)
       real cldlay2(Npoints,Ncolumns)
@@ -296,6 +352,9 @@ CONTAINS
       real nsublay2(Npoints,Ncolumns)
       real nsublay3(Npoints,Ncolumns)
 #endif
+
+
+
 
 ! ---------------------------------------------------------------
 ! 1- initialization
@@ -310,6 +369,39 @@ CONTAINS
       nsub = 0.0
       cldlay = 0.0
       nsublay = 0.0
+
+      ATBperp_tmp = 0.
+      lidarcldphase(:,:,:) = 0.
+      cldlayphase(:,:,:,:) = 0.
+      cldlayerphase(:,:,:) = 0.
+      tmpi(:,:,:) = 0.
+      tmpl(:,:,:) = 0.
+      tmpu(:,:,:) = 0.
+      cldlayerphasesum(:,:) = 0.
+      lidarcldtemp(:,:,:) = 0.
+      lidarcldtempind(:,:) = 0.
+      sumlidarcldtemp(:,:) = 0.
+      toplvlsat=0
+      lidarcldphasetmp(:,:) = 0.
+
+! temperature bins
+      tempmod=(/-273.15,-90.,-87.,-84.,-81.,-78.,-75.,-72.,-69.,-66.,-63.,-60.,-57., &
+                -54.,-51.,-48.,-45.,-42.,-39.,-36.,-33.,-30.,-27.,-24.,-21.,-18.,  &
+                -15.,-12.,-9.,-6.,-3.,0.,3.,6.,9.,12.,15.,18.,21.,24.,200. /)
+	
+! convert C to K
+      tempmod=tempmod+273.15
+
+! Polynomial coefficient of the phase discrimination line used to separate liquid from ice
+! (Cesana and Chepfer, JGR, 2013)
+! ATBperp = ATB^5*alpha50 + ATB^4*beta50 + ATB^3*gamma50 + ATB^2*delta50 + ATB*epsilon50 + zeta50
+      alpha50   = 9.0322e+15
+      beta50    = -2.1358e+12
+      gamma50   = 173.3963e06
+      delta50   = -3.9514e03
+      epsilon50 = 0.2559
+      zeta50    = -9.4776e-07
+
 
 ! ---------------------------------------------------------------
 ! 2- Cloud detection
@@ -333,6 +425,7 @@ CONTAINS
 
       enddo ! k
 
+
 ! ---------------------------------------------------------------
 ! 3- grid-box 3D cloud fraction and layered cloud fractions (ISCCP pressure
 ! categories) :
@@ -349,9 +442,29 @@ CONTAINS
       nsublay2 = 0.0
       nsublay3 = 0.0
       nsublay(:,:,4) = 0.0
+
       do k = Nlevels, 1, -1
        do ic = 1, Ncolumns
         do ip = 1, Npoints
+
+         if(srok(ip,ic,k).gt.0.)then
+           ! Computation of the cloud fraction as a function of the temperature
+           ! instead of height, for ice,liquid and all clouds
+           do itemp=1,Ntemp
+             if( (tmp(ip,k).ge.tempmod(itemp)).and.(tmp(ip,k).lt.tempmod(itemp+1)) )then
+               lidarcldtempind(ip,itemp)=lidarcldtempind(ip,itemp)+1.
+             endif
+           enddo
+         endif
+
+         if (cldy(ip,ic,k).eq.1.) then
+           do itemp=1,Ntemp
+             if( (tmp(ip,k).ge.tempmod(itemp)).and.(tmp(ip,k).lt.tempmod(itemp+1)) )then
+               lidarcldtemp(ip,itemp,1)=lidarcldtemp(ip,itemp,1)+1.
+             endif
+           enddo
+         endif
+
          p1 = pplay(ip,k)
 
          if ( p1.gt.0. .and. p1.lt.(440.*100.)) then ! high clouds
@@ -385,6 +498,25 @@ CONTAINS
        do ic = 1, Ncolumns
         do ip = 1, Npoints
 
+          ! Computation of the cloud fraction as a function of the temperature
+          ! instead of height, for ice,liquid and all clouds
+          if(srok(ip,ic,k).gt.0.)then
+          do itemp=1,Ntemp
+            if( (tmp(ip,k).ge.tempmod(itemp)).and.(tmp(ip,k).lt.tempmod(itemp+1)) )then
+              lidarcldtempind(ip,itemp)=lidarcldtempind(ip,itemp)+1.
+            endif
+          enddo
+          endif
+
+          if(cldy(ip,ic,k).eq.1.)then
+          do itemp=1,Ntemp
+            if( (tmp(ip,k).ge.tempmod(itemp)).and.(tmp(ip,k).lt.tempmod(itemp+1)) )then
+              lidarcldtemp(ip,itemp,1)=lidarcldtemp(ip,itemp,1)+1.
+            endif
+          enddo
+          endif
+!
+
           iz=1
           p1 = pplay(ip,k)
           if ( p1.gt.0. .and. p1.lt.(440.*100.)) then ! high clouds
@@ -405,6 +537,7 @@ CONTAINS
        enddo
       enddo
 #endif
+
 
 ! -- grid-box 3D cloud fraction
 
@@ -433,8 +566,421 @@ CONTAINS
          cldlayer(:,:) = undef
       endwhere
 
-      RETURN
+! ---------------------------------------------------------------
+! 4- grid-box 3D cloud Phase :
+! ---------------------------------------------------------------
+! ---------------------------------------------------------------
+! 4.1 - For Cloudy pixels with 8.16km < z < 19.2km
+! ---------------------------------------------------------------
+do ncol=1,Ncolumns
+do i=1,Npoints
+
+      do nlev=Nlevels,18,-1  ! from 19.2km until 8.16km
+         p1 = pplay(i,nlev)
+
+
+! Avoid zero values
+	if( (cldy(i,ncol,nlev).eq.1.) .and. (ATBperp(i,ncol,nlev).gt.0.) )then
+! Computation of the ATBperp along the phase discrimination line
+           ATBperp_tmp = (ATB(i,ncol,nlev)**5)*alpha50 + (ATB(i,ncol,nlev)**4)*beta50 + &
+                         (ATB(i,ncol,nlev)**3)*gamma50 + (ATB(i,ncol,nlev)**2)*delta50 + &
+                          ATB(i,ncol,nlev)*epsilon50 + zeta50
+
+!____________________________________________________________________________________________________
+!
+!4.1.a Ice: ATBperp above the phase discrimination line
+!____________________________________________________________________________________________________
+!
+           if( (ATBperp(i,ncol,nlev)-ATBperp_tmp).ge.0. )then   ! Ice clouds
+             ! ICE with temperature above 273,15°K = Liquid (false ice)
+            if(tmp(i,nlev).gt.273.15)then                ! Temperature above 273,15 K
+              ! Liquid: False ice corrected by the temperature to Liquid
+               lidarcldphase(i,nlev,2)=lidarcldphase(i,nlev,2)+1.   ! false ice detection ==> added to Liquid
+               tmpl(i,ncol,nlev)=tmp(i,nlev)
+               lidarcldphase(i,nlev,5)=lidarcldphase(i,nlev,5)+1.   ! keep the information "temperature criterium used"
+                                                    ! to classify the phase cloud
+         	   cldlayphase(i,ncol,4,2) = 1.                         ! tot cloud
+                if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+        	   cldlayphase(i,ncol,3,2) = 1.
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,2) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,2) = 1.
+                endif
+         	   cldlayphase(i,ncol,4,5) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+        	   cldlayphase(i,ncol,3,5) = 1.
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,5) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,5) = 1.
+                endif
+
+             else
+             ! ICE with temperature below 273,15°K
+              lidarcldphase(i,nlev,1)=lidarcldphase(i,nlev,1)+1.
+              tmpi(i,ncol,nlev)=tmp(i,nlev)
+         	   cldlayphase(i,ncol,4,1) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+        	   cldlayphase(i,ncol,3,1) = 1.
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,1) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,1) = 1.
+                endif
+
+              endif
+
+!____________________________________________________________________________________________________
+!
+! 4.1.b Liquid: ATBperp below the phase discrimination line
+!____________________________________________________________________________________________________
+!
+             else                                        ! Liquid clouds
+              ! Liquid with temperature above 231,15°K
+            if(tmp(i,nlev).gt.231.15)then 
+               lidarcldphase(i,nlev,2)=lidarcldphase(i,nlev,2)+1.
+               tmpl(i,ncol,nlev)=tmp(i,nlev)
+         	   cldlayphase(i,ncol,4,2) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+         	   cldlayphase(i,ncol,3,2) = 1.  
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,2) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,2) = 1.
+	 	endif
+
+             else
+             ! Liquid with temperature below 231,15°K = Ice (false liquid)
+               tmpi(i,ncol,nlev)=tmp(i,nlev)
+               lidarcldphase(i,nlev,1)=lidarcldphase(i,nlev,1)+1.   ! false liquid detection ==> added to ice
+               lidarcldphase(i,nlev,4)=lidarcldphase(i,nlev,4)+1.   ! keep the information "temperature criterium used"
+                                                    ! to classify the phase cloud
+         	   cldlayphase(i,ncol,4,4) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+         	   cldlayphase(i,ncol,3,4) = 1.  
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,4) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,4) = 1.
+	 	endif
+         	   cldlayphase(i,ncol,4,1) = 1.                         ! tot cloud
+        	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+         	   cldlayphase(i,ncol,3,1) = 1.  
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,1) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,1) = 1.
+	 	endif
+
+             endif
+
+            endif  ! end of discrimination condition 
+	 endif  ! end of cloud condition
+      enddo ! end of altitude loop
+
+
+
+! ---------------------------------------------------------------
+! 4.2 - For Cloudy pixels with 0km < z < 8.16km
+! ---------------------------------------------------------------
+
+      toplvlsat=0
+      do nlev=17,1,-1  ! from 8.16km until 0km
+         p1 = pplay(i,nlev)
+
+	if( (cldy(i,ncol,nlev).eq.1.) .and. (ATBperp(i,ncol,nlev).gt.0.) )then
+! Phase discrimination line : ATBperp = ATB^5*alpha50 + ATB^4*beta50 + ATB^3*gamma50 + ATB^2*delta50 
+!                                  + ATB*epsilon50 + zeta50
+! Computation of the ATBperp of the phase discrimination line
+           ATBperp_tmp = (ATB(i,ncol,nlev)**5)*alpha50 + (ATB(i,ncol,nlev)**4)*beta50 + &
+                         (ATB(i,ncol,nlev)**3)*gamma50 + (ATB(i,ncol,nlev)**2)*delta50 + &
+                          ATB(i,ncol,nlev)*epsilon50 + zeta50
+!____________________________________________________________________________________________________
+!
+! 4.2.a Ice: ATBperp above the phase discrimination line
+!____________________________________________________________________________________________________
+!
+            ! ICE with temperature above 273,15°K = Liquid (false ice)
+          if( (ATBperp(i,ncol,nlev)-ATBperp_tmp).ge.0. )then   ! Ice clouds
+            if(tmp(i,nlev).gt.273.15)then 
+               lidarcldphase(i,nlev,2)=lidarcldphase(i,nlev,2)+1.  ! false ice ==> liq
+               tmpl(i,ncol,nlev)=tmp(i,nlev)
+               lidarcldphase(i,nlev,5)=lidarcldphase(i,nlev,5)+1.
+
+         	   cldlayphase(i,ncol,4,2) = 1.                         ! tot cloud
+               if ( p1.gt.0. .and. p1.lt.(440.*100.)) then              ! high cloud
+        	   cldlayphase(i,ncol,3,2) = 1.
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,2) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,2) = 1.
+                endif
+
+         	   cldlayphase(i,ncol,4,5) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+        	   cldlayphase(i,ncol,3,5) = 1.
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,5) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,5) = 1.
+                endif
+
+             else
+              ! ICE with temperature below 273,15°K
+              lidarcldphase(i,nlev,1)=lidarcldphase(i,nlev,1)+1.
+              tmpi(i,ncol,nlev)=tmp(i,nlev)
+
+          	   cldlayphase(i,ncol,4,1) = 1.                         ! tot cloud
+        	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+        	   cldlayphase(i,ncol,3,1) = 1.
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,1) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,1) = 1.
+                endif
+
+              endif
+
+!____________________________________________________________________________________________________
+!
+! 4.2.b Liquid: ATBperp below the phase discrimination line
+!____________________________________________________________________________________________________
+!
+          else  
+             ! Liquid with temperature above 231,15°K
+            if(tmp(i,nlev).gt.231.15)then 
+               lidarcldphase(i,nlev,2)=lidarcldphase(i,nlev,2)+1.
+               tmpl(i,ncol,nlev)=tmp(i,nlev)
+
+         	   cldlayphase(i,ncol,4,2) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+         	   cldlayphase(i,ncol,3,2) = 1.  
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,2) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,2) = 1.
+	 	endif
+
+             else
+             ! Liquid with temperature below 231,15°K = Ice (false liquid)
+               tmpi(i,ncol,nlev)=tmp(i,nlev)
+               lidarcldphase(i,nlev,1)=lidarcldphase(i,nlev,1)+1.  ! false liq ==> ice
+               lidarcldphase(i,nlev,4)=lidarcldphase(i,nlev,4)+1.  ! false liq ==> ice
+
+         	   cldlayphase(i,ncol,4,4) = 1.                         ! tot cloud
+         	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+         	   cldlayphase(i,ncol,3,4) = 1.  
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,4) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,4) = 1.
+	 	endif
+
+         	   cldlayphase(i,ncol,4,1) = 1.                         ! tot cloud
+        	if ( p1.gt.0. .and. p1.lt.(440.*100.)) then             ! high cloud
+         	   cldlayphase(i,ncol,3,1) = 1.  
+         	else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then ! mid cloud
+         	   cldlayphase(i,ncol,2,1) = 1.
+	 	else                                                    ! low cloud
+         	   cldlayphase(i,ncol,1,1) = 1.
+	 	endif
+
+             endif
+           endif  ! end of discrimination condition 
+
+       	    toplvlsat=0
+
+           ! Find the level of the highest cloud with SR>30
+	    if(x(i,ncol,nlev).gt.S_cld_att)then	 ! SR > 30.
+      		toplvlsat=nlev-1
+       		goto 99 
+    	    endif
+
+	endif  ! end of cloud condition
+       enddo  ! end of altitude loop
+
+99 continue
+
+!____________________________________________________________________________________________________
+!
+! Undefined phase: For a cloud located below another cloud with SR>30 
+! see Cesana and Chepfer 2013 Sect.III.2
+!____________________________________________________________________________________________________
+!
+if(toplvlsat.ne.0)then     	
+      do nlev=toplvlsat,1,-1
+         p1 = pplay(i,nlev)
+	if(cldy(i,ncol,nlev).eq.1.)then
+           lidarcldphase(i,nlev,3)=lidarcldphase(i,nlev,3)+1.
+           tmpu(i,ncol,nlev)=tmp(i,nlev)
+
+         	   cldlayphase(i,ncol,4,3) = 1.                         ! tot cloud
+          if ( p1.gt.0. .and. p1.lt.(440.*100.)) then              ! high cloud
+             cldlayphase(i,ncol,3,3) = 1.
+          else if(p1.ge.(440.*100.) .and. p1.lt.(680.*100.)) then  ! mid cloud
+             cldlayphase(i,ncol,2,3) = 1.
+	  else                                                     ! low cloud
+             cldlayphase(i,ncol,1,3) = 1.
+	  endif
+
+        endif	
+      enddo
+endif
+     
+      toplvlsat=0
+
+enddo
+enddo
+
+
+
+!____________________________________________________________________________________________________
+!
+! Computation of final cloud phase diagnosis
+!____________________________________________________________________________________________________
+!
+
+! Compute the Ice percentage in cloud = ice/(ice+liq) as a function
+! of the occurrences
+lidarcldphasetmp(:,:)=lidarcldphase(:,:,1)+lidarcldphase(:,:,2);
+WHERE (lidarcldphasetmp(:,:).gt. 0.)
+   lidarcldphase(:,:,6)=lidarcldphase(:,:,1)/lidarcldphasetmp(:,:)
+ELSEWHERE
+   lidarcldphase(:,:,6) = undef
+ENDWHERE
+
+! Compute Phase 3D Cloud Fraction
+     WHERE ( nsub(:,:).gt.0.0 )
+       lidarcldphase(:,:,1)=lidarcldphase(:,:,1)/nsub(:,:)
+       lidarcldphase(:,:,2)=lidarcldphase(:,:,2)/nsub(:,:)
+       lidarcldphase(:,:,3)=lidarcldphase(:,:,3)/nsub(:,:)
+       lidarcldphase(:,:,4)=lidarcldphase(:,:,4)/nsub(:,:)
+       lidarcldphase(:,:,5)=lidarcldphase(:,:,5)/nsub(:,:)
+     ELSEWHERE
+       lidarcldphase(:,:,1) = undef
+       lidarcldphase(:,:,2) = undef
+       lidarcldphase(:,:,3) = undef
+       lidarcldphase(:,:,4) = undef
+       lidarcldphase(:,:,5) = undef
+     ENDWHERE
+
+
+! Compute Phase low mid high cloud fractions
+    do iz = 1, Ncat
+       do i=1,Nphase-3
+       do ic = 1, Ncolumns
+          cldlayerphase(:,iz,i)=cldlayerphase(:,iz,i) + cldlayphase(:,ic,iz,i)
+          cldlayerphasesum(:,iz)=cldlayerphasesum(:,iz)+cldlayphase(:,ic,iz,i)
+       enddo
+      enddo
+    enddo
+
+    do iz = 1, Ncat
+       do i=4,5
+       do ic = 1, Ncolumns
+          cldlayerphase(:,iz,i)=cldlayerphase(:,iz,i) + cldlayphase(:,ic,iz,i)          
+       enddo
+       enddo
+    enddo
+    
+! Compute the Ice percentage in cloud = ice/(ice+liq)
+cldlayerphasetmp(:,:)=cldlayerphase(:,:,1)+cldlayerphase(:,:,2)
+    WHERE (cldlayerphasetmp(:,:).gt. 0.)
+       cldlayerphase(:,:,6)=cldlayerphase(:,:,1)/cldlayerphasetmp(:,:)
+    ELSEWHERE
+       cldlayerphase(:,:,6) = undef
+    ENDWHERE
+
+    do i=1,Nphase-1
+      WHERE ( cldlayerphasesum(:,:).gt.0.0 )
+         cldlayerphase(:,:,i) = (cldlayerphase(:,:,i)/cldlayerphasesum(:,:)) * cldlayer(:,:) 
+      ENDWHERE
+    enddo
+
+
+    do i=1,Npoints
+       do iz=1,Ncat
+          checkcldlayerphase=0.
+          checkcldlayerphase2=0.
+
+          if (cldlayerphasesum(i,iz).gt.0.0 )then
+             do ic=1,Nphase-3
+                checkcldlayerphase=checkcldlayerphase+cldlayerphase(i,iz,ic)  
+             enddo
+             checkcldlayerphase2=cldlayer(i,iz)-checkcldlayerphase
+             if( (checkcldlayerphase2.gt.0.01).or.(checkcldlayerphase2.lt.-0.01) ) print *, checkcldlayerphase,cldlayer(i,iz)
+
+          endif
+
+       enddo
+    enddo
+
+    do i=1,Nphase-1
+      WHERE ( nsublayer(:,:).eq.0.0 )
+         cldlayerphase(:,:,i) = undef
+      ENDWHERE
+   enddo
+
+
+
+! Compute Phase 3D as a function of temperature
+do nlev=1,Nlevels
+do ncol=1,Ncolumns     
+do i=1,Npoints
+do itemp=1,Ntemp
+if(tmpi(i,ncol,nlev).gt.0.)then
+      if( (tmpi(i,ncol,nlev).ge.tempmod(itemp)).and.(tmpi(i,ncol,nlev).lt.tempmod(itemp+1)) )then
+        lidarcldtemp(i,itemp,2)=lidarcldtemp(i,itemp,2)+1.
+      endif
+elseif(tmpl(i,ncol,nlev).gt.0.)then
+      if( (tmpl(i,ncol,nlev).ge.tempmod(itemp)).and.(tmpl(i,ncol,nlev).lt.tempmod(itemp+1)) )then
+        lidarcldtemp(i,itemp,3)=lidarcldtemp(i,itemp,3)+1.
+      endif
+elseif(tmpu(i,ncol,nlev).gt.0.)then
+      if( (tmpu(i,ncol,nlev).ge.tempmod(itemp)).and.(tmpu(i,ncol,nlev).lt.tempmod(itemp+1)) )then
+        lidarcldtemp(i,itemp,4)=lidarcldtemp(i,itemp,4)+1.
+      endif
+endif
+enddo
+enddo
+enddo
+enddo
+
+! Check temperature cloud fraction
+do i=1,Npoints
+   do itemp=1,Ntemp
+checktemp=lidarcldtemp(i,itemp,2)+lidarcldtemp(i,itemp,3)+lidarcldtemp(i,itemp,4)
+
+	if(checktemp.NE.lidarcldtemp(i,itemp,1))then
+	  print *, i,itemp
+	  print *, lidarcldtemp(i,itemp,1:4)
+	endif
+
+   enddo
+enddo
+
+! Compute the Ice percentage in cloud = ice/(ice+liq)
+!   sumlidarcldtemp=sum(lidarcldtemp(:,:,2:3),3)
+   sumlidarcldtemp(:,:)=lidarcldtemp(:,:,2)+lidarcldtemp(:,:,3)
+
+WHERE(sumlidarcldtemp(:,:)>0.)
+  lidarcldtemp(:,:,5)=lidarcldtemp(:,:,2)/sumlidarcldtemp(:,:)
+ELSEWHERE
+  lidarcldtemp(:,:,5)=undef
+ENDWHERE
+
+do i=1,4
+  WHERE(lidarcldtempind(:,:).gt.0.)
+     lidarcldtemp(:,:,i) = lidarcldtemp(:,:,i)/lidarcldtempind(:,:)
+  ELSEWHERE
+     lidarcldtemp(:,:,i) = undef
+  ENDWHERE
+enddo
+
+       RETURN
       END SUBROUTINE COSP_CLDFRAC
 ! ---------------------------------------------------------------
+
 
 END MODULE MOD_LMD_IPSL_STATS
