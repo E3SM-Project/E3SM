@@ -19,6 +19,14 @@
                                         description="Salinity to restore towards when surface restoring is turned on."
                                         possible_values="Any real number"
                 />
+                <nml_option name="config_cvmix_WSwSBF_surface_temperature_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
+                                        description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_temperature."
+                                        possible_values="Any non-negative real number"
+                />
+                <nml_option name="config_cvmix_WSwSBF_surface_salinity_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
+                                        description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_salinity."
+                                        possible_values="Any non-negative real number"
+                />
                 <nml_option name="config_cvmix_WSwSBF_sensible_heat_flux" type="real" default_value="0.0" units="W m^{-2}"
                                         description="Net sensible heat flux applied when bulk forcing is used. Positive values indicate a net input of heat to ocean."
                                         possible_values="Any real number"
@@ -38,6 +46,14 @@
                 <nml_option name="config_cvmix_WSwSBF_evaporation_flux" type="real" default_value="0.0" units="kg m^{-2} s^{-1}"
                                         description="Net surface evaporation when bulk forcing is used. Positive values indicate a net input of water to ocean."
                                         possible_values="Any real number"
+                />
+                <nml_option name="config_cvmix_WSwSBF_interior_temperature_restoring_rate" type="real" default_value="1.0e-6" units="{s}^-1"
+                                        description="Rate at which temperature is restored toward the initial condition."
+                                        possible_values="Any non-negative real number"
+                />
+                <nml_option name="config_cvmix_WSwSBF_interior_salinity_restoring_rate" type="real" default_value="1.0e-6" units="{s}^-2"
+                                        description="Rate at which salinity is restored toward the initial condition."
+                                        possible_values="Any non-negative real number"
                 />
                 <nml_option name="config_cvmix_WSwSBF_temperature_gradient" type="real" default_value="0.01" units="deg C m^{-1}"
                                         description="d/dz of temperature."
@@ -63,4 +79,5 @@
                                         description="Coriolis parameter for WSwSBF test case"
                                         possible_values="Any real number."
                 />
+
         </nml_record>
