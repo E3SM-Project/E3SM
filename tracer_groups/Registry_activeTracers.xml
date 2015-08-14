@@ -95,20 +95,20 @@
                         </var_array>
                 </var_struct>
                <var_struct name="tracersInteriorRestoringFields" time_levs="1">
-                        <var_array name="activeTracersInteriorRestoringTimeScale" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
-                                <var name="temperatureInteriorRestoringTimeScale" array_group="activeGRP" units="s"
+                        <var_array name="activeTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
+                                <var name="temperatureInteriorRestoringRate" array_group="activeGRP" units="{s}^-1"
                                          description="A non-negative field controlling the rate at which temperature is restored to temperatureInteriorRestoringValue"
                                 />
-                                <var name="salinityInteriorRestoringTimeScale" array_group="activeGRP" units="s"
+                                <var name="salinityInteriorRestoringRate" array_group="activeGRP" units="{s}^-1"
                                          description="A non-negative field controlling the rate at which salinity is restored to salinityInteriorRestoringValue"
                                 />
                         </var_array>
                         <var_array name="activeTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
                                 <var name="temperatureInteriorRestoringValue" array_group="activeGRP" units="^\circ C"
-                                         description="Temperature is restored toward this field at a rate controlled by temperatureInteriorRestoringTimeScale."
+                                         description="Temperature is restored toward this field at a rate controlled by temperatureInteriorRestoringRate."
                                 />
                                 <var name="salinityInteriorRestoringValue" array_group="activeGRP" units="PSU"
-                                         description="Salinity is restored toward this field at a rate controlled by salinityInteriorRestoringTimeScale."
+                                         description="Salinity is restored toward this field at a rate controlled by salinityInteriorRestoringRate."
                                 />
                         </var_array>
                 </var_struct>
