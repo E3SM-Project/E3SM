@@ -329,7 +329,7 @@ if ($ROF_GRID eq "null") {
     }
 }
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
+(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
 ** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }

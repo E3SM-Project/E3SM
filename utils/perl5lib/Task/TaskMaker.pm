@@ -124,7 +124,8 @@ sub _computeValues
 	my @nthrds = @{$self->{nthrds}};
 	my @rootpe = @{$self->{rootpe}};
 	my @pstrid = @{$self->{pstrid}};
-
+	my $pes_per_node = $self->{PES_PER_NODE};
+	
 	for(my $i = 0; $i <= $#ntasks; $i++)
 	{
 		my $n = $ntasks[$i]; 
@@ -144,7 +145,7 @@ sub _computeValues
 		}
 		else
 		{
-			$totaltasks += $self->{PES_PER_NODE};
+			$totaltasks += $pes_per_node;
 		}
 	}
 	
@@ -208,7 +209,7 @@ sub _computeValues
 		$sumthreads[$c1] = $sumthreads[($c1-1)] + $maxt[($c1-1)];
 	}
 	$self->{'sumthreads'} = \@sumthreads;
-	
+
     # Compute task and thread settings for batch commands 
 	my $fullsum = 0;
 	my $sum = $maxt[0];
@@ -240,8 +241,8 @@ sub _computeValues
 		{
 			print "self Max_TASKS_PER_NODE: $self->{'MAX_TASKS_PER_NODE'}\n";
 			print "threadcount $threadcount\n";
-			if(defined $self->{'PES_PER_NODE'}){
-			    $taskpernode = min($self->{'PES_PER_NODE'},$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+			if(defined $pes_per_node){
+			    $taskpernode = min($pes_per_node,$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
 			}else{
 			    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
 			}
@@ -262,8 +263,13 @@ sub _computeValues
 	$self->{'fullsum'} = $fullsum;
 	$taskgeom = $taskgeom.")";
 	$self->{'taskgeom'} = $taskgeom;
-	$taskpernode = min($self->{'PES_PER_NODE'},$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+	if($pes_per_node > 0){
+	    $taskpernode = min($pes_per_node,$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+	}else{
+	    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
+	}
 	$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
+	
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);

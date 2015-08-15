@@ -325,7 +325,7 @@ my $OCN_GRID        = $xmlvars{'OCN_GRID'};
 my $DOCN_MODE       = $xmlvars{'DOCN_MODE'};
 my $SSTICE_STREAM   = $xmlvars{'SSTICE_STREAM'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
+(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
 ** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
 if ($print>=2) { 

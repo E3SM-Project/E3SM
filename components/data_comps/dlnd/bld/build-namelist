@@ -325,7 +325,7 @@ my $LND_GRID         = $xmlvars{'LND_GRID'};
 my $DLND_MODE        = $xmlvars{'DLND_MODE'};        
 my $GLC_NEC          = $xmlvars{'GLC_NEC'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
+(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
 ** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -370,7 +370,7 @@ foreach my $stream ( @streams ) {
 
     } elsif (-e "$CASEROOT/user_$outstream") {  
 
-	my $command = "cp -p $CASEROOT/user_$outstream $CASEROOT/Buildconf/dlndconf/$outstream";
+	my $command = "cp -p $CASEROOT/user_$outstream $CASEROOT/CaseDocs/$outstream";
 	system($command) == 0  or die "system $command failed: $? \n";
 
     } else {
