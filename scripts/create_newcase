@@ -263,7 +263,7 @@ my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
 # *** Set master config file ***
 #------------------------------------------------------------------------------------------
 # The following specifies all necessary files that will be used to configure the case
-my $cimeconfig_file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml";
+my $cimeconfig_file = "$cimeroot/driver_cpl/cimeconfig/config_component.xml";
 my $files_spec_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
 #------------------------------------------------------------------------------------------
@@ -441,13 +441,13 @@ ConfigMachine::setMachineValues($cimeconfig_file, $primary_component, $machine, 
 ConfigPes::setPes($pecount, $primary_component, \%opts, $config);
 
 #------------------------------------------------------------------------------------------
-# *** Determine all <value> settings in driver_cpl/cimeconfig/config_cime.xml
+# *** Determine all <value> settings in driver_cpl/cimeconfig/config_component.xml
 #------------------------------------------------------------------------------------------
 # Note -this needs to come AFTER call to setPES since it might override some of the settings
 # e.g. this effectively works like an override mechanism for NTASKS_GLC and NTHRDS_GLC
 # which must be set to 1 when GLC is CISM1
 
-my $file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml"; #TODO - get this from $config
+my $file = "$cimeroot/driver_cpl/cimeconfig/config_component.xml"; #TODO - get this from $config
 ConfigCompsetGrid::setComponent($file, $config); 
 
 #------------------------------------------------------------------------------------------
@@ -470,6 +470,22 @@ if ($rof_comp eq 'rtm') {
     if (($lnd_grid ne $rof_grid) && ($map_lnd2rof eq 'idmap')) {
 	print "No lnd2rof_fmapname exists - RTM mode set to null \n";
 	$config->set('RTM_MODE', 'NULL');     
+    }
+}
+
+# Determine run_refcase and run_refdate
+my $run_refcase = _clean($config->get('RUN_REFCASE'));
+my $run_refdate = _clean($config->get('RUN_REFDATE'));
+if ($run_refcase ne 'case.std') {
+    $config->set('RUN_TYPE','hybrid');
+    $config->set('GET_REFCASE','TRUE');
+    my $fh_case = new IO::File;
+    $fh_case->open(">>$caseroot/README.case") or die "can't open file: README.case\n";
+    my $fh_stdout = *STDOUT;
+    my @file_handles = ($fh_stdout, $fh_case);
+    foreach my $fhandle (@file_handles) {
+	print $fhandle     "  RUN_REFCASE: $run_refcase \n";
+	print $fhandle     "  RUN_REFDATe: $run_refdate \n";
     }
 }
 
@@ -541,10 +557,9 @@ if (ProjectTools::set_project($project)) {
 } 
 
 #------------------------------------------------------------------------------------------
-# *** Set the mpi library and the repotag
+# *** Set the mpi library 
 #------------------------------------------------------------------------------------------
 _set_mpi_library($mpilib, $config);
-_set_repotag($cimeroot, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the sharedlibroot for building shared CESM components
@@ -766,21 +781,6 @@ sub _set_mpi_library
     }    
     $config->set('MPILIB', "$mpilib");
     if ($print>=2) { print "Machine mpilib specifier: $mpilib.\n"; }
-}
-
-#-------------------------------------------------------------------------------
-sub _set_repotag 
-{
-    my ($cimeroot, $config) = @_; 
-
-    my $repotag;
-    if (-f "$cimeroot/ChangeLog") { 
-	$repotag =`cat $cimeroot/ChangeLog | grep 'Tag name:' | head -1`;
-    }
-    my @repotag = split(/ /,$repotag); 
-    $repotag = $repotag[2]; 
-    chomp($repotag);
-    $config->set('CCSM_REPOTAG', $repotag);
 }
 
 #-------------------------------------------------------------------------------

@@ -330,15 +330,6 @@ if ($mpilib) {
 
 if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 
-my $repotag;
-if (-f "$cimeroot/ChangeLog") { 
-    $repotag =`cat $cimeroot/ChangeLog | grep 'Version:' | head -1`;
-}
-my @repotag = split(/ /,$repotag); 
-$repotag = $repotag[2]; 
-chomp($repotag);
-$cfg_ref->set('CIME_REPOTAG', $repotag);
-
 SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, $print, "$output_dir/Macros", $output_format);
 
 my $sysmod;

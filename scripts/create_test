@@ -1309,7 +1309,7 @@ sub writeEnvTestXML
     my ($test) = @_;
     my $caseroot = "$opts{'testroot'}/$test->{'case'}";
 
-    my $file = "$cimeroot/driver_cpl/cimeconfig/config_cime.xml"; 
+    my $file = "$cimeroot/driver_cpl/cimeconfig/config_component.xml"; 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my $config = ConfigCase->new("");
     $config->add_config_variables($file, $srcroot, $cimeroot);

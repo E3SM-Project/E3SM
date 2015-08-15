@@ -4,14 +4,9 @@
 # Stampede build specific settings
 # -------------------------------------------------------------------------
 
-set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
-if($status == 0) then
-  set COMPILER = `./xmlquery COMPILER -value`
-  set MPILIB   = `./xmlquery MPILIB   -value`
-  set PIO_TYPENAME = `./xmlquery PIO_TYPENAME -value`
-else
-  echo $0 using settings from environment:
-endif
+set COMPILER = `./xmlquery COMPILER -value`
+set MPILIB   = `./xmlquery MPILIB   -value`
+set PIO_TYPENAME = `./xmlquery PIO_TYPENAME -value`
 echo "COMPILER=$COMPILER"
 echo "MPILIB=$MPILIB"
 

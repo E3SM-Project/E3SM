@@ -477,7 +477,6 @@ my $testcase_end = <<'END_TEST';
 	 set npes = ""
 	 set tag  = "unknown"
 	 if ( $?TOTALPES)     set npes = `echo $TOTALPES`
-	 if ( $?CCSM_REPOTAG) set tag  = `echo $CCSM_REPOTAG`
 	 if ( $?BASEGEN_NAME) set tag  = `echo $BASEGEN_NAME`
 
 	 set tput = `zgrep "# simulated years "    $CplLogFile | cut -c 63-72`

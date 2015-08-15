@@ -4,9 +4,7 @@
 # Goldbach machine specific settings
 #===============================================================================
 
-set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
-if($status == 0) then
-  set COMPILER = `./xmlquery COMPILER -value`
+set COMPILER = `./xmlquery COMPILER -value`
 
 limit stacksize unlimited
 limit coredumpsize unlimited

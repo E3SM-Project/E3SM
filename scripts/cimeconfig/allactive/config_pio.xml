@@ -18,13 +18,11 @@
   </entry> 
   -->
 
-  <!--- uncomment and fill in relevant sections 
   <entry id="PIO_STRIDE">
     <values>
-      <value></value>
+      <value grid="a%ne120.+oi%gx1">60</value>
     </values>
   </entry>
-  -->
   
   <!--- uncomment and fill in relevant sections 
   <entry id="PIO_ROOT">
@@ -77,7 +75,7 @@
   <!--- uncomment and fill in relevant sections 
   <entry id="OCN_PIO_STRIDE">
     <values>
-      <value></value>
+      <value grid="a%ne120.+oi%gx1">60</value>
     </values>
   </entry>
   -->

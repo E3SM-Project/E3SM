@@ -188,14 +188,14 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null" >
+  <grid name="a%ne16.+oi%gx3v7_r%r05.+g%null_w%null" >
     <mach name="yellowstone|pronghorn">
       <pes pesize="any" compset="2000_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"> 
 	<comment>js 16 sep 2014 ne16_g37 bc5 yellowstone-specific pe layout used for low res ensemble</comment>
 	<ntasks>
 	  <ntasks_atm>96</ntasks_atm> 
 	  <ntasks_lnd>80</ntasks_lnd> 
-	  <ntasks_rof>96</ntasks_rof> 
+	  <ntasks_rof>80</ntasks_rof> 
 	  <ntasks_ice>80</ntasks_ice> 
 	  <ntasks_ocn>16</ntasks_ocn> 
 	  <ntasks_glc>96</ntasks_glc> 
@@ -368,7 +368,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_l%ne120_np4_oi%tx0.1v2">
+  <grid name="a%ne120np4.+oi%tx0.1v2">
     <mach name='any'>
       <pes pesize="any" compset="any">
 	<comment>none</comment>
@@ -405,7 +405,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_l%ne120_np4_oi%tx0.1v2">
+  <grid name="a%ne120np4.+oi%tx0.1v2">
     <mach name="mira">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
@@ -442,7 +442,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_l%ne120_np4_oi%tx0.1v2">
+  <grid name="a%ne120np4.+oi%tx0.1v2">
     <mach name="stampede|titan" >
       <pes pesize="any" compset="any">
 	<comment>none</comment>
@@ -479,7 +479,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_l%ne120_np4_oi%tx0.1v2">
+  <grid name="a%ne120np4.+oi%tx0.1v2">
     <mach name="yellowstone|pronghorn">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
@@ -516,7 +516,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4_l%ne120np4_oi%gx1v6">
+  <grid name="a%ne120np4.+oi%tx0.1v2">
     <mach name="yellowstone|pronghorn">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
@@ -525,7 +525,7 @@
 	  <ntasks_lnd>2048</ntasks_lnd>			 
 	  <ntasks_rof>2048</ntasks_rof>			 
 	  <ntasks_ice>2048</ntasks_ice>		
-	  <ntasks_ocn>64</ntasks_ocn>		
+	  <ntasks_ocn>512</ntasks_ocn>		
 	  <ntasks_glc>4096</ntasks_glc>	
 	  <ntasks_wav>4096</ntasks_wav>	
 	  <ntasks_cpl>4096</ntasks_cpl>	
@@ -1556,6 +1556,43 @@
 	  <rootpe_rof>0</rootpe_rof>
 	  <rootpe_ice>1936</rootpe_ice>
 	  <rootpe_ocn>3536</rootpe_ocn>
+	  <rootpe_glc>0</rootpe_glc>
+	  <rootpe_wav>0</rootpe_wav>
+	  <rootpe_cpl>0</rootpe_cpl>
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne120.+oi%gx1" >
+    <mach name="yellowstone/pronghorn">
+      <pes pesize="any" compset="any">
+	<comment>none</comment>
+	<ntasks>
+	  <ntasks_atm>15330</ntasks_atm> 
+	  <ntasks_lnd>5115</ntasks_lnd> 
+	  <ntasks_rof>5115</ntasks_rof> 
+	  <ntasks_ice>10215</ntasks_ice> 
+	  <ntasks_ocn>30</ntasks_ocn> 
+	  <ntasks_glc>15330</ntasks_glc> 
+	  <ntasks_wav>15330</ntasks_wav> 
+	  <ntasks_cpl>15330</ntasks_cpl> 
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>1</nthrds_atm> 
+	  <nthrds_lnd>1</nthrds_lnd> 
+	  <nthrds_rof>1</nthrds_rof> 
+	  <nthrds_ice>1</nthrds_ice> 
+	  <nthrds_ocn>1</nthrds_ocn> 
+	  <nthrds_glc>1</nthrds_glc> 
+	  <nthrds_wav>1</nthrds_wav> 
+	  <nthrds_cpl>1</nthrds_cpl> 
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>0</rootpe_atm>
+	  <rootpe_lnd>0</rootpe_lnd>
+	  <rootpe_rof>0</rootpe_rof>
+	  <rootpe_ice>5115</rootpe_ice>
+	  <rootpe_ocn>15330</rootpe_ocn>
 	  <rootpe_glc>0</rootpe_glc>
 	  <rootpe_wav>0</rootpe_wav>
 	  <rootpe_cpl>0</rootpe_cpl>

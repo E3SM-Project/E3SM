@@ -139,22 +139,6 @@
     <desc>Model grid - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="CIME_REPOTAG"> 
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>Version name of CIME repository tag</desc>
-  </entry> 
-
-  <entry id="CCSM_REPOTAG"> 
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>repository tag</desc>
-  </entry> 
-
   <entry id="SUPPORTED_BY"> 
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -1774,7 +1758,7 @@
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_desc</group>
-    <file>env_case.xml</file>
+    <file>env_run.xml</file>
     <desc>
       The directory where the executable will be run. 
       By default this is set to EXEROOT/../run. 

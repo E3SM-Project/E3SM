@@ -506,16 +506,6 @@ sub setComponent {
      	$config->set('CLM_USRDAT_NAME',$2);
      	$newxml{"CLM_USR_DATNAME"} = $2;
     } 
-    
-    # Determine run_refcase and run_refdate
-    my $run_refcase = _clean($config->get('RUN_REFCASE'));
-    my $run_refdate = _clean($config->get('RUN_REFDATE'));
-    if ($run_refcase ne 'case.std') {
-     	$config->set('RUN_TYPE','hybrid');
-     	$config->set('GET_REFCASE','TRUE');
-     	$newxml{"RUN_TYPE"}    = 'hybrid'; 
-     	$newxml{"GET_REFCASE"} = 'TRUE';
-     }
 }
 
 #-------------------------------------------------------------------------------
@@ -622,6 +612,7 @@ sub printGridCompsetInfo
 	    } 
 	    print $fhandle "\n";
 	}
+	$fh_case->close();
     }	
 }
 

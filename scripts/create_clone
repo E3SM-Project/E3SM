@@ -152,31 +152,14 @@ if ($opts{'silent'})  { $print = 0; }
 if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
-#-----------------------------------------------------------------------------------------------
-# Make sure we can find required perl modules and configuration files.
-# Look for them in the directory that contains the create_newcase script.
-
-# The ConfigCase module provides utilities to store and manipulate the configuration.
-(-f "$cloneroot/Tools/ConfigCase.pm")  or  die <<"EOF";
-** Cannot find perl module \"ConfigCase.pm\" in directory 
-    \"$cloneroot/Tools/Tools\" **
-EOF
-
-# Tests file
-my $tests_file = 'config_tests.xml';
-(-f "$cfgdir/Testing/Testcases/$tests_file")  or  die <<"EOF";
-** Cannot find test parameters file \"$tests_file\" in directory 
-    \"$cfgdir/Testing/Testcases\" **
-EOF
-
 if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $caseroot Tools to the list of paths that Perl searches for modules
 my @dirs = ("$cloneroot/Tools", "$cfgdir/Tools");
 unshift @INC, @dirs;
-require ConfigCase;
 require ProjectTools;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create the case directory tree utilizing the clone tree 
@@ -218,15 +201,6 @@ $sysmod = "./xmlchange RESUBMIT=0"          ; system($sysmod) == 0 or die "ERROR
 if ($opts{'mach_dir'}) {
     $sysmod = "./xmlchange MACHIDR=$opts{'mach_dir'}"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
-my $repotag="tag unknown";
-if (-f "$cimeroot/ChangeLog") { 
-    $repotag =`grep 'Tag name:' $cimeroot/ChangeLog | head -1`;
-}
-my @repotag = split(/ /,$repotag); 
-$repotag = @repotag[2]; 
-chomp($repotag);
-$sysmod = "./xmlchange CCSM_REPOTAG=$repotag";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Set project id 
 # Note: we do not just copy this from the clone because it seems likely that
@@ -334,6 +308,7 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( cimeroot    => $cimeroot,
 my $file = "${caseroot}/preview_namelists"; 
 $sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
 $sysmod = "chmod 755 $file";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
