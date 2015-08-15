@@ -18,7 +18,7 @@
 # The available COMPONENTS are: C Fortran
 # If no components are specified, it assumes only C
 include (LibFind)
-include (CheckNetCDF)
+include (LibCheck)
 
 # Define NetCDF C Component
 define_package_component (NetCDF DEFAULT
@@ -61,17 +61,38 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
         # Continue only if component found
         if (NetCDF_${NCDFcomp}_FOUND)
         
-            # Check version
-            check_NetCDF_VERSION (${NetCDF_${NCDFcomp}_INCLUDE_DIRS})
-    
-            # Check for parallel support
-            check_NetCDF_HAS_PARALLEL (${NetCDF_${NCDFcomp}_INCLUDE_DIRS})
+            # Checks
+            if (NCDFcomp STREQUAL C)            
+
+                # Search for the netcdf_meta.h file
+                find_path (NetCDF_META_DIR
+                           NAMES netcdf_meta.h
+                           HINTS ${NetCDF_C_INCLUDE_DIRS})
             
-            # Dependencies
+                # Check version
+                check_version (NetCDF
+                               NAME TryNetCDF_VERSION.c
+                               HINTS ${CMAKE_MODULE_PATH}
+                               DEFINITIONS -I${NetCDF_META_DIR})
+        
+                # Check for parallel support
+                check_package (NetCDF_C_HAS_PARALLEL
+                               NAME TryNetCDF_PARALLEL.c
+                               HINTS ${CMAKE_MODULE_PATH}
+                               DEFINITIONS -I${NetCDF_META_DIR}
+                               COMMENT "whether NetCDF has parallel support")
+                               
+            endif ()
+
+            # Dependencies                
             if (NCDFcomp STREQUAL C AND NOT NetCDF_C_IS_SHARED)            
 
                 # DEPENDENCY: PnetCDF (if PnetCDF enabled)
-                check_NetCDF_HAS_PNETCDF (${NetCDF_C_INCLUDE_DIRS})
+                check_package (NetCDF_C_HAS_PNETCDF
+                               NAME TryNetCDF_PNETCDF.c
+                               HINTS ${CMAKE_MODULE_PATH}
+                               DEFINITIONS -I${NetCDF_META_DIR}
+                               COMMENT "whether NetCDF has PnetCDF support")
                 if (NetCDF_C_HAS_PNETCDF)
                     find_package (PnetCDF COMPONENTS C)
                     if (CURL_FOUND)
@@ -81,7 +102,11 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                 endif ()
 
                 # DEPENDENCY: CURL (If DAP enabled)
-                check_NetCDF_HAS_DAP (${NetCDF_C_INCLUDE_DIRS})
+                check_package (NetCDF_C_HAS_DAP
+                               NAME TryNetCDF_DAP.c
+                               HINTS ${CMAKE_MODULE_PATH}
+                               DEFINITIONS -I${NetCDF_META_DIR}
+                               COMMENT "whether NetCDF has DAP support")
                 if (NetCDF_C_HAS_DAP)
                     find_package (CURL)
                     if (CURL_FOUND)

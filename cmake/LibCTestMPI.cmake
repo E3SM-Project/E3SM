@@ -6,19 +6,23 @@ check_platform ()
 # - Functions for parallel testing with CTest
 #
 
-#
+#==============================================================================
 # - Add a new parallel test
 #
+# Syntax:  add_mpi_test (<TESTNAME>
+#                        COMMAND <command> <arg1> <arg2> ...
+#                        NUMPROCS <num_procs>
+#                        TIMEOUT <timeout>)
 function (add_mpi_test TESTNAME)
 
     # Parse the input arguments
     set (options)
     set (oneValueArgs NUMPROCS TIMEOUT)
-    set (multiValueArgs COMMANDS)
+    set (multiValueArgs COMMAND)
     cmake_parse_arguments (${TESTNAME} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     
     # Store parsed arguments for convenience
-    set (exe_cmds ${${TESTNAME}_COMMANDS})
+    set (exe_cmds ${${TESTNAME}_COMMAND})
     set (num_procs ${${TESTNAME}_NUMPROCS})
     set (timeout ${${TESTNAME}_TIMEOUT})
     
@@ -57,4 +61,4 @@ function (add_mpi_test TESTNAME)
     # Adjust the test timeout
     set_tests_properties(${TESTNAME} PROPERTIES TIMEOUT ${timeout})
 
-endfunction(add_mpi_test)
+endfunction()

@@ -1,7 +1,13 @@
 include (CMakeParseArguments)
 include(FindPackageHandleStandardArgs)
 
-#====================================================
+#==============================================================================
+#
+#  FUNCTIONS TO HELP WITH Find* MODULES
+#
+#==============================================================================
+
+#______________________________________________________________________________
 # - Wrapper for finding static libraries ONLY
 #
 macro (find_static_library)
@@ -13,7 +19,7 @@ macro (find_static_library)
 endmacro ()
 
 
-#====================================================
+#______________________________________________________________________________
 # - Wrapper for finding shared/dynamic libraries ONLY
 #
 macro (find_shared_library)
@@ -25,7 +31,7 @@ macro (find_shared_library)
 endmacro ()
 
 
-#===========================================================
+#______________________________________________________________________________
 # - Function to determine type (SHARED or STATIC) of library
 #
 #   Input:
@@ -44,7 +50,7 @@ function (is_shared_library RETURN_VAR LIB)
 endfunction ()
 
 
-#===============================================
+#______________________________________________________________________________
 # - Function to define a valid package component
 #
 #   Input:
@@ -87,7 +93,7 @@ function (define_package_component PKG)
 endfunction ()
 
 
-#============================================
+#______________________________________________________________________________
 # - Function to find valid package components
 #
 #   Assumes pre-defined variables: 
@@ -116,7 +122,7 @@ function (find_valid_components PKG)
 endfunction ()
 
 
-#====================================================
+#______________________________________________________________________________
 # - Basic find package macro for a specific component
 #
 # Assumes pre-defined variables:

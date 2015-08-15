@@ -18,7 +18,7 @@
 # The available COMPONENTS are: C, Fortran
 # If no components are specified, it assumes only C
 include (LibFind)
-include (CheckPnetCDF)
+include (LibCheck)
 
 # Define PnetCDF C Component
 define_package_component (PnetCDF DEFAULT
@@ -62,7 +62,10 @@ foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
         if (PnetCDF_${PNCDFcomp}_FOUND)
         
             # Check version
-            check_PnetCDF_VERSION (${PnetCDF_${PNCDFcomp}_INCLUDE_DIRS})
+            check_version (PnetCDF
+                           NAME TryPnetCDF_VERSION.c
+                           HINTS ${CMAKE_MODULE_PATH}
+                           DEFINITIONS -I${PnetCDF_${PNCDFcomp}_INCLUDE_DIR})
             
         endif ()
             
