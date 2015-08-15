@@ -17,7 +17,7 @@
 #
 # The available COMPONENTS are: C, Fortran
 # If no components are specified, it assumes only C
-include (LibFindLibraryMacros)
+include (LibFind)
 include (CheckPnetCDF)
 
 # Define PnetCDF C Component

@@ -14,7 +14,7 @@
 #   LIBZ_DEFINITIONS  (LIST) - preprocessor macros to use with LIBZ
 #   LIBZ_OPTIONS      (LIST) - compiler options to use LIBZ
 #
-include (LibFindLibraryMacros)
+include (LibFind)
 
 # Define LIBZ package
 define_package_component (LIBZ
