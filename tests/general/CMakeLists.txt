@@ -1,4 +1,4 @@
-include (LibCTestMPI)
+include (LibMPI)
 
 #==============================================================================
 #  GENERATE TARGET SOURCES
