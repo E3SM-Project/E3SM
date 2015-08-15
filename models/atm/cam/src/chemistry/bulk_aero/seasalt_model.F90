@@ -33,7 +33,7 @@ module seasalt_model
    !=============================================================================
    !=============================================================================
    subroutine seasalt_init
-     use cam_history,   only: addfld, add_default, phys_decomp, fieldname_len
+     use cam_history,   only: addfld, add_default, fieldname_len
      use constituents,  only: cnst_get_ind
 
      character(len=fieldname_len) :: dummy
@@ -47,10 +47,10 @@ module seasalt_model
      if (.not.seasalt_active) return
 
      dummy = 'RH'
-     call addfld (dummy,'frac',pver, 'A','RH in dry dep calc',phys_decomp)
+     call addfld (dummy,(/ 'lev' /), 'A','frac','RH in dry dep calc')
      do m = 1,seasalt_nbin
         dummy = trim(seasalt_names(m)) // 'DI'
-        call addfld (dummy,'m/s ',pver, 'A',trim(seasalt_names(m))//' deposition diameter',phys_decomp)
+        call addfld (dummy,(/ 'lev' /), 'A','m/s',trim(seasalt_names(m))//' deposition diameter')
      enddo
 
    end subroutine seasalt_init
