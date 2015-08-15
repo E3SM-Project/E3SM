@@ -18,7 +18,6 @@
 ! case_name      => CASE	        
 ! username       => CCSMUSER         
 ! hostname       => MACH	        
-! model_version  => CCSM_REPOTAG  
 ! start_type     => RUN_TYPE          
 ! start_ymd      => RUN_STARTDATE  
 ! start_tod      => START_TOD

@@ -378,7 +378,6 @@ add_default($nl, 'case_name',     'val'=>"$xmlvars{'CASE'}",         'xml'=>'CAS
 add_default($nl, 'case_desc',     'val'=>"$xmlvars{'CASESTR'}",      'xml'=>'CASESTR');
 add_default($nl, 'username' ,     'val'=>"$xmlvars{'CCSMUSER'}",     'xml'=>'CCSMUSER');
 add_default($nl, 'hostname' ,     'val'=>"$xmlvars{'MACH'}",         'xml'=>'MACH');
-add_default($nl, 'model_version', 'val'=>"$xmlvars{'CCSM_REPOTAG'}", 'xml'=>'CCSM_REPOTAG');
 
 add_default($nl, 'atm_gnam',      'val'=>"$xmlvars{'ATM_GRID'}",     'xml'=>'ATM_GRID');
 add_default($nl, 'lnd_gnam',      'val'=>"$xmlvars{'LND_GRID'}",     'xml'=>'LND_GRID');
