@@ -9,13 +9,13 @@ include (CMakeParseArguments)
 #______________________________________________________________________________
 # - Basic function to check a property of a package using a try_compile step
 #
-# SYNTAX:  check_package (<return_variable>
-#                         NAME <filename>
-#                         HINTS <path> <path> ...
-#                         DEFINITIONS <definition1> <definition> ...
-#                         COMMENT <string_comment>)
+# SYNTAX:  check_property (<return_variable>
+#                          NAME <filename>
+#                          HINTS <path> <path> ...
+#                          DEFINITIONS <definition1> <definition> ...
+#                          COMMENT <string_comment>)
 #                         
-function (check_package VARIABLE)
+function (check_property VARIABLE)
 
     # Parse the input arguments
     set (options)
