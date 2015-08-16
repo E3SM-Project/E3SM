@@ -234,7 +234,7 @@
 #endif
 
 #ifdef MPAS_PERF_MOD_TIMERS
-          call t_startf(trimed_name)
+          call t_stopf(trimed_name)
 #endif
 
 #ifdef MPAS_GPTL_TIMERS
