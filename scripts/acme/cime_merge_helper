@@ -97,7 +97,7 @@ def merge_acme_changes(acme_path, subdir):
     stat = run_cmd("git remote add acme %s" % acme_path, ok_to_fail=True)[0]
     if (stat != 0):
         # May already exist
-        config_url = run_cmd("git config --get remote.acme.url").strip()
+        config_url = run_cmd("git config --get remote.acme.url")
         if (config_url != acme_path):
             print >> sys.stderr, "Warning: Changing URL of acme remote"
             run_cmd("git remote set-url acme %s" % acme_path)
