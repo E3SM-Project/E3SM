@@ -9,6 +9,8 @@ file (COPY "./input.nl"
 file (COPY "./not_netcdf.ieee" 
       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
+include_directories(${PIO_Fortran_INCLUDE_DIRS})
+
 #==============================================================================
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required (VERSION 2.8.10)
 project (GPTL C Fortran)
 include (FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
@@ -21,12 +21,9 @@ set (GPTL_Fortran_SRCS perf_mod.F90
 
 add_library (gptl EXCLUDE_FROM_ALL ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
 
-target_include_directories (gptl
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_BINARY_DIR})
 
-target_compile_definitions (gptl
-    PRIVATE INCLUDE_CMAKE_FCI)
+add_definitions (-DINCLUDE_CMAKE_FCI)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
@@ -35,8 +32,16 @@ target_compile_definitions (gptl
 #===== MPI =====
 find_package (MPI REQUIRED)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
-    target_compile_definitions (gptl 
-        PRIVATE HAVE_MPI)
+    add_definitions (-DHAVE_MPI)
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
 endif ()
+
+#==============================================================================
+#  DEFINE PARAMETERS FOR TARGETS DEPENDENT ON THIS
+#==============================================================================
+
+get_target_property(GPTL_INCLUDE_DIRS gptl INCLUDE_DIRECTORIES)
+message ("GPTL_INCLUDE_DIRS = ${GPTL_INCLUDE_DIRS}")
+set (GPTL_INCLUDE_DIRS ${GPTL_INCLUDE_DIRS}
+     CACHE STRING "GPTL Include Directory")

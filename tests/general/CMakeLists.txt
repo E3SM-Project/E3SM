@@ -24,6 +24,8 @@ foreach (SRC_FILE IN LISTS GENERATED_SRCS)
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in)
 endforeach ()
 
+include_directories(${PIO_Fortran_INCLUDE_DIRS})
+
 #==============================================================================
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================
