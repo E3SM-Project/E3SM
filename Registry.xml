@@ -335,10 +335,10 @@
 			<var name="floatingBasalMassBal"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
-			<var name="beta"/>
-			<var name="dirichletVelocityMask"/>
-			<var name="uReconstructX"/>
-			<var name="uReconstructY"/>
+			<var name="beta" packages="higherOrderVelocity"/>
+			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
+                        <var name="uReconstructX" packages="higherOrderVelocity"/>
+			<var name="uReconstructY" packages="higherOrderVelocity"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -377,11 +377,13 @@
 			<var name="sfcMassBal"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
-			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers (once packages can be attached to variables, these can be set to the higherOrderVelocity package) -->
-			<var name="uReconstructX"/>
-			<var name="uReconstructY"/>
-			<!-- beta is only needed for HO solvers (once packages can be attached to variables, these can be set to the higherOrderVelocity package) -->
-			<var name="beta"/>
+			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
+			<var name="uReconstructX" packages="higherOrderVelocity"/>
+			<var name="uReconstructY" packages="higherOrderVelocity"/>
+                        <!-- beta is only used for HO solvers -->
+			<var name="beta" packages="higherOrderVelocity"/>
+                        <!-- dirichletVelocityMask is only used for HO solvers -->
+			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
 		</stream>
 
 
