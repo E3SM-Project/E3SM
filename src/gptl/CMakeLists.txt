@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required (VERSION 2.8.11)
 project (GPTL C Fortran)
 include (FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
