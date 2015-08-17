@@ -689,6 +689,10 @@ is the value of that variable from the *previous* time level!
 		     description="higher-order basal traction parameter"
 			packages="higherOrderVelocity"
 		/>
+		<var name="betaSolve" type="real" dimensions="nCells Time" units="Pa s m^{−1}"
+		     description="higher-order basal traction parameter"
+			packages="higherOrderVelocity"
+		/>
 		<var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
 		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
 			packages="higherOrderVelocity"
