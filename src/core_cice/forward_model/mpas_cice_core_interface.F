@@ -13,6 +13,7 @@ module cice_core_interface
    use mpas_constants
    use mpas_io_units
    use cice_core
+   use cice_analysis_driver
 
    public
 
@@ -102,6 +103,9 @@ module cice_core_interface
 
       ! column physics
       call setup_packages_column_physics(configPool, packagePool, ierr)
+
+      ! set up analysis member packages
+      call cice_analysis_setup_packages(configPool, packagePool, ierr)
 
 
    end function cice_setup_packages!}}}

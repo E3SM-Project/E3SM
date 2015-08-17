@@ -1,11 +1,10 @@
 .SUFFIXES: .F .o
 .PHONY: forward_model analysis_members
 
-all: column_package forward_model analysis_members core_cice
+all: core_cice
 
-core_cice:
-	ar -ru libdycore.a column/*.o
-	ar -ru libdycore.a forward_model/*.o
+core_cice: column_package forward_model analysis_members
+	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -25,11 +24,11 @@ post_build:
 column_package:
 	(cd column; $(MAKE))
 
-forward_model: column_package
-	(cd forward_model; $(MAKE))
-
-analysis_members: column_package forward_model
+analysis_members: column_package
 	(cd analysis_members; $(MAKE))
+
+forward_model: column_package analysis_members
+	(cd forward_model; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

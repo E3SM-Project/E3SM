@@ -9,6 +9,7 @@ module cice_core
 
    use mpas_framework
    use mpas_timekeeping
+   use cice_analysis_driver
 
    private
    public :: &
@@ -89,6 +90,9 @@ module cice_core
       ! Read all other inputs
       call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+      ! initialize analysis members
+      call cice_analysis_init(domain, ierr)
 
       !
       ! Initialize core
@@ -255,6 +259,10 @@ module cice_core
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
       write(0,*) 'Initial timestep ', trim(timeStamp)
 
+      ! compute analysis at startup if required
+      ! (note: might require some reordering of call here if cice_forcing_get data is used in analysis members)
+      call cice_analysis_compute_startup(domain, ierr)
+
       ! Avoid writing a restart file at the initial time
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
@@ -284,6 +292,11 @@ module cice_core
             write(22, *) timeStamp
             close(22)
          end if
+
+         ! update analysis members
+         call cice_analysis_compute(domain, ierr)
+         call cice_analysis_restart(domain, ierr)
+         call cice_analysis_write(domain, ierr)
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -369,6 +382,8 @@ module cice_core
       integer :: ierr
 
       iErr = 0
+
+      call cice_analysis_finalize(domain, ierr)
  
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
