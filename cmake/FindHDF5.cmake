@@ -94,6 +94,20 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                     list (APPEND HDF5_C_LIBRARIES ${LIBZ_LIBRARIES})
                 endif ()
                 
+                # DEPENDENCY: SZIP (Optional)
+                check_property (HDF5_C_HAS_SZIP
+                                NAME TryHDF5_HAS_SZIP.c
+                                HINTS ${CMAKE_MODULE_PATH}
+                                DEFINITIONS -I${HDF5_C_INCLUDE_DIRS}
+                                COMMENT "whether HDF5 has SZIP support")
+                if (HDF5_C_HAS_SZIP)
+                    find_package (SZIP)
+                    if (SZIP_FOUND)
+                        list (APPEND HDF5_C_INCLUDE_DIRS ${SZIP_INCLUDE_DIRS})
+                        list (APPEND HDF5_C_LIBRARIES ${SZIP_LIBRARIES})
+                    endif ()
+                endif ()
+                
             elseif (NOT HDF5_${HDF5_comp}_IS_SHARED)
     
                 # DEPENDENCY: HDF5
