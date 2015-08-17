@@ -7,4 +7,4 @@ FCINCLUDES += -I$(ROOT_DIR)/core_landice/mode_forward -I$(ROOT_DIR)/core_landice
 override CPPFLAGS += -DCORE_LANDICE
 
 report_builds:
-    @echo "CORE=landice"
+	@echo "CORE=landice"
