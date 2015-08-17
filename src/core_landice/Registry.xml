@@ -332,6 +332,7 @@
 			<var name="thickness"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
+			<var name="floatingBasalMassBal"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta"/>
@@ -406,7 +407,6 @@
 			<var name="upperSurface"/>
 			<var name="cellMask"/>
 			<var name="edgeMask"/>
-			<var name="vertexMask"/>
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
@@ -629,8 +629,14 @@ is the value of that variable from the *previous* time level!
 		     description="Surface mass balance"
 		/>
 		<var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-		     description="Basal mass balance"
-		/>
+                     description="Basal mass balance applied"
+                />
+                <var name="groundedBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="Basal mass balance on grounded regions"
+                />
+                <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="Basal mass balance on floating regions"
+                />
 
 		<!-- Variables only needed by SIA solver or for calculating diffusivity -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
