@@ -42,32 +42,35 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
 
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+    parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
 
-    parser.add_argument("-n", "--no-wait", action="store_true", dest="no_wait", default=False,
+    parser.add_argument("-n", "--no-wait", action="store_true",
                         help="Do not wait for tests to finish")
 
-    parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
+    parser.add_argument("-t", "--check-throughput", action="store_true",
                         help="Fail if throughput check fails (fail if tests slow down)")
 
-    parser.add_argument("-m", "--check-memory", action="store_true", dest="check_memory", default=False,
+    parser.add_argument("-m", "--check-memory", action="store_true",
                         help="Fail if memory check fails (fail if tests footprint grows)")
 
-    parser.add_argument("-i", "--ignore-namelist-diffs", action="store_true", dest="ignore_namelist_diffs", default=False,
+    parser.add_argument("-i", "--ignore-namelist-diffs", action="store_true",
                         help="Do not fail a test if the only problem is diffing namelists")
 
-    parser.add_argument("-d", "--cdash-build-name", action="store", dest="cdash_build_name", default=None,
+    parser.add_argument("-d", "--cdash-build-name",
                         help="Build name, implies you want results send to Cdash")
 
-    parser.add_argument("-p", "--cdash-project", action="store", dest="cdash_project", default=wait_for_tests.ACME_MAIN_CDASH,
+    parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
+
+    parser.add_argument("-g", "--cdash-build-group", default=wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
+                        help="The build group to be used to display results on the CDash dashboard.")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.cdash_build_name, args.cdash_project
+    return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.cdash_build_name, args.cdash_project, args.cdash_build_group
 
 ###############################################################################
 def _main_func(description):
@@ -78,10 +81,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project = \
+    test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project) else 1)
+    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group) else 1)
 
 ###############################################################################
 

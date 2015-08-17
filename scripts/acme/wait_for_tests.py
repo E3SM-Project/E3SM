@@ -5,17 +5,18 @@ import xml.etree.ElementTree as xmlet
 import acme_util
 from acme_util import expect, warning, verbose_print
 
-TEST_STATUS_FILENAME     = "TestStatus"
-TEST_NOT_FINISHED_STATUS = ["GEN", "BUILD", "RUN", "PEND"]
-TEST_PASSED_STATUS       = "PASS"
-NAMELIST_FAIL_STATUS     = "NLFAIL"
-BUILD_FAIL_STATUS        = "CFAIL"
-SLEEP_INTERVAL_SEC       = 60
-THROUGHPUT_TEST_STR      = ".tputcomp."
-MEMORY_TEST_STR         = ".memcomp."
-NAMELIST_TEST_STR        = ".nlcomp"
-SIGNAL_RECEIVED          = False
-ACME_MAIN_CDASH          = "ACME_Climate"
+TEST_STATUS_FILENAME      = "TestStatus"
+TEST_NOT_FINISHED_STATUS  = ["GEN", "BUILD", "RUN", "PEND"]
+TEST_PASSED_STATUS        = "PASS"
+NAMELIST_FAIL_STATUS      = "NLFAIL"
+BUILD_FAIL_STATUS         = "CFAIL"
+SLEEP_INTERVAL_SEC        = 60
+THROUGHPUT_TEST_STR       = ".tputcomp."
+MEMORY_TEST_STR           = ".memcomp."
+NAMELIST_TEST_STR         = ".nlcomp"
+SIGNAL_RECEIVED           = False
+ACME_MAIN_CDASH           = "ACME_Climate"
+CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 
 ###############################################################################
 def signal_handler(*_):
@@ -66,7 +67,7 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_xml(results, cdash_build_name, cdash_project):
+def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group):
 ###############################################################################
 
     #
@@ -130,7 +131,7 @@ NightlyStartTime: %s UTC
 
     # Make tag file
     tag_fd = open("Testing/TAG", "w")
-    tag_fd.write("%s\nACME_Latest" % subdir_name)
+    tag_fd.write("%s\n%s" % (subdir_name, cdash_build_group))
     tag_fd.close()
 
     #
@@ -140,7 +141,7 @@ NightlyStartTime: %s UTC
     site_elem = xmlet.Element("Site")
 
     site_elem.attrib["BuildName"] = cdash_build_name
-    site_elem.attrib["BuildStamp"] = "%s-ACME_Latest" % subdir_name
+    site_elem.attrib["BuildStamp"] = "%s-%s" % (subdir_name, cdash_build_group)
     site_elem.attrib["Name"] = hostname
     site_elem.attrib["OSName"] = "Linux"
     site_elem.attrib["Hostname"] = hostname
@@ -364,7 +365,8 @@ def wait_for_tests(test_paths,
                    check_memory=False,
                    ignore_namelists=False,
                    cdash_build_name=None,
-                   cdash_project=ACME_MAIN_CDASH):
+                   cdash_project=ACME_MAIN_CDASH,
+                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -380,6 +382,6 @@ def wait_for_tests(test_paths,
         all_pass &= test_status == TEST_PASSED_STATUS
 
     if (cdash_build_name):
-        create_cdash_xml(test_results, cdash_build_name, cdash_project)
+        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)
 
     return all_pass
