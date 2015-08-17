@@ -27,13 +27,13 @@ function (check_property VARIABLE)
     if (NOT DEFINED ${VARIABLE})
         
         message (STATUS "Checking ${${VARIABLE}_COMMENT}")
-        find_file (TRY_FILE
+        find_file (${VARIABLE}_TRY_FILE
                    NAMES ${${VARIABLE}_NAME}
                    HINTS ${${VARIABLE}_HINTS})
-        if (TRY_FILE)
+        if (${VARIABLE}_TRY_FILE)
             try_compile (COMPILE_RESULT
                          ${CMAKE_CURRENT_BINARY_DIR}/try${VARIABLE}
-                         SOURCES ${TRY_FILE}
+                         SOURCES ${${VARIABLE}_TRY_FILE}
                          COMPILE_DEFINITIONS ${${VARIABLE}_DEFINITIONS}
                          OUTPUT_VARIABLE TryOUT)
             if (COMPILE_RESULT)
@@ -49,6 +49,7 @@ function (check_property VARIABLE)
             message (STATUS "Checking ${${VARIABLE}_COMMENT} - failed")
         endif ()
      
+        unset (${VARIABLE}_TRY_FILE CACHE)
     endif ()
             
 endfunction ()
@@ -73,13 +74,13 @@ function (check_version PKG)
     if (NOT DEFINED ${PKG}_VERSION)
         
         message (STATUS "Checking ${PKG} version")
-        find_file (TRY_FILE
+        find_file (${PKG}_VERSION_TRY_FILE
                    NAMES ${${PKG}_NAME}
                    HINTS ${${PKG}_HINTS})
-        if (TRY_FILE)
+        if (${PKG}_VERSION_TRY_FILE)
             try_run (RUN_RESULT COMPILE_RESULT
                      ${CMAKE_CURRENT_BINARY_DIR}/try${PKG}_VERSION
-                     ${TRY_FILE}
+                     ${${PKG}_VERSION_TRY_FILE}
                      COMPILE_DEFINITIONS ${${PKG}_DEFINITIONS}
                      COMPILE_OUTPUT_VARIABLE TryCompileOUT
                      RUN_OUTPUT_VARIABLE TryRunOUT)
@@ -94,9 +95,14 @@ function (check_version PKG)
                 message (STATUS "Checking ${PKG} version - failed")
             endif ()
             
+            unset (COMPILE_RESULT CACHE)
+            unset (RUN_RESULT CACHE)
+            
         else ()
             message (STATUS "Checking ${PKG} version - failed")
         endif ()
+        
+        unset (${PKG}_VERSION_TRY_FILE CACHE)
      
     endif ()
 
