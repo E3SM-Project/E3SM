@@ -2,7 +2,7 @@
 .SUFFIXES: .F .o .cpp
 .PHONY: mode_forward shared
 
-all: shared mode_forward lib_landice core_landice
+all: core_landice
 
 shared: 
 	(cd shared; $(MAKE))
@@ -10,10 +10,8 @@ shared:
 mode_forward: shared 
 	(cd mode_forward; $(MAKE))
 
-lib_landice: shared mode_forward
-
-core_landice: lib_landice
-	ar -ru libdycore.a mode_forward/*.o
+core_landice: mode_forward shared
+	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
