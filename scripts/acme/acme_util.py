@@ -162,6 +162,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             stdin=stdin,
                             cwd=from_dir)
     output, errput = proc.communicate(input_str)
+    output = output.strip() if output is not None else output
     stat = proc.wait()
 
     verbose_print("  stat: %d\n" % stat, verbose)
@@ -227,7 +228,7 @@ def get_current_branch(repo=None):
         return branch
     else:
         output = run_cmd("git symbolic-ref HEAD", from_dir=repo)
-        return output.replace("refs/heads/", "").strip()
+        return output.replace("refs/heads/", "")
 
 ###############################################################################
 def get_current_commit(short=False, repo=None):
@@ -236,7 +237,7 @@ def get_current_commit(short=False, repo=None):
     Return the sha1 of the current HEAD commit
     """
     output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
-    return output.strip()
+    return output
 
 ###############################################################################
 def get_source_repo():
