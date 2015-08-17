@@ -42,12 +42,3 @@ clean:
 	$(RM) -r default_inputs
 	(cd shared; $(MAKE) clean)
 	(cd mode_forward; $(MAKE) clean)
-
-.F.o:
-	$(RM) $@ $*.mod
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90
-
-.cpp.o:
-	$(CXX) $(CXXFLAGS) -c $*.cpp $(CXINCLUDES) $(CPPINCLUDES) -lmpi_cxx -lstdc++ $(CPPFLAGS)
-
