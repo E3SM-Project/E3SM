@@ -1698,7 +1698,7 @@ contains
       
       if (printWarning) then
          write(stderrUnit,*)
-         write(stderrUnit,*) 'Warning: in EPFT package, subroutine check_potentialDensityRef_range'
+         write(stderrUnit,*) 'Warning: in eliassen_palm analysis member, subroutine check_potentialDensityRef_range.'
          write(stderrUnit,*) 'One or more columns in the ocean domain have densities that are not'
          write(stderrUnit,*) 'contained in the defined buoyancy space of the EPFT module'
          if (iCellMinBound.gt.0) write(stderrUnit,*) 'fluid is lighter than min buoyancy at cell: ',iCellMinBound
