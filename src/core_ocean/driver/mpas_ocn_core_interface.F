@@ -103,7 +103,9 @@ module ocn_core_interface
 
       integer :: err_tmp
 
-      logical, pointer :: forwardModeActive, analysisModeActive, initModeActive
+      logical, pointer :: forwardModeActive
+      logical, pointer :: analysisModeActive
+      logical, pointer :: initModeActive
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: windStressBulkPKGActive
@@ -119,14 +121,19 @@ module ocn_core_interface
       logical, pointer :: tracerGroupIdealAgePKGActive
       logical, pointer :: tracerGroupTTDPKGActive
 
-      logical, pointer :: config_use_tracerGroup, config_use_tracerGroup_surface_bulk_forcing, config_use_tracerGroup_surface_restoring, &
-                          config_use_tracerGroup_interior_restoring, config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
-                          config_use_tracerGroup_ttd_forcing
+      logical, pointer :: config_use_tracerGroup
+      logical, pointer :: config_use_tracerGroup_surface_bulk_forcing
+      logical, pointer :: config_use_tracerGroup_surface_restoring
+      logical, pointer :: config_use_tracerGroup_interior_restoring
+      logical, pointer :: config_use_tracerGroup_exponential_decay
+      logical, pointer :: config_use_tracerGroup_idealAge_forcing
+      logical, pointer :: config_use_tracerGroup_ttd_forcing
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_frazil_ice_formation
-      character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type
-      character (len=StrKIND), pointer :: config_ocean_run_mode, config_pressure_gradient_type
+      character (len=StrKIND), pointer :: config_time_integrator
+      character (len=StrKIND), pointer :: config_ocean_run_mode
+      character (len=StrKIND), pointer :: config_pressure_gradient_type
       logical, pointer :: config_use_bulk_wind_stress
       logical, pointer :: config_use_bulk_thickness_flux
 
@@ -134,70 +141,106 @@ module ocn_core_interface
        character (len=StrKIND) :: tracerGroupName, configName, packageName
        integer :: startIndex, strLen
 
-      ! Get Packages
+      ierr = 0
+
+      !
+      ! determine the mode being used
+      !
       call mpas_pool_get_package(packagePool, 'forwardModeActive', forwardModeActive)
       call mpas_pool_get_package(packagePool, 'analysisModeActive', analysisModeActive)
       call mpas_pool_get_package(packagePool, 'initModeActive', initModeActive)
-      call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
-      call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
-      call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
-      call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
-      call mpas_pool_get_package(packagePool, 'windStressBulkPKGActive', windStressBulkPKGActive)
-      call mpas_pool_get_package(packagePool, 'thicknessBulkPKGActive', thicknessBulkPKGActive)
-
       call mpas_pool_get_config(configPool, 'config_ocean_run_mode', config_ocean_run_mode)
-
-      ierr = 0
-
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          forwardModeActive = .true.
+      endif
+      if ( trim(config_ocean_run_mode) == 'analysis') then
+         analysisModeActive = .true.
+      endif
+      if ( trim(config_ocean_run_mode) == 'init') then
+         initModeActive = .true.
+      endif
 
-         call mpas_pool_get_config(configPool, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
-         call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
-         call mpas_pool_get_config(configPool, 'config_forcing_type', config_forcing_type)
-         call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)
-         call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      !
+      ! test for integration scheme
+      ! (TDR: this makes no sense, if split or unsplit then splitTimeIntegratorActive = .true.)
+      !
+      call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
+      call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
+      if ( forwardModeActive ) then 
+         if (    config_time_integrator == trim('split_explicit') &
+            .or. config_time_integrator == trim('unsplit_explicit') ) then
+            splitTimeIntegratorActive = .true.
+         end if
+      endif
 
-         call mpas_pool_get_config(configPool, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
-         call mpas_pool_get_config(configPool, 'config_use_bulk_thickness_flux', config_use_bulk_thickness_flux)
-
+      !
+      ! test for time filtering scheme
+      !
+      call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
+      call mpas_pool_get_config(configPool, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
+      if ( forwardModeActive ) then
          if (config_use_freq_filtered_thickness) then
             thicknessFilterActive = .true.
          end if
+      endif
 
-         if (config_time_integrator == trim('split_explicit') &
-            .or. config_time_integrator == trim('unsplit_explicit') ) then
-
-            splitTimeIntegratorActive = .true.
-         end if
-
-         if ( config_use_bulk_wind_stress ) then
-            windStressBulkPKGActive = .true.
-         end if
-
-         if ( config_use_bulk_thickness_flux ) then
-            thicknessBulkPKGActive = .true.
-         end if
-
-         if (config_frazil_ice_formation) then
-            frazilIceActive = .true.
-         end if
-
-         if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
-            inSituEOSActive = .true.
-         end if
-
-         call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
-         ierr = ior(ierr, err_tmp)
-      else if (trim(config_ocean_run_mode) == 'analysis' ) then
-         analysisModeActive = .true.
-      else if (trim(config_ocean_run_mode) == 'init' ) then
-         initModeActive = .true.
+      !
+      ! test for bulk forcing of layer thickness, thicknessBulkPKG
+      !
+      call mpas_pool_get_package(packagePool, 'thicknessBulkPKGActive', thicknessBulkPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_bulk_thickness_flux', config_use_bulk_thickness_flux)
+      if ( config_use_bulk_thickness_flux ) then
+         thicknessBulkPKGActive = .true.
       end if
 
-      call ocn_analysis_setup_packages(configPool, packagePool, ierr)
-      call ocn_init_mode_validate_configuration(configPool, packagePool, ierr)
+      !
+      ! test for bulk forcing of momentum by wind stress, windStressBulkPKG
+      !
+      call mpas_pool_get_package(packagePool, 'windStressBulkPKGActive', windStressBulkPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
+      if ( config_use_bulk_wind_stress ) then
+         windStressBulkPKGActive = .true.
+      end if
 
+      !
+      ! test for use of frazil ice formation, frazilIceActive
+      !
+      ! TDR: need to add PKG
+      call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
+      call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)      
+      if (config_frazil_ice_formation) then
+         frazilIceActive = .true.
+      end if
+
+      !
+      ! test for form of pressure gradient computation
+      !
+      ! TDR: need to add PKG
+      call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
+      call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
+         inSituEOSActive = .true.
+      end if
+
+      !
+      ! call into analysis member driver to set analysis member packages
+      !
+      call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
+      ierr = ior(ierr, err_tmp)
+
+
+      ! 
+      ! if in init mode, validate configuration
+      !
+      if ( initModeActive ) then
+         call ocn_init_mode_validate_configuration(configPool, packagePool, ierr)
+      endif
+
+      !
+      ! iterate over tracer groups
+      ! each tracer group is toggleed on/off using packages
+      ! test each package
+      !
       call mpas_pool_begin_iteration(packagePool)
       do while ( mpas_pool_get_next_member(packagePool, groupItr) )
          startIndex = index(groupItr % memberName, 'TracersPKG')
@@ -264,6 +307,11 @@ module ocn_core_interface
             end if
          end if
       end do
+
+      !
+      ! test for conflicts, i.e. package settings that are inconsistent in combination
+      !
+
 
    end function ocn_setup_packages!}}}
 
