@@ -7,21 +7,19 @@ include (CMakeParseArguments)
 #==============================================================================
 # - Get the machine platform name
 #
-# Syntax:  platform_name (VARIABLE)
+# Syntax:  platform_name (RETURN_VARIABLE)
 #
-function (platform_name RETURN_VALUE)
+function (platform_name RETURN_VARIABLE)
 
-    # Get sitename
-    site_name (SITENAME)
-    
     # Determine platform name from site name...
-    
+    site_name (SITENAME)
+
     # UCAR/NCAR Machines
     if (SITENAME MATCHES "^yslogin" OR
         SITENAME MATCHES "^geyser" OR
         SITENAME MATCHES "^caldera")
         
-        set (${VARIABLE} "ucar" PARENT_SCOPE)
+        set (${RETURN_VARIABLE} "ucar" PARENT_SCOPE)
         
     # ALCF/Argonne Machines
     elseif (SITENAME MATCHES "^mira" OR
@@ -29,21 +27,21 @@ function (platform_name RETURN_VALUE)
             SITENAME MATCHES "^vesta" OR
             SITENAME MATCHES "^cooley")
         
-        set (${VARIABLE} "alcf" PARENT_SCOPE)
+        set (${RETURN_VARIABLE} "alcf" PARENT_SCOPE)
         
     # ALCF/Argonne Machines
     elseif (SITENAME MATCHES "^edison" OR
         SITENAME MATCHES "^carver" OR
         SITENAME MATCHES "^hopper")
         
-        set (${VARIABLE} "nersc" PARENT_SCOPE)
+        set (${RETURN_VARIABLE} "nersc" PARENT_SCOPE)
         
     else ()
 
-        set (${VARIABLE} "unknown" PARENT_SCOPE)
+        set (${RETURN_VARIABLE} "unknown" PARENT_SCOPE)
     
     endif ()
-        
+
 endfunction ()
 
 #==============================================================================
