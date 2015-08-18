@@ -3,13 +3,7 @@
 #
 # build-namelist
 #
-# This is the build-namelist script for the CESM datm (Data ATmosphere Model).
-# This is normally run under the covers as part of the CESM scripts.
-#
-# Date        Contributor      Modification
-# -------------------------------------------------------------------------------------------
-# 2010-05-04  Kluzek           Original version
-# 2012-03-10  Vertenstein      Updated for cesm1.1
+# This is the build-namelist script for the CIME datm (Data Atmosphere Model).
 #--------------------------------------------------------------------------------------------
 
 use strict;
@@ -181,7 +175,7 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-#The root directory to cesm utils Tools
+#The root directory to utils Tools
 my $cimeroot   = abs_path( "${SCRIPTSROOT}/../" );
 my $perl5lib   = "$cimeroot/utils/perl5lib";
 
@@ -383,9 +377,9 @@ EOF
 }
 
 (-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+** DATM $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 my $test_files = $opts{'test'};
 
@@ -405,8 +399,8 @@ $nl->set_variable_value( $group, $var, "\'$xmlvars{$var}\'" );
 
 if ($print>=1) { print "  datm mode is $DATM_MODE \n"; }
 if ($print>=1) { print "  datm presaero mode is $DATM_PRESAERO \n"; }
-if ($print>=1) { print "  datm cesm grid is $GRID \n"; }
-if ($print>=1) { print "  datm atm grid is $ATM_GRID \n" };
+if ($print>=1) { print "  datm model grid is $GRID \n"; }
+if ($print>=1) { print "  datm atm   grid is $ATM_GRID \n" };
 
 # Create input data list (written to later)
 my $fh_out = new IO::File;
@@ -711,7 +705,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- CESM inputdata root directory
+#  $DIN_LOC_ROOT      -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -768,7 +762,7 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the CESM inputdata root directory.
+       # the inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});
