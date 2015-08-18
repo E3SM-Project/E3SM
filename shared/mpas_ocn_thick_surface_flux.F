@@ -51,9 +51,7 @@ module ocn_thick_surface_flux
    !
    !--------------------------------------------------------------------
 
-   logical :: surfaceMassFluxOn
-   real (kind=RKIND) :: refDensity
-
+   logical :: surfaceThicknessFluxOn
 
 !***********************************************************************
 
@@ -72,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceMassFlux, tend, err)!{{{
+   subroutine ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceThicknessFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -89,7 +87,7 @@ contains
          layerThickness   !< Input: Layer thickness
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceMassFlux   !< Input: surface flux of mass
+         surfaceThicknessFlux   !< Input: surface flux of thickness
 
 
       !-----------------------------------------------------------------
@@ -124,7 +122,7 @@ contains
 
       err = 0
 
-      if (.not. surfaceMassFluxOn) return
+      if (.not. surfaceThicknessFluxOn) return
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
@@ -136,11 +134,11 @@ contains
         do k = 1, maxLevelCell(iCell)
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
 
-          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * (surfaceMassFlux(iCell) / refDensity) * transmissionCoefficients(k, iCell)
+          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * surfaceThicknessFlux(iCell) * transmissionCoefficients(k, iCell)
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
-          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + cellMask(maxLevelCell(iCell), iCell) * remainingFlux * surfaceMassFlux(iCell) / refDensity
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + cellMask(maxLevelCell(iCell), iCell) * remainingFlux * surfaceThicknessFlux(iCell)
         end if
       end do
 
@@ -175,24 +173,20 @@ contains
 
       logical, pointer :: config_disable_thick_sflux
       character (len=StrKIND), pointer :: config_forcing_type
-      real (kind=RKIND), pointer :: config_density0
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_sflux', config_disable_thick_sflux)
       call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
-      refDensity = config_density0
-
-      surfaceMassFluxOn = .true.
+      surfaceThicknessFluxOn = .true.
 
       if (config_disable_thick_sflux) then
-         surfaceMassFluxOn = .false.
+         surfaceThicknessFluxOn = .false.
       end if
 
       if (config_forcing_type == trim('off')) then
-         surfaceMassFluxOn = .false.
+         surfaceThicknessFluxOn = .false.
       end if
 
 

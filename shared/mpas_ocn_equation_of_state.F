@@ -128,8 +128,8 @@ contains
 
       if (linearEos) then
 
-         call ocn_equation_of_state_linear_density(meshPool, indexT, indexS, tracers, density, err, &
-            thermalExpansionCoeff, salineContractionCoeff)
+         call ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
+            tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
 
       elseif (jmEos) then
 

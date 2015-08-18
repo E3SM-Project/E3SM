@@ -7,18 +7,18 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_zonal_mean
+!  ocn_meridional_heat_transport
 !
-!> \brief MPAS ocean analysis core member: zonal_mean
+!> \brief MPAS ocean analysis core member: meridional_heat_transport
 !> \author Mark Petersen
 !> \date   March 2014
 !> \details
-!>  MPAS ocean analysis core member: zonal_mean
+!>  MPAS ocean analysis core member: meridional_heat_transport
 !>  Compute zonal means of selected variables
 !
 !-----------------------------------------------------------------------
 
-module ocn_zonal_mean
+module ocn_meridional_heat_transport
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -45,10 +45,10 @@ module ocn_zonal_mean
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_init_zonal_mean, &
-             ocn_compute_zonal_mean, &
-             ocn_restart_zonal_mean, &
-             ocn_finalize_zonal_mean
+   public :: ocn_init_meridional_heat_transport, &
+             ocn_compute_meridional_heat_transport, &
+             ocn_restart_meridional_heat_transport, &
+             ocn_finalize_meridional_heat_transport
 
    !--------------------------------------------------------------------
    !
@@ -56,66 +56,15 @@ module ocn_zonal_mean
    !
    !--------------------------------------------------------------------
 
+   integer :: nMerHeatTransBinsUsed
+
 !***********************************************************************
 
 contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_zonal_mean
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_zonal_mean(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: zonalMeanAMActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'zonalMeanAMActive', zonalMeanAMActive)
-
-      ! turn on package for this analysis member
-      zonalMeanAMActive = .true.
-
-   end subroutine ocn_setup_packages_zonal_mean!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_zonal_mean
+!  routine ocn_init_meridional_heat_transport
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -126,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_zonal_mean(domain, err)!{{{
+   subroutine ocn_init_meridional_heat_transport(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -158,18 +107,19 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: zonalMeanAMPool
+      type (mpas_pool_type), pointer :: meridionalHeatTransportAMPool
       type (mpas_pool_type), pointer :: meshPool
 
       integer ::  iBin
-      integer, pointer ::  nZonalMeanBins
+      integer, pointer ::  nMerHeatTransBins
 
       real (kind=RKIND) :: binWidth
       ! These are array size 1 because mpas_dmpar_min_real_array calls require arrays.
       real (kind=RKIND), dimension(1) :: minBin, maxBin, minBinDomain, maxBinDomain
-      real (kind=RKIND), dimension(:), pointer ::  binCenterZonalMean, binBoundaryZonalMean, binVariable
+      real (kind=RKIND), dimension(:), pointer ::  binBoundaryMerHeatTrans, binVariable
 
-      real (kind=RKIND), pointer :: config_AM_zonalMean_min_bin, config_AM_zonalMean_max_bin
+      integer, pointer :: config_AM_meridionalHeatTransport_num_bins
+      real (kind=RKIND), pointer :: config_AM_meridionalHeatTransport_min_bin, config_AM_meridionalHeatTransport_max_bin
 
       logical, pointer :: on_a_sphere
 
@@ -180,14 +130,16 @@ contains
       minBin =  1.0e34_RKIND
       maxBin = -1.0e34_RKIND
 
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'zonalMeanAM', zonalMeanAMPool)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'meridionalHeatTransportAM', meridionalHeatTransportAMPool)
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_zonalMean_min_bin', config_AM_zonalMean_min_bin)
-      call mpas_pool_get_config(domain % configs, 'config_AM_zonalMean_max_bin', config_AM_zonalMean_max_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_meridionalHeatTransport_num_bins', config_AM_meridionalHeatTransport_num_bins)
+      call mpas_pool_get_config(domain % configs, 'config_AM_meridionalHeatTransport_min_bin', config_AM_meridionalHeatTransport_min_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_meridionalHeatTransport_max_bin', config_AM_meridionalHeatTransport_max_bin)
 
-      call mpas_pool_get_array(zonalMeanAMPool, 'binCenterZonalMean', binCenterZonalMean)
-      call mpas_pool_get_array(zonalMeanAMPool, 'binBoundaryZonalMean', binBoundaryZonalMean)
+      nMerHeatTransBinsUsed = config_AM_meridionalHeatTransport_num_bins
+
+      call mpas_pool_get_array(meridionalHeatTransportAMPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
 
       ! Find min and max values of binning variable.
       block => domain % blocklist
@@ -212,39 +164,36 @@ contains
       call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
       ! Set up bins. 
-      binBoundaryZonalMean = -1.0e34_RKIND
-      binCenterZonalMean = -1.0e34_RKIND
+      binBoundaryMerHeatTrans = -1.0e34_RKIND
 
       ! Change min and max bin bounds to configuration settings, if applicable.
-      if (config_AM_zonalMean_min_bin > -1.0e33_RKIND) then
-         minBinDomain(1) = config_AM_zonalMean_min_bin
+      if (config_AM_meridionalHeatTransport_min_bin > -1.0e33_RKIND) then
+         minBinDomain(1) = config_AM_meridionalHeatTransport_min_bin
       else
          ! use measured min value, but decrease slightly to include least value.
          minBinDomain(1) = minBinDomain(1) - 1.0e-10_RKIND * abs(minBinDomain(1))
       end if
 
-      if (config_AM_zonalMean_max_bin > -1.0e33_RKIND) then
-         maxBinDomain(1) = config_AM_zonalMean_max_bin
+      if (config_AM_meridionalHeatTransport_max_bin > -1.0e33_RKIND) then
+         maxBinDomain(1) = config_AM_meridionalHeatTransport_max_bin
       else
          ! use measured max value, but increase slightly to include max value.
          maxBinDomain(1) = maxBinDomain(1) + 1.0e-10_RKIND * abs(maxBinDomain(1))
       end if
 
-      binBoundaryZonalMean(1) = minBinDomain(1)
-      binWidth = (maxBinDomain(1) - minBinDomain(1)) / nZonalMeanBins
+      binBoundaryMerHeatTrans(1) = minBinDomain(1)
+      binWidth = (maxBinDomain(1) - minBinDomain(1)) / nMerHeatTransBinsUsed
 
-      binCenterZonalMean(1) = minBinDomain(1) + binWidth/2.0_RKIND
-      do iBin = 2, nZonalMeanBins
-         binBoundaryZonalMean(iBin) = binBoundaryZonalMean(iBin-1) + binWidth
-         binCenterZonalMean(iBin) = binCenterZonalMean(iBin-1) + binWidth
+      do iBin = 2, nMerHeatTransBinsUsed
+         binBoundaryMerHeatTrans(iBin) = binBoundaryMerHeatTrans(iBin-1) + binWidth
       end do
-      binBoundaryZonalMean(nZonalMeanBins+1) = binBoundaryZonalMean(nZonalMeanBins) + binWidth
+      binBoundaryMerHeatTrans(nMerHeatTransBinsUsed+1) = binBoundaryMerHeatTrans(nMerHeatTransBinsUsed) + binWidth
 
-   end subroutine ocn_init_zonal_mean!}}}
+   end subroutine ocn_init_meridional_heat_transport!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_zonal_mean
+!  routine ocn_compute_meridional_heat_transport
 !
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -255,7 +204,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_zonal_mean(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_meridional_heat_transport(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -289,46 +238,48 @@ contains
 
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: zonalMeanAMPool
+      type (mpas_pool_type), pointer :: meridionalHeatTransportAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
 
-      integer :: iTracer, k, iCell, kMax
-      integer :: iBin, iField, nZonalMeanVariables
-      integer, pointer :: num_tracers, nCellsSolve, nVertLevels, nZonalMeanBins
-      integer, dimension(:), pointer :: maxLevelCell
+      integer :: iTracer, k, iCell, kMax, i, iEdge
+      integer :: iBin, iField, nMerHeatTransVariables
+      integer, pointer :: nCellsSolve, nVertLevels, nMerHeatTransBins, indexTemperature
+      integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgeSignOnCell, cellsOnEdge, edgesOnCell
 
-      real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonalZonalMean, velocityMeridionalZonalMean
+      real (kind=RKIND) :: div_huT
+      real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryMerHeatTrans, dvEdge
+      real (kind=RKIND), dimension(:), pointer ::  meridionalHeatTransportLat
+      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, normalTransportVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: meridionalHeatTransportLatZ
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracersZonalMean
+      real (kind=RKIND), dimension(:,:), allocatable :: mht_meridional_integral
+      real (kind=RKIND), dimension(:,:,:), allocatable :: sumMerHeatTrans, totalSumMerHeatTrans
 
       logical, pointer :: on_a_sphere
 
       err = 0
       dminfo = domain % dminfo
 
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'zonalMeanAM', zonalMeanAMPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'meridionalHeatTransportAM', meridionalHeatTransportAMPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 
-      call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-      nZonalMeanVariables = num_tracers + 3
+      nMerHeatTransVariables = 1
 
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
 
-      call mpas_pool_get_array(zonalMeanAMPool, 'binBoundaryZonalMean', binBoundaryZonalMean)
+      call mpas_pool_get_array(meridionalHeatTransportAMPool, 'binBoundaryMerHeatTrans', binBoundaryMerHeatTrans)
 
-      allocate(sumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins), &
-         totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins), &
-         normZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins))
+      allocate(sumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
+      allocate(totalSumMerHeatTrans(nMerHeatTransVariables,nVertLevels,nMerHeatTransBinsUsed))
+      allocate(mht_meridional_integral(nVertLevels,nMerHeatTransBinsUsed))
 
-      sumZonalMean = 0.0_RKIND
+      sumMerHeatTrans = 0.0_RKIND
 
       block => domain % blocklist
       do while (associated(block))
@@ -337,23 +288,21 @@ contains
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
-
-         !state => block % state % time_levs(timeLevel) % state
-         !mesh => block % mesh
-         !scratch => block % scratch
-         !diagnostics => block % diagnostics
-
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
 
          call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
 
          ! Bin by latitude on a sphere, by yCell otherwise.
          if (on_a_sphere) then
@@ -362,28 +311,31 @@ contains
             call mpas_pool_get_array(meshPool, 'yCell', binVariable)
          end if
 
-         ! note that sum is for each vertical index, which is a little wrong for z-star and very wrong for PBCs.
          do iCell = 1, nCellsSolve
             kMax = maxLevelCell(iCell)
 
-            if (binVariable(iCell) .lt. binBoundaryZonalMean(1)) cycle
+            if (binVariable(iCell) .lt. binBoundaryMerHeatTrans(1)) cycle
 
-            do iBin = 1, nZonalMeanBins
-               if (binVariable(iCell) .lt. binBoundaryZonalMean(iBin+1) ) then
+            do iBin = 1, nMerHeatTransBinsUsed
+               if (binVariable(iCell) .lt. binBoundaryMerHeatTrans(iBin+1) ) then
 
                   do k = 1, kMax
 
-                     ! Field 1 is the total area in this bin, which can vary by level due to land.
-                     sumZonalMean(1,k,iBin) = sumZonalMean(1,k,iBin) + areaCell(iCell)
-
-                     do iField = 1,num_tracers
-                        sumZonalMean(iField+1,k,iBin) = sumZonalMean(iField+1,k,iBin) + tracers(iField,k,iCell)*areaCell(iCell)
-                     enddo
-
-                     iField = num_tracers+2
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityZonal(k,iCell)*areaCell(iCell)
-                     iField = iField+1
-                     sumZonalMean(iField,k,iBin) = sumZonalMean(iField,k,iBin) + velocityMeridional(k,iCell)*areaCell(iCell)
+                     ! Compute divergence of huT, i.e. layerThicknessEdge * normalVelocity * temperature, at an edge
+                     ! for meridional heat transport.  Here we use a centered difference to compute the temperature at
+                     ! the edge, which is an approximation to the actual edge temperature used in the horizontal
+                     ! advection scheme (for example, FCT).  We expect that the error in this approximation is small.
+                     ! Here we do not divide by the area, as one normally does in a divergence calculation, so that
+                     ! div_huT is weighted by area here.
+                     iField = 1
+                     div_huT = 0.0_RKIND
+                     do i = 1, nEdgesOnCell(iCell)
+                        iEdge = edgesOnCell(i, iCell)
+                        div_huT = div_huT - layerThicknessEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
+                             * 0.5_RKIND * (tracers(indexTemperature,k,cellsOnEdge(1,iEdge)) + tracers(indexTemperature,k,cellsOnEdge(2,iEdge))) &
+                             * edgeSignOnCell(i, iCell) * dvEdge(iEdge)
+                     end do
+                     sumMerHeatTrans(iField,k,iBin) = sumMerHeatTrans(iField,k,iBin) + div_huT
 
                   end do
                   exit
@@ -397,65 +349,64 @@ contains
       end do
 
       ! mpi summation over all processors
-      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nZonalMeanBins*nZonalMeanVariables, sumZonalMean, totalSumZonalMean)
-
-      ! normalize by area
-      do iBin = 1, nZonalMeanBins
-         do k = 1, nVertLevels
-            ! Check if there is any area accumulated.  If so, normalize by the area.
-            if (totalSumZonalMean(1,k,iBin) > 1.0e-12_RKIND) then
-               normZonalMean(:,k,iBin) = totalSumZonalMean(:,k,iBin) / totalSumZonalMean(1,k,iBin)
-            else
-               normZonalMean(:,k,iBin) = -1.0e34_RKIND
-            end if
-         end do
-      end do
-      do iBin = nZonalMeanBins + 1, nZonalMeanBins
-         normZonalMean(:,:,iBin) = -1.0e34_RKIND
-      end do
+      ! Note the input and output arrays are of the same dimension, so summation is
+      ! over the domain decompositon (by processor), not over an array index.
+      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nMerHeatTransBinsUsed*nMerHeatTransVariables, sumMerHeatTrans, totalSumMerHeatTrans)
 
       ! Even though these variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_dimension(block % dimensions, 'nZonalMeanBins', nZonalMeanBins)
+         call mpas_pool_get_dimension(block % dimensions, 'nMerHeatTransBins', nMerHeatTransBins)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
-         call mpas_pool_get_subpool(block % structs, 'zonalMeanAM', zonalMeanAMPool)
+         call mpas_pool_get_subpool(block % structs, 'meridionalHeatTransportAM', meridionalHeatTransportAMPool)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
 
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
+         call mpas_pool_get_array(meridionalHeatTransportAMPool, 'meridionalHeatTransportLat', meridionalHeatTransportLat)
+         call mpas_pool_get_array(meridionalHeatTransportAMPool, 'meridionalHeatTransportLatZ', meridionalHeatTransportLatZ)
 
-         call mpas_pool_get_array(zonalMeanAMPool, 'tracersZonalMean', tracersZonalMean)
-         call mpas_pool_get_array(zonalMeanAMPool, 'velocityZonalZonalMean', velocityZonalZonalMean)
-         call mpas_pool_get_array(zonalMeanAMPool, 'velocityMeridionalZonalMean', velocityMeridionalZonalMean)
-
-         do iBin = 1, nZonalMeanBins
+         do iBin = 1, nMerHeatTransBinsUsed
             do k = 1, nVertLevels
 
-               do iField = 1, num_tracers
-                  tracersZonalMean(iField,k,iBin) = normZonalMean(iField+1,k,iBin)
-               enddo
-
-               iField = num_tracers + 2
-               velocityZonalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
-               iField = iField+1
-               velocityMeridionalZonalMean(k,iBin) = normZonalMean(iField,k,iBin)
+               ! MHT = sum ( div(huT) A ) * rho c_p, in PW
+               ! where the sum is over each latitude bin
+               ! Here we simply multiply by (rho c_p) and convert to PW:
+               iField = 1
+               mht_meridional_integral(k,iBin) = totalSumMerHeatTrans(iField,k,iBin)*rho_sw*cp_sw*1.0e-15_RKIND
 
             end do
          end do
 
+         ! Compute integral of ( sum ( div(huT) A ) * rho c_p ) from southernmost latitude to bin boundary.
+         ! Note that mht_meridional_integral is indexed by bin, spanning 1:nMerHeatTransBinsUsed, while
+         ! meridionalHeatTransportLatZ (second dimension) is indexed by bin boundary, spanning 1:nMerHeatTransBinsUsed+1
+         meridionalHeatTransportLatZ(:,1) = 0.0_RKIND
+         do iBin = 2, nMerHeatTransBinsUsed+1
+            meridionalHeatTransportLatZ(:,iBin) = meridionalHeatTransportLatZ(:,iBin-1) + mht_meridional_integral(:,iBin-1)
+         end do
+
+         ! meridionalHeatTransportLatZ is a function of depth.  Sum in vertical to get
+         ! meridionalHeatTransportLat, a single value for each latitude bin boundary.
+         ! meridionalHeatTransportLat is indexed by bin boundary, spanning 1:nMerHeatTransBinsUsed+1
+         do iBin = 1, nMerHeatTransBinsUsed+1
+            meridionalHeatTransportLat(iBin) = sum(meridionalHeatTransportLatZ(:,iBin))
+         end do
+
+
          block => block % next
       end do
 
-      deallocate(sumZonalMean,totalSumZonalMean,normZonalMean)
+      deallocate(sumMerHeatTrans)
+      deallocate(totalSumMerHeatTrans)
+      deallocate(mht_meridional_integral)
 
-   end subroutine ocn_compute_zonal_mean!}}}
+   end subroutine ocn_compute_meridional_heat_transport!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_zonal_mean
+!  routine ocn_restart_meridional_heat_transport
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -466,7 +417,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_zonal_mean(domain, err)!{{{
+   subroutine ocn_restart_meridional_heat_transport(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -498,11 +449,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_zonal_mean!}}}
+   end subroutine ocn_restart_meridional_heat_transport!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_zonal_mean
+!  routine ocn_finalize_meridional_heat_transport
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -513,7 +464,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_zonal_mean(domain, err)!{{{
+   subroutine ocn_finalize_meridional_heat_transport(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -545,8 +496,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_zonal_mean!}}}
+   end subroutine ocn_finalize_meridional_heat_transport!}}}
 
-end module ocn_zonal_mean
+end module ocn_meridional_heat_transport
 
 ! vim: foldmethod=marker

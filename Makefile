@@ -1,35 +1,29 @@
 .SUFFIXES: .F .c .o
 
-OCEAN_SHARED_INCLUDES=-I../shared -I../analysis_members -I../cvmix -I../../framework -I../../external/esmf_time_f90 -I../../operators
 
-OCEAN_LIBRARIES=cvmix/*.o analysis_members/*.o shared/*.o
-
-ifdef MODE
-
-ifeq ($(wildcard ./mode_$(MODE)), ) # CHECK FOR EXISTENCE OF MODE DIRECTORY
-all: exit
-
-core_reg: exit
-
-error_msg: error_head
-	@echo "$(MODE) is not a valid build mode for the ocean core"
-
-else # IFEQ ($(wildcard....
+OCEAN_SHARED_INCLUDES = -I$(PWD)/../framework -I$(PWD)/../external/esmf_time_f90 -I$(PWD)/../operators
+OCEAN_SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix -I$(PWD)/mode_forward -I$(PWD)/mode_analysis
 
 all: shared libcvmix analysis_members
-	(cd mode_$(MODE); $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" )
+	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
+	(cd mode_analysis; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
+	(cd driver; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 	if [ -e libdycore.a ]; then \
 		($(RM) libdycore.a) \
 	fi
-	ar -ru libdycore.a $(OCEAN_LIBRARIES) mode_$(MODE)/*.o
+	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean_$(MODE) )
-	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean_$(MODE) stream_list.ocean_$(MODE). mutable )
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean )
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.forward mode=forward )
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.analysis mode=analysis )
+	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
+	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
+	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
 
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -40,20 +34,6 @@ post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
-
-
-endif # IFEQ ($(wildcard....
-
-else # IFDEF MODE
-
-all: exit
-
-core_reg: exit
-
-error_msg: error_head
-	@echo "The ocean core requires a build mode."
-
-endif # IFDEF MODE
 
 cvmix_source: get_cvmix.sh
 	(chmod a+x get_cvmix.sh; ./get_cvmix.sh)
@@ -72,31 +52,13 @@ shared: libcvmix
 analysis_members: libcvmix shared
 	( cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 
-error_head:
-	@echo ""
-	@echo ""
-	@echo "*************************************"
-	@echo "ERROR"
-
-error_tail: error_head error_msg
-	@echo "Available build modes are:"
-	@ls -d mode_* | grep ".*" | sed "s/mode_/    /g"
-	@echo ""
-	@echo "Please specify at build time as follows:"
-	@echo "    make target CORE=ocean MODE=build_mode"
-	@echo "*************************************"
-	@echo ""
-	@echo ""
-
-exit: error_head error_msg error_tail
-	@exit 1
-
 clean:
 	if [ -d cvmix ]; then \
 		(cd cvmix; make clean) \
 	fi
 	(cd mode_forward; $(MAKE) clean)
 	(cd mode_analysis; $(MAKE) clean)
+	(cd driver; $(MAKE) clean)
 	(cd analysis_members; $(MAKE) clean)
 	(cd shared; $(MAKE) clean)
 	($(RM) *.mod libdycore.a Registry_processed.xml)
