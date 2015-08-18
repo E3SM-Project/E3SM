@@ -8,7 +8,7 @@ module mo_extfrc
   use chem_mods,    only : gas_pcnst, extcnt
   use spmd_utils,   only : masterproc,iam
   use cam_abortutils,   only : endrun
-  use cam_history,  only : addfld, outfld, phys_decomp, add_default
+  use cam_history,  only : addfld, horiz_only, outfld, add_default
   use cam_logfile,  only : iulog
   use tracer_data,  only : trfld,trfile
 
@@ -165,10 +165,10 @@ contains
           forcings(n)%frc_ndx          = get_extfrc_ndx( spc_name )
           forcings(n)%species          = spc_name
           forcings(n)%filename         = spc_fnames(m)
-          call addfld( trim(spc_name)//'_XFRC',  'molec/cm3/s', pver, 'A', &
-                       'external forcing for '//trim(spc_name),   phys_decomp )
-          call addfld( trim(spc_name)//'_CLXF',  'molec/cm2/s', 1, 'A', &
-                       'vertically intergrated external forcing for '//trim(spc_name),   phys_decomp )
+          call addfld( trim(spc_name)//'_XFRC', (/ 'lev' /), 'A',  'molec/cm3/s', &
+                       'external forcing for '//trim(spc_name) )
+          call addfld( trim(spc_name)//'_CLXF', horiz_only, 'A',  'molec/cm2/s', &
+                       'vertically intergrated external forcing for '//trim(spc_name) )
           if ( history_aerosol ) then 
              call add_default( trim(spc_name)//'_XFRC', 1, ' ' )
              call add_default( trim(spc_name)//'_CLXF', 1, ' ' )

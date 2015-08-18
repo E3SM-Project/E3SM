@@ -68,7 +68,7 @@ contains
   subroutine linoz_data_init()
 
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld
     use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
@@ -109,7 +109,7 @@ contains
        if (ndx < 1) then
           call endrun('linoz_data_init: '//trim(fields(i)%fldnam)//' is not one of the named linoz data fields ')
        endif
-       call addfld(fld_names(i), fld_units(i), pver, 'I', 'linoz data', phys_decomp )
+       call addfld(fld_names(i), (/ 'lev' /), 'I', fld_units(i), 'linoz data' )
     enddo
 
 

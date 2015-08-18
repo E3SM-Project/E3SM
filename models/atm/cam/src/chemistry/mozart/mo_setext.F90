@@ -21,7 +21,7 @@ contains
 
     use mo_chem_utls, only : get_extfrc_ndx
     use ppgrid,       only : pver
-    use cam_history,  only : addfld, phys_decomp
+    use cam_history,  only : addfld
     use spmd_utils,   only : masterproc
 
     implicit none
@@ -48,20 +48,20 @@ contains
        write(iulog,'(10i5)') co_ndx, no_ndx, synoz_ndx, xno_ndx
     endif
 
-    call addfld( 'NO_Lightning','molec/cm3/s', pver, 'A', 'lightning NO source', phys_decomp )
-    call addfld( 'NO_Aircraft', 'molec/cm3/s', pver, 'A', 'aircraft NO source',  phys_decomp )
-    call addfld( 'CO_Aircraft', 'molec/cm3/s', pver, 'A', 'aircraft CO source',  phys_decomp )
+    call addfld( 'NO_Lightning', (/ 'lev' /), 'A','molec/cm3/s', 'lightning NO source' )
+    call addfld( 'NO_Aircraft', (/ 'lev' /), 'A', 'molec/cm3/s', 'aircraft NO source' )
+    call addfld( 'CO_Aircraft', (/ 'lev' /), 'A', 'molec/cm3/s', 'aircraft CO source' )
 
-    call addfld( 'N4S_SPE', 'molec/cm3/s', pver, 'I', 'solar proton event N(4S) source',phys_decomp )
-    call addfld( 'N2D_SPE', 'molec/cm3/s', pver, 'I', 'solar proton event N(2S) source',phys_decomp )
-    call addfld( 'OH_SPE',  'molec/cm3/s', pver, 'I', 'solar proton event HOx source',  phys_decomp )
+    call addfld( 'N4S_SPE', (/ 'lev' /), 'I', 'molec/cm3/s', 'solar proton event N(4S) source' )
+    call addfld( 'N2D_SPE', (/ 'lev' /), 'I', 'molec/cm3/s', 'solar proton event N(2S) source' )
+    call addfld( 'OH_SPE', (/ 'lev' /), 'I',  'molec/cm3/s', 'solar proton event HOx source' )
 
     if ( has_ions ) then
-       call addfld( 'P_Op', '/s ', pver, 'I', 'production o+', phys_decomp )
-       call addfld( 'P_O2p', '/s ', pver, 'I', 'production o2+', phys_decomp )
-       call addfld( 'P_N2p', '/s ', pver, 'I', 'production n2+', phys_decomp )
-       call addfld( 'P_Np', '/s ', pver, 'I', 'production n+', phys_decomp )
-       call addfld( 'P_IONS', '/s ', pver, 'I', 'total ion production', phys_decomp )
+       call addfld( 'P_Op', (/ 'lev' /), 'I', '/s', 'production o+' )
+       call addfld( 'P_O2p', (/ 'lev' /), 'I', '/s', 'production o2+' )
+       call addfld( 'P_N2p', (/ 'lev' /), 'I', '/s', 'production n2+' )
+       call addfld( 'P_Np', (/ 'lev' /), 'I', '/s', 'production n+' )
+       call addfld( 'P_IONS', (/ 'lev' /), 'I', '/s', 'total ion production' )
     endif
 
   end subroutine setext_inti

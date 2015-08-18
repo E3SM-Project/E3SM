@@ -43,7 +43,7 @@ contains
 !-----------------------------------------------------------------
   subroutine ghg_chem_init(phys_state, bndtvg, h2orates)
     use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
-    use cam_history,  only : addfld, phys_decomp
+    use cam_history,  only : addfld
 
     implicit none
 
@@ -87,11 +87,11 @@ contains
        endif
     endif
 
-    call addfld( 'GHG_CFC11_R', '1/sec', pver, 'I', 'prescribed cfc11 loss rate for ghg chem', phys_decomp )
-    call addfld( 'GHG_CFC12_R', '1/sec', pver, 'I', 'prescribed cfc12 loss rate for ghg chem', phys_decomp )
-    call addfld( 'GHG_N2O_R',   '1/sec', pver, 'I', 'prescribed n2o loss rate for ghg chem',   phys_decomp )
-    call addfld( 'GHG_CH4_R',   '1/sec', pver, 'I', 'prescribed ch4 loss rate for ghg chem',   phys_decomp )
-    call addfld( 'GHG_H2O_R',   '1/sec', pver, 'I', 'prescribed h2o loss rate for ghg chem',   phys_decomp )
+    call addfld( 'GHG_CFC11_R', (/ 'lev' /), 'I', '1/sec', 'prescribed cfc11 loss rate for ghg chem' )
+    call addfld( 'GHG_CFC12_R', (/ 'lev' /), 'I', '1/sec', 'prescribed cfc12 loss rate for ghg chem' )
+    call addfld( 'GHG_N2O_R', (/ 'lev' /), 'I',   '1/sec', 'prescribed n2o loss rate for ghg chem' )
+    call addfld( 'GHG_CH4_R', (/ 'lev' /), 'I',   '1/sec', 'prescribed ch4 loss rate for ghg chem' )
+    call addfld( 'GHG_H2O_R', (/ 'lev' /), 'I',   '1/sec', 'prescribed h2o loss rate for ghg chem' )
 
     ghg_ndx =       (/  n2o_ndx,  ch4_ndx, cfc11_ndx, cfc12_ndx /)
     ghg_bnd_names = (/ 'N2OVMR', 'CH4VMR',  'F11VMR',  'F12VMR' /)
