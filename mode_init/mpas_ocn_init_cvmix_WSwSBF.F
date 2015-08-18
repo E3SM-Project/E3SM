@@ -219,8 +219,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
         call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
         call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
-  ! TDR
-  !     call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+        call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
         ! Set refBottomDepth and refBottomDepthTopOfCell
         do k = 1, nVertLevels
@@ -267,9 +266,8 @@ contains
            shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
 
            ! Set precipation and evaporation
-  ! TDR
-  !        rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
-  !        evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
+           rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
+           evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
 
            ! Set interior temperature restoring value and rate
            do k = 1, nVertLevels
@@ -293,11 +291,10 @@ contains
            maxLevelCell(iCell) = nVertLevels
         end do
 
-  ! TDR
-  !     do iCell = 1, nCellsSolve
-  !        windStressZonal(iCell) = config_cvmix_WSwSBF_max_windstress
-  !        windStressMeridional(iCell) = 0.0_RKIND
-  !     enddo
+        do iCell = 1, nCellsSolve
+           windStressZonal(iCell) = config_cvmix_WSwSBF_max_windstress
+           windStressMeridional(iCell) = 0.0_RKIND
+        enddo
 
         do iEdge = 1, nEdgesSolve
            fEdge(iEdge) = config_cvmix_WSwSBF_coriolis_parameter
