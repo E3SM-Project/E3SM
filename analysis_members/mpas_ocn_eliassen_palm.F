@@ -923,7 +923,7 @@ contains
          !-------------------------------------------------------------
          if(config_eliassen_palm_debug) then
            do i = 1, nCells
-              array1_3D(:,i) = zMid(:,nCells/2)
+              array1_3D(:,i) = -zMid(:,nCells/2)
               array2_3D(:,i) = potentialDensity(:,nCells/2)
            end do
            print *, ' '
@@ -983,7 +983,7 @@ contains
             end do
             call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
                maxLevelCell, array1_3D, zMid, potentialDensityMidRef, array1_3Dbuoy)
-            
+
             do i = 1,nCells
                do k = 1, nBuoyancyLayers
                   array2_3Dbuoy(k,i) = zMid(1,i) + &
@@ -1023,32 +1023,32 @@ contains
          ! interpolate state variable from z-space into buoyancy-space
          !-------------------------------------------------------------
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, zMid, &
-            -potentialDensityMidRef, heightMidBuoyCoor)
+            maxLevelCell, potentialDensity, zMid, &
+            potentialDensityMidRef, heightMidBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, zMid, &
-            -potentialDensityTopRef, heightTopBuoyCoor)
+            maxLevelCell, potentialDensity, zMid, &
+            potentialDensityTopRef, heightTopBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, velocityZonal, &
-            -potentialDensityMidRef, uMidBuoyCoor)
+            maxLevelCell, potentialDensity, velocityZonal, &
+            potentialDensityMidRef, uMidBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, velocityMeridional, &
-            -potentialDensityMidRef, vMidBuoyCoor)
+            maxLevelCell, potentialDensity, velocityMeridional, &
+            potentialDensityMidRef, vMidBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, density, &
-            -potentialDensityMidRef, densityMidBuoyCoor)
+            maxLevelCell, potentialDensity, density, &
+            potentialDensityMidRef, densityMidBuoyCoor)
 
          call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-            maxLevelCell, -potentialDensity, density, &
-            -potentialDensityTopRef, densityTopBuoyCoor)
+            maxLevelCell, potentialDensity, density, &
+            potentialDensityTopRef, densityTopBuoyCoor)
 
          ! Diabatic terms
          !call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-         !   maxLevelCell, -potentialDensity, wCellCenter, potentialDensityTopRef, wMidBuoyCoor)
+         !   maxLevelCell, potentialDensity, wCellCenter, potentialDensityTopRef, wMidBuoyCoor)
 
          !-------------------------------------------------------------
          ! fill in data above firstLayerBuoyCoor and below lastLayerBuoyCoor
@@ -1294,8 +1294,8 @@ contains
             
             ! store relVortMidBuoyCoor in array1_3Dbuoy
             call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &
-               maxLevelCell, -potentialDensity, relativeVorticityCell, &
-               -potentialDensityMidRef, array1_3Dbuoy)
+               maxLevelCell, potentialDensity, relativeVorticityCell, &
+               potentialDensityMidRef, array1_3Dbuoy)
             
             do i = 1,nCells
                do k=firstLayerBuoyCoor(i), lastLayerBuoyCoor(i)
@@ -1720,7 +1720,7 @@ contains
 !>  Interpolate a field yFieldIn residing on xFieldIn onto xColumnOut and store 
 !>  and return in yFieldOut.
 !>  Interpolation is done using one-dimensional interpolation along xColumnOut.
-!>  Required: xFieldIn monotonically decreases with index value
+!>  Required: xFieldIn monotonically increases with index value
 !
 !-----------------------------------------------------------------------
 
@@ -1747,6 +1747,10 @@ contains
       integer :: iCell, maxLevel, kB, kBBottom, kBTop, kDataAbove, kDataBelow, kData
       real (kind=RKIND) :: dx, dy
 
+      ! jas issue: the code below works for monotonically decreasing arrays.
+      ! however above it expects arguments that are monotonically increasing arrays.
+      xFieldIn   = -xFieldIn
+      xColumnOut = -xColumnOut
 
       !-----------------------------------------------------------------
       ! test for monoticity of xFieldIn
