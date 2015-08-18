@@ -212,7 +212,6 @@ contains
       integer :: iCell, iRegion, iTracer, err_tmp
 
       ! package flag
-      logical, pointer :: surfaceAreaWeightedAveragesAMPKGActive
       logical, pointer :: bulkForcingPkgActive
       logical, pointer :: frazilIcePkgActive
 

@@ -187,9 +187,6 @@ contains
       real (kind=RKIND), pointer :: minSalinity, maxSalinity
       real (kind=RKIND) :: deltaTemperature, deltaSalinity, temperature, salinity, density, zPosition, volume
 
-      ! package flag
-      logical, pointer :: waterMassCensusAMPKGActive
-
       ! buffers data for message passaging
       integer :: kBuffer, kBufferLength
       real (kind=RKIND), dimension(:), allocatable :: workBufferSum, workBufferSumReduced

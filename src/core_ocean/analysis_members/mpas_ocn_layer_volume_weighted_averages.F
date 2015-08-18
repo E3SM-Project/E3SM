@@ -196,9 +196,6 @@ contains
       integer :: iDataField, nDefinedDataFields
       integer :: iCell, iLevel, iRegion, iTracer, err_tmp
 
-      ! package flag
-      logical, pointer :: layerVolumeWeightedAverageAMPKGActive
-
       ! buffers data for message passaging
       integer :: kBuffer, kBufferLength
       real (kind=RKIND), dimension(:), allocatable :: workBufferSum, workBufferSumReduced

@@ -247,15 +247,11 @@ contains
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
-      logical, pointer :: thicknessFilterActive, globalStatsAMPKGActive
+      logical, pointer :: thicknessFilterActive
       logical, pointer :: config_AM_globalStats_text_file
       character (len=StrKIND), pointer :: config_AM_globalStats_directory
 
       err = 0
-
-      call mpas_pool_get_package(ocnPackages, 'globalStatsAMPKGActive', globalStatsAMPKGActive)
-
-      if ( .not. globalStatsAMPKGActive ) return
 
       dminfo = domain % dminfo
 

@@ -62,59 +62,6 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_zonal_mean
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_zonal_mean(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: zonalMeanAMActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'zonalMeanAMActive', zonalMeanAMActive)
-
-      ! turn on package for this analysis member
-      zonalMeanAMActive = .true.
-
-   end subroutine ocn_setup_packages_zonal_mean!}}}
-
-!***********************************************************************
-!
 !  routine ocn_init_zonal_mean
 !
 !> \brief   Initialize MPAS-Ocean analysis member
