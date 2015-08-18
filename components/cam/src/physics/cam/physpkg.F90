@@ -11,7 +11,7 @@ module physpkg
   ! Nov 2010    A. Gettelman   Put micro/macro physics into separate routines
   !-----------------------------------------------------------------------
 
-
+  use module_perturb
   use shr_kind_mod,     only: r8 => shr_kind_r8, i8 => shr_kind_i8
   use spmd_utils,       only: masterproc, iam, npes!BSINGH added iam, npes
   use physconst,        only: latvap, latice, rh2o
@@ -1708,6 +1708,7 @@ if (l_vdiff) then
     else
 
        call t_startf('vertical_diffusion_tend')
+       if(icolprnt(lchnk) > 0)write(202,*)'physpkg3:',state%t(icolprnt(lchnk),kprnt)
        call vertical_diffusion_tend (ztodt ,state ,cam_in%wsx, cam_in%wsy,   &
             cam_in%shf     ,cam_in%cflx     ,surfric  ,obklen   ,ptend    ,ast    ,&
             cam_in%ocnfrac  , cam_in%landfrac ,        &
@@ -1719,9 +1720,12 @@ if (l_vdiff) then
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
        call mspd_intr (ztodt    ,state    ,ptend)
     endif
-
-       call physics_update(state, ptend, ztodt, tend)
-       call t_stopf ('vertical_diffusion_tend')
+    if(icolprnt(lchnk) > 0)write(202,*)'physpkg2:PTEND:',ptend%s(icolprnt(lchnk),kprnt)
+    call physics_update(state, ptend, ztodt, tend)
+    if(icolprnt(lchnk) > 0)write(202,*)'physpkg1:',state%t(icolprnt(lchnk),kprnt),nstep
+    if(icolprnt(lchnk) > 0 .and. nstep == 0) call endrun('BALLI: forced exit for nstep=0')
+       
+    call t_stopf ('vertical_diffusion_tend')
     
     endif
 

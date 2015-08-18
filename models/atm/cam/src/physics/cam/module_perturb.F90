@@ -2,7 +2,7 @@ module module_perturb
   use phys_debug_util, only: phys_debug_col
   implicit none
   
-  integer :: kprnt = 29
+  integer :: kprnt = 27
 contains
 
   function icolprnt(lchnk) result(icol)

@@ -29,7 +29,7 @@ module vertical_diffusion
   ! J. McCaa    : Sep. 2004                                                                              !
   ! S. Park     : Aug. 2006, Dec. 2008. Jan. 2010                                                        ! 
   !----------------------------------------------------------------------------------------------------- !
-
+  use module_perturb
   use shr_kind_mod,     only : r8 => shr_kind_r8, i4=> shr_kind_i4
   use ppgrid,           only : pcols, pver, pverp
   use constituents,     only : pcnst, qmin, cnst_get_ind
@@ -915,9 +915,14 @@ contains
                                cgs      , tpert       , qpert      , wpert      , tke            , bprod   , &
                                sprod    , sfi         , kvinit     ,                                         &
                                tauresx  , tauresy     , ksrftms    ,                                         &
+<<<<<<< HEAD:components/cam/src/physics/cam/vertical_diffusion.F90
                                ipbl     , kpblh       , wstarPBL   , tkes       , went           , turbtype, &
                                smaw )
 
+=======
+                               ipbl(:)  , kpblh(:)    , wstarPBL(:), turbtype   , smaw )
+       if(icolprnt(lchnk) > 0)write(202,*)'->vdiff_7_kvh:',kvh(icolprnt(lchnk), kprnt + 1),kvh_in(icolprnt(lchnk), kprnt + 1)
+>>>>>>> This commit has vertical diff bug finding print statements:models/atm/cam/src/physics/cam/vertical_diffusion.F90
        ! The diag_TKE scheme does not calculate the Monin-Obukhov length, which is used in dry deposition calculations.
        ! Use the routines from pbl_utils to accomplish this. Assumes ustar and rrho have been set.
        th(:ncol,pver) = state%t(:ncol,pver) * state%exner(:ncol,pver)
@@ -1072,7 +1077,7 @@ contains
     ! Note that the output 'tauresx,tauresy' from below subroutines are fully implicit ones.
 
     call pbuf_get_field(pbuf, kvt_idx, kvt)
-
+    if(icolprnt(lchnk) > 0)write(202,*)'->vdiff_6_stmp:',s_tmp(icolprnt(lchnk),kprnt)
     if( any(fieldlist_wet) ) then
 
         call compute_vdiff( state%lchnk   ,                                                                     &
@@ -1084,7 +1089,8 @@ contains
                             u_tmp         , v_tmp              , q_tmp        , s_tmp         ,                 &
                             tautmsx       , tautmsy            , dtk          , topflx        , errstring     , &
                             tauresx       , tauresy            , 1            , cpairv(:,:,state%lchnk), rairi, &
-                            do_molec_diff , compute_molec_diff , vd_lu_qdecomp, kvt )
+                            do_molec_diff , compute_molec_diff , vd_lu_qdecomp, kvt,flb=1 )
+        if(icolprnt(lchnk) > 0)write(202,*)'->vdiff_5_wet:',s_tmp(icolprnt(lchnk),kprnt)
 
         call handle_errmsg(errstring, subname="compute_vdiff", &
              extra_msg="Error in fieldlist_wet call from vertical_diffusion.")
@@ -1108,6 +1114,7 @@ contains
                             tautmsx       , tautmsy            , dtk          , topflx        , errstring     , &
                             tauresx       , tauresy            , 1            , cpairv(:,:,state%lchnk), rairi, &
                             do_molec_diff , compute_molec_diff , vd_lu_qdecomp )
+        if(icolprnt(lchnk) > 0)write(202,*)'->vdiff_4_dry:',s_tmp(icolprnt(lchnk),kprnt)
 
         call handle_errmsg(errstring, subname="compute_vdiff", &
              extra_msg="Error in fieldlist_dry call from vertical_diffusion.")
@@ -1212,8 +1219,9 @@ contains
     lq(:) = .TRUE.
     call physics_ptend_init(ptend,state%psetcols, "vdiff", &
          ls=.true., lu=.true., lv=.true., lq=lq)
-
+    if(icolprnt(lchnk) > 0)write(202,*)'->vdiff_3:',ptend%s(icolprnt(lchnk),kprnt)
     ptend%s(:ncol,:)       = ( s_tmp(:ncol,:) - state%s(:ncol,:) ) * rztodt
+    if(icolprnt(lchnk) > 0)write(202,*)'->vdiff_2:',ptend%s(icolprnt(lchnk),kprnt)
     ptend%u(:ncol,:)       = ( u_tmp(:ncol,:) - state%u(:ncol,:) ) * rztodt
     ptend%v(:ncol,:)       = ( v_tmp(:ncol,:) - state%v(:ncol,:) ) * rztodt
     ptend%q(:ncol,:pver,:) = ( q_tmp(:ncol,:pver,:) - state%q(:ncol,:pver,:) ) * rztodt
@@ -1236,6 +1244,7 @@ contains
 
          ptend%q(:ncol,:pver,1) = qtten(:ncol,:pver)
          ptend%s(:ncol,:pver)   = slten(:ncol,:pver)
+         if(icolprnt(lchnk) > 0)write(202,*)'-> vdiff_1:',ptend%s(icolprnt(lchnk),kprnt)
          ptend%q(:ncol,:pver,ixcldliq) = 0._r8         
          ptend%q(:ncol,:pver,ixcldice) = 0._r8         
          ptend%q(:ncol,:pver,ixnumliq) = 0._r8         

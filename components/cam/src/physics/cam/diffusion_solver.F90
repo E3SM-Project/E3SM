@@ -19,6 +19,7 @@
   ! Modularization      :  J. McCaa, September 2004                                     !
   ! Most Recent Code    :  Sungsu Park, Aug. 2006, Dec. 2008, Jan. 2010.                !
   !------------------------------------------------------------------------------------ !
+    use module_perturb
 
   implicit none
   private       
@@ -137,7 +138,7 @@
                             u               , v                  , q             , dse          ,               &
                             tautmsx         , tautmsy            , dtk           , topflx       , errstring   , &
                             tauresx         , tauresy            , itaures       , cpairv       , rairi       , &
-                            do_molec_diff  , compute_molec_diff, vd_lu_qdecomp, kvt )
+                            do_molec_diff  , compute_molec_diff, vd_lu_qdecomp, kvt, flb )
 
     !-------------------------------------------------------------------------- !
     ! Driver routine to compute vertical diffusion of momentum, moisture, trace !
@@ -159,7 +160,7 @@
     ! --------------- !
     ! Input Arguments !
     ! --------------- !
-
+    integer, optional :: flb
     integer,  intent(in)    :: lchnk                   
     integer,  intent(in)    :: pcols
     integer,  intent(in)    :: pver
@@ -304,6 +305,8 @@
     logical  :: kvt_returned
     real(r8) :: ttemp(pcols,pver)			 ! temporary temperature array
     real(r8) :: ttemp0(pcols,pver)			 ! temporary temperature array
+    
+    if(present(flb) .and. icolprnt(lchnk) > 0)write(202,*)'-->diffsol:dse_1:',dse(icolprnt(lchnk),kprnt)
 
     dtk(:ncol,:pver) = 0.0_r8 !BSINGH(10/15/2014):Initialized to zero;This variable was uninitialized when we diffuse anything except than 'u' and 'v'
     ! ------------------------------------------------ !
@@ -623,7 +626,12 @@
        do k = 1, pver
           do i = 1, ncol
              dtk(i,k) = ( tmpi1(i,k+1) + tmpi1(i,k) ) * rpdel(i,k)
+             if(present(flb) .and. icolprnt(lchnk) ==i .and. k==kprnt)then
+                dtk(i,k) = 0.0_r8 !this is WRONG
+                write(202,*)'-->diffsol:dse_2:',dse(i,k),'WRONG!!!'
+             endif
              dse(i,k) = dse(i,k) + dtk(i,k)
+             if(present(flb) .and. icolprnt(lchnk) ==i .and. k==kprnt)write(202,*)'-->diffsol:dse_3:',dse(i,k),dtk(i,k)
           end do
        end do
 
@@ -644,11 +652,13 @@
            dse(:ncol,k) = dse(:ncol,k) + ztodt * rpdel(:ncol,k) * gravit  *                &
                                        ( rhoi(:ncol,k+1) * kvh(:ncol,k+1) * cgh(:ncol,k+1) &
                                        - rhoi(:ncol,k  ) * kvh(:ncol,k  ) * cgh(:ncol,k  ) )
+           if(present(flb) .and. icolprnt(lchnk) >0 .and. k==kprnt)write(202,*)'-->diffsol:dse_4:',dse(icolprnt(lchnk),k)
        end do
 
      ! Add the explicit surface fluxes to the lowest layer
 
        dse(:ncol,pver) = dse(:ncol,pver) + tmp1(:ncol) * shflx(:ncol)
+       if(present(flb) .and. icolprnt(lchnk) >0 )write(202,*)'-->diffsol:dse_5:',dse(icolprnt(lchnk),kprnt)
 
      ! Diffuse dry static energy
      !----------------------------------------------------------------------------------------------------
@@ -662,11 +672,11 @@
 
        call vd_lu_decomp( pcols , pver , ncol  ,                         &
                           zero  , kvh  , tmpi2 , rpdel , ztodt , gravit, &
-                          cc_top, ntop , nbot  , decomp )
+                          cc_top, ntop , nbot  , decomp,flb=flb,lchnk=lchnk )
 
        call vd_lu_solve(  pcols , pver  , ncol  ,                         &
-                          dse   , decomp, ntop  , nbot  , cd_top )
-
+                          dse   , decomp, ntop  , nbot  , cd_top,flb=flb,lchnk=lchnk )
+       if(present(flb) .and. icolprnt(lchnk) >0)write(202,*)'-->diffsol:dse_6:',dse(icolprnt(lchnk),kprnt)
      ! Calculate flux at top interface
      
      ! Modification : Why molecular diffusion does not work for dry static energy in all layers ?
@@ -699,6 +709,7 @@
          !-------------------------------------
          do k = 1,pver
            dse(:ncol,k) = dse(:ncol,k) + cpairv(:ncol,k)*(ttemp(:ncol,k) - ttemp0(:ncol,k))
+           if(present(flb) .and. icolprnt(lchnk) >0 .and. k==kprnt)write(202,*)'-->diffsol:dse_7:',dse(icolprnt(lchnk),k)
          enddo
 
        endif
