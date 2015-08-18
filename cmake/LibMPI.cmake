@@ -74,7 +74,7 @@ function (add_mpi_test TESTNAME)
         set (EXE_CMD mpirun.lsf ${exe_cmds})
 
     # ALCF COBALT execution
-    if (PLATFORM STREQUAL "alcf")
+    elseif (PLATFORM STREQUAL "alcf")
 
         # Run tests from within an interactive session (COBALT_PARTNAME defined)
         set (REQUIRED_OPTION --block \$ENV{COBALT_PARTNAME}) 
@@ -87,7 +87,7 @@ function (add_mpi_test TESTNAME)
         set (EXE_CMD ${RUNJOB} ${RUNJOB_NPF} ${REQUIRED_OPTION} ${MPIEXEC_PREFLAGS} : ${exe_cmds})
 
     # NERSC PBS execution
-    if (PLATFORM STREQUAL "nersc")
+    elseif (PLATFORM STREQUAL "nersc")
 
         # Run tests from within an interactive session
         set (EXE_CMD aprun -n ${num_procs} ${exe_cmds})
