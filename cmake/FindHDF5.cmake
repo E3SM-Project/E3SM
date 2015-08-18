@@ -95,7 +95,7 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
                 endif ()
                 
                 # DEPENDENCY: SZIP (Optional)
-                check_property (HDF5_C_HAS_SZIP
+                check_macro (HDF5_C_HAS_SZIP
                                 NAME TryHDF5_HAS_SZIP.c
                                 HINTS ${CMAKE_MODULE_PATH}
                                 DEFINITIONS -I${HDF5_C_INCLUDE_DIRS}

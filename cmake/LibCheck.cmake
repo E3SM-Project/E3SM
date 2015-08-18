@@ -9,13 +9,13 @@ include (CMakeParseArguments)
 #______________________________________________________________________________
 # - Basic function to check a property of a package using a try_compile step
 #
-# SYNTAX:  check_property (<return_variable>
+# SYNTAX:  check_macro (<return_variable>
 #                          NAME <filename>
 #                          HINTS <path> <path> ...
 #                          DEFINITIONS <definition1> <definition> ...
 #                          COMMENT <string_comment>)
 #                         
-function (check_property VARIABLE)
+function (check_macro VARIABLE)
 
     # Parse the input arguments
     set (options)
@@ -47,6 +47,44 @@ function (check_property VARIABLE)
                  
         else ()
             message (STATUS "Checking ${${VARIABLE}_COMMENT} - failed")
+        endif ()
+     
+        unset (${VARIABLE}_TRY_FILE CACHE)
+    endif ()
+            
+endfunction ()
+
+#______________________________________________________________________________
+# - Basic function to check if a given file exists
+#
+# SYNTAX:  check_file (<return_variable>
+#                      NAME <filename>
+#                      HINTS <path> <path> ...
+#                      COMMENT <string_comment>)
+#                         
+function (check_file VARIABLE)
+
+    # Parse the input arguments
+    set (options)
+    set (oneValueArgs COMMENT NAME)
+    set (multiValueArgs HINTS)
+    cmake_parse_arguments (${VARIABLE} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
+    
+    # If the return variable is defined, already, don't continue
+    if (NOT DEFINED ${VARIABLE})
+        
+        message (STATUS "Checking ${${VARIABLE}_COMMENT}")
+        find_file (${VARIABLE}_TRY_FILE
+                   NAMES ${${VARIABLE}_NAME}
+                   HINTS ${${VARIABLE}_HINTS})
+        if (${VARIABLE}_TRY_FILE)
+            message (STATUS "Checking ${${VARIABLE}_COMMENT} - yes")
+            set (${VARIABLE} TRUE
+                 CACHE BOOL "${${VARIABLE}_COMMENT}")
+        else ()
+            message (STATUS "Checking ${${VARIABLE}_COMMENT} - no")
+            set (${VARIABLE} FALSE
+                 CACHE BOOL "${${VARIABLE}_COMMENT}")
         endif ()
      
         unset (${VARIABLE}_TRY_FILE CACHE)

@@ -33,7 +33,7 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 # Look for c_sizeof capability
-check_property (Fortran_CSIZEOF
+check_macro (Fortran_CSIZEOF
                 NAME TryCSizeOf.f90
                 HINTS ${CMAKE_UTILS_DIR}
                 COMMENT "whether Fortran compiler supports c_sizeof")
@@ -97,7 +97,7 @@ find_package (MPI REQUIRED)
 
 # Check MPI I/O capabilities
 if (PIO_ENABLE_MPIIO)
-    check_property (MPIIO_DETECTED
+    check_macro (MPIIO_DETECTED
                     NAME TryMPIIO.f90
                     HINTS ${CMAKE_UTILS_DIR}
                     COMMENT "whether MPIIO is supported")
@@ -113,7 +113,7 @@ if (${PIO_ENABLE_MPIIO})
 endif ()
 
 # Check for MPI Fortran module
-check_property (MPIMOD_DETECTED
+check_macro (MPIMOD_DETECTED
                 NAME TryMPIMod.f90
                 HINTS ${CMAKE_UTILS_DIR}
                 COMMENT "whether MPI Fortran module is supported")
