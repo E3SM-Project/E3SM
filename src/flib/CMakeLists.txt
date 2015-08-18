@@ -24,10 +24,15 @@ if (NOT PIO_ENABLE_FORTRAN)
     set_target_properties(piof PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif ()
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+set (PIO_Fortran_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+     CACHE STRING "PIO Fortran include directories")
+set (PIO_Fortran_DEFINITIONS ""
+     CACHE STRING "PIO Fortran compiler definitions")
+set (PIO_Fortran_COMPILE_FLAGS ""
+     CACHE STRING "PIO Fortran compiler flags")
 
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
-    set_target_properties(piof PROPERTIES COMPILE_FLAGS -ffree-line-length-none)
+    list (APPEND PIO_Fortran_COMPILE_FLAGS -ffree-line-length-none)
 endif()
 
 # Look for c_sizeof capability
@@ -36,17 +41,17 @@ check_property (Fortran_CSIZEOF
                 HINTS ${CMAKE_UTILS_DIR}
                 COMMENT "whether Fortran compiler supports c_sizeof")
 if (Fortran_CSIZEOF)
-    add_definitions (-DNO_C_SIZEOF)
+    list (APPEND PIO_Fortran_DEFINITIONS -DNO_C_SIZEOF)
 endif()
 
 # Look for filesystem hints
 if (PIO_FILESYSTEM_HINTS)
     if (PIO_FILESYSTEM_HINTS STREQUAL lustre)
         message (STATUS "PIO will use lustre filesystem hints")
-        add_definitions (-DPIO_LUSTRE_HINTS)
+        list (APPEND PIO_Fortran_DEFINITIONS -DPIO_LUSTRE_HINTS)
     elseif (PIO_FILESYSTEM_HINTS STREQUAL gpfs)
         message (STATUS "PIO will use gpfs filesystem hints")
-        add_definitions (-DPIO_GPFS_HINTS)
+        list (APPEND PIO_Fortran_DEFINITIONS -DPIO_GPFS_HINTS)
     else ()
         message (WARNING "${PIO_FILESYSTEM_HINTS} not valid option for PIO_FILESYSTEM_HINTS; use gpfs or lustre.")
     endif ()
@@ -85,8 +90,8 @@ endforeach ()
 
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
-    add_definitions (-DTIMING)
-    include_directories(${GPTL_INCLUDE_DIRS})
+    list (APPEND PIO_Fortran_INCLUDE_DIRS ${GPTL_INCLUDE_DIRS})
+    list (APPEND PIO_Fortran_DEFINITIONS -DTIMING ${GPTL_DEFINITIONS})
     target_link_libraries (piof gptl)
 endif ()
 
@@ -107,7 +112,7 @@ if (PIO_ENABLE_MPIIO)
     endif ()
 endif ()
 if (${PIO_ENABLE_MPIIO}) 
-    add_definitions (-DUSEMPIIO)
+    list (APPEND PIO_Fortran_DEFINITIONS -DUSEMPIIO)
 endif ()
 
 # Check for MPI Fortran module
@@ -119,27 +124,27 @@ if (${MPIMOD_DETECTED})
     message (STATUS "MPI Fortran module detected and enabled.")
 else ()
     message (STATUS "MPI Fortran module not detected and therefore disabled.")
-    add_definitions (-DNO_MPIMOD)
+    list (APPEND PIO_Fortran_DEFINITIONS -DNO_MPIMOD)
 endif ()
 
 #===== NetCDF-Fortran =====
 find_package (NetCDF "4.3.3" COMPONENTS Fortran)
 if (NetCDF_Fortran_FOUND)
-    include_directories (${NetCDF_Fortran_INCLUDE_DIRS})
-    add_definitions (-D_NETCDF)
+    list (APPEND PIO_Fortran_INCLUDE_DIRS ${NetCDF_Fortran_INCLUDE_DIRS})
+    list (APPEND PIO_Fortran_DEFINITIONS -D_NETCDF)
     target_link_libraries (piof ${NetCDF_Fortran_LIBRARIES})
     if (EXISTS ${NetCDF_Fortran_INCLUDE_DIR}/netcdf_par.h)
-        add_definitions (-D_NETCDF4)
+        list (APPEND PIO_Fortran_DEFINITIONS -D_NETCDF4)
     endif ()
 else ()
-    add_definitions (-D_NONETCDF)
+    list (APPEND PIO_Fortran_DEFINITIONS -D_NONETCDF)
 endif ()
 
 #===== PnetCDF =====
 find_package (PnetCDF "1.6" COMPONENTS Fortran)
 if (PnetCDF_Fortran_FOUND)
-    include_directories (${PnetCDF_Fortran_INCLUDE_DIRS})
-    add_definitions (-D_PNETCDF)
+    list (APPEND PIO_Fortran_INCLUDE_DIRS ${PnetCDF_Fortran_INCLUDE_DIRS})
+    list (APPEND PIO_Fortran_DEFINITIONS -D_PNETCDF)
     target_link_libraries (piof ${PnetCDF_Fortran_LIBRARIES})
 
     # Check library for varn functions
@@ -147,20 +152,17 @@ if (PnetCDF_Fortran_FOUND)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_Fortran_LIBRARY})
     check_function_exists (ncmpi_get_varn PnetCDF_VARN)
     if (PnetCDF_VARN)
-        add_definitions(-DUSE_PNETCDF_VARN -DUSE_PNETCDF_VARN_ON_READ)
+        list (APPEND PIO_Fortran_DEFINITIONS -DUSE_PNETCDF_VARN -DUSE_PNETCDF_VARN_ON_READ)
     endif()  
 else ()
-    add_definitions (-D_NOPNETCDF)
+    list (APPEND PIO_Fortran_DEFINITIONS -D_NOPNETCDF)
 endif ()
 
 #===== Add EXTRAs =====
-include_directories (${PIO_Fortran_EXTRA_INCLUDE_DIRS})
-target_link_libraries (pioc ${PIO_Fortran_EXTRA_LIBRARIES})
-add_definitions (${PIO_Fortran_EXTRA_DEFINITIONS})
-if (PIO_Fortran_EXTRA_LINK_FLAGS)
-    set_target_properties(pioc PROPERTIES 
-        LINK_FLAGS ${PIO_Fortran_EXTRA_LINK_FLAGS})
-endif ()
+list (APPEND PIO_Fortran_INCLUDE_DIRS ${PIO_Fortran_EXTRA_INCLUDE_DIRS})
+list (APPEND PIO_Fortran_DEFINITIONS ${PIO_Fortran_EXTRA_DEFINITIONS})
+list (APPEND PIO_Fortran_COMPILE_FLAGS ${PIO_Fortran_EXTRA_COMPILE_FLAGS})
+target_link_libraries (piof ${PIO_Fortran_EXTRA_LIBRARIES})
 
 #===== Check for necessities =====
 if (NOT PnetCDF_Fortran_FOUND AND NOT NetCDF_Fortran_FOUND)
@@ -168,9 +170,10 @@ if (NOT PnetCDF_Fortran_FOUND AND NOT NetCDF_Fortran_FOUND)
 endif ()
 
 #==============================================================================
-#  DEFINE PARAMETERS FOR TARGETS DEPENDENT ON THIS
+#  SET INCLUDES, DEFINITIONS, ETC.
 #==============================================================================
 
-get_target_property(PIO_Fortran_INCLUDE_DIRS piof INCLUDE_DIRECTORIES)
-set (PIO_Fortran_INCLUDE_DIRS ${PIO_Fortran_INCLUDE_DIRS}
-     CACHE STRING "PIO Fortran Include Directory")
+include_directories (${PIO_Fortran_INCLUDE_DIRS})
+add_definitions (${PIO_Fortran_DEFINITIONS})
+list (APPEND CMAKE_Fortran_FLAGS ${PIO_Fortran_COMPILE_FLAGS})
+
