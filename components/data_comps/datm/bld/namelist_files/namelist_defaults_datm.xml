@@ -640,8 +640,10 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_year_align stream="CORE2_NYF.GISS">1</strm_year_align>
 <strm_domdir     stream="CORE2_NYF.GISS">$DIN_LOC_ROOT/atm/datm7/NYF</strm_domdir>
 <strm_domfil     stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</strm_domfil>
+<strm_domfil     stream="CORE2_NYF.GISS" atmgrid="01col">nyf.giss.01col.20150818.nc</strm_domfil>
 <strm_datdir     stream="CORE2_NYF.GISS">$DIN_LOC_ROOT/atm/datm7/NYF</strm_datdir>
 <strm_datfil     stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</strm_datfil>
+<strm_datfil     stream="CORE2_NYF.GISS" atmgrid="01col">nyf.giss.01col.20150818.nc</strm_datfil>
 <strm_offset     stream="CORE2_NYF.GISS">0</strm_offset>
 <strm_tintalgo   stream="CORE2_NYF.GISS">linear</strm_tintalgo>
 <strm_domvar     stream="CORE2_NYF.GISS">
@@ -664,8 +666,10 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_year_align stream="CORE2_NYF.GXGXS">1</strm_year_align>
 <strm_domdir     stream="CORE2_NYF.GXGXS">$DIN_LOC_ROOT/atm/datm7/NYF</strm_domdir>
 <strm_domfil     stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</strm_domfil>
+<strm_domfil     stream="CORE2_NYF.GXGXS" atmgrid="01col">nyf.gxgxs.01col.20150818.nc</strm_domfil>
 <strm_datdir     stream="CORE2_NYF.GXGXS">$DIN_LOC_ROOT/atm/datm7/NYF</strm_datdir>
 <strm_datfil     stream="CORE2_NYF.GXGXS">nyf.gxgxs.T62.051007.nc</strm_datfil>
+<strm_datfil     stream="CORE2_NYF.GXGXS" atmgrid="01col">nyf.gxgxs.01col.20150818.nc</strm_datfil>
 <strm_offset     stream="CORE2_NYF.GXGXS">0</strm_offset>
 <strm_tintalgo   stream="CORE2_NYF.GXGXS">linear</strm_tintalgo>
 <strm_domvar     stream="CORE2_NYF.GXGXS">
@@ -686,8 +690,10 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_year_align stream="CORE2_NYF.NCEP">1</strm_year_align>
 <strm_domdir     stream="CORE2_NYF.NCEP">$DIN_LOC_ROOT/atm/datm7/NYF</strm_domdir>
 <strm_domfil     stream="CORE2_NYF.NCEP">nyf.ncep.T62.050923.nc</strm_domfil>
+<strm_domfil     stream="CORE2_NYF.NCEP" atmgrid="01col">nyf.ncep.01col.20150818.nc</strm_domfil>
 <strm_datdir     stream="CORE2_NYF.NCEP">$DIN_LOC_ROOT/atm/datm7/NYF</strm_datdir>
 <strm_datfil     stream="CORE2_NYF.NCEP">nyf.ncep.T62.050923.nc</strm_datfil>
+<strm_datfil     stream="CORE2_NYF.NCEP" atmgrid="01col">nyf.ncep.01col.20150818.nc</strm_datfil>
 <strm_offset     stream="CORE2_NYF.NCEP">0</strm_offset>
 <strm_tintalgo   stream="CORE2_NYF.NCEP">linear</strm_tintalgo>
 <strm_domvar     stream="CORE2_NYF.NCEP">
