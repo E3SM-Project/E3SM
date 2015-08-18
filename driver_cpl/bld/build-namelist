@@ -3,7 +3,7 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the DRV configuration of CESM1.
+# This script builds the namelists for the Driver-cpl 
 #
 # build-namelist uses a config_cache.xml file that current contains the ocean grid information.
 # build-namelist reads this file to obtain information it needs to provide
@@ -306,9 +306,9 @@ foreach my $file (@files) {
 }
 my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
 (-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+** DRIVER_CPL $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Note - $USER is not in the config_defintion.xml file - it is only in the environment
 $xmlvars{'USER'} = $ENV{'USER'};
@@ -377,7 +377,7 @@ add_default($nl, 'start_type', 'val'=>"$start_type",'xml'=>'RUN_TYPE');
 
 add_default($nl, 'case_name',     'val'=>"$xmlvars{'CASE'}",         'xml'=>'CASE');
 add_default($nl, 'case_desc',     'val'=>"$xmlvars{'CASESTR'}",      'xml'=>'CASESTR');
-add_default($nl, 'username' ,     'val'=>"$xmlvars{'CCSMUSER'}",     'xml'=>'CCSMUSER');
+add_default($nl, 'username' ,     'val'=>"$xmlvars{'USER'}",         'xml'=>'USER');
 add_default($nl, 'hostname' ,     'val'=>"$xmlvars{'MACH'}",         'xml'=>'MACH');
 
 add_default($nl, 'atm_gnam',      'val'=>"$xmlvars{'ATM_GRID'}",     'xml'=>'ATM_GRID');
@@ -939,7 +939,7 @@ sub add_default {
 #
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
-#  $inputdata_rootdir -- CCSM inputdata root directory
+#  $inputdata_rootdir -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -1005,7 +1005,7 @@ sub add_default {
 
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
-    # the CCSM inputdata root directory.
+    # the inputdata root directory.
     if ($is_input_pathname eq 'abs') {
 	$val =~ s/ //g;
 	if ($val eq 'idmap') {

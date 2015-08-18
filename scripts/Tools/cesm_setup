@@ -383,33 +383,33 @@ sub _build_usernl_files {
 
 
     my $model = uc($model);
-    my $bld_dir = `./xmlquery BLD_${model}_DIR -value`;
-    (-d $bld_dir) or die "ERROR _build_user_nl_files: cannot find bld directory $bld_dir for component $comp\n"; 
+    my $dir = `./xmlquery CONFIG_${model}_DIR -value`;
+    (-d $dir) or die "ERROR _build_user_nl_files: cannot find cime_config directory $dir for component $comp\n"; 
 
     if ($comp eq 'cpl') {
-	my $bld_dir = `./xmlquery BLD_DRV_DIR -value`;
+	my $dir = `./xmlquery CONFIG_DRV_DIR -value`;
 	if ( ! -f "$caseroot/user_nl_cpl" ) {
-	    my $sysmod = "cp $bld_dir/user_nl_cpl $caseroot/user_nl_cpl";
+	    my $sysmod = "cp $dir/user_nl_cpl $caseroot/user_nl_cpl";
 	    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 	}
     } else {
 	my $NINST = `./xmlquery NINST_${model} -value`;  
-	if ( -f "${bld_dir}/user_nl_${comp}") {
+	if ( -f "${dir}/user_nl_${comp}") {
 	    if ($NINST > 1) {
 		my $inst_string;
 		my $inst_counter = 1;
 		while ($inst_counter <= $NINST) {
 		    $inst_string = `printf _%04d $inst_counter`;
 		    if ( ! -f "$caseroot/user_nl_${comp}${inst_string}" ) {
-			my $sysmod = "cp $bld_dir/user_nl_${comp} $caseroot/user_nl_${comp}${inst_string}";
+			my $sysmod = "cp $dir/user_nl_${comp} $caseroot/user_nl_${comp}${inst_string}";
 			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 		    }
 		    $inst_counter = $inst_counter + 1;
 		}
 	    } else {
 		if ( ! -f "$caseroot/user_nl_${comp}" ) {
-		    (-f "${bld_dir}/user_nl_${comp}" or die "ERROR _build_usernl_files: $bld_dir/user_nl_${comp} does not exist");
-		    my $sysmod = "cp $bld_dir/user_nl_${comp} $caseroot/user_nl_${comp}";
+		    (-f "${dir}/user_nl_${comp}" or die "ERROR _build_usernl_files: $dir/user_nl_${comp} does not exist");
+		    my $sysmod = "cp $dir/user_nl_${comp} $caseroot/user_nl_${comp}";
 		    system($sysmod) == 0 or die "ERROR _build_usernl_files: $sysmod failed: $?\n";
 		}		    
 	    }

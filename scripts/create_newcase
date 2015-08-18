@@ -7,10 +7,10 @@
 # options via a commandline interface.
 #
 # A few notes for clarification:
-# - All possible compset components will contain a cimeconfig directory containing 
+# - All possible compset components will contain a cime_config directory containing 
 # a file "config_component.xml" specifying the xml variable definitions for that component 
 # - If the atmopsheric component was datm, then $file would be
-#     $cimeroot/components/data_comps/datm/cimeconfig/config_component.xml
+#     $cimeroot/components/data_comps/datm/cime_config/config_component.xml
 # note that for CESM, the only primary components are
 #     cam, clm, cice, cism, pop, drv, allactive
 # so the directories for the primary components will contain the additional two files:
@@ -132,9 +132,9 @@ OPTIONS
                            default: M, partially redundant with confopts _P
   -user_compset <name>     Long name for new user compset to use (optional)
                            This assumes that all of the compset settings in the 
-                           long name have been defined in cimeconfig/compsets.xml
+                           long name have been defined in cime_config/config_compsets.xml
   -user_grid_file <name>   Full pathname of grid file to use (optional)
-                           This should be a "copy" of cimeconfig/grids.xml
+                           This should be a "copy" of cime_config/config_grids.xml
                            with the new user grid changes added to it
   -help [or -h]            Print usage to STDOUT (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
@@ -263,7 +263,7 @@ my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
 # *** Set master config file ***
 #------------------------------------------------------------------------------------------
 # The following specifies all necessary files that will be used to configure the case
-my $cimeconfig_file = "$cimeroot/driver_cpl/cimeconfig/config_component.xml";
+my $cimeconfig_file = "$cimeroot/driver_cpl/cime_config/config_component.xml";
 my $files_spec_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
 #------------------------------------------------------------------------------------------
@@ -275,7 +275,7 @@ my $config = ConfigCase->new("");
 # Add all the elements of the config_files.xml to $config
 $config->add_config_variables($files_spec_file, $srcroot, $cimeroot);
 
-# Add all the elements of the driver_cpl/cimeconfig/cime_config.xml to $config
+# Add all the elements of the driver_cpl/cime_config/cime_config.xml to $config
 $config->add_config_variables($cimeconfig_file, $srcroot, $cimeroot);
 
 $config->set('CIMEROOT', $cimeroot); 
@@ -327,7 +327,7 @@ foreach my $element (@elements) {
 
 # Given the compset components, determine the full pathname of each component definition file
 # (all have the generic name config_component.xml) and the directories each component's buildlib and buildnml files
-foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV') { 
+foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') { 
     FOUND1: foreach my $component (@compset_components) {
 	my $name = "CONFIG_" . $model . "_FILE";
 	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
@@ -340,7 +340,7 @@ foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV') {
 	}
     }
     FOUND2: foreach my $component (@compset_components) {
-	my $name = "BLD_" . $model . "_DIR";
+	my $name = "CONFIG_" . $model . "_DIR";
 	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
 	if (@nodes) {
 	    my $value = $nodes[0]->textContent();
@@ -441,13 +441,13 @@ ConfigMachine::setMachineValues($cimeconfig_file, $primary_component, $machine, 
 ConfigPes::setPes($pecount, $primary_component, \%opts, $config);
 
 #------------------------------------------------------------------------------------------
-# *** Determine all <value> settings in driver_cpl/cimeconfig/config_component.xml
+# *** Determine all <value> settings in driver_cpl/cime_config/config_component.xml
 #------------------------------------------------------------------------------------------
 # Note -this needs to come AFTER call to setPES since it might override some of the settings
 # e.g. this effectively works like an override mechanism for NTASKS_GLC and NTHRDS_GLC
 # which must be set to 1 when GLC is CISM1
 
-my $file = "$cimeroot/driver_cpl/cimeconfig/config_component.xml"; #TODO - get this from $config
+my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml"; #TODO - get this from $config
 ConfigCompsetGrid::setComponent($file, $config); 
 
 #------------------------------------------------------------------------------------------
@@ -813,7 +813,6 @@ sub _create_caseroot
 
     _create_caseroot_sourcemods($caseroot, $cimeroot, $config);  
     _create_caseroot_tools ($caseroot, $scriptsroot);
-    _create_caseroot_buildconf($caseroot, $cimeroot, $config);  
     _create_caseroot_files($case, $caseroot, $cimeroot, $scriptsroot, $machine, $compiler, $print, $config);
 }
 
@@ -985,63 +984,6 @@ sub _create_caseroot_files
     print $fh "$commandline\n";
     printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hour,$min,$sec);
 }
-
-#-------------------------------------------------------------------------------
-sub _create_caseroot_buildconf
-{
-    my ($caseroot, $cimeroot, $config) = @_;  
-
-    my $dir_atm  = $config->get("BLD_ATM_DIR"); 
-    my $dir_lnd  = $config->get("BLD_LND_DIR"); 
-    my $dir_ocn  = $config->get("BLD_OCN_DIR"); 
-    my $dir_ice  = $config->get("BLD_ICE_DIR"); 
-    my $dir_glc  = $config->get("BLD_GLC_DIR"); 
-    my $dir_rof  = $config->get("BLD_ROF_DIR"); 
-    my $dir_wav  = $config->get("BLD_WAV_DIR");
-
-    my $sysmod;
-    my $buildconf  = "$caseroot/Buildconf";
-    my @bld_dirs = ($dir_atm, $dir_lnd, $dir_ocn, $dir_ice, $dir_glc, $dir_rof, $dir_wav); 
-    foreach my $bld_dir (@bld_dirs) {
-	$sysmod = "cp -p $bld_dir/*.buildlib $buildconf/.";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-	$sysmod = "cp -p $bld_dir/*.buildnml $buildconf/.";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	
-	# TODO: the following is CESM specific and should be moved
-	if ($bld_dir =~ /cism/) {
-	    $sysmod = "cp -p $bld_dir/cism.template $buildconf/.";
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	}
-	if ($bld_dir =~ /cice/) {
-	    $sysmod = "cp $bld_dir/generate_cice_decomp.pl $buildconf/."; 
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	}
-	if ($bld_dir =~ /pop/) {
-	    $sysmod = "cp $bld_dir/generate_pop_decomp.pl $buildconf/."; 
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	} 
-    }
-
-    # copy cpl.buildnml and cpl.buildexe into Buildconf/
-    $sysmod = "cp -p $cimeroot/driver_cpl/bld/cpl.buildnml $buildconf/.";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-    $sysmod = "cp -p $cimeroot/driver_cpl/bld/model.buildexe $buildconf/.";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-    # copy external libraries buildlib.xxx into Buildconf/
-    # ---TODO: this will need to be generalized when csm_share is split up
-
-    my $machines_file = $config->get('MACHINES_SPEC_FILE');
-    my $machines_dir  = dirname($machines_file);
-    foreach my $lib ("gptl", "mct", "csm_share", "pio") {
-	$sysmod = "cp ${machines_dir}/buildlib.${lib} $buildconf/.";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    }
-}
-
 
 #-------------------------------------------------------------------------------
 sub _create_caseroot_sourcemods

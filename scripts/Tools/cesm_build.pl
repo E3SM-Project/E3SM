@@ -39,6 +39,13 @@ my $COMP_GLC;
 my $COMP_WAV;
 my $COMP_ROF;
 my $COMP_INTERFACE;
+my $CONFIG_ATM_DIR;
+my $CONFIG_LND_DIR;
+my $CONFIG_ICE_DIR;
+my $CONFIG_OCN_DIR;
+my $CONFIG_GLC_DIR;
+my $CONFIG_WAV_DIR;
+my $CONFIG_ROF_DIR;
 my $DEBUG;
 my $USE_ESMF_LIB;
 my $MPILIB;
@@ -49,6 +56,7 @@ my $SHAREDPATH;
 my $CLM_CONFIG_OPTS;
 my $CAM_CONFIG_OPTS;
 my $sysmod;
+my $machines_dir;
 
 # Stash the build log paths here..
 my @bldlogs;
@@ -96,10 +104,19 @@ sub main {
     $DEBUG		= `./xmlquery  DEBUG		-value `;
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
+    $CONFIG_ATM_DIR	= `./xmlquery  CONFIG_ATM_DIR	-value `;
+    $CONFIG_LND_DIR	= `./xmlquery  CONFIG_LND_DIR	-value `;
+    $CONFIG_ICE_DIR	= `./xmlquery  CONFIG_ICE_DIR	-value `;
+    $CONFIG_OCN_DIR	= `./xmlquery  CONFIG_OCN_DIR	-value `;
+    $CONFIG_GLC_DIR	= `./xmlquery  CONFIG_GLC_DIR	-value `;
+    $CONFIG_WAV_DIR	= `./xmlquery  CONFIG_WAV_DIR	-value `;
+    $CONFIG_ROF_DIR	= `./xmlquery  CONFIG_ROF_DIR	-value `;
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
     my $OS	        = `./xmlquery  OS		-value `;
     my $COMP_CPL	= `./xmlquery  COMP_CPL		-value `;
+    my $machines_file   = `./xmlquery  MACHINES_SPEC_FILE -value `;
+    $machines_dir       = dirname($machines_file);
 
     $ENV{CIMEROOT}		= $CIMEROOT		;
     $ENV{CASETOOLS}		= $CASETOOLS		;
@@ -164,6 +181,8 @@ sub main {
     
 }
 
+
+#-----------------------------------------------------------------------------------------------
 sub checkInputData()
 {
     print "    .... calling data prestaging  \n";
@@ -265,6 +284,7 @@ sub checkInputData()
 }
 
 
+#-----------------------------------------------------------------------------------------------
 sub buildChecks()
 {
     print "    .... calling cesm build checks \n";
@@ -410,6 +430,7 @@ sub buildChecks()
 }
 
 
+#-----------------------------------------------------------------------------------------------
 sub buildLibraries()
 {
     print "    .... calling cesm builds for utility libraries (compiler is $COMPILER) \n";
@@ -426,9 +447,9 @@ sub buildLibraries()
     
     my $threaddir = 'nothreads';
     if ($ENV{'SMP'} eq 'TRUE' or $ENV{BUILD_THREADED} eq 'TRUE')
-	{
-		$threaddir = 'threads';
-	}
+    {
+	$threaddir = 'threads';
+    }
     
     $ENV{'SHAREDPATH'}  = "$SHAREDLIBROOT/$COMPILER/$MPILIB/$debugdir/$threaddir";
     $SHAREDPATH = $ENV{'SHAREDPATH'};
@@ -451,7 +472,8 @@ sub buildLibraries()
 	map { print $FB "$_: $ENV{$_}\n"} sort keys %ENV;
 	close $FB;
 	
-	eval {system("$CASEBUILD/buildlib.$lib $SHAREDPATH $CASEROOT >> $file_build 2>&1")};
+	my $file = "${machines_dir}/buildlib.${lib}";
+	eval {system("$file $SHAREDPATH $CASEROOT >> $file_build 2>&1")};
 	if ($?)	{
 	    print "ERROR: buildlib.$lib failed, see $file_build\n";
 	    die "ERROR: cat $file_build\n";
@@ -461,9 +483,11 @@ sub buildLibraries()
     }
 }
 
+
+#-----------------------------------------------------------------------------------------------
 sub buildModel()
 {
-    print "    .... calling cesm builds for component libraries  \n";
+    print "    .... calling builds for component libraries  \n";
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 
@@ -473,6 +497,9 @@ sub buildModel()
     my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
                    ocn => $COMP_OCN, glc => $COMP_GLC, wav => $COMP_WAV,
 		   rof => $COMP_ROF);
+    my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_ICE_DIR,
+		   ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
+		   rof => $CONFIG_ROF_DIR);
     my $model;
 
     foreach $model(@modelsbuildorder) {
@@ -522,11 +549,13 @@ sub buildModel()
 	$ENV{'MODEL'} = $model;
 	my $file_build = "$EXEROOT/${model}.bldlog.$LID";
 	my $now = localtime;
-        print "      $now $file_build\n";
+	print "      .... calling $dirs{$model}/buildlib \n";
+        print "           $now $file_build\n";
 
 	# build the component library
 	chdir "$EXEROOT/$model" or die "Could not cd to $EXEROOT/$model: $!\n";
-	eval{ system("$CASEBUILD/$comp.buildlib $CASEROOT $bldroot $compspec >> $file_build 2>&1") };
+
+	eval{ system("$dirs{$model}/buildlib $CASEROOT $bldroot $compspec >> $file_build 2>&1") };
 	if($?) { die "ERROR: $comp.buildlib failed, see $file_build\n";	}
 
 	#push the file_build path into the bldlogs array..
@@ -549,7 +578,7 @@ sub buildModel()
 
     # create the model executable 
     chdir "$EXEROOT/cesm" or die "Could not cd to $EXEROOT/cesm: $!\n";
-    eval{ system("$CASEBUILD/model.buildexe $CASEROOT >> $file_build 2>&1") };
+    eval{ system("$CIMEROOT/driver_cpl/bld/model.buildexe $CASEROOT >> $file_build 2>&1") };
     if ($?) {die "ERROR: model.buildexe failed, see $file_build\n";}
 
     push(@bldlogs, $file_build);

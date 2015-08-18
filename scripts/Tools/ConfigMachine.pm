@@ -37,6 +37,7 @@ sub setMachineFile
     # Determine the machines specificaiton file and see if the
     # target machine is supported
 
+    print "DEBUG: input_file is $input_file \n";
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($input_file);
     my @nodes = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/default_value");
     my $machines_file = $nodes[0]->textContent();

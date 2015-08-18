@@ -77,6 +77,7 @@ if($dryrun){
 #
 # DO not load modules, only create rundir 
 #
+    print "RUNDIR = $RUNDIR\n";
     my $sysmod = "mkdir -p $RUNDIR";
     if(system($sysmod) != 0) {
 	warn "Not able to create $RUNDIR, trying a subdirectory of $CASEROOT";
@@ -143,10 +144,9 @@ my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_IC
 	       ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
 	       rof => $CONFIG_ROF_DIR);
 
-foreach my $model (@modelsorder) {
+foreach my $model (@modelsbuildorder) {
     my $comp = $models{$model};
-    my $file = "$dirs{$model}/buildnml";
-    print "***** Calling $file *****\n";
+    my $file = $dirs{$model};
     if ($opts{'verbose'}) {
 	my $sysmod = "env PREVIEW_NML=1 $file $CASEROOT";
 	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";

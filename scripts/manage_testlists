@@ -17,7 +17,7 @@ my %opts;
 my $scriptdir = dirname(abs_path(__FILE__));
 my $cimeroot  = abs_path("$scriptdir/../");
 my $srcroot   = abs_path("$cimeroot/../");
-my $definitions_file = "$cimeroot/scripts/cimeconfig/files_specifications.xml";
+my $config_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
 my $testlist;
 my $component;
@@ -28,12 +28,12 @@ my $banner = "==================================================================
     # Simple attribute class to facilitate easier test parsing..
     #
     # NOTE(wjs, 2014-11-12): it would be great if we could make more use of
-    # this intermediate CESMTests representation, doing more processing of
-    # lists of CESMTests, and less of the xml representation (e.g., via
-    # convertXMLToCESMTests, then processing that list, then converting back
+    # this intermediate CIMETests representation, doing more processing of
+    # lists of CIMETests, and less of the xml representation (e.g., via
+    # convertXMLToCIMETests, then processing that list, then converting back
     # to xml via addXMLTests).
     # ==========================================================================
-    package CESMTest;
+    package CIMETest;
     
     sub new 
     {
@@ -42,7 +42,7 @@ my $banner = "==================================================================
 	my $self = {
 	    # The following are always defined
 	    compset  => $params{'compset'}  || undef, 	
-	    grid     => $params{'grid'}	|| undef, 	
+	    grid     => $params{'grid'}	    || undef, 	
 	    testname => $params{'testname'} || undef, 	
 	    machine  => $params{'machine'}  || undef, 	
 	    compiler => $params{'compiler'} || undef, 	
@@ -107,7 +107,7 @@ USAGE, OPTIONS, AND EXAMPLES
     This mode is intended for adding new tests to the testlist. The script will parse your text 
     list, and add the new test to the appropriate compset, grid, and test entry.  If duplicates are found, 
     they will be silently ignored, even if they contain a different comment.  Also, please not that since the
-    CESM text testlist never contained a test category, the test category is required to add tests. 
+    CIME text testlist never contained a test category, the test category is required to add tests. 
 
     Example:
     To clone and add a new set of prebeta tests for a machine, one would execute the following command
@@ -129,14 +129,14 @@ USAGE, OPTIONS, AND EXAMPLES
     by each category.  
  
     Example:  
-    To modify the yellowstone PGI prebeta test list for example, one would do the following: 
+    To modify the yellowstone PGI allactive prebeta test list example, one would execute the following command: 
 	manage_testlists -query -outputlist -machine yellowstone -compiler pgi \
-             -category prebeta -component cesm > yellowstone.txt
+             -category prebeta -component allactive > yellowstone.txt
  
     Make any modifications necessary to yellowstone.txt
 
     manage_testlists -synclist -machine yellowstone -compiler pgi \
-             -category prebeta -component cesm -file yellowstone.txt
+             -category prebeta -component allactive -file yellowstone.txt
 
     This command will delete all tests that match yellowstone, the pgi compiler, and the prebeta category. 
     Then all the potentially modified tests in yellowstone.txt will be added back in.   
@@ -145,17 +145,17 @@ USAGE, OPTIONS, AND EXAMPLES
  
     This mode is intended delete any tests found matching the specified arguments.
     Want to delete all the aux_clm tests?  
-    manage_testlists -removetests -category aux_clm -component cesm
+    manage_testlists -removetests -category aux_clm -component allactive
    
     Want to delete all the BG1850CN tests?  
-    manage_testlists -removetests -compset BG1850CN -component cesm
+    manage_testlists -removetests -compset BG1850CN -component allactive
 	
     want to delte the yellowstone aux_science tests using only the gnu compiler? 
     manage_testlists -removetests -category aux_science -machine yellowstone \
-        -compiler gnu -component cesm
+        -compiler gnu -component allactive
 
     Want to remove only tests with the 'clm/decStart' testmod? 
-    manage_testlists -removetests -testmods "clm/decStart" -component cesm
+    manage_testlists -removetests -testmods "clm/decStart" -component allactive
 
     -cleanxml:
 
@@ -313,7 +313,7 @@ sub writeXML
 
 	my $newfilename; 
 	if ($component eq 'allactive') {
-	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
+	    $newfilename = "$cimeroot/scripts/cimeconfig/allactive/testlist_allactive-$dtformat.xml";
 	}
 	elsif ($component eq 'drv') {
 	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
@@ -339,15 +339,15 @@ sub writeXML
 }
 
 #==========================================================================
-# Sort an array of CESMTests. Return a reference to a sorted array.
+# Sort an array of CIMETests. Return a reference to a sorted array.
 #
-# NOTE(wjs, 2014-11-12): Should this be moved into the CESMTest package?
+# NOTE(wjs, 2014-11-12): Should this be moved into the CIMETest package?
 #
 # NOTE(wjs, 2014-11-12): It's possible that we could replace some of the other
-# sorting done in this file with calls to sortCESMTests. In particular, it would
+# sorting done in this file with calls to sortCIMETests. In particular, it would
 # be great if we could do away with sortXML, since that is a complex routine.
 # ==========================================================================
-sub sortCESMTests {
+sub sortCIMETests {
    my $tests = shift;
    my @sorted_tests = sort 
       {$a->{compset} cmp $b->{compset} ||
@@ -387,7 +387,7 @@ sub parseTextList
 	my @lines = <$TSTFILE>;
 	close $TSTFILE;
 
-	# We're building a list of CESMTest objects
+	# We're building a list of CIMETest objects
 	my @tests;
 	my $testsfound = 0;
 	
@@ -444,7 +444,7 @@ sub parseTextList
 			$testmods =~ s/ //g;
 			$testmods =~  s/-/\//g;
 		}
-		my $tst = new CESMTest(compset => $compset, grid => $grid, testname => $testname, 
+		my $tst = new CIMETest(compset => $compset, grid => $grid, testname => $testname, 
 					          machine => $machine, compiler => $compiler); 
 		
 		if(defined $testmods)
@@ -465,7 +465,7 @@ sub parseTextList
 }
 
 #==========================================================================
-# Add a new set of tests.  Go through the list of CESMTests, silently ignore 
+# Add a new set of tests.  Go through the list of CIMETests, silently ignore 
 # any that happen to already be there, and add the tests that don't yet exist 
 # to a new machine element.  Then walk back up the tree of tests, grids, and compsets, 
 # adding any that do not yet exist. 
@@ -604,7 +604,7 @@ sub addXMLTests
 # by machine name, testtype, then compiler.  Then sort the tests, then the grids,
 # finally the compsets.
 #
-# NOTE(wjs, 2014-11-12): Could we replace this with uses of sortCESMTests, to
+# NOTE(wjs, 2014-11-12): Could we replace this with uses of sortCIMETests, to
 # avoid needing to maintain this relatively complex routine?
 # ==========================================================================
 sub sortXML
@@ -964,9 +964,9 @@ sub query
 }
 
 #==========================================================================
-# Convert an xml-based test list to a list of CESMTests
+# Convert an xml-based test list to a list of CIMETests
 # ==========================================================================
-sub convertXMLToCESMTests {
+sub convertXMLToCIMETests {
    my $testxml = shift;
    my @tests;
    foreach my $compsetnode ($testxml->findnodes('./testlist/compset')) {
@@ -982,7 +982,7 @@ sub convertXMLToCESMTests {
                my $testmods = $machnode->getAttribute('testmods');
                my $comment = $machnode->getAttribute('comment');
                
-               my $tst = new CESMTest(compset => $compset,
+               my $tst = new CIMETest(compset => $compset,
                                       grid => $grid,
                                       testname => $testname,
                                       machine => $machine,
@@ -1013,7 +1013,7 @@ sub textOutput {
    my $testxml = shift;
    #print $testxml->toString(1);
    my @output;
-   my $tests = convertXMLToCESMTests($testxml);
+   my $tests = convertXMLToCIMETests($testxml);
    foreach my $test (@$tests) {
       my $compset = $test->{compset};
       my $grid = $test->{grid};
@@ -1063,11 +1063,10 @@ sub formattedOutput {
                          "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "TestMods (optional)", "Comment(Optional)");
 
    my %configcompsets;
-   my $file_xml = XML::LibXML->new()->parse_file($definitions_file);
-   my @file_nodes= $file_xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/*");
-   foreach my $file_node (@file_nodes) {
-       my $primary_component = $file_node->getAttribute('primary_component');
-       my $file = $file_node->textContent();
+   my $xml = XML::LibXML->new()->parse_file($config_file);
+   my @nodes= $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/*");
+   foreach my $node (@nodes) {
+       my $file = $node->textContent();
        $file =~ s/\$CIMEROOT/$cimeroot/;
        $file =~ s/\$SRCROOT/$srcroot/;
        my $compset_xml = XML::LibXML->new()->parse_file($file);
@@ -1085,7 +1084,7 @@ sub formattedOutput {
        }
    }
 
-   my $tests = convertXMLToCESMTests($testxml);
+   my $tests = convertXMLToCIMETests($testxml);
    foreach my $test (@$tests) {
       my $compset = $test->{compset};
       my $fcompset = "$compset ($configcompsets{$compset})";
@@ -1176,7 +1175,7 @@ sub setTestlist{
     my $list;
 
     if ($comp =~ /^allactive/) {
-	$list = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive.xml"; 
+	$list = "$cimeroot/scripts/cimeconfig/allactive/testlist_allactive.xml"; 
     } elsif ($comp =~ /^drv/) {
 	$list = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml"; 
     } else {
@@ -1199,8 +1198,8 @@ sub setTestlist{
 #==========================================================================
 sub cleanTestlistXML {
    my $testxml = shift;
-   my $cesm_tests = convertXMLToCESMTests($testxml);
-   my $testxml_cleaned = addXMLTests($cesm_tests, blankXML());
+   my $cime_tests = convertXMLToCIMETests($testxml);
+   my $testxml_cleaned = addXMLTests($cime_tests, blankXML());
    return $testxml_cleaned;
 }
 

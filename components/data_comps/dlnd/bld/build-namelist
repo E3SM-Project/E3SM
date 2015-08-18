@@ -3,12 +3,7 @@
 #
 # build-namelist
 #
-# The simplest use of build-namelist is to execute it from the build directory where configure
-# was run.  
-#
-# Date        Contributor      Modification
-# -------------------------------------------------------------------------------------------
-# 2012-03-10  Vertenstein      Updated for cesm1.1
+# This is the build-namelist script for the CIME dlnd (Data Lnd Model).
 #--------------------------------------------------------------------------------------------
 
 use strict;
@@ -154,7 +149,7 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-#The root directory to cesm utils Tools
+#The root directory to utils Tools
 my $cimeroot   = abs_path( "${SCRIPTSROOT}/../" );
 my $perl5lib   = "$cimeroot/utils/perl5lib";
 
@@ -326,9 +321,9 @@ my $DLND_MODE        = $xmlvars{'DLND_MODE'};
 my $GLC_NEC          = $xmlvars{'GLC_NEC'};
 
 (-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+** DLND $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################
 # Streams file(s)                  #
@@ -571,7 +566,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- CESM inputdata root directory
+#  $DIN_LOC_ROOT      -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -628,7 +623,7 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the CESM inputdata root directory.
+       # the inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});
