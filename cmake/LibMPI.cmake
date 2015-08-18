@@ -78,7 +78,7 @@ function (add_mpi_test TESTNAME)
 
         # Run tests from within an interactive session (COBALT_PARTNAME defined)
         set (REQUIRED_OPTION --block \$ENV{COBALT_PARTNAME}) 
-        set (RUNJOB_NPF --np ${num_proc})
+        set (RUNJOB_NPF --np ${num_procs})
         if (DEFINED ENV{BGQ_RUNJOB})
             set (RUNJOB $ENV{BGQ_RUNJOB})
         else ()
