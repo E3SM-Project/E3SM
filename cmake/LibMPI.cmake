@@ -5,67 +5,45 @@ include (CMakeParseArguments)
 #
 
 #==============================================================================
-# - Check the platform
+# - Get the machine platform name
 #
-# Defines the following variables:
+# Syntax:  platform_name (VARIABLE)
 #
-#    PLATFORM - The name of the platform (alcf, ucar, nersc, etc)
-#    PLATFORM_MPIEXEC - The MPIEXEC command name to use when launching tests
-function (check_platform)
+function (platform_name RETURN_VALUE)
 
-    if (NOT DEFINED PLATFORM)
-        site_name (sitename)
-
-        set (PLATFORM_HOSTNAME ${sitename}
-             CACHE STRING "Platform host name")             
-
-        # UCAR/NCAR Machines
-        if (sitename MATCHES "^yslogin" OR
-            sitename MATCHES "^geyser" OR
-            sitename MATCHES "^caldera")
-
-            set (PLATFORM "ucar"
-                 CACHE STRING "Platform name")             
+    # Get sitename
+    site_name (SITENAME)
     
-            set (PLATFORM_MPIEXEC "execca mpirun.lsf"
-                 CACHE STRING "Platform MPI job launch command")
-
-        # Argonne ALCF Machines
-        elseif (sitename MATCHES "^mira" OR
-                sitename MATCHES "^cetus" OR
-                sitename MATCHES "^vesta" OR
-                sitename MATCHES "^cooley")
-
-            set (PLATFORM "alcf"
-                 CACHE STRING "Platform name")             
+    # Determine platform name from site name...
     
-            set (PLATFORM_MPIEXEC "qsub"
-                 CACHE STRING "Platform MPI job launch command")
+    # UCAR/NCAR Machines
+    if (SITENAME MATCHES "^yslogin" OR
+        SITENAME MATCHES "^geyser" OR
+        SITENAME MATCHES "^caldera")
+        
+        set (${VARIABLE} "ucar" PARENT_SCOPE)
+        
+    # ALCF/Argonne Machines
+    elseif (SITENAME MATCHES "^mira" OR
+            SITENAME MATCHES "^cetus" OR
+            SITENAME MATCHES "^vesta" OR
+            SITENAME MATCHES "^cooley")
+        
+        set (${VARIABLE} "alcf" PARENT_SCOPE)
+        
+    # ALCF/Argonne Machines
+    elseif (SITENAME MATCHES "^edison" OR
+        SITENAME MATCHES "^carver" OR
+        SITENAME MATCHES "^hopper")
+        
+        set (${VARIABLE} "nersc" PARENT_SCOPE)
+        
+    else ()
 
-        # NERSC Machines
-        elseif (sitename MATCHES "^edison" OR
-                sitename MATCHES "^hopper" OR
-                sitename MATCHES "^carver")
-
-            set (PLATFORM "nersc"
-                 CACHE STRING "Platform name")             
+        set (${VARIABLE} "unknown" PARENT_SCOPE)
     
-            set (PLATFORM_MPIEXEC ${MPIEXEC}
-                 CACHE STRING "Platform MPI job launch command")
-
-        # All other machines (depend upon FindMPI's MPIEXEC variable)
-        else ()
-
-            set (PLATFORM "unknown"
-                 CACHE STRING "Platform name")             
-    
-            set (PLATFORM_MPIEXEC ${MPIEXEC}
-                 CACHE STRING "Platform MPI job launch command")
-
-        endif ()
-
     endif ()
-
+        
 endfunction ()
 
 #==============================================================================
@@ -88,13 +66,16 @@ function (add_mpi_test TESTNAME)
     set (num_procs ${${TESTNAME}_NUMPROCS})
     set (timeout ${${TESTNAME}_TIMEOUT})
     
+    # Get the platform name
+    platform_name (PLATFORM)
+    
     # UCAR LSF execution
-    if (PLATFORM STREQUAL "ucar" )
+    if (PLATFORM STREQUAL "ucar")
         ###
         ### note: no space between -n and num_procs for mpirun.lsf on
         ### yellowstone
         ###
-        set (EXE_CMD ${PLATFORM_MPIEXEC} ${exe_cmds} -n${num_procs})
+        set (EXE_CMD execca mpirun.lsf ${exe_cmds} -n${num_procs})
         
     # Argonne COBALT execution
     elseif (PLATFORM STREQUAL "alcf" )
