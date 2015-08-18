@@ -14,7 +14,7 @@ OBJS =  mpas_li_core.o \
     mpas_li_mask.o \
     mpas_li_velocity_external.o
 
-ifeq "$(BUILD_INTERFACE)" "true"
+ifneq (, $(findstring MPAS_LI_BUILD_INTERFACE,$(CPPFLAGS)))
     OBJS += Interface_velocity_solver.o
 endif
 

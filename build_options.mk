@@ -9,19 +9,18 @@ override CPPFLAGS += -DCORE_LANDICE
 # ===================================
 # Check if building with LifeV, Albany, and/or PHG external libraries
 
-BUILD_INTERFACE=false  # This will become true if any of the external libraries are being used.
-
 # LifeV can solve L1L2 or FO
 ifeq "$(LIFEV)" "true"
+    EXTERNAL_DYCORE_FLAG += -DLIFEV
     EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_L1L2
     EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_FIRSTORDER
-    BUILD_INTERFACE = true
+    EXTERNAL_DYCORE_FLAG += -DMPAS_LI_BUILD_INTERFACE
 endif # LIFEV IF
 
 # Albany can only solve FO at present
 ifeq "$(ALBANY)" "true"
     EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_FIRSTORDER
-    BUILD_INTERFACE = true
+    EXTERNAL_DYCORE_FLAG += -DMPAS_LI_BUILD_INTERFACE
 endif # ALBANY IF
 
 # Currently LifeV AND Albany is not allowed
@@ -40,7 +39,7 @@ endif
 # PHG can only Stokes at present
 ifeq "$(PHG)" "true"
     EXTERNAL_DYCORE_FLAG += -DUSE_EXTERNAL_STOKES
-    BUILD_INTERFACE = true
+    EXTERNAL_DYCORE_FLAG += -DMPAS_LI_BUILD_INTERFACE
 endif # PHG IF
 
 override CPPFLAGS += $(EXTERNAL_DYCORE_FLAG)
