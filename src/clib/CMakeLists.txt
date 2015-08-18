@@ -21,14 +21,13 @@ set (PIO_C_SRCS topology.c
 
 add_library (pioc ${PIO_C_SRCS})
 
-set (PIO_C_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
-     CACHE STRING "PIO C include directories")
-set (PIO_C_DEFINITIONS ""
-     CACHE STRING "PIO C compiler definitions")
-set (PIO_C_COMPILE_FLAGS ""
-     CACHE STRING "PIO C compiler flags")
+set (PIO_C_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+set (PIO_C_DEFINITIONS)
+set (PIO_C_COMPILE_FLAGS)
 
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    list (APPEND PIO_C_COMPILE_FLAGS -std=c99)
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
     list (APPEND PIO_C_COMPILE_FLAGS -std=c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
     list (APPEND PIO_C_COMPILE_FLAGS -c99)
@@ -42,8 +41,8 @@ endif()
     
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
-    list (APPEND PIO_C_DEFINITIONS -DTIMING ${GPTL_DEFINITIONS})
     list (APPEND PIO_C_INCLUDE_DIRS ${GPTL_INCLUDE_DIRS})
+    list (APPEND PIO_C_DEFINITIONS TIMING ${GPTL_DEFINITIONS})
     target_link_libraries (pioc gptl)
 endif ()
 
@@ -54,20 +53,20 @@ find_package (MPI REQUIRED)
 find_package (NetCDF "4.3.3" COMPONENTS C)
 if (NetCDF_C_FOUND)
     list (APPEND PIO_C_INCLUDE_DIRS ${NetCDF_C_INCLUDE_DIRS})
-    list (APPEND PIO_C_DEFINITIONS -D_NETCDF)
-    target_link_libraries (pioc ${NetCDF_C_LIBRARIES})
-    if (${NetCDF_C_HAS_PARALLEL})
-        list (APPEND PIO_C_DEFINITIONS -D_NETCDF4)
+    list (APPEND PIO_C_DEFINITIONS _NETCDF)
+    if (NetCDF_C_HAS_PARALLEL)
+        list (APPEND PIO_C_DEFINITIONS _NETCDF4)
     endif ()
+    target_link_libraries (pioc ${NetCDF_C_LIBRARIES})
 else ()
-    list (APPEND PIO_C_DEFINITIONS -D_NONETCDF)
+    list (APPEND PIO_C_DEFINITIONS _NONETCDF)
 endif ()
 
 #===== PnetCDF-C =====
 find_package (PnetCDF "1.6" COMPONENTS C)
 if (PnetCDF_C_FOUND)
     list (APPEND PIO_C_INCLUDE_DIRS ${PnetCDF_C_INCLUDE_DIRS})
-    list (APPEND PIO_C_DEFINITIONS -D_PNETCDF)
+    list (APPEND PIO_C_DEFINITIONS _PNETCDF)
     target_link_libraries (pioc ${PnetCDF_C_LIBRARIES})
 
     # Check library for varn functions
@@ -75,10 +74,10 @@ if (PnetCDF_C_FOUND)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
     check_function_exists (ncmpi_get_varn PnetCDF_VARN)
     if (PnetCDF_VARN)
-        list (APPEND PIO_C_DEFINITIONS -DUSE_PNETCDF_VARN -DUSE_PNETCDF_VARN_ON_READ)
+        list (APPEND PIO_C_DEFINITIONS USE_PNETCDF_VARN USE_PNETCDF_VARN_ON_READ)
     endif()  
 else ()
-    list (APPEND PIO_C_DEFINITIONS -D_NOPNETCDF)
+    list (APPEND PIO_C_DEFINITIONS _NOPNETCDF)
 endif ()
 
 #===== Add EXTRAs =====
@@ -93,9 +92,19 @@ if (NOT PnetCDF_C_FOUND AND NOT NetCDF_C_FOUND)
 endif ()
 
 #==============================================================================
-#  SET INCLUDES, DEFINITIONS, ETC.
+#  SET TARGET PROPERTIES
 #==============================================================================
 
-include_directories (${PIO_C_INCLUDE_DIRS})
-add_definitions (${PIO_C_DEFINITIONS})
-list (APPEND CMAKE_C_FLAGS ${PIO_C_COMPILE_FLAGS})
+set_target_properties (pioc PROPERTIES
+    INCLUDE_DIRECTORIES "${PIO_C_INCLUDE_DIRS}"
+    COMPILE_DEFINITIONS "${PIO_C_DEFINITIONS}"
+    COMPILE_FLAGS "${PIO_C_COMPILE_FLAGS}")
+
+# Cache for out-of-scope use
+set (PIO_C_INCLUDE_DIRS "${PIO_C_INCLUDE_DIRS}"
+     CACHE STRING "PIO C include directories")
+set (PIO_C_DEFINITIONS "${PIO_C_DEFINITIONS}"
+     CACHE STRING "PIO C compiler definitions")
+set (PIO_C_COMPILE_FLAGS "${PIO_C_COMPILE_FLAGS}"
+     CACHE STRING "PIO C compiler flags")
+

@@ -21,11 +21,8 @@ set (GPTL_Fortran_SRCS perf_mod.F90
 
 add_library (gptl EXCLUDE_FROM_ALL ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
 
-set (GPTL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} 
-                       ${CMAKE_CURRENT_BINARY_DIR} 
-     CACHE STRING "GPTL include directories")
-set (GPTL_DEFINITIONS -DINCLUDE_CMAKE_FCI
-     CACHE STRING "GPTL compiler definitions")
+set (GPTL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+set (GPTL_DEFINITIONS INCLUDE_CMAKE_FCI)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES
@@ -34,14 +31,22 @@ set (GPTL_DEFINITIONS -DINCLUDE_CMAKE_FCI
 #===== MPI =====
 find_package (MPI REQUIRED)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
-    list (APPEND GPTL_DEFINITIONS -DHAVE_MPI)
+    list (APPEND GPTL_DEFINITIONS HAVE_MPI)
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
 endif ()
 
 #==============================================================================
-#  ADD INCLUDES AND DEFINITIONS
+#  SET TARGET PROPERTIES
 #==============================================================================
 
-include_directories(${GPTL_INCLUDE_DIRS})
-add_definitions (${GPTL_DEFINITIONS})
+set_target_properties (gptl PROPERTIES
+    INCLUDE_DIRECTORIES "${GPTL_INCLUDE_DIRS}"
+    COMPILE_DEFINITIONS "${GPTL_DEFINITIONS}")
+
+# Cache for out-of-scope use
+set (GPTL_INCLUDE_DIRS "${GPTL_INCLUDE_DIRS}" 
+     CACHE STRING "GPTL include directories")
+set (GPTL_DEFINITIONS "${GPTL_DEFINITIONS}"
+     CACHE STRING "GPTL compiler definitions")
+    
