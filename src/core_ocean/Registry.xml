@@ -1195,6 +1195,18 @@
 			<var name="velocityY"/>
 		</stream>
 
+                <stream name="forcing_data"
+                                type="input"
+                                filename_template="forcing_data.nc"
+                                input_interval="initial_only"
+                                runtime_format="single_file"
+                                mode="forward">
+
+                        <var name="windStressZonal"/>
+                        <var name="windStressMeridional"/>
+
+                </stream>
+
 		<stream name="forcing"
 				type="none"
 				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"
