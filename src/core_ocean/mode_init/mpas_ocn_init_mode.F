@@ -118,7 +118,7 @@ module ocn_init_mode
 
       call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='input_init', ierr=err_tmp)
-      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+   !  call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       call mpas_timer_stop('reset_io_alarms')
 
       !
@@ -252,7 +252,7 @@ module ocn_init_mode
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_timer_start('io_write', .false.)
-      call mpas_stream_mgr_write(domain % streamManager, streamID='output_init', forceWriteNow=.true., ierr=ierr)
+      call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_timer_stop('io_write')
       call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
