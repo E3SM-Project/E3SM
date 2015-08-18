@@ -92,10 +92,10 @@ function (add_mpi_test TESTNAME)
         set (EXE_CMD ${RUNJOB} ${RUNJOB_NPF} ${REQUIRED_OPTION}
                      ${MPIEXEC_PREFLAGS} : ${exe_cmds})
     
-    # All others
+    # All others (assume can run MPIEXEC directly)
     else()
         set(MPIEXEC_NPF ${MPIEXEC_NUMPROC_FLAG} ${num_procs})
-        set(EXE_CMD ${PLATFORM_MPIEXEC} ${MPIEXEC_NPF} ${MPIEXEC_PREFLAGS} ${exe_cmds})
+        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${MPIEXEC_PREFLAGS} ${exe_cmds})
     endif()
     
     # Add the test to CTest
