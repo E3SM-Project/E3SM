@@ -71,10 +71,11 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
                                DEFINITIONS -I${NetCDF_C_INCLUDE_DIR})
         
                 # Check for parallel support
-                check_file (NetCDF_C_HAS_PARALLEL
-                            NAME netcdf_par.h
-                            HINTS ${NetCDF_C_INCLUDE_DIRS}
-                            COMMENT "whether NetCDF has parallel support")
+                check_macro (NetCDF_C_HAS_PARALLEL
+                             NAME TryNetCDF_PARALLEL.c
+                             HINTS ${CMAKE_MODULE_PATH}
+                             DEFINITIONS -I${NetCDF_C_INCLUDE_DIR}
+                             COMMENT "whether NetCDF has parallel support")
                                
             endif ()
 
