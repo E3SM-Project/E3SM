@@ -423,6 +423,22 @@ value of RUN_STARTDATE will be date2.
 <!-- here                                    --> 
 <!-- ======================================= -->
 
+<!-- ======================================= -->
+<!-- QL, 150525 active WW3 and data wave     -->
+<!-- ======================================= -->
+<COMPSET sname="B_2000_WAV"             alias="B_WAV"      >2000_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_WW3</COMPSET>
+<COMPSET sname="B_1850-2000_WAV"	alias="BHIST_WAV"  >HIST_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_WW3</COMPSET>
+<COMPSET sname="B_1850-2000_CAM5_WAV"	alias="BHISTC5_WAV"	>HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_WW3</COMPSET>
+<COMPSET sname="C_NORMAL_YEAR_WAV"      alias="C_WAV"      >2000_DATM%NYF_SLND_DICE%SSMI_POP2_DROF%NYF_SGLC_WW3</COMPSET>
+<COMPSET sname="C_INTERANNUAL_WAV"      alias="CIAF_WAV"   >2000_DATM%IAF_SLND_DICE%SIAF_POP2_DROF%IAF_SGLC_WW3</COMPSET>
+<COMPSET sname="G_NORMAL_YEAR_WAV"      alias="G_WAV"      >2000_DATM%NYF_SLND_CICE_POP2_DROF%NYF_SGLC_WW3</COMPSET>
+<COMPSET sname="G_INTERANNUAL_WAV"      alias="GIAF_WAV"   >2000_DATM%IAF_SLND_CICE_POP2_DROF%IAF_SGLC_WW3</COMPSET>
+<COMPSET sname="B_1850-2000_CAM5_DWAV"	alias="BHISTC5_DWAV"	>HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV%COPY</COMPSET>
+<COMPSET sname="C_NORMAL_YEAR_DWAV"     alias="C_DWAV"     >2000_DATM%NYF_SLND_DICE%SSMI_POP2_DROF%NYF_SGLC_DWAV%COPY</COMPSET>
+<COMPSET sname="C_INTERANNUAL_DWAV"     alias="CIAF_DWAV"  >2000_DATM%IAF_SLND_DICE%SIAF_POP2_DROF%IAF_SGLC_DWAV%COPY</COMPSET>
+<COMPSET sname="G_NORMAL_YEAR_DWAV"     alias="G_DWAV"     >2000_DATM%NYF_SLND_CICE_POP2_DROF%NYF_SGLC_DWAV%COPY</COMPSET>
+<COMPSET sname="G_INTERANNUAL_DWAV"     alias="GIAF_DWAV"  >2000_DATM%IAF_SLND_CICE_POP2_DROF%IAF_SGLC_DWAV%COPY</COMPSET>
+
 <!-- ================================================================================== -->
 <!-- SECTION COMPSET COMPONENTS -->
 <!-- ================================================================================== -->
@@ -1377,6 +1393,31 @@ DOCN%COPY => docn copy mode
 </help>
 
 <!-- ================================================================================== -->
+<!-- SECTION: component dwav, QL, 150525				 	        -->     
+<!-- ================================================================================== -->
+
+<DWAV_MODE compset="_DWAV%NULL">null</DWAV_MODE>
+<DWAV_MODE compset="_DWAV%COPY">copyall</DWAV_MODE>
+
+<!-- ======================================= -->
+<!--          USER_DEFINED section           -->
+<!-- Add new values for                      -->
+<!--   DWAV_MODE                             -->
+<!-- here                                    -->
+<!-- ======================================= -->
+
+<desc compset="_DWAV%NULL">dwav null mode:</desc>
+<desc compset="_DWAV%COPY">dwav copy mode:</desc>
+
+<help>
+=========================================
+DWAV naming conventions
+=========================================
+DWAV%NULL => dwav null mode
+DWAV%COPY => dwav copy mode
+</help>
+
+<!-- ================================================================================== -->
 <!-- SECTION: SSTICE xml variables for docn/dice/cice(pres) -->     
 <!-- ================================================================================== -->
 
@@ -1557,6 +1598,9 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset="_DATM.*_CLM"        > 48</ATM_NCPL> 
 <ATM_NCPL compset="_DATM%COPYALL_NPS"  > 72</ATM_NCPL> 
 <ATM_NCPL compset="_DATM.*_DICE.*_POP2">  4</ATM_NCPL>
+<!-- QL, 150629, 6h coupling frequency for C_WAV/DWAV -->
+<ATM_NCPL compset="_DATM.*_DICE.*_POP2.*_WW3">  4</ATM_NCPL>
+<ATM_NCPL compset="_DATM.*_DICE.*_POP2.*_DWAV">  4</ATM_NCPL>
 <ATM_NCPL compset="_DATM.*_CICE.*_DOCN"> 24</ATM_NCPL>
 <ATM_NCPL compset="_DATM.*_CICE.*_POP2"> 48</ATM_NCPL>
 <ATM_NCPL compset="_DATM.*_DOCN%US20"  > 24</ATM_NCPL> 
@@ -1575,7 +1619,8 @@ DOCN%COPY => docn copy mode
 <ATM_NCPL compset=".+" grid="1x1_urbanc" >48</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="1x1_mexico" >24</ATM_NCPL>
 <ATM_NCPL compset=".+" grid="1x1_vancou" >24</ATM_NCPL>
-<ATM_NCPL compset=".+" grid="w%ww3a"     >48</ATM_NCPL>
+<!-- QL, 150629, high frequency coupling not needed when forced by datm and dice -->
+<!-- <ATM_NCPL compset=".+" grid="w%ww3a"     >48</ATM_NCPL> -->
 
 <OCN_NCPL compset=".+" >$ATM_NCPL</OCN_NCPL>
 <OCN_NCPL compset="_POP2"                     >1</OCN_NCPL>
@@ -1917,6 +1962,14 @@ DOCN%COPY => docn copy mode
 <!--    RUN_REFDATE                          --> 
 <!-- here                                    -->
 <!-- ======================================= -->
+
+<!-- QL, 150629, BHISTC5 with active waves -->
+<RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a" compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_WW3">b40_1850_c02c_76jpf</RUN_REFCASE>   
+<RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a" compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_WW3">0221-01-01</RUN_REFDATE> 
+
+<!-- QL, 150629, BHISTC5 with data waves -->
+<RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a" compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV">b40_1850_c02c_76jpf</RUN_REFCASE>   
+<RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a" compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV">0221-01-01</RUN_REFDATE> 
 
 <!-- ================================================================================== -->
 <!-- SECTION: estimated cost (used only for development purposes)  -->     

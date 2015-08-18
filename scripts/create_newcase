@@ -984,7 +984,8 @@ my @comps      = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $c
 foreach my $comp (@comps)  {
     $comp =~ s/\'//g;
     my $compdir;
-    if ($comp =~ /^d[ailor]/) {
+    if ($comp =~ /^d[ailorw]/) {
+	# QL, 150527, add support for dwav
 	$compdir = "$cimeroot/components/data_comps/$comp/bld";
     } elsif ($comp =~ /^s[aiglorw]/) {
 	$compdir = "$cimeroot/components/stub_comps/$comp/bld";
@@ -1500,6 +1501,9 @@ NAME:
 	if ($attr{'atm_grid'} && $attr{'lnd_grid'}) {$found = 1;}
 	if ($attr{'rof_grid'} && $attr{'lnd_grid'}) {$found = 1;}
 	if ($attr{'rof_grid'} && $attr{'ocn_grid'}) {$found = 1;}
+	# QL, 150525, atm<->wav and ocn<->wav
+	if ($attr{'atm_grid'} && $attr{'wav_grid'}) {$found = 1;}
+	if ($attr{'ocn_grid'} && $attr{'wav_grid'}) {$found = 1;}
 	unless ($found) {
 	    die "ERROR in config_grid.xml gridmap element attributes \n";
 	}
@@ -1527,6 +1531,21 @@ NAME:
 	    }
 	    if ($attr{'rof_grid'} && $attr{'ocn_grid'}) {
 		if ($rof_grid eq $attr{'rof_grid'} && $ocn_grid eq $attr{'ocn_grid'}) {
+		    my $name = clean($child->get_name());
+		    my $val  = clean($child->get_text());
+		    $cfg_ref->set($name, $val);
+		}
+	    }
+	    # QL, 150525, atm<->wav, ocn<->wav
+	    if ($attr{'atm_grid'} && $attr{'wav_grid'}) {
+		if ($atm_grid eq $attr{'atm_grid'} && $wav_grid eq $attr{'wav_grid'}) {
+		    my $name = clean($child->get_name());
+		    my $val  = clean($child->get_text());
+		    $cfg_ref->set($name, $val);
+		}
+	    }
+	    if ($attr{'ocn_grid'} && $attr{'wav_grid'}) {
+		if ($ocn_grid eq $attr{'ocn_grid'} && $wav_grid eq $attr{'wav_grid'}) {
 		    my $name = clean($child->get_name());
 		    my $val  = clean($child->get_text());
 		    $cfg_ref->set($name, $val);

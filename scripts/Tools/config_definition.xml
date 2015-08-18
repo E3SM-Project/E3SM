@@ -152,9 +152,10 @@
  sdesc="Name of river runoff component "
 ></entry>
 
+<!--- QL, 150525, add dwav -->
 <entry id="COMP_WAV"
  type="char"
- valid_values="ww3,xwav,swav"
+ valid_values="ww3,xwav,swav,dwav"
  value="swav"
  group="case_comp"
  sdesc="Name of wave component"
@@ -2011,6 +2012,20 @@ Default is prescribed."
  sdesc="Sets SOM forcing data filename for pres runs, only used in D and E compset"
  ldesc="Sets SOM forcing data filename for pres runs, only used in D and E compset"
 ></entry>
+
+<!-- ======================================================================= -->
+<!-- DWAV, QL, 150525                                                        -->
+<!-- ======================================================================= -->
+
+<entry id="DWAV_MODE" 
+ type="char"
+ valid_values="copyall,null"
+ value="copyall" 
+ group="run_component_dwav"
+ sdesc="valid values: copyall,null"
+ ldesc="
+DWAV mode. To be set..."
+></entry> 
 
 <!-- ======================================================================= -->
 <!-- DROF                                                                    -->

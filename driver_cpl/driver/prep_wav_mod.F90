@@ -236,8 +236,11 @@ contains
        enddo
 
        call mct_aVect_setSharedIndices(a2x_w, x2w_w, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(o2x_w, x2w_w, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(i2x_w, x2w_w, a2x_SharedIndices)
+       ! QL, 150625, bug?
+       ! a2x_SharedIndices -> o2x_SharedIndices
+       ! a2x_SharedIndices -> i2x_SharedIndices
+       call mct_aVect_setSharedIndices(o2x_w, x2w_w, o2x_SharedIndices)
+       call mct_aVect_setSharedIndices(i2x_w, x2w_w, i2x_SharedIndices)
 
        !--- document copy operations ---
        do i=1,a2x_SharedIndices%shared_real%num_indices

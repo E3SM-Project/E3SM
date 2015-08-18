@@ -268,7 +268,8 @@ if (! $clean ) {
 	print "Creating user_nl_xxx files for components and cpl$eol";
     }
     my @models = qw( ATM LND ICE OCN GLC ROF WAV );
-    my @multi_support = qw(cam datm clm dlnd cice dice pop docn rtm drof cism ww3);
+    # QL, 150527, add support for dwav
+    my @multi_support = qw(cam datm clm dlnd cice dice pop docn rtm drof cism ww3 dwav);
     # loop over target models
     foreach my $model (@models) {
 	# what is component for target model
@@ -404,12 +405,13 @@ sub build_usernl_files {
 	    while ($inst_counter <= $NINST) {
 		$inst_string = `printf _%04d $inst_counter`;
 		if ( ! -f "$CASEROOT/user_nl_${comp}${inst_string}" ) {
-		    if ($comp =~ /^d[ailor]/) {
+		    # QL, 150527, add support for dwav, swav, xwav
+		    if ($comp =~ /^d[ailorw]/) {
 			my $sysmod = "cp $CIMEROOT/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}${inst_string}";
 			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
-		    } elsif ($comp =~ /^s[aiglor]/) {
+		    } elsif ($comp =~ /^s[aiglorw]/) {
 			# do nothing
-		    } elsif ($comp =~ /^x[aiglor]/) {
+		    } elsif ($comp =~ /^x[aiglorw]/) {
 			# do nothing
 		    } else {
 			if (-f "$CIMEROOT/../components/${comp}/bld/user_nl_${comp}") {
@@ -422,12 +424,13 @@ sub build_usernl_files {
 	    }
 	} else {
 	    if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
-		if ($comp =~ /^d[ailor]/) {
+		# QL, 150527, add support for dwav, swav, xwav
+		if ($comp =~ /^d[ailorw]/) {
 		    my $sysmod = "cp $CIMEROOT/components/data_comps/${comp}/bld/user_nl_${comp} $CASEROOT/user_nl_${comp}";
 		    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
-		} elsif ($comp =~ /^s[aiglor]/) {
+		} elsif ($comp =~ /^s[aiglorw]/) {
 		    # do nothing
-		} elsif ($comp =~ /^x[aiglor]/) {
+		} elsif ($comp =~ /^x[aiglorw]/) {
 		    # do nothing
 		} else {
 		    if (-f "$CIMEROOT/../components/${comp}/bld/user_nl_${comp}") {
