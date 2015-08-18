@@ -33,7 +33,7 @@ function (check_property VARIABLE)
         if (${VARIABLE}_TRY_FILE)
             try_compile (COMPILE_RESULT
                          ${CMAKE_CURRENT_BINARY_DIR}/try${VARIABLE}
-                         SOURCES ${${VARIABLE}_TRY_FILE}
+                         ${${VARIABLE}_TRY_FILE}
                          COMPILE_DEFINITIONS ${${VARIABLE}_DEFINITIONS}
                          OUTPUT_VARIABLE TryOUT)
             if (COMPILE_RESULT)
