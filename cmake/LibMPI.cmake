@@ -70,13 +70,35 @@ function (add_mpi_test TESTNAME)
     # UCAR LSF execution
     if (PLATFORM STREQUAL "ucar")
 
-        # Run tests from within an MPI job (i.e., interactive)
+        # Run tests from within an an interactive session
         set (EXE_CMD mpirun.lsf ${exe_cmds})
-        
+
+    # ALCF COBALT execution
+    if (PLATFORM STREQUAL "alcf")
+
+        # Run tests from within an interactive session (COBALT_PARTNAME defined)
+        set (REQUIRED_OPTION --block \$ENV{COBALT_PARTNAME}) 
+        set (RUNJOB_NPF --np ${num_proc})
+        if (DEFINED ENV{BGQ_RUNJOB})
+            set (RUNJOB $ENV{BGQ_RUNJOB})
+        else ()
+            set (RUNJOB runjob)
+        endif ()
+        set (EXE_CMD ${RUNJOB} ${RUNJOB_NPF} ${REQUIRED_OPTION} ${MPIEXEC_PREFLAGS} : ${exe_cmds})
+
+    # NERSC PBS execution
+    if (PLATFORM STREQUAL "nersc")
+
+        # Run tests from within an interactive session
+        set (EXE_CMD aprun -n ${num_procs} ${exe_cmds})
+
     # All others (assume can run MPIEXEC directly)
     else()
+
+        # Run tests directly from the command line
         set(MPIEXEC_NPF ${MPIEXEC_NUMPROC_FLAG} ${num_procs})
         set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${MPIEXEC_PREFLAGS} ${exe_cmds})
+
     endif()
     
     # Add the test to CTest
