@@ -1,0 +1,769 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_SUBCOMPONENT
+#define CORE_SUBCOMPONENT
+
+namespace core {
+   template<
+      // physical quantity
+      class array = carray<>,
+
+      // derived geometric quantity
+      class array_geometrical = typename traits<array>::array_physical,
+
+      // nodal coordinate
+      class array_nodal = array_geometrical
+   >
+   class remapper;
+}
+
+
+
+// =============================================================================
+// Geometry-related subcomponents
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Geometry_edge
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void geometry_edge(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   int edge_old_num;
+
+   geometry_edge(
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_vert,
+
+      edge_old_num = r.edge_old_num(),
+      r.edge_old_left,
+      r.edge_old_right,
+      r.edge_old_vert
+   );
+
+   // Resize, because edge_old_num probably changed. It's safe to call resize
+   // rather than extend because only edge_old_num can be different here, and
+   // everything of length edge_old_num (edge_old_left, edge_old_right, and
+   // edge_old_vert) has been completely computed here. In fact, those arrays
+   // were resized already by the low-level geometry_edge function, so all the
+   // resize really does is to change the value of edge_old_num stored in r.
+
+   if (r.connectivity == core::same)
+      r.resize(
+         r.node_old_num(), r.cell_old_num(),   edge_old_num
+      );
+   else
+      r.resize(
+         r.node_old_num(), r.cell_old_num(),   edge_old_num,
+         r.node_new_num(), r.cell_new_num()
+      );
+}
+
+
+
+// Geometry_wrap
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void geometry_wrap(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   int cell_old_num;
+
+   geometry_wrap(
+      cell_old_num = r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_vert,
+
+      r.cell_old_cell
+   );
+
+   /*
+   Extend, because cell_old_num probably changed. We call extend rather than
+   resize because some of r's cell_old_num-length arrays, in particular
+   cell_old_density, might already have been initialized for the physical
+   cells before calling this function. We don't want to lose data on physical
+   cells just because the data arrays have been lengthened to include boundary
+   cells. This is only relevant to the cell_old_num-length physics arrays, not
+   the cell_old_num-length geometry arrays; the latter (cell_old_type,
+   cell_old_vert, and cell_old_cell) were already handled correctly in the
+   low-level geometry_wrap function. In fact, even of the physics arrays,
+   cell_old_density is typically the only one in which a user is likely to
+   have placed important data before coming here, but we can't be sure.
+   */
+
+   if (r.connectivity == core::same)
+      r.extend(
+         r.node_old_num(),   cell_old_num,   r.edge_old_num()
+      );
+   else
+      r.extend(
+         r.node_old_num(),   cell_old_num,   r.edge_old_num(),
+         r.node_new_num(), r.cell_new_num()
+      );
+}
+
+
+
+// Geometry_cell
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void geometry_cell(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   geometry_cell(
+      r.connectivity,
+
+      r.node_old_num(),
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_vert,
+
+      r.node_new_num(),
+      r.cell_new_num(),
+      r.cell_new_type,
+      r.cell_new_vert,
+
+      r.cell_old_cell,
+      r.cell_new_cell
+   );
+
+   // Note: no sizes were changed by the above call.
+}
+
+
+
+// Geometry
+// Call the remapper object's geometry_edge, geometry_wrap, and geometry_cell
+// subcomponents, in that order.
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void geometry(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   r.geometry_edge();
+   r.geometry_wrap();
+   r.geometry_cell();
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Boundary subcomponent
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Boundary
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void boundary(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   hidden::boundary(
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_cell,
+      r.cell_old_density
+   );
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Remapping-related subcomponents
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Volume
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void volume(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   volume(
+      r.coordinate,
+      r.connectivity,
+
+      r.node_old_x,
+      r.node_old_y,
+      r.node_new_x,
+      r.node_new_y,
+
+      r.cell_old_num(), r.cell_old_type, r.cell_old_vert,
+      r.cell_new_num(), r.cell_new_type, r.cell_new_vert,
+
+      r.cell_old_volume,
+      r.cell_new_volume
+   );
+}
+
+
+
+// Center
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void center(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   center(
+      r.coordinate,
+      r.node_old_x,
+      r.node_old_y,
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_vert,
+      r.cell_old_volume,
+      r.cell_old_x,
+      r.cell_old_y
+   );
+}
+
+
+
+// Density_bound
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void density_bound(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   density_bound(
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_cell,
+      r.cell_old_density,
+      r.cell_old_density_min,
+      r.cell_old_density_max
+   );
+}
+
+
+
+// Density_grad
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void density_grad(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   assert(r.machine == core::serial || r.machine == core::parallel);
+
+   density_grad(
+      r.node_old_x,
+      r.node_old_y,
+
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_vert,
+      r.cell_old_cell,
+
+      r.cell_old_density,
+      r.cell_old_x,
+      r.cell_old_y,
+      r.cell_old_density_min,
+      r.cell_old_density_max,
+
+      r.cell_old_density_grad_x,
+      r.cell_old_density_grad_y
+   );
+
+   // Update cell_old_density_grad_[xy] on off-processor cells, because the
+   // reconstructed density function on off-processor cells is needed by
+   // both versions (swept and intersection) of the upcoming mass-exchange
+   // algorithm. (Note that the other parts of the reconstructed density
+   // function, cell_old_[xy] and cell_old_density, are already known on
+   // off-processor cells.) Another option is to put the following computation
+   // in mass_exchange, because that's where its results are needed, but
+   // I think it makes the most sense to put it here. If someone replaces this
+   // density_grad subcomponent with one that more naturally computes density
+   // gradient everywhere, then we don't want mass_exchange later doing an
+   // unnecessary parallel communication.
+
+   if (r.machine == core::parallel) {
+      // user should have provided parallel
+      // update_grad
+      assert(r.update_grad != r.serial_update_grad);
+   }
+
+   r.update_grad(
+      r.cell_old_density_grad_x,
+      r.cell_old_density_grad_y
+   );
+   // Now cell_old_density_grad_[xy] are available on off-processor physical
+   // cells too (as they'll NEED to be in either of the built-in mass exchange
+   // subcomponents).
+}
+
+
+
+// Mass
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void mass(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   // Technically, the following is needed only if the algorithm is swept, not
+   // intersection. However, the computation is very fast relative to the remap
+   // (especially when algorithm = intersection, because that case is slower
+   // overall), and we're often interested in examining the old mass (e.g., in
+   // order to compare it with the new mass) anyway. So, we do this computation
+   // always.
+
+   mass(
+      r.cell_old_num(),
+      r.cell_old_type,
+      r.cell_old_density,
+      r.cell_old_volume,
+      r.cell_old_mass
+   );
+}
+
+
+
+// Mass_exchange
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void mass_exchange(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   // ================================
+   // Swept-region algorithm
+   // ================================
+
+   if (r.algorithm == core::swept) {
+      // connectivity must be same
+      assert(r.connectivity == core::same);
+
+      mass_exchange_swept(
+         r.coordinate,
+
+         r.node_old_x,
+         r.node_old_y,
+         r.node_new_x,
+         r.node_new_y,
+
+         r.cell_old_num(),
+         r.cell_old_type,
+         r.cell_old_vert,
+
+         r.edge_old_num(),
+         r.edge_old_left,
+         r.edge_old_right,
+         r.edge_old_vert,
+
+         r.cell_old_density,
+         r.cell_old_mass,
+         r.cell_old_x,
+         r.cell_old_y,
+         r.cell_old_density_grad_x,
+         r.cell_old_density_grad_y,
+
+         r.cell_new_mass
+      );
+
+
+   // ================================
+   // Exact-intersection algorithm
+   // ================================
+
+   } else {
+      assert(r.algorithm == core::intersection);
+      // connectivity can be either same or different
+
+      typedef typename traits<array_nodal>::element nodal;
+      typedef typename traits<array_geometrical>::element geometrical;
+
+      if (r.eps_inside   < nodal(0))
+         r.eps_inside   = core_op_unary(nodal(0))-r.eps_inside;
+      if (r.eps_parallel < nodal(0))
+         r.eps_parallel = core_op_unary(nodal(0))-r.eps_parallel;
+      if (r.eps_line     < nodal(0))
+         r.eps_line     = core_op_unary(nodal(0))-r.eps_line;
+      if (r.eps_trim     < geometrical(0))
+         r.eps_trim     = core_op_unary(geometrical(0))-r.eps_trim;
+      if (r.eps_volume   < geometrical(0))
+         r.eps_volume   = core_op_unary(geometrical(0))-r.eps_volume;
+
+      /*
+      zzz no longer applicable
+      if (r.connectivity == core::different) {
+         // just in case repair was norepair before
+         const int ncell = r.connectivity == core::same
+            ? r.cell_num()
+            : r.cell_new_num();
+         hidden::resize_if_different(r.cell_new_to_old, ncell);
+      }
+      */
+
+      mass_exchange_intersection(
+         r.connectivity,
+         r.coordinate,
+         r.polyint,
+         r.trim,
+         r.max_level,
+
+         r.eps_inside,
+         r.eps_parallel,
+         r.eps_line,
+         r.eps_trim,
+         r.eps_volume,
+
+         r.node_old_x,
+         r.node_old_y,
+         r.node_new_x,
+         r.node_new_y,
+
+         r.cell_old_num(),
+         r.cell_old_type,
+         r.cell_old_vert,
+         r.cell_old_cell,
+
+         r.connectivity == core::same ? r.cell_old_num() : r.cell_new_num(),
+         r.connectivity == core::same ? r.cell_old_type  : r.cell_new_type,
+         r.connectivity == core::same ? r.cell_old_vert  : r.cell_new_vert,
+
+         r.cell_old_density,
+         r.cell_old_x,
+         r.cell_old_y,
+         r.cell_old_density_grad_x,
+         r.cell_old_density_grad_y,
+
+         r.cell_new_to_old,
+         r.cell_new_volume,
+
+         r.cell_new_mass
+      );
+   }
+}
+
+
+
+// Mass_bound
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void mass_bound(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   // we don't need to compute mass bounds if "norepair" is set, because
+   // we won't use the bounds anyway (see mass_repair() below)
+   if (r.repair == core::norepair)
+      return;
+
+   if (r.connectivity == core::same) {
+      // same connectivity
+      mass_bound(
+         r.connectivity,
+
+         r.cell_old_num(),
+         r.cell_old_type,
+
+         r.cell_old_density_min,
+         r.cell_old_density_max,
+
+         r.cell_new_mass_min,
+         r.cell_new_mass_max,
+
+         r.cell_new_to_old,
+         r.cell_new_volume
+      );
+
+   } else {
+      // different connectivity
+      mass_bound(
+         r.connectivity,
+
+         r.cell_new_num(),
+         r.cell_new_type,
+
+         r.cell_old_density_min,  // unused
+         r.cell_old_density_max,  // unused
+
+         r.cell_new_mass_min,
+         r.cell_new_mass_max,
+
+         r.cell_new_to_old,
+         r.cell_new_volume
+      );
+   }
+}
+
+
+
+// Mass_repair
+template<class array_multiple, class array_geometrical, class array_nodal>
+void mass_repair(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   // do absolutely nothing if "norepair" is set
+   if (r.repair == core::norepair)
+      return;
+
+   typedef typename traits<array_multiple>::element multiple;
+   typedef typename traits<multiple>::element physical;
+
+   assert(r.machine == core::serial || r.machine == core::parallel);
+   if (r.eps_repair < physical(0))
+      r.eps_repair = core_op_unary(physical(0))-r.eps_repair;
+
+   // ================================
+   // Global repair
+   // ================================
+
+   if (r.repair == core::global) {
+      // Global repair consists of two parts, separated by some parallel
+      // communication
+
+      mass_repair_global_fix(
+         r.eps_repair,
+
+         r.connectivity == core::same ? r.cell_old_num() : r.cell_new_num(),
+         r.connectivity == core::same ? r.cell_old_type  : r.cell_new_type,
+
+         r.cell_new_mass_min,
+         r.cell_new_mass_max,
+         r.cell_new_mass,
+
+         r.available_up, r.available_down, r.change
+      );
+
+      if (r.machine == core::parallel) {
+         // user should have provided parallel
+         // update_global
+         assert(r.update_global != r.serial_update_global);
+         r.update_global(r.available_up, r.available_down, r.change);
+      }
+
+      mass_repair_global_spread(
+         r.connectivity == core::same ? r.cell_old_num() : r.cell_new_num(),
+         r.connectivity == core::same ? r.cell_old_type  : r.cell_new_type,
+
+         r.cell_new_mass_min,
+         r.cell_new_mass_max,
+         r.cell_new_mass,
+
+         r.available_up, r.available_down, r.change
+      );
+
+
+   // ================================
+   // Shellman repair
+   // ================================
+
+   } else if (r.repair == core::shellman) {
+      if (r.machine == core::parallel) {
+         // user should have provided parallel
+         // update_gs, update_mdprime, update_bool
+         assert(r.update_gs != r.serial_update_gs);
+         assert(r.update_mdprime != r.serial_update_mdprime);
+         assert(r.update_bool != r.serial_update_bool);
+      }
+
+      // in case repair was not shellman before
+      const int ncell = r.connectivity == core::same
+         ? r.cell_num()
+         : r.cell_new_num();
+      hidden::resize_if_different(r.cell_new_d,      ncell);
+      hidden::resize_if_different(r.cell_new_g,      ncell);
+      hidden::resize_if_different(r.cell_new_s,      ncell);
+      hidden::resize_if_different(r.cell_new_mprime, ncell);
+      hidden::resize_if_different(r.cell_new_dprime, ncell);
+
+      mass_repair_shellman(
+         r.max_iter,
+         r.eps_repair,
+
+         r.iter_component,
+
+         r.update_gs,
+         r.update_mdprime,
+         r.update_bool,
+
+         r.connectivity == core::same ? r.cell_old_num() : r.cell_new_num(),
+         r.connectivity == core::same ? r.cell_old_type  : r.cell_new_type,
+         r.connectivity == core::same ? r.cell_old_cell  : r.cell_new_cell,
+
+         r.cell_new_mass_min,
+         r.cell_new_mass_max,
+         r.cell_new_mass,
+
+         r.cell_new_d,
+         r.cell_new_g,
+         r.cell_new_s,
+         r.cell_new_mprime,
+         r.cell_new_dprime
+      );
+
+
+   // ================================
+   // Wendroff repair
+   // ================================
+
+   } else {
+      assert(r.repair == core::wendroff);
+
+      if (r.machine == core::parallel) {
+         // user should have provided parallel
+         // update_mass, update_delta, update_bool
+         assert(r.update_mass != r.serial_update_mass);
+         assert(r.update_delta != r.serial_update_delta);
+         assert(r.update_bool != r.serial_update_bool);
+      }
+
+      // in case repair was not wendroff before
+      const int ncell = r.connectivity == core::same
+         ? r.cell_num()
+         : r.cell_new_num();
+      hidden::resize_if_different(r.cell_new_d, ncell);
+
+      mass_repair_wendroff(
+         r.max_iter,
+         r.max_level,
+         r.eps_repair,
+
+         r.iter_component,  r.iter_lower_component,  r.iter_upper_component,
+         r.level_component, r.level_lower_component, r.level_upper_component,
+
+         r.update_mass,
+         r.update_delta,
+         r.update_bool,
+
+         r.connectivity == core::same ? r.cell_old_num() : r.cell_new_num(),
+         r.connectivity == core::same ? r.cell_old_type  : r.cell_new_type,
+         r.connectivity == core::same ? r.cell_old_vert  : r.cell_new_vert,
+         r.connectivity == core::same ? r.cell_old_cell  : r.cell_new_cell,
+
+         r.cell_new_mass_min,
+         r.cell_new_mass_max,
+         r.cell_new_mass,
+
+         r.cell_new_d
+      );
+   }
+}
+
+
+
+// Density
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void density(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   density(
+      r.connectivity == core::same ? r.cell_old_num() : r.cell_new_num(),
+      r.connectivity == core::same ? r.cell_old_type  : r.cell_new_type,
+
+      r.cell_new_density,
+      r.cell_new_volume,
+      r.cell_new_mass
+   );
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Remap_begin
+// Remap_end
+// These are not actually set up as subcomponents
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Remap_begin
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remap_begin(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   // figure out machine type, if necessary
+   if (r.machine != core::serial && r.machine != core::parallel) {
+      r.machine = core::serial;
+
+      if (r.connectivity == core::same) {
+         // same connectivity
+         const int ncell = r.cell_num();
+         for (int ic = 0;  ic < ncell && r.machine == core::serial;  ++ic)
+            if (r.cell_type[ic] == core::ghost)
+               r.machine = core::parallel;
+
+      } else {
+         // different connectivity
+         const int cell_old_num = r.cell_old_num();
+         for (int ic=0;  ic < cell_old_num && r.machine==core::serial;  ++ic)
+            if (r.cell_old_type[ic] == core::ghost)
+               r.machine = core::parallel;
+
+         const int cell_new_num = r.cell_new_num();
+         for (int ic=0;  ic < cell_new_num && r.machine==core::serial;  ++ic)
+            if (r.cell_new_type[ic] == core::ghost)
+               r.machine = core::parallel;
+      }
+   }
+}
+
+
+
+// Remap_end
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remap_end(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   typedef typename traits<array_multiple>::element multiple;
+   typedef typename traits<multiple>::element physical;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   // compute old and new total mass (FYI)
+   multiple_eq_p(start, r.cell_old_mass_total, physical(0));
+   multiple_eq_p(start, r.cell_new_mass_total, physical(0));
+
+   if (r.connectivity == core::same) {
+      // same connectivity
+      const int ncell = r.cell_num();
+      for (int ic = 0;  ic < ncell;  ++ic)
+         if (r.cell_type[ic] == core::real) {
+            multiple_pe_m(start, r.cell_old_mass_total, r.cell_old_mass[ic]);
+            multiple_pe_m(start, r.cell_new_mass_total, r.cell_new_mass[ic]);
+         }
+
+   } else {
+      // different connectivity
+      const int cell_old_num = r.cell_old_num();
+      for (int ic = 0;  ic < cell_old_num;  ++ic)
+         if (r.cell_old_type[ic] == core::real)
+            multiple_pe_m(start, r.cell_old_mass_total, r.cell_old_mass[ic]);
+
+      const int cell_new_num = r.cell_new_num();
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         if (r.cell_new_type[ic] == core::real)
+            multiple_pe_m(start, r.cell_new_mass_total, r.cell_new_mass[ic]);
+   }
+
+   // finish
+   r.restart = false;
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Remap "subcomponent" (really the whole remap)
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Remap
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remap(remapper<array_multiple,array_geometrical,array_nodal> &r)
+{
+   // begin
+   r.remap_begin();
+
+   // call the subcomponents
+   r.volume       ();
+   r.center       ();
+   r.density_bound();
+
+   r.density_grad ();
+   r.mass         ();
+   r.mass_exchange();
+
+   r.mass_bound   ();
+   r.mass_repair  ();
+   r.density      ();
+
+   // end
+   r.remap_end();
+}
+
+}
+}
+
+#endif

@@ -1,0 +1,231 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_DENSITY_GRAD
+#define CORE_DENSITY_GRAD
+
+
+
+// =============================================================================
+// Multiple_compute_phi
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<int num, class multiple, class geometrical>
+inline void multiple_compute_phi(
+   const twoint<num,num>,
+   const geometrical &, const multiple &,
+   const geometrical &, const multiple &,
+   multiple &,
+   const multiple &, const multiple &, const multiple &
+) {
+   // stub
+}
+
+template<int n, int num, class multiple, class geometrical>
+inline void multiple_compute_phi(
+   const twoint<n,num>,
+   const geometrical &xfac, const multiple &grxu,
+   const geometrical &yfac, const multiple &gryu,
+   multiple &phi,
+   const multiple &min, const multiple &d, const multiple &max
+) {
+   typedef typename traits<multiple>::element physical;
+
+   const physical den =
+      core_into(grxu,n)*physical(xfac)
+    + core_into(gryu,n)*physical(yfac);
+
+   if (physical(0) < den) {
+      // rho unlimited INCREASING from center to vertex
+      core_into(phi,n) = core_min(
+         core_into(phi,n),
+        (core_into(max,n) - core_into(d,n))/den
+      );
+
+   } else if (den < physical(0)) {
+      // rho unlimited DECREASING from center to vertex
+      core_into(phi,n) = core_min(
+         core_into(phi,n),
+        (core_into(min,n) - core_into(d,n))/den
+      );
+   }
+   // no action in the den == 0 case
+
+   multiple_compute_phi(
+      twoint<n+1,num>(),
+      xfac,grxu, yfac,gryu, phi, min,d,max
+   );
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Helper function for density_grad
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<
+   class array_geometrical, class array_multiple,
+   class multiple, class geometrical
+>
+inline void fun(
+   // input
+   const array_geometrical &cell_old_x,
+   const array_geometrical &cell_old_y,
+   const array_multiple &cell_old_density,
+
+   const int last,
+   const int current,
+   const int next,
+
+   // output
+   multiple &grxu, geometrical &tmpx,
+   multiple &gryu, geometrical &tmpy
+) {
+   typedef typename traits<multiple>::element physical;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   {
+   const geometrical fac = cell_old_y[next] - cell_old_y[last];
+   multiple_pe_mtp(start, grxu, cell_old_density[current], physical(fac));
+   core_plus_equal(tmpx, fac*cell_old_x[current]);
+   } {
+   const geometrical fac = cell_old_x[next] - cell_old_x[last];
+   multiple_pe_mtp(start, gryu, cell_old_density[current], physical(fac));
+   core_plus_equal(tmpy, fac*cell_old_y[current]);
+   }
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Density_grad
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<
+   class array_nodal,
+   class array_cell_type,
+   class array_array_int,
+   class array_multiple,
+   class array_geometrical
+>
+void density_grad(
+   // input
+   const array_nodal &node_old_x,
+   const array_nodal &node_old_y,
+
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+   const array_array_int &cell_old_cell,
+
+   const array_multiple &cell_old_density,
+   const array_geometrical &cell_old_x,
+   const array_geometrical &cell_old_y,
+   const array_multiple &cell_old_density_min,
+   const array_multiple &cell_old_density_max,
+
+   // output
+   array_multiple &cell_old_density_grad_x,
+   array_multiple &cell_old_density_grad_y
+) {
+   typedef typename traits<array_multiple>::element multiple;
+   typedef typename traits<array_geometrical>::element geometrical;
+   typedef typename traits<multiple>::element physical;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic)
+   if (cell_old_type[ic] == core::real) {
+
+      // ========================================
+      // Compute grad unlimited
+      // ========================================
+
+      multiple grxu;  multiple_eq_p(start, grxu, physical(0));
+      geometrical tmpx = geometrical(0);
+      multiple gryu;  multiple_eq_p(start, gryu, physical(0));
+      geometrical tmpy = geometrical(0);
+
+      const int numcm1 = size(cell_old_cell[ic])-1;
+
+      // loop over cells surrounding this cell
+      fun(
+         cell_old_x, cell_old_y, cell_old_density,
+         cell_old_cell[ic][numcm1],
+         cell_old_cell[ic][0],
+         cell_old_cell[ic][1],
+         grxu, tmpx, gryu, tmpy
+      );
+      for (int jc = 1;  jc < numcm1;  ++jc) fun(
+         cell_old_x, cell_old_y, cell_old_density,
+         cell_old_cell[ic][jc-1],
+         cell_old_cell[ic][jc],
+         cell_old_cell[ic][jc+1],
+         grxu, tmpx, gryu, tmpy
+      );
+      fun(
+         cell_old_x, cell_old_y, cell_old_density,
+         cell_old_cell[ic][numcm1-1],
+         cell_old_cell[ic][numcm1],
+         cell_old_cell[ic][0],
+         grxu, tmpx, gryu, tmpy
+      );
+
+      // tmpx and tmpy should not be zero if the cells were reasonable
+      core_assert(!(tmpx == geometrical(0)));
+      core_assert(!(tmpy == geometrical(0)));
+
+      // grad unlimited
+      multiple_de_p(start, grxu, physical(tmpx));
+      multiple_de_p(start, gryu, physical(tmpy));
+
+
+      // ========================================
+      // Compute phi (multiplier for grad unlimited)
+      // ========================================
+
+      // not allowed to be > 1
+      multiple phi;  multiple_eq_p(start, phi, physical(1));
+
+      // loop over nodes of this cell
+      const int numn = size(cell_old_vert[ic]);
+      for (int jn = 0;  jn < numn;  ++jn)
+         multiple_compute_phi(
+            start,
+            geometrical(node_old_x[cell_old_vert[ic][jn]]) - cell_old_x[ic],
+            grxu,
+            geometrical(node_old_y[cell_old_vert[ic][jn]]) - cell_old_y[ic],
+            gryu,
+            phi,
+            cell_old_density_min[ic],
+            cell_old_density    [ic],
+            cell_old_density_max[ic]
+         );
+
+
+      // ========================================
+      // Grad = phi * grad unlimited
+      // ========================================
+
+      multiple_eq_mtm(start, cell_old_density_grad_x[ic], phi, grxu);
+      multiple_eq_mtm(start, cell_old_density_grad_y[ic], phi, gryu);
+   }
+}
+
+}
+}
+
+#endif

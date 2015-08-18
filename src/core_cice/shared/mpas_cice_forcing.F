@@ -995,7 +995,7 @@ contains
     real(kind=RKIND), intent(out) :: &    
          snowfallRate
 
-    real(kind=RKIND), intent(out) :: & 
+    real(kind=RKIND), intent(in) :: & 
          airTemperature
    
     rainfallRate = rainfallRate * precipitationFactor

@@ -1,0 +1,46 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_PAIR
+#define CORE_PAIR
+
+// Provide the minimal set of constructs necessary for the C++ standard
+// library's "pair" type to work as a remapper object's multiple-remapping type
+
+namespace core {
+
+// Traits
+template<class T>
+class traits<std::pair<T,T> > {
+public:
+   typedef T element;
+   static const int size = 2;
+};
+
+// Into
+template<class T>
+inline T &into(std::pair<T,T> &obj, const integer<0>)
+{
+   return obj.first;
+}
+
+template<class T>
+inline const T &into(const std::pair<T,T> &obj, const integer<0>)
+{
+   return obj.first;
+}
+
+template<class T>
+inline T &into(std::pair<T,T> &obj, const integer<1>)
+{
+   return obj.second;
+}
+
+template<class T>
+inline const T &into(const std::pair<T,T> &obj, const integer<1>)
+{
+   return obj.second;
+}
+
+}
+
+#endif

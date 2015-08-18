@@ -654,7 +654,8 @@ contains
          configs
 
     type(MPAS_pool_type), pointer :: &
-         tracers
+         tracers, &
+         mesh
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -663,7 +664,13 @@ contains
          snowVolumeCategory
 
     integer, parameter :: &
-         iCellPoint = 81*40
+         iCellPoint = 81*40   ! global index for first cell with ice
+!!         iCellPoint = 420   ! global index for first cell with ice
+
+    !WHL - added the remaining variables for parallel runs
+    integer, dimension(:),   pointer :: indexToCellID
+    integer, pointer :: nCellsSolve
+    integer :: iCell
 
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
@@ -672,10 +679,31 @@ contains
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
-    iceAreaCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
-    surfaceTemperature(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
-    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
-    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call mpas_pool_get_array(mesh, 'indexToCellID', indexToCellID)
+    call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+
+    !WHL - iCellPoint is a global cell index.  For parallel runs, we need to check whether
+    !      the cell with this global index is owned by the local processor.
+
+    !WHL - old code commented out
+!    iceAreaCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
+!    surfaceTemperature(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
+!    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
+!    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
+
+    write(stderrUnit,*) 'Initial cells with ice (local ID, global ID):'
+
+    do iCell = 1, nCellsSolve
+       if (indexToCellID(iCell) >= iCellPoint .and. indexToCellID(iCell) <= iCellPoint+9) then
+          iceAreaCategory(:,:,iCell) = 1.0_RKIND
+          surfaceTemperature(:,:,iCell) = 1.0_RKIND
+          iceVolumeCategory(:,:,iCell) = 1.0_RKIND
+          snowVolumeCategory(:,:,iCell) = 1.0_RKIND
+          write(stderrUnit,*) iCell, indexToCellID(iCell)
+       endif
+    enddo
+    write(stderrUnit,*) ' '
 
   end subroutine cice_init_square_point_test_case_hex
 

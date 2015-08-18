@@ -1,0 +1,77 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_NTUPLE
+#define CORE_NTUPLE
+
+
+
+// =============================================================================
+// Ntuple: simple "n-tuple" type
+// =============================================================================
+
+namespace core {
+
+// Ntuple
+template<int n, class T = double>
+class ntuple {
+   T ptr[n];
+
+public:
+
+   // default constructor
+   explicit ntuple(void)
+   {
+   }
+
+   // copy constructor (not needed by carray)
+   ntuple(const ntuple &from)
+   {
+      for (int i = 0;  i < n;  ++i)
+         ptr[i] = from[i];
+   }
+
+   // copy assignment
+   ntuple &operator=(const ntuple &from)
+   {
+      if (this != &from)
+         for (int i = 0;  i < n;  ++i)
+            ptr[i] = from[i];
+      return *this;
+   }
+
+   // operator[]
+   inline T &operator[](const int i)
+   { core_assert(0 <= i && i < n); return ptr[i]; }
+
+   inline const T &operator[](const int i) const
+   { core_assert(0 <= i && i < n); return ptr[i]; }
+};
+
+
+
+// Traits
+template<int n, class T>
+class traits<ntuple<n,T> > {
+public:
+   typedef T element;
+   static const int size = n;
+};
+
+
+
+// Into
+template<int n, class T, int i>
+inline T &into(ntuple<n,T> &obj, const integer<i>)
+{
+   return obj[i];
+}
+
+template<int n, class T, int i>
+inline const T &into(const ntuple<n,T> &obj, const integer<i>)
+{
+   return obj[i];
+}
+
+}
+
+#endif

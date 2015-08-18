@@ -1,0 +1,191 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_GEOMETRY_WRAP
+#define CORE_GEOMETRY_WRAP
+
+// geometry_edge, geometry_wrap, and geometry_cell should be called
+// in that order.
+
+/*
+
+Given
+   cell_old_num
+   cell_old_type
+   cell_old_vert
+
+geometry_wrap AUGMENTS
+   cell_old_num
+   cell_old_type
+   cell_old_vert
+   cell_old_cell
+to include boundary cells.
+
+Any old data in cell_old_cell is implicitly invalid, because cell_old_cell can't
+have been correct unless boundary cells are known---and the purpose of calling
+the present function is to compute boundary cells. The present function goes
+ahead and computes cell_old_cell for the just-computed boundary cells, because
+it's convenient to do so here, but computing cell_old_cell for real and ghost
+cells is left to the geometry_cell function.
+
+Note: either geometry_edge must have been called before geometry_wrap to compute
+Exterior_edge, or Exterior_edge must have been initialized in some other way.
+
+*/
+
+
+
+// =============================================================================
+// Geometry_wrap
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class array_cell_type, class array_array_int>
+void geometry_wrap(
+   // both input and output
+   int  &cell_old_num,
+   array_cell_type &cell_old_type,
+   array_array_int &cell_old_vert,
+
+   // output
+   array_array_int &cell_old_cell
+) {
+   typedef typename core_info<char>::boundary_edge boundary_edge;
+
+   // input, often from side-effect of geometry_edge; cleared
+   // after being used in the present function
+   boundary_edge &exterior_edge = core_info<char>::Exterior_edge;
+
+   // should contain something meaningful
+   core_assert(exterior_edge.size() > 0);
+   // of course, the above doesn't prove that what it contains is correct!
+
+   const int cell_old_num_real = cell_old_num;
+
+   // <int, set<int> > = <node, touching cells>...
+   typedef std::map<int,std::set<int> > boundary_node;
+   boundary_node exterior_node;
+
+   // for each edge...
+   for (typename boundary_edge::iterator it = exterior_edge.begin();
+        it != exterior_edge.end();  ++it) {
+      const int node1 = it->first.first;
+      const int node2 = it->first.second;
+      const int left  = it->second.first;
+      int &marked = it->second.second;
+
+      if (cell_old_type[left] == core::real) {
+         // edge, node1, and node2 are boundary cells
+         ++cell_old_num;  // for the line-boundary cell
+         marked = 1;  // mark this edge as being next to an real cell
+
+         // record the nodes and the fact that they're touching the left cell
+        (exterior_node.insert(make_pair(node1,std::set<int>())).first)
+            ->second.insert(left);
+        (exterior_node.insert(make_pair(node2,std::set<int>())).first)
+            ->second.insert(left);
+
+      } else {
+         // no boundary cells yet!
+         core_assert(cell_old_type[left] == core::ghost);
+
+         // edge is boundary cell iff >= 1 of its nodes touches real, in
+         // which case the node(s) in question will be boundary cells too
+
+         // examine every node on every real cell for a match
+         for (int ic = 0;  ic < cell_old_num_real && marked != 1;  ++ic)
+            if (cell_old_type[ic] == core::real) {
+               const int numn = size(cell_old_vert[ic]);
+               for (int jn = 0;  jn < numn;  ++jn)
+                  if ((cell_old_vert[ic][jn] == node1 ||
+                       cell_old_vert[ic][jn] == node2) &&
+                       marked == 0) {  // count only once!!!
+                     // edge, and node1 and/or node2, are boundary cells
+                     ++cell_old_num;  // for the line-boundary cell
+                     marked = 1;  // mark this edge as touching a real cell
+                     break;
+
+                     // no need to insert nodes; this will (have) happen(ed)
+                     // in the cell_old_type[left] == real context
+                  }
+            }
+      }
+   }
+
+   // with line-like boundary cells
+   if_core_assert(const int cell_old_num_withline = cell_old_num);
+
+   // with all boundary cells
+   cell_old_num += exterior_node.size();
+
+   /*
+      At this point:
+         cell_old_num_real
+            number of real and ghost cells
+         cell_old_num_withline
+            number of real and ghost cells plus line-like boundary cells
+         cell_old_num
+            number of cells, ALL cells included
+   */
+
+   extend_if_larger(cell_old_type, cell_old_num);
+   extend_if_larger(cell_old_vert, cell_old_num);
+
+   resize_if_different(cell_old_cell, cell_old_num);
+   // cell_old_cell is now sized correctly, but must generally be recomputed.
+
+   // Augment the following:
+   //    cell_old_type
+   //    cell_old_vert
+   //    cell_old_cell
+
+   // starting index of the boundary cells
+   int cell = cell_old_num_real;
+
+   // line-like boundary cells
+   for (typename boundary_edge::iterator it = exterior_edge.begin();
+        it != exterior_edge.end();  ++it)
+      if (it->second.second) {  // marked; see above
+         cell_old_type[cell] = core::boundary;
+
+         resize_if_different(cell_old_vert[cell], 2);
+         cell_old_vert[cell][0] = it->first.first;
+         cell_old_vert[cell][1] = it->first.second;
+
+         resize_if_different(cell_old_cell[cell], 1);  // adjacent physical cell
+         cell_old_cell[cell][0] = it->second.first;
+
+         ++cell;
+      }
+   core_assert(cell == cell_old_num_withline);
+
+   // point-like boundary cells
+   for (boundary_node::iterator it = exterior_node.begin();
+        it != exterior_node.end();  ++it, ++cell) {
+      // recall that exterior_node is a map<int, set<int> >
+
+      // type
+      cell_old_type[cell] = core::boundary;
+
+      // vertices
+      resize_if_different(cell_old_vert[cell], 1);
+      cell_old_vert[cell][0] = it->first;
+
+      // adjacent physical cells
+      resize_if_different(cell_old_cell[cell], it->second.size());
+      int jc = 0;
+      for (set_int_iterator itc = it->second.begin();
+           itc != it->second.end();  ++itc)
+         cell_old_cell[cell][jc++] = *itc;
+   }
+   core_assert(cell == cell_old_num);
+
+   // erase map data; it's no longer needed
+   exterior_edge.erase(exterior_edge.begin(), exterior_edge.end());
+}
+
+}
+}
+
+#endif

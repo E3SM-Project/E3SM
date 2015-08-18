@@ -1,0 +1,47 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_DENSITY
+#define CORE_DENSITY
+
+// Density: compute according to the relationship mass = density * volume.
+
+
+
+// =============================================================================
+// Density
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class array_cell_type, class array_multiple, class array_geometrical>
+void density(
+   // input
+   const int cell_new_num,
+   const array_cell_type &cell_new_type,
+
+   // output
+   array_multiple &cell_new_density,
+
+   // input
+   const array_geometrical &cell_new_volume,
+   const array_multiple &cell_new_mass
+) {
+   typedef typename traits<array_multiple>::element multiple;
+   typedef typename traits<multiple>::element physical;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real)
+         multiple_eq_mdp(
+            start,
+            cell_new_density[ic],
+            cell_new_mass[ic],
+            physical(cell_new_volume[ic])
+         );
+}
+
+}
+}
+
+#endif

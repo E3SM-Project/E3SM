@@ -1,6 +1,9 @@
-.SUFFIXES: .F .o
+.SUFFIXES: .F .c .o
 
 OBJS = 	mpas_cice_time_integration.o \
+	mpas_cice_advection_incremental_remap_tracers.o \
+	mpas_cice_advection_incremental_remap.o \
+	mpas_cice_advection_upwind.o \
 	mpas_cice_advection.o \
 	mpas_cice_velocity_solver_unit_tests.o \
 	mpas_cice_velocity_solver.o \
@@ -20,7 +23,9 @@ OBJS = 	mpas_cice_time_integration.o \
 	mpas_cice_numerics.o \
 	mpas_cice_constants.o \
 	mpas_cice_column.o \
-	mpas_cice_history.o
+	mpas_cice_history.o \
+        mpas_cice_polygon_intersection.o \
+        polygon_intersection_c.o
 
 all: $(OBJS)
 
@@ -58,7 +63,13 @@ mpas_cice_velocity_solver.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_te
 
 mpas_cice_velocity_solver_unit_tests.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocity_solver_weak.o mpas_cice_velocity_solver_variational.o
 
-mpas_cice_advection.o: mpas_cice_mesh.o mpas_cice_debug.o
+mpas_cice_advection_upwind.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_debug.o
+
+mpas_cice_advection_incremental_remap_tracers.o: mpas_cice_constants.o 
+
+mpas_cice_advection_incremental_remap.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_advection_incremental_remap_tracers.o mpas_cice_polygon_intersection.o
+
+mpas_cice_advection.o: mpas_cice_advection_upwind.o mpas_cice_advection_incremental_remap.o
 
 mpas_cice_unit_test.o: mpas_cice_constants.o mpas_cice_velocity_solver_unit_tests.o
 
@@ -69,6 +80,11 @@ mpas_cice_initialize.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_velocit
 mpas_cice_core.o: mpas_cice_constants.o mpas_cice_time_integration.o mpas_cice_velocity_solver.o mpas_cice_forcing.o mpas_cice_initialize.o mpas_cice_column.o
 
 mpas_cice_core_interface.o: mpas_cice_core.o
+
+mpas_cice_polygon_intersection.o: polygon_intersection_c.o
+
+polygon_intersection_c.o: polygon_intersection_c.cc polygon_intersection_c.hh 
+	$(CC) $(CPPFLAGS) $(CPP_INCLUDES) -I ./core -c polygon_intersection_c.cc
 
 clean:
 	$(RM) *.o *.i *.mod *.f90

@@ -93,11 +93,7 @@ contains
 
     ! init advection
     if (config_use_advection) then
-       block => domain % blocklist
-       do while (associated(block))
-          call cice_init_advection(block)
-          block => block % next
-       end do
+       call cice_init_advection(domain)
     endif
 
     ! column physics initialization
@@ -966,15 +962,24 @@ contains
          config_initial_ice_volume, &
          config_initial_snow_volume
 
+    !WHL - added config_rotate_cartesian_grid
+    logical, pointer :: &
+         config_rotate_cartesian_grid
+
     integer :: &
          iCell
     
+    !WHL - debug - Assume that surface of the sphere is defined by xCell^2 + yCell^2 = zCell^2 = 1
     real(kind=RKIND), parameter :: &
-         circle_radius = 1.0e6_RKIND
+!!!         circle_radius = 1.0e6_RKIND
+         circle_radius = 0.1_RKIND
    
     call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
     call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
     call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
+
+    !WHL - Get config_rotate_cartesian_grid also, to decide where to put the circle of ice
+    call mpas_pool_get_config(configs, 'config_rotate_cartesian_grid', config_rotate_cartesian_grid)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -990,27 +995,59 @@ contains
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
 
-    do iCell = 1, nCells
-       
-       if (sqrt(xCell(iCell)**2 + zCell(iCell)**2) < circle_radius .and. yCell(iCell) > 0.0_RKIND) then
-          
-          ! has ice
-          iceAreaCategory(1,:,iCell)    = config_initial_ice_area
-          iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
-          snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
-          surfaceTemperature(1,:,iCell) = 1.0_RKIND
+    if (config_rotate_cartesian_grid) then
 
-       else
-          
-          ! no ice
-          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
-          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
-          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
-          surfaceTemperature(1,:,iCell) = 0.0_RKIND
-          
-       endif
+       do iCell = 1, nCells
        
-    enddo ! iCell
+!!       if (sqrt(xCell(iCell)**2 + zCell(iCell)**2) < circle_radius .and. yCell(iCell) > 0.0_RKIND) then
+          !WHL - rotated grid; put a circle of ice at the North Pole
+          if (zCell(iCell) > 0.0_RKIND .and. sqrt((zCell(iCell)-1.0_RKIND)**2 + xCell(iCell)**2) < circle_radius) then
+          
+             ! has ice
+             iceAreaCategory(1,:,iCell)    = config_initial_ice_area
+             iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
+             snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
+             surfaceTemperature(1,:,iCell) = 1.0_RKIND
+
+          else
+          
+             ! no ice
+             iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+             iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+             snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+             surfaceTemperature(1,:,iCell) = 0.0_RKIND
+          
+          endif
+       
+       enddo ! iCell
+
+    else   ! no rotation
+
+       do iCell = 1, nCells
+       
+          !!       if (sqrt(xCell(iCell)**2 + zCell(iCell)**2) < circle_radius .and. yCell(iCell) > 0.0_RKIND) then
+          !WHL - unrotated grid; put a circle of ice on the equator
+          if (xCell(iCell) > 0.0_RKIND .and. sqrt((xCell(iCell)-1.0_RKIND)**2 + zCell(iCell)**2) < circle_radius) then
+          
+             ! has ice
+             iceAreaCategory(1,:,iCell)    = config_initial_ice_area
+             iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume
+             snowVolumeCategory(1,:,iCell) = config_initial_snow_volume
+             surfaceTemperature(1,:,iCell) = 1.0_RKIND
+
+          else
+          
+             ! no ice
+             iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+             iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+             snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+             surfaceTemperature(1,:,iCell) = 0.0_RKIND
+          
+          endif
+       
+       enddo ! iCell
+
+    endif ! config_rotate_cartesian_grid
 
   end subroutine init_ice_state_circle_of_ice!}}}
 

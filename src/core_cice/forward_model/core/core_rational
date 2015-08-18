@@ -1,0 +1,331 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_RATIONAL
+#define CORE_RATIONAL
+
+// Simple rational number type. Useful for illustrating CORE's support of
+// generic data types. See the Advanced Topics and Advanced Examples chapters
+// in the CORE manual.
+
+// This rational type could be improved somewhat. For example, more factoring
+// in the arithmetic operators would reduce the chances of integer overflow
+// in numerators or denominators. And, the code could no doubt be made more
+// efficient. However, we'll leave that as an exercise for the future, as the
+// rational type is only for amusement.
+
+
+
+// =============================================================================
+// Rational
+// =============================================================================
+
+namespace core {
+
+template<class integer = int>
+class rational {
+   typedef long double quad;
+
+public:
+   // mutable, so we can reduce the fraction in simplify()
+   mutable integer num;  // numerator
+   mutable integer den;  // denominator
+
+   // constructor: default
+   // constructor: integer
+   inline explicit rational(const integer &from = 0)
+ : num(from),
+   den(1)
+   {
+   }
+
+   // constructor: numerator, denominator
+   inline explicit rational(
+      const integer &_num,
+      const integer &_den, const bool do_simplify = true
+   )
+ : num(_num),
+   den(_den)
+   {
+      if (do_simplify)
+         simplify();
+      else
+         assert(den != 0);
+   }
+
+   // constructor: copy
+   inline rational(const rational &from)
+ : num(from.num),
+   den(from.den)
+   {
+   }
+
+   // assignment: integer
+   inline rational &operator=(const integer &from)
+   {
+      num = from;
+      den = 1;
+      return *this;
+   }
+
+   // assignment: copy
+   inline rational &operator=(const rational &from)
+   {
+      num = from.num;
+      den = from.den;
+      return *this;
+   }
+
+   // implicit conversions to float, double, and long double
+   inline operator float (void) const { return float (num)/den; }
+   inline operator double(void) const { return double(num)/den; }
+   inline operator quad  (void) const { return quad  (num)/den; }
+
+   // simplify
+   void simplify(void) const;
+};
+
+}
+
+
+
+// =============================================================================
+// Rational::simplify
+// =============================================================================
+
+namespace core {
+
+template<class integer>
+void rational<integer>::simplify(void) const
+{
+// Basic cases
+   if (den < 0) {
+      num = -num;
+      den = -den;
+   } else
+      assert(den > 0);
+
+   if (num == 0)
+      den = 1;
+
+   if (den == 1)
+      return;
+
+// Handle negative
+   const bool is_neg = num < 0;
+   if (is_neg) num = -num;
+
+// Simplify
+   integer small, large;
+   if (num < den) {
+      small = num;  large = den;
+   } else {
+      small = den;  large = num;
+   }
+
+   integer rem;
+   for ( ; (rem = large % small) ; large = small, small = rem)  // =, not ==
+      ;
+   num /= small;
+   den /= small;
+
+   // Finish
+   if (is_neg) num = -num;
+}
+
+}
+
+
+
+// =============================================================================
+// Rational +,-,*,/ rational
+// =============================================================================
+
+// rational + rational
+template<class integer>
+inline core::rational<integer> operator+(
+   const core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   return core::rational<integer>(a.num*b.den + a.den*b.num, a.den*b.den);
+}
+
+
+// rational - rational
+template<class integer>
+inline core::rational<integer> operator-(
+   const core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   return core::rational<integer>(a.num*b.den - a.den*b.num, a.den*b.den);
+}
+
+
+// rational * rational
+template<class integer>
+inline core::rational<integer> operator*(
+   const core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   return core::rational<integer>(a.num*b.num, a.den*b.den);
+}
+
+
+// rational / rational
+template<class integer>
+inline core::rational<integer> operator/(
+   const core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   return core::rational<integer>(a.num*b.den, a.den*b.num);
+}
+
+
+
+// =============================================================================
+// Rational +=,-=,/= rational
+// =============================================================================
+
+// rational += rational
+template<class integer>
+inline core::rational<integer> &operator+=(
+         core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   a.num  = a.num*b.den + a.den*b.num;
+   a.den *= b.den;
+
+   a.simplify();  return a;
+}
+
+
+// rational -= rational
+template<class integer>
+inline core::rational<integer> &operator-=(
+         core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   a.num  = a.num*b.den - a.den*b.num;
+   a.den *= b.den;
+
+   a.simplify();  return a;
+}
+
+
+// rational /= rational
+template<class integer>
+inline core::rational<integer> &operator/=(
+         core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   a.num *= b.den;
+   a.den *= b.num;
+
+   a.simplify();  return a;
+}
+
+
+
+// =============================================================================
+// Rational ==,< rational
+// =============================================================================
+
+// rational == rational
+template<class integer>
+inline bool operator==(
+   const core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   return a.num*b.den == a.den*b.num;
+}
+
+
+// rational < rational
+template<class integer>
+inline bool operator<(
+   const core::rational<integer> &a,
+   const core::rational<integer> &b
+) {
+   const integer ad = a.num*b.den;
+   const integer bc = a.den*b.num;
+
+   return a.den*b.den > 0 ? ad < bc : bc < ad;
+}
+
+
+
+// =============================================================================
+// Core_abs(rational), -rational
+// =============================================================================
+
+// core_abs(rational)
+// This is more efficient than CORE's generic core_abs function would be
+// if it was instantiated for rational
+namespace core {
+namespace hidden {
+   template<class integer>
+   inline core::rational<integer> core_abs(const core::rational<integer> &a)
+   {
+      return core::rational<integer>(core_abs(a.num), core_abs(a.den), false);
+   }
+}
+}
+
+
+// -rational
+template<class integer>
+inline core::rational<integer> operator-(
+   const core::rational<integer> &a
+) {
+   return core::rational<integer>(-a.num, a.den, false);
+}
+
+
+
+// =============================================================================
+// Rational input/output
+// =============================================================================
+
+// Input
+template<class integer>
+std::istream &operator>>(std::istream &s, core::rational<integer> &obj)
+{
+   obj.den = 1;  char ch;
+   if (s >> obj.num) {
+      if (!(s >> ch))
+         s.clear();  // integer-form rational at eof: perfectly okay
+      else if (ch != '/')
+         s.putback(ch);
+      else if (s >> obj.den)
+         obj.simplify();
+   }
+   return s;
+}
+
+
+
+#ifdef __USE_GNU
+namespace core {  // because g++ is broken
+#endif
+
+// Output
+template<class integer>
+std::ostream &operator<<(std::ostream &s, const core::rational<integer> &obj)
+{
+   obj.simplify();
+
+   std::ostringstream oss;
+   oss << obj.num;
+
+   if (obj.den != 1)
+      oss << '/' << obj.den;
+
+   // output the value as a whole, so that the I/O manipulators
+   // such as setw() work as expected
+   return s << oss.str();
+}
+
+#ifdef __USE_GNU
+}  // because g++ is broken
+#endif
+
+#endif

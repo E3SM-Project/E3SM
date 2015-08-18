@@ -1,0 +1,130 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_GEOMETRY_EDGE
+#define CORE_GEOMETRY_EDGE
+
+// geometry_edge, geometry_wrap, and geometry_cell should be called
+// in that order.
+
+/*
+
+Given
+   cell_old_num
+   cell_old_type
+   cell_old_vert
+
+geometry_edge COMPUTES
+   edge_old_num
+   edge_old_left
+   edge_old_right
+   edge_old_vert
+
+Note: only real/real and real/ghost edges are computed, because only
+they are needed by the remapper. Indeed, boundary cells might not exist yet,
+although they're allowed to.
+
+*/
+
+
+
+// =============================================================================
+// Geometry_edge
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class array_cell_type, class array_array_int, class array_int>
+void geometry_edge(
+   // input
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+
+   // output
+   int  &edge_old_num,
+   array_int &edge_old_left,
+   array_int &edge_old_right,
+   array_int &edge_old_vert
+) {
+   // side-effect output; can be used by geometry_wrap
+   typename core_info<char>::boundary_edge &exterior_edge
+    = core_info<char>::Exterior_edge;
+   // Note: on a multiprocessor machine, "exterior edge" means edges exterior
+   // to the cells, not necessarily the physical edges of the overall grid.
+
+   // erase old map data, if it exists
+   exterior_edge.erase(exterior_edge.begin(), exterior_edge.end());
+
+   /*
+   isn't necessary; reallocated later anyway
+   // deallocate edge_old_*
+   resize_if_different(edge_old_left,  0);
+   resize_if_different(edge_old_right, 0);
+   resize_if_different(edge_old_vert,  0);
+   */
+
+   // compute edges...
+
+   // map: ((node #1, node #2), (left, right))
+   typedef typename core_info<char>::boundary_edge boundary_edge;
+   boundary_edge interior_edge;
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic)
+   if (cell_old_type[ic] != core::boundary) {
+      // for each real and ghost cell...
+      const int nvert = size(cell_old_vert[ic]);  // #vertices
+
+      for (int jv = 0;  jv < nvert;  ++jv) {
+         const std::pair<int,int> p = wrap_pair(cell_old_vert,ic,jv,nvert);
+
+         // for each edge (p.first,p.second)...
+         typename boundary_edge::iterator it;
+         if ((it = exterior_edge.find(flip_pair(p))) == exterior_edge.end()) {
+            // edge NOT already saved - so save it
+            exterior_edge.insert(
+               typename boundary_edge::value_type(p, std::make_pair(ic,0))
+            );
+         } else {
+            // edge already seen - must be interior
+            if (cell_old_type[ic] == core::real ||
+                cell_old_type[it->second.first] == core::real)
+               interior_edge.insert(*it).first->second.second = ic;  // right
+            exterior_edge.erase(it);  // not an EXTERIOR edge, after all
+         }
+      }
+   }
+   // at this point, only exterior edges remain in "exterior_edge,"
+   // and they have the form ((node #1, node #2), (left, 0))
+
+   // compute edge_old_num
+   edge_old_num = interior_edge.size();
+
+   // reallocate edge_old_*
+   resize_if_different(edge_old_left,  edge_old_num);
+   resize_if_different(edge_old_right, edge_old_num);
+   resize_if_different(edge_old_vert,  edge_old_num);
+
+   // compute edge_old_*
+   int edge = 0;
+   for (typename boundary_edge::iterator ie = interior_edge.begin();
+        ie != interior_edge.end();  ++ie, ++edge) {
+
+      const int left = ie->second.first;
+      edge_old_left [edge] = left;
+      edge_old_right[edge] = ie->second.second;
+
+      // for each node of the left cell
+      const int nvert = size(cell_old_vert[left]);
+      for (int jv = 0;  jv < nvert;  ++jv)
+         if (cell_old_vert[left][jv] == ie->first.first) {
+            edge_old_vert[edge] = jv;
+            break;
+         }
+   }
+}
+
+}
+}
+
+#endif

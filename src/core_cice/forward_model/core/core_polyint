@@ -1,0 +1,1026 @@
+/* -*- C++ -*- */
+
+// Note: the "chasing" algorithm in this file is adapted from the code
+// contained in the book "Computational Geometry in C," by Joseph O'Rourke.
+
+#ifndef CORE_POLYINT
+#define CORE_POLYINT
+
+namespace core {
+
+// get_eps
+template<class T>
+inline T get_eps(const T &)
+ { return T(0); }
+
+inline float get_eps(const float &)
+ { return std::pow(float(10), -2*FLT_DIG/3); }
+
+inline double get_eps(const double &)
+ { return std::pow(double(10), -2*DBL_DIG/3); }
+
+inline long double get_eps(const long double &)
+ { return std::pow((long double)(10), -2*LDBL_DIG/3); }
+
+}
+
+
+
+// =============================================================================
+// Miscellaneous
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// core_poly_int
+template<class I>
+class core_poly_int {
+public:
+
+#ifdef CORE_LONG_LONG_INT
+   typedef long long int result;
+
+   // The following is one of the reasons this nonstandard "long long int"
+   // nonsense is not our default. You may need to modify the computation
+   // of min and max, depending on what your compiler uses.
+   #ifdef __KCC
+      // for the KAI C++ compiler
+      static const result min = LLONG_MIN;
+      static const result max = LLONG_MAX;
+   #else
+   #ifdef __PGI
+      // for the Portland Group C++ compiler
+      static const result min = LONGLONG_MIN;
+      static const result max = LONGLONG_MAX;
+   #else
+      // for other compilers; works (for me) with GNU C++ and Intel C++
+      static const result min = LONG_LONG_MIN;
+      static const result max = LONG_LONG_MAX;
+   #endif
+   #endif
+
+#else
+   typedef long int result;
+
+   // long int is standard
+   static const result min = LONG_MIN;
+   static const result max = LONG_MAX;
+#endif
+
+};
+
+
+
+// clear
+template<class CONTAINER>
+inline void clear(CONTAINER &c)
+{
+   c.erase(c.begin(), c.end());
+}
+
+
+// inflag
+enum inflag { pinside, qinside, unknown };
+
+
+// core_round
+template<class INTEGER, class REAL>
+inline INTEGER core_round(const REAL &x)
+{
+   return INTEGER(x > REAL(0) ? x+REAL(0.5) : x-REAL(0.5));
+}
+
+
+// is_real: for general types
+template<class T>
+class is_real              { public: static const bool result = false; };
+
+// is_real: for floating-point types
+template<>
+class is_real<float      > { public: static const bool result = true;  };
+template<>
+class is_real<double     > { public: static const bool result = true;  };
+template<>
+class is_real<long double> { public: static const bool result = true;  };
+
+}
+}
+
+
+
+// =============================================================================
+// point
+// =============================================================================
+
+namespace core {
+
+template<class T>
+class point {
+public:
+   T x, y;
+
+   inline explicit point(void) { }
+   inline explicit point(const T &_x, const T &_y) : x(_x), y(_y) { }
+};
+
+}
+
+
+
+// operator==
+template<class T>
+inline bool operator==(const core::point<T> &a, const core::point<T> &b)
+{
+   return a.x == b.x && a.y == b.y;
+}
+
+// operator!=
+template<class T>
+inline bool operator!=(const core::point<T> &a, const core::point<T> &b)
+{
+   return !(a == b);
+}
+
+
+
+// =============================================================================
+// left
+// closepoint
+// averagepoint
+// trimpoly
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// left
+// Compute the relation of point c to the vector [a to b], as follows:
+//    > 0  c is to the left
+//    = 0  c is on the line
+//    < 0  c is to the right
+// Note: this is the cross product of vectors [a to b] and [a to c].
+// Note: the issue of inexact arithmetic can be dealt with as
+// appropriate by whatever code uses the return value.
+
+template<class T>
+inline T left(
+   const point<T> &a,
+   const point<T> &b,
+   const point<T> &c
+) {
+   return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
+}
+
+
+
+// closepoint
+template<class geometrical>
+inline bool closepoint(
+   const point<geometrical> &p1,
+   const point<geometrical> &p2,
+   const geometrical &eps_trimx,
+   const geometrical &eps_trimy
+) {
+   // Note: eps_trim[xy] should already have been scaled in a reasonable
+   // way, e.g. by the size of a polygon's bounding box
+
+   return !(
+      eps_trimx < core_abs(p1.x - p2.x) ||
+      eps_trimy < core_abs(p1.y - p2.y)
+   );
+}
+
+
+
+// averagepoint
+template<class geometrical>
+point<geometrical> averagepoint(
+   const std::vector<point<geometrical> > &v,
+   const int begin,
+   const int total
+) {
+   if (total <= 0)
+      return point<geometrical>(geometrical(0),geometrical(0));
+   if (total == 1)
+      return v[begin];
+
+   const int vsize = v.size();
+   point<geometrical> avg(geometrical(0),geometrical(0));
+
+   int n = begin;
+   for (int count = 0;  count < total;  ++count, ++n %= vsize) {
+      core_plus_equal(avg.x, v[n].x);
+      core_plus_equal(avg.y, v[n].y);
+   }
+
+   core_divide_equal(avg.x, geometrical(total));
+   core_divide_equal(avg.y, geometrical(total));
+
+   return avg;
+}
+
+
+
+// trimpoly
+template<class geometrical>
+void trimpoly(
+   const std::vector<point<geometrical> > &in,
+         std::vector<point<geometrical> > &out,
+   const geometrical &eps_trimx,
+   const geometrical &eps_trimy, const trim_type trim
+) {
+   const int size = in.size();
+   if (size == 0)  // but still transfer in --> out if size == 1
+      return;
+
+   // first
+   if (trim == first) {
+      out.push_back(in[0]);
+      for (int n = 1;  n < size;  ++n)
+         if (!closepoint(in[n],in[n-1],eps_trimx,eps_trimy))
+            out.push_back(in[n]);
+      for (int n = out.size()-1;
+           0 < n && closepoint(out[n],out[0],eps_trimx,eps_trimy);  --n)
+         out.pop_back();
+      return;
+   }
+
+   // average
+   int first = 0, last = size-1;
+   while (closepoint(in[first],in[last],eps_trimx,eps_trimy)) {
+      last = first;
+      if ((++first %= size) == 0)
+         break;
+   }
+
+   int i = first, j = first;
+   do {
+      int total = 1;
+      while ((++j %= size) != first &&
+             closepoint(in[i],in[j],eps_trimx,eps_trimy))
+         ++total;
+      out.push_back(averagepoint(in,i,total));
+   } while ((i = j) != first);
+}
+
+}
+}
+
+
+
+// =============================================================================
+// polygon_type
+// compare_chull
+// chull
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// polygon_type
+enum polygon_type {
+   convex = 0,
+   borderline = 1,
+   concave = 2
+};
+
+
+
+// compare_chull
+template<class T>
+class compare_chull {
+public:
+   point<T> p;
+   inline explicit compare_chull(const point<T> &_p) : p(_p) { }
+
+   inline bool operator()(const point<T> &a, const point<T> &b)
+   {
+      // zzz might tweak this function a bit
+
+      if (a == b)
+         return false;
+      // if (a == p) return true;
+      // if (b == p) return false;
+
+      const T cross = left(p,a,b);  // 0 if a == b (not "iff")
+      return
+         T(0) < cross ? true
+       : cross < T(0) ? false
+       : !(b.y < a.y || a.y == b.y && b.x < a.x);
+   }
+};
+
+
+
+// chull
+template<class T>
+int chull(
+   std::vector<point<T> >  in,  // not a reference
+   std::vector<point<T> > &out
+) {
+   // bookkeeping
+   const int isize = in.size();
+   if (isize < 3) {
+      out = in;
+      return convex;
+   }
+
+   // find pivot (lowest y major, lowest x minor)
+   T x = in[0].x;
+   T y = in[0].y;  int pos = 0;
+   for (int n = 1;  n < isize;  ++n)
+      if (in[n].y < y || in[n].y == y && in[n].x < x) {
+         x = in[n].x;
+         y = in[n].y;  pos = n;
+      }
+   std::swap(in[0],in[pos]);
+
+   // sort
+   std::sort(in.begin()+1, in.end(), compare_chull<T>(in[0]));
+
+   // main algorithm
+   clear(out);
+   out.push_back(in[0]);
+   out.push_back(in[1]);  int osize = 2;
+
+   int status = convex;
+   for (int i = 2;  i < isize;  ++i) {
+      T cross = left(out[osize-2], out[osize-1], in[i]);
+      if (cross == T(0)) {
+         out[osize-1] = in[i];
+         status |= borderline;
+      } else if (T(0) < cross)
+         out.push_back(in[i]), osize++;
+      else {
+         while (!(T(0) < cross) && osize > 2) {
+            status |= cross < T(0) ? concave : borderline;
+            out.pop_back(), osize--;
+            cross = left(out[osize-2], out[osize-1], in[i]);
+         }
+         out.push_back(in[i]), osize++;
+      }
+   }
+
+   return status;
+}
+
+}
+}
+
+
+
+// =============================================================================
+// advance
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Count point v if appropriate, and do some bookkeeping.
+template<class nodal, class geometrical>
+inline void advance(
+   const bool inside, const point<nodal> &v,
+   int &ind, int &prev, int &count, const int size,
+   std::vector<point<geometrical> > &i
+) {
+   if (inside)
+      i.push_back(point<geometrical>(geometrical(v.x), geometrical(v.y)));
+   prev = ind;
+   ++ind %= size;
+   ++count;
+}
+
+}
+}
+
+
+
+// =============================================================================
+// intline: for the simple algorithm
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// If the line segments [a to b] and [c to d] touch but are not parallel,
+// compute their intersection and return true. Otherwise, return false.
+
+template<class nodal, class geometrical>
+inline bool intline(
+   const point<nodal> &a, const point<nodal> &b,
+   const point<nodal> &c, const point<nodal> &d,
+   const nodal &eps_parallel, const nodal &eps_line,
+   point<geometrical> &inter
+) {
+   const nodal cross = (b.x-a.x)*(d.y-c.y) - (b.y-a.y)*(d.x-c.x);
+
+   // if line segments are approximately parallel
+   if (!(eps_parallel < core_abs(cross)))
+      return false;
+
+   // line segments are NOT approximately parallel...
+
+   // Note: eps_line is effectively used here in such a way that it's scaled,
+   // because s/cross and t/cross are in [0,1] if an intersection exists.
+   const nodal zero = core_op_unary(nodal(0))-eps_line*cross;  // (0-eps)*cross
+   const nodal one  = cross-zero;  // (1+eps)*cross
+
+   const nodal s = a.x*(c.y-d.y) + c.x*(d.y-a.y) + d.x*(a.y-c.y);
+   if (nodal(0) < cross ? s < zero || one < s : zero < s || s < one)
+      return false;
+
+   const nodal t = a.x*(c.y-b.y) + b.x*(a.y-c.y) + c.x*(b.y-a.y);
+   if (nodal(0) < cross ? t < zero || one < t : zero < t || t < one)
+      return false;
+
+   // line segments approximately touch...
+
+   const geometrical fac = geometrical(s)/geometrical(cross);
+   inter.x = geometrical(a.x) + fac*geometrical(b.x-a.x);
+   inter.y = geometrical(a.y) + fac*geometrical(b.y-a.y);
+   return true;
+}
+
+}
+}
+
+
+
+// =============================================================================
+// polysimple: simple algorithm, O(n*m)
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class nodal, class geometrical>
+void polysimple(
+   const std::vector<point<nodal> > &_p,
+   const std::vector<point<nodal> > &_q,
+   std::vector<point<geometrical> > &i,  // should have been cleared already
+   const nodal &eps_inside, const nodal &eps_parallel, const nodal &eps_line
+) {
+   // ========================
+   // Setup
+   // ========================
+
+   //int flag;
+
+   // process p
+   static std::vector<point<nodal> > p;
+   if ((/*flag =*/ chull(_p,p)) & concave)
+      { }  // qqq could print a warning for this
+   const int psize = p.size();  if (psize < 3) return;
+
+   // process q
+   static std::vector<point<nodal> > q;
+   if ((/*flag =*/ chull(_q,q)) & concave)
+      { }  // qqq could print a warning for this
+   const int qsize = q.size();  if (qsize < 3) return;
+
+
+
+   // ========================
+   // Main algorithm
+   // ========================
+
+   // find vertices of q that are inside p
+   for (int b = 0;  b < qsize;  ++b) {  // for each q vertex
+      int aprev = psize-1;
+      for (int a = 0;  a < psize;  aprev = a++)  // for each p line segment
+         if (left(p[aprev], p[a], q[b]) < core_op_unary(nodal(0))-eps_inside)
+            goto bnext;  // distinctly outside; go to the next q vertex
+
+      // (approximately) inside
+      i.push_back(point<geometrical>(geometrical(q[b].x), geometrical(q[b].y)));
+
+      bnext:;
+   }
+
+   // find vertices of p that are inside q
+   for (int a = 0;  a < psize;  ++a) {  // for each p vertex
+      int bprev = qsize-1;
+      for (int b = 0;  b < qsize;  bprev = b++)  // for each q line segment
+         if (left(q[bprev], q[b], p[a]) < core_op_unary(nodal(0))-eps_inside)
+            goto anext;  // distinctly outside; go to the next p vertex
+
+      // (approximately) inside
+      i.push_back(point<geometrical>(geometrical(p[a].x), geometrical(p[a].y)));
+
+      anext:;
+   }
+
+   // find line intersections
+   int aprev = psize-1;
+   for (int a = 0;  a < psize;  aprev = a++) {  // for each p line segment
+      int bprev = qsize-1;
+      for (int b = 0;  b < qsize;  bprev = b++) {  // for each q line segment
+         static point<geometrical> inter;
+         if (intline(p[aprev],p[a],q[bprev],q[b],eps_parallel,eps_line,inter))
+            i.push_back(inter);
+      }
+   }
+}
+
+}
+}
+
+
+
+// =============================================================================
+// intline: for the chasing algorithm
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Same remarks as for the "simple" algorithm.
+
+// T is "nodal" for exact, "integer" for real
+template<class T, class geometrical>
+inline bool intline(
+   const point<T> &a, const point<T> &b,
+   const point<T> &c, const point<T> &d,
+   T &cross, point<geometrical> &inter
+) {
+   // if line segments are parallel
+   if ((cross = (b.x-a.x)*(d.y-c.y) - (b.y-a.y)*(d.x-c.x)) == T(0))
+      return false;
+
+   // line segments are NOT parallel...
+
+   const T s = a.x*(c.y-d.y) + c.x*(d.y-a.y) + d.x*(a.y-c.y);
+   if (T(0) < cross ? s < T(0) || cross < s : T(0) < s || s < cross)
+      return false;
+
+   const T t = a.x*(c.y-b.y) + b.x*(a.y-c.y) + c.x*(b.y-a.y);
+   if (T(0) < cross ? t < T(0) || cross < t : T(0) < t || t < cross)
+      return false;
+
+   // line segments touch...
+
+   const geometrical fac = geometrical(s)/geometrical(cross);
+   inter.x = geometrical(a.x) + fac*geometrical(b.x-a.x);
+   inter.y = geometrical(a.y) + fac*geometrical(b.y-a.y);
+   return true;
+}
+
+}
+}
+
+
+
+// =============================================================================
+// polyexact: chasing algorithm, "exact" variation, O(n+m)
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class T, class geometrical>
+void polyexact(
+   const std::vector<point<T> > &_p,
+   const std::vector<point<T> > &_q,
+   std::vector<point<geometrical> > &i  // should have been cleared already
+) {
+   // ========================
+   // Setup
+   // ========================
+
+   // int flag;
+
+   // process p
+   static std::vector<point<T> > p;
+   if ((/*flag =*/ chull(_p,p)) & concave)
+      { }  // qqq could print a warning for this
+   const int psize = p.size();  if (psize < 3) return;
+
+   // process q
+   static std::vector<point<T> > q;
+   if ((/*flag =*/ chull(_q,q)) & concave)
+      { }  // qqq could print a warning for this
+   const int qsize = q.size();  if (qsize < 3) return;
+
+
+
+   // ========================
+   // Main algorithm
+   // ========================
+
+   int a = 0, b = 0, aprev = psize-1, bprev = qsize-1, acount = 0, bcount = 0;
+   int firstreset = 1;  inflag in = unknown;
+
+   do {
+      const T aleftb = left(q[bprev], q[b], p[a]);
+      const T blefta = left(p[aprev], p[a], q[b]);
+
+      T cross;  static point<geometrical> inter;
+      if (intline(p[aprev], p[a], q[bprev], q[b], cross, inter)) {
+         // line segments touch and are not parallel
+         if (in == unknown && firstreset)
+            firstreset = acount = bcount = 0;
+
+         i.push_back(inter);
+
+         if (T(0) < aleftb) in = pinside; else
+         if (T(0) < blefta) in = qinside;
+      }
+
+      // advance
+      if (cross == T(0) && !(T(0) < blefta || T(0) < aleftb))
+         if (in == pinside)
+            advance(in == qinside, q[b], b,bprev,bcount, qsize, i);
+         else
+            advance(in == pinside, p[a], a,aprev,acount, psize, i);
+      else if (!(cross < T(0)))
+         if (T(0) < blefta)
+            advance(in == pinside, p[a], a,aprev,acount, psize, i);
+         else
+            advance(in == qinside, q[b], b,bprev,bcount, qsize, i);
+      else
+         if (T(0) < aleftb)
+            advance(in == qinside, q[b], b,bprev,bcount, qsize, i);
+         else
+            advance(in == pinside, p[a], a,aprev,acount, psize, i);
+
+   } while ((acount < psize || bcount < qsize) &&
+             acount < psize+psize && bcount < qsize+qsize);
+
+
+
+   // ========================
+   // Finish
+   // ========================
+
+   // if nothing found...
+   if (i.size() == 0) {
+      // see if p is entirely inside q
+      int bprev = qsize-1;
+      for (int b = 0;  b < qsize;  bprev = b++)
+         if (left(q[bprev], q[b], p[0]) < T(0))  // strictly outside
+            goto check_q;
+      for (int n = 0;  n < psize;  ++n)
+         i.push_back(point<geometrical>
+           (geometrical(p[n].x), geometrical(p[n].y)));
+      return;
+
+      // see if q is entirely inside p
+check_q:
+      int aprev = psize-1;
+      for (int a = 0;  a < psize;  aprev = a++)
+         if (left(p[aprev], p[a], q[0]) < T(0))  // strictly outside
+            return;
+      for (int n = 0;  n < qsize;  ++n)
+         i.push_back(point<geometrical>
+           (geometrical(q[n].x), geometrical(q[n].y)));
+   }
+}
+
+}
+}
+
+
+
+// =============================================================================
+// polyreal: chasing algorithm, "real" variation, O(n+m)
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class nodal, class geometrical>
+void polyreal(
+   // polygons
+   const std::vector<point<nodal> > &p,
+   const std::vector<point<nodal> > &q,
+
+   // intersection
+   std::vector<point<geometrical> > &i,  // should have been cleared already
+
+   // bounding boxes for p and q
+   const point<nodal> &pmin, const point<nodal> &pmax,
+   const point<nodal> &qmin, const point<nodal> &qmax
+) {
+   // overall bounding box of {p,q}
+   const nodal xmin = core_min(pmin.x,qmin.x), xmax = core_max(pmax.x,qmax.x);
+   const nodal ymin = core_min(pmin.y,qmin.y), ymax = core_max(pmax.y,qmax.y);
+
+   // if degenerate scaling, there's no meaningful intersection anyway
+   if (xmin == xmax || ymin == ymax) return;
+
+   // scaling should be such that (x+x)*(x+x) + (x+x)*(x+x) stays
+   // in-bounds for [[long] long] integers x. Thus 8*x^2 <= bound,
+   // or x <= sqrt(bound/8). Using sqrt(bound)/3 is safe.
+   typedef core_poly_int<char> cpi;
+
+   static const nodal imin = -std::sqrt(-nodal(cpi::min))/3;
+   static const nodal imax =  std::sqrt( nodal(cpi::max))/3, idif = imax-imin;
+
+   const nodal xfac = idif/(xmax-xmin);
+   const nodal yfac = idif/(ymax-ymin);
+
+   // compute integer p and q...
+   typedef cpi::result integer;
+
+   static std::vector<point<integer> > pint;
+   hidden::clear(pint);
+   const int psize = p.size();
+   for (int n = 0;  n < psize;  ++n) pint.push_back(point<integer>(
+      core_round<integer>(imax + (p[n].x - xmax)*xfac),
+      core_round<integer>(imax + (p[n].y - ymax)*yfac)
+   ));
+
+   static std::vector<point<integer> > qint;
+   hidden::clear(qint);
+   const int qsize = q.size();
+   for (int n = 0;  n < qsize;  ++n) qint.push_back(point<integer>(
+      core_round<integer>(imax + (q[n].x - xmax)*xfac),
+      core_round<integer>(imax + (q[n].y - ymax)*yfac)
+   ));
+
+   // compute intersection based on integer p and q
+   polyexact(pint,qint,i);
+
+   // convert i (based on integer p and q) back to nodal
+   const int isize = i.size();
+   for (int n = 0;  n < isize;  ++n) {
+      i[n].x = (i[n].x - imax)/xfac + xmax;
+      i[n].y = (i[n].y - imax)/yfac + ymax;
+   }
+}
+
+}
+}
+
+
+
+// =============================================================================
+// polychasing: chasing algorithm
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// general
+template<class nodal, class geometrical>
+inline void polychasing(
+   const std::vector<point<nodal> > &p,
+   const std::vector<point<nodal> > &q,
+   std::vector<point<geometrical> > &i,
+   const point<nodal> &pmin, const point<nodal> &pmax,
+   const point<nodal> &qmin, const point<nodal> &qmax
+) {
+   polyexact(p,q,i);
+}
+
+
+
+// float
+template<class geometrical>
+inline void polychasing(
+   const std::vector<point<float> > &p,
+   const std::vector<point<float> > &q,
+   std::vector<point<geometrical> > &i,
+   const point<float> &pmin, const point<float> &pmax,
+   const point<float> &qmin, const point<float> &qmax
+) {
+   polyreal(p,q,i, pmin,pmax,qmin,qmax);
+}
+
+
+
+// double
+template<class geometrical>
+inline void polychasing(
+   const std::vector<point<double> > &p,
+   const std::vector<point<double> > &q,
+   std::vector<point<geometrical> > &i,
+   const point<double> &pmin, const point<double> &pmax,
+   const point<double> &qmin, const point<double> &qmax
+) {
+   polyreal(p,q,i, pmin,pmax,qmin,qmax);
+}
+
+
+
+// long double
+template<class geometrical>
+inline void polychasing(
+   const std::vector<point<long double> > &p,
+   const std::vector<point<long double> > &q,
+   std::vector<point<geometrical> > &i,
+   const point<long double> &pmin, const point<long double> &pmax,
+   const point<long double> &qmin, const point<long double> &qmax
+) {
+   polyreal(p,q,i, pmin,pmax,qmin,qmax);
+}
+
+}
+}
+
+
+
+// =============================================================================
+// polygon_intersection
+// This function is unused by CORE itself, but is something users can call
+// directly if they want to compute polygon intersections. Its return value
+// is the number of points in the intersection polygon.
+// =============================================================================
+
+namespace core {
+
+template<class nodal, class geometrical>
+int polygon_intersection(
+   const std::vector<point<nodal> > &p,
+   const std::vector<point<nodal> > &q,
+   std::vector<point<geometrical> > &i,
+
+   const polyint_type polyint = DEFAULT_POLYINT,
+   const trim_type    trim    = DEFAULT_TRIM,
+
+   const nodal       &eps_inside   = get_eps(nodal()),
+   const nodal       &eps_parallel = get_eps(nodal()),
+   const nodal       &eps_line     = get_eps(nodal()),
+   const geometrical &eps_trim     = get_eps(geometrical())
+) {
+   // ========================
+   // Bookkeeping
+   // ========================
+
+   hidden::clear(i);
+   const int psize = p.size();  if (psize < 3) return 0;
+   const int qsize = q.size();  if (qsize < 3) return 0;
+
+
+
+   // ========================
+   // Bounding boxes
+   // ========================
+
+   static point<nodal> pmin, pmax;
+   static point<nodal> qmin, qmax;
+
+   if (polyint == core::chasing && hidden::is_real<nodal>::result ||
+       trim != notrim
+   ) {
+      // If we're using the chasing algorithm with a real type, OR
+      // if we're trimming in some way, then compute the bounding boxes.
+      // The former case uses them for scaling in the real --> integer
+      // conversion. The latter case uses them for scaling eps_trim.
+
+      // p's bounding box
+      pmin.x = pmax.x = p[0].x;  pmin.y = pmax.y = p[0].y;
+      for (int n = 1;  n < psize;  ++n) {
+         if (p[n].x < pmin.x) pmin.x = p[n].x; else
+         if (pmax.x < p[n].x) pmax.x = p[n].x;
+         if (p[n].y < pmin.y) pmin.y = p[n].y; else
+         if (pmax.y < p[n].y) pmax.y = p[n].y;
+      }
+
+      // q's bounding box
+      qmin.x = qmax.x = q[0].x;  qmin.y = qmax.y = q[0].y;
+      for (int n = 1;  n < qsize;  ++n) {
+         if (q[n].x < qmin.x) qmin.x = q[n].x; else
+         if (qmax.x < q[n].x) qmax.x = q[n].x;
+         if (q[n].y < qmin.y) qmin.y = q[n].y; else
+         if (qmax.y < q[n].y) qmax.y = q[n].y;
+      }
+
+      // if there's no chance of an overlap...
+      if (!(qmin.x < pmax.x) || !(pmin.x < qmax.x) ||
+          !(qmin.y < pmax.y) || !(pmin.y < qmax.y))
+         return 0;
+   }
+
+
+
+   // ========================
+   // Intersection
+   // ========================
+
+   static std::vector<point<geometrical> > itmp;
+   hidden::clear(itmp);
+
+   if (polyint == simple)
+      // simple algorithm
+      hidden::polysimple(
+         p, q, trim == notrim ? i : itmp, eps_inside, eps_parallel, eps_line
+      );
+   else
+      // chasing algorithm
+      hidden::polychasing(
+         p, q, trim == notrim ? i : itmp, pmin, pmax, qmin, qmax
+      );
+
+
+
+   // ========================
+   // Postprocess
+   // ========================
+
+   // chull
+   const int flag = trim == notrim
+      ? hidden::chull(i,i)
+      : hidden::chull(itmp,itmp);
+   if (flag & hidden::concave)
+      { }  // qqq could print a warning for this
+
+   // trim
+   // Note: we scale eps_trim by the average x and y sizes
+   // of the p and q bounding boxes.
+   if (trim != notrim)
+      hidden::trimpoly(
+         itmp, i,
+         geometrical(pmax.x-pmin.x + qmax.x-qmin.x)*eps_trim/geometrical(2),
+         geometrical(pmax.y-pmin.y + qmax.y-qmin.y)*eps_trim/geometrical(2),
+         trim
+      );
+
+   // done
+   if (i.size() < 3)
+      hidden::clear(i);
+   return i.size();
+}
+
+}
+
+
+
+// =============================================================================
+// polygon_intersection
+// Interface to the vector-based polygon_intersection(), with C-style arrays
+// =============================================================================
+
+namespace core {
+
+template<class nodal, class geometrical>
+int polygon_intersection(
+   const point<nodal> *const p, const int psize,
+   const point<nodal> *const q, const int qsize,
+   point<geometrical> *const i, const int imaxlength,
+
+   const polyint_type polyint = DEFAULT_POLYINT,
+   const trim_type    trim    = DEFAULT_TRIM,
+
+   const nodal       &eps_inside   = get_eps(nodal()),
+   const nodal       &eps_parallel = get_eps(nodal()),
+   const nodal       &eps_line     = get_eps(nodal()),
+   const geometrical &eps_trim     = get_eps(geometrical())
+) {
+   // ========================
+   // p&pvec, q&qvec, i&ivec
+   // ========================
+
+   // pvec <-- p
+   static std::vector< point<nodal> > pvec;
+   hidden::clear(pvec);  pvec.reserve(psize);
+   for (int n = 0;  n < psize;  ++n)
+      pvec.push_back(p[n]);
+
+   // qvec <-- q
+   static std::vector< point<nodal> > qvec;
+   hidden::clear(qvec);  qvec.reserve(qsize);
+   for (int n = 0;  n < qsize;  ++n)
+      qvec.push_back(q[n]);
+
+   // ivec
+   static std::vector< point<geometrical> > ivec;  // cleared elsewhere
+
+
+   // ========================
+   // Intersection
+   // ========================
+
+   // call the vector-based polygon_intersection
+   const int isize = polygon_intersection(
+      pvec, qvec, ivec,
+      polyint, trim, eps_inside, eps_parallel, eps_line, eps_trim
+   );
+
+   // print error if there's not enough room in the user's i
+   if (isize > imaxlength) {
+      std::core_cerr <<
+         "[core] ERROR: polygon_intersection: not enough room for "
+         "intersection\npolygon; have " << isize << "points, but "
+         "you gave space for only " << imaxlength << " points"
+      << std::endl;
+      exit(1);
+   }
+
+
+   // ========================
+   // Finish
+   // ========================
+
+   // i <-- ivec
+   for (int n = 0;  n < isize;  ++n)
+      i[n] = ivec[n];
+
+   // done
+   return isize;
+}
+
+}
+
+#endif

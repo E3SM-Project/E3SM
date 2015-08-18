@@ -1,0 +1,289 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_CENTER
+#define CORE_CENTER
+
+
+
+// =============================================================================
+// Center_cartesian
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Helper function
+template<class array_nodal, class geometrical>
+inline void fun(
+   // input
+   const int curr,
+   const int next,
+
+   const array_nodal &node_old_x,
+   const array_nodal &node_old_y,
+
+   // output
+   geometrical &cell_old_x,
+   geometrical &cell_old_y
+) {
+   typedef typename traits<array_nodal>::element nodal;
+
+   const nodal
+      xc = node_old_x[curr], xn = node_old_x[next],
+      yc = node_old_y[curr], yn = node_old_y[next];
+
+   core_plus_equal(cell_old_x, geometrical((yn - yc)*(xn*(xn + xc) + xc*xc)));
+   core_plus_equal(cell_old_y, geometrical((xc - xn)*(yn*(yn + yc) + yc*yc)));
+}
+
+
+
+// Center_cartesian
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+void center_cartesian(
+   // input
+   const array_nodal &node_old_x,
+   const array_nodal &node_old_y,
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+   const array_geometrical &cell_old_volume,
+
+   // output
+   array_geometrical &cell_old_x,
+   array_geometrical &cell_old_y
+) {
+   core_begin("center_cartesian");
+
+   typedef typename traits<array_geometrical>::element geometrical;
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic) {
+
+      // ========================================
+      // Boundary cell
+      // ========================================
+
+      if (cell_old_type[ic] == core::boundary) {
+         const int n0 = cell_old_vert[ic][0];
+
+         if (size(cell_old_vert[ic]) == 1) {
+            // center is node coordinate
+            cell_old_x[ic] = geometrical(node_old_x[n0]);
+            cell_old_y[ic] = geometrical(node_old_y[n0]);
+
+         } else {
+            // center is average of node coordinates
+            const int n1 = cell_old_vert[ic][1];
+            cell_old_x[ic] = geometrical(node_old_x[n0] + node_old_x[n1])
+               /geometrical(2);
+            cell_old_y[ic] = geometrical(node_old_y[n0] + node_old_y[n1])
+               /geometrical(2);
+         }
+         continue;  // next cell
+      }
+
+
+      // ========================================
+      // Real or ghost cell
+      // ========================================
+
+      core_assert(!(cell_old_volume[ic] == geometrical(0)));
+
+      // loop over the nodes of this cell
+      const int nvert = size(cell_old_vert[ic]);
+      fun(
+         cell_old_vert[ic][nvert-1], cell_old_vert[ic][0],
+         node_old_x, node_old_y,
+         cell_old_x[ic] = geometrical(0), cell_old_y[ic] = geometrical(0)
+      );
+      for (int jn = 0;  jn < nvert-1;  ++jn) fun(
+         cell_old_vert[ic][jn], cell_old_vert[ic][jn+1],
+         node_old_x, node_old_y, cell_old_x[ic], cell_old_y[ic]
+      );
+
+      // finish up
+      const geometrical v6 = cell_old_volume[ic]*geometrical(6);
+
+      core_divide_equal(cell_old_x[ic], v6);
+      core_divide_equal(cell_old_y[ic], v6);
+   }
+
+   core_end("center_cartesian");
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Center_cylindrical
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Helper function
+template<class array_nodal, class geometrical>
+inline void fun(
+   // input
+   const int curr,
+   const int next,
+
+   const array_nodal &node_old_r,
+   const array_nodal &node_old_z,
+
+   // output
+   geometrical &cell_old_r,
+   geometrical &cell_old_z,
+
+   // to distinguish this from the cartesian fun()
+   const int
+) {
+   typedef typename traits<array_nodal>::element nodal;
+
+   const nodal
+      r0 = node_old_r[curr], r1 = node_old_r[next],
+      z0 = node_old_z[curr], z1 = node_old_z[next];
+
+   core_plus_equal(cell_old_r, geometrical((z1 - z0)*(
+      r1*r1 + r0*r0)*(r1 + r0))
+   );
+   core_plus_equal(cell_old_z, geometrical((z1 - z0)*(
+      r1*(r1*(z1*nodal(3) + z0) + r0*z1*nodal(2))
+    + r0*(r0*(z0*nodal(3) + z1) + r1*z0*nodal(2))
+   )));
+}
+
+
+
+// Center_cylindrical
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+void center_cylindrical(
+   // input
+   const array_nodal &node_old_r,
+   const array_nodal &node_old_z,
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+   const array_geometrical &cell_old_volume,
+
+   // output
+   array_geometrical &cell_old_r,
+   array_geometrical &cell_old_z
+) {
+   core_begin("center_cylindrical");
+
+   typedef typename traits<array_geometrical>::element geometrical;
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic) {
+
+      // ========================================
+      // Boundary cell
+      // ========================================
+
+      if (cell_old_type[ic] == core::boundary) {
+         // zzz I assume this is still the right way, for cylindrical...
+         const int n0 = cell_old_vert[ic][0];
+
+         if (size(cell_old_vert[ic]) == 1) {
+            // center is node coordinate
+            cell_old_r[ic] = geometrical(node_old_r[n0]);
+            cell_old_z[ic] = geometrical(node_old_z[n0]);
+
+         } else {
+            // center is average of node coordinates
+            const int n1 = cell_old_vert[ic][1];
+            cell_old_r[ic] = geometrical(node_old_r[n0] + node_old_r[n1])
+               /geometrical(2);
+            cell_old_z[ic] = geometrical(node_old_z[n0] + node_old_z[n1])
+               /geometrical(2);
+         }
+         continue;  // next cell
+      }
+
+
+      // ========================================
+      // Real or ghost cell
+      // ========================================
+
+      core_assert(!(cell_old_volume[ic] == geometrical(0)));
+
+      // loop over the nodes of this cell
+      const int nvert = size(cell_old_vert[ic]);
+      fun(
+         cell_old_vert[ic][nvert-1], cell_old_vert[ic][0],
+         node_old_r, node_old_z,
+         cell_old_r[ic] = geometrical(0), cell_old_z[ic] = geometrical(0), 0
+      );
+      for (int jn = 0;  jn < nvert-1;  ++jn) fun(
+         cell_old_vert[ic][jn], cell_old_vert[ic][jn+1],
+         node_old_r, node_old_z, cell_old_r[ic], cell_old_z[ic], 0
+      );
+
+      // finish up
+      const geometrical v12 = cell_old_volume[ic]*geometrical(12);
+
+      core_divide_equal(cell_old_r[ic], v12);
+      core_divide_equal(cell_old_z[ic], (v12+v12));
+   }
+
+   core_end("center_cylindrical");
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Center
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Center
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+inline void center(
+   // input
+   const coordinate_type coordinate,
+
+   const array_nodal &node_old_x,  // or r
+   const array_nodal &node_old_y,  // or z
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+   const array_geometrical &cell_old_volume,
+
+   // output
+   array_geometrical &cell_old_x,  // or r
+   array_geometrical &cell_old_y   // or z
+) {
+   if (coordinate == core::cartesian)
+      center_cartesian(
+         node_old_x, node_old_y, cell_old_num,
+         cell_old_type, cell_old_vert, cell_old_volume,
+         cell_old_x, cell_old_y
+      );
+   else
+      center_cylindrical(
+         node_old_x, node_old_y, cell_old_num,
+         cell_old_type, cell_old_vert, cell_old_volume,
+         cell_old_x, cell_old_y
+      );
+}
+
+}
+}
+
+#endif

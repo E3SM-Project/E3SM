@@ -1,0 +1,369 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_GEOMETRY_CELL
+#define CORE_GEOMETRY_CELL
+
+// geometry_edge, geometry_wrap, and geometry_cell should be called
+// in that order.
+
+/*
+
+Given
+   node_old_num
+   cell_old_num
+   cell_old_type
+   cell_old_vert
+
+geometry_cell COMPUTES
+   cell_old_cell
+with placeholder entries for non-real cells.
+
+Note: if all non-real cells are at the ends of the arrays AND if we'll only
+require a 1-level neighborhood, then we don't need the placeholders. But we
+shouldn't assume those conditions will be met. The number of non-real cells
+is usually small compared with the overall number of cells, so having the
+placeholders isn't expensive.
+
+*/
+
+
+
+// =============================================================================
+// Helper functions for geometry_cell
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Get_node_cell
+template<class array_array_int>
+void get_node_cell(
+   const int node_old_num,
+   const int cell_old_num,
+   const array_array_int &cell_old_vert
+) {
+   // node_multiplicity
+   std::vector<int> node_multiplicity;
+   resize_if_different(node_multiplicity, node_old_num);
+   for (int in = 0;  in < node_old_num;  ++in)
+      node_multiplicity[in] = 0;
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic) {  // each cell
+      const int nvert = size(cell_old_vert[ic]);
+      for (int jv = 0;  jv < nvert;  ++jv)  // each node of the cell
+         node_multiplicity[cell_old_vert[ic][jv]]++;
+   }
+
+   // Node_cell
+   resize_if_different(core_info<char>::Node_cell, node_old_num);
+   for (int in = 0;  in < node_old_num;  ++in)
+      resize_if_different(
+         core_info<char>::Node_cell[in], node_multiplicity[in]
+      );
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic) {  // each cell
+      const int nvert = size(cell_old_vert[ic]);
+      for (int jv = 0;  jv < nvert;  ++jv)  // each node of the cell
+         core_info<char>::Node_cell
+            [cell_old_vert[ic][jv]]
+            [--node_multiplicity[cell_old_vert[ic][jv]]]
+         = ic;
+   }
+}
+
+
+
+// Get_cell_old_cell_sizes
+template<class array_cell_type, class array_array_int>
+void get_cell_old_cell_sizes(
+   const int node_old_num,
+   const int cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+   array_array_int &cell_old_cell
+) {
+   get_node_cell(node_old_num, cell_old_num, cell_old_vert);
+
+   // compute cell_old_cell sizes
+   for (int ic = 0;  ic < cell_old_num;  ++ic)
+   if (cell_old_type[ic] == core::real) {
+      int syze = 0;
+      const int nvert = size(cell_old_vert[ic]);
+      for (int jv = 0;  jv < nvert;  ++jv)
+         syze += size(core_info<char>::Node_cell[cell_old_vert[ic][jv]]);
+      resize_if_different(cell_old_cell[ic], syze-nvert-nvert);
+   }
+}
+
+
+
+// Get_cell_old_cell_ic
+template<class array_array_int, class array_int>
+void get_cell_old_cell_ic(
+   const int ic,
+   const int cell_old_num,
+   const array_array_int &cell_old_vert,
+   array_int &cell  // "cell_old_cell[ic]"
+) {
+   int pos = 0;
+
+   // for each node/edge of cell ic...
+   const int pnode = size(cell_old_vert[ic]);
+   for (int in = 0;  in < pnode;  ++in) {
+      std::vector<int> nay;  // neighbors of cell c via node n
+      nay.push_back(0);  // placeholder for previous-edge neighbor
+
+      // p for "primary" cell
+      const int plast = cell_old_vert[ic][(in ? in : pnode)-1];
+      const int pnow  = cell_old_vert[ic][in];
+      const int pnext = cell_old_vert[ic][(in+1) % pnode];
+
+
+      // examine other cells...
+      if_core_assert(bool found_edge_neighbor = false);
+
+      const int numc = size(core_info<char>::Node_cell[pnow]);
+      for (int jc = 0;  jc < numc;  ++jc) {
+         const int c = core_info<char>::Node_cell[pnow][jc];
+         if (c == ic)
+            continue;
+
+         const int snode = size(cell_old_vert[c]);
+         for (int kn = 0;  kn < snode;  ++kn) {
+            // s for "secondary" cell
+            const int slast = cell_old_vert[c][(kn ? kn : snode)-1];
+            const int snow  = cell_old_vert[c][kn];
+            const int snext = cell_old_vert[c][(kn+1) % snode];
+
+            // ...for previous-edge neighbor
+            if (
+               pnow == slast && plast == snow ||
+               pnow == snow  && plast == slast
+            ) {
+               // only one cell can share an edge
+               core_assert(!found_edge_neighbor);
+
+               if_core_assert(found_edge_neighbor = true);
+               nay[0] = c;
+               break;
+            }
+
+            // ...for current-node neighbor (touching only at point)
+            if (snow == pnow &&
+                slast != plast && slast != pnext &&
+                snext != plast && snext != pnext
+            ) {
+               nay.push_back(c);
+               break;
+            }
+         }
+      }
+
+      // something must have shared the edge
+      core_assert(found_edge_neighbor);
+
+
+      // sort
+      const int numa = nay.size()-1;
+      for (int a = 1;  a < numa;  ++a) {
+         const int last = nay[a-1];  // previous cell
+
+         // look for the value that should be in nay[a] (matches nay[a-1])
+         const int numb = nay.size();
+         for (int b = a;  b < numb;  ++b) {
+            int look = nay[b];  // we'll compare this with nay[a-1]
+
+            const int numanode = size(cell_old_vert[last]);
+            for (int anode = 0;  anode < numanode;  ++anode) {
+               const std::pair<int,int> an = wrap_pair(
+                  cell_old_vert, last, anode, numanode
+               );
+               const int numbnode = size(cell_old_vert[look]);
+               for (int bnode = 0;  bnode < numbnode;  ++bnode) {
+                  const std::pair<int,int> bn = wrap_pair(
+                     cell_old_vert, look, bnode, numbnode
+                  );
+                  if (an == bn || an == flip_pair(bn)) {
+                     std::swap(nay[a],nay[b]);
+                     goto found_a;
+                  }
+               }
+            }
+         }
+
+         {
+         // must be exactly one point-boundary; put at [a]
+         if_core_assert(bool found_point = false);
+         const int numb = nay.size();
+         for (int b = a;  b < numb;  ++b)
+            if (size(cell_old_vert[nay[b]]) == 1) {
+               core_assert(!found_point);
+               if_core_assert(found_point = true);
+               std::swap(nay[a],nay[b]);
+            }
+         core_assert(found_point);
+
+         // must be exactly one line-boundary; put at [a+1] (there could
+         // have been another line-boundary, but it would have occurred
+         // before the point-boundary)
+         if_core_assert(bool found_bar = false);
+         for (int b = ++a;  b < numb;  ++b)
+            if (size(cell_old_vert[nay[b]]) == 2) {
+               core_assert(!found_bar);
+               if_core_assert(found_bar = true);
+               std::swap(nay[a],nay[b]);
+            }
+         core_assert(found_bar);
+         }
+
+         found_a:;
+      }
+
+      const int numb = nay.size();
+      for (int it = 0;  it < numb;  ++it)
+         cell[pos++] = nay[it];
+   }
+}
+
+
+
+// Get_cell_old_cell
+template<class array_cell_type, class array_array_int>
+void get_cell_old_cell(
+   const int node_old_num,
+   const int cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+   array_array_int &cell_old_cell
+) {
+   get_cell_old_cell_sizes(
+      node_old_num,
+      cell_old_num, cell_old_type, cell_old_vert, cell_old_cell
+   );
+
+   // for each cell
+   for (int ic = 0;  ic < cell_old_num;  ++ic)
+   if (cell_old_type[ic] == core::real)
+      get_cell_old_cell_ic(
+         ic,
+         cell_old_num,
+         cell_old_vert,
+         cell_old_cell[ic]
+      );
+
+   // No longer need Node_cell's information...
+   resize_if_different(core_info<char>::Node_cell, 0);
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Get_cell_new_cell
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// For each real and ghost cell on the new grid, this function finds the real
+// and ghost neighbors. No particular ordering (e.g. counterclockwise) of the
+// neighbors is produced, as the ordering isn't important in this context.
+
+template<class array_cell_type, class array_array_int>
+void get_cell_new_cell(
+   // input
+   const int   node_new_num,
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+
+   // output
+   array_array_int &cell_new_cell
+) {
+   carray<std::vector<int> > node_cell;
+   resize_if_different(node_cell, node_new_num);
+
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+   if (cell_new_type[ic] != core::boundary) {
+      const int nvert = size(cell_new_vert[ic]);
+      for (int jv = 0;  jv < nvert;  ++jv)
+         node_cell[cell_new_vert[ic][jv]].push_back(ic);
+   }
+
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+   if (cell_new_type[ic] != core::boundary) {
+      // apparently, static+erase is faster than non-static
+      static std::set<int> nay;
+      nay.erase(nay.begin(), nay.end());
+
+      const int nvert = size(cell_new_vert[ic]);
+      for (int jv = 0;  jv < nvert;  ++jv) {
+         const int thevert = cell_new_vert[ic][jv];
+         nay.insert(
+            node_cell[thevert].begin(),
+            node_cell[thevert].end  ()
+         );
+      }
+
+      resize_if_different(cell_new_cell[ic], nay.size()-1);
+      int count = 0;
+      for (set_int_iterator i = nay.begin();  i != nay.end();  ++i)
+         if (*i != ic) cell_new_cell[ic][count++] = *i;
+   }
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Geometry_cell
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class array_cell_type, class array_array_int>
+void geometry_cell(
+   const connectivity_type connectivity,
+
+   // input
+   const int   node_old_num,
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+
+   // input if connectivity == different
+   const int   node_new_num,
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+
+   // output
+   array_array_int &cell_old_cell,
+
+   // output if connectivity == different
+   array_array_int &cell_new_cell
+) {
+   resize_if_different(cell_old_cell, cell_old_num);
+   get_cell_old_cell(
+      node_old_num,
+      cell_old_num, cell_old_type, cell_old_vert, cell_old_cell
+   );
+
+   if (connectivity == core::same) return;
+
+   resize_if_different(cell_new_cell, cell_new_num);
+   get_cell_new_cell(
+      node_new_num,
+      cell_new_num, cell_new_type, cell_new_vert, cell_new_cell
+   );
+}
+
+}
+}
+
+#endif

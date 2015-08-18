@@ -1,0 +1,602 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_AUXILIARY
+#define CORE_AUXILIARY
+
+namespace core {
+   template<class T = double>
+   class carray;
+}
+
+
+
+// =============================================================================
+// Types and constants
+// =============================================================================
+
+namespace core {
+   // Cell type
+   enum cell_type {
+      real,
+      ghost,
+      boundary
+   };
+
+   // Machine type
+   enum machine_type {
+      serial,
+      parallel,
+      UNKNOWN_MACHINE  // not yet determined
+   };
+
+   // Coordinate type
+   enum coordinate_type {
+      cartesian,
+      cylindrical,
+      DEFAULT_COORDINATE = cartesian
+   };
+
+   // Connectivity type
+   enum connectivity_type {
+      same,
+      different,
+      DEFAULT_CONNECTIVITY = same
+   };
+
+   // Algorithm type
+   enum algorithm_type {
+      swept,
+      intersection,
+      inter = intersection,  // for typing ease
+      DEFAULT_ALGORITHM = swept
+   };
+
+   // Polygon-intersection type
+   enum polyint_type {
+      simple,
+      chasing,
+      DEFAULT_POLYINT = simple  // zzz maybe change to chasing
+   };
+
+   // Trim-intersection flag
+   enum trim_type {
+      notrim,
+      first,
+      average,
+      DEFAULT_TRIM = notrim
+   };
+
+   // Repair type
+   enum repair_type {
+      norepair,
+      global,
+      shellman,
+      wendroff,
+      DEFAULT_REPAIR = wendroff
+   };
+
+namespace hidden {
+   typedef std::set<int>::iterator set_int_iterator;
+
+   static const int CORE_MINIMUM_WIDTH  = 8;
+   static const int CORE_MINIMUM_WIDTHI = 9;
+   static const int CORE_MINIMUM_WIDTHL = 16;
+   static const int CORE_MINIMUM_WIDTHP = 10;
+   static const int CORE_MINIMUM_WIDTHG = CORE_MINIMUM_WIDTHP;
+   static const int CORE_MINIMUM_WIDTHN = CORE_MINIMUM_WIDTHG;
+
+   static const int CORE_DEFAULT_MAX_ITER  = 10;  // for non-global repairs
+   static const int CORE_DEFAULT_MAX_LEVEL = 1;   // for wendroff repair
+
+}
+}
+
+
+
+// =============================================================================
+// Macros
+// =============================================================================
+
+// Core_assert
+#ifdef CORE_ASSERT
+   #define    core_assert(x) assert(x)
+   #define if_core_assert(x) x
+#else
+   #define    core_assert(x)
+   #define if_core_assert(x)
+#endif
+
+
+// Core_function
+#ifdef CORE_FUNCTION
+   #define core_begin(sub) std::cout << sub " begin" << std::endl
+   #define core_end(  sub) std::cout << sub " end"   << std::endl
+#else
+   #define core_begin(sub)
+   #define core_end(  sub)
+#endif
+
+
+/*
+// Core_op_mixed
+#ifdef CORE_OP_MIXED
+   #define core_op_mixed(type,val) val
+#else
+   #define core_op_mixed(type,val) type(val)
+#endif
+*/
+
+
+// Core_op_unary
+#ifndef CORE_NO_OP_UNARY
+   #undef  CORE_OP_UNARY
+   #define CORE_OP_UNARY 1
+#endif
+
+#ifdef CORE_OP_UNARY
+   #define core_op_unary(thing)
+#else
+   #define core_op_unary(thing) thing
+#endif
+
+
+// Core_op_assignment
+#ifndef CORE_NO_OP_ASSIGNMENT
+   #undef  CORE_OP_ASSIGNMENT
+   #define CORE_OP_ASSIGNMENT 1
+#endif
+
+#ifdef CORE_OP_ASSIGNMENT
+   #define core_plus_equal(  a,b) a += b
+   #define core_minus_equal( a,b) a -= b
+   #define core_divide_equal(a,b) a /= b
+#else
+   #define core_plus_equal(  a,b) a = a+b
+   #define core_minus_equal( a,b) a = a-b
+   #define core_divide_equal(a,b) a = a/b
+#endif
+
+
+// Core_cerr_is_cout
+#ifdef CORE_CERR_IS_COUT
+   #define core_cerr cout
+#else
+   #define core_cerr cerr
+#endif
+
+
+#define core_into(multiple,n) into(multiple,core::integer<n>())
+
+
+
+// =============================================================================
+// Classes
+// =============================================================================
+
+namespace core {
+
+// Traits
+// Should override this when T is a multiple-remapping composite type
+template<class T>
+class traits {
+public:
+   // appropriate for simple (non-composite) types T
+   typedef T element;
+   static const int size = 1;
+};
+
+
+// Integer
+template<int i>
+class integer {
+};
+
+
+namespace hidden {
+
+// Twoint
+template<int a, int b>
+class twoint {
+public:
+   // constructors needed because g++ is broken
+   twoint(void) { }
+   explicit twoint(const bool) { }
+};
+
+
+// Core_info
+template<class junk>
+class core_info {
+   typedef std::pair<int,int> pii;
+public:
+   typedef std::map<pii,pii> boundary_edge;
+
+   static boundary_edge Exterior_edge;
+   static carray<carray<int> > Node_cell;
+};
+
+template<class junk>
+typename core_info<junk>::boundary_edge core_info<junk>::Exterior_edge;
+
+template<class junk>
+carray<carray<int> > core_info<junk>::Node_cell;
+
+}
+}
+
+
+
+// =============================================================================
+// Functions
+// =============================================================================
+
+namespace core {
+
+// Into
+template<class elem, int n>
+inline elem &into(elem &obj, const integer<n>)
+{
+   core_assert(n == 0);
+   return obj;
+}
+
+template<class elem, int n>
+inline const elem &into(const elem &obj, const integer<n>)
+{
+   core_assert(n == 0);
+   return obj;
+}
+
+
+namespace hidden {
+
+// Core_abs
+// I use the following instead of std::abs only because std::abs apparently
+// doesn't work properly in the Portland Group C++ compiler. :-( For example,
+// try std::abs(12.34) in pgCC; when I tried it, it gave 12 as the answer.
+// Apparently, it converts the parameter to int.
+template<class T>
+inline T core_abs(const T &val)
+   { return val < T(0) ? core_op_unary(T(0))-val : val; }
+
+
+inline int core_abs(const int val)  // could return "unsigned"
+   { return std::abs(val); }
+
+inline long core_abs(const long val)  // could return "unsigned long"
+   { return std::labs(val); }
+
+
+// Portland Group C++ doesn't work properly. It's apparently missing
+// std::abs(float) and std::abs(long double)
+#ifndef __PGI
+inline float core_abs(const float val)
+   { return ((float (*)(const float))(std::abs))(val); }
+#endif
+
+inline double core_abs(const double val)
+   { return std::fabs(val); }
+
+#ifndef __PGI
+inline long double core_abs(const long double val)
+   { return ((long double (*)(const long double))(std::abs))(val); }
+#endif
+
+// zzz see if the the above specializations work on all the compilers I have.
+// zzz what about *const and const arguments???
+
+
+// Core_sgn
+template<class T>
+inline int core_sgn(const T &val)
+{
+   return val < T(0) ? -1 : T(0) < val ? 1 : 0;
+}
+
+
+// Apparently, the use of std::min() and std::max() sometimes confuses the GNU
+// and Portland Group compilers. I think it has something to do with namespace
+// and scope issues being handled improperly by those compilers. To resolve the
+// problem, we'll use core_min and core_max instead of std::min and std::max.
+
+template<class T>
+inline const T &core_min(const T &x, const T &y) { return x < y ? x : y;}
+
+template<class T>
+inline const T &core_max(const T &x, const T &y) { return x < y ? y : x;}
+
+
+// Resize_if_different
+template<class arr>
+inline void resize_if_different(arr &obj, const int num)
+{
+   if (size(obj) != num) {
+      resize(obj,num);
+      const int RESIZE_IN_YOUR_ARRAY_TYPE_BEHAVES_INCORRECTLY = num;
+      assert(size(obj) == RESIZE_IN_YOUR_ARRAY_TYPE_BEHAVES_INCORRECTLY);
+   }
+}
+
+
+// Extend_if_larger
+template<class arr>
+inline void extend_if_larger(arr &obj, const int num)
+{
+   assert(size(obj) <= num);
+
+   if (size(obj) < num) {
+      extend(obj,num);
+      const int EXTEND_IN_YOUR_ARRAY_TYPE_BEHAVES_INCORRECTLY = num;
+      assert(size(obj) == EXTEND_IN_YOUR_ARRAY_TYPE_BEHAVES_INCORRECTLY);
+   }
+}
+
+
+// Flip_pair
+inline std::pair<int,int> flip_pair(const std::pair<int,int> &p)
+{
+   return std::make_pair(p.second,p.first);
+}
+
+
+// Wrap_pair
+template<class array_array_int>
+inline std::pair<int,int> wrap_pair(
+   const array_array_int &_arr,
+   const int i,
+   const int j,
+   const int size_arr
+) {
+   return std::make_pair(
+     _arr[i][ j],
+     _arr[i][(j+1) % size_arr]
+   );
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Computation unrollers for multiple-remapping composites
+//
+//    Multiple_min      multiple minimum
+//    Multiple_max      multiple maximum
+//    Multiple_minmax   multiple minimum and maximum
+//
+//    Multiple_eq_p     multiple equals        physics
+//    Multiple_eq_m     multiple equals        multiple
+//    Multiple_eq_mtp   multiple equals        multiple * physics
+//    Multiple_eq_mdp   multiple equals        multiple / physics
+//    Multiple_eq_mtm   multiple equals        multiple * multiple
+//    Multiple_de_p     multiple divide-equals physics
+//    Multiple_pe_m     multiple plus-equals   multiple
+//    Multiple_pe_mtp   multiple plus-equals   multiple * physics
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+
+
+// Multiple_min
+template<int num, class multiple>
+inline void multiple_min(
+   const twoint<num,num>,
+   multiple &, const multiple &
+) {
+   // stub
+}
+template<int n, int num, class multiple>
+inline void multiple_min(
+   const twoint<n,num>,
+   multiple &min, const multiple &d
+) {
+   if (core_into(d,n) < core_into(min,n))
+      core_into(min,n) = core_into(d,n);
+   multiple_min(twoint<n+1,num>(), min, d);
+}
+
+
+
+// Multiple_max
+template<int num, class multiple>
+inline void multiple_max(
+   const twoint<num,num>,
+   multiple &, const multiple &
+) {
+   // stub
+}
+template<int n, int num, class multiple>
+inline void multiple_max(
+   const twoint<n,num>,
+   multiple &max, const multiple &d
+) {
+   if (core_into(d,n) > core_into(max,n))
+      core_into(max,n) = core_into(d,n);
+   multiple_max(twoint<n+1,num>(), max, d);
+}
+
+
+
+// Multiple_minmax
+template<int num, class multiple>
+inline void multiple_minmax(
+   const twoint<num,num>,
+   multiple &, const multiple &, multiple &
+) {
+   // stub
+}
+template<int n, int num, class multiple>
+inline void multiple_minmax(
+   const twoint<n,num>,
+   multiple &min, const multiple &d, multiple &max
+) {
+   if (core_into(d,n) < core_into(min,n)) core_into(min,n) = core_into(d,n);
+   else
+   if (core_into(max,n) < core_into(d,n)) core_into(max,n) = core_into(d,n);
+
+   multiple_minmax(twoint<n+1,num>(), min, d, max);
+}
+
+
+
+// Multiple_eq_p
+template<int num, class multiple, class base>
+inline void multiple_eq_p(
+   const twoint<num,num>,
+   multiple &, const base &
+) {
+   // stub
+}
+template<int n, int num, class multiple, class base>
+inline void multiple_eq_p(
+   const twoint<n,num>,
+   multiple &gru, const base &val
+) {
+   core_into(gru,n) = val;
+   multiple_eq_p(twoint<n+1,num>(), gru, val);
+}
+
+
+
+// Multiple_eq_m
+template<int num, class multiple>
+inline void multiple_eq_m(
+   const twoint<num,num>,
+   multiple &, const multiple &
+) {
+   // stub
+}
+template<int n, int num, class multiple>
+inline void multiple_eq_m(
+   const twoint<n,num>,
+   multiple &lhs, const multiple &rhs
+) {
+   core_into(lhs,n) = core_into(rhs,n);
+   multiple_eq_m(twoint<n+1,num>(), lhs, rhs);
+}
+
+
+
+// Multiple_eq_mtp
+template<int num, class multiple, class base>
+inline void multiple_eq_mtp(
+   const twoint<num,num>,
+   multiple &, const multiple &, const base &
+) {
+   // stub
+}
+template<int n, int num, class multiple, class base>
+inline void multiple_eq_mtp(
+   const twoint<n,num>,
+   multiple &cdg, const multiple &gru, const base &fac
+) {
+   core_into(cdg,n) = core_into(gru,n)*fac;
+   multiple_eq_mtp(twoint<n+1,num>(), cdg, gru, fac);
+}
+
+
+
+// Multiple_eq_mdp
+template<int num, class multiple, class base>
+inline void multiple_eq_mdp(
+   const twoint<num,num>,
+   multiple &, const multiple &, const base &
+) {
+   // stub
+}
+template<int n, int num, class multiple, class base>
+inline void multiple_eq_mdp(
+   const twoint<n,num>,
+   multiple &d, const multiple &m, const base &v
+) {
+   core_into(d,n) = core_into(m,n)/v;
+   multiple_eq_mdp(twoint<n+1,num>(), d, m, v);
+}
+
+
+
+// Multiple_eq_mtm
+template<int num, class multiple>
+inline void multiple_eq_mtm(
+   const twoint<num,num>,
+   multiple &, const multiple &, const multiple &
+) {
+   // stub
+}
+template<int n, int num, class multiple>
+inline void multiple_eq_mtm(
+   const twoint<n,num>,
+   multiple &a, const multiple &b, const multiple &c
+) {
+   core_into(a,n) = core_into(b,n)*core_into(c,n);
+   multiple_eq_mtm(twoint<n+1,num>(), a, b, c);
+}
+
+
+
+// Multiple_de_p
+template<int num, class multiple, class base>
+inline void multiple_de_p(
+   const twoint<num,num>,
+   multiple &, const base &
+) {
+   // stub
+}
+template<int n, int num, class multiple, class base>
+inline void multiple_de_p(
+   const twoint<n,num>,
+   multiple &gru, const base &tmp
+) {
+   // writing this as follows, without using /=, allows for fewer operators
+   // to be provided by user-defined arithmetic types
+   core_into(gru,n) = core_into(gru,n)/tmp;
+   multiple_de_p(twoint<n+1,num>(), gru, tmp);
+}
+
+
+
+// Multiple_pe_m
+template<int num, class multiple>
+inline void multiple_pe_m(
+   const twoint<num,num>,
+   multiple &, const multiple &
+) {
+   // stub
+}
+template<int n, int num, class multiple>
+inline void multiple_pe_m(
+   const twoint<n,num>,
+   multiple &lhs, const multiple &rhs
+) {
+   core_plus_equal(core_into(lhs,n), core_into(rhs,n));
+   multiple_pe_m(twoint<n+1,num>(), lhs, rhs);
+}
+
+
+
+// Multiple_pe_mtp
+template<int num, class multiple, class base>
+inline void multiple_pe_mtp(
+   const twoint<num,num>,
+   multiple &, const multiple &, const base &
+) {
+   // stub
+}
+template<int n, int num, class multiple, class base>
+inline void multiple_pe_mtp(
+   const twoint<n,num>,
+   multiple &gru, const multiple &cod, const base &fac
+) {
+   core_plus_equal(core_into(gru,n), core_into(cod,n)*fac);
+   multiple_pe_mtp(twoint<n+1,num>(), gru, cod, fac);
+}
+
+
+
+}
+}
+
+#endif

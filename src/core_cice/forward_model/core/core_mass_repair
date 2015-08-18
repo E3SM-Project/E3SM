@@ -1,0 +1,1431 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_MASS_REPAIR
+#define CORE_MASS_REPAIR
+
+// For global repair:
+// This file contains mass_repair_global_fix and mass_repair_global_spread.
+// We have these instead of a single mass_repair because communication (on
+// a parallel machine) must be performed between the two parts.
+
+// For shellman repair:
+// This file contains mass_repair_shellman[_helper].
+
+// For wendroff repair:
+// This file contains mass_repair_wendroff[_helper].
+
+
+
+// Tweak
+// Doesn't actually tweak the value, but says if we CAN tweak it
+namespace core {
+namespace hidden {
+
+template<class physical>
+inline bool tweak(
+   const physical &refmin,
+   const physical &refmax,
+   const physical &delta,
+   const physical &eps_repair
+) {
+   return !(
+      refmin == physical(0) && refmax == physical(0)
+       ? eps_repair < delta  // relative size not available; use absolute
+    : refmin == refmax
+       ? eps_repair*core_abs(refmax) < delta  // relative to value
+       : eps_repair*core_abs(refmax-refmin) < delta  // relative to range
+   );
+}
+
+}
+}
+
+
+
+// =============================================================================
+// =============================================================================
+// Global repair
+// =============================================================================
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// ================================
+// Multiple_global_fix
+// ================================
+
+template<int num, class physical, class multiple>
+inline void multiple_global_fix(
+   const twoint<num,num>,
+   const physical &,
+
+   const multiple &,
+         multiple &,
+   const multiple &,
+
+   multiple &,
+   multiple &,
+   multiple &
+) {
+   // stub
+}
+
+template<int n, int num, class physical, class multiple>
+inline void multiple_global_fix(
+   const twoint<n,num>,
+   const physical &eps_repair,
+
+   const multiple &themin,
+         multiple &theval,
+   const multiple &themax,
+
+   multiple &available_up,
+   multiple &available_down,
+   multiple &change
+) {
+   const physical  oldval = core_into(theval,n);  // not a reference
+
+   const physical &refmin = core_into(themin,n);
+         physical &refval = core_into(theval,n);
+   const physical &refmax = core_into(themax,n);
+
+   assert(!(refmax < refmin));
+
+   // below minimum
+   if (oldval < refmin) {
+      const physical delta = refmin - oldval;
+
+      if (!tweak(refmin,refmax,delta,eps_repair))
+         core_plus_equal(core_into(change,n), delta);  // increase
+
+      core_plus_equal(core_into(available_up,n), refmax - refmin);
+      refval = refmin;
+
+   // above maximum
+   } else if (refmax < oldval) {
+      const physical delta = oldval - refmax;
+
+      if (!tweak(refmin,refmax,delta,eps_repair))
+         core_minus_equal(core_into(change,n), delta);  // decrease
+
+      core_plus_equal(core_into(available_down,n), refmax - refmin);
+      refval = refmax;
+
+   // within bounds
+   } else {
+      core_plus_equal(core_into(available_up,  n), refmax - oldval);
+      core_plus_equal(core_into(available_down,n), oldval - refmin);
+   }
+
+   multiple_global_fix(
+      twoint<n+1,num>(),
+      eps_repair,
+      themin, theval, themax,
+      available_up, available_down, change
+   );
+}
+
+
+
+// ================================
+// Mass_repair_global_fix
+// ================================
+
+template<
+   class physical, class array_cell_type,
+   class array_multiple, class multiple
+>
+void mass_repair_global_fix(
+   // input
+   const physical &eps_repair,
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_multiple &cell_new_mass_min,
+   const array_multiple &cell_new_mass_max,
+
+   // both input and output
+   array_multiple &cell_new_mass,
+
+   // output
+   multiple &available_up,
+   multiple &available_down,
+   multiple &change
+) {
+   core_begin("mass_repair_global_fix");
+
+   const twoint<0,traits<multiple>::size> start(true);
+
+   multiple_eq_p(start, available_up,   physical(0));
+   multiple_eq_p(start, available_down, physical(0));
+   multiple_eq_p(start, change,         physical(0));
+
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+   if (cell_new_type[ic] == core::real)
+      multiple_global_fix(
+         start,
+         eps_repair,
+
+         cell_new_mass_min[ic],
+         cell_new_mass    [ic],
+         cell_new_mass_max[ic],
+
+         available_up,
+         available_down,
+         change
+      );
+
+   core_end("mass_repair_global_fix");
+}
+
+
+
+// ================================
+// Multiple_global_spread
+// ================================
+
+template<int num, class array_cell_type, class array_multiple, class multiple>
+inline void multiple_global_spread(
+   const twoint<num,num>,
+
+   const int,
+   const array_cell_type &,
+   const array_multiple &,
+   const array_multiple &,
+
+   array_multiple &,
+
+   const multiple &,
+   const multiple &,
+   const multiple &
+) {
+   // stub
+}
+
+template<
+   int n, int num, class array_cell_type,
+   class array_multiple, class multiple
+>
+inline void multiple_global_spread(
+   const twoint<n,num>,
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_multiple &cell_new_mass_min,
+   const array_multiple &cell_new_mass_max,
+
+   array_multiple &cell_new_mass,
+
+   const multiple &total_available_up,
+   const multiple &total_available_down,
+   const multiple &total_change
+) {
+   typedef typename traits<multiple>::element physical;
+
+   if (physical(0) < core_into(total_change,n)) {
+      // must subtract some mass
+#ifdef CORE_ASSERT
+      {
+         const physical available_down = core_into(total_available_down,n);
+         const physical change = core_into(total_change, n);
+         assert(!(available_down < change));
+      }
+#endif
+
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         core_minus_equal(
+            core_into(cell_new_mass[ic],n),
+            ((core_into(cell_new_mass    [ic],n) -
+              core_into(cell_new_mass_min[ic],n)
+             )
+             /core_into(total_available_down,n)
+            )*core_into(total_change,n)
+         );
+      }
+
+   } else if (core_into(total_change,n) < physical(0)) {
+      // must add some mass
+#ifdef CORE_ASSERT
+      {
+         const physical available_up = core_into(total_available_up, n);
+         const physical change = core_into(total_change, n);
+         assert(!(available_up < core_op_unary(physical(0))-change));
+      }
+#endif
+
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         core_minus_equal(
+            core_into(cell_new_mass[ic],n),
+            ((core_into(cell_new_mass_max[ic],n) -
+              core_into(cell_new_mass    [ic],n)
+             )
+             /core_into(total_available_up,n)
+            )*core_into(total_change,n)
+         );
+      }
+   }
+
+   multiple_global_spread(
+      twoint<n+1,num>(),
+
+      cell_new_num,
+      cell_new_type,
+      cell_new_mass_min,
+      cell_new_mass_max,
+
+      cell_new_mass,
+
+      total_available_up,
+      total_available_down,
+      total_change
+   );
+}
+
+
+
+// ================================
+// Mass_repair_global_spread
+// ================================
+
+template<class array_cell_type, class array_multiple, class multiple>
+void mass_repair_global_spread(
+   // input
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_multiple &cell_new_mass_min,
+   const array_multiple &cell_new_mass_max,
+
+   // both input and output
+   array_multiple &cell_new_mass,
+
+   // input
+   const multiple &total_available_up,
+   const multiple &total_available_down,
+   const multiple &total_change
+) {
+   core_begin("mass_repair_global_spread");
+
+   const twoint<0,traits<multiple>::size> start(true);
+
+   multiple_global_spread(
+      start,
+
+      cell_new_num,
+      cell_new_type,
+      cell_new_mass_min,
+      cell_new_mass_max,
+
+      cell_new_mass,
+
+      total_available_up,
+      total_available_down,
+      total_change
+   );
+
+   core_end("mass_repair_global_spread");
+}
+
+}
+}
+
+
+
+// =============================================================================
+// =============================================================================
+// Shellman repair
+// Algorithm due to S. Shellman.
+// =============================================================================
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Mass_repair_shellman_helper: terminal
+template<
+   int numend, class physical,
+   class array_int, class array_geometrical, class array_cell_type,
+   class array_array_int, class array_multiple
+>
+inline void mass_repair_shellman_helper(
+   const twoint<numend,numend>,
+   const int,
+   const physical &,
+
+   std::vector<int> &,
+
+   void (*const)(array_int &, array_int &),
+   void (*const)(array_int &, array_geometrical &),
+   void (*const)(bool &),
+
+   const int,
+   const array_cell_type &,
+   const array_array_int &,
+
+   const array_multiple &,
+   const array_multiple &,
+
+   array_multiple &,
+
+   array_geometrical &,
+   array_int &,
+   array_int &,
+   array_int &,
+   array_geometrical &
+) {
+   // stub
+}
+
+
+
+// Mass_repair_shellman_helper: standard
+template<
+   int num, int numend, class physical,
+   class array_int, class array_physical, class array_cell_type,
+   class array_array_int, class array_multiple
+>
+void mass_repair_shellman_helper(
+   const twoint<num,numend>,
+   const int max_iter,
+   const physical &eps_repair,
+
+   std::vector<int> &iter_component,
+
+   void (*const update_gs)(array_int &, array_int &),
+   void (*const update_mdprime)(array_int &, array_physical &),
+   void (*const update_bool)(bool &),
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_cell,
+
+   const array_multiple &cell_new_mass_min,
+   const array_multiple &cell_new_mass_max,
+
+   array_multiple &cell_new_mass,
+
+   array_physical &cell_new_d,
+   array_int      &cell_new_g,
+   array_int      &cell_new_s,
+   array_int      &cell_new_mprime,
+   array_physical &cell_new_dprime
+) {
+   // NOTE: "Steps" below are as given in Shellman's writeup, although in
+   // a few instances I combined pieces of different steps, for efficiency.
+
+
+   // Step 1
+   const array_multiple &l = cell_new_mass_min;
+         array_multiple &q = cell_new_mass;
+   const array_multiple &u = cell_new_mass_max;
+
+
+   // Step 2
+   bool done = true;
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+   if (cell_new_type[ic] == core::real) {
+      // examine every on-processor cell
+
+      if (core_into(q[ic],num) < core_into(l[ic],num)) {
+         // too small
+
+         if (tweak(
+            core_into(l[ic],num),
+            core_into(u[ic],num),
+            cell_new_d[ic] = core_into(l[ic],num) - core_into(q[ic],num),
+            eps_repair
+         ))
+            cell_new_d[ic] = physical(0);
+         else
+            done = false;
+
+         core_into(q[ic],num) = core_into(l[ic],num);
+
+      } else if (core_into(u[ic],num) < core_into(q[ic],num)) {
+         // too large
+         if (tweak(
+            core_into(l[ic],num),
+            core_into(u[ic],num),
+            core_op_unary(physical(0))
+          -(cell_new_d[ic] = core_into(u[ic],num) - core_into(q[ic],num)),
+            eps_repair
+         ))
+            cell_new_d[ic] = physical(0);
+         else
+            done = false;
+
+         core_into(q[ic],num) = core_into(u[ic],num);
+
+      } else {
+         // in range
+         cell_new_d[ic] = physical(0);
+      }
+
+      cell_new_g[ic] = core_into(q[ic],num) < core_into(u[ic],num) ? 0:INT_MAX;
+      cell_new_s[ic] = core_into(l[ic],num) < core_into(q[ic],num) ? 0:INT_MAX;
+   }
+
+   update_bool(done);
+
+
+   // Step 3
+   if (!done) {
+      // I rolled epsilon checks into Step 2, although they're a bit different
+      // than what Shellman described. His Step 3 seems intended to address the
+      // cases where all values were >= their maximum, or all values were <=
+      // their minimum, so that all values are now pushed up near a bound and
+      // can't possibly be readjusted to cancel the nonzero cell_new_d's.
+   }
+
+
+
+   // Main loop
+   int &iter = iter_component[num];
+   for (iter = 0;  iter < max_iter && !done;  ++iter) {
+
+      // Step 4
+      update_gs(cell_new_g, cell_new_s);
+
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         // for every on-processor cell
+         cell_new_mprime[ic] = INT_MAX;
+
+         if (cell_new_d[ic] < physical(0)) {
+            // cell_new_mprime = smallest adjacent cell_new_g
+            const int neigh = size(cell_new_cell[ic]);
+            for (int n = 0;  n < neigh;  ++n) {
+               const int jc = cell_new_cell[ic][n];
+               if (cell_new_type[jc] != core::boundary)
+                  cell_new_mprime[ic] =
+                     core_min(cell_new_mprime[ic], cell_new_g[jc]);
+            }
+         } else if (physical(0) < cell_new_d[ic]) {
+            // cell_new_mprime = smallest adjacent cell_new_s
+            const int neigh = size(cell_new_cell[ic]);
+            for (int n = 0;  n < neigh;  ++n) {
+               const int jc = cell_new_cell[ic][n];
+               if (cell_new_type[jc] != core::boundary)
+                  cell_new_mprime[ic] =
+                     core_min(cell_new_mprime[ic], cell_new_s[jc]);
+            }
+         }
+      }
+
+
+      // Step 5
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         // for every on-processor cell
+
+         if (cell_new_mprime[ic] == INT_MAX)
+            cell_new_dprime[ic] = physical(0);
+
+         else {
+            int r = 0;
+
+            if (cell_new_d[ic] < physical(0)) {
+               const int neigh = size(cell_new_cell[ic]);
+               for (int n = 0;  n < neigh;  ++n) {
+                  const int jc = cell_new_cell[ic][n];
+                  if (cell_new_type[jc] != core::boundary &&
+                      cell_new_g[jc] == cell_new_mprime[ic])
+                     ++r;
+               }
+            } else {
+               // should be true by construction...
+               core_assert(physical(0) < cell_new_d[ic]);
+
+               const int neigh = size(cell_new_cell[ic]);
+               for (int n = 0;  n < neigh;  ++n) {
+                  const int jc = cell_new_cell[ic][n];
+                  if (cell_new_type[jc] != core::boundary &&
+                      cell_new_s[jc] == cell_new_mprime[ic])
+                     ++r;
+               }
+            }
+
+            cell_new_dprime[ic] = cell_new_d[ic]/physical(r);
+            cell_new_d[ic] = physical(0);
+         }
+      }
+
+
+      // Step 6
+      update_mdprime(cell_new_mprime, cell_new_dprime);
+
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         // for every on-processor cell
+
+         const int neigh = size(cell_new_cell[ic]);
+         for (int n = 0;  n < neigh;  ++n) {
+            const int jc = cell_new_cell[ic][n];
+            if (cell_new_type[jc] != core::boundary &&
+                cell_new_mprime[jc] != INT_MAX && (
+               (cell_new_mprime[jc] == cell_new_g[ic] &&
+                cell_new_dprime[jc] < physical(0)) ||
+               (cell_new_mprime[jc] == cell_new_s[ic] &&
+                physical(0) < cell_new_dprime[jc])
+            ))
+               core_plus_equal(cell_new_d[ic], (
+                 (core_sgn(cell_new_dprime[ic]) ==
+                 -core_sgn(cell_new_dprime[jc]) &&
+                  cell_new_mprime[ic] != INT_MAX && (
+                 (cell_new_mprime[ic] == cell_new_g[jc] &&
+                  cell_new_dprime[ic] < physical(0)) ||
+                 (cell_new_mprime[ic] == cell_new_s[jc] &&
+                  physical(0) < cell_new_dprime[ic])))
+               ? (cell_new_dprime[ic] + cell_new_dprime[jc])/physical(2)
+               :  cell_new_dprime[jc]
+               ));
+         }
+      }
+
+
+      // Step 7
+      done = true;
+
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         // examine every on-processor cell
+
+         core_minus_equal(core_into(q[ic],num), cell_new_d[ic]);
+
+         if (core_into(q[ic],num) < core_into(l[ic],num)) {
+            // too small
+
+            if (tweak(
+               core_into(l[ic],num),
+               core_into(u[ic],num),
+               cell_new_d[ic] = core_into(l[ic],num) - core_into(q[ic],num),
+               eps_repair
+            ))
+               cell_new_d[ic] = physical(0);
+            else
+               done = false;
+
+            core_into(q[ic],num) = core_into(l[ic],num);
+
+         } else if (core_into(u[ic],num) < core_into(q[ic],num)) {
+            // too large
+
+            if (tweak(
+               core_into(l[ic],num),
+               core_into(u[ic],num),
+               core_op_unary(physical(0))
+             -(cell_new_d[ic] = core_into(u[ic],num) - core_into(q[ic],num)),
+               eps_repair
+            ))
+               cell_new_d[ic] = physical(0);
+            else
+               done = false;
+
+            core_into(q[ic],num) = core_into(u[ic],num);
+
+         } else {
+            // in range
+            cell_new_d[ic] = physical(0);
+         }
+      }
+
+
+      // Step 8
+      if (!done)
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real) {
+         // for every on-processor cell
+
+         // deal with cell_new_g
+         if (core_into(q[ic],num) < core_into(u[ic],num))
+            cell_new_g[ic] = 0;
+         else {
+            cell_new_g[ic] = INT_MAX;
+            const int neigh = size(cell_new_cell[ic]);
+            for (int n = 0;  n < neigh;  ++n) {
+               const int jc = cell_new_cell[ic][n];
+               if (cell_new_type[jc] != core::boundary)
+                  cell_new_g[ic] = core_min(cell_new_g[ic], cell_new_g[jc]);
+            }
+            if (cell_new_g[ic] != INT_MAX) cell_new_g[ic]++;
+         }
+
+         // deal with cell_new_s
+         if (core_into(l[ic],num) < core_into(q[ic],num))
+            cell_new_s[ic] = 0;
+         else {
+            cell_new_s[ic] = INT_MAX;
+            const int neigh = size(cell_new_cell[ic]);
+            for (int n = 0;  n < neigh;  ++n) {
+               const int jc = cell_new_cell[ic][n];
+               if (cell_new_type[jc] != core::boundary)
+                  cell_new_s[ic] = core_min(cell_new_s[ic], cell_new_s[jc]);
+            }
+            if (cell_new_s[ic] != INT_MAX) cell_new_s[ic]++;
+         }
+      }
+
+      update_bool(done);
+   }  // Main loop
+
+
+
+   /*
+   Formats of warnings:
+
+      [core] Warning: maximum iterations (#) exceeded during repair.
+      Consequence: masses are in bounds, but total mass is not conserved.
+
+      [core] Warning: maximum iterations (#) exceeded during repair
+      of component #. Consequence: masses are in bounds, but total mass
+      is not conserved.
+   */
+
+   if (!done) {
+      if (numend == 1)
+         std::core_cerr
+            << "[core] Warning: maximum iterations (" << max_iter
+            << ") exceeded during repair.\nConsequence: masses are in "
+               "bounds, but total mass is not conserved.\n";
+      else
+         std::core_cerr
+            << "[core] Warning: maximum iterations (" << max_iter
+            << ") exceeded during repair\nof component " << num
+            << ". Consequence: masses are in bounds, but total mass\n"
+               "is not conserved.\n";
+   }
+
+
+
+   // ================================
+   // Next component
+   // ================================
+
+   mass_repair_shellman_helper(
+      twoint<num+1, numend>(),
+      max_iter,
+      eps_repair,
+
+      iter_component,
+
+      update_gs,
+      update_mdprime,
+      update_bool,
+
+      cell_new_num,
+      cell_new_type,
+      cell_new_cell,
+
+      cell_new_mass_min,
+      cell_new_mass_max,
+      cell_new_mass,
+
+      cell_new_d,
+      cell_new_g,
+      cell_new_s,
+      cell_new_mprime,
+      cell_new_dprime
+   );
+}
+
+
+
+template<
+   class physical, class array_int, class array_geometrical,
+   class array_cell_type, class array_array_int,
+   class array_multiple, class array_physical
+>
+inline void mass_repair_shellman(
+   // input
+   const int max_iter,
+   const physical &eps_repair,
+
+   // output
+   std::vector<int> &iter_component,
+
+   // input
+   void (*const update_gs)(array_int &, array_int &),
+   void (*const update_mdprime)(
+      array_int &,
+      array_geometrical &
+   ),
+   void (*const update_bool)(bool &),
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_cell,
+   const array_multiple &cell_new_mass_min,
+   const array_multiple &cell_new_mass_max,
+
+   // both input and output
+   array_multiple &cell_new_mass,
+
+   // output
+   array_physical &cell_new_d,
+   array_int &cell_new_g,
+   array_int &cell_new_s,
+   array_int &cell_new_mprime,
+   array_physical &cell_new_dprime
+) {
+   core_begin("mass_repair_shellman begin");
+
+   typedef typename traits<array_multiple>::element multiple;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   // 0th component
+   mass_repair_shellman_helper(
+      start,
+      max_iter,
+      eps_repair,
+
+      iter_component,
+
+      update_gs,
+      update_mdprime,
+      update_bool,
+
+      cell_new_num,
+      cell_new_type,
+      cell_new_cell,
+
+      cell_new_mass_min,
+      cell_new_mass_max,
+      cell_new_mass,
+
+      cell_new_d,
+      cell_new_g,
+      cell_new_s,
+      cell_new_mprime,
+      cell_new_dprime
+   );
+
+   core_end("mass_repair_shellman begin");
+}
+
+}
+}
+
+
+
+// =============================================================================
+// =============================================================================
+// Wendroff repair
+// Algorithm due to B. Wendroff.
+// =============================================================================
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Repair_expand_neighborhood
+// zzz At some point, we may want to see if we can merge this with
+// me_expand_neighborhood (in mass_exchange.hh). The two are very similar.
+template<
+   int num, int numend, class array_cell_type,
+   class array_array_int, class array_multiple, class physical
+>
+bool repair_expand_neighborhood(
+   const twoint<num,numend>,
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+         array_array_int &cell_new_cell,
+
+   const array_multiple &one,
+   const array_multiple &two,
+
+   physical &have,
+   std::set<int> &nay,
+
+   const int level,  // current level; we're expanding to level+1
+   const int max_level,  // thickness of ghost layer
+
+   int  &offproc_level,
+   bool &offproc_warning,
+
+   const int ic,
+   const char *const lowup,
+   const int iter,
+   const int max_iter
+) {
+   // Input set of neighbors. We make a copy of "nay" because we'll be adding
+   // to "nay" while we iterate.
+   std::set<int> innay = nay;
+
+   for (set_int_iterator it = innay.begin();  it != innay.end();  ++it) {
+      const int jc = *it;
+      int numnay = size(cell_new_cell[jc]);
+      // jc is an existing physical neighbor;
+      // now find its num physical neighbors
+
+      if (cell_new_type[jc] == core::ghost) {
+         if (offproc_level == -1)  // haven't seen a ghost cell before
+            offproc_level = level;
+
+         if (!offproc_warning && level-offproc_level+1 == max_level) {
+            /*
+            [core] Warning: number of neighborhood levels (#)
+            insufficient for repair of cell # on [lower|upper] iteration #/#.
+            */
+            std::core_cerr
+               << "[core] Warning: number of neighborhood levels ("
+               << max_level << ")\ninsufficient for repair of cell "
+               << ic << " on " << lowup << " iteration " << iter
+               << '/' << max_iter-1 << ".\n";
+            offproc_warning = true;
+         }
+
+         if (numnay == 0) numnay = get_offproc_neighborhood(
+            cell_new_num,cell_new_type,cell_new_vert,cell_new_cell, jc
+         );
+      }
+
+      for (int n = 0;  n < numnay;  ++n) {
+         const int kc = cell_new_cell[jc][n];
+         if (cell_new_type[kc] != core::boundary && nay.insert(kc).second &&
+             core_into(one[kc],num) < core_into(two[kc],num)
+         )
+            core_plus_equal(have,core_into(two[kc],num)-core_into(one[kc],num));
+      }
+   }
+   return nay.size() > innay.size();
+}
+
+
+// =============================================================================
+
+
+// Mass_repair_wendroff_helper: terminal
+template<
+   int numend, class physical, class array_multiple,
+   class array_physical, class array_cell_type, class array_array_int
+>
+inline void mass_repair_wendroff_helper(
+   const twoint<numend,numend>,
+   const int,
+   const int,
+   const physical &,
+
+   std::vector<int> &,
+   std::vector<int> &,
+   std::vector<int> &,
+
+   std::vector<int> &,
+   std::vector<int> &,
+   std::vector<int> &,
+
+   void (*const)(
+      array_multiple &, array_multiple &, array_multiple &, const int
+   ),
+   void (*const)(array_physical &),
+   void (*const)(bool &),
+
+   const int,
+   const array_cell_type &,
+   const array_array_int &,
+         array_array_int &,
+
+   array_multiple &,
+   array_multiple &,
+   array_multiple &,
+
+   array_physical &
+) {
+   // stub
+}
+
+
+
+// Mass_repair_wendroff_helper: standard
+template<
+   int num, int numend, class physical,
+   class array_multiple, class array_physical,
+   class array_cell_type, class array_array_int
+>
+void mass_repair_wendroff_helper(
+   const twoint<num,numend> flag,
+   const int max_iter,
+   const int max_level,
+   const physical &eps_repair,
+
+   std::vector<int> &iter_component,
+   std::vector<int> &iter_lower_component,
+   std::vector<int> &iter_upper_component,
+
+   std::vector<int> &level_component,
+   std::vector<int> &level_lower_component,
+   std::vector<int> &level_upper_component,
+
+   void (*const update_mass)(
+      array_multiple &, array_multiple &, array_multiple &, const int
+   ),
+   void (*const update_delta)(array_physical &),
+   void (*const update_bool)(bool &),
+
+   const int cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+         array_array_int &cell_new_cell,
+
+   array_multiple &cell_new_mass_min,
+   array_multiple &cell_new_mass_max,
+   array_multiple &cell_new_mass,
+
+   array_physical &delta
+) {
+   array_multiple &l = cell_new_mass_min;
+   array_multiple &q = cell_new_mass;
+   array_multiple &u = cell_new_mass_max;
+
+   bool updated_lqu = false;  // have we called update_mass?
+
+
+
+   // ================================
+   // Fix values below lower bounds
+   // ================================
+
+   bool done_lower = true;
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real &&
+          core_into(q[ic],num) < core_into(l[ic],num)) {  // too small
+         if (tweak(
+            core_into(l[ic],num),
+            core_into(u[ic],num),
+            core_into(l[ic],num) - core_into(q[ic],num),
+            eps_repair
+         ))
+            core_into(q[ic],num) = core_into(l[ic],num);
+         else
+            done_lower = false;
+      }
+
+   update_bool(done_lower);
+
+   if (!done_lower && !updated_lqu) {
+      update_mass(l,q,u,num);
+      updated_lqu = true;
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         delta[ic] = physical(0);
+   }
+
+   // Main loop
+   int &level_lower = level_lower_component[num];
+   level_lower = 0;
+
+   int &iter_lower = iter_lower_component[num];
+   for (iter_lower = 0;  iter_lower < max_iter && !done_lower;  ++iter_lower) {
+
+      // For each too-small real cell
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real &&
+          core_into(q[ic],num) < core_into(l[ic],num)  // too small
+      ) {
+         // amount (positive) by which cell is too small
+         const physical need = core_into(l[ic],num) - core_into(q[ic],num);
+
+         // find minimal neighborhood with at least "need" more than lower bound
+         std::set<int> nay;  nay.insert(ic);
+         int level = 0;  physical have = physical(0);
+         int offproc_level = -1;  bool offproc_warning = false;
+
+         for ( ; have < need ; ++level)
+            if (!repair_expand_neighborhood(
+               flag, cell_new_num,cell_new_type,cell_new_vert,cell_new_cell,
+               l,q, have,nay,
+               level,max_level, offproc_level,offproc_warning,
+               ic,"lower",iter_lower,max_iter
+            )) {
+               /*
+                  [core] Warning: unable to expand neighborhood of cell #
+                  beyond #-level on lower-bound repair iteration #/#.
+               */
+               std::core_cerr
+                  << "[core] Warning: unable to expand neighborhood of cell "
+                  << ic << "\nbeyond " << level << "-level on lower-bound "
+                     "repair iteration "
+                  << iter_lower << '/' << max_iter-1 << ".\n";
+               break;
+            }
+         level_lower = core_max(level,level_lower);
+
+         // increment neighboring deltas
+         // these deltas are positive; we'll subtract them later
+         if (!(have == physical(0)))
+         for (set_int_iterator i = nay.begin();  i != nay.end();  ++i)
+            if (core_into(l[*i],num) < core_into(q[*i],num))
+               core_plus_equal(
+                  delta[*i],
+                  need*(core_into(q[*i],num)-core_into(l[*i],num))/have
+               );
+      }  // For each too-small real cell
+
+      // Sum delta (sum over all processors of each element)
+      update_delta(delta);
+
+      // Adjust
+      done_lower = true;
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] != core::boundary) {
+         // for each real and ghost cell
+
+         if (core_into(q[ic],num) < core_into(l[ic],num))
+            core_into(q[ic],num) = core_into(l[ic],num);  // fix
+         else if (!(delta[ic] == physical(0))) {
+            // adjust by delta, which could break cell...
+            if ((core_minus_equal(core_into(q[ic],num), delta[ic]))
+               < core_into(l[ic],num)) {
+               if (tweak(
+                  core_into(l[ic],num),
+                  core_into(u[ic],num),
+                  core_into(l[ic],num) - core_into(q[ic],num),
+                  eps_repair
+               ))
+                  core_into(q[ic],num) = core_into(l[ic],num);
+               else
+                  done_lower = false;
+            }
+            delta[ic] = physical(0);
+         }
+      }
+
+      update_bool(done_lower);
+   }  // Main loop
+
+
+
+   // ================================
+   // Fix values above upper bounds
+   // ================================
+
+   bool done_upper = true;
+   for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real &&
+          core_into(u[ic],num) < core_into(q[ic],num)) {  // too large
+         if (tweak(
+            core_into(l[ic],num),
+            core_into(u[ic],num),
+            core_into(q[ic],num) - core_into(u[ic],num),
+            eps_repair
+         ))
+            core_into(q[ic],num) = core_into(u[ic],num);
+         else
+            done_upper = false;
+      }
+
+   update_bool(done_upper);
+
+   if (!done_upper && !updated_lqu) {
+      update_mass(l,q,u,num);
+      updated_lqu = true;
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         delta[ic] = physical(0);
+   }
+
+   // Main loop
+   int &level_upper = level_upper_component[num];
+   level_upper = 0;
+
+   int &iter_upper = iter_upper_component[num];
+   for (iter_upper = 0;  iter_upper < max_iter && !done_upper;  ++iter_upper) {
+
+      // For each too-large real cell
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] == core::real &&
+          core_into(u[ic],num) < core_into(q[ic],num)  // too large
+      ) {
+         // amount (positive) by which cell is too large
+         const physical need = core_into(q[ic],num) - core_into(u[ic],num);
+
+         // find minimal neighborhood with at least "need" less than upper bound
+         std::set<int> nay;  nay.insert(ic);
+         int level = 0;  physical have = physical(0);
+         int offproc_level = -1;  bool offproc_warning = false;
+
+         for ( ; have < need ; ++level)
+            if (!repair_expand_neighborhood(
+               flag, cell_new_num,cell_new_type,cell_new_vert,cell_new_cell,
+               q,u, have,nay,
+               level,max_level, offproc_level,offproc_warning,
+               ic,"upper",iter_upper,max_iter
+            )) {
+               /*
+                  [core] Warning: unable to expand neighborhood of cell #
+                  beyond #-level on upper-bound repair iteration #/#.
+               */
+               std::core_cerr
+                  << "[core] Warning: unable to expand neighborhood of cell "
+                  << ic << "\nbeyond " << level << "-level on upper-bound "
+                     "repair iteration "
+                  << iter_upper << '/' << max_iter-1 << ".\n";
+               break;
+            }
+         level_upper = core_max(level,level_upper);
+
+         // increment neighboring deltas
+         // these deltas are negative; we'll add them later
+         if (!(have == physical(0)))
+         for (set_int_iterator i = nay.begin();  i != nay.end();  ++i)
+            if (core_into(q[*i],num) < core_into(u[*i],num))
+               core_plus_equal(
+                  delta[*i],
+                  need*(core_into(u[*i],num)-core_into(q[*i],num))/have
+               );
+      }  // For each too-large real cell
+
+      // Sum delta (sum over all processors of each element)
+      update_delta(delta);
+
+      // Adjust
+      done_upper = true;
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+      if (cell_new_type[ic] != core::boundary) {
+         // for each real and ghost cell
+
+         if (core_into(u[ic],num) < core_into(q[ic],num))
+            core_into(q[ic],num) = core_into(u[ic],num);  // fix
+         else if (!(delta[ic] == physical(0))) {
+            // adjust by delta, which could break cell...
+            if (core_into(u[ic],num) < (
+                   core_plus_equal(core_into(q[ic],num), delta[ic])
+               )) {
+               if (tweak(
+                  core_into(l[ic],num),
+                  core_into(u[ic],num),
+                  core_into(q[ic],num) - core_into(u[ic],num),
+                  eps_repair
+               ))
+                  core_into(q[ic],num) = core_into(u[ic],num);
+               else
+                  done_upper = false;
+            }
+            delta[ic] = physical(0);
+         }
+      }
+
+      update_bool(done_upper);
+   }  // Main loop
+
+
+
+   // ================================
+   // Finish
+   // ================================
+
+   int &iter = iter_component[num];
+   iter = core_max(iter_lower,iter_upper);
+
+   int &level = level_component[num];
+   level = core_max(level_lower,level_upper);
+
+   /*
+   Formats of warnings:
+
+      [core] Warning: maximum iterations (#) exceeded during repair
+      of upper bound. Consequence: masses are in bounds, but total
+      mass is not conserved.
+
+      [core] Warning: maximum iterations (#) exceeded during repair
+      of upper bound of component #. Consequence: masses are in bounds,
+      but total mass is not conserved.
+   */
+
+   if (!done_upper) {
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         if (core_into(u[ic],num) < core_into(q[ic],num))
+            core_into(q[ic],num) = core_into(u[ic],num);  // just fix it
+
+      if (numend == 1)
+         std::core_cerr
+            << "[core] Warning: maximum iterations (" << max_iter
+            << ") exceeded during repair\nof upper bound. Consequence: "
+               "masses are in bounds, but total\nmass is not conserved.\n";
+      else
+         std::core_cerr
+            << "[core] Warning: maximum iterations (" << max_iter
+            << ") exceeded during repair\nof upper bound of component " << num
+            << ". Consequence: masses are in bounds,\n"
+               "but total mass is not conserved.\n";
+   }
+
+
+
+   /*
+   Formats of warnings:
+
+      Similar to upper-bound warnings.
+
+   Formats of notes:
+
+      [core] Note: repair of upper bound had side effect of repairing
+      lower bound, even though maximum iterations (#) were exceeded
+      during earlier repair of lower bound.
+
+      [core] Note: repair of upper bound of component # had side effect
+      of repairing lower bound, even though maximum iterations (#) were
+      exceeded during earlier repair of lower bound.
+   */
+
+   if (!done_lower) {
+      // it's possible the still-out-of-bounds lower values were fixed
+      // as a side effect of the upper-bound iteration.
+      done_lower = true;
+
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         if (core_into(q[ic],num) < core_into(l[ic],num)) {
+            core_into(q[ic],num) = core_into(l[ic],num);  // just fix it
+            done_lower = false;
+         }
+
+      if (!done_lower) {
+         if (numend == 1)
+            std::core_cerr
+               << "[core] Warning: maximum iterations (" << max_iter
+               << ") exceeded during repair\nof lower bound. Consequence: "
+               "masses are in bounds, but total\nmass is not conserved.\n";
+         else
+            std::core_cerr
+               << "[core] Warning: maximum iterations (" << max_iter
+               << ") exceeded during repair\nof lower bound of component "
+               << num << ". Consequence: masses are in bounds,\n"
+               "but total mass is not conserved.\n";
+      } else {
+         if (numend == 1)
+            std::core_cerr
+               << "[core] Note: repair of upper bound had side effect of "
+               "repairing\nlower bound, even though maximum iterations ("
+               << max_iter << ") were exceeded\nduring earlier repair "
+               "of lower bound.\n";
+         else
+            std::core_cerr
+               << "[core] Note: repair of upper bound of component " << num
+               << " had side effect\nof repairing lower bound, even though "
+               "maximum iterations (" << max_iter
+               << ") were\nexceeded during earlier repair of lower bound.\n";
+      }
+   }
+
+
+
+   // ================================
+   // Next component
+   // ================================
+
+   mass_repair_wendroff_helper(
+      twoint<num+1, numend>(),
+      max_iter,
+      max_level,
+      eps_repair,
+
+      iter_component,
+      iter_lower_component,
+      iter_upper_component,
+
+      level_component,
+      level_lower_component,
+      level_upper_component,
+
+      update_mass,
+      update_delta,
+      update_bool,
+
+      cell_new_num,
+      cell_new_type,
+      cell_new_vert,
+      cell_new_cell,
+
+      cell_new_mass_min,
+      cell_new_mass_max,
+      cell_new_mass,
+
+      delta
+   );
+}
+
+
+
+template<
+   class physical, class array_multiple, class array_physical,
+   class array_cell_type, class array_array_int
+>
+inline void mass_repair_wendroff(
+   // input
+   const int max_iter,
+   const int max_level,
+   const physical &eps_repair,
+
+   // output
+   std::vector<int> &iter_component,
+   std::vector<int> &iter_lower_component,
+   std::vector<int> &iter_upper_component,
+
+   std::vector<int> &level_component,
+   std::vector<int> &level_lower_component,
+   std::vector<int> &level_upper_component,
+
+   // input
+   void (*const update_mass)(
+      array_multiple &, array_multiple &, array_multiple &, const int
+   ),
+   void (*const update_delta)(array_physical &),
+   void (*const update_bool)(bool &),
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+         array_array_int &cell_new_cell,
+
+   // both input and output
+   // note: min and max are output only because of parallel update
+   array_multiple &cell_new_mass_min,
+   array_multiple &cell_new_mass_max,
+   array_multiple &cell_new_mass,
+
+   // output
+   array_physical &delta
+) {
+   core_begin("mass_repair_wendroff");
+
+   typedef typename traits<array_multiple>::element multiple;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   // 0th component
+   mass_repair_wendroff_helper(
+      start,
+      max_iter,
+      max_level,
+      eps_repair,
+
+      iter_component,
+      iter_lower_component,
+      iter_upper_component,
+
+      level_component,
+      level_lower_component,
+      level_upper_component,
+
+      update_mass,
+      update_delta,
+      update_bool,
+
+      cell_new_num,
+      cell_new_type,
+      cell_new_vert,
+      cell_new_cell,
+
+      cell_new_mass_min,
+      cell_new_mass_max,
+      cell_new_mass,
+
+      delta
+   );
+
+   core_end("mass_repair_wendroff");
+}
+
+}
+}
+
+#endif

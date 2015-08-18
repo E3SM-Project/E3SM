@@ -1,0 +1,486 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_VOLUME
+#define CORE_VOLUME
+
+// Volume: compute according to the x and y (or r and z) coordinates
+// (not according to the relationship mass = density * volume).
+// Compute for both old and new grids.
+
+
+
+// =============================================================================
+// Volume_cartesian
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Volume_cartesian_ic: for old and new together
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+void volume_cartesian_ic(
+   // input
+   const int ic,
+   const array_nodal &node_old_x,
+   const array_nodal &node_old_y,
+   const array_nodal &node_new_x,
+   const array_nodal &node_new_y,
+
+   const array_cell_type &cell_type,
+   const array_array_int &cell_vert,
+
+   // output
+   array_geometrical &cell_old_volume,
+   array_geometrical &cell_new_volume
+) {
+   typedef typename traits<array_geometrical>::element geometrical;
+   const int nvert = size(cell_vert[ic]);
+
+   if (nvert == 3) {
+      // triangle case: write directly
+      const int c0 = cell_vert[ic][0];
+      const int c1 = cell_vert[ic][1];
+      const int c2 = cell_vert[ic][2];
+
+      // x0*(y1-y2) + x1*(y2-y0) + x2*(y0-y1)
+      cell_old_volume[ic] = geometrical(
+         node_old_x[c0] * (node_old_y[c1] - node_old_y[c2])
+       + node_old_x[c1] * (node_old_y[c2] - node_old_y[c0])
+       + node_old_x[c2] * (node_old_y[c0] - node_old_y[c1])
+      );
+
+      if (cell_type[ic] == core::real)
+      cell_new_volume[ic] = geometrical(
+         node_new_x[c0] * (node_new_y[c1] - node_new_y[c2])
+       + node_new_x[c1] * (node_new_y[c2] - node_new_y[c0])
+       + node_new_x[c2] * (node_new_y[c0] - node_new_y[c1])
+      );
+
+   } else if (nvert == 4) {
+      // quadrilateral case: write directly
+      const int c0 = cell_vert[ic][0], c1 = cell_vert[ic][1];
+      const int c2 = cell_vert[ic][2], c3 = cell_vert[ic][3];
+
+      // x0*(y1-y3) + x1*(y2-y0) + x2*(y3-y1) + x3*(y0-y2)
+      cell_old_volume[ic] = geometrical(
+         node_old_x[c0] * (node_old_y[c1] - node_old_y[c3])
+       + node_old_x[c1] * (node_old_y[c2] - node_old_y[c0])
+       + node_old_x[c2] * (node_old_y[c3] - node_old_y[c1])
+       + node_old_x[c3] * (node_old_y[c0] - node_old_y[c2])
+      );
+
+      if (cell_type[ic] == core::real)
+      cell_new_volume[ic] = geometrical(
+         node_new_x[c0] * (node_new_y[c1] - node_new_y[c3])
+       + node_new_x[c1] * (node_new_y[c2] - node_new_y[c0])
+       + node_new_x[c2] * (node_new_y[c3] - node_new_y[c1])
+       + node_new_x[c3] * (node_new_y[c0] - node_new_y[c2])
+      );
+
+   } else {
+      // general case: loop over the cell's nodes
+      const int cnm1 = cell_vert[ic][nvert-1];
+      const int c0   = cell_vert[ic][0];
+
+      cell_old_volume[ic] = geometrical(
+        (node_old_x[c0] + node_old_x[cnm1])
+       *(node_old_y[c0] - node_old_y[cnm1])
+      );
+
+      if (cell_type[ic] == core::real)
+      cell_new_volume[ic] = geometrical(
+        (node_new_x[c0] + node_new_x[cnm1])
+       *(node_new_y[c0] - node_new_y[cnm1])
+      );
+
+      for (int jn = 0;  jn < nvert-1;  ++jn) {  // -1: skip last
+         const int cn   = cell_vert[ic][jn  ];
+         const int cnp1 = cell_vert[ic][jn+1];
+
+         core_plus_equal(cell_old_volume[ic], geometrical(
+            (node_old_x[cnp1] + node_old_x[cn])
+           *(node_old_y[cnp1] - node_old_y[cn])
+         ));
+
+         if (cell_type[ic] == core::real)
+         core_plus_equal(cell_new_volume[ic], geometrical(
+            (node_new_x[cnp1] + node_new_x[cn])
+           *(node_new_y[cnp1] - node_new_y[cn])
+         ));
+      }
+   }
+
+   // finish
+   core_divide_equal(cell_old_volume[ic], geometrical(2));
+   if (cell_type[ic] == core::real)
+   core_divide_equal(cell_new_volume[ic], geometrical(2));
+}
+
+
+
+// Volume_cartesian_ic: for old and new separately
+template<class array_nodal, class array_array_int, class array_geometrical>
+void volume_cartesian_ic(
+   // input
+   const int ic,
+   const array_nodal &node_x,
+   const array_nodal &node_y,
+
+   const array_array_int &cell_vert,
+
+   // output
+   array_geometrical &cell_volume
+) {
+   typedef typename traits<array_geometrical>::element geometrical;
+   const int nvert = size(cell_vert[ic]);
+
+   if (nvert == 3) {
+      // triangle case: write directly
+      const int c0 = cell_vert[ic][0];
+      const int c1 = cell_vert[ic][1];
+      const int c2 = cell_vert[ic][2];
+
+      // x0*(y1-y2) + x1*(y2-y0) + x2*(y0-y1)
+      cell_volume[ic] = geometrical(
+         node_x[c0] * (node_y[c1] - node_y[c2])
+       + node_x[c1] * (node_y[c2] - node_y[c0])
+       + node_x[c2] * (node_y[c0] - node_y[c1])
+      );
+
+   } else if (nvert == 4) {
+      // quadrilateral case: write directly
+      const int c0 = cell_vert[ic][0], c1 = cell_vert[ic][1];
+      const int c2 = cell_vert[ic][2], c3 = cell_vert[ic][3];
+
+      // x0*(y1-y3) + x1*(y2-y0) + x2*(y3-y1) + x3*(y0-y2)
+      cell_volume[ic] = geometrical(
+         node_x[c0] * (node_y[c1] - node_y[c3])
+       + node_x[c1] * (node_y[c2] - node_y[c0])
+       + node_x[c2] * (node_y[c3] - node_y[c1])
+       + node_x[c3] * (node_y[c0] - node_y[c2])
+      );
+
+   } else {
+      // general case: loop over the cell's nodes
+      const int cnm1 = cell_vert[ic][nvert-1];
+      const int c0   = cell_vert[ic][0];
+
+      cell_volume[ic] = geometrical(
+        (node_x[c0] + node_x[cnm1])
+       *(node_y[c0] - node_y[cnm1])
+      );
+
+      for (int jn = 0;  jn < nvert-1;  ++jn) {  // -1: skip last
+         const int cn   = cell_vert[ic][jn  ];
+         const int cnp1 = cell_vert[ic][jn+1];
+
+         core_plus_equal(cell_volume[ic], geometrical(
+            (node_x[cnp1] + node_x[cn])
+           *(node_y[cnp1] - node_y[cn])
+         ));
+      }
+   }
+
+   // finish
+   core_divide_equal(cell_volume[ic], geometrical(2));
+}
+
+
+
+// Volume_cartesian
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+void volume_cartesian(
+   // input
+   const connectivity_type connectivity,
+
+   const array_nodal &node_old_x,
+   const array_nodal &node_old_y,
+   const array_nodal &node_new_x,
+   const array_nodal &node_new_y,
+
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+
+   // output
+   array_geometrical &cell_old_volume,
+   array_geometrical &cell_new_volume
+) {
+   core_begin("volume_cartesian");
+
+   if (connectivity == core::same) {
+      // old, new
+      for (int ic = 0;  ic < cell_old_num;  ++ic)
+         if (cell_old_type[ic] != core::boundary)
+            volume_cartesian_ic(
+               ic,
+               node_old_x, node_old_y,
+               node_new_x, node_new_y,
+               cell_old_type, cell_old_vert,
+               cell_old_volume, cell_new_volume
+            );
+   } else {
+      // old
+      for (int ic = 0;  ic < cell_old_num;  ++ic)
+         if (cell_old_type[ic] != core::boundary)
+            volume_cartesian_ic(
+               ic, node_old_x, node_old_y, cell_old_vert, cell_old_volume
+            );
+
+      // new
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         if (cell_new_type[ic] == core::real)
+            volume_cartesian_ic(
+               ic, node_new_x, node_new_y, cell_new_vert, cell_new_volume
+            );
+   }
+
+   core_end("volume_cartesian");
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Volume_cylindrical
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Helper function
+template<class array_nodal, class geometrical>
+inline void fun(
+   // input
+   const int curr,
+   const int next,
+
+   const array_nodal &r,
+   const array_nodal &z,
+
+   // output
+   geometrical &val
+) {
+   core_plus_equal(val, geometrical(
+      (z[next] - z[curr])
+    * (r[next]*(r[next] + r[curr]) + r[curr]*r[curr])
+   ));
+}
+
+
+
+// Volume_cylindrical_ic: for old and new together
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+void volume_cylindrical_ic(
+   // input
+   const int ic,
+   const array_nodal &node_old_r,
+   const array_nodal &node_old_z,
+   const array_nodal &node_new_r,
+   const array_nodal &node_new_z,
+
+   const array_cell_type &cell_type,
+   const array_array_int &cell_vert,
+
+   // output
+   array_geometrical &cell_old_volume,
+   array_geometrical &cell_new_volume
+) {
+   typedef typename traits<array_geometrical>::element geometrical;
+   const int nvert = size(cell_vert[ic]);
+
+   // general case: loop over the cell's nodes
+   const int cnm1 = cell_vert[ic][nvert-1];
+   const int c0   = cell_vert[ic][0];
+
+   fun(cnm1, c0, node_old_r, node_old_z, cell_old_volume[ic] = geometrical(0));
+   if (cell_type[ic] == core::real)
+   fun(cnm1, c0, node_new_r, node_new_z, cell_new_volume[ic] = geometrical(0));
+
+   for (int jn = 0;  jn < nvert-1;  ++jn) {  // -1: skip last
+      const int cn   = cell_vert[ic][jn  ];
+      const int cnp1 = cell_vert[ic][jn+1];
+
+      fun(cn, cnp1, node_old_r, node_old_z, cell_old_volume[ic]);
+      if (cell_type[ic] == core::real)
+      fun(cn, cnp1, node_new_r, node_new_z, cell_new_volume[ic]);
+   }
+
+   // finish
+   core_divide_equal(cell_old_volume[ic], geometrical(6));
+   if (cell_type[ic] == core::real)
+   core_divide_equal(cell_new_volume[ic], geometrical(6));
+}
+
+
+
+// Volume_cylindrical_ic: for old and new separately
+template<class array_nodal, class array_array_int, class array_geometrical>
+void volume_cylindrical_ic(
+   // input
+   const int ic,
+   const array_nodal &node_r,
+   const array_nodal &node_z,
+
+   const array_array_int &cell_vert,
+
+   // output
+   array_geometrical &cell_volume
+) {
+   typedef typename traits<array_geometrical>::element geometrical;
+   const int nvert = size(cell_vert[ic]);
+
+   // general case: loop over the cell's nodes
+   const int cnm1 = cell_vert[ic][nvert-1];
+   const int c0   = cell_vert[ic][0];
+
+   fun(cnm1, c0, node_r, node_z, cell_volume[ic] = geometrical(0));
+
+   for (int jn = 0;  jn < nvert-1;  ++jn) {  // -1: skip last
+      const int cn   = cell_vert[ic][jn  ];
+      const int cnp1 = cell_vert[ic][jn+1];
+
+      fun(cn, cnp1, node_r, node_z, cell_volume[ic]);
+   }
+
+   // finish
+   core_divide_equal(cell_volume[ic], geometrical(6));
+}
+
+
+
+// Volume_cylindrical
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+void volume_cylindrical(
+   // input
+   const connectivity_type connectivity,
+
+   const array_nodal &node_old_r,
+   const array_nodal &node_old_z,
+   const array_nodal &node_new_r,
+   const array_nodal &node_new_z,
+
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+
+   // output
+   array_geometrical &cell_old_volume,
+   array_geometrical &cell_new_volume
+) {
+   core_begin("volume_cylindrical");
+
+   if (connectivity == core::same) {
+      // old, new
+      for (int ic = 0;  ic < cell_old_num;  ++ic)
+         if (cell_old_type[ic] != core::boundary)
+            volume_cylindrical_ic(
+               ic,
+               node_old_r, node_old_z,
+               node_new_r, node_new_z,
+               cell_old_type, cell_old_vert,
+               cell_old_volume, cell_new_volume
+            );
+   } else {
+      // old
+      for (int ic = 0;  ic < cell_old_num;  ++ic)
+         if (cell_old_type[ic] != core::boundary)
+            volume_cylindrical_ic(
+               ic, node_old_r, node_old_z, cell_old_vert, cell_old_volume
+            );
+
+      // new
+      for (int ic = 0;  ic < cell_new_num;  ++ic)
+         if (cell_new_type[ic] == core::real)
+            volume_cylindrical_ic(
+               ic, node_new_r, node_new_z, cell_new_vert, cell_new_volume
+            );
+   }
+
+   core_end("volume_cylindrical");
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Volume
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<
+   class array_nodal, class array_cell_type,
+   class array_array_int, class array_geometrical
+>
+inline void volume(
+   // input
+   const coordinate_type coordinate,
+   const connectivity_type connectivity,
+
+   const array_nodal &node_old_x,  // or r
+   const array_nodal &node_old_y,  // or z
+   const array_nodal &node_new_x,  // or r
+   const array_nodal &node_new_y,  // or z
+
+   const int   cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_array_int &cell_old_vert,
+
+   const int   cell_new_num,
+   const array_cell_type &cell_new_type,
+   const array_array_int &cell_new_vert,
+
+   // output
+   array_geometrical &cell_old_volume,
+   array_geometrical &cell_new_volume
+) {
+   if (coordinate == core::cartesian)
+      volume_cartesian(
+         connectivity,
+         node_old_x, node_old_y,
+         node_new_x, node_new_y,
+         cell_old_num, cell_old_type, cell_old_vert,
+         cell_new_num, cell_new_type, cell_new_vert,
+         cell_old_volume, cell_new_volume
+      );
+   else
+      volume_cylindrical(
+         connectivity,
+         node_old_x, node_old_y,
+         node_new_x, node_new_y,
+         cell_old_num, cell_old_type, cell_old_vert,
+         cell_new_num, cell_new_type, cell_new_vert,
+         cell_old_volume, cell_new_volume
+      );
+}
+
+}
+}
+
+#endif

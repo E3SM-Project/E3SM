@@ -1,0 +1,3208 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_
+#define CORE_
+
+#include "core_user"
+
+#include <algorithm>
+#include <cassert>
+#include <cfloat>
+#include <climits>
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <set>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+#include "core_auxiliary"
+#include "core_rational"
+
+#include "core_pair"
+#include "core_ntuple"
+
+#include "core_vector"
+#include "core_carray"
+
+#include "core_geometry_edge"
+#include "core_geometry_wrap"
+#include "core_geometry_cell"
+
+#include "core_boundary"
+#include "core_polyint"
+
+#include "core_volume"
+#include "core_center"
+#include "core_density_bound"
+#include "core_density_grad"
+#include "core_mass"
+#include "core_mass_exchange"
+#include "core_mass_bound"
+#include "core_mass_repair"
+#include "core_density"
+
+#include "core_subcomponent"
+
+namespace core {
+namespace hidden {
+
+// char_*
+static const char
+   char_undefined = '*',
+   char_noentry   = '-';
+
+// ref_setup
+template<class array_multiple>
+inline int &ref_setup(std::vector<int> &obj)
+{
+   resize(obj, traits<typename traits<array_multiple>::element>::size);
+   return obj[0];
+}
+
+// same_class
+template<class A, class B>
+class same_class { };
+
+template<class A>
+class same_class<A,A> {
+public:
+   typedef A result;
+};
+
+}
+}
+
+
+
+// =============================================================================
+// Remapper
+// =============================================================================
+
+namespace core {
+
+template<class _array_multiple, class _array_geometrical, class _array_nodal>
+class remapper {
+   typedef _array_multiple array_multiple;
+
+public:
+   bool restart;
+
+   // ================================
+   // Types
+   // ================================
+
+public:
+
+   // array
+   typedef _array_multiple    array;
+   typedef _array_geometrical array_geometrical;
+   typedef _array_nodal       array_nodal;
+
+   typedef typename traits<array_multiple>::array_cell_type
+      array_cell_type;
+   typedef typename traits<array_multiple>::array_int
+      array_int;
+   typedef typename traits<array_multiple>::array_array_int
+      array_array_int;
+   typedef typename traits<array_multiple>::array_physical
+      array_physical;
+
+
+   // scalar
+   typedef typename traits<array            >::element multiple;
+   typedef typename traits<array_physical   >::element physical;
+   typedef typename traits<array_geometrical>::element geometrical;
+   typedef typename traits<array_nodal      >::element nodal;
+
+
+   // parallel communication callbacks...
+
+   // ...for density_grad
+   typedef void (*function_update_grad)
+      (array &, array &);
+
+   // ...for global repair
+   typedef void (*function_update_global)
+      (multiple &, multiple &, multiple &);
+
+   // ...for shellman repair
+   typedef void (*function_update_gs)
+      (array_int &, array_int &);
+
+   typedef void (*function_update_mdprime)
+      (array_int &, array_physical &);
+
+   // ...for wendroff repair
+   typedef void (*function_update_mass)
+      (array &, array &, array &, const int);
+
+   typedef void (*function_update_delta)
+      (array_physical &);
+
+   // ...for shellman and wendroff repairs
+   typedef void (*function_update_bool)
+      (bool &);
+
+
+   // subcomponent type
+   typedef void (*subcomponent)(remapper &);
+
+
+
+   // ================================
+   // Consistency checks
+   // ================================
+
+private:
+
+   typedef typename hidden::same_class<
+      typename traits<array_cell_type>::element,
+      enum cell_type
+   >::result
+   element_type_of_array_cell_type_must_be_cell_type;
+
+   typedef typename hidden::same_class<
+      typename traits<array_int>::element,
+      int
+   >::result
+   element_type_of_array_int_must_be_int;
+
+   typedef typename hidden::same_class<
+      typename traits<
+         typename traits<array_array_int>::element
+      >::element,
+      int
+   >::result
+   element_type_of_element_type_of_array_array_int_must_be_int;
+
+   typedef typename hidden::same_class<
+      typename traits<array_physical>::element,
+      typename traits<multiple>::element
+   >::result
+   element_type_of_array_physical_must_be_element_type_of_multiple;
+
+
+
+   // ================================
+   // Serial Functions
+   // ================================
+
+public:
+
+   static inline void serial_update_grad
+   (array_multiple &, array_multiple &)
+      { }
+   static inline void serial_update_global
+   (multiple &, multiple &, multiple &)
+      { }
+   static inline void serial_update_gs
+   (array_int &, array_int &)
+      { }
+   static inline void serial_update_mdprime
+   (array_int &, array_physical &)
+      { }
+   static inline void serial_update_mass
+   (array_multiple &, array_multiple &, array_multiple &,const int)
+      { }
+   static inline void serial_update_delta
+   (array_physical &)
+      { }
+   static inline void serial_update_bool
+   (bool &)
+      { }
+
+
+
+   // ================================
+   // Data: basic
+   // ================================
+
+public:
+
+   // repair: max_iter, max_level
+   int max_iter;   // maximum number of iterations
+   int max_level;  // maximum level of neighborhoods
+
+   // miscellaneous options
+   machine_type      machine;
+   coordinate_type   coordinate;
+   connectivity_type connectivity;
+   algorithm_type    algorithm;
+   polyint_type      polyint;
+   trim_type         trim;
+   repair_type       repair;
+
+   // functions
+   function_update_grad    update_grad;
+   function_update_global  update_global;
+   function_update_gs      update_gs;
+   function_update_mdprime update_mdprime;
+   function_update_mass    update_mass;
+   function_update_delta   update_delta;
+   function_update_bool    update_bool;
+
+
+
+   // ================================
+   // Data: subcomponents
+   // ================================
+
+public:
+
+   // geometry
+   subcomponent
+      subcomponent_geometry_edge,
+      subcomponent_geometry_wrap,
+      subcomponent_geometry_cell,
+      subcomponent_geometry
+   ;
+
+   // boundary
+   subcomponent
+      subcomponent_boundary
+   ;
+
+   // algorithm
+   subcomponent
+      subcomponent_volume,
+      subcomponent_center,
+      subcomponent_density_bound,
+      subcomponent_density_grad,
+      subcomponent_mass,
+      subcomponent_mass_exchange,
+      subcomponent_mass_bound,
+      subcomponent_mass_repair,
+      subcomponent_density
+   ;
+
+   // remap
+   subcomponent
+      subcomponent_remap
+   ;
+
+
+
+   // ================================
+   // Data: geometry, physics, repair
+   // ================================
+
+private:
+
+   // number of nodes, cells, and edges
+   int nnode_old, ncell_old, nedge_old;  // old grid
+   int nnode_new, ncell_new           ;  // new grid
+
+public:
+
+   // geometry: given
+   array_nodal node_old_x, &node_old_r;  // for each node: old x or r
+   array_nodal node_old_y, &node_old_z;  // for each node: old y or z
+   array_nodal node_new_x, &node_new_r;  // for each node: new x or r
+   array_nodal node_new_y, &node_new_z;  // for each node: new y or z
+
+
+   // geometry: given, and perhaps augmented by geometry_wrap
+   array_cell_type &cell_type;  // cell types (real, ghost, boundary)
+   array_array_int &cell_vert;  // cell vertices, in ccw order
+
+   // geometry: given, or computed by geometry_cell
+   array_array_int &cell_cell;  // cell neighbors, in ccw order
+
+   array_cell_type  cell_old_type, cell_new_type;
+   array_array_int  cell_old_vert, cell_new_vert;
+   array_array_int  cell_old_cell, cell_new_cell;
+
+
+   // geometry: given, or computed by geometry_edge
+   array_int &edge_left;   // aliased to edge_old_left
+   array_int &edge_right;  // aliased to edge_old_right
+   array_int &edge_vert;   // aliased to edge_old_vert
+
+   array_int edge_old_left;   // for each edge: left cell
+   array_int edge_old_right;  // for each edge: right cell
+   array_int edge_old_vert;   // for each edge: index in left cell of start node
+
+
+
+   // physics: old-cell information
+   array_multiple    cell_old_density;
+   array_geometrical cell_old_volume;
+   array_multiple    cell_old_mass;
+
+   // physics: remapping-related information on the old grid
+   array_geometrical cell_old_x, &cell_old_r;
+   array_geometrical cell_old_y, &cell_old_z;
+
+   array_multiple cell_old_density_min;
+   array_multiple cell_old_density_max;
+   array_multiple cell_old_density_grad_x, &cell_old_density_grad_r;
+   array_multiple cell_old_density_grad_y, &cell_old_density_grad_z;
+
+   // physics: remapping-related information on the new grid
+   array_multiple cell_new_mass_min;
+   array_multiple cell_new_mass_max;
+
+   // physics: new-cell information
+   array_multiple    cell_new_density;
+   array_geometrical cell_new_volume;
+   array_multiple    cell_new_mass;
+
+
+
+   // repair: shellman & wendroff
+   array_physical cell_new_d;
+
+   // repair: shellman
+   array_int      cell_new_g;
+   array_int      cell_new_s;
+   array_int      cell_new_mprime;
+   array_physical cell_new_dprime;
+
+   // different connectivity: for each new cell, the nearest old cell
+   array_int cell_new_to_old;
+
+
+
+   // ================================
+   // Data: miscellaneous
+   // ================================
+
+public:
+
+   // input: epsilons
+   nodal       eps_inside;
+   nodal       eps_parallel;
+   nodal       eps_line;
+   geometrical eps_trim;
+   geometrical eps_volume;
+   physical    eps_repair;
+
+   // input: widths for printing
+   mutable int width ;  // for indices
+   mutable int widthi;  // for ints
+   mutable int widthl;  // for lists of ints
+   mutable int widthp;  // for physical quantities
+   mutable int widthg;  // for geometrical quantities
+   mutable int widthn;  // for nodal quantities
+
+
+
+   // output: old and new total mass (on this processor)
+   multiple cell_old_mass_total;
+   multiple cell_new_mass_total;
+
+   // output: repair-related
+   std::vector<int> iter_component;         // iterations
+   std::vector<int> iter_lower_component;   // lower-bound iterations
+   std::vector<int> iter_upper_component;   // upper-bound iterations
+
+   std::vector<int> level_component;        // levels
+   std::vector<int> level_lower_component;  // lower-bound levels
+   std::vector<int> level_upper_component;  // upper-bound levels
+
+   int &iter;
+   int &iter_lower;
+   int &iter_upper;
+
+   int &level;
+   int &level_lower;
+   int &level_upper;
+
+   /*
+   output from shellman repair:
+      iter       [_component]  required iterations
+
+   output from wendroff repair:
+      iter       [_component]  maximum(lower,upper) iterations
+      iter_lower [_component]  required lower iterations
+      iter_upper [_component]  required upper iterations
+
+      level      [_component]  maximum(lower,upper) levels
+      level_lower[_component]  maximum lower levels
+      level_upper[_component]  maximum upper levels
+   */
+
+
+
+   // for internal use
+   multiple available_up, available_down, change;
+
+
+
+   // ================================
+   // Constructors
+   // ================================
+
+private:
+// Helper stuff for the constructors
+
+   bool defined_node_old_num, defined_cell_old_num;
+   bool defined_node_new_num, defined_cell_new_num;
+
+   bool defined_machine;
+   bool defined_coordinate;
+   bool defined_connectivity;
+   bool defined_algorithm;
+   bool defined_polyint;
+   bool defined_trim;
+   bool defined_repair;
+
+   bool defined_update_grad;
+   bool defined_update_global;
+   bool defined_update_gs;
+   bool defined_update_mdprime;
+   bool defined_update_mass;
+   bool defined_update_delta;
+   bool defined_update_bool;
+
+   void construct_begin(void);
+   void construct_end  (void);
+
+   void construct(const int);
+
+   void construct(const machine_type     );
+   void construct(const coordinate_type  );
+   void construct(const connectivity_type);
+   void construct(const algorithm_type   );
+   void construct(const polyint_type     );
+   void construct(const trim_type        );
+   void construct(const repair_type      );
+
+   void construct(const function_update_grad   );
+   void construct(const function_update_global );
+   void construct(const function_update_gs     );
+   void construct(const function_update_mdprime);
+   void construct(const function_update_mass   );
+   void construct(const function_update_delta  );
+   void construct(const function_update_bool   );
+
+public:
+// The constructors themselves
+
+   // 0-argument
+   explicit remapper(
+      void
+   );
+
+   // 1-argument
+   template<
+      class A
+   >
+   explicit remapper(
+      const A &_a
+   );
+
+   // 2-argument
+   template<
+      class A, class B
+   >
+   explicit remapper(
+      const A &_a, const B &_b
+   );
+
+   // 3-argument
+   template<
+      class A, class B, class C
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c
+   );
+
+   // 4-argument
+   template<
+      class A, class B, class C,
+      class D
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d
+   );
+
+   // 5-argument
+   template<
+      class A, class B, class C,
+      class D, class E
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e
+   );
+
+   // 6-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f
+   );
+
+   // 7-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g
+   );
+
+   // 8-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h
+   );
+
+   // 9-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i
+   );
+
+   // 10-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j
+   );
+
+   // 11-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k
+   );
+
+   // 12-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l
+   );
+
+   // 13-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L,
+      class M
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l,
+      const M &_m
+   );
+
+   // 14-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L,
+      class M, class N
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l,
+      const M &_m, const N &_n
+   );
+
+   // 15-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L,
+      class M, class N, class O
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l,
+      const M &_m, const N &_n, const O &_o
+   );
+
+   // 16-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L,
+      class M, class N, class O,
+      class P
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l,
+      const M &_m, const N &_n, const O &_o,
+      const P &_p
+   );
+
+   // 17-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L,
+      class M, class N, class O,
+      class P, class Q
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l,
+      const M &_m, const N &_n, const O &_o,
+      const P &_p, const Q &_q
+   );
+
+   // 18-argument
+   template<
+      class A, class B, class C,
+      class D, class E, class F,
+      class G, class H, class I,
+      class J, class K, class L,
+      class M, class N, class O,
+      class P, class Q, class R
+   >
+   explicit remapper(
+      const A &_a, const B &_b, const C &_c,
+      const D &_d, const E &_e, const F &_f,
+      const G &_g, const H &_h, const I &_i,
+      const J &_j, const K &_k, const L &_l,
+      const M &_m, const N &_n, const O &_o,
+      const P &_p, const Q &_q, const R &_r
+   );
+
+
+
+   // ================================
+   // Functions: resize and extend
+   // ================================
+
+public:
+
+   /*
+   For connectivity = same
+      (2-argument)  n, c
+      (3-argument)  n, c, e
+   For connectivity = different
+      (4-argument)  nold, cold, nnew, cnew
+      (5-argument)  nold, cold, eold, nnew, cnew
+   */
+
+   // RESIZE
+
+   // 2-argument
+   inline remapper &resize(const int n, const int c)
+   {
+      if (connectivity == core::different) {
+         std::core_cerr <<
+            "[core] ERROR: connectivity = different, so you should call the "
+            "4-argument\nversion of resize() instead of the 2-argument version"
+         << std::endl;
+         exit(1);
+      }
+      return resize(n, c, nedge_old);
+   }
+
+   // 3-argument
+   remapper &resize(const int, const int, const int);
+
+
+   // 4-argument
+   inline remapper &resize(
+      const int nold, const int cold,
+      const int nnew, const int cnew
+   ) {
+      if (connectivity == core::same) {
+         std::core_cerr <<
+            "[core] ERROR: connectivity = same, so you should call the "
+            "2-argument\nversion of resize() instead of the 4-argument version"
+         << std::endl;
+         exit(1);
+      }
+      return resize(
+         nold, cold, nedge_old,
+         nnew, cnew
+      );
+   }
+
+   // 5-argument
+   remapper &resize(
+      const int, const int, const int,
+      const int, const int
+   );
+
+
+
+   // EXTEND
+
+   // 2-argument
+   inline remapper &extend(const int n, const int c)
+   {
+      if (connectivity == core::different) {
+         std::core_cerr <<
+            "[core] ERROR: connectivity = different, so you should call the "
+            "4-argument\nversion of extend() instead of the 2-argument version"
+         << std::endl;
+         exit(1);
+      }
+      return extend(n, c, nedge_old);
+   }
+
+   // 3-argument
+   remapper &extend(const int, const int, const int);
+
+
+   // 4-argument
+   inline remapper &extend(
+      const int nold, const int cold,
+      const int nnew, const int cnew
+   ) {
+      if (connectivity == core::same) {
+         std::core_cerr <<
+            "[core] ERROR: connectivity = same, so you should call the "
+            "2-argument\nversion of extend() instead of the 4-argument version"
+         << std::endl;
+         exit(1);
+      }
+      return extend(
+         nold, cold, nedge_old,
+         nnew, cnew
+      );
+   }
+
+   // 5-argument
+   remapper &extend(
+      const int, const int, const int,
+      const int, const int
+   );
+
+
+
+   // ================================
+   // Functions: geometry-related
+   // ================================
+
+public:
+
+   inline remapper &geometry_edge(void)
+   {
+      core_begin("geometry_edge");
+      if (subcomponent_geometry_edge == NULL)
+         subcomponent_geometry_edge = hidden::geometry_edge;
+      subcomponent_geometry_edge(*this);
+      core_end("geometry_edge");
+      return *this;
+   }
+
+   inline remapper &geometry_wrap(void)
+   {
+      core_begin("geometry_wrap");
+      if (subcomponent_geometry_wrap == NULL)
+         subcomponent_geometry_wrap = hidden::geometry_wrap;
+      subcomponent_geometry_wrap(*this);
+      core_end("geometry_wrap");
+      return *this;
+   }
+
+   inline remapper &geometry_cell(void)
+   {
+      core_begin("geometry_cell");
+      if (subcomponent_geometry_cell == NULL)
+         subcomponent_geometry_cell = hidden::geometry_cell;
+      subcomponent_geometry_cell(*this);
+      core_end("geometry_cell");
+      return *this;
+   }
+
+   inline remapper &geometry(void)
+   {
+      core_begin("geometry");
+      if (subcomponent_geometry == NULL)
+         subcomponent_geometry = hidden::geometry;
+      subcomponent_geometry(*this);
+      core_end("geometry");
+      return *this;
+   }
+
+
+
+   // ================================
+   // Functions: boundary
+   // ================================
+
+public:
+
+   inline remapper &boundary(void)
+   {
+      core_begin("boundary");
+      if (subcomponent_boundary == NULL)
+         subcomponent_boundary = hidden::boundary;
+      subcomponent_boundary(*this);
+      core_end("boundary");
+      return *this;
+   }
+
+
+
+   // ================================
+   // Functions: number of nodes, cells, and edges
+   // ================================
+
+public:
+
+   // the following should be called only when connectivity = same
+   inline int node_num(void) const
+   {
+      if (connectivity == core::different)
+         std::core_cerr <<
+            "[core] Warning: connectivity = different, so you really should\n"
+            "call node_old_num() or node_new_num(), not node_num(). Returning\n"
+            "the same value as node_old_num()." << std::endl;
+      return node_old_num();
+   }
+
+   inline int cell_num(void) const
+   {
+      if (connectivity == core::different)
+         std::core_cerr <<
+            "[core] Warning: connectivity = different, so you really should\n"
+            "call cell_old_num() or cell_new_num(), not cell_num(). Returning\n"
+            "the same value as cell_old_num()." << std::endl;
+      return cell_old_num();
+   }
+
+   inline int edge_num(void) const
+   {
+      // don't bother with the warning; there is no "edge new num"
+      return edge_old_num();
+   }
+
+   // old
+   inline int node_old_num(void) const { return nnode_old; }
+   inline int cell_old_num(void) const { return ncell_old; }
+   inline int edge_old_num(void) const { return nedge_old; }
+
+   // new
+   inline int node_new_num(void) const
+    { return connectivity == core::same ? nnode_old : nnode_new; }
+   inline int cell_new_num(void) const
+    { return connectivity == core::same ? ncell_old : ncell_new; }
+   // edge information is never needed on the new grid, so there
+   // is no "edge new num"
+
+
+
+   // ================================
+   // Functions: remapping-related
+   // ================================
+
+public:
+
+   inline remapper &volume(void)
+   {
+      core_begin("volume");
+      if (subcomponent_volume == NULL)
+         subcomponent_volume = hidden::volume;
+      subcomponent_volume(*this);
+      core_end("volume");
+      return *this;
+   }
+
+   inline remapper &center(void)
+   {
+      core_begin("center");
+      if (subcomponent_center == NULL)
+         subcomponent_center = hidden::center;
+      subcomponent_center(*this);
+      core_end("center");
+      return *this;
+   }
+
+   inline remapper &density_bound(void)
+   {
+      core_begin("density_bound");
+      if (subcomponent_density_bound == NULL)
+         subcomponent_density_bound = hidden::density_bound;
+      subcomponent_density_bound(*this);
+      core_end("density_bound");
+      return *this;
+   }
+
+   inline remapper &density_grad(void)
+   {
+      core_begin("density_grad");
+      if (subcomponent_density_grad == NULL)
+         subcomponent_density_grad = hidden::density_grad;
+      subcomponent_density_grad(*this);
+      core_end("density_grad");
+      return *this;
+   }
+
+   inline remapper &mass(void)
+   {
+      core_begin("mass");
+      if (subcomponent_mass == NULL)
+         subcomponent_mass = hidden::mass;
+      subcomponent_mass(*this);
+      core_end("mass");
+      return *this;
+   }
+
+   inline remapper &mass_exchange(void)
+   {
+      core_begin("mass_exchange");
+      if (subcomponent_mass_exchange == NULL)
+         subcomponent_mass_exchange = hidden::mass_exchange;
+      subcomponent_mass_exchange(*this);
+      core_end("mass_exchange");
+      return *this;
+   }
+
+   inline remapper &mass_bound(void)
+   {
+      core_begin("mass_bound");
+      if (subcomponent_mass_bound == NULL)
+         subcomponent_mass_bound = hidden::mass_bound;
+      subcomponent_mass_bound(*this);
+      core_end("mass_bound");
+      return *this;
+   }
+
+   inline remapper &mass_repair(void)
+   {
+      core_begin("mass_repair");
+      if (subcomponent_mass_repair == NULL)
+         subcomponent_mass_repair = hidden::mass_repair;
+      subcomponent_mass_repair(*this);
+      core_end("mass_repair");
+      return *this;
+   }
+
+   inline remapper &density(void)
+   {
+      core_begin("density");
+      if (subcomponent_density == NULL)
+         subcomponent_density = hidden::density;
+      subcomponent_density(*this);
+      core_end("density");
+      return *this;
+   }
+
+
+
+   // ================================
+   // Functions: remap*
+   // ================================
+
+public:
+
+   inline remapper &remap_begin(void)
+   {
+      core_begin("remap_begin");
+      hidden::remap_begin(*this);
+      core_end("remap_begin");
+      return *this;
+   }
+
+   inline remapper &remap(void)
+   {
+      core_begin("remap");
+      if (subcomponent_remap == NULL)
+         subcomponent_remap = hidden::remap;
+      subcomponent_remap(*this);
+      core_end("remap");
+      return *this;
+   }
+
+   inline remapper &remap_end(void)
+   {
+      core_begin("remap_end");
+      hidden::remap_end(*this);
+      core_end("remap_end");
+      return *this;
+   }
+
+
+
+   // ================================
+   // Functions: print and check
+   // ================================
+
+private:
+
+   // print: helper stuff
+   void print_general  (void) const;
+
+   void print_node     (void) const;
+   void print_cell     (void) const;
+   void print_edge     (void) const;
+   void print_geometry (void) const;
+
+   void print_old      (void) const;
+   void print_new      (void) const;
+   void print_physics  (void) const;
+
+   void print_remapping(void) const;
+
+public:
+
+   // print
+   const remapper &print(
+      const bool general   = true,
+      const bool geometry  = true,
+      const bool physics   = true,
+      const bool remapping = false
+   ) const;
+
+   // check
+   const remapper &check(void) const;
+};
+
+}
+
+
+
+// =============================================================================
+// Remapper::construct_begin
+// Remapper::construct_end
+// =============================================================================
+
+namespace core {
+
+// construct_begin
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<
+   array_multiple, array_geometrical, array_nodal
+>::construct_begin(void)
+{
+   restart = true;
+
+   // basic data
+   max_iter  = hidden::CORE_DEFAULT_MAX_ITER;
+   max_level = hidden::CORE_DEFAULT_MAX_LEVEL;
+
+   machine      = core::UNKNOWN_MACHINE     ;  defined_machine      = false;
+   coordinate   = core::DEFAULT_COORDINATE  ;  defined_coordinate   = false;
+   connectivity = core::DEFAULT_CONNECTIVITY;  defined_connectivity = false;
+   algorithm    = core::DEFAULT_ALGORITHM   ;  defined_algorithm    = false;
+   polyint      = core::DEFAULT_POLYINT     ;  defined_polyint      = false;
+   trim         = core::DEFAULT_TRIM        ;  defined_trim         = false;
+   repair       = core::DEFAULT_REPAIR      ;  defined_repair       = false;
+
+   update_grad    = serial_update_grad   ;  defined_update_grad    = false;
+   update_global  = serial_update_global ;  defined_update_global  = false;
+   update_gs      = serial_update_gs     ;  defined_update_gs      = false;
+   update_mdprime = serial_update_mdprime;  defined_update_mdprime = false;
+   update_mass    = serial_update_mass   ;  defined_update_mass    = false;
+   update_delta   = serial_update_delta  ;  defined_update_delta   = false;
+   update_bool    = serial_update_bool   ;  defined_update_bool    = false;
+
+   // subcomponents
+   subcomponent_geometry_edge = hidden::geometry_edge;
+   subcomponent_geometry_wrap = hidden::geometry_wrap;
+   subcomponent_geometry_cell = hidden::geometry_cell;
+   subcomponent_geometry      = hidden::geometry;
+
+   subcomponent_boundary      = hidden::boundary;
+
+   subcomponent_volume        = hidden::volume;
+   subcomponent_center        = hidden::center;
+   subcomponent_density_bound = hidden::density_bound;
+   subcomponent_density_grad  = hidden::density_grad;
+   subcomponent_mass          = hidden::mass;
+   subcomponent_mass_exchange = hidden::mass_exchange;
+   subcomponent_mass_bound    = hidden::mass_bound;
+   subcomponent_mass_repair   = hidden::mass_repair;
+   subcomponent_density       = hidden::density;
+
+   subcomponent_remap         = hidden::remap;
+
+   // miscellaneous
+   nnode_old = ncell_old = nedge_old = 0;
+   nnode_new = ncell_new = 0;
+   defined_node_old_num = defined_cell_old_num = false;
+   defined_node_new_num = defined_cell_new_num = false;
+
+   eps_inside   = get_eps(eps_inside);
+   eps_parallel = get_eps(eps_parallel);
+   eps_line     = get_eps(eps_line);
+   eps_trim     = get_eps(eps_trim);
+   eps_volume   = get_eps(eps_volume);
+   eps_repair   = get_eps(eps_repair);
+
+   width  = hidden::CORE_MINIMUM_WIDTH;
+   widthi = hidden::CORE_MINIMUM_WIDTHI;
+   widthl = hidden::CORE_MINIMUM_WIDTHL;
+   widthp = hidden::CORE_MINIMUM_WIDTHP;
+   widthg = hidden::CORE_MINIMUM_WIDTHG;
+   widthn = hidden::CORE_MINIMUM_WIDTHN;
+}
+
+
+
+// construct_end
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct_end(void)
+{
+   // Sending more than two integers implies different connectivity...
+   if (defined_node_new_num) {
+      if (defined_connectivity && connectivity == core::same) {
+         // ...but user requested same connectivity
+         std::core_cerr <<
+            "[core] ERROR: sending more than two integers to remapper's "
+            "constructor implies\nconnectivity = different, but you requested "
+            "connectivity = same"
+         << std::endl;
+         exit(1);
+      }
+
+      connectivity = core::different;  // in case default was core::same
+   }
+
+
+   // Requesting swept-region algorithm implies same connectivity...
+   if (defined_algorithm && algorithm == core::swept)
+      if (connectivity == core::different) {
+         if (defined_connectivity) {
+            // ...but user requested different connectivity
+            std::core_cerr <<
+               "[core] ERROR: requesting algorithm = swept in remapper's "
+               "constructor implies\nconnectivity = same, but you requested "
+               "connectivity = different"
+            << std::endl;
+            exit(1);
+
+         } else if (defined_node_new_num) {
+            // ...or different connectivity was implied above
+            std::core_cerr <<
+               "[core] ERROR: requesting algorithm = swept in remapper's "
+               "constructor implies\nconnectivity = same, but you implied "
+               "connectivity = different by sending more\nthan two integers"
+            << std::endl;
+            exit(1);
+         }
+
+         connectivity = core::same;  // in case default was core::different
+      }
+
+
+   // Different connectivity implies exact-intersection algorithm
+   if (connectivity == core::different) {
+      // swept-region algorithm wasn't requested, or an earlier test
+      // would have failed
+
+      algorithm = core::intersection;  // in case default was core::swept
+   }
+
+
+   // Resize appropriately
+   if (connectivity == core::same)
+      resize(nnode_old, ncell_old);
+   else
+      resize(nnode_old, ncell_old, nnode_new, ncell_new);
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::construct
+// =============================================================================
+
+namespace core {
+
+// construct(int)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const int n)
+{
+        if (!defined_node_old_num) { nnode_old=n;  defined_node_old_num=true; }
+   else if (!defined_cell_old_num) { ncell_old=n;  defined_cell_old_num=true; }
+   else if (!defined_node_new_num) { nnode_new=n;  defined_node_new_num=true; }
+   else if (!defined_cell_new_num) { ncell_new=n;  defined_cell_new_num=true; }
+   else {
+      std::core_cerr <<
+         "[core] ERROR: too many integers sent to remapper's constructor;\n"
+         "order is number of [old] nodes, [old] cells, new nodes, and new\n"
+         "cells, with the last two allowed only if connectivity = different"
+      << std::endl;
+      exit(1);
+   }
+}
+
+
+
+// construct(machine)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const machine_type _machine)
+{
+   if (!defined_machine) {
+      machine = _machine;
+      defined_machine = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one machine type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(coordinate)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const coordinate_type _coordinate)
+{
+   if (!defined_coordinate) {
+      coordinate = _coordinate;
+      defined_coordinate = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one coordinate type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(connectivity)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const connectivity_type _connectivity)
+{
+   if (!defined_connectivity) {
+      connectivity = _connectivity;
+      defined_connectivity = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one connectivity type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(algorithm)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const algorithm_type _algorithm)
+{
+   if (!defined_algorithm) {
+      algorithm = _algorithm;
+      defined_algorithm = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one algorithm type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(polyint)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const polyint_type _polyint)
+{
+   if (!defined_polyint) {
+      polyint = _polyint;
+      defined_polyint = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one polygon-intersection type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(trim)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const trim_type _trim)
+{
+   if (!defined_trim) {
+      trim = _trim;
+      defined_trim = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one trim type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(repair)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+construct(const repair_type _repair)
+{
+   if (!defined_repair) {
+      repair = _repair;
+      defined_repair = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one repair type "
+         "sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+
+
+// construct(update_grad)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_grad _update_grad
+) {
+   if (!defined_update_grad) {
+      update_grad = _update_grad;
+      defined_update_grad = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_grad "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(update_global)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_global _update_global
+) {
+   if (!defined_update_global) {
+      update_global = _update_global;
+      defined_update_global = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_global "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(update_gs)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_gs _update_gs
+) {
+   if (!defined_update_gs) {
+      update_gs = _update_gs;
+      defined_update_gs = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_gs "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(update_mdprime)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_mdprime _update_mdprime
+) {
+   if (!defined_update_mdprime) {
+      update_mdprime = _update_mdprime;
+      defined_update_mdprime = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_mdprime "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(update_mass)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_mass _update_mass
+) {
+   if (!defined_update_mass) {
+      update_mass = _update_mass;
+      defined_update_mass = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_mass "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(update_delta)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_delta _update_delta
+) {
+   if (!defined_update_delta) {
+      update_delta = _update_delta;
+      defined_update_delta = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_delta "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+// construct(update_bool)
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::construct(
+   const typename remapper<array_multiple,array_geometrical,array_nodal>::
+      function_update_bool _update_bool
+) {
+   if (!defined_update_bool) {
+      update_bool = _update_bool;
+      defined_update_bool = true;
+   } else {
+      std::core_cerr << "[core] ERROR: more than one update_bool "
+         "function sent to remapper's constructor" << std::endl;
+      exit(1);
+   }
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::remapper
+// =============================================================================
+
+#define core_reference_setup\
+   node_old_r(node_old_x),\
+   node_old_z(node_old_y),\
+   node_new_r(node_new_x),\
+   node_new_z(node_new_y),\
+\
+   cell_type(cell_old_type),\
+   cell_vert(cell_old_vert),\
+   cell_cell(cell_old_cell),\
+\
+   edge_left (edge_old_left ),\
+   edge_right(edge_old_right),\
+   edge_vert (edge_old_vert ),\
+\
+   cell_old_r(cell_old_x),\
+   cell_old_z(cell_old_y),\
+\
+   cell_old_density_grad_r(cell_old_density_grad_x),\
+   cell_old_density_grad_z(cell_old_density_grad_y),\
+\
+   iter       (hidden::ref_setup<array_multiple>(iter_component       )),\
+   iter_lower (hidden::ref_setup<array_multiple>(iter_lower_component )),\
+   iter_upper (hidden::ref_setup<array_multiple>(iter_upper_component )),\
+   level      (hidden::ref_setup<array_multiple>(level_component      )),\
+   level_lower(hidden::ref_setup<array_multiple>(level_lower_component)),\
+   level_upper(hidden::ref_setup<array_multiple>(level_upper_component))
+
+
+
+namespace core {
+
+// constructor: 0-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   void
+) : core_reference_setup {
+   construct_begin();
+
+   construct_end();
+}
+
+
+
+// constructor: 1-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);
+
+   construct_end();
+}
+
+
+
+// constructor: 2-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);
+
+   construct_end();
+}
+
+
+
+// constructor: 3-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+
+   construct_end();
+}
+
+
+
+// constructor: 4-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);
+
+   construct_end();
+}
+
+
+
+// constructor: 5-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);
+
+   construct_end();
+}
+
+
+
+// constructor: 6-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+
+   construct_end();
+}
+
+
+
+// constructor: 7-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);
+
+   construct_end();
+}
+
+
+
+// constructor: 8-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);
+
+   construct_end();
+}
+
+
+
+// constructor: 9-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+
+   construct_end();
+}
+
+
+
+// constructor: 10-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);
+
+   construct_end();
+}
+
+
+
+// constructor: 11-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);
+
+   construct_end();
+}
+
+
+
+// constructor: 12-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+
+   construct_end();
+}
+
+
+
+// constructor: 13-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L,
+   class M
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l,
+   const M &_m
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+   construct(_m);
+
+   construct_end();
+}
+
+
+
+// constructor: 14-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L,
+   class M, class N
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l,
+   const M &_m, const N &_n
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+   construct(_m);  construct(_n);
+
+   construct_end();
+}
+
+
+
+// constructor: 15-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L,
+   class M, class N, class O
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l,
+   const M &_m, const N &_n, const O &_o
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+   construct(_m);  construct(_n);  construct(_o);
+
+   construct_end();
+}
+
+
+
+// constructor: 16-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L,
+   class M, class N, class O,
+   class P
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l,
+   const M &_m, const N &_n, const O &_o,
+   const P &_p
+) : core_reference_setup {
+   construct_begin();
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+   construct(_m);  construct(_n);  construct(_o);
+   construct(_p);
+
+   construct_end();
+}
+
+
+
+// constructor: 17-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L,
+   class M, class N, class O,
+   class P, class Q
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l,
+   const M &_m, const N &_n, const O &_o,
+   const P &_p, const Q &_q
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+   construct(_m);  construct(_n);  construct(_o);
+   construct(_p);  construct(_q);
+
+   construct_end();
+}
+
+
+
+// constructor: 18-argument
+template<class array_multiple, class array_geometrical, class array_nodal>
+template<
+   class A, class B, class C,
+   class D, class E, class F,
+   class G, class H, class I,
+   class J, class K, class L,
+   class M, class N, class O,
+   class P, class Q, class R
+>
+remapper<array_multiple,array_geometrical,array_nodal>::remapper(
+   const A &_a, const B &_b, const C &_c,
+   const D &_d, const E &_e, const F &_f,
+   const G &_g, const H &_h, const I &_i,
+   const J &_j, const K &_k, const L &_l,
+   const M &_m, const N &_n, const O &_o,
+   const P &_p, const Q &_q, const R &_r
+) : core_reference_setup {
+   construct_begin();
+
+   construct(_a);  construct(_b);  construct(_c);
+   construct(_d);  construct(_e);  construct(_f);
+   construct(_g);  construct(_h);  construct(_i);
+   construct(_j);  construct(_k);  construct(_l);
+   construct(_m);  construct(_n);  construct(_o);
+   construct(_p);  construct(_q);  construct(_r);
+
+   construct_end();
+}
+
+}
+
+#undef core_reference_setup
+
+
+
+// =============================================================================
+// Remapper::resize
+// =============================================================================
+
+namespace core {
+
+// 3-argument version (only for connectivity = same).
+// Parameters: number of nodes, cells, and edges (on both grids, except edges)
+template<class array_multiple, class array_geometrical, class array_nodal>
+remapper<array_multiple,array_geometrical,array_nodal> &
+remapper<array_multiple,array_geometrical,array_nodal>::resize(
+   const int _nnode,
+   const int _ncell,
+   const int _nedge
+) {
+   if (connectivity == core::different) {
+      std::core_cerr <<
+         "[core] ERROR: connectivity = different, so you should call the "
+         "5-argument\nversion of resize() instead of the 3-argument version"
+      << std::endl;
+      exit(1);
+   }
+
+   nnode_old = _nnode;
+   ncell_old = _ncell;
+   nedge_old = _nedge;
+
+   nnode_new = _nnode;
+   ncell_new = _ncell;
+
+   // geometry
+   hidden::resize_if_different(node_old_x, node_old_num());  // or r
+   hidden::resize_if_different(node_old_y, node_old_num());  // or z
+   hidden::resize_if_different(node_new_x, node_new_num());  // or r
+   hidden::resize_if_different(node_new_y, node_new_num());  // or z
+
+   hidden::resize_if_different(cell_type, cell_old_num());
+   hidden::resize_if_different(cell_vert, cell_old_num());
+   hidden::resize_if_different(cell_cell, cell_old_num());
+
+   hidden::resize_if_different(edge_old_left,  edge_old_num());
+   hidden::resize_if_different(edge_old_right, edge_old_num());
+   hidden::resize_if_different(edge_old_vert,  edge_old_num());
+
+   // physics
+   hidden::resize_if_different(cell_old_density, cell_old_num());
+   hidden::resize_if_different(cell_old_volume,  cell_old_num());
+   hidden::resize_if_different(cell_old_mass,    cell_old_num());
+
+   hidden::resize_if_different(cell_old_x,              cell_old_num()); // or r
+   hidden::resize_if_different(cell_old_y,              cell_old_num()); // or z
+   hidden::resize_if_different(cell_old_density_min,    cell_old_num());
+   hidden::resize_if_different(cell_old_density_max,    cell_old_num());
+   hidden::resize_if_different(cell_old_density_grad_x, cell_old_num()); // or r
+   hidden::resize_if_different(cell_old_density_grad_y, cell_old_num()); // or z
+
+   hidden::resize_if_different(cell_new_mass_min, cell_new_num());
+   hidden::resize_if_different(cell_new_mass_max, cell_new_num());
+
+   hidden::resize_if_different(cell_new_density, cell_new_num());
+   hidden::resize_if_different(cell_new_volume,  cell_new_num());
+   hidden::resize_if_different(cell_new_mass,    cell_new_num());
+
+   if (repair == core::shellman) {
+      hidden::resize_if_different(cell_new_d,      cell_new_num());
+      hidden::resize_if_different(cell_new_g,      cell_new_num());
+      hidden::resize_if_different(cell_new_s,      cell_new_num());
+      hidden::resize_if_different(cell_new_mprime, cell_new_num());
+      hidden::resize_if_different(cell_new_dprime, cell_new_num());
+   }
+
+   /*
+   // connectivity = same in the current function
+   hidden::resize_if_different(cell_new_to_old, cell_new_num());
+   */
+
+   if (repair == core::wendroff)
+      hidden::resize_if_different(cell_new_d, cell_new_num());
+
+   check();
+   return *this;
+}
+
+
+
+// 5-argument version (only for connectivity = different).
+// Parameters:
+// number of nodes, cells, and edges (on the old grid)
+// number of nodes and cells (on the new grid)
+template<class array_multiple, class array_geometrical, class array_nodal>
+remapper<array_multiple,array_geometrical,array_nodal> &
+remapper<array_multiple,array_geometrical,array_nodal>::resize(
+   const int _nnode_old, const int _ncell_old, const int _nedge_old,
+   const int _nnode_new, const int _ncell_new
+) {
+   if (connectivity == core::same) {
+      std::core_cerr <<
+         "[core] ERROR: connectivity = same, so you should call the "
+         "3-argument\nversion of resize() instead of the 5-argument version"
+      << std::endl;
+      exit(1);
+   }
+
+   nnode_old = _nnode_old;
+   ncell_old = _ncell_old;
+   nedge_old = _nedge_old;
+
+   nnode_new = _nnode_new;
+   ncell_new = _ncell_new;
+
+   // geometry
+   hidden::resize_if_different(node_old_x, node_old_num());  // or r
+   hidden::resize_if_different(node_old_y, node_old_num());  // or z
+   hidden::resize_if_different(node_new_x, node_new_num());  // or r
+   hidden::resize_if_different(node_new_y, node_new_num());  // or z
+
+   hidden::resize_if_different(cell_old_type, cell_old_num());
+   hidden::resize_if_different(cell_old_vert, cell_old_num());
+   hidden::resize_if_different(cell_old_cell, cell_old_num());
+
+   hidden::resize_if_different(edge_old_left,  edge_old_num());
+   hidden::resize_if_different(edge_old_right, edge_old_num());
+   hidden::resize_if_different(edge_old_vert,  edge_old_num());
+
+   hidden::resize_if_different(cell_new_type, cell_new_num());
+   hidden::resize_if_different(cell_new_vert, cell_new_num());
+   hidden::resize_if_different(cell_new_cell, cell_new_num());
+
+   // physics
+   hidden::resize_if_different(cell_old_density, cell_old_num());
+   hidden::resize_if_different(cell_old_volume,  cell_old_num());
+   hidden::resize_if_different(cell_old_mass,    cell_old_num());
+
+   hidden::resize_if_different(cell_old_x,              cell_old_num()); // or r
+   hidden::resize_if_different(cell_old_y,              cell_old_num()); // or z
+   hidden::resize_if_different(cell_old_density_min,    cell_old_num());
+   hidden::resize_if_different(cell_old_density_max,    cell_old_num());
+   hidden::resize_if_different(cell_old_density_grad_x, cell_old_num()); // or r
+   hidden::resize_if_different(cell_old_density_grad_y, cell_old_num()); // or z
+
+   hidden::resize_if_different(cell_new_mass_min, cell_new_num());
+   hidden::resize_if_different(cell_new_mass_max, cell_new_num());
+
+   hidden::resize_if_different(cell_new_density, cell_new_num());
+   hidden::resize_if_different(cell_new_volume,  cell_new_num());
+   hidden::resize_if_different(cell_new_mass,    cell_new_num());
+
+   if (repair == core::shellman) {
+      hidden::resize_if_different(cell_new_d,      cell_new_num());
+      hidden::resize_if_different(cell_new_g,      cell_new_num());
+      hidden::resize_if_different(cell_new_s,      cell_new_num());
+      hidden::resize_if_different(cell_new_mprime, cell_new_num());
+      hidden::resize_if_different(cell_new_dprime, cell_new_num());
+   }
+
+   // connectivity = different in the current function
+   hidden::resize_if_different(cell_new_to_old, cell_new_num());
+   const int ncell = cell_new_num();
+   for (int c = 0;  c < ncell;  ++c)
+      cell_new_to_old[c] = -1;  // flag: not found (legit value would be > 0)
+
+   if (repair == core::wendroff)
+      hidden::resize_if_different(cell_new_d, cell_new_num());
+
+   check();
+   return *this;
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::extend
+// =============================================================================
+
+namespace core {
+
+// 3-argument version (only for connectivity = same).
+// Parameters: number of nodes, cells, and edges (on both grids, except edges)
+template<class array_multiple, class array_geometrical, class array_nodal>
+remapper<array_multiple,array_geometrical,array_nodal> &
+remapper<array_multiple,array_geometrical,array_nodal>::extend(
+   const int _nnode,
+   const int _ncell,
+   const int _nedge
+) {
+   if (connectivity == core::different) {
+      std::core_cerr <<
+         "[core] ERROR: connectivity = different, so you should call the "
+         "5-argument\nversion of extend() instead of the 3-argument version"
+      << std::endl;
+      exit(1);
+   }
+
+   nnode_old = _nnode;
+   ncell_old = _ncell;
+   nedge_old = _nedge;
+
+   nnode_new = _nnode;
+   ncell_new = _ncell;
+
+   // geometry
+   hidden::extend_if_larger(node_old_x, node_old_num());  // or r
+   hidden::extend_if_larger(node_old_y, node_old_num());  // or z
+   hidden::extend_if_larger(node_new_x, node_new_num());  // or r
+   hidden::extend_if_larger(node_new_y, node_new_num());  // or z
+
+   hidden::extend_if_larger(cell_type, cell_old_num());
+   hidden::extend_if_larger(cell_vert, cell_old_num());
+   hidden::extend_if_larger(cell_cell, cell_old_num());
+
+   hidden::extend_if_larger(edge_old_left,  edge_old_num());
+   hidden::extend_if_larger(edge_old_right, edge_old_num());
+   hidden::extend_if_larger(edge_old_vert,  edge_old_num());
+
+   // physics
+   hidden::extend_if_larger(cell_old_density, cell_old_num());
+   hidden::extend_if_larger(cell_old_volume,  cell_old_num());
+   hidden::extend_if_larger(cell_old_mass,    cell_old_num());
+
+   hidden::extend_if_larger(cell_old_x,              cell_old_num()); // or r
+   hidden::extend_if_larger(cell_old_y,              cell_old_num()); // or z
+   hidden::extend_if_larger(cell_old_density_min,    cell_old_num());
+   hidden::extend_if_larger(cell_old_density_max,    cell_old_num());
+   hidden::extend_if_larger(cell_old_density_grad_x, cell_old_num()); // or r
+   hidden::extend_if_larger(cell_old_density_grad_y, cell_old_num()); // or z
+
+   hidden::extend_if_larger(cell_new_mass_min, cell_new_num());
+   hidden::extend_if_larger(cell_new_mass_max, cell_new_num());
+
+   hidden::extend_if_larger(cell_new_density, cell_new_num());
+   hidden::extend_if_larger(cell_new_volume,  cell_new_num());
+   hidden::extend_if_larger(cell_new_mass,    cell_new_num());
+
+   if (repair == core::shellman) {
+      hidden::extend_if_larger(cell_new_d,      cell_new_num());
+      hidden::extend_if_larger(cell_new_g,      cell_new_num());
+      hidden::extend_if_larger(cell_new_s,      cell_new_num());
+      hidden::extend_if_larger(cell_new_mprime, cell_new_num());
+      hidden::extend_if_larger(cell_new_dprime, cell_new_num());
+   }
+
+   /*
+   // connectivity = same in the current function
+   hidden::extend_if_larger(cell_new_to_old, cell_new_num());
+   */
+
+   if (repair == core::wendroff)
+      hidden::extend_if_larger(cell_new_d, cell_new_num());
+
+   check();
+   return *this;
+}
+
+
+
+// 5-argument version (only for connectivity = different).
+// Parameters:
+// number of nodes, cells, and edges (on the old grid)
+// number of nodes and cells (on the new grid)
+template<class array_multiple, class array_geometrical, class array_nodal>
+remapper<array_multiple,array_geometrical,array_nodal> &
+remapper<array_multiple,array_geometrical,array_nodal>::extend(
+   const int _nnode_old, const int _ncell_old, const int _nedge_old,
+   const int _nnode_new, const int _ncell_new
+) {
+   if (connectivity == core::same) {
+      std::core_cerr <<
+         "[core] ERROR: connectivity = same, so you should call the "
+         "3-argument\nversion of extend() instead of the 5-argument version"
+      << std::endl;
+      exit(1);
+   }
+
+   nnode_old = _nnode_old;
+   ncell_old = _ncell_old;
+   nedge_old = _nedge_old;
+
+   nnode_new = _nnode_new;
+   ncell_new = _ncell_new;
+
+   // geometry
+   hidden::extend_if_larger(node_old_x, node_old_num());  // or r
+   hidden::extend_if_larger(node_old_y, node_old_num());  // or z
+   hidden::extend_if_larger(node_new_x, node_new_num());  // or r
+   hidden::extend_if_larger(node_new_y, node_new_num());  // or z
+
+   hidden::extend_if_larger(cell_old_type, cell_old_num());
+   hidden::extend_if_larger(cell_old_vert, cell_old_num());
+   hidden::extend_if_larger(cell_old_cell, cell_old_num());
+
+   hidden::extend_if_larger(edge_old_left,  edge_old_num());
+   hidden::extend_if_larger(edge_old_right, edge_old_num());
+   hidden::extend_if_larger(edge_old_vert,  edge_old_num());
+
+   hidden::extend_if_larger(cell_new_type, cell_new_num());
+   hidden::extend_if_larger(cell_new_vert, cell_new_num());
+   hidden::extend_if_larger(cell_new_cell, cell_new_num());
+
+   // physics
+   hidden::extend_if_larger(cell_old_density, cell_old_num());
+   hidden::extend_if_larger(cell_old_volume,  cell_old_num());
+   hidden::extend_if_larger(cell_old_mass,    cell_old_num());
+
+   hidden::extend_if_larger(cell_old_x,              cell_old_num()); // or r
+   hidden::extend_if_larger(cell_old_y,              cell_old_num()); // or z
+   hidden::extend_if_larger(cell_old_density_min,    cell_old_num());
+   hidden::extend_if_larger(cell_old_density_max,    cell_old_num());
+   hidden::extend_if_larger(cell_old_density_grad_x, cell_old_num()); // or r
+   hidden::extend_if_larger(cell_old_density_grad_y, cell_old_num()); // or z
+
+   hidden::extend_if_larger(cell_new_mass_min, cell_new_num());
+   hidden::extend_if_larger(cell_new_mass_max, cell_new_num());
+
+   hidden::extend_if_larger(cell_new_density, cell_new_num());
+   hidden::extend_if_larger(cell_new_volume,  cell_new_num());
+   hidden::extend_if_larger(cell_new_mass,    cell_new_num());
+
+   if (repair == core::shellman) {
+      hidden::extend_if_larger(cell_new_d,      cell_new_num());
+      hidden::extend_if_larger(cell_new_g,      cell_new_num());
+      hidden::extend_if_larger(cell_new_s,      cell_new_num());
+      hidden::extend_if_larger(cell_new_mprime, cell_new_num());
+      hidden::extend_if_larger(cell_new_dprime, cell_new_num());
+   }
+
+   // connectivity = different in the current function
+   hidden::extend_if_larger(cell_new_to_old, cell_new_num());
+   const int ncell = cell_new_num();
+   for (int c = 0;  c < ncell;  ++c)
+      cell_new_to_old[c] = -1;  // flag: not found (legit value would be > 0)
+
+   if (repair == core::wendroff)
+      hidden::extend_if_larger(cell_new_d, cell_new_num());
+
+   check();
+   return *this;
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::print_general
+// =============================================================================
+
+namespace core {
+
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_general(void) const
+{
+   core_begin("print_general");
+
+   std::cout
+      << "   restart = " << (
+         restart ? "true\n" : "false\n")
+   ;
+
+
+   if (connectivity == core::same)
+      std::cout
+         << "\n   node_num() = " << node_num()
+         << "\n   cell_num() = " << cell_num()
+         << "\n   edge_num() = " << edge_num() << '\n'
+      ;
+   else
+      std::cout
+         << "\n   node_old_num() = " << node_old_num()
+         << "\n   cell_old_num() = " << cell_old_num()
+         << "\n   edge_old_num() = " << edge_old_num() << "\n"
+            "\n   node_new_num() = " << node_new_num()
+         << "\n   cell_new_num() = " << cell_new_num() << '\n'
+      ;
+
+
+   std::cout
+      << "\n   max_iter  = " << max_iter
+      << "\n   max_level = " << max_level << '\n'
+
+
+      << "\n   machine      = " << (
+         machine == core::serial   ? "serial"   :
+         machine == core::parallel ? "parallel" :
+         "unknown")
+
+      << "\n   coordinate   = " << (
+         coordinate == core::cartesian   ? "cartesian"   :
+         coordinate == core::cylindrical ? "cylindrical" :
+         "unknown")
+
+      << "\n   connectivity = " << (
+         connectivity == core::same      ? "same"      :
+         connectivity == core::different ? "different" :
+         "unknown")
+
+      << "\n   algorithm    = " << (
+         algorithm == core::swept        ? "swept"        :
+         algorithm == core::intersection ? "intersection" :
+         "unknown")
+
+      << "\n   polyint      = " << (
+         algorithm != core::intersection ? "NA" :
+         polyint == core::simple  ? "simple"  :
+         polyint == core::chasing ? "chasing" :
+         "unknown")
+
+      << "\n   trim         = " << (
+         algorithm != core::intersection ? "NA" :
+         trim == core::notrim  ? "notrim"  :
+         trim == core::first   ? "first"   :
+         trim == core::average ? "average" :
+         "unknown")
+
+      << "\n   repair       = " << (
+         repair == core::norepair ? "norepair\n" :
+         repair == core::global   ? "global\n"   :
+         repair == core::shellman ? "shellman\n" :
+         repair == core::wendroff ? "wendroff\n" :
+         "unknown\n")
+
+
+      << "\n * "
+         "update_grad    = " << (
+         update_grad    == serial_update_grad    || update_grad    == NULL
+         ? "default (serial)" : "user-defined")
+
+      << (repair == core::global   ? "\n * " : "\n   ")
+      << "update_global  = " << (
+         update_global  == serial_update_global  || update_global  == NULL
+         ? "default (serial)" : "user-defined")
+
+      << (repair == core::shellman ? "\n * " : "\n   ")
+      << "update_gs      = " << (
+         update_gs      == serial_update_gs      || update_gs      == NULL
+         ? "default (serial)" : "user-defined")
+
+      << (repair == core::shellman ? "\n * " : "\n   ")
+      << "update_mdprime = " << (
+         update_mdprime == serial_update_mdprime || update_mdprime == NULL
+         ? "default (serial)" : "user-defined")
+
+      << (repair == core::wendroff ? "\n * " : "\n   ")
+      << "update_mass    = " << (
+         update_mass    == serial_update_mass    || update_mass    == NULL
+         ? "default (serial)" : "user-defined")
+
+      << (repair == core::wendroff ? "\n * " : "\n   ")
+      << "update_delta   = " << (
+         update_delta   == serial_update_delta   || update_delta   == NULL
+         ? "default (serial)" : "user-defined")
+
+      << (repair == core::shellman ||
+          repair == core::wendroff ? "\n * " : "\n   ")
+      << "update_bool    = " << (
+         update_bool    == serial_update_bool    || update_bool    == NULL
+         ? "default (serial)" : "user-defined")
+
+      << '\n'
+   ;
+
+   core_end("print_general");
+}
+
+}
+
+
+
+// =============================================================================
+// Print_element
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+// Print_element unroller
+template<int num, class multiple>
+inline void print_element(
+   const twoint<num,num>, std::ostringstream &, const multiple &
+) {
+   // stub
+}
+
+template<int n, int num, class multiple>
+inline void print_element(
+   const twoint<n,num>, std::ostringstream &oss, const multiple &val
+) {
+   if (n) oss << ',';
+   oss << core_into(val,n);
+   print_element(twoint<n+1,num>(), oss, val);
+}
+
+
+
+// Print_element splitter: integer<1 vs. num>
+template<class multiple>
+inline void print_element(
+   const integer<1>, std::ostringstream &oss, const multiple &val
+) {
+   // for scalar types
+   oss << val;
+}
+
+template<int num, class multiple>
+inline void print_element(
+   const integer<num>, std::ostringstream &oss, const multiple &val
+) {
+   // for composite types
+   const twoint<0,traits<multiple>::size> start(true);
+
+   oss << '{';
+   print_element(start,oss,val);
+   oss << '}';
+}
+
+
+
+// Print_element
+template<class multiple>
+inline std::ostringstream &print_element(
+   std::ostringstream &oss, const multiple &val
+) {
+   print_element(integer<traits<multiple>::size>(),oss,val);
+   return oss;
+}
+
+}
+}
+
+
+
+// =============================================================================
+// Remapper::print_geometry
+// =============================================================================
+
+namespace core {
+
+// NODE GEOMETRY information
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_node(void) const
+{
+   if (coordinate == core::cartesian)
+      std::cout
+         << '\n'
+         << std::right << std::setw(width   ) << "NODE#"
+         << std::right << std::setw(widthn+3) << "node_old_x"
+         << std::right << std::setw(widthn+3) << "node_old_y"
+         << std::right << std::setw(widthn+3) << "node_new_x"
+         << std::right << std::setw(widthn+3) << "node_new_y"
+         << '\n';
+   else
+      std::cout
+         << '\n'
+         << std::right << std::setw(width   ) << "NODE#"
+         << std::right << std::setw(widthn+3) << "node_old_r"
+         << std::right << std::setw(widthn+3) << "node_old_z"
+         << std::right << std::setw(widthn+3) << "node_new_r"
+         << std::right << std::setw(widthn+3) << "node_new_z"
+         << '\n';
+
+   const int nnode = connectivity == same
+    ? nnode_old
+    : hidden::core_max(nnode_old, nnode_new);
+
+   for (int in = 0;  in < nnode;  ++in) {
+      std::ostringstream oss;  oss << '[' << in << ']';
+      std::cout << std::right << std::setw(width) << oss.str();
+
+      if (connectivity == core::same) {
+         // same connectivity
+         std::cout
+            << "   " << std::right << std::setw(widthn) << node_old_x[in]
+            << "   " << std::right << std::setw(widthn) << node_old_y[in]
+            << "   " << std::right << std::setw(widthn) << node_new_x[in]
+            << "   " << std::right << std::setw(widthn) << node_new_y[in]
+            << '\n';
+
+      } else {
+         // different connectivity
+         if (in < nnode_old)
+            std::cout
+               << "   " << std::right << std::setw(widthn) << node_old_x[in]
+               << "   " << std::right << std::setw(widthn) << node_old_y[in];
+         else
+            std::cout
+               << "   " << std::right << std::setw(widthn)
+               << hidden::char_noentry
+               << "   " << std::right << std::setw(widthn)
+               << hidden::char_noentry;
+         if (in < nnode_new)
+            std::cout
+               << "   " << std::right << std::setw(widthn) << node_new_x[in]
+               << "   " << std::right << std::setw(widthn) << node_new_y[in];
+         else
+            std::cout
+               << "   " << std::right << std::setw(widthn)
+               << hidden::char_noentry
+               << "   " << std::right << std::setw(widthn)
+               << hidden::char_noentry;
+         std::cout << '\n';
+      }
+   }
+}
+
+
+
+// CELL GEOMETRY information
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_cell(void) const
+{
+   if (connectivity == core::same) {
+      // SAME CONNECTIVITY
+
+      std::cout
+         << '\n'
+         << std::right << std::setw(width ) << "CELL#"     << "   "
+         << std::left  << std::setw(9     ) << "cell_type" << "   "
+         << std::left  << std::setw(widthl) << "cell_vert" << "   "
+         << "cell_cell" << '\n';
+
+      for (int ic = 0;  ic < ncell_old;  ++ic) {
+         std::ostringstream oss, cv, cc;
+         oss << '[' << ic << ']';
+
+         cv << '(';
+         const int nvert = size(cell_vert[ic]);
+         for (int jv = 0;  jv < nvert;  ++jv)
+            cv << (jv == 0 ? "" : ",") << cell_vert[ic][jv];
+         cv << ')';
+         cc << '(';
+         const int nnayb = size(cell_cell[ic]);
+         for (int jc = 0;  jc < nnayb;  ++jc)
+            cc << (jc == 0 ? "" : ",") << cell_cell[ic][jc];
+         cc << ')';
+
+         std::cout
+            << std::right << std::setw(width ) << oss.str() << "   "
+            << std::left  << std::setw(9     ) << (
+                  cell_type[ic] == core::real  ? 'r' :
+                  cell_type[ic] == core::ghost ? 'g' : 'b'
+               ) << "   "
+            << std::left  << std::setw(widthl) << cv.str()  << "   "
+            << cc.str() << '\n';
+      }
+
+   } else {
+      // DIFFERENT CONNECTIVITIES
+
+      // old grid
+      std::cout
+         << '\n'
+         << std::right << std::setw(width   ) << "CELL#"         << "   "
+         << std::left  << std::setw(13      ) << "cell_old_type" << "   "
+         << std::left  << std::setw(widthl+4) << "cell_old_vert" << "   "
+         << "cell_old_cell" << '\n';
+
+      for (int ic = 0;  ic < ncell_old;  ++ic) {
+         std::ostringstream oss, cv, cc;
+         oss << '[' << ic << ']';
+
+         cv << '(';
+         const int nvert = size(cell_old_vert[ic]);
+         for (int jv = 0;  jv < nvert;  ++jv)
+            cv << (jv == 0 ? "" : ",") << cell_old_vert[ic][jv];
+         cv << ')';
+         cc << '(';
+         const int nnayb = size(cell_old_cell[ic]);
+         for (int jc = 0;  jc < nnayb;  ++jc)
+            cc << (jc == 0 ? "" : ",") << cell_old_cell[ic][jc];
+         cc << ')';
+
+         std::cout
+            << std::right << std::setw(width   ) << oss.str() << "   "
+            << std::left  << std::setw(13      ) << (
+                  cell_old_type[ic] == core::real   ? 'r' :
+                  cell_old_type[ic] == core::ghost  ? 'g' : 'b'
+               ) << "   "
+            << std::left  << std::setw(widthl+4) << cv.str()  << "   "
+            << cc.str() << '\n';
+      }
+
+      // new grid
+      std::cout
+         << '\n'
+         << std::right << std::setw(width   ) << "CELL#"         << "   "
+         << std::left  << std::setw(13      ) << "cell_new_type" << "   "
+         << std::left  << std::setw(widthl+4) << "cell_new_vert" << "   "
+         << "cell_new_cell" << '\n';
+
+      for (int ic = 0;  ic < ncell_new;  ++ic) {
+         std::ostringstream oss, cv, cc;
+         oss << '[' << ic << ']';
+
+         cv << '(';
+         const int nvert = size(cell_new_vert[ic]);
+         for (int jv = 0;  jv < nvert;  ++jv)
+            cv << (jv == 0 ? "" : ",") << cell_new_vert[ic][jv];
+         cv << ')';
+         cc << '(';
+         const int nnayb = size(cell_new_cell[ic]);
+         for (int jc = 0;  jc < nnayb;  ++jc)
+            cc << (jc == 0 ? "" : ",") << cell_new_cell[ic][jc];
+         cc << ')';
+
+         std::cout
+            << std::right << std::setw(width   ) << oss.str() << "   "
+            << std::left  << std::setw(13      ) << (
+                  cell_new_type[ic] == core::real   ? 'r' :
+                  cell_new_type[ic] == core::ghost  ? 'g' : 'b'
+               ) << "   "
+            << std::left  << std::setw(widthl+4) << cv.str()  << "   "
+            << cc.str() << '\n';
+      }
+   }
+}
+
+
+
+// EDGE GEOMETRY information
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_edge(void) const
+{
+   // zzz maybe use edge_old_* (i.e. with old). Would need to change manual
+   std::cout
+      << '\n'
+      << std::right << std::setw(width   ) << "EDGE#"
+      << std::right << std::setw(widthi+3) << "edge_left"
+      << std::right << std::setw(widthi+4) << "edge_right"
+      << std::right << std::setw(widthi+3) << "edge_vert"
+      << std::right << std::setw(widthi+6) << "(start vert)"
+      << std::right << std::setw(widthi+4) << "(end vert)"
+      << '\n';
+
+   // edge information is strictly for the old grid
+   for (int ie = 0;  ie < nedge_old;  ++ie) {
+      std::ostringstream oss;  oss << '[' << ie << ']';
+
+      const int esn = cell_old_vert
+         [edge_old_left[ie]]
+         [edge_old_vert[ie]];
+
+      const int een = cell_old_vert
+         [ edge_old_left[ie]]
+         [(edge_old_vert[ie]+1) % size(cell_old_vert[edge_old_left[ie]])];
+
+      std::cout
+         <<          std::right << std::setw(width   ) << oss.str()
+         << "   " << std::right << std::setw(widthi  ) << edge_old_left [ie]
+         << "   " << std::right << std::setw(widthi+1) << edge_old_right[ie]
+         << "   " << std::right << std::setw(widthi  ) << edge_old_vert [ie]
+         << "   " << std::right << std::setw(widthi+3) << esn
+         << "   " << std::right << std::setw(widthi+1) << een
+         << '\n';
+   }
+}
+
+
+
+// GEOMETRY
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void remapper<array_multiple,array_geometrical,array_nodal>::
+print_geometry(void) const
+{
+   core_begin("print_geometry");
+
+   std::cout << "\n   GEOMETRY\n";
+   print_node();
+   print_cell();
+   print_edge();
+
+   core_end("print_geometry");
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::print_physics
+// =============================================================================
+
+namespace core {
+
+// OLD PHYSICS information
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_old(void) const
+{
+   std::cout
+      << '\n'
+      << std::right << std::setw(width   ) << "CELL#"
+      << std::right << std::setw(widthp+9) << "cell_old_density"
+      << std::right << std::setw(widthg+8) << "cell_old_volume"
+      << std::right << std::setw(widthp+6) << "cell_old_mass"
+      << '\n';
+
+   for (int ic = 0;  ic < ncell_old;  ++ic) {
+      std::ostringstream oss, oss_cod, oss_com;
+      oss << '[' << ic << ']';
+
+      std::cout
+         << std::right << std::setw(width) << oss.str() << "   "
+         << std::right << std::setw(widthp+6)
+         << hidden::print_element(oss_cod,cell_old_density[ic]).str() << "   ";
+
+      if (cell_old_type[ic] != core::boundary)
+         std::cout
+            << std::right << std::setw(widthg+5) << cell_old_volume[ic];
+      else
+         std::cout
+            << std::right << std::setw(widthg+5) << hidden::char_undefined;
+
+      std::cout << "   ";
+      if (cell_old_type[ic] == core::real)
+         std::cout
+            << std::right << std::setw(widthp+3)
+            << hidden::print_element(oss_com,cell_old_mass[ic]).str();
+      else
+         std::cout
+            << std::right << std::setw(widthp+3) << hidden::char_undefined;
+
+      std::cout << '\n';
+   }
+}
+
+
+
+// NEW PHYSICS information
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_new(void) const
+{
+   std::cout
+      << '\n'
+      << std::right << std::setw(width   ) << "CELL#"
+      << std::right << std::setw(widthp+9) << "cell_new_density"
+      << std::right << std::setw(widthg+8) << "cell_new_volume"
+      << std::right << std::setw(widthp+6) << "cell_new_mass"
+      << '\n';
+
+   for (int ic = 0;  ic < ncell_new;  ++ic) {
+      std::ostringstream oss, oss_cnd, oss_cnm;
+      oss << '[' << ic << ']';
+
+      std::cout
+         << std::right << std::setw(width) << oss.str();
+
+      if ((connectivity == core::same ? cell_old_type[ic] : cell_new_type[ic])
+          == core::real)
+         std::cout
+            << "   " << std::right << std::setw(widthp+6)
+            << hidden::print_element(oss_cnd,cell_new_density[ic]).str()
+            << "   " << std::right << std::setw(widthg+5)
+            << cell_new_volume [ic]
+            << "   " << std::right << std::setw(widthp+3)
+            << hidden::print_element(oss_cnm,cell_new_mass   [ic]).str();
+      else
+         std::cout
+            << "   " << std::right << std::setw(widthp+6)
+            << hidden::char_undefined
+            << "   " << std::right << std::setw(widthg+5)
+            << hidden::char_undefined
+            << "   " << std::right << std::setw(widthp+3)
+            << hidden::char_undefined;
+
+      std::cout << '\n';
+   }
+}
+
+
+
+// PHYSICS
+template<class array_multiple, class array_geometrical, class array_nodal>
+inline void remapper<array_multiple,array_geometrical,array_nodal>::
+print_physics(void) const
+{
+   core_begin("print_physics");
+
+   std::cout << "\n   PHYSICS\n";
+   print_old();
+   print_new();
+
+   core_end("print_physics");
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::print_remapping
+// =============================================================================
+
+namespace core {
+
+// REMAPPING
+template<class array_multiple, class array_geometrical, class array_nodal>
+void remapper<array_multiple,array_geometrical,array_nodal>::
+print_remapping(void) const
+{
+   core_begin("print_remapping");
+
+   std::cout << "\n   REMAPPING\n";
+
+   if (coordinate == core::cartesian)
+      std::cout
+         << '\n'
+         << std::right << std::setw(width    ) << "CELL#"
+         << std::right << std::setw(widthg+ 3) << "cell_old_x"
+         << std::right << std::setw(widthg+ 3) << "cell_old_y"
+         << std::right << std::setw(widthp+13) << "cell_old_density_min"
+         << std::right << std::setw(widthp+13) << "cell_old_density_max"
+         << std::right << std::setw(widthp+16) << "cell_old_density_grad_x"
+         << std::right << std::setw(widthp+16) << "cell_old_density_grad_y"
+         << std::right << std::setw(widthp+10) << "cell_new_mass_min"
+         << std::right << std::setw(widthp+10) << "cell_new_mass_max"
+         << '\n';
+   else
+      std::cout
+         << '\n'
+         << std::right << std::setw(width    ) << "CELL#"
+         << std::right << std::setw(widthg+ 3) << "cell_old_r"
+         << std::right << std::setw(widthg+ 3) << "cell_old_z"
+         << std::right << std::setw(widthp+13) << "cell_old_density_min"
+         << std::right << std::setw(widthp+13) << "cell_old_density_max"
+         << std::right << std::setw(widthp+16) << "cell_old_density_grad_r"
+         << std::right << std::setw(widthp+16) << "cell_old_density_grad_z"
+         << std::right << std::setw(widthp+10) << "cell_new_mass_min"
+         << std::right << std::setw(widthp+10) << "cell_new_mass_max"
+         << '\n';
+
+   const int ncell = connectivity == same
+    ? ncell_old
+    : hidden::core_max(ncell_old, ncell_new);
+
+   for (int ic = 0;  ic < ncell;  ++ic) {
+      std::ostringstream oss;  oss << '[' << ic << ']';
+
+      std::cout
+         << std::right << std::setw(width) << oss.str();
+      if (ic < ncell_old)
+         std::cout
+            << "   " << std::right << std::setw(widthg) << cell_old_x[ic]
+            << "   " << std::right << std::setw(widthg) << cell_old_y[ic];
+      else
+         std::cout
+            << "   " << std::right << std::setw(widthg) << hidden::char_noentry
+            << "   " << std::right << std::setw(widthg) << hidden::char_noentry;
+
+      std::ostringstream oss_cdmin, oss_cdgx, oss_cnmmin;
+      std::ostringstream oss_cdmax, oss_cdgy, oss_cnmmax;
+
+      // cell_density_[min|max]
+      if (ic < ncell_old && cell_type[ic] == core::real)
+         std::cout
+            << "   " << std::right << std::setw(widthp+10)
+            << hidden::print_element(oss_cdmin, cell_old_density_min[ic]).str()
+            << "   " << std::right << std::setw(widthp+10)
+            << hidden::print_element(oss_cdmax, cell_old_density_max[ic]).str();
+      else if (ic < ncell_old)
+         std::cout
+            << "   " << std::right << std::setw(widthp+10)
+            << hidden::char_undefined
+            << "   " << std::right << std::setw(widthp+10)
+            << hidden::char_undefined;
+      else
+         std::cout
+            << "   " << std::right << std::setw(widthp+10)
+            << hidden::char_noentry
+            << "   " << std::right << std::setw(widthp+10)
+            << hidden::char_noentry;
+
+      // cell_old_density_grad_[xy]
+      if (ic < ncell_old && cell_type[ic] != core::boundary)
+         std::cout
+            << "   " << std::right << std::setw(widthp+13)
+            << hidden::print_element
+                 (oss_cdgx,  cell_old_density_grad_x[ic]).str()
+            << "   " << std::right << std::setw(widthp+13)
+            << hidden::print_element
+                 (oss_cdgy,  cell_old_density_grad_y[ic]).str();
+      else if (ic < ncell_old)
+         std::cout
+            << "   " << std::right << std::setw(widthp+13)
+            << hidden::char_undefined
+            << "   " << std::right << std::setw(widthp+13)
+            << hidden::char_undefined;
+      else
+         std::cout
+            << "   " << std::right << std::setw(widthp+13)
+            << hidden::char_noentry
+            << "   " << std::right << std::setw(widthp+13)
+            << hidden::char_noentry;
+
+      // cell_new_mass_[min|max]
+      if (ic < cell_new_num() &&
+          (connectivity == core::same ? cell_old_type[ic] : cell_new_type[ic])
+          == core::real)
+         std::cout
+            << "   " << std::right << std::setw(widthp+7)
+            << hidden::print_element(oss_cnmmin, cell_new_mass_min[ic]).str()
+            << "   " << std::right << std::setw(widthp+7)
+            << hidden::print_element(oss_cnmmax, cell_new_mass_max[ic]).str();
+      else if (ic < cell_new_num())
+         std::cout
+            << "   " << std::right << std::setw(widthp+7)
+            << hidden::char_undefined
+            << "   " << std::right << std::setw(widthp+7)
+            << hidden::char_undefined;
+      else
+         std::cout
+            << "   " << std::right << std::setw(widthp+7)
+            << hidden::char_noentry
+            << "   " << std::right << std::setw(widthp+7)
+            << hidden::char_noentry;
+
+      std::cout << '\n';
+   }
+
+   core_end("print_remapping");
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::print
+// =============================================================================
+
+namespace core {
+
+// Print
+template<class array_multiple, class array_geometrical, class array_nodal>
+const
+remapper<array_multiple,array_geometrical,array_nodal> &
+remapper<array_multiple,array_geometrical,array_nodal>::print(
+   const bool general,
+   const bool geometry,
+   const bool physics,
+   const bool remapping
+) const {
+   core_begin("print");
+
+   check();
+
+   if (width < hidden::CORE_MINIMUM_WIDTH) {
+      std::core_cerr
+         << "[core] Note: width = "  << width
+         << "; changing to minimum allowed value of "
+         << hidden::CORE_MINIMUM_WIDTH  << ".\n";
+      width  = hidden::CORE_MINIMUM_WIDTH ;
+   }
+
+   if (widthi < hidden::CORE_MINIMUM_WIDTHI) {
+      std::core_cerr
+         << "[core] Note: widthi = " << widthi
+         << "; changing to minimum allowed value of "
+         << hidden::CORE_MINIMUM_WIDTHI << ".\n";
+      widthi = hidden::CORE_MINIMUM_WIDTHI;
+   }
+
+   if (widthl < hidden::CORE_MINIMUM_WIDTHL) {
+      std::core_cerr
+         << "[core] Note: widthl = " << widthl
+         << "; changing to minimum allowed value of "
+         << hidden::CORE_MINIMUM_WIDTHL << ".\n";
+      widthl = hidden::CORE_MINIMUM_WIDTHL;
+   }
+
+   if (widthp < hidden::CORE_MINIMUM_WIDTHP) {
+      std::core_cerr
+         << "[core] Note: widthp = " << widthp
+         << "; changing to minimum allowed value of "
+         << hidden::CORE_MINIMUM_WIDTHP << ".\n";
+      widthp = hidden::CORE_MINIMUM_WIDTHP;
+   }
+
+   if (widthg < hidden::CORE_MINIMUM_WIDTHG) {
+      std::core_cerr
+         << "[core] Note: widthg = " << widthg
+         << "; changing to minimum allowed value of "
+         << hidden::CORE_MINIMUM_WIDTHG << ".\n";
+      widthg = hidden::CORE_MINIMUM_WIDTHG;
+   }
+
+   if (widthn < hidden::CORE_MINIMUM_WIDTHN) {
+      std::core_cerr
+         << "[core] Note: widthn = " << widthn
+         << "; changing to minimum allowed value of "
+         << hidden::CORE_MINIMUM_WIDTHN << ".\n";
+      widthn = hidden::CORE_MINIMUM_WIDTHN;
+   }
+
+   std::cout
+      << "remapper {\n";
+
+   if (general  ) print_general  ();
+   if (geometry ) print_geometry ();
+   if (physics  ) print_physics  ();
+   if (remapping) print_remapping();
+
+   std::cout << "}\n";
+
+   core_end("print");
+   return *this;
+}
+
+}
+
+
+
+// =============================================================================
+// Remapper::check
+// =============================================================================
+
+namespace core {
+
+template<class array_multiple, class array_geometrical, class array_nodal>
+const
+remapper<array_multiple,array_geometrical,array_nodal> &
+remapper<array_multiple,array_geometrical,array_nodal>::check(void) const
+{
+   core_begin("check");
+
+   // geometry
+   if (coordinate == core::cartesian) {
+      assert(size(node_old_x) == node_old_num());
+      assert(size(node_old_y) == node_old_num());
+      assert(size(node_new_x) == node_new_num());
+      assert(size(node_new_y) == node_new_num());
+   } else {
+      assert(size(node_old_r) == node_old_num());
+      assert(size(node_old_z) == node_old_num());
+      assert(size(node_new_r) == node_new_num());
+      assert(size(node_new_z) == node_new_num());
+   }
+
+   assert(size(cell_old_type) == cell_old_num());
+   assert(size(cell_old_vert) == cell_old_num());
+   assert(size(cell_old_cell) == cell_old_num());
+
+   assert(size(edge_old_left) == edge_old_num());
+   assert(size(edge_old_right) == edge_old_num());
+   assert(size(edge_old_vert) == edge_old_num());
+
+   if (connectivity == core::different) {
+      assert(size(cell_new_type) == cell_new_num());
+      assert(size(cell_new_vert) == cell_new_num());
+      assert(size(cell_new_cell) == cell_new_num());
+   }
+
+   // physics
+   assert(size(cell_old_density) == cell_old_num());
+   assert(size(cell_old_volume) == cell_old_num());
+   assert(size(cell_old_mass) == cell_old_num());
+
+   if (coordinate == core::cartesian) {
+      assert(size(cell_old_x) == cell_old_num());
+      assert(size(cell_old_y) == cell_old_num());
+   } else {
+      assert(size(cell_old_r) == cell_old_num());
+      assert(size(cell_old_z) == cell_old_num());
+   }
+
+   assert(size(cell_old_density_min) == cell_old_num());
+   assert(size(cell_old_density_max) == cell_old_num());
+
+   if (coordinate == core::cartesian) {
+      assert(size(cell_old_density_grad_x) == cell_old_num());
+      assert(size(cell_old_density_grad_y) == cell_old_num());
+   } else {
+      assert(size(cell_old_density_grad_r) == cell_old_num());
+      assert(size(cell_old_density_grad_z) == cell_old_num());
+   }
+
+   assert(size(cell_new_mass_min) == cell_new_num());
+   assert(size(cell_new_mass_max) == cell_new_num());
+
+   assert(size(cell_new_density) == cell_new_num());
+   assert(size(cell_new_volume) == cell_new_num());
+   assert(size(cell_new_mass) == cell_new_num());
+
+   if (repair == core::shellman) {
+      assert(size(cell_new_d) == cell_new_num());
+      assert(size(cell_new_g) == cell_new_num());
+      assert(size(cell_new_s) == cell_new_num());
+      assert(size(cell_new_mprime) == cell_new_num());
+      assert(size(cell_new_dprime) == cell_new_num());
+   }
+
+   if (connectivity == core::different)
+      assert(size(cell_new_to_old) == cell_new_num());
+
+   if (repair == core::wendroff)
+      assert(size(cell_new_d) == cell_new_num());
+
+   core_end("check");
+   return *this;
+}
+
+}
+
+#endif

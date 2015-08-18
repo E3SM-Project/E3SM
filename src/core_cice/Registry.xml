@@ -16,6 +16,11 @@
 		<dim name="nIceLayers"         definition="7"/>
 		<dim name="nSnowLayers"        definition="1"/>
 		<dim name="nHemispheres"       definition="3"/>
+		<dim name="nQuadPoints"        definition="6"/>
+		<dim name="nTriPerEdge"        definition="5"/>
+		<dim name="maxCellsPerEdgeRemap"    definition="6"/>
+		<dim name="maxEdgesPerEdgeRemap"    definition="6"/>
+		<dim name="maxVerticesPerEdgeRemap" definition="8"/>
 		<dim name="nIceLayersP1"       definition="nIceLayers+1"/>
 		<dim name="nCategoriesP1"      definition="nCategories+1"/>
 		<dim name="nAerosols"          definition="1"/>
@@ -98,6 +103,10 @@
 	  	<nml_option name="config_limit_ice_concentration"               type="logical"       default_value="true"/>
 	  	<nml_option name="config_conservation_check"                    type="logical"       default_value="true"/>
 	  	<nml_option name="config_clean_tracers"                         type="logical"       default_value="true"/>
+		<nml_option name="config_advection_type" type="character" default_value="upwind" units="unitless"
+					description="Type of advection scheme (upwind or incremental remapping)"
+					possible_values="'upwind' and 'incremental_remap'"
+		/>
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"
@@ -342,6 +351,17 @@
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
 	    <var name="surfaceTemperature"/>
+<<<<<<< HEAD
+=======
+	    <var name="iceThickness"/>
+	    <var name="snowThickness"/>
+	    <var name="iceAreaCategoryPlot"/>
+	    <var name="iceVolumeCategoryPlot"/>
+	    <var name="snowVolumeCategoryPlot"/>
+	    <var name="surfaceTemperaturePlot"/>
+	    <var name="iceThicknessPlot"/>
+	    <var name="snowThicknessPlot"/>
+>>>>>>> Merged incremental remap changes from bill/cice/incremental_remap
 	    <var name="iceAreaCell"/>
 	    <var name="iceAreaVertex"/>
 	    <var name="iceVolumeCell"/>
@@ -443,6 +463,9 @@
 		<var name="dcEdge"                            type="real"     dimensions="nEdges"/>
 		<var name="areaCell"                          type="real"     dimensions="nCells"/>
 		<var name="areaTriangle"                      type="real"     dimensions="nVertices"/>
+		<var name="edgeNormalVectors"                 type="real"     dimensions="R3 nEdges"/>
+		<var name="localVerticalUnitVectors"          type="real"     dimensions="R3 nCells"/>
+		<var name="cellTangentPlane"                  type="real"     dimensions="R3 TWO nCells"/>
 		<var name="cellsOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
 		<var name="verticesOnCell"                    type="integer"  dimensions="maxEdges nCells"/>
 		<var name="verticesOnEdge"                    type="integer"  dimensions="TWO nEdges"/>
@@ -450,6 +473,7 @@
 		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
 		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
 		<var name="fVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="coeffs_reconstruct"                type="real"     dimensions="R3 maxEdges nCells"/>
 		<var name="POPindxi"                          type="integer"  dimensions="nCells"/>
 		<var name="POPindxj"                          type="integer"  dimensions="nCells"/>
 		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"/>
@@ -489,6 +513,7 @@
 
 	</packages>
 
+<!--TODO WHL - Convert iceVolume and snowVolume to iceThickness and snowThickness (and change the source code accordingly) -->
 	<!-- ice state -->
 	<var_struct name="tracers" time_levs="2">
 		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="iceAreaCategory"/>
@@ -509,24 +534,6 @@
 		<var name="snowBodyAerosol"                   type="real"     dimensions="nAerosols nCategories nCells Time"    name_in_code="snowBodyAerosol"       packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosol"              type="real"     dimensions="nAerosols nCategories nCells Time"    name_in_code="iceScatteringAerosol"  packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosol"                    type="real"     dimensions="nAerosols nCategories nCells Time"    name_in_code="iceBodyAerosol"        packages="pkgColumnTracerAerosols"/>
-	</var_struct>
-	<var_struct name="tracer_tendencies" time_levs="1">
-		<var name="iceAreaCategoryTend"               type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategoryTend"             type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategoryTend"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperatureTend"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpyTend"                   type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpy"/>
-		<var name="iceSalinityTend"                   type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinity"/>
-		<var name="snowEnthalpyTend"                  type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
-	</var_struct>
-	<var_struct name="tracer_edge_fluxes" time_levs="1">
-		<var name="iceAreaCategoryEdgeFlux"           type="real"     dimensions="ONE nCategories nEdges"          name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategoryEdgeFlux"         type="real"     dimensions="ONE nCategories nEdges"          name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategoryEdgeFlux"        type="real"     dimensions="ONE nCategories nEdges"          name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperatureEdgeFlux"        type="real"     dimensions="ONE nCategories nEdges"          name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpyEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceEnthalpy"/>
-		<var name="iceSalinityEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceSalinity"/>
-		<var name="snowEnthalpyEdgeFlux"              type="real"     dimensions="nSnowLayers nCategories nEdges"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="tracers_aggregate" time_levs="1">
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"          name_in_code="iceAreaCell"/>
@@ -558,14 +565,163 @@
 		<var name="totalMassCell"                     type="real"     dimensions="nCells Time"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices Time"           name_in_code="totalMassVertex"/>
 	</var_struct>
+	<var_struct name="tracer_tendencies" time_levs="1">
+		<var name="iceAreaCategoryTend"               type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryTend"/>
+		<var name="iceVolumeCategoryTend"             type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryTend"/>
+		<var name="snowVolumeCategoryTend"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryTend"/>
+		<var name="surfaceTemperatureTend"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureTend"/>
+		<var name="iceEnthalpyTend"                   type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyTend"/>
+		<var name="iceSalinityTend"                   type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityTend"/>
+		<var name="snowEnthalpyTend"                  type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyTend"/>
+	</var_struct>
+	<var_struct name="tracer_masks" time_levs="1">
+		<var name="iceAreaCategoryMask"               type="integer"  dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryMask"/>
+		<var name="iceVolumeCategoryMask"             type="integer"  dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryMask"/>
+		<var name="snowVolumeCategoryMask"            type="integer"  dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryMask"/>
+		<var name="surfaceTemperatureMask"            type="integer"  dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureMask"/>
+		<var name="iceEnthalpyMask"                   type="integer"  dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyMask"/>
+		<var name="iceSalinityMask"                   type="integer"  dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityMask"/>
+		<var name="snowEnthalpyMask"                  type="integer"  dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyMask"/>
+	</var_struct>
+	<var_struct name="tracer_edge_fluxes" time_levs="1">
+		<var name="iceAreaCategoryEdgeFlux"           type="real"     dimensions="ONE nCategories nEdges"          name_in_code="iceAreaCategoryEdgeFlux"/>
+		<var name="iceVolumeCategoryEdgeFlux"         type="real"     dimensions="ONE nCategories nEdges"          name_in_code="iceVolumeCategoryEdgeFlux"/>
+		<var name="snowVolumeCategoryEdgeFlux"        type="real"     dimensions="ONE nCategories nEdges"          name_in_code="snowVolumeCategoryEdgeFlux"/>
+		<var name="surfaceTemperatureEdgeFlux"        type="real"     dimensions="ONE nCategories nEdges"          name_in_code="surfaceTemperatureEdgeFlux"/>
+		<var name="iceEnthalpyEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceEnthalpyEdgeFlux"/>
+		<var name="iceSalinityEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceSalinityEdgeFlux"/>
+		<var name="snowEnthalpyEdgeFlux"              type="real"     dimensions="nSnowLayers nCategories nEdges"  name_in_code="snowEnthalpyEdgeFlux"/>
+	</var_struct>
+	<var_struct name="tracer_products" time_levs="1">
+		<var name="iceAreaCategoryProduct"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryProduct"/>
+		<var name="iceVolumeCategoryProduct"          type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryProduct"/>
+		<var name="snowVolumeCategoryProduct"         type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryProduct"/>
+		<var name="surfaceTemperatureProduct"         type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureProduct"/>
+		<var name="iceEnthalpyProduct"                type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyProduct"/>
+		<var name="iceSalinityProduct"                type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityProduct"/>
+		<var name="snowEnthalpyProduct"               type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyProduct"/>
+	</var_struct>
+	<var_struct name="tracer_triangles" time_levs="1">
+		<var name="iceAreaCategoryTriangle"           type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="iceAreaCategoryTriangle"/>
+		<var name="iceVolumeCategoryTriangle"         type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="iceVolumeCategoryTriangle"/>
+		<var name="snowVolumeCategoryTriangle"        type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="snowVolumeCategoryTriangle"/>
+		<var name="surfaceTemperatureTriangle"        type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="surfaceTemperatureTriangle"/>
+		<var name="iceEnthalpyTriangle"               type="real"     dimensions="nIceLayers nCategories nQuadPoints nTriPerEdge nEdges"   name_in_code="iceEnthalpyTriangle"/>
+		<var name="iceSalinityTriangle"               type="real"     dimensions="nIceLayers nCategories nQuadPoints nTriPerEdge nEdges"   name_in_code="iceSalinityTriangle"/>
+		<var name="snowEnthalpyTriangle"              type="real"     dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdge nEdges"  name_in_code="snowEnthalpyTriangle"/>
+	</var_struct>
+	<var_struct name="tracer_barycenter" time_levs="1">
+		<var name="iceAreaCategoryBarycenterx"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryBarycenterx"/>
+		<var name="iceAreaCategoryBarycentery"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryBarycentery"/>
+		<var name="iceVolumeCategoryBarycenterx"      type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryBarycenterx"/>
+		<var name="iceVolumeCategoryBarycentery"      type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryBarycentery"/>
+		<var name="snowVolumeCategoryBarycenterx"     type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryBarycenterx"/>
+		<var name="snowVolumeCategoryBarycentery"     type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryBarycentery"/>
+		<var name="surfaceTemperatureBarycenterx"     type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureBarycenterx"/>
+		<var name="surfaceTemperatureBarycentery"     type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureBarycentery"/>
+		<var name="iceEnthalpyBarycenterx"            type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyBarycenterx"/>
+		<var name="iceEnthalpyBarycentery"            type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyBarycentery"/>
+		<var name="iceSalinityBarycenterx"            type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityBarycenterx"/>
+		<var name="iceSalinityBarycentery"            type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityBarycentery"/>
+		<var name="snowEnthalpyBarycenterx"           type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyBarycenterx"/>
+		<var name="snowEnthalpyBarycentery"           type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyBarycentery"/>
+	</var_struct>
+	<var_struct name="tracer_reconstruction" time_levs="1">
+		<var name="iceAreaCategoryCenter"             type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryCenter"/>
+		<var name="iceAreaCategoryGradx"              type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryGradx"/>
+		<var name="iceAreaCategoryGrady"              type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryGrady"/>
+		<var name="iceVolumeCategoryCenter"           type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryCenter"/>
+		<var name="iceVolumeCategoryGradx"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryGradx"/>
+		<var name="iceVolumeCategoryGrady"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryGrady"/>
+		<var name="snowVolumeCategoryCenter"          type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryCenter"/>
+		<var name="snowVolumeCategoryGradx"           type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryGradx"/>
+		<var name="snowVolumeCategoryGrady"           type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryGrady"/>
+		<var name="surfaceTemperatureCenter"          type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureCenter"/>
+		<var name="surfaceTemperatureGradx"           type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureGradx"/>
+		<var name="surfaceTemperatureGrady"           type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureGrady"/>
+		<var name="iceEnthalpyCenter"                 type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyCenter"/>
+		<var name="iceEnthalpyGradx"                  type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyGradx"/>
+		<var name="iceEnthalpyGrady"                  type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyGrady"/>
+		<var name="iceSalinityCenter"                 type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityCenter"/>
+		<var name="iceSalinityGradx"                  type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityGradx"/>
+		<var name="iceSalinityGrady"                  type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityGrady"/>
+		<var name="snowEnthalpyCenter"                type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyCenter"/>
+		<var name="snowEnthalpyGradx"                 type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyGradx"/>
+		<var name="snowEnthalpyGrady"                 type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyGrady"/>
+	</var_struct>
 	<var_struct name="tracer_conservation" time_levs="2">
-		<var name="iceAreaCategoryCons"               type="real"     dimensions="ONE nCategories"          name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategoryCons"             type="real"     dimensions="ONE nCategories"          name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategoryCons"            type="real"     dimensions="ONE nCategories"          name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperatureCons"            type="real"     dimensions="ONE nCategories"          name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpyCons"                   type="real"     dimensions="nIceLayers nCategories"   name_in_code="iceEnthalpy"/>
-		<var name="iceSalinityCons"                   type="real"     dimensions="nIceLayers nCategories"   name_in_code="iceSalinity"/>
-		<var name="snowEnthalpyCons"                  type="real"     dimensions="nSnowLayers nCategories"  name_in_code="snowEnthalpy"/>
+		<var name="iceAreaCategoryCons"               type="real"     dimensions="ONE nCategories"          name_in_code="iceAreaCategoryCons"/>
+		<var name="iceVolumeCategoryCons"             type="real"     dimensions="ONE nCategories"          name_in_code="iceVolumeCategoryCons"/>
+		<var name="snowVolumeCategoryCons"            type="real"     dimensions="ONE nCategories"          name_in_code="snowVolumeCategoryCons"/>
+		<var name="surfaceTemperatureCons"            type="real"     dimensions="ONE nCategories"          name_in_code="surfaceTemperatureCons"/>
+		<var name="iceEnthalpyCons"                   type="real"     dimensions="nIceLayers nCategories"   name_in_code="iceEnthalpyCons"/>
+		<var name="iceSalinityCons"                   type="real"     dimensions="nIceLayers nCategories"   name_in_code="iceSalinityCons"/>
+		<var name="snowEnthalpyCons"                  type="real"     dimensions="nSnowLayers nCategories"  name_in_code="snowEnthalpyCons"/>
+	</var_struct>
+	<var_struct name="tracer_monotonicity" time_levs="1">
+		<var name="iceAreaCategoryLocalMin"           type="real"     dimensions="ONE nCategories nCells"   name_in_code="iceAreaCategoryLocalMin"/>
+		<var name="iceAreaCategoryLocalMax"           type="real"     dimensions="ONE nCategories nCells"   name_in_code="iceAreaCategoryLocalMax"/>
+		<var name="iceVolumeCategoryLocalMin"         type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryLocalMin"/>
+		<var name="iceVolumeCategoryLocalMax"         type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryLocalMax"/>
+		<var name="snowVolumeCategoryLocalMin"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryLocalMin"/>
+		<var name="snowVolumeCategoryLocalMax"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="snowVolumeCategoryLocalMax"/>
+		<var name="surfaceTemperatureLocalMin"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureLocalMin"/>
+		<var name="surfaceTemperatureLocalMax"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="surfaceTemperatureLocalMax"/>
+		<var name="iceEnthalpyLocalMin"               type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyLocalMin"/>
+		<var name="iceEnthalpyLocalMax"               type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceEnthalpyLocalMax"/>
+		<var name="iceSalinityLocalMin"               type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityLocalMin"/>
+		<var name="iceSalinityLocalMax"               type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinityLocalMax"/>
+		<var name="snowEnthalpyLocalMin"              type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyLocalMin"/>
+		<var name="snowEnthalpyLocalMax"              type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyLocalMax"/>
+	</var_struct>
+
+	<var_struct name="rotated_mesh" time_levs="1">
+		<var name="xCellRotate"                       type="real"     dimensions="nCells"                          name_in_code="xCellRotate"/>
+		<var name="yCellRotate"                       type="real"     dimensions="nCells"                          name_in_code="yCellRotate"/>
+		<var name="zCellRotate"                       type="real"     dimensions="nCells"                          name_in_code="zCellRotate"/>
+		<var name="xVertexRotate"                     type="real"     dimensions="nVertices"                       name_in_code="xVertexRotate"/>
+		<var name="yVertexRotate"                     type="real"     dimensions="nVertices"                       name_in_code="yVertexRotate"/>
+		<var name="zVertexRotate"                     type="real"     dimensions="nVertices"                       name_in_code="zVertexRotate"/>
+		<var name="xEdgeRotate"                       type="real"     dimensions="nEdges"                          name_in_code="xEdgeRotate"/>
+		<var name="yEdgeRotate"                       type="real"     dimensions="nEdges"                          name_in_code="yEdgeRotate"/>
+		<var name="zEdgeRotate"                       type="real"     dimensions="nEdges"                          name_in_code="zEdgeRotate"/>
+	</var_struct>
+
+	<!-- incremental remapping -->
+	<var_struct name="incremental_remap" time_levs="1">
+		<var name="xTriangle"                         type="real"     dimensions="nQuadPoints nTriPerEdge nEdges"  name_in_code="xTriangle"/>
+		<var name="yTriangle"                         type="real"     dimensions="nQuadPoints nTriPerEdge nEdges"  name_in_code="yTriangle"/>
+		<var name="iCellTriangle"                     type="integer"  dimensions="nTriPerEdge nEdges"              name_in_code="iCellTriangle"/>
+		<var name="triangleArea"                      type="real"     dimensions="nTriPerEdge nEdges"              name_in_code="triangleArea"/>
+		<var name="departurePoint"                    type="real"     dimensions="TWO nVertices"                   name_in_code="departurePoint"/>	
+		<var name="remapEdge"                         type="integer"  dimensions="nEdges"                          name_in_code="remapEdge"/>
+		<var name="cellsOnEdgeRemap"                  type="integer"  dimensions="maxCellsPerEdgeRemap nEdges"     name_in_code="cellsOnEdgeRemap"/>
+		<var name="edgesOnEdgeRemap"                  type="integer"  dimensions="maxEdgesPerEdgeRemap nEdges"     name_in_code="edgesOnEdgeRemap"/>
+		<var name="xVertexOnCell"                     type="real"     dimensions="maxEdges nCells"                 name_in_code="xVertexOnCell"/>
+		<var name="yVertexOnCell"                     type="real"     dimensions="maxEdges nCells"                 name_in_code="yVertexOnCell"/>
+		<var name="xVertexOnEdge"                     type="real"     dimensions="maxVerticesPerEdgeRemap nEdges"  name_in_code="xVertexOnEdge"/>
+		<var name="yVertexOnEdge"                     type="real"     dimensions="maxVerticesPerEdgeRemap nEdges"  name_in_code="yVertexOnEdge"/>
+		<var name="transCellToGlobal"                 type="real"     dimensions="R3 R3 nCells"             name_in_code="transCellToGlobal"/>
+		<var name="transGlobalToCell"                 type="real"     dimensions="R3 R3 nCells"             name_in_code="transGlobalToCell"/>
+		<var name="transVertexToGlobal"               type="real"     dimensions="R3 R3 nVertices"          name_in_code="transVertexToGlobal"/>
+		<var name="transGlobalToVertex"               type="real"     dimensions="R3 R3 nVertices"          name_in_code="transGlobalToVertex"/>
+		<var name="transEdgeToGlobal"                 type="real"     dimensions="R3 R3 nEdges"             name_in_code="transEdgeToGlobal"/>
+		<var name="transGlobalToEdge"                 type="real"     dimensions="R3 R3 nEdges"             name_in_code="transGlobalToEdge"/>
+                <var name="xAvgCell"                          type="real"     dimensions="nCells"                   name_in_code="xAvgCell"/>
+                <var name="yAvgCell"                          type="real"     dimensions="nCells"                   name_in_code="yAvgCell"/>
+                <var name="xxAvgCell"                         type="real"     dimensions="nCells"                   name_in_code="xxAvgCell"/>
+                <var name="xyAvgCell"                         type="real"     dimensions="nCells"                   name_in_code="xyAvgCell"/>
+                <var name="yyAvgCell"                         type="real"     dimensions="nCells"                   name_in_code="yyAvgCell"/>
+                <var name="xxxAvgCell"                        type="real"     dimensions="nCells"                   name_in_code="xxxAvgCell"/>
+                <var name="xxyAvgCell"                        type="real"     dimensions="nCells"                   name_in_code="xxyAvgCell"/>
+                <var name="xyyAvgCell"                        type="real"     dimensions="nCells"                   name_in_code="xyyAvgCell"/>
+                <var name="yyyAvgCell"                        type="real"     dimensions="nCells"                   name_in_code="yyyAvgCell"/>
+                <var name="xxxxAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xxxxAvgCell"/>
+                <var name="xxxyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xxxyAvgCell"/>
+                <var name="xxyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xxyyAvgCell"/>
+                <var name="xyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xyyyAvgCell"/>
+                <var name="yyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="yyyyAvgCell"/>
+		<var name="cellsOnEdgeSign"                   type="integer"  dimensions="nEdges"                          name_in_code="cellsOnEdgeSign"/>
 	</var_struct>
 
 	<!--atmos coupling -->
@@ -871,9 +1027,20 @@
 		<var name="categoryThicknessLimits"           type="real"     dimensions="nCategoriesP1"                    name_in_code="categoryThicknessLimits"/>
 	</var_struct>
 
+<<<<<<< HEAD
 	<!-- Regions -->
 	<var_struct name="regions" time_levs="1">
 		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
+=======
+	<!-- Plotting -->
+	<var_struct name="plotting" time_levs="1">
+		<var name="iceAreaCategoryPlot"               type="real"     dimensions="nCells Time"          name_in_code="iceAreaCategoryPlot"/>
+		<var name="iceVolumeCategoryPlot"             type="real"     dimensions="nCells Time"          name_in_code="iceVolumeCategoryPlot"/>
+		<var name="snowVolumeCategoryPlot"            type="real"     dimensions="nCells Time"          name_in_code="snowVolumeCategoryPlot"/>
+		<var name="surfaceTemperaturePlot"            type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperaturePlot"/>
+		<var name="iceThicknessPlot"                  type="real"     dimensions="nCells Time"          name_in_code="iceThicknessPlot"/>
+		<var name="snowThicknessPlot"                 type="real"     dimensions="nCells Time"          name_in_code="snowThicknessPlot"/>
+>>>>>>> Merged incremental remap changes from bill/cice/incremental_remap
 	</var_struct>
 
 	<!-- Diagnostics -->

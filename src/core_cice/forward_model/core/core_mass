@@ -1,0 +1,45 @@
+/* -*- C++ -*- */
+
+#ifndef CORE_MASS
+#define CORE_MASS
+
+// Mass: compute according to the relationship mass = density * volume.
+
+
+
+// =============================================================================
+// Mass
+// =============================================================================
+
+namespace core {
+namespace hidden {
+
+template<class array_cell_type, class array_multiple, class array_geometrical>
+void mass(
+   // input
+   const int cell_old_num,
+   const array_cell_type &cell_old_type,
+   const array_multiple &cell_old_density,
+   const array_geometrical &cell_old_volume,
+
+   // output
+   array_multiple &cell_old_mass
+) {
+   typedef typename traits<array_multiple>::element multiple;
+   typedef typename traits<multiple>::element physical;
+   const twoint<0,traits<multiple>::size> start(true);
+
+   for (int ic = 0;  ic < cell_old_num;  ++ic)
+      if (cell_old_type[ic] == core::real)
+         multiple_eq_mtp(
+            start,
+            cell_old_mass[ic],
+            cell_old_density[ic],
+            physical(cell_old_volume[ic])
+         );
+}
+
+}
+}
+
+#endif

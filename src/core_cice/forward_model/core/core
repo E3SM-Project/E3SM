@@ -1,0 +1,8 @@
+/* -*- C++ -*- */
+
+#ifndef CORE
+#define CORE
+
+#include "core_"
+
+#endif
