@@ -4,6 +4,13 @@ include (CMakeParseArguments)
 # - Functions for parallel testing with CTest
 #
 
+#==============================================================================
+# - Check the platform
+#
+# Defines the following variables:
+#
+#    PLATFORM - The name of the platform (alcf, ucar, nersc, etc)
+#    PLATFORM_MPIEXEC - The MPIEXEC command name to use when launching tests
 function (check_platform)
 
     if (NOT DEFINED PLATFORM)
@@ -23,9 +30,6 @@ function (check_platform)
             set (PLATFORM_MPIEXEC "execca mpirun.lsf"
                  CACHE STRING "Platform MPI job launch command")
 
-            set (PLATFORM_MPIEXEC_NPF "-n"
-                 CACHE STRING "Platform MPI job launch command")
-
         # Argonne ALCF Machines
         elseif (sitename MATCHES "^mira" OR
                 sitename MATCHES "^cetus" OR
@@ -38,9 +42,6 @@ function (check_platform)
             set (PLATFORM_MPIEXEC "qsub"
                  CACHE STRING "Platform MPI job launch command")
 
-            set (PLATFORM_MPIEXEC_NPF "-n"
-                 CACHE STRING "Platform MPI job launch command")
-
         # NERSC Machines
         elseif (sitename MATCHES "^edison" OR
                 sitename MATCHES "^hopper" OR
@@ -49,7 +50,7 @@ function (check_platform)
             set (PLATFORM "nersc"
                  CACHE STRING "Platform name")             
     
-            set (PLATFORM_MPIEXEC ""
+            set (PLATFORM_MPIEXEC ${MPIEXEC}
                  CACHE STRING "Platform MPI job launch command")
 
         # All other machines (depend upon FindMPI's MPIEXEC variable)
@@ -93,7 +94,7 @@ function (add_mpi_test TESTNAME)
         ### note: no space between -n and num_procs for mpirun.lsf on
         ### yellowstone
         ###
-        set (EXE_CMD execca mpirun.lsf ${exe_cmds} -n${num_procs})
+        set (EXE_CMD ${PLATFORM_MPIEXEC} ${exe_cmds} -n${num_procs})
         
     # Argonne COBALT execution
     elseif (PLATFORM STREQUAL "alcf" )
@@ -113,7 +114,7 @@ function (add_mpi_test TESTNAME)
     # All others
     else()
         set(MPIEXEC_NPF ${MPIEXEC_NUMPROC_FLAG} ${num_procs})
-        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${MPIEXEC_PREFLAGS} ${exe_cmds})
+        set(EXE_CMD ${PLATFORM_MPIEXEC} ${MPIEXEC_NPF} ${MPIEXEC_PREFLAGS} ${exe_cmds})
     endif()
     
     # Add the test to CTest
