@@ -659,7 +659,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(in) :: domain
+      !WHL - Must be intent(inout) to be compatible with interface to mpas_stream_mgr_write
+!!      type (domain_type), intent(in) :: domain
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
