@@ -1746,14 +1746,16 @@ contains
       !-----------------------------------------------------------------
       integer :: iCell, maxLevel, kB, kBBottom, kBTop, kDataAbove, kDataBelow, kData
       real (kind=RKIND) :: dx, dy
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: xSrc ! source data
+      real (kind=RKIND), dimension(nBuoyancyLayers) :: xDst     ! destination data
 
       ! jas issue: the code below works for monotonically decreasing arrays.
       ! however above it expects arguments that are monotonically increasing arrays.
-      xFieldIn   = -xFieldIn
-      xColumnOut = -xColumnOut
+      xSrc = -xFieldIn
+      xDst = -xColumnOut
 
       !-----------------------------------------------------------------
-      ! test for monoticity of xFieldIn
+      ! test for monoticity of xSrc
       !-----------------------------------------------------------------
       ! jas issue : to do
 
@@ -1770,14 +1772,14 @@ contains
          ! find the index of the bottom level of a column
          maxLevel = maxLevelCell(iCell)
 
-         ! Monotonically decreasing xFieldIn required
-         ! Find index of first element in xColumnOut that is inside xFieldIn(:,iCell)
+         ! Monotonically decreasing xSrc required
+         ! Find index of first element in xDst that is inside xSrc(:,iCell)
          kBTop = 1
          do kB = 1, nBuoyancyLayers
             ! the following line ensures that
-            ! if all xColumnOut > xFieldIn(1,iCell) then kBTop = nBuoyancyLayers
+            ! if all xDst > xSrc(1,iCell) then kBTop = nBuoyancyLayers
             kBTop = kB
-            if (xColumnOut(kB) <= xFieldIn(1,iCell) ) then
+            if (xDst(kB) <= xSrc(1,iCell) ) then
                exit
             endif
          enddo
@@ -1786,9 +1788,9 @@ contains
          kBBottom = nBuoyancyLayers
          do kB = nBuoyancyLayers, 1, -1
             ! the following line ensures that
-            ! if all xColumnOut < xFieldIn(1,iCell) then kBBottom = 1
+            ! if all xDst < xSrc(1,iCell) then kBBottom = 1
             kBBottom = kB
-            if (xColumnOut(kB) >= xFieldIn(maxLevel,iCell) ) then
+            if (xDst(kB) >= xSrc(maxLevel,iCell) ) then
                exit
             endif
          enddo
@@ -1808,11 +1810,11 @@ contains
          kDataAbove = 1
          kDataBelow = kDataAbove + 1
          do kB = kBTop, kBBottom
-            ! for each xColumnOut(kB) value, find the corresponding upper and lower 
-            ! xFieldIn value in the field data, then interpolate y between those values.
-            if (xColumnOut(kB) < xFieldIn(kDataBelow,iCell)) then
+            ! for each xDst(kB) value, find the corresponding upper and lower 
+            ! xSrc value in the field data, then interpolate y between those values.
+            if (xDst(kB) < xSrc(kDataBelow,iCell)) then
                do kData = kDataBelow, maxLevel
-                  if (xColumnOut(kB) > xFieldIn(kData,iCell) ) then
+                  if (xDst(kB) > xSrc(kData,iCell) ) then
                      kDataBelow=kData
                      kDataAbove=kDataBelow-1
                      exit
@@ -1820,10 +1822,10 @@ contains
                enddo
             endif
             
-            dx = xFieldIn(kDataBelow,iCell) - xFieldIn(kDataAbove,iCell)
+            dx = xSrc(kDataBelow,iCell) - xSrc(kDataAbove,iCell)
             dy = yFieldIn(kDataBelow,iCell) - yFieldIn(kDataAbove,iCell)
             yFieldOut(kB,iCell) = yFieldIn(kDataAbove,iCell) + &
-               (xColumnOut(kB)-xFieldIn(kDataAbove,iCell)) * dy/dx
+               (xDst(kB)-xSrc(kDataAbove,iCell)) * dy/dx
          enddo
       
       enddo
