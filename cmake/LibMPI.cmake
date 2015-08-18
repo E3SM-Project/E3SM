@@ -70,6 +70,7 @@ function (add_mpi_test TESTNAME)
     # UCAR LSF execution
     if (PLATFORM STREQUAL "ucar")
 
+        # Run tests from within an MPI job (i.e., interactive)
         set (EXE_CMD mpirun.lsf ${exe_cmds})
         
     # All others (assume can run MPIEXEC directly)
