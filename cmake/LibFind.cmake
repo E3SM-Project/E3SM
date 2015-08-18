@@ -203,6 +203,14 @@ function (find_package_component PKG)
                 set (${PKGCOMP}_LIBRARY ${${PKGCOMP}_SHARED_LIBRARY})
                 set (${PKGCOMP}_IS_SHARED TRUE)
             endif ()
+        elseif (PREFER_STATIC AND ${PKGCOMP}_IS_SHARED)
+            find_static_library (${PKGCOMP}_STATIC_LIBRARY
+                                 NAMES ${${PKGCOMP}_LIBRARY_NAMES}
+                                 HINTS ${LIBRARY_HINTS})
+            if (${PKGCOMP}_STATIC_LIBRARY)
+                set (${PKGCOMP}_LIBRARY ${${PKGCOMP}_STATIC_LIBRARY})
+                set (${PKGCOMP}_IS_SHARED FALSE)
+            endif ()
         endif ()
         
     endif ()
