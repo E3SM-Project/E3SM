@@ -548,7 +548,7 @@
          <mpirun mpilib="default">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+	     <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
              <arg name="num_tasks"> -n {{ num_tasks }} </arg>
            </arguments>
          </mpirun>
