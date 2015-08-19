@@ -14,15 +14,11 @@ endif
 
 limit stacksize unlimited
 limit coredumpsize unlimited
-setenv P4_GLOBMEMSIZE 500000000
+
 source /usr/share/Modules/init/csh
 module purge
 if ( $COMPILER == "intel" ) then
     module load compiler/intel/15.0.2.164
-    if( $MPILIB == "mvapich2" ) then
-	module unload mpi/intel/openmpi-1.8.1-qlc
-        module load mpi/intel/mvapich2-1.8.1-qlc
-    endif
     if ( $MPILIB != "mpi-serial" ) then
         module load tool/parallel-netcdf/1.6.1/intel
     endif
@@ -30,10 +26,6 @@ endif
 
 if ( $COMPILER == "pgi" ) then
     module load compiler/pgi/15.1
-    if( $MPILIB == "mvapich2" ) then
-       module unload mpi/pgi/openmpi-1.8.1-qlc
-       module load  mpi/pgi/mvapich2-1.8.1-qlc
-    endif
 endif
 
 if ( $COMPILER == "nag" ) then
@@ -50,6 +42,6 @@ if ( $COMPILER == "gnu" ) then
     module load compiler/gnu/4.8.3
 endif
 
-
+setenv OMP_STACKSIZE 64M
 setenv NETCDF_DIR $NETCDF_PATH
 module list
