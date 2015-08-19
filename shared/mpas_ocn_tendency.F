@@ -407,7 +407,7 @@ contains
       ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
       !
       call mpas_timer_start("hmix", .false., tracerHmixTimer)
-      call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+      call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
                                 relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, tend_tr, err)
       call mpas_timer_stop("hmix", tracerHmixTimer)
 
