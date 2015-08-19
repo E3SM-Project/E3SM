@@ -70,7 +70,7 @@ function (add_mpi_test TESTNAME)
     platform_name (PLATFORM)
     
     # Default ("unknown" platform) execution
-    if (PLATFORM STREQUAL "ucar")
+    if (PLATFORM STREQUAL "unknown")
 
         # Run tests directly from the command line
         set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${num_procs} 
