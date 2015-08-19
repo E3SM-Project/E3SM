@@ -30,7 +30,7 @@ target_include_directories (piof
 
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
-        PUBLIC -ffree-line-length-none)
+        PRIVATE -ffree-line-length-none)
 endif()
 
 # Look for c_sizeof capability
@@ -184,7 +184,7 @@ target_include_directories (piof
 target_link_libraries (piof
     PUBLIC ${PIO_Fortran_EXTRA_LIBRARIES})
 target_compile_options (piof
-    PUBLIC ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
+    PRIVATE ${PIO_Fortran_EXTRA_COMPILE_OPTIONS})
 target_compile_definitions (piof
     PUBLIC ${PIO_Fortran_EXTRA_COMPILE_DEFINITIONS})
 if (PIO_Fortran_EXTRA_LINK_FLAGS)

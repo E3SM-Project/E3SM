@@ -26,16 +26,16 @@ target_include_directories (pioc
 
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pioc
-        PUBLIC -std=c99)
+        PRIVATE -std=c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
     target_compile_options (pioc
-        PUBLIC -c99)
+        PRIVATE -c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
     target_compile_options (pioc
-        PUBLIC -std=c99)
+        PRIVATE -std=c99)
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options (pioc
-        PUBLIC -std=c99)
+        PRIVATE -std=c99)
 endif()
 
 #==============================================================================
@@ -101,7 +101,7 @@ target_include_directories (pioc
 target_link_libraries (pioc
     PUBLIC ${PIO_C_EXTRA_LIBRARIES})
 target_compile_options (pioc
-    PUBLIC ${PIO_C_EXTRA_COMPILE_OPTIONS})
+    PRIVATE ${PIO_C_EXTRA_COMPILE_OPTIONS})
 target_compile_definitions (pioc
     PUBLIC ${PIO_C_EXTRA_COMPILE_DEFINITIONS})
 if (PIO_C_EXTRA_LINK_FLAGS)
