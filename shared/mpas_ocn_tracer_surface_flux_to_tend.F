@@ -120,6 +120,7 @@ contains
 
       err = 0
 
+      write(6,*) 'surfaceTracerFluxOn',surfaceTracerFluxOn
       if (.not. surfaceTracerFluxOn) return
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
