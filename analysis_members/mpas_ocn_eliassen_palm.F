@@ -2825,28 +2825,29 @@ contains
 
       do iCell = 1,nCells
 
-         wrkAbove = field(firstLayer(iCell),iCell)
-         wrkBelow = field(firstLayer(iCell)+1,iCell)
-         dz = heightMid(firstLayer(iCell),iCell)-heightMid(firstLayer(iCell)+1,iCell)
+         if ( lastLayer(iCell) > firstLayer(iCell) ) then
+            wrkAbove = field(firstLayer(iCell),iCell)
+            wrkBelow = field(firstLayer(iCell)+1,iCell)
+            dz = heightMid(firstLayer(iCell),iCell)-heightMid(firstLayer(iCell)+1,iCell)
 
-         derivativeField(firstLayer(iCell), iCell) = (wrkAbove - wrkBelow) / dz
+            derivativeField(firstLayer(iCell), iCell) = (wrkAbove - wrkBelow) / dz
 
-         do kLayer = firstLayer(iCell)+1, lastLayer(iCell)-1
+            do kLayer = firstLayer(iCell)+1, lastLayer(iCell)-1
 
-            wrkAbove = field(kLayer-1,iCell)
-            wrkBelow = field(kLayer+1,iCell)
-            dz = heightMid(kLayer-1,iCell)-heightMid(kLayer+1,iCell)
+               wrkAbove = field(kLayer-1,iCell)
+               wrkBelow = field(kLayer+1,iCell)
+               dz = heightMid(kLayer-1,iCell)-heightMid(kLayer+1,iCell)
 
-            derivativeField(kLayer, iCell) = (wrkAbove - wrkBelow) / dz
+               derivativeField(kLayer, iCell) = (wrkAbove - wrkBelow) / dz
 
-         end do ! kLayer = firstLayer(iCell)+1, lastLayer(iCell)-1
+            end do ! kLayer = firstLayer(iCell)+1, lastLayer(iCell)-1
 
-         wrkAbove = field(lastLayer(iCell)-1,iCell)
-         wrkBelow = field(lastLayer(iCell),iCell)
-         dz = heightMid(lastLayer(iCell)-1,iCell)-heightMid(lastLayer(iCell),iCell)
+            wrkAbove = field(lastLayer(iCell)-1,iCell)
+            wrkBelow = field(lastLayer(iCell),iCell)
+            dz = heightMid(lastLayer(iCell)-1,iCell)-heightMid(lastLayer(iCell),iCell)
 
-         derivativeField(lastLayer(iCell), iCell) = (wrkAbove - wrkBelow) / dz
-
+            derivativeField(lastLayer(iCell), iCell) = (wrkAbove - wrkBelow) / dz
+         end if
       end do ! iCell = 1,nCells
    end subroutine computeVerticalDerivative!}}}
 
