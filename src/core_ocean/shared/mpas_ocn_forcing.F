@@ -80,11 +80,9 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      character (len=StrKIND), pointer :: config_forcing_type
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
 
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
-      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       attenuationCoefficient = config_flux_attenuation_coefficient
 

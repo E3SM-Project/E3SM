@@ -49,6 +49,8 @@ module ocn_forward_mode
    use ocn_vel_hmix
    use ocn_vel_forcing
    use ocn_vel_coriolis
+   use ocn_vel_forcing_windstress
+   use ocn_surface_bulk_forcing
 
    use ocn_tracer_hmix
    use ocn_tracer_surface_flux_to_tend
@@ -174,6 +176,10 @@ module ocn_forward_mode
       call ocn_vel_hmix_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_vel_forcing_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_vel_forcing_windstress_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_surface_bulk_forcing_init(err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)

@@ -169,6 +169,7 @@ contains
 
       err = 0
 
+      write(6,*) 'bulkWindStressOn',bulkWindStressOn
       if ( .not. bulkWindStressOn ) return
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
