@@ -24,10 +24,6 @@ foreach (SRC_FILE IN LISTS GENERATED_SRCS)
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in)
 endforeach ()
 
-if (PIO_ENABLE_TIMING)
-    set (GPTL_LIB gptl)
-endif ()
-
 #==============================================================================
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================
@@ -38,7 +34,7 @@ set (DEFAULT_TEST_TIMEOUT 240)
 #===== pio_init_finalize =====
 add_executable (pio_init_finalize pio_init_finalize.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (pio_init_finalize piof pioc ${GPTL_LIB})
+target_link_libraries (pio_init_finalize piof)
 
 add_mpi_test(init_finialize_1_proc
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
@@ -59,7 +55,7 @@ add_mpi_test(init_finalize_2_proc_with_args
 #===== pio_file_simple_tests =====
 add_executable (pio_file_simple_tests pio_file_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (pio_file_simple_tests piof pioc ${GPTL_LIB})
+target_link_libraries (pio_file_simple_tests piof)
 
 add_mpi_test(pio_file_simple_tests
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests
@@ -69,7 +65,7 @@ add_mpi_test(pio_file_simple_tests
 #===== pio_file_fail =====
 add_executable (pio_file_fail pio_file_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (pio_file_fail piof pioc ${GPTL_LIB})
+target_link_libraries (pio_file_fail piof)
 
 add_mpi_test(pio_file_fail
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail
@@ -79,7 +75,7 @@ add_mpi_test(pio_file_fail
 #===== ncdf_simple_tests =====
 add_executable (ncdf_simple_tests ncdf_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (ncdf_simple_tests piof pioc ${GPTL_LIB})
+target_link_libraries (ncdf_simple_tests piof)
 
 add_mpi_test(ncdf_simple_tests
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
@@ -89,7 +85,7 @@ add_mpi_test(ncdf_simple_tests
 #===== ncdf_get_put =====
 add_executable (ncdf_get_put ncdf_get_put.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (ncdf_get_put piof pioc ${GPTL_LIB})
+target_link_libraries (ncdf_get_put piof)
 
 add_mpi_test(ncdf_get_put_1proc
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
@@ -103,7 +99,7 @@ add_mpi_test(ncdf_get_put_2proc
 #===== ncdf_fail =====
 add_executable (ncdf_fail ncdf_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (ncdf_fail piof pioc ${GPTL_LIB})
+target_link_libraries (ncdf_fail piof)
 
 add_mpi_test(ncdf_fail
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail
@@ -113,7 +109,7 @@ add_mpi_test(ncdf_fail
 #===== pio_decomp_tests =====
 add_executable (pio_decomp_tests pio_decomp_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (pio_decomp_tests piof pioc ${GPTL_LIB})
+target_link_libraries (pio_decomp_tests piof)
 
 add_mpi_test(pio_decomp_tests_1p
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
@@ -174,28 +170,9 @@ add_mpi_test(pio_decomp_tests_4p_2iop_1agg
 #===== pio_decomp_fillval =====
 add_executable (pio_decomp_fillval pio_decomp_fillval.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
-target_link_libraries (pio_decomp_fillval piof pioc ${GPTL_LIB})
+target_link_libraries (pio_decomp_fillval piof)
 
 add_mpi_test(pio_decomp_fillval
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
     NUMPROCS 4
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-
-#==============================================================================
-#  SET TARGET PROPERTIES
-#==============================================================================
-
-set_target_properties (
-    pio_init_finalize
-    pio_file_simple_tests
-    pio_file_fail
-    ncdf_simple_tests
-    ncdf_get_put
-    ncdf_fail
-    pio_decomp_tests
-    pio_decomp_fillval
-    PROPERTIES
-    INCLUDE_DIRECTORIES "${PIO_Fortran_INCLUDE_DIRS}"
-    COMPILE_DEFINITIONS "${PIO_Fortran_DEFINITIONS}"
-    COMPILE_FLAGS "${PIO_Fortran_COMPILE_FLAGS}")
-    
