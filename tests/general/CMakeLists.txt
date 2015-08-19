@@ -41,19 +41,18 @@ add_executable (pio_init_finalize pio_init_finalize.F90
 target_link_libraries (pio_init_finalize piof pioc ${GPTL_LIB})
 
 add_mpi_test(init_finialize_1_proc
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
     NUMPROCS 1
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
              
 add_mpi_test(init_finialize_2_proc 
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize 
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize 
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
              
 add_mpi_test(init_finalize_2_proc_with_args
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize 
-             "--pio-tf-stride=2"
-             "--pio-tf-num-aggregators=2"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
+    ARGUMENTS --pio-tf-stride=2 --pio-tf-num-aggregators=2
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
@@ -63,7 +62,7 @@ add_executable (pio_file_simple_tests pio_file_simple_tests.F90
 target_link_libraries (pio_file_simple_tests piof pioc ${GPTL_LIB})
 
 add_mpi_test(pio_file_simple_tests
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
              
@@ -73,7 +72,7 @@ add_executable (pio_file_fail pio_file_fail.F90
 target_link_libraries (pio_file_fail piof pioc ${GPTL_LIB})
 
 add_mpi_test(pio_file_fail
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
@@ -83,7 +82,7 @@ add_executable (ncdf_simple_tests ncdf_simple_tests.F90
 target_link_libraries (ncdf_simple_tests piof pioc ${GPTL_LIB})
 
 add_mpi_test(ncdf_simple_tests
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
@@ -93,11 +92,11 @@ add_executable (ncdf_get_put ncdf_get_put.F90
 target_link_libraries (ncdf_get_put piof pioc ${GPTL_LIB})
 
 add_mpi_test(ncdf_get_put_1proc
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
     NUMPROCS 1 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(ncdf_get_put_2proc
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
@@ -107,7 +106,7 @@ add_executable (ncdf_fail ncdf_fail.F90
 target_link_libraries (ncdf_fail piof pioc ${GPTL_LIB})
 
 add_mpi_test(ncdf_fail
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
     
@@ -117,60 +116,58 @@ add_executable (pio_decomp_tests pio_decomp_tests.F90
 target_link_libraries (pio_decomp_tests piof pioc ${GPTL_LIB})
 
 add_mpi_test(pio_decomp_tests_1p
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
     NUMPROCS 1
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_2p
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
     NUMPROCS 2 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_3p
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
     NUMPROCS 3 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 add_mpi_test(pio_decomp_tests_4p_1agg
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             "--pio-tf-num-aggregators=1"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-aggregators=1
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_2agg
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             "--pio-tf-num-aggregators=2"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-aggregators=2
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_3agg
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
-             "--pio-tf-num-aggregators=3"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+    ARGUMENTS --pio-tf-num-aggregators=3
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 add_mpi_test(pio_decomp_tests_4p_1iop
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             "--pio-tf-num-io-tasks=1"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-io-tasks=1
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_2iop
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             "--pio-tf-num-io-tasks=2"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-io-tasks=2
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_3iop
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             "--pio-tf-num-io-tasks=3"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-io-tasks=3
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 add_mpi_test(pio_decomp_tests_4p_2iop_2str
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             "--pio-tf-num-io-tasks=2"
-             "--pio-tf-stride=2"
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-io-tasks=2 --pio-tf-stride=2
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 add_mpi_test(pio_decomp_tests_4p_2iop_1agg
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-             --pio-tf-num-io-tasks=2
-             --pio-tf-num-aggregators=1
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+    ARGUMENTS --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1
     NUMPROCS 4 
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
@@ -180,7 +177,7 @@ add_executable (pio_decomp_fillval pio_decomp_fillval.F90
 target_link_libraries (pio_decomp_fillval piof pioc ${GPTL_LIB})
 
 add_mpi_test(pio_decomp_fillval
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
+    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
     NUMPROCS 4
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 

@@ -5,7 +5,7 @@ include (CMakeParseArguments)
 #
 
 #==============================================================================
-# - Get the machine platform name
+# - Get the machine platform-specific 
 #
 # Syntax:  platform_name (RETURN_VARIABLE)
 #
@@ -14,12 +14,12 @@ function (platform_name RETURN_VARIABLE)
     # Determine platform name from site name...
     site_name (SITENAME)
 
-    # UCAR/NCAR Machines
+    # UCAR/NWSC Machines
     if (SITENAME MATCHES "^yslogin" OR
         SITENAME MATCHES "^geyser" OR
         SITENAME MATCHES "^caldera")
         
-        set (${RETURN_VARIABLE} "ucar" PARENT_SCOPE)
+        set (${RETURN_VARIABLE} "nwsc" PARENT_SCOPE)
         
     # ALCF/Argonne Machines
     elseif (SITENAME MATCHES "^mira" OR
@@ -48,58 +48,42 @@ endfunction ()
 # - Add a new parallel test
 #
 # Syntax:  add_mpi_test (<TESTNAME>
-#                        COMMAND <command> <arg1> <arg2> ...
+#                        EXECUTABLE <command>
+#                        ARGUMENTS <arg1> <arg2> ...
 #                        NUMPROCS <num_procs>
 #                        TIMEOUT <timeout>)
 function (add_mpi_test TESTNAME)
 
     # Parse the input arguments
     set (options)
-    set (oneValueArgs NUMPROCS TIMEOUT)
-    set (multiValueArgs COMMAND)
+    set (oneValueArgs NUMPROCS TIMEOUT EXECUTABLE)
+    set (multiValueArgs ARGUMENTS)
     cmake_parse_arguments (${TESTNAME} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     
     # Store parsed arguments for convenience
-    set (exe_cmds ${${TESTNAME}_COMMAND})
+    set (exec_file ${${TESTNAME}_EXECUTABLE})
+    set (exec_args ${${TESTNAME}_ARGUMENTS})
     set (num_procs ${${TESTNAME}_NUMPROCS})
     set (timeout ${${TESTNAME}_TIMEOUT})
     
     # Get the platform name
     platform_name (PLATFORM)
     
-    # UCAR LSF execution
+    # Default ("unknown" platform) execution
     if (PLATFORM STREQUAL "ucar")
 
-        # Run tests from within an an interactive session
-        set (EXE_CMD mpirun.lsf ${exe_cmds})
-
-    # ALCF COBALT execution
-    elseif (PLATFORM STREQUAL "alcf")
-
-        # Run tests from within an interactive session (COBALT_PARTNAME defined)
-        set (REQUIRED_OPTION --block \$ENV{COBALT_PARTNAME}) 
-        set (RUNJOB_NPF --np ${num_procs})
-        if (DEFINED ENV{BGQ_RUNJOB})
-            set (RUNJOB $ENV{BGQ_RUNJOB})
-        else ()
-            set (RUNJOB runjob)
-        endif ()
-        set (EXE_CMD ${RUNJOB} ${RUNJOB_NPF} ${REQUIRED_OPTION} ${MPIEXEC_PREFLAGS} : ${exe_cmds})
-
-    # NERSC PBS execution
-    elseif (PLATFORM STREQUAL "nersc")
-
-        # Run tests from within an interactive session
-        set (EXE_CMD aprun -n ${num_procs} ${exe_cmds})
-
-    # All others (assume can run MPIEXEC directly)
-    else()
-
         # Run tests directly from the command line
-        set(MPIEXEC_NPF ${MPIEXEC_NUMPROC_FLAG} ${num_procs})
-        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NPF} ${MPIEXEC_PREFLAGS} ${exe_cmds})
+        set(EXE_CMD ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${num_procs} 
+                    ${MPIEXEC_PREFLAGS} ${exec_file} 
+                    ${MPIEXEC_POSTFLAGS} ${exec_args})
 
-    endif()
+    else ()
+                        
+        # Run tests from the platform-specific executable
+        set (EXE_CMD ${CMAKE_SOURCE_DIR}/cmake/mpiexec.${PLATFORM} 
+                     ${num_procs} ${exec_file} ${exec_args})
+                     
+    endif ()
     
     # Add the test to CTest
     add_test(NAME ${TESTNAME} COMMAND ${EXE_CMD})
