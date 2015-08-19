@@ -17,7 +17,7 @@ from acme_util import expect, warning, verbose_print, run_cmd
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s <testname> <testroot> <project> [--compare=<baseline-id>] [--no-submit]  [--verbose]
+        usage="""\n%s <testname> [--compare=<baseline-id>] [--no-batch]  [--verbose]
 OR
 %s --help
 OR
@@ -36,13 +36,20 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
+    default_compiler, _, _, default_project, default_testroot, _, _ = acme_util.get_machine_info(raw=True)
+
     parser.add_argument("testname", help="Name of failing test.")
 
-    parser.add_argument("testroot", help="Path to testroot to use for testcases for bisect.")
+    parser.add_argument("-r", "--test-root", action="store", dest="testroot", default=default_testroot,
+                        help="Path to testroot to use for testcases for bisect.")
 
-    parser.add_argument("project", help="Project to be given to create_test.")
+    parser.add_argument("-c", "--compiler", action="store", dest="compiler", default=default_compiler,
+                        help="What compiler to use to build ACME")
 
-    parser.add_argument("-c", "--compare", action="store", dest="compare", default=None,
+    parser.add_argument("-p", "--project", action="store", dest="project", default=default_project,
+                        help="Project to be given to create_test.")
+
+    parser.add_argument("-b", "--baseline-name", action="store", dest="baseline_name", default=None,
                         help="Baseline id for comparing baselines. Not specifying means no comparisons will be done.")
 
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
@@ -58,16 +65,19 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Consider a commit to be broken if memory check fails (fail if tests footprint grows)")
 
     parser.add_argument("--no-batch", action="store_true", dest="no_batch", default=False,
-                        help="Do not submit job to queue, run locally. Will default to whatever is standard on your machine")
+                        help="Force scripts to not submit tests as batch jobs. Default will be to do whatever is standard on the current machine")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.testname, args.testroot, args.project, args.compare, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
+    if (args.test_root == default_testroot):
+        args.test_root = acme_util.get_machine_info(project=args.project)
+
+    return args.testname, args.testroot, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
 
 ###############################################################################
-def acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, check_memory, no_batch):
+def acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch):
 ###############################################################################
     expect(os.path.exists("scripts/acme/create_test"), "Please run from root of repository")
 
@@ -80,9 +90,9 @@ def acme_bisect(testname, testroot, project, compare, check_namelists, check_thr
     # Formulate and run create_test command
 
     extra_args = "--no-batch" if no_batch else ""
-    compare_args = "-c -b %s" % compare if compare is not None else ""
-    create_test_cmd = "scripts/acme/create_test %s --test-root %s -t %s -p %s %s %s" % \
-                      (testname, testroot, current_sha, project, compare_args, extra_args)
+    compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
+    create_test_cmd = "scripts/acme/create_test %s --test-root %s --compiler %s -t %s -p %s %s %s" % \
+                      (testname, testroot, compiler, current_sha, project, compare_args, extra_args)
     run_cmd(create_test_cmd)
 
     # Find testcase area
@@ -119,11 +129,11 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    testname, testroot, project, compare, check_namelists, check_throughput, check_memory, no_batch = \
+    testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch = \
         parse_command_line(sys.argv, description)
 
     try:
-        rv = acme_bisect(testname, testroot, project, compare, check_namelists, check_throughput, check_memory, no_batch)
+        rv = acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch)
     except:
         print >> sys.stderr, "Exception in script, aborting bisect entirely:"
         e = sys.exc_info()[1]
