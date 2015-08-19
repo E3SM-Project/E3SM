@@ -9,4 +9,4 @@
 NP=$1
 shift
 
-mpirun.lsf -n$NP $@
+mpirun.lsf $@ -n$NP
