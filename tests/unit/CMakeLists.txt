@@ -23,10 +23,10 @@ set (SRCS basic_tests.F90
           ncdf_tests.F90
           nc_set_log_level2.c)
 
-add_executable (pio_unit_test ${SRCS})
-target_link_libraries (pio_unit_test piof pioc)
+add_executable (piotest ${SRCS})
+target_link_libraries (piotest piof pioc)
 if (PIO_ENABLE_TIMING)
-    target_link_libraries (pio_unit_test gptl)
+    target_link_libraries (piotest gptl)
 endif ()
 
 # Test Timeout (4 min = 240 sec)
@@ -41,7 +41,7 @@ add_mpi_test(pio_unit_test
 #  SET TARGET PROPERTIES
 #==============================================================================
 
-set_target_properties (pio_unit_test PROPERTIES
+set_target_properties (piotest PROPERTIES
     INCLUDE_DIRECTORIES "${PIO_Fortran_INCLUDE_DIRS}"
     COMPILE_DEFINITIONS "${PIO_Fortran_DEFINITIONS}"
     COMPILE_FLAGS "${PIO_Fortran_COMPILE_FLAGS}")

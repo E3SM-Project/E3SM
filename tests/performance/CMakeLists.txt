@@ -12,7 +12,7 @@ if (PIO_HDF5_LOGGING)
     add_definitions (-DLOGGING)
 endif ()
 
-set_target_properties (pio_perf_test PROPERTIES
+set_target_properties (pioperf PROPERTIES
     INCLUDE_DIRECTORIES "${PIO_Fortran_INCLUDE_DIRS}"
     COMPILE_DEFINITIONS "${PIO_Fortran_DEFINITIONS}"
     COMPILE_FLAGS "${PIO_Fortran_COMPILE_FLAGS}")
