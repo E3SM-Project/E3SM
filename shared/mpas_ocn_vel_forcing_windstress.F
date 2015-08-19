@@ -129,6 +129,7 @@ contains
 
       err = 0
 
+      write(6,*) 'windStressOn',windStressOn
       if ( .not. windStressOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
@@ -194,19 +195,12 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       logical, pointer :: config_disable_vel_windstress
-      character (len=StrKIND), pointer :: config_forcing_type
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_windstress', config_disable_vel_windstress)
-      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       windStressOn = .true.
 
       if(config_disable_vel_windstress) windStressOn = .false.
-
-      if (config_forcing_type == trim('off')) then
-         windStressOn = .false.
-      end if
-
 
       err = 0
 

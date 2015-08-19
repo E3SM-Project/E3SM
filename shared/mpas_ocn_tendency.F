@@ -315,6 +315,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
+      write(6,*) 'calling ocn_vel_forcing_tend'
       call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceWindStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 

@@ -169,20 +169,14 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       logical, pointer :: config_disable_tr_sflux
-      character (len=StrKIND), pointer :: config_forcing_type
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_sflux', config_disable_tr_sflux)
-      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       surfaceTracerFluxOn = .true.
 
       if (config_disable_tr_sflux) then
-         surfaceTracerFluxOn = .false.
-      end if
-
-      if (config_forcing_type == trim('off')) then
          surfaceTracerFluxOn = .false.
       end if
 
