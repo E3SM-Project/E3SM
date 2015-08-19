@@ -198,6 +198,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: heightMGradMeridEA
       real (kind=RKIND), dimension(:,:), pointer :: usigmaEA
       real (kind=RKIND), dimension(:,:), pointer :: vsigmaEA
+      real (kind=RKIND), dimension(:,:), pointer :: varpisigmaEA
       real (kind=RKIND), dimension(:,:), pointer :: uusigmaEA
       real (kind=RKIND), dimension(:,:), pointer :: vvsigmaEA
       real (kind=RKIND), dimension(:,:), pointer :: uvsigmaEA
@@ -277,6 +278,7 @@ contains
             call mpas_pool_get_array(amEPFTPool, 'heightMGradMeridEA', heightMGradMeridEA)
             call mpas_pool_get_array(amEPFTPool, 'usigmaEA', usigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'vsigmaEA', vsigmaEA)
+            call mpas_pool_get_array(amEPFTPool, 'varpisigmaEA', varpisigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'uusigmaEA', uusigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'vvsigmaEA', vvsigmaEA)
             call mpas_pool_get_array(amEPFTPool, 'uvsigmaEA', uvsigmaEA)
@@ -295,6 +297,7 @@ contains
             heightMGradMeridEA = 0.0
             usigmaEA = 0.0
             vsigmaEA = 0.0
+            varpisigmaEA = 0.0
             uusigmaEA = 0.0
             vvsigmaEA = 0.0
             uvsigmaEA = 0.0
