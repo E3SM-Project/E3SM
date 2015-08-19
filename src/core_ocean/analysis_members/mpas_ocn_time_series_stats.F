@@ -11,7 +11,7 @@
 !
 !> \brief MPAS ocean analysis core member: time_series_stats
 !> \author Jon Woodring
-!> \date   March 2, 2015
+!> \date   September 1, 2015
 !> \details
 !>  Flexible time series averaging, mins, and maxes of fields.
 !-----------------------------------------------------------------------
@@ -105,36 +105,28 @@ contains
 !
 !> \brief Initialize MPAS-Ocean analysis member
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts all initializations required for the 
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
 subroutine ocn_init_time_series_stats(domain, err)!{{{
-
   ! input variables
-  !-----------------------------------------------------------------
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (domain_type), intent(inout) :: domain
 
   ! output variables
-  !-----------------------------------------------------------------
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  !-----------------------------------------------------------------
-  integer :: v, b
-  character (len=StrKIND), pointer :: config_results
-  logical, pointer :: copy_mesh
+  integer :: b
   integer :: number_of_variables, number_of_buffers
-  character (len=StrKIND) :: stream_str, prefix_str, &
-    config_str, buffer_str, op_str, var_str, field
-  logical :: ok
-
+  character (len=StrKIND) :: instance ! TODO intent(in)
+  character (len=StrKIND) :: prefix, op
+  character (len=StrKIND), pointer :: stream_name
+ 
   ! start procedure
-  !-----------------------------------------------------------------
   err = 0
 
   ! TODO do restart
@@ -142,249 +134,22 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   ! string representation
   ! TODO placeholder for some unique ID if this code is replicated
   !    per multiple AMs for multiple streams
-  stream_str = ''
-  prefix_str = 'config_AM_timeSeriesStats' // trim(stream_str)
+  instance = ''
+  prefix = 'config_AM_timeSeriesStats' // trim(instance)
 
-  ! get our operation
-  config_str = trim(prefix_str) // '_operation'
-  call mpas_pool_get_config(domain % configs, config_str, config_results)
-  if (config_results .eq. 'avg') then
-    operation = AVG_OP
-    op_str = 'avg'
-  else if (config_results .eq. 'min') then
-    operation = MIN_OP
-    op_str = 'min'
-  else if (config_results .eq. 'max') then
-    operation = MAX_OP
-    op_str = 'max'
-  else
-    ! error if unknown operation
-    call mpas_dmpar_global_abort('Error: unknown operation in time ' // &
-      'averaging analysis member configuration.')
-  end if
+  ! get the basic configuration of this stream
+  call start_init(domain, prefix, number_of_variables, number_of_buffers, &
+    stream_name, op, err)
 
-  ! count string tokens
-  config_str = trim(prefix_str) // '_initial_times' 
-  call mpas_pool_get_config(domain % configs, config_str, config_results)
-  field = config_results
-  number_of_buffers = 1
-  b = scan(field, ';')
-  do while (b .gt. 0)
-    number_of_buffers = number_of_buffers + 1
-    field = field(b+1:)
-    b = scan(field, ';')
-  end do
+  ! modify the stream to remove existing vars and add accumulated versions 
+  call modify_stream(domain, stream_name, number_of_variables, &
+    number_of_buffers, instance, prefix, op, err)
 
-  ! get the stream name
-  config_str = trim(prefix_str) // '_stream_name'
-  call mpas_pool_get_config(domain % configs, config_str, stream_name)
+  ! get all of the timing and configuration
+  call get_alarms(domain, prefix, number_of_buffers, err)
 
-  if (stream_name .eq. 'none') then
-    call mpas_dmpar_global_abort('Error: stream cannot be "none" ' // &
-      'for time series stats.')
-  end if
-
-  ! set up all of the timing
-  !
-
-  ! allocate the state for the buffers
-  allocate(buffers(number_of_buffers))
-
-  ! configure start times
-  config_str = trim(prefix_str) // '_initial_times' 
-  call mpas_pool_get_config(domain % configs, config_str, config_results)
-  call set_times(buffers, number_of_buffers, domain % clock, &
-            START_TIMES, config_results, ok, err) 
-
-  ! order matters, don't reorder these following ones!
-  ! it matters because times/intervals can be configured to be equal
-  ! to other ones
-
-  ! configure reset intervals
-  config_str = trim(prefix_str) // '_reset_intervals'
-  call mpas_pool_get_config(domain % configs, config_str, config_results)
-  call set_times(buffers, number_of_buffers, domain % clock, &
-            RESET_INTERVALS, config_results, ok, err) 
-  if (.not. ok) then
-    call mpas_dmpar_global_abort('Error: number of times in ' // &
-      'reset_intervals is not consistent with number of times ' // &
-      'in initial_times in time series stats analysis member ' // &
-      'configuration.')
-  end if
-
-  ! configure repeat intervals
-  config_str = trim(prefix_str) // '_repeat_intervals'
-  call mpas_pool_get_config(domain % configs, config_str, config_results)
-  call set_times(buffers, number_of_buffers, domain % clock, &
-            REPEAT_INTERVALS, config_results, ok, err) 
-  if (.not. ok) then
-    call mpas_dmpar_global_abort('Error: number of times in ' // &
-      'repeat_intervals is not consistent with number of times ' // &
-      'in initial_times in time series stats analysis member ' // &
-      'configuration.')
-  end if
-
-  ! configure duration intervals
-  config_str = trim(prefix_str) // '_duration_intervals'
-  call mpas_pool_get_config(domain % configs, config_str, config_results)
-  call set_times(buffers, number_of_buffers, domain % clock, &
-            DURATION_INTERVALS, config_results, ok, err) 
-  if (.not. ok) then
-    call mpas_dmpar_global_abort('Error: number of times in ' // &
-      'duration_intervals is not consistent with number of times ' // &
-      'in initial_times in time series stats analysis member ' // &
-      'configuration.')
-  end if
-
-  ! check if the configuration is sensible
-  do b = 1, number_of_buffers
-    if (buffers(b) % repeat_interval .gt. &
-       buffers(b) % reset_interval) then
-      write(stderrUnit,*) 'Warning: repeat_interval > ' // &
-        'reset_interval in time averaging analysis member ' // &
-        'configuration. Truncating repeat_interval.'
-      buffers(b) % repeat_interval = buffers(b) % reset_interval
-    end if
-
-    if (buffers(b) % duration_interval .gt. &
-       buffers(b) % repeat_interval) then
-      write(stderrUnit,*) 'Warning: duration_interval > ' // &
-        'repeat_interval in time averaging analysis member ' // &
-        'configuration. Truncating duration_interval.'
-      buffers(b) % repeat_interval = buffers(b) % reset_interval
-    end if
-  end do
-
-  ! 
-  ! OK, if we got this far, then we should be able to allocate memory
-  ! and set up the timers and variables that we will analyze 
-  !
-
-  ! count the number of variables
-  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
-  number_of_variables = 0
-  do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    stream_name, field))
-    number_of_variables = number_of_variables + 1
-  end do
-
-  ! allocate the variable information
-  allocate(variables(number_of_variables))
-
-  ! get the old field names 
-  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
-  v = 1
-  do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    stream_name, field))
-    variables(v) % input_name = field
-    v = v + 1
-  end do
-  
-  ! remove the old ones from the stream 
-  do v = 1, number_of_variables
-    call mpas_stream_mgr_remove_field(domain % streamManager, &
-      stream_name, variables(v) % input_name)
-  end do
-
-  ! add xtime to the stream
-  call mpas_stream_mgr_add_field(domain % streamManager, &
-    stream_name, 'xtime', ierr=err)
-
-  ! optionally add mesh to stream
-  config_str = trim(prefix_str) // '_add_mesh'
-  call mpas_pool_get_config(domain % configs, config_str, copy_mesh)
-  if (copy_mesh) then
-    call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-      'mesh', err)
-    do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-      'mesh', field))
-      call mpas_stream_mgr_add_field(domain % streamManager, &
-        stream_name, field, ierr=err)
-    end do
-  end if
-
-  ! set up the variables
-  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
-  do v = 1, number_of_variables 
-    ! allocate space for the names of the outputs
-    allocate(variables(v) % output_names(number_of_buffers))
-    write(var_str, '(I0)') v
-
-    ! get the info of the field
-    call mpas_pool_get_field_info(domain % blocklist % allFields, &
-      variables(v) % input_name, variables(v) % info)
-
-    ! check if we can handle it
-    if(.not. &
-      ((variables(v) % info % fieldType .eq. MPAS_POOL_REAL) &
-      .or. &
-      (variables(v) % info % fieldType .eq. MPAS_POOL_INTEGER))) &
-      then
-      call mpas_dmpar_global_abort('Error: field "' // &
-        trim(variables(v) % input_name) // '" listed in the ' // &
-        'output stream, for time series stats analysis member ' // &
-        'stream, is not real or integer.')
-    end if
-
-    ! allocate a number of fields and add field
-    do b = 1, number_of_buffers
-      ! create the name of the new field
-      write(buffer_str, '(I0)') b
-      field = 'time' // trim(stream_str) // '_' // &
-        trim(op_str) // '_' // trim(buffer_str) // '_'
-      variables(v) % output_names(b) = trim(field) // &
-        variables(v) % input_name
-
-      ! create the field and add to pool
-      call add_new_field(variables(v) % info, &
-        variables(v) % input_name, field, &
-        domain % blocklist % allFields)
-
-      ! add the field to the stream
-      call mpas_stream_mgr_add_field(domain % streamManager, &
-        stream_name, variables(v) % output_names(b), ierr=err)
-    end do
-
-  end do ! number_of_variables
-
-  ! configure alarms
-  ! TODO modify the alarms based on do_restart
-  do b = 1, number_of_buffers
-    write(buffer_str, '(I0)') b
-    buffers(b) % start_alarm_ID = &
-      'tavg_start' // trim(stream_str) // '_' // buffer_str
-    call mpas_add_clock_alarm(domain % clock, &
-      buffers(b) % start_alarm_ID, &
-      buffers(b) % start_time, ierr=err)
-
-    buffers(b) % repeat_alarm_ID = &
-      'tavg_repeat' // trim(stream_str) // '_' // buffer_str
-    call mpas_add_clock_alarm(domain % clock, &
-      buffers(b) % repeat_alarm_ID, &
-      buffers(b) % start_time + &
-      buffers(b) % repeat_interval, &
-      buffers(b) % repeat_interval, ierr=err)
-
-    buffers(b) % duration_alarm_ID = &
-      'tavg_duration' // trim(stream_str) // '_' // buffer_str
-    call mpas_add_clock_alarm(domain % clock, &
-      buffers(b) % duration_alarm_ID, &
-      buffers(b) % start_time + &
-      buffers(b) % duration_interval, & 
-      buffers(b) % repeat_interval, ierr=err)
-
-    ! reset at start
-    buffers(b) % reset_alarm_ID = &
-      'tavg_reset' // trim(stream_str) // '_' // buffer_str
-    call mpas_add_clock_alarm(domain % clock, &
-      buffers(b) % reset_alarm_ID, &
-      buffers(b) % start_time, &
-      buffers(b) % reset_interval, ierr=err)
-
-  end do
+  ! set all of the alarms based on timers
+  call set_alarms(domain, instance, number_of_buffers, err)
 
   ! set initial flags
   do b = 1, number_of_buffers
@@ -393,7 +158,8 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
     buffers(b) % accumulate_flag = .false.
   end do
 
-  ! set flags based on initial times
+  ! set flags based on initial timers and times
+  ! TODO maybe needs to be modified based on restart
   call timer_checking(domain, err)
 end subroutine ocn_init_time_series_stats!}}}
 
@@ -404,30 +170,25 @@ end subroutine ocn_init_time_series_stats!}}}
 !
 !> \brief Compute MPAS-Ocean analysis member
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
 subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
   ! input variables
-  !-----------------------------------------------------------------
   integer, intent(in) :: timeLevel
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (domain_type), intent(inout) :: domain
 
   ! output variables
-  !-----------------------------------------------------------------
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  !-----------------------------------------------------------------
   integer :: i, v, b
 
   ! start procedure
-  !-----------------------------------------------------------------
   err = 0
 
   ! update the counter
@@ -460,33 +221,26 @@ end subroutine ocn_compute_time_series_stats!}}}
 !
 !> \brief Save restart for MPAS-Ocean analysis member
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
 subroutine ocn_restart_time_series_stats(domain, err)!{{{
-
   ! input variables
-  !-----------------------------------------------------------------
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (domain_type), intent(inout) :: domain
 
   ! output variables
-  !-----------------------------------------------------------------
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  !-----------------------------------------------------------------
 
   ! start procedure
-  !-----------------------------------------------------------------
   err = 0
 
-  ! TODO save data to restart and accumulate
-
+  ! TODO is there anything needed here?
 end subroutine ocn_restart_time_series_stats!}}}
 
 
@@ -496,30 +250,24 @@ end subroutine ocn_restart_time_series_stats!}}}
 !
 !> \brief Finalize MPAS-Ocean analysis member
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
 subroutine ocn_finalize_time_series_stats(domain, err)!{{{
-
   ! input variables
-  !-----------------------------------------------------------------
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (domain_type), intent(inout) :: domain
 
   ! output variables
-  !-----------------------------------------------------------------
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  !-----------------------------------------------------------------
   integer :: i, v
 
   ! start procedure
-  !-----------------------------------------------------------------
   err = 0
 
   ! clean up memory
@@ -543,30 +291,385 @@ end subroutine ocn_finalize_time_series_stats!}}}
 !
 
 !***********************************************************************
+! routine start_init
+!
+!> \brief Begin the initialization of this analysis member
+!> \author  Jon Woodring
+!> \date    September 1, 2015
+!> \details 
+!> This will count the number of variables, number of buffers, and
+!> also get the stream name and operation strings.
+!-----------------------------------------------------------------------
+subroutine start_init(domain, prefix, number_of_variables, &
+  number_of_buffers, stream_name, op, err)
+  ! input variables
+  character (len=StrKIND), intent(in) :: prefix
+
+  ! input/output variables
+  type (domain_type), intent(inout) :: domain
+
+  ! output variables
+  character (len=StrKIND), pointer, intent(out) :: stream_name
+  character (len=StrKIND), intent(out) :: op
+  integer, intent(out) :: number_of_variables, number_of_buffers
+  integer, intent(out) :: err !< Output: error flag
+
+  ! local variables
+  character (len=StrKIND), pointer :: config_results
+  character (len=StrKIND) :: copy, config
+  integer :: b
+ 
+  ! start procedure
+  err = 0
+
+  ! get the stream name
+  config = trim(prefix) // '_stream_name'
+  call mpas_pool_get_config(domain % configs, config, stream_name)
+
+  if (stream_name == 'none') then
+    call mpas_dmpar_global_abort('Error: stream cannot be "none" ' // &
+      'for time series stats.')
+  end if
+
+  ! count the number of variables
+  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
+    stream_name, err)
+  number_of_variables = 0
+  do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
+    stream_name, copy))
+    number_of_variables = number_of_variables + 1
+  end do
+
+  ! count the number of buffers
+  config = trim(prefix) // '_initial_times' 
+  call mpas_pool_get_config(domain % configs, config, config_results)
+  copy = config_results
+  number_of_buffers = 1
+  b = scan(copy, ';')
+  do while (b > 0)
+    number_of_buffers = number_of_buffers + 1
+    copy = copy(b+1:)
+    b = scan(copy, ';')
+  end do
+
+  ! get our operation
+  config = trim(prefix) // '_operation'
+  call mpas_pool_get_config(domain % configs, config, config_results)
+  if (config_results == 'avg') then
+    operation = AVG_OP
+    op = 'avg'
+  else if (config_results == 'min') then
+    operation = MIN_OP
+    op = 'min'
+  else if (config_results == 'max') then
+    operation = MAX_OP
+    op = 'max'
+  else
+    ! error if unknown operation
+    call mpas_dmpar_global_abort('Error: unknown operation in time ' // &
+      'averaging analysis member configuration.')
+  end if
+
+end subroutine start_init
+
+
+
+!***********************************************************************
+! routine get_alarms
+!
+!> \brief Read the namelist for timings
+!> \author  Jon Woodring
+!> \date    September 1, 2015
+!> \details 
+!> This will read the namelist and get the strings and set the clocks
+!> for the different timers to be used. The actual alarms are not set.
+!-----------------------------------------------------------------------
+subroutine get_alarms(domain, prefix, number_of_buffers, err)
+  ! input variables
+  integer, intent(in) :: number_of_buffers
+  character (len=StrKIND) :: prefix
+
+  ! input/output variables
+  type (domain_type), intent(inout) :: domain
+
+  ! output variables
+  integer, intent(out) :: err !< Output: error flag
+
+  ! local variables
+  integer :: b
+  character (len=StrKIND), pointer :: config_results
+  character (len=StrKIND) :: config
+  logical :: ok
+
+  ! configure start times - we don't have to check ok
+  ! because the timer count is based on initial_times tokens
+  config = trim(prefix) // '_initial_times' 
+  call mpas_pool_get_config(domain % configs, config, config_results)
+  call set_times(buffers, number_of_buffers, domain % clock, &
+            START_TIMES, config_results, ok, err) 
+
+  ! order matters, don't reorder these following ones!
+  ! it matters because times/intervals can be configured to be equal
+  ! to other ones
+
+  ! configure reset intervals
+  config = trim(prefix) // '_reset_intervals'
+  call mpas_pool_get_config(domain % configs, config, config_results)
+  call set_times(buffers, number_of_buffers, domain % clock, &
+            RESET_INTERVALS, config_results, ok, err) 
+  if (.not. ok) then
+    call mpas_dmpar_global_abort('Error: number of times in ' // &
+      'reset_intervals is not consistent with number of times ' // &
+      'in initial_times in time series stats analysis member ' // &
+      'configuration.')
+  end if
+
+  ! configure repeat intervals
+  config = trim(prefix) // '_repeat_intervals'
+  call mpas_pool_get_config(domain % configs, config, config_results)
+  call set_times(buffers, number_of_buffers, domain % clock, &
+            REPEAT_INTERVALS, config_results, ok, err) 
+  if (.not. ok) then
+    call mpas_dmpar_global_abort('Error: number of times in ' // &
+      'repeat_intervals is not consistent with number of times ' // &
+      'in initial_times in time series stats analysis member ' // &
+      'configuration.')
+  end if
+
+  ! configure duration intervals
+  config = trim(prefix) // '_duration_intervals'
+  call mpas_pool_get_config(domain % configs, config, config_results)
+  call set_times(buffers, number_of_buffers, domain % clock, &
+            DURATION_INTERVALS, config_results, ok, err) 
+  if (.not. ok) then
+    call mpas_dmpar_global_abort('Error: number of times in ' // &
+      'duration_intervals is not consistent with number of times ' // &
+      'in initial_times in time series stats analysis member ' // &
+      'configuration.')
+  end if
+
+  ! check if some of the time configuration is sensible
+  do b = 1, number_of_buffers
+    if (buffers(b) % repeat_interval > &
+       buffers(b) % reset_interval) then
+      write(stderrUnit,*) 'Warning: repeat_interval > ' // &
+        'reset_interval in time averaging analysis member ' // &
+        'configuration. Truncating repeat_interval.'
+      buffers(b) % repeat_interval = buffers(b) % reset_interval
+    end if
+
+    if (buffers(b) % duration_interval > &
+       buffers(b) % repeat_interval) then
+      write(stderrUnit,*) 'Warning: duration_interval > ' // &
+        'repeat_interval in time averaging analysis member ' // &
+        'configuration. Truncating duration_interval.'
+      buffers(b) % repeat_interval = buffers(b) % reset_interval
+    end if
+  end do
+end subroutine get_alarms
+
+
+
+!***********************************************************************
+! routine get_alarms
+!
+!> \brief Set the alarms based on the clocks
+!> \author  Jon Woodring
+!> \date    September 1, 2015
+!> \details 
+!> Alarms for the different timers are set, such that temporal
+!> window alarms are configured.
+!-----------------------------------------------------------------------
+subroutine set_alarms(domain, instance, number_of_buffers, err)
+  ! input variables
+  integer, intent(in) :: number_of_buffers
+  character (len=StrKIND) :: instance
+
+  ! input/output variables
+  type (domain_type), intent(inout) :: domain
+
+  ! output variables
+  integer, intent(out) :: err !< Output: error flag
+
+  ! local variables
+  integer :: b
+  character (len=StrKIND) :: buffer
+
+  ! configure alarms
+  ! TODO modify the alarms based on do_restart
+  do b = 1, number_of_buffers
+    write(buffer, '(I0)') b
+    buffers(b) % start_alarm_ID = &
+      'tavg_start' // trim(instance) // '_' // buffer
+    call mpas_add_clock_alarm(domain % clock, &
+      buffers(b) % start_alarm_ID, &
+      buffers(b) % start_time, ierr=err)
+
+    buffers(b) % repeat_alarm_ID = &
+      'tavg_repeat' // trim(instance) // '_' // buffer
+    call mpas_add_clock_alarm(domain % clock, &
+      buffers(b) % repeat_alarm_ID, &
+      buffers(b) % start_time + &
+      buffers(b) % repeat_interval, &
+      buffers(b) % repeat_interval, ierr=err)
+
+    buffers(b) % duration_alarm_ID = &
+      'tavg_duration' // trim(instance) // '_' // buffer
+    call mpas_add_clock_alarm(domain % clock, &
+      buffers(b) % duration_alarm_ID, &
+      buffers(b) % start_time + &
+      buffers(b) % duration_interval, & 
+      buffers(b) % repeat_interval, ierr=err)
+
+    ! reset at start
+    buffers(b) % reset_alarm_ID = &
+      'tavg_reset' // trim(instance) // '_' // buffer
+    call mpas_add_clock_alarm(domain % clock, &
+      buffers(b) % reset_alarm_ID, &
+      buffers(b) % start_time, &
+      buffers(b) % reset_interval, ierr=err)
+
+  end do
+end subroutine set_alarms
+
+
+
+!***********************************************************************
+! routine modify_stream
+!
+!> \brief Remove existing variables and replace them with new ones
+!> \author  Jon Woodring
+!> \date    September 1, 2015
+!> \details 
+!>  Given a stream name, this will remove the existing variables
+!>  in a stream and replace them with similiarly named ones for
+!>  their accumulation. It will also add xtime and optionally the mesh.
+!-----------------------------------------------------------------------
+subroutine modify_stream(domain, stream_name, number_of_variables, &
+  number_of_buffers, instance, prefix, op, err)!{{{
+  ! input variables
+  integer, intent(in) :: number_of_variables, number_of_buffers
+  character (len=StrKIND) :: stream_name, instance, prefix, op
+
+  ! input/output variables
+  type (domain_type), intent(inout) :: domain
+
+  ! output variables
+  integer, intent(out) :: err !< Output: error flag
+
+  ! local variables
+  integer :: v, b
+  character (len=StrKIND) :: field, buffer, config, var
+  logical, pointer :: copy_mesh
+
+  ! allocate the variable information
+  allocate(variables(number_of_variables))
+
+  ! allocate the state for the buffers
+  allocate(buffers(number_of_buffers))
+
+  ! get the old field names 
+  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
+    stream_name, err)
+  v = 1
+  do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
+    stream_name, field))
+    variables(v) % input_name = field
+    v = v + 1
+  end do
+  
+  ! remove the old ones from the stream 
+  do v = 1, number_of_variables
+    call mpas_stream_mgr_remove_field(domain % streamManager, &
+      stream_name, variables(v) % input_name)
+  end do
+
+  ! add xtime to the stream
+  call mpas_stream_mgr_add_field(domain % streamManager, &
+    stream_name, 'xtime', ierr=err)
+
+  ! optionally add mesh to stream
+  config = trim(prefix) // '_add_mesh'
+  call mpas_pool_get_config(domain % configs, config, copy_mesh)
+  if (copy_mesh) then
+    call mpas_stream_mgr_begin_iteration(domain % streamManager, &
+      'mesh', err)
+    do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
+      'mesh', field))
+      call mpas_stream_mgr_add_field(domain % streamManager, &
+        stream_name, field, ierr=err)
+    end do
+  end if
+
+  ! set up the variables
+  call mpas_stream_mgr_begin_iteration(domain % streamManager, &
+    stream_name, err)
+  do v = 1, number_of_variables 
+    ! allocate space for the names of the outputs
+    allocate(variables(v) % output_names(number_of_buffers))
+    write(var, '(I0)') v
+
+    ! get the info of the field
+    call mpas_pool_get_field_info(domain % blocklist % allFields, &
+      variables(v) % input_name, variables(v) % info)
+
+    ! check if we can handle it
+    if(.not. &
+      ((variables(v) % info % fieldType == MPAS_POOL_REAL) &
+      .or. &
+      (variables(v) % info % fieldType == MPAS_POOL_INTEGER))) &
+      then
+      call mpas_dmpar_global_abort('Error: field "' // &
+        trim(variables(v) % input_name) // '" listed in the ' // &
+        'output stream, for time series stats analysis member ' // &
+        'stream, is not real or integer.')
+    end if
+
+    ! allocate a number of fields and add field
+    do b = 1, number_of_buffers
+      ! create the name of the new field
+      write(buffer, '(I0)') b
+      field = 'time' // trim(instance) // '_' // &
+        trim(op) // '_' // trim(buffer) // '_'
+      variables(v) % output_names(b) = trim(field) // &
+        variables(v) % input_name
+
+      ! create the field and add to pool
+      call add_new_field(variables(v) % info, &
+        variables(v) % input_name, field, &
+        domain % blocklist % allFields)
+
+      ! add the field to the stream
+      call mpas_stream_mgr_add_field(domain % streamManager, &
+        stream_name, variables(v) % output_names(b), ierr=err)
+    end do
+
+  end do ! number_of_variables
+end subroutine modify_stream!}}}
+
+
+
+!***********************************************************************
 ! routine walk_string
 !
 !> \brief Walk a semicolon delimited string to find substrings
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  Walk a string delimited by semicolons and return the first substring
 !>  from start index, and modify start to point at the next candidate.
 !-----------------------------------------------------------------------
 subroutine walk_string(next, substr, ok)!{{{
   ! input variables
-  !-----------------------------------------------------------------
 
   ! input/output variables
-  !-----------------------------------------------------------------
   character (len=StrKIND), intent(inout) :: next
 
   ! output variables
-  !-----------------------------------------------------------------
   character (len=StrKIND), intent(out) :: substr
   logical, intent(out) :: ok
 
   ! local variables
-  !-----------------------------------------------------------------
   integer :: i
   character (len=StrKIND) :: copy
 
@@ -575,7 +678,7 @@ subroutine walk_string(next, substr, ok)!{{{
 
   ! if there's anything in it other than whitespace, pass through
   i = verify(copy, ' ')
-  ok = i .gt. 0
+  ok = i > 0
   if (.not. ok) then
     return
   end if 
@@ -585,7 +688,7 @@ subroutine walk_string(next, substr, ok)!{{{
   i = scan(copy, ';')
   
   ! return that substring and the remainder
-  if (i .gt. 0) then
+  if (i > 0) then
     substr = trim(copy(1:i-1))
     next = trim(copy(i+1:))
   else
@@ -602,80 +705,76 @@ end subroutine walk_string!}}}
 !
 !> \brief Set a list of times
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  Walk a list of times delimited by spaces and set the time info
 !>  for the buffer structure so that alarms can be set.
 !-----------------------------------------------------------------------
 subroutine set_times(buffers, number_of_buffers, clock, &
-              which, config_str, ok, err)
+              which, config, ok, err)
   ! input variables
-  !-----------------------------------------------------------------
   integer, intent(in) :: number_of_buffers, which
-  character (len=StrKIND), pointer, intent(in) :: config_str
+  character (len=StrKIND), pointer, intent(in) :: config
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (time_buffer_type), dimension(:), intent(inout) :: buffers
   type (MPAS_Clock_type), intent(inout) :: clock
 
   ! output variables
-  !-----------------------------------------------------------------
   logical, intent(out) :: ok
   integer, intent(out) :: err 
 
   ! local variables
-  !-----------------------------------------------------------------
-  character (len=StrKIND) :: next_str, time_str
+  character (len=StrKIND) :: next, time
   integer :: b 
 
   ! find the first time in the list
-  next_str = config_str
+  next = config
   b = 0
-  call walk_string(next_str, time_str, ok)
+  call walk_string(next, time, ok)
 
   ! while the time string is ok
   do while (ok)
     ! exit if we went over
     b = b + 1
-    if (b .gt. number_of_buffers) then
+    if (b > number_of_buffers) then
       exit
     end if
 
     ! set the time
-    if (which .eq. START_TIMES) then
-      if (time_str .eq. 'initial_time') then
+    if (which == START_TIMES) then
+      if (time == 'initial_time') then
         buffers(b) % start_time = mpas_get_clock_time(clock, &
           MPAS_NOW, err)
       else
         call mpas_set_time(buffers(b) % start_time, &
-            dateTimeString=time_str, ierr=err)
+            dateTimeString=time, ierr=err)
       end if
-    else if (which .eq. DURATION_INTERVALS) then
-      if (time_str .eq. 'repeat_interval') then
+    else if (which == DURATION_INTERVALS) then
+      if (time == 'repeat_interval') then
         buffers(b) % duration_interval = buffers(b) % repeat_interval
       else
         call mpas_set_timeInterval(buffers(b) % duration_interval, &
-            timeString=time_str, ierr=err)
+            timeString=time, ierr=err)
       end if
-    else if (which .eq. REPEAT_INTERVALS) then
-      if (time_str .eq. 'reset_interval') then
+    else if (which == REPEAT_INTERVALS) then
+      if (time == 'reset_interval') then
         buffers(b) % repeat_interval = buffers(b) % reset_interval
       else
         call mpas_set_timeInterval(buffers(b) % repeat_interval, &
-            timeString=time_str, ierr=err)
+            timeString=time, ierr=err)
       end if
     else
       call mpas_set_timeInterval(buffers(b) % reset_interval, &
-          timeString=time_str, ierr=err)
+          timeString=time, ierr=err)
     end if 
 
     ! get the next time string
-    call walk_string(next_str, time_str, ok)
+    call walk_string(next, time, ok)
   end do
 
   ! only ok if we parsed out as many as there are number of buffers
-  ok = number_of_buffers .eq. b
+  ok = number_of_buffers == b
  end subroutine set_times
 
 
@@ -685,51 +784,44 @@ subroutine set_times(buffers, number_of_buffers, clock, &
 !
 !> \brief Function to create a new field from an existing field
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts all initializations required for
 !>  duplicating a field and adding it to the allFields pool.
 !-----------------------------------------------------------------------
 subroutine add_new_field(info, inname, prefix, pool)!{{{
   ! input variables
-  !-----------------------------------------------------------------
   type (mpas_pool_field_info_type), intent(in) :: info
   character (len=StrKIND), intent(in) :: inname, prefix
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (mpas_pool_type), intent(inout) :: pool 
 
   ! output variables
-  !-----------------------------------------------------------------
 
   ! local variables
-  !-----------------------------------------------------------------
-
-  ! start procedure
-  !-----------------------------------------------------------------
 
   ! duplicate field and add new field to pool
-  if (info % fieldType .eq. MPAS_POOL_REAL) then
-    if (info % nDims .eq. 0) then
+  if (info % fieldType == MPAS_POOL_REAL) then
+    if (info % nDims == 0) then
       call copy_field_0r(inname, pool, prefix)
-    else if (info % nDims .eq. 1) then
+    else if (info % nDims == 1) then
       call copy_field_1r(inname, pool, prefix)
-    else if (info % nDims .eq. 2) then
+    else if (info % nDims == 2) then
       call copy_field_2r(inname, pool, prefix)
-    else if (info % nDims .eq. 3) then
+    else if (info % nDims == 3) then
       call copy_field_3r(inname, pool, prefix)
-    else if (info % nDims .eq. 4) then
+    else if (info % nDims == 4) then
       call copy_field_4r(inname, pool, prefix)
     else
       call copy_field_5r(inname, pool, prefix)
     end if
   else
-    if (info % nDims .eq. 0) then
+    if (info % nDims == 0) then
       call copy_field_0i(inname, pool, prefix)
-    else if (info % nDims .eq. 1) then
+    else if (info % nDims == 1) then
       call copy_field_1i(inname, pool, prefix)
-    else if (info % nDims .eq. 2) then
+    else if (info % nDims == 2) then
       call copy_field_2i(inname, pool, prefix)
     else
       call copy_field_3i(inname, pool, prefix)
@@ -745,29 +837,24 @@ end subroutine add_new_field!}}}
 !
 !> \brief Timer functions to determine when to run
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts timer checking to determine if it 
 !>  needs to run at this particular time. 
 !-----------------------------------------------------------------------
 subroutine timer_checking(domain, err)!{{{
   ! input variables
-  !-----------------------------------------------------------------
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (domain_type), intent(inout) :: domain
 
   ! output variables
-  !-----------------------------------------------------------------
   integer, intent(out) :: err
 
   ! local variables
-  !-----------------------------------------------------------------
   integer :: b
 
   ! start procedure
-  !-----------------------------------------------------------------
   err = 0
 
   do b = 1, size(buffers)
@@ -825,73 +912,69 @@ end subroutine timer_checking!}}}
 !
 !> \brief Do the operation, but switch on run-time type
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  Since we don't know the type of the array, we need to do some
 !>  run-time type switching based on the type of the array.
 !-----------------------------------------------------------------------
 subroutine typed_operate(block, tvar, operation)!{{{
   ! input variables
-  !-----------------------------------------------------------------
   type (block_type), pointer, intent(in) :: block
   integer, intent(in) :: operation
 
   ! input/output variables
-  !-----------------------------------------------------------------
   type (time_variable_type), intent(inout) :: tvar
 
   ! output variables
-  !-----------------------------------------------------------------
 
   ! local variables
-  !-----------------------------------------------------------------
 
   ! switch based on the type, dimensionality, and operation
   if (tvar % info % fieldType == MPAS_POOL_REAL) then
     if (tvar % info % nDims  == 0) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate0r_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate0r_min(block, tvar)
       else
         call operate0r_max(block, tvar)
       end if 
     else if (tvar % info % nDims == 1) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate1r_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate1r_min(block, tvar)
       else
         call operate1r_max(block, tvar)
       end if 
     else if (tvar % info % nDims == 2) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate2r_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate2r_min(block, tvar)
       else
         call operate2r_max(block, tvar)
       end if 
     else if (tvar % info % nDims == 3) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate3r_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate3r_min(block, tvar)
       else
         call operate3r_max(block, tvar)
       end if 
     else if (tvar % info % nDims == 4) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate4r_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate4r_min(block, tvar)
       else
         call operate4r_max(block, tvar)
       end if 
     else
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate5r_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate5r_min(block, tvar)
       else
         call operate5r_max(block, tvar)
@@ -899,33 +982,33 @@ subroutine typed_operate(block, tvar, operation)!{{{
     end if
   else 
     if (tvar % info % nDims == 0) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate0i_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate0i_min(block, tvar)
       else
         call operate0i_max(block, tvar)
       end if 
     else if (tvar % info % nDims == 1) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate1i_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate1i_min(block, tvar)
       else
         call operate1i_max(block, tvar)
       end if 
     else if (tvar % info % nDims == 2) then
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate2i_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate2i_min(block, tvar)
       else
         call operate2i_max(block, tvar)
       end if 
     else
-      if (operation .eq. AVG_OP) then
+      if (operation == AVG_OP) then
         call operate3i_avg(block, tvar)
-      else if (operation .eq. MIN_OP) then
+      else if (operation == MIN_OP) then
         call operate3i_min(block, tvar)
       else
         call operate3i_max(block, tvar)
@@ -941,7 +1024,7 @@ end subroutine typed_operate!}}}
 !
 !> \brief Functions to create a new field from an existing field
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  This routine conducts initializations required for
 !>  duplicating a field and adding it to the allFields pool based on type.
@@ -1173,7 +1256,7 @@ end subroutine copy_field_3i!}}}
 !
 !> \brief Series of subroutines to support operations on run-time types
 !> \author  Jon Woodring
-!> \date    March 2, 2015
+!> \date    September 1, 2015
 !> \details 
 !>  These subroutines encapsulate the different opertions that can occur
 !>  based on the run-time types. (This would likely be
