@@ -13,6 +13,7 @@ option (PIO_ENABLE_MPIIO     "Enable support for MPI-IO auto detect"        ON)
 
 #===== Library Variables
 set (PIO_FILESYSTEM_HINTS IGNORE CACHE STRING "Filesystem hints (lustre or gpfs)")
+set (PIO_MACRO_SCRIPT IGNORE CACHE FILEPATH "CMake script to initialize cache variables")
 
 #===== Testing Options =====
 option (PIO_ENABLE_TESTS  "Enable the testing builds"                           ON)
@@ -45,6 +46,11 @@ endif ()
 set (CMAKE_UTILS_DIR ${CMAKE_UTILS_DIR}
      CACHE STRING "Location of the CMake_Fortran_utils")
 list (APPEND CMAKE_MODULE_PATH ${CMAKE_UTILS_DIR})
+
+#===== External CMake Macro Script =====
+if (PIO_MACROS_SCRIPT)
+    include (${PIO_MACRO_SCRIPT})
+endif ()
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
