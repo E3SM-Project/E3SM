@@ -4291,6 +4291,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
 
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
+
       do i = 1, 1
         if(field % dimSizes(i) <= 0) then
           return
@@ -4458,6 +4465,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: nHaloLayers, iHalo, i, j
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
+
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
 
       do i = 1, 2
         if(field % dimSizes(i) <= 0) then
@@ -4628,6 +4642,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: nHaloLayers, iHalo, i, j, k
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
+
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
 
       do i = 1, 3
         if(field % dimSizes(i) <= 0) then
@@ -4805,6 +4826,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
 
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
+
       do i = 1, 1
         if(field % dimSizes(i) <= 0) then
           return
@@ -4970,6 +4998,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: nHaloLayers, iHalo, i, j
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
+
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
 
       do i = 1, 2
         if(field % dimSizes(i) <= 0) then
@@ -5139,6 +5174,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: nHaloLayers, iHalo, i, j, k
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
+
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
 
       do i = 1, 3
         if(field % dimSizes(i) <= 0) then
@@ -5314,6 +5356,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: nHaloLayers, iHalo, i, j, k, l
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
+
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
 
       do i = 1, 4
         if(field % dimSizes(i) <= 0) then
@@ -5498,6 +5547,13 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: nHaloLayers, iHalo, i, j, k, l, m
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
+
+      if ( .not. field % isActive ) then
+#ifdef MPAS_DEBUG
+         write(stderrUnit, *) ' -- Skipping halo exchange for deactivated field: ' // trim(field % fieldName)
+#endif
+         return
+      end if
 
       do i = 1, 5
         if(field % dimSizes(i) <= 0) then
