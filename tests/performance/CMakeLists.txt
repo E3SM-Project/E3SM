@@ -4,9 +4,9 @@
 
 set (SRC pioperformance.F90)
 
-add_executable (pio_perf_test ${SRC})
+add_executable (pioperf ${SRC})
 
-target_link_libraries (pio_perf_test piof pioc gptl)
+target_link_libraries (pioperf piof pioc gptl)
 
 if (PIO_HDF5_LOGGING) 
     add_definitions (-DLOGGING)
