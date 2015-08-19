@@ -49,7 +49,6 @@ module ocn_time_series_stats
   type time_buffer_type
     ! internal state
     logical :: started_flag, accumulate_flag, reset_flag
-    logical :: delay_reset_flag, duration_over_flag
     integer :: total_accum
 
     type (MPAS_Time_type) :: start_time
@@ -352,6 +351,7 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   end do ! number_of_variables
 
   ! configure alarms
+  ! TODO modify the alarms based on do_restart
   do b = 1, number_of_buffers
     write(buffer_str, '(I0)') b
     buffers(b) % start_alarm_ID = &
@@ -376,13 +376,14 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
       buffers(b) % duration_interval, & 
       buffers(b) % repeat_interval, ierr=err)
 
+    ! reset at start
     buffers(b) % reset_alarm_ID = &
       'tavg_reset' // trim(stream_str) // '_' // buffer_str
     call mpas_add_clock_alarm(domain % clock, &
       buffers(b) % reset_alarm_ID, &
-      buffers(b) % start_time + &
-      buffers(b) % reset_interval, &
+      buffers(b) % start_time, &
       buffers(b) % reset_interval, ierr=err)
+
   end do
 
   ! set initial flags
@@ -390,10 +391,10 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
     buffers(b) % started_flag = .false.
     buffers(b) % reset_flag = .false.
     buffers(b) % accumulate_flag = .false.
-    buffers(b) % delay_reset_flag = .false.
-    buffers(b) % duration_over_flag = .false.
   end do
 
+  ! set flags based on initial times
+  call timer_checking(domain, err)
 end subroutine ocn_init_time_series_stats!}}}
 
 
@@ -429,13 +430,9 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
   !-----------------------------------------------------------------
   err = 0
 
-  ! do all of the time checking and flag setting
-  call timer_checking(domain, err)
-
-  ! update number of accumulations, once only
+  ! update the counter
   do b = 1, size(buffers)
-    if (buffers(b) % reset_flag .and. &
-       (.not. buffers(b) % delay_reset_flag)) then
+    if (buffers(b) % reset_flag) then
       buffers(b) % total_accum = 1
     else if (buffers(b) % accumulate_flag) then
       buffers(b) % total_accum = buffers(b) % total_accum + 1
@@ -447,20 +444,13 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
     call typed_operate(domain % blocklist, variables(v), operation)
   end do
 
-  ! clear resets and accumulation
+  ! clear any resets
   do b = 1, size(buffers)
-    if (buffers(b) % delay_reset_flag) then
-      buffers(b) % delay_reset_flag = .false.
-    else
-      buffers(b) % reset_flag = .false.
-    end if
-    
-    if (buffers(b) % duration_over_flag) then
-      buffers(b) % duration_over_flag = .false.
-      buffers(b) % accumulate_flag = .false.
-    end if
+    buffers(b) % reset_flag = .false.
   end do
 
+  ! do all of the time checking and flag setting
+  call timer_checking(domain, err)
 end subroutine ocn_compute_time_series_stats!}}}
 
 
@@ -788,9 +778,6 @@ subroutine timer_checking(domain, err)!{{{
         buffers(b) % start_alarm_ID, ierr=err)
       buffers(b) % started_flag = .true. 
       buffers(b) % accumulate_flag = .true.
-
-      ! TODO only reset if not restart
-      buffers(b) % reset_flag = .true.
     end if
 
     ! if we aren't started, continue to next buffer
@@ -805,7 +792,6 @@ subroutine timer_checking(domain, err)!{{{
       call mpas_reset_clock_alarm(domain % clock, &
         buffers(b) % reset_alarm_ID, ierr=err)
       buffers(b) % reset_flag = .true.
-      buffers(b) % delay_reset_flag = .true.
     end if
 
     ! turn off accumulation
@@ -816,7 +802,7 @@ subroutine timer_checking(domain, err)!{{{
         buffers(b) % duration_alarm_ID, ierr=err)) then
       call mpas_reset_clock_alarm(domain % clock, &
         buffers(b) % duration_alarm_ID, ierr=err)
-      buffers(b) % duration_over_flag = .true.
+      buffers(b) % accumulate_flag = .false.
     end if
 
     ! turn on accumulation 
@@ -827,7 +813,6 @@ subroutine timer_checking(domain, err)!{{{
       call mpas_reset_clock_alarm(domain % clock, &
         buffers(b) % repeat_alarm_ID, ierr=err)
       buffers(b) % accumulate_flag = .true.
-      buffers(b) % duration_over_flag = .false.
     end if
 
   end do
@@ -1217,8 +1202,7 @@ subroutine operate0r_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1253,8 +1237,7 @@ subroutine operate1r_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1289,8 +1272,7 @@ subroutine operate2r_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1325,8 +1307,7 @@ subroutine operate3r_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1361,8 +1342,7 @@ subroutine operate4r_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1397,8 +1377,7 @@ subroutine operate5r_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1433,8 +1412,7 @@ subroutine operate0i_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1469,8 +1447,7 @@ subroutine operate1i_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1505,8 +1482,7 @@ subroutine operate2i_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1541,8 +1517,7 @@ subroutine operate3i_avg (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1577,8 +1552,7 @@ subroutine operate0r_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1613,8 +1587,7 @@ subroutine operate1r_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1649,8 +1622,7 @@ subroutine operate2r_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1685,8 +1657,7 @@ subroutine operate3r_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1721,8 +1692,7 @@ subroutine operate4r_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1757,8 +1727,7 @@ subroutine operate5r_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1793,8 +1762,7 @@ subroutine operate0i_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1829,8 +1797,7 @@ subroutine operate1i_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1865,8 +1832,7 @@ subroutine operate2i_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1901,8 +1867,7 @@ subroutine operate3i_min (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1937,8 +1902,7 @@ subroutine operate0r_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -1973,8 +1937,7 @@ subroutine operate1r_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2009,8 +1972,7 @@ subroutine operate2r_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2045,8 +2007,7 @@ subroutine operate3r_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2081,8 +2042,7 @@ subroutine operate4r_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2117,8 +2077,7 @@ subroutine operate5r_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2153,8 +2112,7 @@ subroutine operate0i_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2189,8 +2147,7 @@ subroutine operate1i_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2225,8 +2182,7 @@ subroutine operate2i_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
@@ -2261,8 +2217,7 @@ subroutine operate3i_max (start_block, tvar)
       tvar % input_name, in_array, 1)
 
     do b = 1, size(buffers)
-      if (buffers(b) % reset_flag .and. &
-         (.not. buffers(b) % delay_reset_flag)) then
+      if (buffers(b) % reset_flag) then
         call mpas_pool_get_array(block % allFields, &
             tvar % output_names(b), out_array, 1)
         out_array = in_array
