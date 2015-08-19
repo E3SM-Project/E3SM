@@ -69,6 +69,9 @@ function (add_mpi_test TESTNAME)
     # Get the platform name
     platform_name (PLATFORM)
     
+    message ("exec_file = ${exec_file}")
+    message ("exec_args = ${exec_args}")
+    
     # Default ("unknown" platform) execution
     if (PLATFORM STREQUAL "unknown")
 

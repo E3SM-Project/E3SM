@@ -9,4 +9,7 @@
 NP=$1
 shift
 
+echo "NP = $NP"
+echo "args = $@"
+
 mpirun.lsf $@ -n$NP
