@@ -984,7 +984,6 @@
 			<var name="bottomDepth"/>
 			<var name="bottomDepthObserved"/>
 			<var name="maxLevelCell"/>
-			<var name="seaSurfacePressure"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="edgeMask"/>
 			<var name="cullCell"/>
