@@ -8,3 +8,4 @@
 #include "Registry_test_compute_interval.xml"
 #include "Registry_high_frequency_output.xml"
 #include "Registry_time_filters.xml"
+#include "Registry_mixed_layer_depths.xml"
