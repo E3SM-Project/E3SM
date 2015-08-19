@@ -650,8 +650,10 @@ sub gettime2{
     if ($#tmp == 0) {
 	#pw2 if ($tmp[0] =~ /\s*${strw}\s+([\.\de\+]+)\s+(\d+)\s/) {
 	if ($tmp[0] =~ m/\s*${strw}\s*(\d+)\s*\d+\s*(\S+)/) {
-	    $procs=$2;
-	    $count=$1;
+#pw	    $procs=$2;
+#pw	    $count=$1;
+	    $procs=$1;
+	    $count=$2;
 	}
 	elsif ($tmp[0] =~ /\s*${strw}\s+(\d+)\s/) {
 	    $procs = 1;
