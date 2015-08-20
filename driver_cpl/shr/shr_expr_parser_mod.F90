@@ -39,6 +39,8 @@ contains
     type(shr_exp_item_t), pointer :: exp_item, list_item
 
     nullify( exp_items_list )
+    nullify( exp_item )
+    nullify( list_item )
 
     n_exp_items = 0
     nmax = size( exp_array )
@@ -53,6 +55,7 @@ contains
              n_exp_items = n_exp_items + 1
 
              allocate( exp_item )
+             nullify(exp_item%next_item)
              exp_item%n_terms = 0
              exp_item%name = trim(adjustl(exp_array(i)(:j-1)))
 
