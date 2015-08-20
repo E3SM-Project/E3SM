@@ -158,59 +158,57 @@ contains
   !------------------------------------------------------------------------
   subroutine shr_fire_emis_init( specifier, emis_fields )
 
-    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_maxitems
+    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t
 
     character(len=*), intent(in) :: specifier(:)
     character(len=*), intent(out) :: emis_fields	
 
     integer :: n_entries
     integer :: i, j, k
-    integer :: spc_len
 
-    type(shr_exp_item_t) :: items(shr_exp_maxitems)
-
+    type(shr_exp_item_t), pointer :: items_list, item
     character(len=12) :: token   ! fire emis field name to add
 
     nullify(shr_fire_emis_linkedlist)
 
-    items = shr_exp_parse( specifier, nitems=n_entries ) 
+    items_list => shr_exp_parse( specifier, nitems=n_entries ) 
 
     allocate(shr_fire_emis_mechcomps(n_entries))
     shr_fire_emis_mechcomps(:)%n_emis_comps = 0
 
     emis_fields = ''
 
-    do i = 1,n_entries
-       spc_len=len_trim(specifier(i))
-       if ( spc_len > 0 ) then
+    item => items_list
+    i = 1
+    do while(associated(item))
 
-          do k=1,shr_fire_emis_mechcomps_n
-             if ( trim(shr_fire_emis_mechcomps(k)%name) == trim(items(i)%name) ) then
-                call shr_sys_abort( 'shr_fire_emis_init : multiple emissions definitions specified for : '//trim(items(i)%name))
-             endif
-          enddo
-
-          shr_fire_emis_mechcomps(i)%name = items(i)%name
-          shr_fire_emis_mechcomps(i)%n_emis_comps = items(i)%n_terms
-          allocate(shr_fire_emis_mechcomps(i)%emis_comps(items(i)%n_terms))
-
-          do j = 1,items(i)%n_terms
-             shr_fire_emis_mechcomps(i)%emis_comps(j)%ptr => add_emis_comp( items(i)%vars(j), items(i)%coeffs(j) )
-          enddo
-          shr_fire_emis_mechcomps_n = shr_fire_emis_mechcomps_n+1
-
-          write(token,333) shr_fire_emis_mechcomps_n
-
-          if ( shr_fire_emis_mechcomps_n == 1 ) then
-             ! no not prepend ":" to the string for the first token
-             emis_fields = trim(token)
-             shr_fire_emis_fields_token = token
-          else
-             emis_fields = trim(emis_fields)//':'//trim(token)                 
+       do k=1,shr_fire_emis_mechcomps_n
+          if ( trim(shr_fire_emis_mechcomps(k)%name) == trim(item%name) ) then
+             call shr_sys_abort( 'shr_fire_emis_init : multiple emissions definitions specified for : '//trim(item%name))
           endif
+       enddo
 
+       shr_fire_emis_mechcomps(i)%name = item%name
+       shr_fire_emis_mechcomps(i)%n_emis_comps = item%n_terms
+       allocate(shr_fire_emis_mechcomps(i)%emis_comps(item%n_terms))
+
+       do j = 1,item%n_terms
+          shr_fire_emis_mechcomps(i)%emis_comps(j)%ptr => add_emis_comp( item%vars(j), item%coeffs(j) )
+       enddo
+       shr_fire_emis_mechcomps_n = shr_fire_emis_mechcomps_n+1
+
+       write(token,333) shr_fire_emis_mechcomps_n
+
+       if ( shr_fire_emis_mechcomps_n == 1 ) then
+          ! do not prepend ":" to the string for the first token
+          emis_fields = trim(token)
+          shr_fire_emis_fields_token = token
+       else
+          emis_fields = trim(emis_fields)//':'//trim(token)                 
        endif
 
+       item => item%next_item
+       i = i+1
     enddo
 
     ! Need to explicitly add Fl_ based on naming convention

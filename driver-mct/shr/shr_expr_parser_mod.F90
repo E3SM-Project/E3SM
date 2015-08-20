@@ -13,17 +13,14 @@ module shr_expr_parser_mod
 
   public :: shr_exp_parse     ! parses simple strings which contain expressions 
   public :: shr_exp_item_t    ! user defined type which contains an expression component
-  public :: shr_exp_maxitems  ! number of objects contained in arry returned by shr_exp_parse
-
-  integer, parameter :: shr_exp_maxitems = 256
-  integer, parameter :: lrg_num = 256
 
   ! contains componets of expression
   type shr_exp_item_t
      character(len=64) :: name
-     character(len=64) :: vars(lrg_num)
-     real(r8)          :: coeffs(lrg_num)
+     character(len=64),pointer :: vars(:) => null()
+     real(r8)         ,pointer :: coeffs(:) => null()
      integer           :: n_terms = 0
+     type(shr_exp_item_t), pointer :: next_item
   end type shr_exp_item_t
 
 contains
@@ -31,14 +28,17 @@ contains
   ! -----------------------------------------------------------------
   ! parses expressions provided in array of strings
   ! -----------------------------------------------------------------
-  function shr_exp_parse( exp_array, nitems ) result(exp_items)
+  function shr_exp_parse( exp_array, nitems ) result(exp_items_list)
 
     character(len=*), intent(in)   :: exp_array(:) ! contains a expressions
     integer, optional, intent(out) :: nitems       ! number of expressions parsed
-    type(shr_exp_item_t)           :: exp_items(shr_exp_maxitems) ! array of items returned
+    type(shr_exp_item_t), pointer  :: exp_items_list ! linked list of items returned
     
-    integer :: i,j, nmax, n_exp_items
+    integer :: i,j, jj, nmax, nterms, n_exp_items
     character(len=cx) :: tmp_str
+    type(shr_exp_item_t), pointer :: exp_item, list_item
+
+    nullify( exp_items_list )
 
     n_exp_items = 0
     nmax = size( exp_array )
@@ -51,19 +51,33 @@ contains
           if ( j>0 ) then 
 
              n_exp_items = n_exp_items + 1
-             exp_items(n_exp_items)%n_terms = 0
 
-             exp_items(n_exp_items)%name = trim(adjustl(exp_array(i)(:j-1)))
+             allocate( exp_item )
+             exp_item%n_terms = 0
+             exp_item%name = trim(adjustl(exp_array(i)(:j-1)))
+
+             tmp_str = trim(adjustl(exp_array(i)(j+1:)))
+
+             nterms = 1             
+             jj = scan( tmp_str, '+' )
+             do while(jj>0)
+                nterms = nterms + 1
+                tmp_str = tmp_str(jj+1:)
+                jj = scan( tmp_str, '+' )
+             enddo
+             
+             allocate( exp_item%vars(nterms) )
+             allocate( exp_item%coeffs(nterms) )
 
              tmp_str = trim(adjustl(exp_array(i)(j+1:)))
 
              j = scan( tmp_str, '+' )
 
              if (j>0) then
-                call set_coefvar( tmp_str(:j-1), exp_items(n_exp_items) )
+                call set_coefvar( tmp_str(:j-1), exp_item )
                 tmp_str = tmp_str(j-1:)
              else
-                call set_coefvar( tmp_str, exp_items(n_exp_items) )
+                call set_coefvar( tmp_str, exp_item )
              endif
 
           else
@@ -83,15 +97,28 @@ contains
 
              do while(j>0)
 
-                call set_coefvar( tmp_str(:j-1), exp_items(n_exp_items) )
+                call set_coefvar( tmp_str(:j-1), exp_item )
 
                 tmp_str = tmp_str(j+1:)
                 j = scan( tmp_str, '+' )
 
              enddo
 
-             call set_coefvar( tmp_str, exp_items(n_exp_items) )
+             call set_coefvar( tmp_str, exp_item )
 
+          endif
+
+          
+          if (associated(exp_item)) then
+             if (associated(exp_items_list)) then
+                list_item => exp_items_list
+                do while(associated(list_item%next_item))
+                   list_item => list_item%next_item
+                enddo
+                list_item%next_item => exp_item
+             else
+                exp_items_list => exp_item
+             endif
           endif
 
        endif

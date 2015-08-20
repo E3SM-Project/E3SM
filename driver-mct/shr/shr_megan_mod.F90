@@ -173,60 +173,57 @@ contains
   !-------------------------------------------------------------------------
   subroutine shr_megan_init( specifier, megan_fields )
 
-    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_maxitems
+    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t
 
     character(len=*), intent(in) :: specifier(:)
     character(len=*), intent(out) :: megan_fields	
 
     integer :: n_entries
     integer :: i, j, k
-    integer :: spc_len
 
-    type(shr_exp_item_t) :: items(shr_exp_maxitems)
+    type(shr_exp_item_t), pointer :: items_list, item
     character(len=12) :: token   ! megan field name to add
 
     nullify(shr_megan_linkedlist)
 
-    items = shr_exp_parse( specifier, nitems=n_entries ) 
+    items_list => shr_exp_parse( specifier, nitems=n_entries ) 
 
     allocate(shr_megan_mechcomps(n_entries))
     shr_megan_mechcomps(:)%n_megan_comps = 0
 
     megan_fields = ''
 
-    do i = 1,n_entries
-       spc_len=len_trim(specifier(i))
-       if ( spc_len > 0 ) then
+    item => items_list
+    i = 1
+    do while(associated(item))
 
-          do k=1,shr_megan_mechcomps_n
-             if ( trim(shr_megan_mechcomps(k)%name) == trim(items(i)%name) ) then
-                call shr_sys_abort( 'shr_megan_init : duplicate compound names : '//trim(items(i)%name))
-             endif
-          enddo
-
-          shr_megan_mechcomps(i)%name = items(i)%name
-
-          shr_megan_mechcomps(i)%n_megan_comps = items(i)%n_terms
-
-          allocate(shr_megan_mechcomps(i)%megan_comps(items(i)%n_terms))
-
-          do j = 1,items(i)%n_terms
-             shr_megan_mechcomps(i)%megan_comps(j)%ptr => add_megan_comp( items(i)%vars(j), items(i)%coeffs(j) )
-          enddo
-          shr_megan_mechcomps_n = shr_megan_mechcomps_n+1
-
-          write(token,333) shr_megan_mechcomps_n
-
-          if ( shr_megan_mechcomps_n == 1 ) then
-             ! no not prepend ":" to the string for the first token
-             megan_fields = trim(token)
-             shr_megan_fields_token = token
-          else
-             megan_fields = trim(megan_fields)//':'//trim(token)                 
+       do k=1,shr_megan_mechcomps_n
+          if ( trim(shr_megan_mechcomps(k)%name) == trim(item%name) ) then
+             call shr_sys_abort( 'shr_megan_init : duplicate compound names : '//trim(item%name))
           endif
+       enddo
 
+       shr_megan_mechcomps(i)%name = item%name
+       shr_megan_mechcomps(i)%n_megan_comps = item%n_terms
+       allocate(shr_megan_mechcomps(i)%megan_comps(item%n_terms))
+
+       do j = 1,item%n_terms
+          shr_megan_mechcomps(i)%megan_comps(j)%ptr => add_megan_comp( item%vars(j), item%coeffs(j) )
+       enddo
+       shr_megan_mechcomps_n = shr_megan_mechcomps_n+1
+
+       write(token,333) shr_megan_mechcomps_n
+
+       if ( shr_megan_mechcomps_n == 1 ) then
+          ! do not prepend ":" to the string for the first token
+          megan_fields = trim(token)
+          shr_megan_fields_token = token
+       else
+          megan_fields = trim(megan_fields)//':'//trim(token)                 
        endif
 
+       item => item%next_item
+       i = i+1
     enddo
 
     ! Need to explicitly add Fl_ based on naming convention
