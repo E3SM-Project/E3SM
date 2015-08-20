@@ -16,7 +16,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_ge
 
 use cam_logfile,      only: iulog
 use cam_abortutils,       only: endrun
-use cam_history,      only: addfld, add_default, fieldname_len, phys_decomp, outfld
+use cam_history,      only: addfld, horiz_only, add_default, fieldname_len, outfld
 use constituents,     only: pcnst, cnst_name
 
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
@@ -151,7 +151,7 @@ subroutine modal_aero_calcsize_init(pbuf2d)
          unit = '#/m2/s'
          fieldname = trim(tmpnamea) // '_sfcsiz1'
          long_name = trim(tmpnamea) // ' calcsize number-adjust column source'
-         call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol) then
             call add_default(fieldname, 1, ' ')
          end if
@@ -159,7 +159,7 @@ subroutine modal_aero_calcsize_init(pbuf2d)
 
          fieldname = trim(tmpnamea) // '_sfcsiz2'
          long_name = trim(tmpnamea) // ' calcsize number-adjust column sink'
-         call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol) then
             call add_default(fieldname, 1, ' ')
          end if
@@ -209,7 +209,7 @@ subroutine modal_aero_calcsize_init(pbuf2d)
             (tmpnamea(1:3) == 'NUM')) unit = '#/m2/s'
          fieldname = trim(tmpnamea) // '_sfcsiz3'
          long_name = trim(tmpnamea) // ' calcsize aitken-to-accum adjust column tendency'
-         call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol) then
             call add_default(fieldname, 1, ' ')
          end if
@@ -217,7 +217,7 @@ subroutine modal_aero_calcsize_init(pbuf2d)
 
          fieldname = trim(tmpnameb) // '_sfcsiz3'
          long_name = trim(tmpnameb) // ' calcsize aitken-to-accum adjust column tendency'
-         call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol) then
             call add_default(fieldname, 1, ' ')
          end if
@@ -225,7 +225,7 @@ subroutine modal_aero_calcsize_init(pbuf2d)
 
          fieldname = trim(tmpnamea) // '_sfcsiz4'
          long_name = trim(tmpnamea) // ' calcsize accum-to-aitken adjust column tendency'
-         call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol) then
             call add_default(fieldname, 1, ' ')
          end if
@@ -233,7 +233,7 @@ subroutine modal_aero_calcsize_init(pbuf2d)
 
          fieldname = trim(tmpnameb) // '_sfcsiz4'
          long_name = trim(tmpnameb) // ' calcsize accum-to-aitken adjust column tendency'
-         call addfld( fieldname, unit, 1, 'A', long_name, phys_decomp )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol) then
             call add_default(fieldname, 1, ' ')
          end if

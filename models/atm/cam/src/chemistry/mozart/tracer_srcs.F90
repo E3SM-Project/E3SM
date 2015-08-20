@@ -51,7 +51,7 @@ contains
 
     use mo_chem_utls, only : get_extfrc_ndx
     use tracer_data,  only : trcdata_init
-    use cam_history,  only : addfld, phys_decomp
+    use cam_history,  only : addfld
     use ppgrid,       only : pver
     use physics_buffer, only : physics_buffer_desc
 
@@ -89,7 +89,7 @@ contains
 
        tracer_src_flds(i) = fields(i)%fldnam
  
-       call addfld(trim(fields(i)%fldnam)//'_trsrc','/cm3/s ', pver, 'I', 'tracer source rate', phys_decomp )
+       call addfld(trim(fields(i)%fldnam)//'_trsrc', (/ 'lev' /), 'I','/cm3/s', 'tracer source rate' )
 
     enddo 
 
