@@ -181,7 +181,8 @@ contains
       real (kind=RKIND), pointer :: tempGradMin, tempGradMax
       real (kind=RKIND), pointer :: denThreshMin, denThreshMax
       real (kind=RKIND), pointer :: denGradMin, denGradMax
-      character (len=StrKIND), pointer :: interp_type
+      integer, pointer :: interp_type
+      integer :: interp_local
       real (kind=RKIND), pointer :: refPress
       real (kind=RKIND), allocatable, dimension(:,:) :: gradientBins, thresholdBins
       real (kind=RKIND), allocatable, dimension(:,:) :: densityGradient, temperatureGradient
@@ -210,6 +211,10 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_den_gradient_maxthreshold', denGradMax)
       call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_interp_method', interp_type)
       call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_reference_pressure', refPress)
+
+      if (interp_type == 1) interp_local = 1
+      if (interp_type == 2) interp_local = 2
+      if (interp_type == 3) interp_local = 3
 
       block => domain % blocklist
       do while (associated(block))
@@ -246,21 +251,24 @@ contains
             enddo            
 
             do iCell = 1,nCellsSolve
+
+               found_den_mld = .false.
+               found_temp_mld = .false.
+
                do k=1, maxLevelCell(iCell)
                   if(pressure(k+1,iCell) > refPress) then
                      call interp_bw_levels(tracers(index_temperature,k,iCell),tracers(index_temperature,k+1,iCell), &
-                                   pressure(k,iCell),pressure(k+1,iCell),refPress,trim(interp_type),                &
+                                   pressure(k,iCell),pressure(k+1,iCell),refPress,interp_local,                &
                                    pressure(k-1,iCell),tracers(index_temperature,k-1,iCell),temp_ref_lev)
 
                      call interp_bw_levels(potentialDensity(k,iCell),potentialDensity(k+1,iCell), &
-                                   pressure(k,iCell),pressure(k+1,iCell),refPress,trim(interp_type),                &
+                                   pressure(k,iCell),pressure(k+1,iCell),refPress,interp_local,                &
                                    pressure(k-1,iCell),potentialDensity(k-1,iCell),den_ref_lev) 
                     
                      refIndex = k+1
                      exit
                    endif
                enddo
-
 
                do i=1,nThresholdBins
                   do k=refIndex,maxLevelCell(iCell)
@@ -269,7 +277,7 @@ contains
                         dV   = abs(tracers(index_temperature,k  ,iCell) - temp_ref_lev)
                         dVm1 = abs(tracers(index_temperature,k-1,iCell) - temp_ref_lev)
                         call interp_bw_levels(zMid(k,iCell),zMid(k+1,iCell), dV, dVp1, thresholdBins(1,i),     &
-                                   trim(interp_type), dVm1, zMid(k-1,iCell), thresholdMLD(1,i,iCell))
+                                   interp_local, dVm1, zMid(k-1,iCell), thresholdMLD(1,i,iCell))
                         found_temp_mld = .true.
                      endif
 
@@ -278,7 +286,7 @@ contains
                         dV   = abs(potentialDensity(k  ,iCell) - den_ref_lev)
                         dVm1 = abs(potentialDensity(k-1,iCell) - den_ref_lev)
                         call interp_bw_levels(zMid(k,iCell),zMid(k+1,iCell), dV, dVp1, thresholdBins(2,i),     &
-                                   trim(interp_type), dVm1, zMid(k-1,iCell), thresholdMLD(2,i,iCell))
+                                   interp_local, dVm1, zMid(k-1,iCell), thresholdMLD(2,i,iCell))
                         found_den_mld = .true.
                      endif
           
@@ -295,8 +303,6 @@ contains
 ! Compute the mixed layer depth based on a gradient threshold in temperature and density
 
          if(gradientFlag) then
-            found_temp_mld=.false.
-            found_den_mld=.false.
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'gradientMLD', gradientMLD)
             dTempGrad = (tempGradMax - tempGradMin) / float(nGradientBins)
             dDenGrad  = (denGradMax - denGradMin) / float(nGradientBins)
@@ -315,6 +321,10 @@ contains
             temperatureGradient(2,1) = 1
 
             do iCell = 1,nCellsSolve
+
+               found_den_mld=.false.
+               found_temp_mld=.false.
+
                do k=2,maxLevelCell(iCell)
                      dz=abs(zMid(k-1,iCell)-zMid(k,iCell))
                      densityGradient(k,1) = (potentialDensity(k-1,iCell)-potentialDensity(k,iCell)) / dz 
@@ -335,12 +345,12 @@ contains
                do k=2, maxLevelCell(iCell)
                   if(densityGradient(1,k+1) .ge. gradientBins(2,i)) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),densityGradient(k,1),densityGradient(k+1,1),           &
-                           gradientBins(2,i), trim(interp_type),densityGradient(k-1,1),zTop(k-1,iCell), gradientMLD(2,i,iCell))                   
+                           gradientBins(2,i), interp_local,densityGradient(k-1,1),zTop(k-1,iCell), gradientMLD(2,i,iCell))                   
                     found_den_mld=.true.
                   endif
                   if(temperatureGradient(k+1,1) .ge. gradientBins(2,i)) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),temperatureGradient(k,1),temperatureGradient(k+1,1),          &
-                           gradientBins(1,i), trim(interp_type),temperatureGradient(k-1,1),zTop(k-1,iCell), gradientMLD(1,i,iCell))
+                           gradientBins(1,i), interp_local,temperatureGradient(k-1,1),zTop(k-1,iCell), gradientMLD(1,i,iCell))
                     found_temp_mld=.true.
                   endif
 
@@ -397,9 +407,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine interp_bw_levels(y0,y1,x0,x1,xT,interp_type,xm1,ym1,yT)!{{{
+   subroutine interp_bw_levels(y0,y1,x0,x1,xT,interp_f,xm1,ym1,yT)!{{{
 
-   character(len=StrKIND),intent(in) :: interp_type  ! linear, quadratic, or spline
+   integer,intent(in) :: interp_f  ! linear, quadratic, or spline
    real(kind=RKIND),intent(in)  :: y0,y1,x0,x1,xT
    real(kind=RKIND),intent(inout) :: yT
    real(kind=RKIND),optional,intent(in) :: xm1,ym1
@@ -421,14 +431,14 @@ contains
    Minv(:,:) = 0.0_RKIND
    rhs(:)    = 0.0_RKIND
 
-   select case (trim(interp_type))
 
-       case ("linear")
+   select case (interp_f)
+
+       case (1)
 
           coeffs(2) = (y1-y0)/(x1-x0)
           coeffs(1) = y0 - coeffs(2)*x0
-
-       case ("quadratic")
+       case (2)
            
           det = -(x1-x0)**2
           rhs(1) = y0
@@ -456,7 +466,7 @@ contains
              enddo
           enddo
             
-        case ("spline")
+        case (3)
           det = -(x1-x0)**3
           rhs(1) = y1
           rhs(2) = y0
@@ -493,7 +503,7 @@ contains
 
      end select
 
-     yT = coeffs(1)*xT**3 + coeffs(2)*xT**2 + coeffs(3)*xT + coeffs(4)
+     yT = coeffs(4)*xT**3 + coeffs(3)*xT**2 + coeffs(2)*xT + coeffs(1)
    end subroutine interp_bw_levels!}}}
 
 !***********************************************************************
