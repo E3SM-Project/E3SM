@@ -70,9 +70,9 @@
                         description="minimum potential density gradient crit value.  If not exceeded max gradient used"
                         possible_values="all positive reals"
                 />
-		<nml_option name="config_AM_mixedLayerDepths_interp_method" type="character" default_value="linear" units="unitless"
+		<nml_option name="config_AM_mixedLayerDepths_interp_method" type="integer" default_value="1" units="unitless"
 			description="string specifying which interpolation method to use in computations"
-			possible_values="linear or quadratic or spline"
+			possible_values="1=linear or 2=quadratic or 3=cubic"
 		/>
 	</nml_record>
 	<packages>
