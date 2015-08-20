@@ -396,10 +396,11 @@ subroutine get_alarms(domain, prefix, number_of_buffers, err)
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  integer :: b
+  integer :: b, n
   character (len=StrKIND), pointer :: config_results
   character (len=StrKIND) :: config
   logical :: ok
+  type (mpas_timeinterval_type) :: rem, zero
 
   ! configure start times - we don't have to check ok
   ! because the timer count is based on initial_times tokens
@@ -449,17 +450,23 @@ subroutine get_alarms(domain, prefix, number_of_buffers, err)
   end if
 
   ! check if some of the time configuration is sensible
+  call mpas_set_timeInterval(zero, s=0)
+
   do b = 1, number_of_buffers
-    if (buffers(b) % repeat_interval > &
-       buffers(b) % reset_interval) then
+    call mpas_interval_division(buffers(b) % start_time, &
+       buffers(b) % repeat_interval, buffers(b) % reset_interval, n, rem) 
+
+    if (n > 1 .or. (n == 1 .and. rem /= zero)) then
       write(stderrUnit,*) 'Warning: repeat_interval > ' // &
         'reset_interval in time averaging analysis member ' // &
         'configuration. Truncating repeat_interval.'
       buffers(b) % repeat_interval = buffers(b) % reset_interval
     end if
 
-    if (buffers(b) % duration_interval > &
-       buffers(b) % repeat_interval) then
+    call mpas_interval_division(buffers(b) % start_time, &
+       buffers(b) % duration_interval, buffers(b) % repeat_interval, n, rem) 
+
+    if (n > 1 .or. (n == 1 .and. rem /= zero)) then
       write(stderrUnit,*) 'Warning: duration_interval > ' // &
         'repeat_interval in time averaging analysis member ' // &
         'configuration. Truncating duration_interval.'
