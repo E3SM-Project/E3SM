@@ -67,6 +67,7 @@ my $CONFIG_OCN_DIR	= `./xmlquery  CONFIG_OCN_DIR	-value `;
 my $CONFIG_GLC_DIR	= `./xmlquery  CONFIG_GLC_DIR	-value `;
 my $CONFIG_WAV_DIR	= `./xmlquery  CONFIG_WAV_DIR	-value `;
 my $CONFIG_ROF_DIR	= `./xmlquery  CONFIG_ROF_DIR	-value `;
+my $CONFIG_DRV_DIR	= `./xmlquery  CONFIG_DRV_DIR	-value `;
 my $TESTCASE;
 $TESTCASE               = `./xmlquery  TESTCASE		-value` if(-e "env_test.xml");
 
@@ -134,14 +135,14 @@ if($dryrun){
 # Create namelists
 # -------------------------------------------------------------------------
 
-my @modelsorder = qw( atm lnd ice ocn glc wav rof );
+my @modelsorder = qw( atm lnd ice ocn glc wav rof drv );
 
 my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
 	       ocn => $COMP_OCN, glc => $COMP_GLC, wav => $COMP_WAV,
-	       rof => $COMP_ROF);
+	       rof => $COMP_ROF, drv => $COMP_CPL);
 my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_ICE_DIR,
 	       ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
-	       rof => $CONFIG_ROF_DIR);
+	       rof => $CONFIG_ROF_DIR, drv => $CONFIG_DRV_DIR );
 
 foreach my $model (@modelsorder) {
     my $comp = $models{$model};
