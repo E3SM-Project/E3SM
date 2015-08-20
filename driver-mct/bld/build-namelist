@@ -305,9 +305,6 @@ foreach my $file (@files) {
     }
 }
 my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
-(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** DRIVER_CPL $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
 if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Note - $USER is not in the config_defintion.xml file - it is only in the environment

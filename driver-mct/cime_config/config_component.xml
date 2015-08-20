@@ -577,7 +577,7 @@
   <entry id="BATCHREDIRECT">
     <type>char</type>
     <default_value>UNSET</default_value>
-    <group>run_mach</group>
+    <group>run_machine</group>
     <file>env_case.xml</file>
     <desc>Batch redirect character</desc>
   </entry>
@@ -1829,7 +1829,7 @@
   <entry id="BATCHQUERY"> 
     <type>char</type>
     <default_value>UNSET</default_value>
-    <group>run_mach</group>
+    <group>run_machine</group>
     <file>env_run.xml</file>
     <desc>command used to query batch system</desc>
   </entry>
@@ -1837,7 +1837,7 @@
   <entry id="BATCHSUBMIT"> 
     <type>char</type>
     <default_value>UNSET</default_value>
-    <group>run_mach</group>
+    <group>run_machine</group>
     <file>env_run.xml</file>
     <desc>command used to submit to batch system</desc>
   </entry>
@@ -2940,7 +2940,7 @@
       <value compset="DATM.+POP">true</value>
       <value compset="DATM.+DOCN%IAF">true</value>
     </values>
-    <group>run_component_pop</group>
+    <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
       Only used for compsets with DATM and POP (currently C and G): 
@@ -2962,7 +2962,7 @@
     <values>
       <value compset="DATM.+POP">ocn</value>
     </values>
-    <group>run_component_pop</group>
+    <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
       Only used for compsets with DATM and POP (currently C and G): 
@@ -3116,7 +3116,7 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Turns on component varying thread control in the driver.
-      Used to set the driver namelist variable "drv_threading".</desc>
+    Used to set the driver namelist variable "drv_threading".</desc>
   </entry>
 
   <entry id="CPL_DECOMP"> 
@@ -3206,7 +3206,7 @@
       <value compset="_CISM">10</value> 
       <value compset="_X"   >10</value> 
     </values>
-    <group>run_cesm</group>
+    <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
     Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
@@ -3223,7 +3223,7 @@
 	   feedbacks for a TG compset, this will give us additional diagnostics -->
       <value compset="_DLND.+CISM">TRUE</value>
     </values>
-    <group>run_cesm</group>
+    <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>Whether the glacier component feeds back to the rest of the system
       This affects:
@@ -3277,6 +3277,8 @@
     <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
     <desc compset="9205_CAM">1992 to 2005 transient:</desc>
     <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam</desc> 
+    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc> 
+    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc> 
     <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
