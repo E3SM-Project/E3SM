@@ -349,7 +349,7 @@ contains
                            gradientBins(2,i), interp_local,densityGradient(k-1,1),zTop(k-1,iCell), gradientMLD(2,i,iCell))                   
                     found_den_mld=.true.
                   endif
-                  if(temperatureGradient(k+1,1) .ge. gradientBins(2,i)) then
+                  if(temperatureGradient(k+1,1) .ge. gradientBins(1,i)) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),temperatureGradient(k,1),temperatureGradient(k+1,1),          &
                            gradientBins(1,i), interp_local,temperatureGradient(k-1,1),zTop(k-1,iCell), gradientMLD(1,i,iCell))
                     found_temp_mld=.true.
