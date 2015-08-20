@@ -1,6 +1,14 @@
    type dm_info
      integer :: nprocs, my_proc_id, comm, info
      logical :: using_external_comm
+
+     ! Add variables specific to block decomposition. {{{
+     ! These are used in mpas_block_decomp.F
+     integer :: total_blocks
+     logical :: explicitDecomp
+     integer, dimension(:), allocatable :: block_proc_list
+     integer, dimension(:), allocatable :: block_local_id_list
+     !}}}
    end type dm_info
 
 

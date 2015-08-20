@@ -46,6 +46,7 @@ mpas_framework.o: mpas_dmpar.o \
                   mpas_timer.o \
                   mpas_sort.o \
                   mpas_io_units.o \
+                  mpas_block_decomp.o \
                   mpas_stream_manager.o \
                   mpas_c_interfacing.o
 
