@@ -400,7 +400,8 @@ contains
 
       ! Monotonoic Advection, or standard advection
       call mpas_timer_start("adv", .false., tracerHadvTimer)
-      call ocn_tracer_advection_tend(tracers, normalThicknessFlux, vertAleTransportTop, layerThickness, layerThickness, dt, meshPool, tend_layerThickness, tend_tr)
+      call ocn_tracer_advection_tend(tracers, normalThicknessFlux, vertAleTransportTop, layerThickness, layerThickness, dt, &
+                                     meshPool, scratchPool, tend_layerThickness, tend_tr)
       call mpas_timer_stop("adv", tracerHadvTimer)
 
       !
