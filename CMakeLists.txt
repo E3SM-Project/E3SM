@@ -26,25 +26,25 @@ option (PIO_HDF5_LOGGING  "Enable hdf5 logging (requires instrumented netcdf4)" 
 list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 #===== External modules =====
-if (NOT DEFINED CMAKE_UTILS_DIR)
+if (NOT DEFINED CMAKE_UTILS_PATH)
     message (STATUS "Importing CMake_Fortran_utils")
     execute_process(
         COMMAND git clone https://github.com/CESM-Development/CMake_Fortran_utils
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         OUTPUT_QUIET
         ERROR_QUIET)
-    find_path (CMAKE_UTILS_DIR
+    find_path (CMAKE_UTILS_PATH
                NAMES mpiexec.cmake
                HINTS ${CMAKE_BINARY_DIR}/CMake_Fortran_utils)
-    if (CMAKE_UTILS_DIR)
+    if (CMAKE_UTILS_PATH)
         message (STATUS "Importing CMake_Fortran_utils - success")
     else ()
         message (FATAL_ERROR "Failed to import CMake_Fortran_utils")
     endif ()
 endif ()
-set (CMAKE_UTILS_DIR ${CMAKE_UTILS_DIR}
+set (CMAKE_UTILS_PATH ${CMAKE_UTILS_PATH}
      CACHE STRING "Location of the CMake_Fortran_utils")
-list (APPEND CMAKE_MODULE_PATH ${CMAKE_UTILS_DIR})
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_UTILS_PATH})
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES

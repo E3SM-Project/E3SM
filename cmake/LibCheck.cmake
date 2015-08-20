@@ -18,10 +18,9 @@ include (CMakeParseArguments)
 function (check_macro VARIABLE)
 
     # Parse the input arguments
-    set (options)
     set (oneValueArgs COMMENT NAME)
     set (multiValueArgs HINTS DEFINITIONS)
-    cmake_parse_arguments (${VARIABLE} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
+    cmake_parse_arguments (${VARIABLE} "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
     
     # If the return variable is defined, already, don't continue
     if (NOT DEFINED ${VARIABLE})
@@ -65,44 +64,40 @@ endfunction ()
 function (check_version PKG)
 
     # Parse the input arguments
-    set (options)
-    set (oneValueArgs NAME)
-    set (multiValueArgs HINTS DEFINITIONS)
-    cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
+    set (oneValueArgs NAME MACRO_REGEX)
+    set (multiValueArgs HINTS)
+    cmake_parse_arguments (${PKG} "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
 
     # If the return variable is defined, already, don't continue
     if (NOT DEFINED ${PKG}_VERSION)
         
         message (STATUS "Checking ${PKG} version")
-        find_file (${PKG}_VERSION_TRY_FILE
+        find_file (${PKG}_VERSION_HEADER
                    NAMES ${${PKG}_NAME}
                    HINTS ${${PKG}_HINTS})
-        if (${PKG}_VERSION_TRY_FILE)
-            try_run (RUN_RESULT COMPILE_RESULT
-                     ${CMAKE_CURRENT_BINARY_DIR}/try${PKG}_VERSION
-                     ${${PKG}_VERSION_TRY_FILE}
-                     COMPILE_DEFINITIONS ${${PKG}_DEFINITIONS}
-                     COMPILE_OUTPUT_VARIABLE TryCompileOUT
-                     RUN_OUTPUT_VARIABLE TryRunOUT)
-            if (COMPILE_RESULT AND NOT RUN_RESULT STREQUAL FAILED_TO_RUN)
-                message (STATUS "Checking ${PKG} version - ${TryRunOUT}")
-                set (${PKG}_VERSION ${TryRunOUT}
-                     CACHE STRING "${PKG} version string")
-                if (${PKG}_VERSION VERSION_LESS ${PKG}_FIND_VERSION})
-                    message (FATAL_ERROR "${PKG} version insufficient")
-                endif ()
-            else ()
-                message (STATUS "Checking ${PKG} version - failed")
+        if (${PKG}_VERSION_HEADER)
+            set (def)
+            file (STRINGS ${${PKG}_VERSION_HEADER} deflines
+                  REGEX "^#define[ \\t]+${${PKG}_MACRO_REGEX}")
+            foreach (defline IN LISTS deflines)
+                string (REPLACE "\"" "" defline "${defline}")
+                string (REPLACE "." "" defline "${defline}")
+                string (REGEX REPLACE "[ \\t]+" ";" deflist "${defline}")
+                list (GET deflist 2 arg)
+                list (APPEND def ${arg})
+            endforeach ()
+            string (REPLACE ";" "." vers "${def}")
+            message (STATUS "Checking ${PKG} version - ${vers}")
+            set (${PKG}_VERSION ${vers}
+                 CACHE STRING "${PKG} version string")
+            if (${PKG}_VERSION VERSION_LESS ${PKG}_FIND_VERSION})
+                message (FATAL_ERROR "${PKG} version insufficient")
             endif ()
-            
-            unset (COMPILE_RESULT CACHE)
-            unset (RUN_RESULT CACHE)
-            
         else ()
             message (STATUS "Checking ${PKG} version - failed")
         endif ()
         
-        unset (${PKG}_VERSION_TRY_FILE CACHE)
+        unset (${PKG}_VERSION_HEADER CACHE)
      
     endif ()
 

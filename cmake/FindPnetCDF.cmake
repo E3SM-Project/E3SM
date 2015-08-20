@@ -63,10 +63,10 @@ foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
         
             # Check version
             check_version (PnetCDF
-                           NAME TryPnetCDF_VERSION.c
-                           HINTS ${CMAKE_MODULE_PATH}
-                           DEFINITIONS -I${PnetCDF_${PNCDFcomp}_INCLUDE_DIR})
-            
+                           NAME "pnetcdf.h"
+                           HINTS ${PnetCDF_${PNCDFcomp}_INCLUDE_DIR}
+                           MACRO_REGEX "PNETCDF_VERSION_")
+
         endif ()
             
     endif ()
