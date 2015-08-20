@@ -376,13 +376,6 @@ if ( $GRID eq "CLM_USRDAT" && $CLM_USRDAT_NAME =~ /^(UNSET|)$/ ) {
 EOF
 }
 
-(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** DATM $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
-if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
-
-my $test_files = $opts{'test'};
-
 my $var   = "DATM_MODE";
 my $group = $definition->get_group_name($var);
 $nl->set_variable_value( $group, $var, "\'$xmlvars{$var}\'" );
@@ -769,7 +762,7 @@ sub add_default {
 	   } else {
 	       if ($is_input_pathname eq 'abs') {
 		   $val = set_abs_filepath($val, $DIN_LOC_ROOT);
-                   if ( $test_files ) {
+                   if ( $opts{'test'} ) {
                       if ($print>=2) { print "Test that $val exists$eol"; }
                       if ( ($val !~ /null/) and (! -f "$val") ) {
                          die "$ProgName - file not found: $var = $val\n";

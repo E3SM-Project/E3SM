@@ -320,9 +320,6 @@ my $LND_GRID         = $xmlvars{'LND_GRID'};
 my $DLND_MODE        = $xmlvars{'DLND_MODE'};        
 my $GLC_NEC          = $xmlvars{'GLC_NEC'};
 
-(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** DLND $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
 if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################

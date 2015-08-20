@@ -320,9 +320,6 @@ my $OCN_GRID        = $xmlvars{'OCN_GRID'};
 my $DOCN_MODE       = $xmlvars{'DOCN_MODE'};
 my $SSTICE_STREAM   = $xmlvars{'SSTICE_STREAM'};
 
-(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** DOCN $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
 if ($print>=2) { 
     print "Inputdata root directory: $DIN_LOC_ROOT \n"; 
     print "  docn mode is $DOCN_MODE \n";
