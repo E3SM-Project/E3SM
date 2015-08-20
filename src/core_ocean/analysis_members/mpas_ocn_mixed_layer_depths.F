@@ -272,7 +272,8 @@ contains
 
                do i=1,nThresholdBins
                   do k=refIndex,maxLevelCell(iCell)
-                     if( abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. thresholdBins(1,i)) then
+  
+                    if( abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. thresholdBins(1,i)) then
                         dVp1 = abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev)
                         dV   = abs(tracers(index_temperature,k  ,iCell) - temp_ref_lev)
                         dVm1 = abs(tracers(index_temperature,k-1,iCell) - temp_ref_lev)
@@ -326,9 +327,9 @@ contains
                found_temp_mld=.false.
 
                do k=2,maxLevelCell(iCell)
-                     dz=abs(zMid(k-1,iCell)-zMid(k,iCell))
-                     densityGradient(k,1) = (potentialDensity(k-1,iCell)-potentialDensity(k,iCell)) / dz 
-                     temperatureGradient(k,1) = (tracers(index_temperature,k-1,iCell) - tracers(index_temperature,k,iCell)) / dz
+                     dz=abs(pressure(k-1,iCell)-pressure(k,iCell))
+                     densityGradient(k,1) = abs(potentialDensity(k-1,iCell)-potentialDensity(k,iCell)) / dz 
+                     temperatureGradient(k,1) = abs(tracers(index_temperature,k-1,iCell) - tracers(index_temperature,k,iCell)) / dz
                      densityGradient(k,2) = k
                      temperatureGradient(k,2) = k
                enddo
@@ -339,7 +340,7 @@ contains
                   densityGradient(k,1) = (densityGradient(k-1,1) + densityGradient(k,1) + densityGradient(k+1,1)) / float(3)
                   temperatureGradient(k,1) = (temperatureGradient(k-1,1) + temperatureGradient(k,1) + temperatureGradient(k+1,1)) / float(3)
                enddo
-          
+         
                do i=1, nGradientBins
 
                do k=2, maxLevelCell(iCell)
