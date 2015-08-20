@@ -136,6 +136,8 @@ OPTIONS
   -user_grid_file <name>   Full pathname of grid file to use (optional)
                            This should be a "copy" of cime_config/config_grids.xml
                            with the new user grid changes added to it
+  -user_pes_setby <name>   Component that sets the pe-layouts and pio settings 
+                           For cesm this is [allactive, cam, clm, cice, cism, pop]
   -help [or -h]            Print usage to STDOUT (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
   -silent [or -s]          Turns on silent mode - only fatal messages issued (optional).
@@ -175,19 +177,20 @@ GetOptions(
     "h|help"                    => \$opts{'help'},
     "mach=s"                    => \$opts{'mach'},
     "mach_dir=s"                => \$opts{'mach_dir'},
-    "user_mods_dir=s"           => \$opts{'user_mods_dir'},
     "pecount=s"                 => \$opts{'pecount'},
     "petype=s"                  => \$opts{'petype'},
     "pes_file=s"                => \$opts{'pes_file'}, 
-    "user_grid_file=s"          => \$opts{'user_grid_file'},
     "s|silent"                  => \$opts{'silent'},
     "testname=s"                => \$opts{'testname'},
     "testlist"                  => \$opts{'testlist'},
     "v|verbose"                 => \$opts{'verbose'},
     "xmlmode=s"                 => \$opts{'xmlmode'},
     "nowarning"                 => \$opts{'nowarning'},
-    "user_compset=s"            => \$opts{'user_compset'},
     "sharedlibroot=s"           => \$opts{'sharedlibroot'},
+    "user_mods_dir=s"           => \$opts{'user_mods_dir'},
+    "user_grid_file=s"          => \$opts{'user_grid_file'},
+    "user_compset=s"            => \$opts{'user_compset'},
+    "user_pes_setby=s"          => \$opts{'user_pes_setby'},
     )  or usage();
 
 # Give usage message.
@@ -256,14 +259,12 @@ if ($user_mods_dir) {
 #------------------------------------------------------------------------------------------
 # *** Set hard-wired paths ***
 #------------------------------------------------------------------------------------------
-my $srcroot  = "$cimeroot/../"; #TODO - this needs to be generalized
-my $username = "$ENV{'USER'}";  #TODO - change ccsmuser to username
+my $srcroot = abs_path("$cimeroot/../"); 
 
 #------------------------------------------------------------------------------------------
 # *** Set master config file ***
 #------------------------------------------------------------------------------------------
 # The following specifies all necessary files that will be used to configure the case
-my $cimeconfig_file = "$cimeroot/driver_cpl/cime_config/config_component.xml";
 my $files_spec_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
 
 #------------------------------------------------------------------------------------------
@@ -275,33 +276,37 @@ my $config = ConfigCase->new("");
 # Add all the elements of the config_files.xml to $config
 $config->add_config_variables($files_spec_file, $srcroot, $cimeroot);
 
+# Determine the driver_cpl config_component.xml file 
+my $cimeconfig_file = $config->get('CONFIG_DRV_FILE');
+$cimeconfig_file =~ s/\$CIMEROOT/$cimeroot/;
+$cimeconfig_file =~ s/\$SRCROOT/$srcroot/;
+
 # Add all the elements of the driver_cpl/cime_config/cime_config.xml to $config
 $config->add_config_variables($cimeconfig_file, $srcroot, $cimeroot);
 
 $config->set('CIMEROOT', $cimeroot); 
 $config->set('SRCROOT' , $srcroot); 
 
-# Determine compset longname and primary component
-# For user_compset, still need a primary component to determine config_pes and config_pio
-# TODO: Just for the user_compset would seem to need the CESM specification but just for the longname ???
-if (! $opts{'compset'}) {
-    die "ERROR: must set the -compset option to create_newcase \n";
-}
-my ($primary_component, $compsets_file, $compset_longname, $support_level);
+# Determine compset longname and component that sets pe-layouts, compsets and pio settings  ($pes_setby)
+my ($pes_setby, $compsets_file, $compset_longname, $support_level);
 if ($opts{'user_compset'}) {
-    #TODO - set the primary component 
+    $compset_longname = $opts{'user_compset'};
+    $pes_setby = $opts{'user_pes_setby'};
+    $config->set('COMPSET',$compset_longname); 
 } else {
+    if (! $opts{'compset'}) {
+	die "ERROR: must set the -compset option to create_newcase \n";
+    }
     #TODO - add support_level to config and query it here
-    ($primary_component, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
-    $compsets_file    = $config->get('COMPSETS_SPEC_FILE');
+    ($pes_setby, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
     $compset_longname = $config->get('COMPSET');
 }
 
-# Now given the primary component, determine the full pathname of the file that
-# defines the compsets for this primary component
+# Now given the target component, determine the full pathname of the file that
+# defines the compsets for this target component
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$files_spec_file");
 foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
-    my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$primary_component\"]");
+    my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$pes_setby\"]");
     if (@nodes) {
 	my $value = $nodes[0]->textContent();
 	$value =~ s/\$CIMEROOT/$cimeroot/;
@@ -353,7 +358,8 @@ foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
 }
 
 # Overwrite the non-default values for the following config elements (needed for the calls below)
-$config->set('CCSMUSER'	  , "$username");
+my $username = "$ENV{'USER'}";  
+$config->set('CCSMUSER'	  , "$username"); #TODO - remove CCSMUSER in $config
 $config->set('USER'	  , "$username");
 $config->set('CASEROOT'	  , "$caseroot");
 $config->set('CASETOOLS'  , "$caseroot/Tools");
@@ -403,7 +409,7 @@ $config->set('GRID', "$grid_longname");
 if ($compset_match) {
     # if there is a compset attribute, does the compset longname 
     if ($compset_longname !~ /$compset_match/) {
-	die " ERROR: no supported match for primary grid $grid and primary compset-match $compset_match \n";
+	die " ERROR: no supported match for target grid $grid and target compset-match $compset_match \n";
     }
 }
 
@@ -419,7 +425,7 @@ ConfigCompsetGrid::setGridMaps($grids_file, $config);
 # *** Determine compset component configurations 
 #------------------------------------------------------------------------------------------
 # Loop over the component files (i.e. definitions_component.xml files)
-# determined by the compsets of the primary component
+# determined by the compsets of the target component
 
 my @setup_comp_files;
 foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE', 
@@ -433,12 +439,12 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 # *** Determine machines file specifying set of out-of-the box machines and then
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
-ConfigMachine::setMachineValues($cimeconfig_file, $primary_component, $machine, $compiler, $print, $config);
+ConfigMachine::setMachineValues($cimeconfig_file, $pes_setby, $machine, $compiler, $print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
-ConfigPes::setPes($pecount, $primary_component, \%opts, $config);
+ConfigPes::setPes($pecount, $pes_setby, \%opts, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Determine all <value> settings in driver_cpl/cime_config/config_component.xml
@@ -457,7 +463,9 @@ ConfigCompsetGrid::setComponent($file, $config);
 # and also check that compset is supported for target grid
 # Note- this needs to come last since it will overwrite any values set above 
 
-ConfigCompsetGrid::setCompsetGeneralVars($config); 
+if (!$opts{'user_compset'}) {
+    ConfigCompsetGrid::setCompsetGeneralVars($config); 
+}
 
 # Special case - if land and river grids are different AND there is no mapping file
 # between land and river then set the river mode  to null if the river component is rtm
@@ -509,7 +517,7 @@ if ( $opts{'compset'} ) {
    #   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir); TODO
    #   $testsforcase = $testlistobj->findTestsForCase(\%case); TODO
 } else {
-   $testsforcase = "WARNING!:: User compset names are NOT tested by the standard CESM process.\n" .
+   $testsforcase = "WARNING!:: User compset names are NOT tested.\n" .
                    "           Thus you may likely find that this configuration will NOT work.\n" .
                    "           And you are completely on your own to figure out how to get it working.";
 }
@@ -616,7 +624,10 @@ sub _check_input_options
 	    $compset = $opts{'compset'};
 	} else {
 	    if (!$opts{'user_compset'}) {
-		die "ERROR: create_newcase must include the input argument, -compset or user_compset\n";
+		die "ERROR: create_newcase must include the input argument, -compset OR user_compset\n";
+	    }
+	    if (!$opts{'user_pes_setby'}) {
+		die "ERROR: if the user_compset argument is specified, the user_pes_setby argument must also be specified";
 	    }
 	}
 	# Check for mandatory grid input
@@ -651,12 +662,6 @@ sub _check_input_options
 	    $xmlmode = $opts{'xmlmode'};
 	}
     }
-}
-
-#-------------------------------------------------------------------------------
-sub _define_cfg_elements
-{
-    my ($cimeroot, $opts_ref, $primary_component, $config) = @_;
 }
 
 #-------------------------------------------------------------------------------

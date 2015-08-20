@@ -324,9 +324,6 @@ if ($ROF_GRID eq "null") {
     }
 }
 
-(-d $DIN_LOC_ROOT)  or  warn <<"EOF";
-** DROF $ProgName - inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
 if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################

@@ -39,6 +39,9 @@ sub getCompsetLongname
     # Determine compset longname, alias and support level
     my ($input_file, $input_compset, $config) = @_;
 
+    $input_compset =~ s/^\s+//; # strip any leading whitespace 
+    $input_compset =~ s/\s+$//; # strip any trailing whitespace
+
     # Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
     # file containing the possible out of the box compsets that can be used by create_newcase
 
@@ -46,7 +49,7 @@ sub getCompsetLongname
     # TODO: Add support level to $config rather than an argument
 
     my $support_level;
-    my $primary_component;
+    my $pes_setby;
 
     my $cimeroot = $config->get('CIMEROOT');
     my $srcroot  = $config->get('SRCROOT');
@@ -60,10 +63,11 @@ sub getCompsetLongname
     my $compsets_file;
     my $compset_longname;
 
-    $input_compset =~ s/^\s+//; # strip any leading whitespace 
-    $input_compset =~ s/\s+$//; # strip any trailing whitespace
-    my $primary_component;
+    my $pes_setby;
     my $xml1 = XML::LibXML->new( no_blanks => 1)->parse_file("$input_file");
+
+    # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
+    # that has a match for either the alias or the longname in that order
     my @nodes = $xml1->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value");
     foreach my $node_file (@nodes) {
 	my $file = $node_file->textContent();
@@ -71,6 +75,7 @@ sub getCompsetLongname
 	$file =~ s/\$SRCROOT/$srcroot/;
 	my $xml2 = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
 
+	# First determine if there is a match for the alias - if so stop
 	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
 	if (@alias_nodes) {
 	    if ($#alias_nodes > 0) {
@@ -84,13 +89,14 @@ sub getCompsetLongname
 		    }		    
 		}
 	    }
-	    $primary_component = $node_file->getAttribute('component');
+	    $pes_setby = $node_file->getAttribute('component');
 	    $compsets_file = $file;
 	    $config->set('COMPSETS_SPEC_FILE', $compsets_file);
 	    $config->set('COMPSET', "$compset_longname");
 	    last;
 	} 
 
+	# If no alias match - then determine if there is a match for the longname
 	my @lname_nodes = $xml2->findnodes(".//compset[lname=\"$input_compset\"]");
 	if (@lname_nodes) {
 	    if ($#lname_nodes > 0) {
@@ -104,7 +110,7 @@ sub getCompsetLongname
 		    }		    
 		}
 	    }
-	    $primary_component = $node_file->getAttribute('component');
+	    $pes_setby = $node_file->getAttribute('component');
 	    $compsets_file = $file;
 	    $config->set('COMPSETS_SPEC_FILE', "$compsets_file");
 	    $config->set('COMPSET', "$compset_longname");
@@ -112,7 +118,7 @@ sub getCompsetLongname
 	} 
 
     }
-    if (! defined $primary_component) {
+    if (! defined $pes_setby) {
 	print "ERROR create_newcase: no compset match was found in any of the following files \n";
 	foreach my $node_file (@nodes) {
 	    my $file = $node_file->textContent();
@@ -122,11 +128,11 @@ sub getCompsetLongname
     } else {
 	print "\n";
 	print "File specifying possible compsets: $compsets_file \n";
-	print "Primary component (specifies possible compsets, pelayouts and pio settings): $primary_component \n";
+	print "Primary component (specifies possible compsets, pelayouts and pio settings): $pes_setby \n";
 	print "Compset: $compset_longname \n";
     }   
 
-    return ($primary_component, $support_level);
+    return ($pes_setby, $support_level);
 }
 
 
@@ -426,7 +432,7 @@ sub setComponent {
 	    my $desc  = $node->textContent();
 	    print "     $match: $desc \n";
 	}
-	#die; #TODO - should we die here?
+	die; 
     }
 
     # Now set the actual values of the variable

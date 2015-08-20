@@ -86,6 +86,17 @@ require Batch::BatchMaker;
 my %xmlvars=();
 SetupTools::getxmlvars($caseroot, \%xmlvars);
 
+# Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
+my $din_loc_root = $xmlvars{'DIN_LOC_ROOT'};
+my $testcase = $xmlvars{'TESTCASE'};
+if (! -d $din_loc_root) {
+    if ($testcase eq 'SBN') {    
+     	# do nothing 
+    } else {
+	die "ERROR cesm_setup: inputdata root is not a directory: \"$din_loc_root\" \n";
+    }
+}
+
 # Check that userdefine settings are specified before expanding variable
 my $fail_setup = 0;
 my $strmacros;
