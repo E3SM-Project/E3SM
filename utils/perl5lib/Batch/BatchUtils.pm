@@ -201,7 +201,13 @@ sub submitSingleJob()
 
 	eval {
         open (my $RUN, "-|", $runcmd) // die "job submission failed, $!";
-        $output = <$RUN>;
+
+		foreach (<$RUN>) {
+			chomp;
+			print "$_\n";
+			$output .= $_;
+		}
+
 		close $RUN or die "job submission failed: |$?|, |$!|"
 	};
 	my $exitstatus = ($?>>8);
