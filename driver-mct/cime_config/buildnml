@@ -3,16 +3,12 @@ use strict;
 use Cwd;
 
 if ($#ARGV == -1) {
-    die " ERROR cpl.buildexe: must specify a caseroot input argument";
+    die " ERROR cpl buildnml: must specify a caseroot input argument";
 }
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my @dirs = ("$CASEROOT/Tools");
-unshift @INC, @dirs;
-require SetupTools;
-my $sysmod; 
-
+my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
 my $GRID		= `./xmlquery  GRID		-value`;
 my $ATM_GRID		= `./xmlquery  ATM_GRID		-value`;
 my $LND_GRID		= `./xmlquery  LND_GRID		-value`;
@@ -22,8 +18,12 @@ my $WAV_GRID		= `./xmlquery  WAV_GRID		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
 my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
 my $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
-my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
 my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
+
+my @dirs = ( "${CIMEROOT}/utils/perl5lib" );
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod; 
 
 if (! -d "$CASEBUILD/cplconf" ) {
     $sysmod = "mkdir $CASEBUILD/cplconf";
@@ -62,7 +62,7 @@ SetupTools::create_namelist_infile("$CASEROOT",
 $sysmod = "$CIMEROOT/driver_cpl/bld/build-namelist";
 $sysmod = "$sysmod -infile $CASEBUILD/cplconf/cesm_namelist";
 $sysmod = "$sysmod -caseroot $CASEROOT";
-$sysmod = "$sysmod -scriptsroot $CIMEROOT/scripts";
+$sysmod = "$sysmod -cimeroot $CIMEROOT";
 $sysmod = "$sysmod -grid $GRID -rof_grid $ROF_GRID -atm_grid $ATM_GRID ";
 $sysmod = "$sysmod -lnd_grid $LND_GRID -ocn_grid $OCN_GRID -wav_grid $WAV_GRID";
 system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
