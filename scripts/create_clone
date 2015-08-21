@@ -185,10 +185,10 @@ system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 chdir $caseroot;
 
 # Obtain variables needed below
-my $scriptsroot = `./xmlquery SCRIPTSROOT -value`;
-my $machdir     = `./xmlquery MACHDIR -value`;
-my $mach        = `./xmlquery MACH -value`;
-my $username     = "$ENV{'USER'}"; #TODO - change ccsmuser to username
+my $cimeroot  = `./xmlquery CIMEROOT -value`;
+my $machdir   = `./xmlquery MACHDIR  -value`;
+my $mach      = `./xmlquery MACH     -value`;
+my $username  = "$ENV{'USER'}"; #TODO - change ccsmuser to username
 
 $sysmod = "./xmlchange CCSMUSER=$username"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "./xmlchange USER=$username"      ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -261,7 +261,6 @@ foreach my $attr (keys %xmlvars) {
 
 my $compset     = $xmlvars{COMPSET};
 my $cimeroot    = $xmlvars{CIMEROOT};
-my $scriptsroot = $xmlvars{SCRIPTSROOT};
 my $machdir     = $xmlvars{MACHDIR};
 my $mach        = $xmlvars{MACH};
 $project        = $xmlvars{PROJECT};
@@ -269,24 +268,19 @@ my $perl5lib    = "$cimeroot/utils/perl5lib";
 push(@INC, $perl5lib);
 require Batch::BatchMaker;
 
-# --- env_archive.xml doesn't use the id / value pairs do needs to be read from
-# --- config_archive.xml file in the scriptsroot/Tools/ directory
-#TODO - the following should not be needed
-#$cfg_ref->write_file("$caseroot/env_archive.xml" , "xml", "$scriptsroot/Tools");
-
 # --- Create $case.build
-$sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
+$sysmod = "cp $cimeroot/scripts/Tools/cesm_build.csh  $caseroot/$case.build";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 $sysmod = "chmod 755 $caseroot/$case.build";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.clean_build
-$sysmod = "cp $scriptsroot/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+$sysmod = "cp $cimeroot/scripts/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.submit
-$sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit"; 
+$sysmod = "cp  $cimeroot/scripts/Tools/cesm_submit $caseroot/$case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.l_archive
@@ -294,7 +288,7 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( cimeroot    => $cimeroot,
 						     caseroot    => $xmlvars{'CASEROOT'},
 						     case        => $xmlvars{'CASE'},
 						     mpilib      => $xmlvars{'MPILIB'},
-						     scriptsroot => $xmlvars{'SCRIPTSROOT'},
+						     cimeroot    => $xmlvars{'CIMEROOT'},
 						     machroot    => $xmlvars{'MACHDIR'},
 						     machine     => $xmlvars{'MACH'},
 						     compiler    => $xmlvars{'COMPILER'});
@@ -305,11 +299,10 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( cimeroot    => $cimeroot,
  $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
 
 # --- Create preview_namelist file
-my $file = "${caseroot}/preview_namelists"; 
-$sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
+$sysmod = "cp  ${cimeroot}/scripts/Tools/preview_namelists ${caseroot}/preview_namelists"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-$sysmod = "chmod 755 $file";
+$sysmod = "chmod 755 ${caseroot}/preview_namelists";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # --- Print output ---

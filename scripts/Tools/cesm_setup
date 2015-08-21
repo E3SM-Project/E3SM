@@ -76,10 +76,10 @@ if ($opts{'testmode'}) {
 
 chdir "$caseroot";
 my $cimeroot  = `./xmlquery CIMEROOT  -value`;
-my @dirs = ("$caseroot/Tools", "$cimeroot/utils/perl5lib");
+my @dirs = ("$cimeroot/utils/perl5lib" );
 
 unshift @INC, @dirs;
-require SetupTools;
+require Config::SetupTools;
 require Task::TaskMaker;
 require Batch::BatchMaker;
 
@@ -242,7 +242,6 @@ if (! $clean ) {
 							     cimeroot    => $cimeroot,
 							     case        => $xmlvars{'CASE'},
 							     mpilib      => $xmlvars{'MPILIB'},
-							     scriptsroot => $xmlvars{'SCRIPTSROOT'},
 							     machroot    => $xmlvars{'MACHDIR'},
 							     machine     => $xmlvars{'MACH'},
 							     compiler    => $xmlvars{'COMPILER'});

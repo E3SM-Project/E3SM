@@ -198,9 +198,12 @@ EOF
         }
 
         # If any values have variables in them, read in xml variables and expand
-	my @dirs = ("./Tools");
-	unshift @INC, @dirs;
-	require SetupTools;
+	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+	my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+	my $cimeroot = $nodes[0]->getAttribute('value');
+
+	unshift @INC, "$cimeroot/utils/perl5lib";
+	require Config::SetupTools;
 
         if ($fileneed =~ m/\$/) {
            print "Print expand any xml variables for: $fileneed\n";

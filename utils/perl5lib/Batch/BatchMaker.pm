@@ -28,28 +28,28 @@ use XML::LibXML;
 use Exporter qw(import);
 use lib '.';
 require Task::TaskMaker;
+
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
-my @requiredargs = qw/caseroot case machroot machine scriptsroot cimeroot/;
+my @requiredargs = qw/caseroot case machroot machine cimeroot/;
 
 #==============================================================================
 #  Class constructor.  We need to know where in the filesystem we are, 
-#  so caseroot, case, machroot, machine, scriptsroot, 
+#  so caseroot, case, machroot, machine, cimeroot
 #==============================================================================
 sub new
 {
 	my ($class, %params) = @_;
 	my $self = {
-		case     => $params{'case'}     || undef,
-		caseroot => $params{'caseroot'} || undef,
-		compiler    => $params{'compiler'}     || undef,
-		config => $params{'config'}           || undef,
-		machine     => $params{'machine'}     || undef,
-		scriptsroot => $params{'scriptsroot'} || undef,
-	    cimeroot  => $params{'cimeroot'} || undef,
-        machroot    => $params{'machroot'}    || ".",
-        mpilib      => $params{'mpilib'}      || undef,
+	    case	=> $params{'case'}	|| undef,
+	    caseroot	=> $params{'caseroot'}	|| undef,
+	    compiler    => $params{'compiler'}  || undef,
+	    config	=> $params{'config'}    || undef,
+	    machine     => $params{'machine'}   || undef,
+	    cimeroot	=> $params{'cimeroot'}	|| undef,
+	    machroot    => $params{'machroot'}  || ".",
+	    mpilib      => $params{'mpilib'}    || undef,
 	};
-    $self->{'ccsmroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
+	$self->{'srcroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 
 	# make sure that the required args are supplied
 	foreach my $reqarg(@requiredargs)
@@ -66,11 +66,9 @@ sub new
 	$self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
 
 	# we need ProjectTools. 
-	my $casetoolsdir = "$self->{'caseroot'}/Tools";
-	push(@INC, $casetoolsdir);
-	my $toolsdir = "$self->{'scriptsroot'}/ccsm_utils/Tools";
-	push(@INC, $toolsdir);
-	require ProjectTools;
+	my $cimeroot = "$self->{'cimeroot'}";
+	push(@INC, "$cimeroot/utils/per5lib");
+	require Project::ProjectTools;
 	$self->{'cwd'} = Cwd::getcwd();
 	bless $self, $class;
 	return $self;
@@ -342,11 +340,11 @@ sub setTaskInfo()
 {
 	my $self = shift;
 	chdir $self->{'caseroot'};
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+	my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
 	$self->{'taskmaker'} = $taskmaker;
 	$self->{'sumpes'} = $taskmaker->sumPES();
 	$self->{'tasks_per_node'} = $taskmaker->taskPerNode();
-    $self->{'MAX_TASKS_PER_NODE'} = $taskmaker->maxTasksPerNode();
+	$self->{'MAX_TASKS_PER_NODE'} = $taskmaker->maxTasksPerNode();
 	$self->{'tasks_per_numa'} = $taskmaker->taskPerNuma();
 	$self->{'fullsum'} = $taskmaker->sumOnly();
 	$self->{'task_count'} = $taskmaker->sumOnly();
@@ -753,8 +751,8 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-	#print "in Batch::BatchMaker_cray setTaskInfo\n";
-    #my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    #print "in Batch::BatchMaker_cray setTaskInfo\n";
+    #my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
     #my $config = $taskmaker->{'config'};
     #my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
     #$self->{'mppsize'} = $self->{'mppsum'};
@@ -784,7 +782,7 @@ sub setTaskInfo()
 {
 	my $self = shift;
     $self->SUPER::setTaskInfo();
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+	my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
 
 	$self->{'mppsize'}  = $taskmaker->sumTasks();
@@ -842,7 +840,7 @@ sub _test()
 sub setTaskInfo()
 {
 	my $self = shift;
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+	my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
 	$self->{'mppsum'} = $taskmaker->sumOnly();
     $self->SUPER::setTaskInfo();
 }
@@ -917,16 +915,16 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-	my $mppsize = $taskmaker->sumOnly();
+    my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
+    my $mppsize = $taskmaker->sumOnly();
     my $config = $taskmaker->{'config'};
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
 
     if($mppsize % $maxTasksPerNode > 0)
 	{
-		my $mppnodes = $mppsize / $maxTasksPerNode;
-		$mppnodes = $mppnodes + 1;
-		$mppsize = $mppnodes * $maxTasksPerNode;
+	    my $mppnodes = $mppsize / $maxTasksPerNode;
+	    $mppnodes = $mppnodes + 1;
+	    $mppsize = $mppnodes * $maxTasksPerNode;
 	}
 	$self->{'mppsize'} = $mppsize;
     $self->SUPER::setTaskInfo();

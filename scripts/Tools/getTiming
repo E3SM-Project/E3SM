@@ -8,6 +8,7 @@ use File::Basename;
 use IO::File;
 use IO::Handle;
 
+
 sub usage {
     die <<'EOF';
 
@@ -74,13 +75,15 @@ sub gettiming2 {
 
     my($fin, $fout) = @_;
 
-    my $dirs = "$CASEROOT/Tools";
-    unshift @INC, $dirs;
-    require SetupTools;
-
     # Retreve and expand all case xml variables
-    my %xml=();
     chdir $CASEROOT;
+
+    my $cimeroot  = `./xmlquery CIMEROOT  -value`;
+    my @dirs = ("$cimeroot/utils/perl5lib" );
+    unshift @INC, @dirs;
+    require Config::SetupTools;
+
+    my %xml=();
     SetupTools::getxmlvars($CASEROOT, \%xml);
     foreach my $attr (keys %xml) {
 	$xml{$attr} = SetupTools::expand_xml_var($xml{$attr}, \%xml);

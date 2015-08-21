@@ -17,37 +17,35 @@ require Batch::BatchMaker;
 use lib '.';
 #==============================================================================
 # Base class constructor.  required args are the case name, caseroot, cime/cesmroot, 
-# compiler, machine, machine root directory, the mpi library, and the scriptsroot.  
+# compiler, machine, machine root directory, the mpi library,
 # get the paths to the config_machines and config_batch xml files, and figure out 
 # the batch system type. 
 #==============================================================================
 sub new
 {
-	my ($class, %params) = @_;
-	my $self = {
-		case => $params{'case'}     || undef,
-		caseconfig => $params{'caseconfig'} || undef,
-		caseroot => $params{'caseroot'}     || undef,
-		ccsmroot => $params{'ccsmroot'}     || undef,
-		compiler => $params{'compiler'}  || undef,
-		machine => $params{'machine'}  || undef,
-		machroot => $params{'machroot'}  || undef,
-		mpilib => $params{'mpilib'}  || undef,
-		scriptsroot => $params{'scriptsroot'}  || undef,
-	};
-	bless $self, $class;
+    my ($class, %params) = @_;
+    my $self = {
+	case		=> $params{'case'}		|| undef,
+	caseconfig	=> $params{'caseconfig'}	|| undef,
+	caseroot	=> $params{'caseroot'}		|| undef,
+	compiler	=> $params{'compiler'}		|| undef,
+	machine		=> $params{'machine'}		|| undef,
+	machroot	=> $params{'machroot'}		|| undef,
+	mpilib		=> $params{'mpilib'}		|| undef,
+    };
+    bless $self, $class;
 
     my $perl5libdir = undef;
-	my $configbatch = $self->{'machroot'} . "/config_batch.xml";
-	$self->{'configbatch'} = $configbatch;
-	my $configmachines = $self->{'machroot'} . "/config_machines.xml";
-	$self->{'configmachines'} = $configmachines;
+    my $configbatch = $self->{'machroot'} . "/config_batch.xml";
+    $self->{'configbatch'} = $configbatch;
+    my $configmachines = $self->{'machroot'} . "/config_machines.xml";
+    $self->{'configmachines'} = $configmachines;
     my $casetoolsdir = $self->{'caseroot'} . "/Tools";
     push(@INC, $casetoolsdir);
     my $xml = XML::LibXML->new(no_blanks => 1);
     my $machineconfig = $xml->parse_file($configmachines);
     my $root = $machineconfig->getDocumentElement();
-	
+    
     my @batchtypes = $root->findnodes("/config_machines/machine[\@MACH=\'$self->{machine}\']/batch_system");
     if(! @batchtypes)
     {
@@ -55,9 +53,10 @@ sub new
     }
     $self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
 
-	$self->{dependencyqueue} = undef;
-	return $self;
+    $self->{dependencyqueue} = undef;
+    return $self;
 }
+
 sub _check()
 {
     my $self = shift;
@@ -352,10 +351,12 @@ sub getSubmitArguments()
     my $dependentjobid = shift;
 
 	# Get a BatchMaker instance, we need its instance data. 
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
-                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
-                                                  machroot => $self->{machroot}, machine => $self->{machine},
-                                                  compiler => $self->{compiler} );
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+							 case => $self->{case},
+							 mpilib => $self->{mpilib}, 
+							 machroot => $self->{machroot}, 
+							 machine => $self->{machine},
+							 compiler => $self->{compiler} );
 
 
     # Find the submit arguments for this particular batch system.
@@ -786,10 +787,12 @@ sub getSubmitArguments()
     my $dependentjobid = shift;
     my $sta_ok = shift;
 
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
-                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
-                                                  machroot => $self->{machroot}, machine => $self->{machine},
-                                                  compiler => $self->{compiler} );
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+							 case => $self->{case},
+							 mpilib => $self->{mpilib}, 
+							 machroot => $self->{machroot}, 
+							 machine => $self->{machine},
+							 compiler => $self->{compiler} );
     
     # Set the node count to 1 if this is the short-term archive script. 
     if(defined $scriptname && $scriptname =~ /archive/)

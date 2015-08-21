@@ -8,22 +8,21 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my @dirs = ("$CASEROOT/Tools");
-unshift @INC, @dirs;
-require SetupTools;
-my $sysmod; 
-
-my $CASEBUILD	= `./xmlquery  CASEBUILD   -value`;
 my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
 my $NINST_ICE	= `./xmlquery  NINST_ICE   -value`;
 my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
-my $SCRIPTSROOT	= `./xmlquery  SCRIPTSROOT -value`;
+my $CIMEROOT	= `./xmlquery  CIMEROOT    -value`;
 
-if (! -d "$CASEBUILD/diceconf" ) {
-    $sysmod = "mkdir $CASEBUILD/diceconf";
+my @dirs = ("${CIMEROOT}/utils/perl5lib");
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod; 
+
+if (! -d "$CASEROOT/Buildconf/diceconf" ) {
+    $sysmod = "mkdir $CASEROOT/Buildconf/diceconf";
     system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
 }
-chdir "$CASEBUILD/diceconf";
+chdir "$CASEROOT/Buildconf/diceconf";
 
 my $inst_string;
 my $inst_counter = 1;
@@ -51,28 +50,28 @@ while ($inst_counter <= $NINST_ICE) {
 
     SetupTools::create_namelist_infile("$CASEROOT", 
 				       "$CASEROOT/user_nl_dice${inst_string}", 
-				       "$CASEBUILD/diceconf/cesm_namelist"); 
+				       "$CASEROOT/Buildconf/diceconf/cesm_namelist"); 
 
     # -----------------------------------------------------
     # call build-namelist
     # -----------------------------------------------------
 
     $sysmod = "$CIMEROOT/components/data_comps/dice/bld/build-namelist";
-    $sysmod = "$sysmod -infile $CASEBUILD/diceconf/cesm_namelist";
+    $sysmod = "$sysmod -infile $CASEROOT/Buildconf/diceconf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT";
-    $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
+    $sysmod = "$sysmod -cimeroot $CIMEROOT";
     $sysmod = "$sysmod -inst_string \"$inst_string\"";
     $sysmod = "$sysmod -user_xml_dir \"$CASEROOT/SourceMods/src.dice\"";
     system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
 
     if (-d ${RUNDIR}) {
-	$sysmod = "cp $CASEBUILD/diceconf/dice_in     ${RUNDIR}/dice_in${inst_string}";
+	$sysmod = "cp $CASEROOT/Buildconf/diceconf/dice_in     ${RUNDIR}/dice_in${inst_string}";
 	system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
 
-	$sysmod = "cp $CASEBUILD/diceconf/dice_ice_in ${RUNDIR}/dice_ice_in${inst_string}";
+	$sysmod = "cp $CASEROOT/Buildconf/diceconf/dice_ice_in ${RUNDIR}/dice_ice_in${inst_string}";
 	system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
 
-	$sysmod = "cp $CASEBUILD/diceconf/*txt* ${RUNDIR}/ >& /dev/null";
+	$sysmod = "cp $CASEROOT/Buildconf/diceconf/*txt* ${RUNDIR}/ >& /dev/null";
 	system($sysmod) == 0;
     }
 

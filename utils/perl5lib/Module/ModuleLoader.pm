@@ -12,7 +12,7 @@ use Data::Dumper;
 use Cwd;
 
 #------------------------------------------------------------------------------
-# Constructor.  We need the machine and scriptsroot, and optionally the compiler, 
+# Constructor.  We need the machine and optionally the compiler, 
 # mpi library, and whether DEBUG is on.   We also want to initialize the module system so this object
 # is ready to load modules.  
 #------------------------------------------------------------------------------
@@ -23,32 +23,22 @@ sub new
 	{
 		die "ModuleLoader requires a machine argument";
 	}
-	if(! defined $params{'scriptsroot'})
-	{
-		die "ModuleLoader requires the scriptsroot";
-	}
 	if(! defined $params{'caseroot'})
 	{
 		die "ModuleLoader requires the caseroot";
 	}
 	my $self = {	
-		machine => $params{'machine'} || undef,
-		compiler => $params{'compiler'} || undef,
-		mpilib =>   $params{'mpilib'} || undef,
-		debug  =>   $params{'debug'} || undef,
-		scriptsroot => $params{'scriptsroot'} || undef,
-		caseroot => $params{'caseroot'} || undef,
+	    machine	=> $params{'machine'}	|| undef,
+	    compiler	=> $params{'compiler'}	|| undef,
+	    mpilib	=> $params{'mpilib'}	|| undef,
+	    debug	=> $params{'debug'}	|| undef,
+	    caseroot	=> $params{'caseroot'}	|| undef,
 	};
 	if(! defined $params{'debug'} )
 	{
-		$self->{debug} = 'FALSE';
+	    $self->{debug} = 'FALSE';
 	}
-	$self->{machineroot} = Cwd::abs_path($self->{scriptsroot}) . "/ccsm_utils/Machines/";
-	my $toolsroot = $self->{'caseroot'} . "/Tools";
-	push(@INC, $toolsroot);
-	$self->{'toolsroot'} = $toolsroot;
 	bless $self, $class;
-	#$self->moduleInit();
 	return $self;
 }
 
@@ -59,26 +49,16 @@ sub new
 sub loadModules()
 {
 	my $self = shift;
-	#my $self = {	
-	#	machine => $params{'machine'} || undef,
-	#	compiler => $params{'compiler'} || undef,
-	#	mpilib =>   $params{'mpilib'} || undef,
-	#	debug  =>   $params{'debug'} || undef,
-	#	scriptsroot => $params{'scriptsroot'} || undef,
-	#	caseroot => $params{'caseroot'} || undef,
-	#};
-	#eval qx($self->{cmdpath} $cmd);
-
 	if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
 
 	my %oldenv = %ENV;
 	my $envfile = $self->{'caseroot'} . "/env_mach_specific";
 	my $cshenv = "env ";
-    $cshenv .= "COMPILER=". $self->{'compiler'} . " " ;
-    $cshenv .= "MPILIB=". $self->{'mpilib'} . " " ;
-    $cshenv .= "DEBUG=". $self->{'debug'} . " " ;
-    $cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
-    $cshenv .= "PERL=TRUE ";
+	$cshenv .= "COMPILER=". $self->{'compiler'} . " " ;
+	$cshenv .= "MPILIB=". $self->{'mpilib'} . " " ;
+	$cshenv .= "DEBUG=". $self->{'debug'} . " " ;
+	$cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
+	$cshenv .= "PERL=TRUE ";
 	#my $cmd = $cshenv . " " . $envfile;
 	#my $cmd = $cshenv . " " . $envfile . " && printenv";
 	my $cmd = $cshenv . " " . $envfile ;

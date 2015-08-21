@@ -351,7 +351,7 @@ sub initialize()
     chomp $testlid;
 
     $cimeroot = abs_path("$cfgdir/../");
-    my @dirs = ("$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib");
+    my @dirs = ("$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib/Config");
     (-d "$cimeroot")  or  die "** Cannot find cimeroot directory \"$cimeroot\" **";
 
     $srcroot  = abs_path("$cimeroot/../");

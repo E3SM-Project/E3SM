@@ -38,7 +38,7 @@ if($@)
 {
     my $warning = <<END;
 WARNING:
-    The perl module XML::LibXML is needed for XML parsing in the CESM script system.  
+    The perl module XML::LibXML is needed for XML parsing in the CIME script system.  
 	Please contact your local systems administrators or IT staff and have them install it for 
 	you, or install the module locally.  
 
@@ -53,7 +53,7 @@ END
 *STDOUT->autoflush();                  
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
+# Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -93,9 +93,9 @@ OPTIONS
   NOT be bundled.
 
   -case <name>             Specifies the case name (required).
-  -compset <name>          Specify a CESM compset (required).
-  -res <name>              Specify a CESM grid resolution (required).
-  -mach <name>             Specify a CESM machine (required).
+  -compset <name>          Specify a compset (required).
+  -res <name>              Specify a grid resolution (required).
+  -mach <name>             Specify a machine (required).
   -pes_file <name>         Full pathname of pes file to use (will overwrite default settings) (optional)
   -project <name>          Specify a project id for the case (optional)
                            default: user-specified environment variable PROJECT or ACCOUNT
@@ -137,14 +137,14 @@ OPTIONS
                            This should be a "copy" of cime_config/config_grids.xml
                            with the new user grid changes added to it
   -user_pes_setby <name>   Component that sets the pe-layouts and pio settings 
-                           For cesm this is [allactive, cam, clm, cice, cism, pop]
+                           For CESM this is [allactive, cam, clm, cice, cism, pop]
   -help [or -h]            Print usage to STDOUT (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
   -silent [or -s]          Turns on silent mode - only fatal messages issued (optional).
   -verbose [or -v]         Turn on verbose echoing of settings made by create_newcase (optional).
   -xmlmode <name>          Sets format of xml files; normal or expert (optional). (default is normal) 
   -nowarning               Turns off checking of the known_problems repository. (default is on)
-  -sharedlibroot           Used for re-using build components when building multiple CESM cases, 
+  -sharedlibroot           Used for re-using build components when building multiple cases, 
                            default is \$EXEROOT
 
 EXAMPLES
@@ -204,15 +204,16 @@ if (@ARGV) {
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ("$cfgdir", "$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib");
+my @dirs = ("$cfgdir", "$cimeroot/utils/perl5lib", "$cimeroot/utils/perl5lib/Config");
 unshift @INC, @dirs;
 require ConfigCase;
 require ConfigCompsetGrid;
 require ConfigPes;
-require ConfigMachine;
+require ConfigMachine; 
 require ConfigTests;
-require ProjectTools;
-require UserModsTools;
+require SetupTools;
+require Project::ProjectTools;
+require UserMods::UserModsTools;
 require Testing::TestLists; 
 
 # Global variables
@@ -359,7 +360,6 @@ foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
 
 # Overwrite the non-default values for the following config elements (needed for the calls below)
 my $username = "$ENV{'USER'}";  
-$config->set('CCSMUSER'	  , "$username"); #TODO - remove CCSMUSER in $config
 $config->set('USER'	  , "$username");
 $config->set('CASEROOT'	  , "$caseroot");
 $config->set('CASETOOLS'  , "$caseroot/Tools");
@@ -368,7 +368,8 @@ $config->set('CASE'	  , "$case");
 $config->set('CIMEROOT'	  , "$cimeroot");
 $config->set('UTILROOT'	  , "$cimeroot/scripts/Tools");
 $config->set('SRCROOT'	  , "$srcroot");
-$config->set('CCSMROOT'	  , "$cimeroot/../"); #TODO - deprecate CCSMROOT = put out message
+$config->set('CCSMROOT'	  , "$srcroot");  #TODO - deprecate CCSMROOT = put out message
+$config->set('CCSMUSER'	  , "$username"); #TODO - deprecate - remove CCSMUSER in $config
 
 #------------------------------------------------------------------------------------------
 # *** Determine grid specification file
@@ -570,7 +571,7 @@ if (ProjectTools::set_project($project)) {
 _set_mpi_library($mpilib, $config);
 
 #------------------------------------------------------------------------------------------
-# *** Set the sharedlibroot for building shared CESM components
+# *** Set the sharedlibroot for building shared components
 #------------------------------------------------------------------------------------------
 if (defined $opts{'sharedlibroot'}) {
     $config->set('SHAREDLIBROOT', $opts{'sharedlibroot'});
@@ -798,8 +799,6 @@ sub _create_caseroot
     mkdir ("$caseroot");
     chdir ("$caseroot");
 
-    my $scriptsroot = "$cimeroot/scripts";
-
     # Create relevant directories in $caseroot
     my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools);
     foreach my $newdir ( @newdirs ) {
@@ -812,34 +811,34 @@ sub _create_caseroot
     print $fh "$commandline\n\n\n";
     $fh->close;
 
-    # print README/disclaimer file in scripts dir
-    $sysmod = "cp $scriptsroot/README $caseroot/README.science_support";
+    # Copy README/disclaimer file 
+    $sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     _create_caseroot_sourcemods($caseroot, $cimeroot, $config);  
-    _create_caseroot_tools ($caseroot, $scriptsroot);
-    _create_caseroot_files($case, $caseroot, $cimeroot, $scriptsroot, $machine, $compiler, $print, $config);
+    _create_caseroot_tools($caseroot, $cimeroot);
+    _create_caseroot_files($case, $caseroot, $cimeroot, $machine, $compiler, $print, $config);
 }
 
 #-------------------------------------------------------------------------------
 sub _create_caseroot_tools
 {
     # Copy relevant files into $caseroot
-    my ($caseroot, $scriptsroot) = @_;
+    my ($caseroot, $cimeroot) = @_;
     
     $sysmod;
 
     my @files = (
-	"$scriptsroot/Tools/cesm_setup", 
-	"$scriptsroot/Tools/testcase_setup", 
-	"$scriptsroot/Tools/check_input_data", 
-	"$scriptsroot/Tools/archive_metadata.sh", 
-	"$scriptsroot/Tools/check_case", 
-	"$scriptsroot/Tools/create_production_test", 
-	"$scriptsroot/Tools/xmlchange",
-	"$scriptsroot/Tools/xmlquery",
-	"$scriptsroot/Tools/st_archive", 
-	"$scriptsroot/Tools/README.post_process", 
+	"$cimeroot/scripts/Tools/cesm_setup", 
+	"$cimeroot/scripts/Tools/testcase_setup", 
+	"$cimeroot/scripts/Tools/check_input_data", 
+	"$cimeroot/scripts/Tools/archive_metadata.sh", 
+	"$cimeroot/scripts/Tools/check_case", 
+	"$cimeroot/scripts/Tools/create_production_test", 
+	"$cimeroot/scripts/Tools/xmlchange",
+	"$cimeroot/scripts/Tools/xmlquery",
+	"$cimeroot/scripts/Tools/st_archive", 
+	"$cimeroot/scripts/Tools/README.post_process", 
 	); 
     foreach my $file (@files) {
 	$sysmod = "cp -p $file $caseroot"; 
@@ -859,25 +858,22 @@ sub _create_caseroot_tools
     }
     
     # Copy relevant files into $caseroot/Tools/
-    @files = ("$scriptsroot/cimeconfig/archive.xml",
-	      "$scriptsroot/cimeconfig/archive.xsd",
-	      "$scriptsroot/Tools/cesm_buildnml", 
-	      "$scriptsroot/Tools/cesm_prestage", 
-	      "$scriptsroot/Tools/cesm_prerun_setup", 
-	      "$scriptsroot/Tools/cesm_postrun_setup", 
-	      "$scriptsroot/Tools/check_lockedfiles", 
-	      "$scriptsroot/Tools/lt_archive.sh", 
-	      "$scriptsroot/Tools/st_archive", 
-	      "$scriptsroot/Tools/getTiming", 
-	      "$scriptsroot/Tools/SetupTools.pm",
-	      "$scriptsroot/Tools/ProjectTools.pm",
-	      "$scriptsroot/Tools/compare_namelists.pl",
+    @files = ("$cimeroot/scripts/cimeconfig/archive.xml",
+	      "$cimeroot/scripts/cimeconfig/archive.xsd",
+	      "$cimeroot/scripts/Tools/cesm_buildnml", 
+	      "$cimeroot/scripts/Tools/cesm_prestage", 
+	      "$cimeroot/scripts/Tools/cesm_prerun_setup", 
+	      "$cimeroot/scripts/Tools/cesm_postrun_setup", 
+	      "$cimeroot/scripts/Tools/check_lockedfiles", 
+	      "$cimeroot/scripts/Tools/lt_archive.sh", 
+	      "$cimeroot/scripts/Tools/st_archive", 
+	      "$cimeroot/scripts/Tools/getTiming", 
+	      "$cimeroot/scripts/Tools/compare_namelists.pl",
 	      "$machines_dir/ccsm_getenv", 
 	      "$machines_dir/taskmaker.pl", 
 	      "$machines_dir/Makefile",
 	      "$machines_dir/mkSrcfiles", 
 	      "$machines_dir/mkDepends"); 
-	      #"$mkbatch");
     
     foreach my $file (@files) {
 	$sysmod = "cp -p $file $caseroot/Tools/. "; 
@@ -888,8 +884,7 @@ sub _create_caseroot_tools
 #-------------------------------------------------------------------------------
 sub _create_caseroot_files
 {
-    my ($case, $caseroot, $cimeroot, $scriptsroot, $machine, 
-	$compiler, $print, $config) = @_;
+    my ($case, $caseroot, $cimeroot, $machine, $compiler, $print, $config) = @_;
 
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);
@@ -901,33 +896,33 @@ sub _create_caseroot_files
     }
 
     # Create $case.build
-    $sysmod = "cp $scriptsroot/Tools/cesm_build.csh  $caseroot/$case.build";
+    $sysmod = "cp $cimeroot/scripts/Tools/cesm_build.csh  $caseroot/$case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     $sysmod = "chmod 755 $caseroot/$case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
     # Create $caseroot/Buildconf/cesm_build.pl
-    $sysmod = "cp $scriptsroot/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
+    $sysmod = "cp $cimeroot/scripts/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
     $sysmod = "chmod 755 $caseroot/Buildconf/cesm_build.pl";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     
     # Create $case.clean_build
-    $sysmod = "cp $scriptsroot/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+    $sysmod = "cp $cimeroot/scripts/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     
     # Create $case.submit
-    $sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit"; 
+    $sysmod = "cp  $cimeroot/scripts/Tools/cesm_submit $caseroot/$case.submit"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     # Create $case.l_archive
-    #$sysmod = "env CCSMUSER=$username CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch_file";
+    #$sysmod = "env USER=$username CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch_file";
     #system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     # Create $caseroot preview_namelist file
     my $file = "${caseroot}/preview_namelists"; 
-    $sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
+    $sysmod = "cp  $cimeroot/scripts/Tools/preview_namelists $file"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     $sysmod = "chmod 755 $file";
@@ -1005,21 +1000,21 @@ sub _create_caseroot_sourcemods
     my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav); 
 
     # Create sourcemods
-    my $moddir = "$caseroot/SourceMods";
     foreach my $comp (@comps)  {
-	mkpath("$moddir/src.$comp"); 
+	mkpath("$caseroot/SourceMods/src.$comp"); 
+
 	# ---TODO: this is CESM specific given that we are referencing cism explitly
-	# this logic should be moved to ConfigCESM.pm
 	if ($comp eq 'cism') {
-	    mkpath("$moddir/src.$comp/glimmer-cism");
-	    open(README, ">", "$moddir/src.$comp/README") or
-		die "cannot open > $moddir/src.$comp/README: $!";
+	    mkpath("$caseroot/SourceMods/src.cism/glimmer-cism");
+	    open(README, ">", "$caseroot/SourceMods/src.$comp/README") or
+		die "cannot open > $caseroot/SourceMods/src.cism/README: $!";
 	    print README
 		"Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
 		"This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism.\n\n",
 		"Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
 	    close(README);
 	}
+
     }
     mkpath("$caseroot/SourceMods/src.share"); 
     mkpath("$caseroot/SourceMods/src.drv"); 

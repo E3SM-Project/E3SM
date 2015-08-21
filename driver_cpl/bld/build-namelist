@@ -39,7 +39,7 @@ OPTIONS
      -silent               Turn on silent mode
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -grid                 GRID variable
      -rof_grid             ROF_GRID variable
      -wav_grid             WAV_GRID variable
@@ -80,7 +80,7 @@ if ($ProgDir) {
 my %opts = ( help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
-	     scriptsroot => 0,
+	     cimeroot    => 0,
 	     grid        => 0,
 	     rof_grid    => 0,
 	     wav_grid    => 0,
@@ -95,7 +95,7 @@ GetOptions(
     "s|silent"      => \$opts{'silent'},
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "grid=s"        => \$opts{'grid'},	   
     "rof_grid=s"    => \$opts{'rof_grid'},
     "wav_grid=s"    => \$opts{'wav_grid'},
@@ -123,7 +123,7 @@ if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
 my $CASEROOT    = $opts{'caseroot'}; 
-my $SCRIPTSROOT = $opts{'scriptsroot'};       
+my $CIMEROOT    = $opts{'cimeroot'};       
 my $GRID        = $opts{'grid'}; 
 my $ROF_GRID    = $opts{'rof_grid'}; 
 my $WAV_GRID    = $opts{'wav_grid'}; 
@@ -165,7 +165,7 @@ EOF
 # Look for them under the directory that contains the configure script.
     
 # The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/../utils/perl5lib";
+my $perl5lib_dir = "${CIMEROOT}/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
@@ -309,9 +309,8 @@ if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Note - $USER is not in the config_defintion.xml file - it is only in the environment
 $xmlvars{'USER'} = $ENV{'USER'};
-unshift @INC, "$CASEROOT/Tools";
-require XML::Lite;
-require SetupTools;
+unshift @INC, "${CIMEROOT}/utils/perl5lib";
+require Config::SetupTools;
 
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);

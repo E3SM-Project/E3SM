@@ -80,7 +80,6 @@ my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
 my $libroot             =  `./xmlquery LIBROOT			-value`;
-my $scriptsroot         =  `./xmlquery SCRIPTSROOT		-value`;
 my $dout_s_root         =  `./xmlquery DOUT_S_ROOT		-value`;
 my $caseroot		=  `./xmlquery CASEROOT			-value`;
 my $case		=  `./xmlquery CASE			-value`;
@@ -97,7 +96,6 @@ my $compare_baseline	=  `./xmlquery COMPARE_BASELINE		-value`;
 my $generate_baseline	=  `./xmlquery GENERATE_BASELINE	-value`;
 my $cleanup             =  `./xmlquery CLEANUP	                -value`;
 my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
-my $casetools           =  `./xmlquery CASETOOLS            -value`;
 my $compiler            =  `./xmlquery COMPILER             -value`;
 my $mpilib              =  `./xmlquery MPILIB               -value`;
 
@@ -129,19 +127,16 @@ if (! $baselineroot) {
 
 chdir($caseroot); 
 
-push(@INC, $casetools);
-my $perl5libdir = "$cimeroot/utils/perl5lib/";
-push(@INC, $perl5libdir);
+push(@INC, "$cimeroot/utils/perl5lib/");
 require Batch::BatchMaker;
 require Task::TaskMaker;
 
 # ------------------ testcase_begin ------------------------------------------
 # -- Make batch script using the BatchMaker module --- 
 my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot    => $caseroot, 
-						     ccsmroot    => $cimeroot,
+						     cimeroot    => $cimeroot,
                                                      case        => $case,     
 						     mpilib      => $mpilib,
-                                                     scriptsroot => $scriptsroot, 
 						     machroot    => $machdir,
                                                      machine     => $mach,        
 						     compiler    => $compiler);
@@ -208,7 +203,7 @@ my $testcase_interp = <<END_INTERP;
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
     set CIMEROOT		=  $cimeroot
-    set SCRIPTSROOT             =  $scriptsroot
+    set SCRIPTSROOT             = "$cimeroot/../";
     set RUNDIR                  =  $rundir
     set EXEROOT                 =  $exeroot
     set LIBROOT                 =  $libroot

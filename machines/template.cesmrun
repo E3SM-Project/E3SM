@@ -92,12 +92,10 @@ sub doPreRunChecks()
     %config = SetupTools::getAllResolved();
     $case        = $config{'CASE'};
     $caseroot    = $config{'CASEROOT'};
-    $cimeroot    = $config{'CIMEROOT'};
     $compiler    = $config{'COMPILER'};
     $machine     = $config{'MACH'};
     $machroot    = $config{'MACHDIR'};
     $mpilib      = $config{'MPILIB'};
-    $scriptsroot = $config{'SCRIPTSROOT'};
     if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
     {
 	print "You are not calling the run script via the submit script. \n";
@@ -116,9 +114,11 @@ sub doPreRunChecks()
     # Now, load the module environment... 
     # ModuleLoader for module-based systems.  
     
-    my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, compiler => $config{'COMPILER'},
-						mpilib => $config{'MPILIB'}, debug => $config{'DEBUG'}, 
-						scriptsroot => $config{'SCRIPTSROOT'}, caseroot => $config{'CASEROOT'});
+    my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, 
+						compiler => $config{'COMPILER'},
+						mpilib => $config{'MPILIB'}, 
+						debug => $config{'DEBUG'}, 
+						caseroot => $config{'CASEROOT'});
     $moduleloader->loadModules();
     
     my $mpilib = `./xmlquery -value MPILIB`;
@@ -449,12 +449,10 @@ sub resubmitCheck()
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	  => $config{'CASE'}, 
 							      caseconfig  => \%config, 
 							      caseroot    => $config{'CASEROOT'},
-                                                              ccsmroot    => $config{'CIMEROOT'}, 
 							      compiler    => $config{'COMPILER'}, 
 							      machine	  => $config{'MACH'},
                                                               machroot    => $config{'MACHDIR'}, 
-							      mpilib      => $config{'MPILIB'},
-                                                              scriptsroot => $config{'SCRIPTSROOT'} );
+							      mpilib      => $config{'MPILIB'});
     $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# st_archive - script to handle CESM short term archiving 
+# st_archive - script to handle short term archiving 
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -21,9 +21,11 @@ use File::stat;
 use File::Glob;
 
 # the st_archive is run in the CASEROOT and needs to look in the CASEROOT/Tools for SetupTools.pm
-my $includedirs = "./Tools";
-unshift(@INC, $includedirs);
-require SetupTools;
+my $cimeroot  = `./xmlquery CIMEROOT  -value`;
+my @dirs = ("$cimeroot/utils/perl5lib" );
+
+unshift @INC, @dirs;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test

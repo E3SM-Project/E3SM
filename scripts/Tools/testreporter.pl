@@ -218,7 +218,6 @@ sub getTestSuiteInfo
 {
     my $testlist = shift;
     my %caseinfo; 
-    #my $firsttest = (@$testlist)[0];
     my $testpath;
     foreach my $testdir(@$testlist)
     {
@@ -228,11 +227,11 @@ sub getTestSuiteInfo
 	    last;
 	}
     }
-    #my $abspath = $testroot . "/" . $firsttest;
     &Debug("test path:  $testpath\n");
-    my @dirs = ( $testpath, $testpath . "/Tools");
+    my @dirs = ( $testpath, $testpath . "../utils/perl5lib");
     unshift @INC, @dirs;
-    require SetupTools;
+
+    require Config::SetupTools;
 
     my %config = SetupTools::getAllResolved();
     $caseinfo{'mach'}     = $config{'MACH'};
@@ -251,11 +250,11 @@ sub getTestSuiteInfo
 	# Get the expectedFailsFile. 
 	if(! defined $expectedFailsFile)
 	{
-		my @cimeroots = $root->findnodes('/testlist/cimeroot');
-		die "cannot find cimeroot!" if(! @cimeroots);
-        my $cimeroot = $cimeroots[0]->textContent();
-		&Debug("cimeroot: $cimeroot\n");
-		$expectedFailsFile = "$cimeroot/scripts/Testing/Testlistxml/ExpectedTestFails.xml";
+	    my @cimeroots = $root->findnodes('/testlist/cimeroot');
+	    die "cannot find cimeroot!" if(! @cimeroots);
+	    my $cimeroot = $cimeroots[0]->textContent();
+	    &Debug("cimeroot: $cimeroot\n");
+	    $expectedFailsFile = "$cimeroot/scripts/Testing/Testlistxml/ExpectedTestFails.xml";
 	}
 
     

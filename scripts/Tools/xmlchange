@@ -78,9 +78,12 @@ if ($#ARGV == -1) {
 # descriptions to be printed to STDOUT before the error messages start.
 *STDOUT->autoflush();                  
 
-my $cwd = getcwd();   # current working directory
-unshift @INC, "$cwd/Tools";
-require SetupTools;
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $cimeroot = $nodes[0]->getAttribute('value');
+
+unshift @INC, "$cimeroot/utils/perl5lib";
+require Config::SetupTools;
 
 # Parse command-line options.
 my @saved_argv = @ARGV;

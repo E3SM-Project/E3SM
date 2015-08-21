@@ -17,20 +17,20 @@ use Exporter qw(import);
 sub new
 {
 	my ($class, %params) = @_;
-	if(! defined $params{'caseroot'})
+	if(! defined $params{'cimeroot'})
 	{
-		die "TaskMaker.pm: the caseroot must be set as an argument!";
+	    die "TaskMaker.pm: cimeroot must be set as an argument!";
 	}
-	
+
 	my $self = {
-		caseroot => $params{'caseroot'} || undef,
+	        cimeroot => $params{'cimeroot'} || undef,
 		removedeadtasks => $params{'removedeadtasks'} || undef,
 	};
 	bless $self, $class;
 
 	# Create a set of strings needed to pull layout information out of the config 
 	# object. 
-    my @layoutstrings = qw/ COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
+	my @layoutstrings = qw/ COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
                      COMP_ATM NTASKS_ATM NTHRDS_ATM ROOTPE_ATM PSTRID_ATM NINST_ATM
                      COMP_LND NTASKS_LND NTHRDS_LND ROOTPE_LND PSTRID_LND NINST_LND
                      COMP_ROF NTASKS_ROF NTHRDS_ROF ROOTPE_ROF PSTRID_ROF NINST_ROF
@@ -40,7 +40,7 @@ sub new
                      COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV NINST_WAV
 					 MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE /;
 	$self->{'layoutstrings'} = \@layoutstrings;
-	# Either the config was passed in, otherwise pull it from within the caseroot
+	# Either the config was passed in, otherwise pull it from within the cimeroot
 	my %config;
 	if( defined $params{'config'})
 	{
@@ -49,8 +49,9 @@ sub new
 	}
 	else
 	{
- 	    my $toolsdir = $self->{'caseroot'} . "/Tools";
-	    require SetupTools;
+ 	    my $dir = $self->{'cimeroot'} . "/utils/perl5lib";
+	    unshift @INC, $dir;
+	    require Config::SetupTools;
 	    %config = SetupTools::getAllResolved();
 	    $self->{'config'} = \%config;
 	}
@@ -106,7 +107,8 @@ sub _getConfig
 {
 	my $self = shift;
 
-	my $toolsdir = $self->{'caseroot'} . "/Tools";
+	my $dir = $self->{'cimeroot'} . "/utils/perl5lib";
+	unshift @INC, $dir;
 	require SetupTools;
 	my %config = SetupTools::getAllResolved();
 	return %config;

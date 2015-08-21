@@ -3,10 +3,16 @@
 use strict;
 use warnings;
 use Data::Dumper;
+use XML::LibXML;
 
-my $toolsdir = "./Tools";
-push(@INC, $toolsdir);
-require SetupTools;
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $cimeroot = $nodes[0]->getAttribute('value');
+
+unshift @INC, "$cimeroot/utils/perl5lib";
+require Config::SetupTools;
+require Batch::BatchUtils;
+require Module::ModuleLoader;
 
 my %config	= SetupTools::getAllResolved();
 my $machine	= $config{'MACH'};
@@ -15,13 +21,7 @@ my $compiler	= $config{'COMPILER'};
 my $mpilib	= $config{'MPILIB'};
 my $caseroot	= $config{'CASEROOT'};
 my $case	= $config{'CASE'};
-my $cimeroot	= $config{'CIMEROOT'};
-my $scriptsroot = $config{'SCRIPTSROOT'};
-my $perl5lib	= "$config{'CIMEROOT'}/utils/perl5lib";
 
-push(@INC, $perl5lib);
-require Batch::BatchUtils;
-require Module::ModuleLoader;
 my $lastjobid = undef;
 
 sub main
@@ -44,7 +44,6 @@ sub main
 						compiler    => $config{'COMPILER'},
 						mpilib	    => $config{'MPILIB'}, 
 						debug	    => $config{'DEBUG'},
-						scriptsroot => $config{'SCRIPTSROOT'}, 
 						caseroot    => $config{'CASEROOT'});
     $moduleloader->loadModules();
 
@@ -52,12 +51,10 @@ sub main
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case, 
 							      caseconfig   => \%config, 
 							      caseroot	   => $caseroot, 
-							      ccsmroot	   => $cimeroot, 
 							      compiler	   => $compiler, 
 							      machine	   => $machine, 
 							      machroot	   => $machroot, 
-							      mpilib	   => $mpilib, 
-							      scriptsroot  => $scriptsroot );
+							      mpilib	   => $mpilib); 
     
     $batchutils->dependencyCheck("sta_ok");
     $batchutils->submitJobs("sta_ok");
