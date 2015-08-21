@@ -5,8 +5,12 @@ project (PIOTests C Fortran)
 #  TESTING TARGET
 #==============================================================================
 
-# Custom "check" target (builds and runs ctest)
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+# Custom "piotests" target (builds the test executables)
+add_custom_target (tests)
+
+# Custom "check" target that depends upon "tests"
+add_custom_target (check COMMAND ${CMAKE_CTEST_COMMAND})
+add_dependencies (check tests)
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES

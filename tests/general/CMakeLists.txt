@@ -36,7 +36,7 @@ add_executable (pio_init_finalize EXCLUDE_FROM_ALL
     pio_init_finalize.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_init_finalize piof)
-add_dependencies (check pio_init_finalize)
+add_dependencies (tests pio_init_finalize)
 
 add_mpi_test(init_finialize_1_proc
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
@@ -59,7 +59,7 @@ add_executable (pio_file_simple_tests EXCLUDE_FROM_ALL
     pio_file_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_file_simple_tests piof)
-add_dependencies (check pio_file_simple_tests)
+add_dependencies (tests pio_file_simple_tests)
 
 add_mpi_test(pio_file_simple_tests
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests
@@ -71,7 +71,7 @@ add_executable (pio_file_fail EXCLUDE_FROM_ALL
     pio_file_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_file_fail piof)
-add_dependencies (check pio_file_fail)
+add_dependencies (tests pio_file_fail)
 
 add_mpi_test(pio_file_fail
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail
@@ -83,7 +83,7 @@ add_executable (ncdf_simple_tests EXCLUDE_FROM_ALL
     ncdf_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (ncdf_simple_tests piof)
-add_dependencies (check ncdf_simple_tests)
+add_dependencies (tests ncdf_simple_tests)
 
 add_mpi_test(ncdf_simple_tests
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
@@ -95,7 +95,7 @@ add_executable (ncdf_get_put EXCLUDE_FROM_ALL
     ncdf_get_put.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (ncdf_get_put piof)
-add_dependencies (check ncdf_get_put)
+add_dependencies (tests ncdf_get_put)
 
 add_mpi_test(ncdf_get_put_1proc
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
@@ -111,7 +111,7 @@ add_executable (ncdf_fail EXCLUDE_FROM_ALL
     ncdf_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (ncdf_fail piof)
-add_dependencies (check ncdf_fail)
+add_dependencies (tests ncdf_fail)
 
 add_mpi_test(ncdf_fail
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail
@@ -123,7 +123,7 @@ add_executable (pio_decomp_tests EXCLUDE_FROM_ALL
     pio_decomp_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_decomp_tests piof)
-add_dependencies (check pio_decomp_tests)
+add_dependencies (tests pio_decomp_tests)
 
 add_mpi_test(pio_decomp_tests_1p
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
@@ -186,7 +186,7 @@ add_executable (pio_decomp_fillval EXCLUDE_FROM_ALL
     pio_decomp_fillval.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_decomp_fillval piof)
-add_dependencies (check pio_decomp_fillval)
+add_dependencies (tests pio_decomp_fillval)
 
 add_mpi_test(pio_decomp_fillval
     EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
