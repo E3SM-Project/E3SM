@@ -19,7 +19,7 @@ set (SRCS basic_tests.F90
           ncdf_tests.F90
           nc_set_log_level2.c)
 
-add_executable (pio_unit_test ${SRCS})
+add_executable (pio_unit_test EXCLUDE_FROM_ALL ${SRCS})
 target_link_libraries (pio_unit_test piof)
 
 # Test Timeout (4 min = 240 sec)

@@ -32,7 +32,8 @@ endforeach ()
 set (DEFAULT_TEST_TIMEOUT 240)
 
 #===== pio_init_finalize =====
-add_executable (pio_init_finalize pio_init_finalize.F90
+add_executable (pio_init_finalize EXCLUDE_FROM_ALL 
+    pio_init_finalize.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_init_finalize piof)
 
@@ -53,7 +54,8 @@ add_mpi_test(init_finalize_2_proc_with_args
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 #===== pio_file_simple_tests =====
-add_executable (pio_file_simple_tests pio_file_simple_tests.F90
+add_executable (pio_file_simple_tests EXCLUDE_FROM_ALL
+    pio_file_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_file_simple_tests piof)
 
@@ -63,7 +65,8 @@ add_mpi_test(pio_file_simple_tests
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
              
 #===== pio_file_fail =====
-add_executable (pio_file_fail pio_file_fail.F90
+add_executable (pio_file_fail EXCLUDE_FROM_ALL
+    pio_file_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_file_fail piof)
 
@@ -73,7 +76,8 @@ add_mpi_test(pio_file_fail
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 #===== ncdf_simple_tests =====
-add_executable (ncdf_simple_tests ncdf_simple_tests.F90
+add_executable (ncdf_simple_tests EXCLUDE_FROM_ALL
+    ncdf_simple_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (ncdf_simple_tests piof)
 
@@ -83,7 +87,8 @@ add_mpi_test(ncdf_simple_tests
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 #===== ncdf_get_put =====
-add_executable (ncdf_get_put ncdf_get_put.F90
+add_executable (ncdf_get_put EXCLUDE_FROM_ALL
+    ncdf_get_put.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (ncdf_get_put piof)
 
@@ -97,7 +102,8 @@ add_mpi_test(ncdf_get_put_2proc
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 #===== ncdf_fail =====
-add_executable (ncdf_fail ncdf_fail.F90
+add_executable (ncdf_fail EXCLUDE_FROM_ALL
+    ncdf_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (ncdf_fail piof)
 
@@ -107,7 +113,8 @@ add_mpi_test(ncdf_fail
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
     
 #===== pio_decomp_tests =====
-add_executable (pio_decomp_tests pio_decomp_tests.F90
+add_executable (pio_decomp_tests EXCLUDE_FROM_ALL
+    pio_decomp_tests.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_decomp_tests piof)
 
@@ -168,7 +175,8 @@ add_mpi_test(pio_decomp_tests_4p_2iop_1agg
     TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
 #===== pio_decomp_fillval =====
-add_executable (pio_decomp_fillval pio_decomp_fillval.F90
+add_executable (pio_decomp_fillval EXCLUDE_FROM_ALL
+    pio_decomp_fillval.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_decomp_fillval piof)
 

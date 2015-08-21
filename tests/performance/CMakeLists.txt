@@ -2,9 +2,8 @@
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================
 
-set (SRC pioperformance.F90)
-
-add_executable (pioperf ${SRC})
+add_executable (pioperf EXCLUDE_FROM_ALL
+                pioperformance.F90)
 
 target_link_libraries (pioperf piof)
 
