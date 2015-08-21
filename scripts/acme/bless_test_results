@@ -118,7 +118,7 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
                 case = os.path.basename(testcase_dir_for_test)
 
                 # Get user that test was run as (affects loc of hist files)
-                user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test).strip()
+                user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test)
                 acme_root = acme_util.get_machine_info(user=user)[4]
 
                 # Find files of various types
