@@ -271,6 +271,8 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
+     ! pflotran
+     real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gN/m3/s)
    contains
 
      procedure , public  :: Init   
@@ -576,6 +578,9 @@ contains
     allocate(this%plant_pdemand_patch         (begp:endp)) ;    this%plant_pdemand_patch         (:) = nan
     allocate(this%avail_retransp_patch        (begp:endp)) ;    this%avail_retransp_patch        (:) = nan
     allocate(this%plant_palloc_patch          (begp:endp)) ;    this%plant_palloc_patch          (:) = nan
+
+    ! pflotran
+    allocate(this%plant_pdemand_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%plant_pdemand_vr_col (:,:) = nan
 
   end subroutine InitAllocate
 
@@ -1788,6 +1793,9 @@ contains
           this%gross_pmin_vr_col(i,j)                    = value_column
           this%net_pmin_vr_col(i,j)                      = value_column
           this%biochem_pmin_vr_col(i,j)                  = value_column
+
+          ! pflotran
+          this%plant_pdemand_vr_col(i,j)                 = value_column
        end do
     end do
 

@@ -12,6 +12,7 @@ module CNCStateUpdate3Mod
   use clm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
+  use clm_varctl       , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -53,6 +54,10 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
       ! column level carbon fluxes from fire
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -66,6 +71,8 @@ contains
             cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%m_c_to_litr_lig_fire_col(c,j)* dt
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools

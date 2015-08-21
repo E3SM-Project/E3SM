@@ -408,6 +408,9 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
+    ! pflotran
+    use clm_varctl            , only : use_pflotran
+    use clm_bgc_interfaceMod  , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     !
     ! !ARGUMENTS    
     implicit none
@@ -1049,6 +1052,15 @@ contains
     ! deallocated
 
     deallocate(topo_glc_mec)
+
+    !------------------------------------------------------------
+    ! PFLOTRAN initialization
+    call t_startf('init_pflotran')
+    if (use_pflotran) then
+       call clm_pf_interface_init(bounds_proc)
+    end if
+    call t_stopf('init_pflotran')
+    !------------------------------------------------------------
 
     !------------------------------------------------------------       
     ! Write log output for end of initialization

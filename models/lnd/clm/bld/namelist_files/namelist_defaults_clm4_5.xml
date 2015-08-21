@@ -1560,4 +1560,10 @@ lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c130927.nc</fsurdat>
 
 <use_aereoxid_prog use_cn=".true.">.true.</use_aereoxid_prog>
 
+<!-- =========================================  -->
+<!-- Defaults for clm_pflotran_inparm interface -->
+<!-- =========================================  -->
+<pflotran_inputdir>pflotran</pflotran_inputdir>
+<pflotran_prefix>pflotran_clm</pflotran_prefix>
+
 </namelist_defaults>

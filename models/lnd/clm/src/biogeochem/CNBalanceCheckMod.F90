@@ -25,6 +25,9 @@ module CNBalanceCheckMod
   use subgridAveMod       , only : p2c
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  ! pflotran
+  use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
+
 
   !
   implicit none
@@ -188,6 +191,7 @@ contains
          dwt_closs               =>    carbonflux_vars%dwt_closs_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total carbon loss from product pools and conversion
          product_closs           =>    carbonflux_vars%product_closs_col       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total wood product carbon loss
          som_c_leached           =>    carbonflux_vars%som_c_leached_col       , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport 
+         col_decompc_delta       =>    carbonflux_vars%externalc_to_decomp_delta_col, & ! Input: [real(r8) (:) ] (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          
          col_begcb               =>    carbonstate_vars%begcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          col_endcb               =>    carbonstate_vars%endcb_col              , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2) 
@@ -218,11 +222,30 @@ contains
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
 
+         ! adjusting the time-lag of org. C increments to decomposing pools when coupled with PFLOTRAN bgc
+         ! (because PF bgc uses the extern C as sink (in, + ) at previous time-step,
+         ! but note that it includes possible negative adding)
+         if (use_pflotran .and. pf_cmode) then
+            col_errcb(c) = col_errcb(c) - col_decompc_delta(c)*dt
+            ! here is '-' adjustment. It says that the adding to PF decomp c pools was less.
+         end if
+
          ! check for significant errors
          if (abs(col_errcb(c)) > 1e-8_r8) then
             err_found = .true.
             err_index = c
          end if
+
+ write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Carbon_Balance_Check: BEG"
+ write(*,'(A5,10A20)')"Col","err","in-out","end-beg","in","out","end","beg"
+ write(*,'(I5,10E20.10)')c,col_errcb(c), &
+            (col_cinputs - col_coutputs)*dt,col_endcb(c) - col_begcb(c), &
+            col_cinputs*dt,col_coutputs*dt,col_endcb(c),col_begcb(c)
+
+write(*,'(A)'),">>>DEBUG | col_cinputs & coutput [g-C/m2]:"
+write(*,'(10A20)')"input_gpp","CO2","fire","dwt_closs","prod_closs","hrv","soc_leach"
+write(*,'(10e20.10)')gpp(c)*dt,er(c)*dt, col_fire_closs(c)*dt, dwt_closs(c)*dt, product_closs(c)*dt, col_hrv_xsmrpool_to_atm(c)*dt,som_c_leached(c)*dt
+write(*,'(A,120(1h-))')">>>DEBUG | ALM_Carbon_Balance_Check: END"
 
       end do ! end of columns loop
 
@@ -281,7 +304,10 @@ contains
          dwt_nloss           =>    nitrogenflux_vars%dwt_nloss_col           , & ! Input:  [real(r8) (:)]  (gN/m2/s) total nitrogen loss from product pools and conversion
          product_nloss       =>    nitrogenflux_vars%product_nloss_col       , & ! Input:  [real(r8) (:)]  (gN/m2/s) total wood product nitrogen loss
          som_n_leached       =>    nitrogenflux_vars%som_n_leached_col       , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
-         
+         ! pflotran:
+         col_decompn_delta   =>    nitrogenflux_vars%externaln_to_decomp_delta_col, & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
+         col_no3_delta       =>    nitrogenflux_vars%no3_net_transport_delta_col  , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column NO3 leaching bwtn time-step
+
          col_ninputs         =>    nitrogenflux_vars%ninputs_col         , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)         
          col_noutputs        =>    nitrogenflux_vars%noutputs_col        , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)        
          col_begnb           =>    nitrogenstate_vars%begnb_col              , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
@@ -322,10 +348,36 @@ contains
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
 
+         ! adjusting the time-lag of org. N increments to decomposing pools when coupled with PFLOTRAN bgc
+         ! (because PF bgc uses the extern N sink (in, +) at previous time-step,
+         ! but note that it includes possible negative adding)
+         if (use_pflotran .and. pf_cmode) then
+            col_errnb(c) = col_errnb(c) - col_decompn_delta(c)*dt
+            ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
+
+            ! if not hydrology-coupled, NO3 leaching/runoff at previous time-step used as 'source' (out, -) to PFLOTRAN bgc
+            if (.not.pf_hmode) col_errnb(c) = col_errnb(c) + col_no3_delta(c)*dt
+            ! here is '+' adjustment. It says that the taking to PF no3 pools was more.
+         end if
+
          if (abs(col_errnb(c)) > 1e-8_r8) then
             err_found = .true.
             err_index = c
          end if
+
+write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Nitrogen_Balance_Check: BEG"
+write(*,'(A5,10A20)')"Col","err","in-out","end-beg","in","out","end","beg"
+write(*,'(I5,10E20.10)')c,col_errnb(c), &
+            (col_ninputs(c)-col_noutputs(c))*dt, col_endnb(c)-col_begnb(c),&
+            col_ninputs(c)*dt,col_noutputs(c)*dt,col_endnb(c),col_begnb(c)
+
+write(*,'(A)'),">>>DEBUG | col_ninputs to sminn [g-N/m2]:"
+write(*,'(10A20)')"ndep","nfix","supplement","fert","soyfixn"
+write(*,'(10e20.10)')ndep_to_sminn(c)*dt,nfix_to_sminn(c)*dt,supplement_to_sminn(c)*dt,fert_to_sminn(c)*dt,soyfixn_to_sminn(c)*dt
+write(*,'(A)'),">>>DEBUG | col_noutputs [g-N/m2]:"
+write(*,'(10A20)')"denit","fire_nloss","dwt_nloss","product_nloss","n2o_nit","no3_leached","no3_runoff","sminn_leached"
+write(*,'(10E20.10)')denit(c)*dt,col_fire_nloss(c)*dt,dwt_nloss(c)*dt,product_nloss(c)*dt,f_n2o_nit(c)*dt,smin_no3_leached(c)*dt , smin_no3_runoff(c)*dt,sminn_leached(c)*dt
+write(*,'(A,120(1h-))')">>>DEBUG | ALM_Nitrogen_Balance_Check: END"
 
       end do ! end of columns loop
 

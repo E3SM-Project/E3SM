@@ -45,8 +45,10 @@ module clm_driver
   !
   use SurfaceRadiationMod    , only : SurfaceRadiation
   use UrbanRadiationMod      , only : UrbanRadiation
-  !
-  use CNEcosystemDynMod      , only : CNEcosystemDynNoLeaching,CNEcosystemDynLeaching
+  !clm_bgc_interface
+  use CNEcosystemDynMod      , only : CNEcosystemDynNoLeaching1, CNEcosystemDynNoLeaching2
+
+  use CNEcosystemDynMod      , only : CNEcosystemDynLeaching !!CNEcosystemDynNoLeaching,
   use CNVegStructUpdateMod   , only : CNVegStructUpdate 
   use CNAnnualUpdateMod      , only : CNAnnualUpdate
   use CNBalanceCheckMod      , only : BeginCBalance, BeginNBalance, CBalanceCheck, NBalanceCheck
@@ -114,7 +116,12 @@ module clm_driver
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  ! pflotran
+  use clm_varctl             , only : use_pflotran
+  use clm_varctl             , only : pf_hmode, pf_tmode, pf_cmode
+  use clm_bgc_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
+!  use clm_bgc_interfaceMod   , only : clm_pf_finalize
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -507,6 +514,7 @@ contains
 
        call t_stopf('bgc')
 
+
        ! ============================================================================
        ! Determine temperatures
        ! ============================================================================
@@ -665,24 +673,77 @@ contains
              ! - CNDV defined: prognostic biogeography; else prescribed
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
-             call CNEcosystemDynNoLeaching(bounds_clump,                        &
-                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
-                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
-                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,              &
-                  cnstate_vars, carbonflux_vars, carbonstate_vars,              &
-                  c13_carbonflux_vars, c13_carbonstate_vars,                    &
-                  c14_carbonflux_vars, c14_carbonstate_vars,                    &
-                  nitrogenflux_vars, nitrogenstate_vars,                        &
-                  atm2lnd_vars, waterstate_vars, waterflux_vars,                &
-                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
-                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
-                  phosphorusflux_vars,phosphorusstate_vars)
+!             call CNEcosystemDynNoLeaching(bounds_clump,                        &
+!                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
+!                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
+!                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,              &
+!                  cnstate_vars, carbonflux_vars, carbonstate_vars,              &
+!                  c13_carbonflux_vars, c13_carbonstate_vars,                    &
+!                  c14_carbonflux_vars, c14_carbonstate_vars,                    &
+!                  nitrogenflux_vars, nitrogenstate_vars,                        &
+!                  atm2lnd_vars, waterstate_vars, waterflux_vars,                &
+!                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
+!                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
+!                  phosphorusflux_vars,phosphorusstate_vars)
+
+             ! pflotran: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines
+             call CNEcosystemDynNoLeaching1(bounds_clump,                               &
+                       filter(nc)%num_soilc, filter(nc)%soilc,                          &
+                       filter(nc)%num_soilp, filter(nc)%soilp,                          &!!num_pcropp, filter_pcropp, doalb, &
+                       cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
+                       c13_carbonflux_vars,                                             &!!c13_carbonstate_vars, &
+                       c14_carbonflux_vars,                                             &!!c14_carbonstate_vars, &
+                       nitrogenflux_vars, nitrogenstate_vars,                           &
+                       atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
+                       canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
+                       ch4_vars, photosyns_vars,                                        & !!dgvs_vars, soilhydrology_vars, energyflux_vars, &
+                       phosphorusflux_vars,phosphorusstate_vars)
+
+             if (use_pflotran .and. pf_cmode) then
+                call t_startf('pflotran')
+           ! ===========================================================================
+           ! PFLOTRAN calling for solving below-ground and ground-surface processes,
+           ! including thermal, hydrological and biogeochemical processes
+           ! ===========================================================================
+
+                call clm_pf_run(bounds_clump,                                      &
+                       ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
+                       ! at this coding stage.
+                       ! Note: 'soilp' as input for possible future use of pft-level variables like ET/nuptake
+                       filter(nc)%num_soilc, filter(nc)%soilc,                          &
+                       filter(nc)%num_soilp, filter(nc)%soilp,                          &
+                       ! soil thermal-hydrology (TODO: will update when testing with th coupling)
+                       atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
+                       soilstate_vars,  temperature_vars, energyflux_vars,              &
+                       soilhydrology_vars, soil_water_retention_curve,                  &
+                       ! soil bgc
+                       cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
+                       nitrogenflux_vars, nitrogenstate_vars,                           &
+                       ch4_vars                                                         &
+                       )
+
+
+
+                call t_stopf('pflotran')
+             end if !!if (use_pflotran .and. pf_cmode)
+
+             call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
+                   filter(nc)%num_soilc, filter(nc)%soilc,                                  &
+                   filter(nc)%num_soilp, filter(nc)%soilp,                                  &
+                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,                         &
+                   cnstate_vars, carbonflux_vars, carbonstate_vars,                         &
+                   c13_carbonflux_vars, c13_carbonstate_vars,                               &
+                   c14_carbonflux_vars, c14_carbonstate_vars,                               &
+                   nitrogenflux_vars, nitrogenstate_vars,                                   &
+                   atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
+                   canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
+                   dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
+                   phosphorusflux_vars,phosphorusstate_vars)
 
              call CNAnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   filter(nc)%num_soilp, filter(nc)%soilp, &
                   cnstate_vars, carbonflux_vars)
-
           else ! not use_cn
 
              if (doalb) then
@@ -787,6 +848,8 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
+write(*,'(/,A,50(1h+))'),">>>DEBUG | CNP_BALANCE_CHECK"
+print*,">>>DEBUG | nstep=",nstep,"; nstep_day=",nstep/48.0
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
@@ -1028,6 +1091,13 @@ contains
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
+
+       !----------------------------------------------
+       ! pflotran
+       if (use_pflotran) then
+            call clm_pf_write_restart(rdate)
+       end if
+       !----------------------------------------------
 
        call t_stopf('clm_drv_io_htapes')
 

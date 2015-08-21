@@ -103,6 +103,9 @@ contains
     use clm_time_manager , only : set_timemgr_init, get_timemgr_defaults
     use fileutils        , only : getavu, relavu
     use shr_string_mod   , only : shr_string_getParentDir
+    ! pflotran
+    use clm_bgc_interfaceMod, only : clm_pf_readnl
+
     implicit none
     !
     ! !LOCAL VARIABLES:
@@ -214,6 +217,8 @@ contains
          use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
 
+    ! pflotran interface
+    namelist /clm_inparm/ use_pflotran
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -352,6 +357,9 @@ contains
 
     call control_spmd()
     
+    if (use_pflotran) then
+       call clm_pf_readnl(NLFilename)
+    end if
     ! ----------------------------------------------------------------------
     ! consistency checks
     ! ----------------------------------------------------------------------
@@ -594,6 +602,8 @@ contains
     ! clump decomposition variables
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
+
+    call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd
 
