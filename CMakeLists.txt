@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.10)
+cmake_minimum_required (VERSION 2.8.12)
 project (PIO C)
 
 #==============================================================================
@@ -49,10 +49,16 @@ list (APPEND CMAKE_MODULE_PATH ${CMAKE_UTILS_PATH})
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
 #==============================================================================
-     
+
+# Libraries
 add_subdirectory (src)
+
+# Tests
 if (PIO_ENABLE_TESTS)
     enable_testing()
     include (CTest)
     add_subdirectory (tests)
 endif ()
+
+# Documentation
+add_subdirectory (doc)
