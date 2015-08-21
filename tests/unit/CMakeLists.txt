@@ -21,6 +21,7 @@ set (SRCS basic_tests.F90
 
 add_executable (pio_unit_test EXCLUDE_FROM_ALL ${SRCS})
 target_link_libraries (pio_unit_test piof)
+add_dependencies (check pio_unit_test)
 
 # Test Timeout (4 min = 240 sec)
 set (DEFAULT_TEST_TIMEOUT 240)
