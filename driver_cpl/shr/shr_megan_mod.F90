@@ -173,7 +173,7 @@ contains
   !-------------------------------------------------------------------------
   subroutine shr_megan_init( specifier, megan_fields )
 
-    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t
+    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
     character(len=*), intent(in) :: specifier(:)
     character(len=*), intent(out) :: megan_fields	
@@ -225,6 +225,7 @@ contains
        item => item%next_item
        i = i+1
     enddo
+    if (associated(items_list)) call shr_exp_list_destroy(items_list)
 
     ! Need to explicitly add Fl_ based on naming convention
 333 format ('Fall_voc',i3.3)

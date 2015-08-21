@@ -13,6 +13,7 @@ module shr_expr_parser_mod
 
   public :: shr_exp_parse     ! parses simple strings which contain expressions 
   public :: shr_exp_item_t    ! user defined type which contains an expression component
+  public :: shr_exp_list_destroy ! destroy the linked list returned by shr_exp_parse
 
   ! contains componets of expression
   type shr_exp_item_t
@@ -20,7 +21,7 @@ module shr_expr_parser_mod
      character(len=64),pointer :: vars(:) => null()
      real(r8)         ,pointer :: coeffs(:) => null()
      integer           :: n_terms = 0
-     type(shr_exp_item_t), pointer :: next_item
+     type(shr_exp_item_t), pointer :: next_item => null()
   end type shr_exp_item_t
 
 contains
@@ -55,7 +56,6 @@ contains
              n_exp_items = n_exp_items + 1
 
              allocate( exp_item )
-             nullify(exp_item%next_item)
              exp_item%n_terms = 0
              exp_item%name = trim(adjustl(exp_array(i)(:j-1)))
 
@@ -132,6 +132,30 @@ contains
     endif
 
   end function shr_exp_parse
+
+  ! -----------------------------------------------------------------
+  ! deallocates memory occupied by linked list
+  ! -----------------------------------------------------------------
+  subroutine  shr_exp_list_destroy( list )
+    type(shr_exp_item_t), pointer, intent(inout) :: list
+
+    type(shr_exp_item_t), pointer :: item, next
+
+    item => list
+    do while(associated(item))
+       next => item%next_item
+       if (associated(item%vars)) then
+          deallocate(item%vars)
+          nullify(item%vars)
+          deallocate(item%coeffs)
+          nullify(item%coeffs)
+       endif
+       deallocate(item)
+       nullify(item)
+       item => next
+    enddo
+
+  end subroutine  shr_exp_list_destroy
 
  !==========================
  ! Private Methods 
