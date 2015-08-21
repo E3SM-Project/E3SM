@@ -77,11 +77,11 @@ contains
       integer, intent(out) :: iErr
 
       ! Define pool pointers
-      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool
+      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, tracersPool
 
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nVertLevelsP1, nCells, nEdges, nVertices
-      integer, pointer :: nCellsSolve, nEdgesSolve, index_temperature, index_salinity
+      integer, pointer :: nCellsSolve, nEdgesSolve, index_temperature, index_salinity, index_tracer1
 
       ! Define array pointers
       integer, dimension(:), pointer :: maxLevelCell
@@ -89,8 +89,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, bottomDepth, dcEdge
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid, vertCoordMovementWeights
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
       real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin
       real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal, dcEdgeMinGlobal
@@ -106,7 +105,7 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      integer :: iCell, k, idx
+      integer :: iCell, k
 
       real (kind=RKIND) :: deltaTemperature
       real (kind=RKIND), dimension(:), pointer :: zTop, refTemperature, refTemperatureTop, refZTop
@@ -184,6 +183,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -197,10 +197,12 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
-        call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
-        call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
         call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
@@ -236,6 +238,11 @@ contains
 
         do iCell = 1, nCellsSolve
 
+           ! Set debug tracer
+           do k = 1, nVertLevels
+             debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+           enddo
+
            if ( trim(config_internal_waves_layer_type) == 'z-level' ) then
 
               ! Set stratified temperature
@@ -243,7 +250,7 @@ contains
                  temperature = config_internal_waves_bottom_temperature &
                       + (config_internal_waves_surface_temperature - config_internal_waves_bottom_temperature) &
                       * ( (refZMid(k) - refZMid(nVertLevels)) / (-refZMid(nVertLevels) ))
-                 tracers(index_temperature, k, iCell) = temperature
+                 activeTracers(index_temperature, k, iCell) = temperature
               end do
 
               if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth ) then
@@ -252,7 +259,7 @@ contains
                     temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) - yMidGlobal) / perturbationWidth) &
                          * sin ( pii * refBottomDepth(k-1) / refBottomDepth(nVertLevels-1) )
 
-                    tracers(index_temperature, k, iCell) = tracers(index_temperature, k, iCell) + temperature
+                    activeTracers(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell) + temperature
                  end do
               end if
 
@@ -263,7 +270,7 @@ contains
            else if ( trim(config_internal_waves_layer_type) == 'isopycnal' ) then
 
               ! Set stratified temperature
-              tracers(index_temperature, :, iCell) =  refTemperature(:)
+              activeTracers(index_temperature, :, iCell) =  refTemperature(:)
 
               ! Set layerThickness
               if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth) then
@@ -289,7 +296,7 @@ contains
            endif
 
            ! Set salinity
-           tracers(index_salinity, :, iCell) = config_internal_waves_salinity
+           activeTracers(index_salinity, :, iCell) = config_internal_waves_salinity
 
            ! Set bottomDepth
            bottomDepth(iCell) = config_internal_waves_bottom_depth

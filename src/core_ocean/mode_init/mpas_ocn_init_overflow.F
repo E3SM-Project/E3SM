@@ -86,18 +86,19 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: verticalMeshPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       integer :: iCell, k
 
       ! Define dimensions
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
-      integer, pointer :: index_temperature, index_salinity
+      integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define arrays
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: yCell, refBottomDepth, bottomDepth, vertCoordMovementWeights, dcEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
       ! Define configs
       character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_overflow_layer_type
@@ -186,19 +187,22 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
         call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
         call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
 
-        call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
@@ -239,14 +243,14 @@ contains
            if ( trim(config_overflow_layer_type) == 'sigma' .or. trim(config_overflow_layer_type) == 'z-level' ) then
               do k = 1, maxLevelCell(iCell)
                  if(yCell(iCell) < yMinGlobal + plugWidth) then
-                    tracers(index_temperature, k, iCell) = config_overflow_plug_temperature
+                    activeTracers(index_temperature, k, iCell) = config_overflow_plug_temperature
                  else
-                    tracers(index_temperature, k, iCell) = config_overflow_domain_temperature
+                    activeTracers(index_temperature, k, iCell) = config_overflow_domain_temperature
                  end if
               end do
            else if ( trim(config_overflow_layer_type) == 'isopycnal' ) then
-              tracers(index_temperature, 1, :) = config_overflow_domain_temperature
-              tracers(index_temperature, 2:nVertLevels, :) = config_overflow_plug_temperature
+              activeTracers(index_temperature, 1, :) = config_overflow_domain_temperature
+              activeTracers(index_temperature, 2:nVertLevels, :) = config_overflow_plug_temperature
            end if
 
            ! Set layerThickness and restingThickness
@@ -274,7 +278,13 @@ contains
            end if
 
            ! Set salinity
-           tracers(index_salinity, :, iCell) = config_overflow_salinity
+           activeTracers(index_salinity, :, iCell) = config_overflow_salinity
+
+           ! Set debug tracer
+           do k = 1, nVertLevels
+             debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+           enddo
+
         end do
 
         ! Set vertCoordMovementWeights
