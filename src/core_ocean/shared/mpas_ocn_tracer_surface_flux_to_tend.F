@@ -114,13 +114,11 @@ contains
       integer :: iCell, k, iTracer, nTracers
       integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:,:), pointer :: cellMask
 
       real (kind=RKIND) :: remainingFlux
 
       err = 0
 
-      write(6,*) 'surfaceTracerFluxOn',surfaceTracerFluxOn
       if (.not. surfaceTracerFluxOn) return
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -128,7 +126,6 @@ contains
       nTracers = size(tend, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
@@ -136,13 +133,13 @@ contains
           remainingFlux = remainingFlux - fractionAbsorbed(k, iCell)
 
           do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * fractionAbsorbed(k, iCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + surfaceTracerFlux(iTracer, iCell) * fractionAbsorbed(k, iCell)
           end do
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
           do iTracer = 1, nTracers
-            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + cellMask(k, iCell) * surfaceTracerFlux(iTracer, iCell) * remainingFlux
+            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + surfaceTracerFlux(iTracer, iCell) * remainingFlux
           end do
         end if
       end do

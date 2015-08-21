@@ -110,7 +110,6 @@ contains
       integer :: iCell, k, iTracer, nTracers
       integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:,:), pointer :: cellMask
       real (kind=RKIND) :: fluxTopOfCell, fluxBottomOfCell
 
       err = 0
@@ -122,7 +121,6 @@ contains
       nTracers = size(tend, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       do iCell = 1, nCells
         do k = 2, maxLevelCell(iCell)-1
@@ -131,7 +129,7 @@ contains
           do iTracer = 1, nTracers
             fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
             fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
           end do
         end do
 
@@ -140,7 +138,7 @@ contains
         do iTracer = 1, nTracers
           fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
           fluxBottomOfCell = 0.0
-          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
         end do
 
         ! enforce boundary conditions at top of column
@@ -148,7 +146,7 @@ contains
         do iTracer = 1, nTracers
           fluxTopOfCell = 0.0
           fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
-          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell)
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
         end do
 
       end do
