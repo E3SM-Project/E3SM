@@ -26,7 +26,9 @@ __TEST_SUITES = {
                          'NCK.f19_g16_rx1.A',
                          'PEA_P1_M.f45_g37_rx1.A',
                          'SMS.ne30_f19_g16_rx1.A',
-                         'SMS.f19_f19.I1850CLM45CN']
+                         'SMS.f19_f19.I1850CLM45CN',
+			 'SMS.f09_g16.I1850CLM45CN',
+			 'SMS.hcru_hcru.I1850CRUCLM45CN']
                         ),
     "acme_integration" : ("acme_developer",
                           ["ERB.f19_g16.B1850C5",
