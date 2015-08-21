@@ -371,12 +371,14 @@ contains
                ctestBlockID,   &
                ctestOnProc)
           
-          if (verboseInit .and. ctestOnProc) then
-             write(stderrUnit,*), 'ctestGlobal, local ctest, block:', ctestGlobal, ctest, ctestBlockID
-          else
-             write(stderrUnit,*), 'Not on this proc: ctestGlobal =', cTestGlobal
+          if (verboseInit) then
+             if (ctestOnProc) then
+                write(stderrUnit,*), 'ctestGlobal, local ctest, block:', ctestGlobal, ctest, ctestBlockID
+             else
+                write(stderrUnit,*), 'Not on this proc: ctestGlobal =', cTestGlobal
+             endif
           endif
-          
+
        endif   ! ctestGlobal > 0
 
        if (etestGlobal > 0) then
@@ -6760,10 +6762,8 @@ contains
                 write(stderrUnit,*) 'Check conservation:', trim(thisTracer % tracerName)
                 if (init) then
                    write(stderrUnit,*) 'Initial sum on block:', thisTracer % globalSumInit3D(1,1)
-                   print*, 'my init sum =', thisTracer % globalSumInit3D(1,1)               !WHL - debug
                 else
                    write(stderrUnit,*) 'Final sum on block:', thisTracer % globalSumFinal3D(1,1)
-                   print*, 'my final sum =', thisTracer % globalSumInit3D(1,1)               !WHL - debug
                 endif
              endif
           endif   ! verbose
