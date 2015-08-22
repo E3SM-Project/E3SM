@@ -693,15 +693,15 @@ contains
     allocate(this%plant_ndemand_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%plant_ndemand_vr_col             (:,:)  = nan
 
     allocate(this%f_ngas_decomp_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_decomp_vr_col             (:,:)  = nan
-    allocate(this%f_ngas_decomp_col           (begc:endc                  )) ; this%f_ngas_decomp_col                (:)    = nan
     allocate(this%f_ngas_nitri_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_nitri_vr_col              (:,:)  = nan
-    allocate(this%f_ngas_nitri_col            (begc:endc                  )) ; this%f_ngas_nitri_col                 (:)    = nan
     allocate(this%f_ngas_denit_vr_col         (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_denit_vr_col              (:,:)  = nan
-    allocate(this%f_ngas_denit_col            (begc:endc                  )) ; this%f_ngas_denit_col                 (:)    = nan
-
     allocate(this%f_n2o_soil_vr_col           (begc:endc,1:nlevdecomp_full)) ; this%f_n2o_soil_vr_col                (:,:)  = nan
-    allocate(this%f_n2o_soil_col              (begc:endc                  )) ; this%f_n2o_soil_col                   (:)    = nan
     allocate(this%f_n2_soil_vr_col            (begc:endc,1:nlevdecomp_full)) ; this%f_n2_soil_vr_col                 (:,:)  = nan
+
+    allocate(this%f_ngas_decomp_col           (begc:endc                  )) ; this%f_ngas_decomp_col                (:)    = nan
+    allocate(this%f_ngas_nitri_col            (begc:endc                  )) ; this%f_ngas_nitri_col                 (:)    = nan
+    allocate(this%f_ngas_denit_col            (begc:endc                  )) ; this%f_ngas_denit_col                 (:)    = nan
+    allocate(this%f_n2o_soil_col              (begc:endc                  )) ; this%f_n2o_soil_col                   (:)    = nan
     allocate(this%f_n2_soil_col               (begc:endc                  )) ; this%f_n2_soil_col                    (:)    = nan
 
     allocate(this%externaln_to_decomp_npools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externaln_to_decomp_npools_col    (:,:,:) = spval
@@ -2291,12 +2291,12 @@ contains
              this%anaerobic_frac_col(i,j)                = value_column
 
              ! pflotran
-            this%plant_ndemand_vr_col(i,j)               = value_column
-            this%f_ngas_decomp_vr_col(i,j)               = value_column
-            this%f_ngas_nitri_vr_col(i,j)                = value_column
-            this%f_ngas_denit_vr_col(i,j)                = value_column
-            this%f_n2o_soil_vr_col(i,j)                  = value_column
-            this%f_n2_soil_vr_col(i,j)                   = value_column
+             this%plant_ndemand_vr_col(i,j)              = value_column
+             this%f_ngas_decomp_vr_col(i,j)              = value_column
+             this%f_ngas_nitri_vr_col(i,j)               = value_column
+             this%f_ngas_denit_vr_col(i,j)               = value_column
+             this%f_n2o_soil_vr_col(i,j)                 = value_column
+             this%f_n2_soil_vr_col(i,j)                  = value_column
           end if
           this%potential_immob_vr_col(i,j)               = value_column
           this%actual_immob_vr_col(i,j)                  = value_column

@@ -757,7 +757,7 @@ contains
 
      ! pflotran
      allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
-     allocate(this%externalc_to_decomp_delta_col(begc:endc));                                    this%externalc_to_decomp_delta_col (:)     = spval
+     allocate(this%externalc_to_decomp_delta_col (begc:endc));                                   this%externalc_to_decomp_delta_col (:)     = spval
      allocate(this%f_co2_soil_vr_col             (begc:endc,1:nlevdecomp_full));                 this%f_co2_soil_vr_col             (:,:)   = nan
      allocate(this%f_co2_soil_col                (begc:endc))                  ;                 this%f_co2_soil_col                (:)     = nan
 
@@ -4061,8 +4061,6 @@ contains
           this%harvest_c_to_cwdc_col(i,j)             = value_column          
 
           this%hr_vr_col(i,j)                         = value_column
-          ! pflotran
-          this%f_co2_soil_vr_col(i,j)                 = value_column
        end do
     end do
 
@@ -4141,9 +4139,6 @@ contains
        this%vegfire_col(i)               = value_column       
        this%wood_harvestc_col(i)         = value_column 
        this%hrv_xsmrpool_to_atm_col(i)   = value_column
-
-       ! pflotran
-        this%f_co2_soil_col(i)                = value_column
     end do
 
     do k = 1, ndecomp_pools
@@ -4170,6 +4165,7 @@ contains
 
     do fi = 1,num_column
        i = filter_column(fi)
+       this%f_co2_soil_col(i) = value_column
        ! only initializing in the first time-step
        if ( this%externalc_to_decomp_delta_col(i) == spval ) then
           this%externalc_to_decomp_delta_col(i) = value_column
@@ -4745,6 +4741,12 @@ contains
     end if !!if (.not.(use_pflotran .and. pf_cmode))
     !----------------------------------------------------------------
 
+    ! pflotran
+    !----------------------------------------------------------------
+    if (use_pflotran .and. pf_cmode) then
+        call CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
+    end if
+    !----------------------------------------------------------------
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -4919,13 +4921,6 @@ contains
        end do
     end do
 
-    ! pflotran
-    !----------------------------------------------------------------
-    if (use_pflotran .and. pf_cmode) then
-        call CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
-    end if
-    !----------------------------------------------------------------
-
   end associate
   end subroutine Summary
 
@@ -5045,7 +5040,7 @@ subroutine CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
           end do
        end do
     end do
-
+write(*,'(A40,E14.6)')">>>DEBUG | externC[t-1]=",this%externalc_to_decomp_delta_col(1)*dtime
     !
     ! do the initialization for the following variable here.
     ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
