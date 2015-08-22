@@ -49,7 +49,7 @@ module ocn_time_series_stats
   type time_buffer_type
     ! internal state
     logical :: started_flag, accumulate_flag, reset_flag
-    integer :: total_accum
+    real (kind=RKIND) :: total_accum
 
     type (MPAS_Time_type) :: start_time
     type (MPAS_TimeInterval_type) :: duration_interval
@@ -61,6 +61,9 @@ module ocn_time_series_stats
     character (len=StrKIND) :: repeat_alarm_ID
     character (len=StrKIND) :: duration_alarm_ID
     character (len=StrKIND) :: reset_alarm_ID
+
+    ! name of counter
+    character (len=StrKIND) :: output_counter
   end type time_buffer_type
 
   ! time variable type
@@ -174,6 +177,7 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
 
   ! local variables
   integer :: i, v, b
+  real (kind=RKIND), pointer :: counter
 
   ! start procedure
   err = 0
@@ -186,6 +190,11 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
       else 
         buffers(b) % total_accum = buffers(b) % total_accum + 1
       end if
+
+      ! update the stream
+      call mpas_pool_get_array(domain % blocklist % allFields, &
+        buffers(b) % output_counter, counter, 1)
+      counter = buffers(b) % total_accum
     end if
   end do
 
@@ -621,6 +630,7 @@ subroutine modify_stream(domain, stream_name, number_of_variables, &
   integer :: v, b
   character (len=StrKIND) :: field, buffer, config, var
   logical, pointer :: copy_mesh
+  type (Field0DReal), pointer :: src, dst
 
   ! allocate the variable information
   allocate(variables(number_of_variables))
@@ -696,15 +706,34 @@ subroutine modify_stream(domain, stream_name, number_of_variables, &
 
       ! create the field and add to pool
       call add_new_field(variables(v) % info, &
-        variables(v) % input_name, field, &
-        domain % blocklist % allFields)
+        variables(v) % input_name, field, domain % blocklist % allFields)
 
       ! add the field to the stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
         stream_name, variables(v) % output_names(b), ierr=err)
     end do
-
   end do ! number_of_variables
+
+  ! add counters to stream
+  do b = 1, size(buffers)
+    ! create the name of the counter
+    write(buffer, '(I0)') b
+    field = 'time' // trim(instance) // '_' // trim(buffer) // '_counter'
+
+    ! create counter and add to pool
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      'timeSeriesStatsCounter', src, 1)
+    call mpas_duplicate_field(src, dst)
+    dst % fieldName = field
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      field, dst)
+
+    ! add counter to the stream
+    buffers(b) % output_counter = field
+    call mpas_stream_mgr_add_field(domain % streamManager, &
+      stream_name, buffers(b) % output_counter, ierr=err)
+  end do
+
 end subroutine modify_stream!}}}
 
 
@@ -1339,7 +1368,6 @@ end subroutine copy_field_3i!}}}
 !>  have a special case of normalizing the data before writing it
 !>  to disk).
 !-----------------------------------------------------------------------
-
 subroutine operate0r_avg (start_block, tvar)
   type (block_type), pointer, intent(in) :: start_block
   type (time_variable_type), intent(inout) :: tvar

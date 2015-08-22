@@ -73,7 +73,7 @@
 		/>
 		<nml_option name="config_AM_timeSeriesStats_reset_intervals"
 					type="character"
-					default_value="00-01-00_00:00:00"
+					default_value="00-00-01_00:00:00"
 					units="unitless"
 					description="A list of time durations in d_h:m:s describing the buffer reset periodicity (how often to reset accumulation). Ought to be >= output_interval (not verified by the analysis member)."
 					possible_values="A list of time durations in d_h:m:s, separated by ;."
@@ -85,12 +85,23 @@
 		<package name="timeSeriesStatsAMPKG" description="This package includes variables required for the time series stats analysis member."/>
 	</packages>
 
+	<var_struct name="timeSeriesStatsAM" 
+				time_levs="1" 
+				packages="timeSeriesStatsAMPKG">
+		<var name="timeSeriesStatsCounter" 
+			type="real" 
+			dimensions="Time" 
+			units="unitless"
+			description="a placeholder counter so that timeSeriesStats has a memory to duplicate"
+			packages="forwardMode;analysisMode"/>
+	</var_struct>
+
 	<streams>
 		<stream name="timeSeriesStatsOutput" 
 				type="none"
 				mode="forward;analysis"
 				filename_template="analysis_members/timeSeriesStats.$Y-$M-$D.nc"
-				filename_interval="01-00-00_00:00:00"
+				filename_interval="00-01-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
 				packages="timeSeriesStatsAMPKG"
 				clobber_mode="truncate"
