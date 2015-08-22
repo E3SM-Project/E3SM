@@ -11,6 +11,7 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_internal_waves.o \
              mpas_ocn_init_overflow.o \
              mpas_ocn_init_cvmix_WSwSBF.o \
+             mpas_ocn_init_iso.o \
              mpas_ocn_init_global_realistic.o
              #mpas_ocn_init_TEMPLATE.o
 
@@ -27,6 +28,8 @@ mpas_ocn_init_spherical_utils.o:
 mpas_ocn_init_vertical_grids.o:
 
 mpas_ocn_init_baroclinic_channel.o: $(UTILS)
+
+mpas_ocn_init_iso.o: $(UTILS)
 
 mpas_ocn_init_lock_exchange.o: $(UTILS)
 
