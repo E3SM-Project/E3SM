@@ -86,7 +86,6 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool, forcingPool
 
       type (mpas_pool_type), pointer :: tracersPool, &
-                                        tracersSurfaceFluxPool, &
                                         tracersSurfaceRestoringFieldsPool, &
                                         tracersInteriorRestoringFieldsPool
 
@@ -179,7 +178,6 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
 
