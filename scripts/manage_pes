@@ -14,6 +14,7 @@ use strict;
 my %opts;
 my $scriptdir = dirname(abs_path(__FILE__));
 my $cimeroot  = abs_path("$scriptdir/../");
+my $srcroot  = abs_path("$cimeroot/../");
 my $pes_file;
 my $compsets_file;
 my $component;
@@ -225,7 +226,7 @@ sub addPes
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
     my @nodes = $xml->findnodes(".//grid[\@name=\'$grid\']/mach[\@name=\'$machine\']/pes[\@compset=\'$compset\' and \@pesize=\'$pesize\']");
-    if (defined @nodes) {
+    if ($#nodes > -1) {
 
 	# we found a match - query the user if the new layout should overwrite the old one
 	my $string = $nodes[0]->toString(1);
@@ -479,14 +480,18 @@ sub getPesFile{
     my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file_config");
 
-    my @files = $xml->findnodes(".//entry[\@id=\"PES_SPEC_FILE\"]/values/value[\@component=\"$opts{'pes_setby'}\"]");
+    my $component = $opts{'pes_setby'};
+    my @files = $xml->findnodes(".//entry[\@id=\"PES_SPEC_FILE\"]/values/value[\@component=\"$component\"]");
     if (! @files) {
 	die " ERROR: no pes specification file found for $opts{'pes_setby'} \n";
     }
     my $file = $files[0]->textContent();
     $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$SRCROOT/$srcroot/;
     if (-f "$file")  {
-	print "Pes specification file is $file \n";
+	print "\n";
+	print "------------------------------------------- \n";
+	print " Pes      set by: \n  $file \n";
     } else {
 	die "*** Cannot find pes specification file $file ***\n";
     }
@@ -501,14 +506,17 @@ sub getCompsetsFile{
     my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file_config");
 
-    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$opts{'pes_setby'}\"]");
+    my $component = $opts{'pes_setby'};
+    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$component\"]");
     if (! @files) {
 	die " ERROR: no compsets specification file found for $opts{'pes_setby'} \n";
     }
     my $file = $files[0]->textContent();
     $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$SRCROOT/$srcroot/;
     if (-f "$file")  {
-	print "Compsets specification file is $compsets_file \n";
+	print " Compsets set by: \n  $file  \n";
+	print "------------------------------------------- \n\n";
     } else {
 	die "*** Cannot find compsets specification file $file ***\n";
     }

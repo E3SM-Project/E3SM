@@ -53,6 +53,7 @@ sub getCompsetLongname
 
     my $cimeroot = $config->get('CIMEROOT');
     my $srcroot  = $config->get('SRCROOT');
+    my $model    = $config->get('MODEL');
     my $compset_longname;
     my $compset_aliasname;
 
@@ -73,6 +74,7 @@ sub getCompsetLongname
 	my $file = $node_file->textContent();
 	$file =~ s/\$CIMEROOT/$cimeroot/;
 	$file =~ s/\$SRCROOT/$srcroot/;
+	$file =~ s/\$MODEL/$model/;
 	my $xml2 = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
 
 	# First determine if there is a match for the alias - if so stop
@@ -122,6 +124,9 @@ sub getCompsetLongname
 	print "ERROR create_newcase: no compset match was found in any of the following files \n";
 	foreach my $node_file (@nodes) {
 	    my $file = $node_file->textContent();
+	    $file =~ s/\$CIMEROOT/$cimeroot/;
+	    $file =~ s/\$SRCROOT/$srcroot/;
+	    $file =~ s/\$MODEL/$model/;
 	    print " $file \n";
 	}
 	die;

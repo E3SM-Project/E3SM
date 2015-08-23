@@ -92,6 +92,7 @@ OPTIONS
   or double leading dashes.  A consequence of this is that single letter options may
   NOT be bundled.
 
+  -model <name>            Specifies target model system (cesm, acme, etc) (optional, default is cesm)
   -case <name>             Specifies the case name (required).
   -compset <name>          Specify a compset (required).
   -res <name>              Specify a grid resolution (required).
@@ -177,6 +178,7 @@ GetOptions(
     "h|help"                    => \$opts{'help'},
     "mach=s"                    => \$opts{'mach'},
     "mach_dir=s"                => \$opts{'mach_dir'},
+    "model=s"                   => \$opts{'model'},
     "pecount=s"                 => \$opts{'pecount'},
     "petype=s"                  => \$opts{'petype'},
     "pes_file=s"                => \$opts{'pes_file'}, 
@@ -217,6 +219,7 @@ require UserMods::UserModsTools;
 require Testing::TestLists; 
 
 # Global variables
+my $model;
 my $case;
 my $caseroot; # set in _check_input_options
 my $compset;  # set in _check_input_options
@@ -266,7 +269,7 @@ my $srcroot = abs_path("$cimeroot/../");
 # *** Set master config file ***
 #------------------------------------------------------------------------------------------
 # The following specifies all necessary files that will be used to configure the case
-my $files_spec_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
+my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
 
 #------------------------------------------------------------------------------------------
 # *** Create config object ***
@@ -278,15 +281,17 @@ my $config = ConfigCase->new("");
 $config->add_config_variables($files_spec_file, $srcroot, $cimeroot);
 
 # Determine the driver_cpl config_component.xml file 
-my $cimeconfig_file = $config->get('CONFIG_DRV_FILE');
-$cimeconfig_file =~ s/\$CIMEROOT/$cimeroot/;
-$cimeconfig_file =~ s/\$SRCROOT/$srcroot/;
+my $drv_file = $config->get('CONFIG_DRV_FILE');
+$drv_file =~ s/\$CIMEROOT/$cimeroot/;
+$drv_file =~ s/\$SRCROOT/$srcroot/;
+$drv_file =~ s/\$MODEL/$model/;
 
-# Add all the elements of the driver_cpl/cime_config/cime_config.xml to $config
-$config->add_config_variables($cimeconfig_file, $srcroot, $cimeroot);
+# Add all the elements of the driver_cpl/cime_config/config_component.xml to $config
+$config->add_config_variables($drv_file, $srcroot, $cimeroot);
 
 $config->set('CIMEROOT', $cimeroot); 
 $config->set('SRCROOT' , $srcroot); 
+$config->set('MODEL'   , $model); 
 
 # Determine compset longname and component that sets pe-layouts, compsets and pio settings  ($pes_setby)
 my ($pes_setby, $compsets_file, $compset_longname, $support_level);
@@ -312,6 +317,7 @@ foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_
 	my $value = $nodes[0]->textContent();
 	$value =~ s/\$CIMEROOT/$cimeroot/;
 	$value =~ s/\$SRCROOT/$srcroot/;
+	$value =~ s/\$MODEL/$model/;
 	(-e $value) or die  "ERROR: $value cannot be found on disk \n";
 	$config->set($id, $value);
     }
@@ -341,6 +347,7 @@ foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
 	    my $value = $nodes[0]->textContent();
 	    $value =~ s/\$CIMEROOT/$cimeroot/;
 	    $value =~ s/\$SRCROOT/$srcroot/;
+	    $value =~ s/\$MODEL/$model/;
 	    $config->set($name, $value);
 	    last FOUND1;
 	}
@@ -352,6 +359,7 @@ foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
 	    my $value = $nodes[0]->textContent();
 	    $value =~ s/\$CIMEROOT/$cimeroot/;
 	    $value =~ s/\$SRCROOT/$srcroot/;
+	    $value =~ s/\$MODEL/$model/;
 	    $config->set($name, $value);
 	    last FOUND2;
 	}
@@ -378,13 +386,14 @@ my $grids_dir;
 if (defined $opts{'user_grid_dir'}){
     # Determine file specifying set of supported model grids
     $grids_dir = $opts{'user_grid_dir'};
-    (-d $grids_dir)  or  die "** Cannot find user specified grid directory $grids_dir **\n";
+    (-d $grids_dir)  or  die "** ERROR create_newcase: cannot find user specified grid directory $grids_dir **\n";
     my $grids_file = "$grids_dir/grids.xml";
-    (-f "$grids_file")  or  die "** Cannot find user specified grids file $grids_file **\n";
+    (-f "$grids_file")  or  die "** ERROR create_newcase: cannot find user specified grids file $grids_file **\n";
     $config->set('GRIDS_DIR', "$grids_dir");
 } else {
     $grids_dir = $config->get('GRIDS_DIR');
-    (-d "$grids_dir")  or  die "** Cannot find grids dir $grids_dir ***\n";
+    $grids_dir =~ s/\$MODEL/$model/;
+    (-d "$grids_dir")  or  die "** ERROR create_newcase: cannot find grids dir $grids_dir ***\n";
 }    
 my $file = "$grids_dir" . '/' . "config_grids.xml";
 $config->set('GRIDS_SPEC_FILE', "$file");
@@ -440,7 +449,7 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 # *** Determine machines file specifying set of out-of-the box machines and then
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
-ConfigMachine::setMachineValues($cimeconfig_file, $pes_setby, $machine, $compiler, $print, $config);
+ConfigMachine::setMachineValues($drv_file, $pes_setby, $machine, $compiler, $print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
@@ -609,6 +618,11 @@ sub _check_input_options
 	    $case = $opts{'case'};
 	} else {
 	    die "ERROR: create_newcase must include the input argument, -case \n";
+	}
+	if ($opts{'model'}) {
+	    $model = $opts{'model'};
+	} else {
+	    $model = 'cesm';
 	}
 	if (-d $case) {
 	    die "Case directory $case already exists \n";
@@ -858,8 +872,8 @@ sub _create_caseroot_tools
     }
     
     # Copy relevant files into $caseroot/Tools/
-    @files = ("$cimeroot/scripts/cimeconfig/archive.xml",
-	      "$cimeroot/scripts/cimeconfig/archive.xsd",
+    @files = ("$cimeroot/cime_config/${model}/archive.xml",
+	      "$cimeroot/cime_config/${model}/archive.xsd",
 	      "$cimeroot/scripts/Tools/cesm_buildnml", 
 	      "$cimeroot/scripts/Tools/cesm_prestage", 
 	      "$cimeroot/scripts/Tools/cesm_prerun_setup", 
@@ -946,32 +960,34 @@ sub _create_caseroot_files
     }
 
     # Create env_case.xml
-    my  $caseheaders_file = $config->get('CASEFILE_HEADERS');
-    (-f $caseheaders_file) or die "ERROR: case header file $caseheaders_file does not exist \n";
+    my $model = $config->get('MODEL');
+    my $file = $config->get('CASEFILE_HEADERS');
+    $file =~ s/\$MODEL/$model/;
+    (-f $file) or die "ERROR: create_newcase case header file $file does not exist \n";
 
-    $config->write_file("$caseroot/env_case.xml", "$caseheaders_file", $caseroot, $cimeroot );
+    $config->write_file("$caseroot/env_case.xml", "$file", $caseroot, $cimeroot );
     if ($print) {print "Created $caseroot/env_case.xml \n";}
 
     # Create env_mach_pes.xml.xml
-    $config->write_file("$caseroot/env_mach_pes.xml", "$caseheaders_file", $caseroot, $cimeroot );  
+    $config->write_file("$caseroot/env_mach_pes.xml", "$file", $caseroot, $cimeroot );  
     if ($print) {print "Created $caseroot/env_mach_pes.xml \n";}
 
     # Create env_build.xml
-    $config->write_file("$caseroot/env_build.xml", "$caseheaders_file", $caseroot, $cimeroot );
+    $config->write_file("$caseroot/env_build.xml", "$file", $caseroot, $cimeroot );
     if ($print) {print "Created $caseroot/env_build.xml \n";}
 
     # Create env_run.xml
-    $config->write_file("$caseroot/env_run.xml", "$caseheaders_file", $caseroot, $cimeroot );
+    $config->write_file("$caseroot/env_run.xml", "$file", $caseroot, $cimeroot );
     if ($print) {print "Created $caseroot/env_run.xml \n";}
 
     # Create env_archive.xml
-    $config->write_file("$caseroot/env_archive.xml", "$caseheaders_file", $caseroot, , $cimeroot, 
-			 "$cimeroot/scripts/cimeconfig/archive.xml");
+    $config->write_file("$caseroot/env_archive.xml", "$file", $caseroot, , $cimeroot, 
+			"$cimeroot/cime_config/${model}/archive.xml");
     if ($print) {print "Created $caseroot/env_archive.xml \n";}
 
     # copy env_case.xml in to locked files
     $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR: create_newcase $sysmod failed: $?\n";
     if ($print) {print "Locking file $caseroot/env_case.xml \n";}
 
     # also create the CaseStatus file in $caseroot

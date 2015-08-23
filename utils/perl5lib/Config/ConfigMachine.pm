@@ -7,7 +7,6 @@ use Cwd qw( getcwd abs_path chdir);
 use IO::File;
 use XML::LibXML;
 use Data::Dumper;
-use ConfigCase;
 use File::Basename;
 
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
@@ -37,7 +36,6 @@ sub setMachineFile
     # Determine the machines specificaiton file and see if the
     # target machine is supported
 
-    print "DEBUG: input_file is $input_file \n";
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($input_file);
     my @nodes = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/default_value");
     my $machines_file = $nodes[0]->textContent();
@@ -227,7 +225,7 @@ sub _setPIOsettings
     # First read the machines file for any non-default machine specific pio settings
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
     my @nodes = $xml->findnodes(".//machine[\@MACH=\"$mach\"]/pio/*");
-    if (defined @nodes) {
+    if ($#nodes > -1) {
 	foreach my $node (@nodes) {
 	    my $name  = $node->nodeName();
 	    my $value = $node->textContent();

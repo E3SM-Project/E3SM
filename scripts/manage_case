@@ -58,16 +58,6 @@ if ($ProgDir) {
     $cfgdir = $cwd;
 }
 
-# Set $cimeroot and $srcroot
-my $cimeroot = abs_path("$cfgdir/../");
-(-d "$cimeroot")  or  die <<"EOF";
-** Cannot find cimeroot directory \"$cimeroot\" **
-EOF
-
-#TODO - these need to be generalized - machroot needs to be read in from the definitions_files.xml
-my $srcroot  = abs_path("$cimeroot/../");
-my $file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
-
 #-----------------------------------------------------------------------------------------------
 if ($#ARGV == -1) {
     usage();
@@ -78,7 +68,7 @@ sub usage {
     die <<EOF;
 
 SYNOPSIS
-  manage_newcase -list  [options]
+  manage_case -model [options] -query  [options]
 
 OPTIONS
   User supplied values are denoted in angle brackets (<>).  Any value that contains
@@ -86,10 +76,11 @@ OPTIONS
   or double leading dashes.  A consequence of this is that single letter options may
   NOT be bundled.
 
-  -list compsets    -compsets_setby [cam, clm, cice, cism, pop, allactive] (if model is CESM)
-  -list definitions -component      [cam, clm, cice, cism, pop, datm, dlnd, dice, dglc, docn] (if model is CESM)
-  -list grids
-  -list machines
+  -model [cesm, acme]
+  -query compsets -setby [cam, clm, cice, cism, pop, allactive] (if model is CESM)
+  -query component -name [cam, clm, cice, cism, pop, datm, dlnd, dice, dglc, docn] (if model is CESM)
+  -query grids
+  -query machines
 
 EOF
 }
@@ -103,11 +94,10 @@ my $commandline = "create_newcase @ARGV";
 my %opts = ( );
 GetOptions(
     "h|help"            => \$opts{'help'},
-    "list=s"            => \$opts{'list'},
-    "grids=s"           => \$opts{'grids'},
-    "machines=s"        => \$opts{'machines'},
-    "compsets_setby=s"  => \$opts{'compsets_setby'},
-    "component=s"       => \$opts{'component'},
+    "query=s"           => \$opts{'query'},
+    "model=s"           => \$opts{'model'},
+    "setby=s"		=> \$opts{'setby'},
+    "name=s"            => \$opts{'name'},
     "v|verbose"         => \$opts{'verbose'},
     )  or usage();
 
@@ -121,54 +111,73 @@ if (@ARGV) {
 }
 
 #-----------------------------------------------------------------------------------------------
-# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ("$cimeroot/scripts/Tools");
-unshift @INC, @dirs;
-require ConfigMachine;
+# Set $cimeroot and $srcroot
+my $cimeroot = abs_path("$cfgdir/../");
+(-d "$cimeroot")  or  die <<"EOF";
+** Cannot find cimeroot directory \"$cimeroot\" **
+EOF
+my $srcroot  = abs_path("$cimeroot/../");
+(-d "$srcroot")  or  die <<"EOF";
+** Cannot find srcroot directory \"$srcroot\" **
+EOF
 
+
+my $model_option = $opts{'model'};
+if (! $opts{'model'}) {
+    die "ERROR: must specify model argument \n";
+}
+
+my $query_option = $opts{'query'};
+if (! $opts{'model'}) {
+    die "ERROR: must specify query argument \n";
+}
+
+my $file_config = "$cimeroot/cime_config/${model_option}/config_files.xml";
+(-f "$file_config")  or  die "*** Cannot find model specification file $file_config ***\n\n";
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file_config");
 
-my $compsets_setby;
-if ($opts{'list'} eq 'definitions') {
-    if (! $opts{'component'}) {
-	die "ERROR: must also specify an input argument,  -component <ANY component name> \n";
-    } else {
-	$compsets_setby = $opts{'component'};
-    }
-}
-if ($opts{'list'} eq "compsets") {
-    if (! $opts{'compsets_setby'}) {
-	die "ERROR: must also specify an input argument,  -compsets_setby <primary component name>\n";
-    }
-}
-
-my $list_option = $opts{'list'};
-if ($list_option eq "compsets") 
+if ($query_option eq "compsets") 
 {
-    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$opts{'compsets_setby'}\"]");
+    if (! $opts{'setby'}) {
+	print "ERROR: The $model_option components and associated files that specify model compsets are \n";
+	my @components = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value");
+	foreach my $component (@components) {
+	    my $attr = $component->getAttribute('component'); 
+	    my $file = $component->textContent();
+	    $file =~ s/\$CIMEROOT/$cimeroot/;
+	    $file =~ s/\$SRCROOT/$srcroot/;
+	    printf("   %-10s %-50s \n",$attr, $file );
+	}
+	print "Must use one of the above components in the -setby <component> argument \n";
+	die; 
+    }
+    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$opts{'setby'}\"]");
     if (! @files) {
-	die " ERROR: no compsets specification file found for  $compsets_setby \n";
+	die " ERROR: no compsets specification file found for  $opts{'setby'} \n";
     }
     my $file = $files[0]->textContent();
     $file =~ s/\$CIMEROOT/$cimeroot/;
     $file =~ s/\$SRCROOT/$srcroot/;
-    (-f "$file")  or  die "*** Cannot find compsets specification file $file ***\n";
-    _listCompsets($file);
+    (-f "$file")  or  die "*** Cannot find compsets specification file $file ***\n\n";
+    _queryCompsets($file);
 } 
-elsif ($list_option eq "definitions") 
+elsif ($query_option eq "component") 
 {
+    if (! $opts{'name'}) {
+	die "ERROR: must also specify an input argument,  -name <component name>\n";
+    }
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-    my @files = $xml->findnodes(".//entry[\@id[contains(.,\"CONFIG\")]]/values/value[\@component=\"$opts{'component'}\"]");
+    my @files = $xml->findnodes(".//entry[\@id[contains(.,\"CONFIG\")]]/values/value[\@component=\"$opts{'name'}\"]");
     if (! @files) {
-	die " ERROR: no component definition files found for component $compsets_setby \n";
+	die " ERROR: no component config_component.xml files found for component $opts{'setby'} \n";
     }
     my $file = $files[0]->textContent();
     $file =~ s/\$CIMEROOT/$cimeroot/;
     $file =~ s/\$SRCROOT/$srcroot/;
     (-f $file) or die "ERROR: component definition file $file is not present"; 
-    _listComponentDefinitions($file);
+    _queryComponent($file);
 } 
-elsif ($list_option eq "grids") 
+elsif ($query_option eq "grids") 
 {
     my @dirs = $xml->findnodes(".//entry[\@id=\"GRIDS_DIR\"]/value");
     if (! @dirs) {
@@ -178,10 +187,10 @@ elsif ($list_option eq "grids")
     $grids_dir =~ s/\$CIMEROOT/$cimeroot/;
     $grids_dir =~ s/\$SRCROOT/$srcroot/;
     (-d "$grids_dir")  or  die "** Cannot find grids dir $grids_dir ***\n";
-    my $grids_file = "$grids_dir" . '/' . "config_grids.xml";
-    _listGrids($grids_file);
+    my $file = "$grids_dir" . '/' . "config_grids.xml";
+    _queryGrids($file);
 } 
-elsif ($list_option eq "machines") 
+elsif ($query_option eq "machines") 
 {
     my @files = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/value");
     if (! @files) {
@@ -191,32 +200,35 @@ elsif ($list_option eq "machines")
     $file =~ s/\$CIMEROOT/$cimeroot/;
     $file =~ s/\$SRCROOT/$srcroot/;
     (-f $file) or die "ERROR: machines specification file $file is not present"; 
-    ConfigMachine::listMachines($file);
+
+    unshift @INC, "$cimeroot/utils/perl5lib";
+    require Config::ConfigMachine;
+    ConfigMachine::queryMachines($file);
 } 
 else 
 {
-    print "** Bad argument to the list option: $list_option \n";
-    print "** Valid options: compsets, grids or machines ** \n";
+    print "** Bad argument to the query option: $query_option \n";
+    print "** Valid options: compsets, component, grids or machines ** \n";
     die;
 }
-print "finished listing valid values, now exiting \n";
+print "finished querying valid values, now exiting \n";
 exit 0;
 
 
 #-----------------------------------------------------------------------------------------------
 #                               Private routines
 #-----------------------------------------------------------------------------------------------
-sub _listCompsets
+sub _queryCompsets
 {
-    # List the supported compsets for the primary component
-    my ($compsets_file) = @_;
+    # Query the supported compsets for the primary component
+    my ($file) = @_;
 
-    my $xml = XML::LibXML->new(no_blanks => 1)->parse_file($compsets_file);
+    my $xml = XML::LibXML->new(no_blanks => 1)->parse_file($file);
 
-    print "     =============================================================\n";
-    print "     The following are the supported components sets in the file \n";
-    print "     $compsets_file \n";
-    print "     =============================================================\n";
+    print " =============================================================\n";
+    print " The following are the supported components sets in the file \n";
+    print " $file \n";
+    print " =============================================================\n";
 
     print " \n";
     foreach my $node ($xml->findnodes(".//help")) {
@@ -224,17 +236,18 @@ sub _listCompsets
 	print "$help \n\n";
     }
 
-    foreach my $node ($xml->findnodes(".//COMPSET")) {
-	my @lname_node = $node->findnodes("./lname");
-	my @alias_node = $node->findnodes("./alias");
-	my @support_node = $node->findnodes("./support_level");
+    foreach my $node ($xml->findnodes(".//compset")) {
+	my $grid     = $node->getAttribute('grid');
+	my @lnames   = $node->findnodes("./lname");
+	my @aliases  = $node->findnodes("./alias");
+	my @supports = $node->findnodes("./support");
 
-	my $lname   = $lname_node[0]->textContent;
-	my $alias   = $alias_node[0]->textContent;
-	my $grid    = $node->getAttribute('grid');
+	my $lname   = $lnames[0]->textContent;
+	my $alias   = $aliases[0]->textContent;
 	my $support;
-	if (@support_node)  {$support = $support_node[0]->textContent;}
-
+	if ($#supports > -1)  {
+	    $support = $supports[0]->textContent;
+	}
 	printf("     alias: %-25s longname: %-96s \n",$alias,$lname);
         if ( $grid) {
         printf("                                                grid match:  %-96s \n", $grid );
@@ -247,11 +260,11 @@ sub _listCompsets
 }
 
 #-----------------------------------------------------------------------------------------------
-sub _listComponentDefinitions
+sub _queryComponent
 {
-    my ($compsets_file) = @_;
+    my ($file) = @_;
  
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($compsets_file);
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     foreach my $node ($xml->findnodes("//help")) {
 	my $value = $node->textContent();
 	print"     $value \n"; 
@@ -265,12 +278,12 @@ sub _listComponentDefinitions
 }
 
 #-------------------------------------------------------------------------------
-sub _listGrids
+sub _queryGrids
 {
     # Print all currently supported valid grids
-    my ($grids_file) = @_;
+    my ($file) = @_;
 
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($grids_file);
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 
     print " \n";
     foreach my $node ($xml->findnodes(".//help")) {
@@ -283,7 +296,7 @@ sub _listGrids
     print "                Component Grids:                       \n";
     print " ======================================================\n";
     print "\n";
-    foreach my $node ($xml->findnodes(".//domain")) {
+    foreach my $node ($xml->findnodes(".//domains/domain")) {
 	my $name  = $node->getAttribute('name');
 	my $alias = $node->getAttribute('alias');
 	if ($alias) { 
@@ -291,18 +304,18 @@ sub _listGrids
 	} else {
 	    print " component grid: $name \n";
 	}	    
-	my $support_level; my $nx; my $ny; my $desc;
+	my $support; my $nx; my $ny; my $desc;
 	foreach my $child_node ($node->childNodes()) {
 	    my $name  = $child_node->nodeName();
 	    my $value = $child_node->textContent();
-	    if ($name eq 'support_level') {$support_level= $value;}
+	    if ($name eq 'support') {$support= $value;}
 	    if ($name eq 'nx') {$nx = $value;}
 	    if ($name eq 'ny') {$ny = $value;}
 	    if ($name eq 'desc') {$desc = $value;}
 	}
-	if (defined $desc)           {print "   $desc \n";}
-	if (defined $nx  )           {print "   nx: $nx ny: $ny \n";}
-	if (defined $support_level ) {print "   support_level: support_level \n";}
+	if (defined $desc)    {print "   $desc \n";}
+	if (defined $nx  )    {print "   nx: $nx ny: $ny \n";}
+	if (defined $support) {print "   support_level: support_level \n";}
 	print " \n";
     }
 
@@ -311,15 +324,15 @@ sub _listGrids
     print "                Model Grids:                           \n";
     print " ======================================================\n";
     print "\n";
-    foreach my $node ($xml->findnodes(".//GRID")) {
-	my $alias         = $node->getAttribute('alias');
-	my $compset       = $node->getAttribute('compset');
-	my $support_level = $node->getAttribute('support_level');
-	my $lname         = $node->textContent();
+    foreach my $node ($xml->findnodes(".//grids/grid")) {
+	my $alias     = $node->getAttribute('alias');
+	my $compset   = $node->getAttribute('compset');
+	my $support   = $node->getAttribute('support');
+	my $lname     = $node->textContent();
 	print " model grid: $lname \n";
-	if (defined ($alias)  )       { print "    alias        : $alias \n"}
-	if (defined ($compset))       { print "    compset match: $compset \n"}
-	if (defined ($support_level)) { print "    support_level: $support_level \n";}
+	if (defined ($alias)  ) { print "    alias        : $alias \n"}
+	if (defined ($compset)) { print "    compset match: $compset \n"}
+	if (defined ($support)) { print "    support level: $support \n";}
 	print " \n";
     }    
     print " \n";

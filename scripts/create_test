@@ -27,7 +27,7 @@ if($@)
 {
     my $warning = <<END;
 WARNING:
-  The perl module XML::LibXML is needed for XML parsing in the CESM script system.
+  The perl module XML::LibXML is needed for XML parsing. 
   Please contact your local systems administrators or IT staff and have them install it for
   you, or install the module locally. 
 
@@ -156,8 +156,7 @@ OPTIONS:
                             testing.  If this argument is not supplied, the 
                             default baselineroot will be used from scripts. 
 
-      -cimeroot <dir>       manually specify the root directory of your CESM 
-                            sandbox. 
+      -cimeroot <dir>       manually specify the root directory of your model sandbox. 
       
       -clean [on|off]       If tests should be cleaned or not after tests are 
                             run. Default: $opts{'clean'}.  If off, all object, 
@@ -465,7 +464,13 @@ sub options
     } else {
 
 	# Set the definitions file for the general xml variables that will be needed
-	$file_config = "$cimeroot/scripts/cimeconfig/config_files.xml";
+	# TODO: how can the MODEL setting ben generalized?
+	my $model = 'cesm';
+	if ($ENV{'MODEL'}) { 
+	    $model = $ENV{'MODEL'};
+	}
+	print "DEBUG: model is $model \n";
+	$file_config = "$cimeroot/cime_config/${model}/config_files.xml";
 
 	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
 	my @nodes = $xml->findnodes(".//entry[\@id=\"TESTS_SPEC_FILE\"]/values/*");
@@ -473,6 +478,7 @@ sub options
 	foreach my $node (@nodes) {
 	    my $primary_component = $node->getAttribute('component');
 	    my $file  = $node->textContent();
+	    $file =~ s/\$MODEL/$model/;
 	    if ($file =~ m/SRCROOT/) {
 		$file =~ s/\$SRCROOT/$srcroot/;
 		if (-f "$file") {
@@ -490,6 +496,7 @@ sub options
 	foreach my $node (@nodes) {
 	    my $primary_component = $node->getAttribute('component');
 	    my $dir  = $node->textContent();
+	    $dir =~ s/\$MODEL/$model/;
 	    if ($dir =~ m/SRCROOT/) {
 		$dir =~ s/\$SRCROOT/$srcroot/;
 		if (-d "$dir") {
@@ -1542,7 +1549,7 @@ sub writeTestListXML
 <?xml version="1.0"?>
 <!-- ========================================================================== -->
 <!-- This file contains the needed configuration information for a suite of     -->
-<!-- CESM tests.                                                                -->
+<!-- system tests.                                                              -->
 <!-- ========================================================================== -->
 
 <testlist>
