@@ -1,3 +1,4 @@
+
 module nudging
 !=====================================================================
 !
@@ -497,7 +498,7 @@ contains
    use dycore        ,only: dycore_is
    use dyn_grid      ,only: get_horiz_grid_dim_d
    use phys_grid     ,only: get_rlat_p,get_rlon_p,get_ncols_p
-   use cam_history   ,only: addfld,phys_decomp
+   use cam_history   ,only: addfld
    use shr_const_mod ,only: SHR_CONST_PI
 
    ! Local values
@@ -565,10 +566,10 @@ contains
 
    ! Register output fields with the cam history module
    !-----------------------------------------------------
-   call addfld('Nudge_U','m/s/s'  ,pver,'A','U Nudging Tendency',phys_decomp)
-   call addfld('Nudge_V','m/s/s'  ,pver,'A','V Nudging Tendency',phys_decomp)
-   call addfld('Nudge_T','cp*K/s' ,pver,'A','T Nudging Tendency',phys_decomp)
-   call addfld('Nudge_Q','kg/kg/s',pver,'A','Q Nudging Tendency',phys_decomp)
+   call addfld('Nudge_U',(/ 'lev' /),'A','m/s/s'  ,'U Nudging Tendency')
+   call addfld('Nudge_V',(/ 'lev' /),'A','m/s/s'  ,'V Nudging Tendency')
+   call addfld('Nudge_T',(/ 'lev' /),'A','cp*K/s' ,'T Nudging Tendency')
+   call addfld('Nudge_Q',(/ 'lev' /),'A','kg/kg/s','Q Nudging Tendency')
 
    !-----------------------------------------
    ! Values initialized only by masterproc

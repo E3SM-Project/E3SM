@@ -1,3 +1,4 @@
+
 ! This module is used to diagnose the location of the tropopause. Multiple
 ! algorithms are provided, some of which may not be able to identify a
 ! tropopause in all situations. To handle these cases, an analytic
@@ -129,8 +130,8 @@ contains
   
 
     use ppgrid,        only: pver
-    use cam_pio_utils, only: phys_decomp
-    use cam_history,   only: addfld, add_default
+    use cam_pio_utils, only: 
+    use cam_history,   only: addfld, horiz_only, add_default
 
 
     implicit none
@@ -141,62 +142,62 @@ contains
     cnst_ka1    = cnst_kap - 1._r8
 
     ! Define the output fields.
-    call addfld('TROP_P',  'Pa',          1,    'A', 'Tropopause Pressure',    phys_decomp, flag_xyfill=.True.)
-    call addfld('TROP_T',  'K',           1,    'A', 'Tropopause Temperature', phys_decomp, flag_xyfill=.True.)
-    call addfld('TROP_Z',  'm',           1,    'A', 'Tropopause Height',      phys_decomp, flag_xyfill=.True.)
-    call addfld('TROP_DZ', 'm',           pver, 'A', 'Relative Tropopause Height',  phys_decomp)
-    call addfld('TROP_PD', 'probability', pver, 'A', 'Tropopause Probabilty',  phys_decomp)
-    call addfld('TROP_FD', 'probability', 1,    'A', 'Tropopause Found',       phys_decomp)
+    call addfld('TROP_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure', flag_xyfill=.True.)
+    call addfld('TROP_T',           horiz_only,    'A',  'K', 'Tropopause Temperature', flag_xyfill=.True.)
+    call addfld('TROP_Z',           horiz_only,    'A',  'm', 'Tropopause Height', flag_xyfill=.True.)
+    call addfld('TROP_DZ',           (/ 'lev' /), 'A', 'm', 'Relative Tropopause Height')
+    call addfld('TROP_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Probabilty')
+    call addfld('TROP_FD', horiz_only,    'A', 'probability', 'Tropopause Found')
     
-    call addfld('TROPP_P',  'Pa',          1,    'A', 'Tropopause Pressure (primary)',     phys_decomp, flag_xyfill=.True.)
-    call addfld('TROPP_T',  'K',           1,    'A', 'Tropopause Temperature (primary)',  phys_decomp, flag_xyfill=.True.)
-    call addfld('TROPP_Z',  'm',           1,    'A', 'Tropopause Height (primary)',       phys_decomp, flag_xyfill=.True.)
-    call addfld('TROPP_DZ', 'm',         pver,   'A', 'Relalive Tropopause Height (primary)',  phys_decomp)
-    call addfld('TROPP_PD', 'probability', pver, 'A', 'Tropopause Distribution (primary)', phys_decomp)
-    call addfld('TROPP_FD', 'probability', 1,    'A', 'Tropopause Found (primary)',        phys_decomp)
+    call addfld('TROPP_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (primary)', flag_xyfill=.True.)
+    call addfld('TROPP_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (primary)', flag_xyfill=.True.)
+    call addfld('TROPP_Z',           horiz_only,    'A',  'm', 'Tropopause Height (primary)', flag_xyfill=.True.)
+    call addfld('TROPP_DZ',         (/ 'lev' /),   'A', 'm', 'Relalive Tropopause Height (primary)')
+    call addfld('TROPP_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (primary)')
+    call addfld('TROPP_FD', horiz_only,    'A', 'probability', 'Tropopause Found (primary)')
     
-    call addfld( 'hstobie_trop',   'fraction of model time', pver, 'I', 'Lowest level with stratospheric chemsitry', phys_decomp )
-    call addfld( 'hstobie_linoz',  'fraction of model time', pver, 'I', 'Lowest possible Linoz level', phys_decomp )
-    call addfld( 'hstobie_tropop', 'fraction of model time', pver, 'I', &
-         'Troposphere boundary calculated in chemistry', phys_decomp )
+    call addfld( 'hstobie_trop', (/ 'lev' /), 'I',   'fraction of model time', 'Lowest level with stratospheric chemsitry' )
+    call addfld( 'hstobie_linoz', (/ 'lev' /), 'I',  'fraction of model time', 'Lowest possible Linoz level' )
+    call addfld( 'hstobie_tropop', (/ 'lev' /), 'I', 'fraction of model time', &
+         'Troposphere boundary calculated in chemistry' )
 
     ! If requested, be prepared to output results from all of the methods.
     if (output_all) then
-      call addfld('TROPA_P',  'Pa',          1,    'A', 'Tropopause Pressure (analytic)',     phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPA_T',  'K',           1,    'A', 'Tropopause Temperature (analytic)',  phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPA_Z',  'm',           1,    'A', 'Tropopause Height (analytic)',       phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPA_PD', 'probability', pver, 'A', 'Tropopause Distribution (analytic)', phys_decomp)
-      call addfld('TROPA_FD', 'probability', 1,    'A', 'Tropopause Found (analytic)',        phys_decomp)
+      call addfld('TROPA_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (analytic)', flag_xyfill=.True.)
+      call addfld('TROPA_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (analytic)', flag_xyfill=.True.)
+      call addfld('TROPA_Z',           horiz_only,    'A',  'm', 'Tropopause Height (analytic)', flag_xyfill=.True.)
+      call addfld('TROPA_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (analytic)')
+      call addfld('TROPA_FD', horiz_only,    'A', 'probability', 'Tropopause Found (analytic)')
 
-      call addfld('TROPC_P',  'Pa',          1,    'A', 'Tropopause Pressure (climatology)',     phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPC_T',  'K',           1,    'A', 'Tropopause Temperature (climatology)',  phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPC_Z',  'm',           1,    'A', 'Tropopause Height (climatology)',       phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPC_PD', 'probability', pver, 'A', 'Tropopause Distribution (climatology)', phys_decomp)
-      call addfld('TROPC_FD', 'probability', 1,    'A', 'Tropopause Found (climatology)',        phys_decomp)
+      call addfld('TROPC_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (climatology)', flag_xyfill=.True.)
+      call addfld('TROPC_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (climatology)', flag_xyfill=.True.)
+      call addfld('TROPC_Z',           horiz_only,    'A',  'm', 'Tropopause Height (climatology)', flag_xyfill=.True.)
+      call addfld('TROPC_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (climatology)')
+      call addfld('TROPC_FD', horiz_only,    'A', 'probability', 'Tropopause Found (climatology)')
 
-      call addfld('TROPS_P',  'Pa',          1,    'A', 'Tropopause Pressure (stobie)',     phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPS_T',  'K',           1,    'A', 'Tropopause Temperature (stobie)',  phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPS_Z',  'm',           1,    'A', 'Tropopause Height (stobie)',       phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPS_PD', 'probability', pver, 'A', 'Tropopause Distribution (stobie)', phys_decomp)
-      call addfld('TROPS_FD', 'probability', 1,    'A', 'Tropopause Found (stobie)',        phys_decomp)
+      call addfld('TROPS_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (stobie)', flag_xyfill=.True.)
+      call addfld('TROPS_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (stobie)', flag_xyfill=.True.)
+      call addfld('TROPS_Z',           horiz_only,    'A',  'm', 'Tropopause Height (stobie)', flag_xyfill=.True.)
+      call addfld('TROPS_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (stobie)')
+      call addfld('TROPS_FD', horiz_only,    'A', 'probability', 'Tropopause Found (stobie)')
 
-      call addfld('TROPT_P',  'Pa',          1,    'A', 'Tropopause Pressure (twmo)',     phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPT_T',  'K',           1,    'A', 'Tropopause Temperature (twmo)',  phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPT_Z',  'm',           1,    'A', 'Tropopause Height (twmo)',       phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPT_PD', 'probability', pver, 'A', 'Tropopause Distribution (twmo)', phys_decomp)
-      call addfld('TROPT_FD', 'probability', 1,    'A', 'Tropopause Found (twmo)',        phys_decomp)
+      call addfld('TROPT_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (twmo)', flag_xyfill=.True.)
+      call addfld('TROPT_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (twmo)', flag_xyfill=.True.)
+      call addfld('TROPT_Z',           horiz_only,    'A',  'm', 'Tropopause Height (twmo)', flag_xyfill=.True.)
+      call addfld('TROPT_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (twmo)')
+      call addfld('TROPT_FD', horiz_only,    'A', 'probability', 'Tropopause Found (twmo)')
 
-      call addfld('TROPW_P',  'Pa',          1,    'A', 'Tropopause Pressure (WMO)',     phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPW_T',  'K',           1,    'A', 'Tropopause Temperature (WMO)',  phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPW_Z',  'm',           1,    'A', 'Tropopause Height (WMO)',       phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPW_PD', 'probability', pver, 'A', 'Tropopause Distribution (WMO)', phys_decomp)
-      call addfld('TROPW_FD', 'probability', 1,    'A', 'Tropopause Found (WMO)',        phys_decomp)
+      call addfld('TROPW_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (WMO)', flag_xyfill=.True.)
+      call addfld('TROPW_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (WMO)', flag_xyfill=.True.)
+      call addfld('TROPW_Z',           horiz_only,    'A',  'm', 'Tropopause Height (WMO)', flag_xyfill=.True.)
+      call addfld('TROPW_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (WMO)')
+      call addfld('TROPW_FD', horiz_only,    'A', 'probability', 'Tropopause Found (WMO)')
 
-      call addfld('TROPH_P',  'Pa',          1,    'A', 'Tropopause Pressure (Hybrid Stobie)',     phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPH_T',  'K',           1,    'A', 'Tropopause Temperature (Hybrid Stobie)',  phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPH_Z',  'm',           1,    'A', 'Tropopause Height (Hybrid Stobie)',       phys_decomp, flag_xyfill=.True.)
-      call addfld('TROPH_PD', 'probability', pver, 'A', 'Tropopause Distribution (Hybrid Stobie)', phys_decomp)
-      call addfld('TROPH_FD', 'probability', 1,    'A', 'Tropopause Found (Hybrid Stobie)',        phys_decomp)
+      call addfld('TROPH_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (Hybrid Stobie)', flag_xyfill=.True.)
+      call addfld('TROPH_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (Hybrid Stobie)', flag_xyfill=.True.)
+      call addfld('TROPH_Z',           horiz_only,    'A',  'm', 'Tropopause Height (Hybrid Stobie)', flag_xyfill=.True.)
+      call addfld('TROPH_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (Hybrid Stobie)')
+      call addfld('TROPH_FD', horiz_only,    'A', 'probability', 'Tropopause Found (Hybrid Stobie)')
      end if
 
 

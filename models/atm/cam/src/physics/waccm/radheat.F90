@@ -1,4 +1,5 @@
 
+
 module radheat
 !-----------------------------------------------------------------------
 !
@@ -115,7 +116,7 @@ contains
 
     use pmgrid,           only: plev
     use nlte_lw,          only: nlte_init
-    use cam_history,      only: add_default, addfld, phys_decomp
+    use cam_history,      only: add_default, addfld
     use physics_buffer,   only: physics_buffer_desc
     use phys_control,     only: phys_getopts
 
@@ -218,13 +219,13 @@ contains
     endif
 
 ! Add history variables to master field list
-    call addfld ('QRL_TOT  ','K/s     ',plev, 'A','Merged LW heating: QRL+QRLNLTE',phys_decomp)
-    call addfld ('QRS_TOT  ','K/s     ',plev, 'A','Merged SW heating: QRS+QCP+QRS_EUV+QRS_CO2NIR+QRS_AUR+QTHERMAL',phys_decomp)
+    call addfld ('QRL_TOT',(/ 'lev' /), 'A','K/s','Merged LW heating: QRL+QRLNLTE')
+    call addfld ('QRS_TOT',(/ 'lev' /), 'A','K/s','Merged SW heating: QRS+QCP+QRS_EUV+QRS_CO2NIR+QRS_AUR+QTHERMAL')
 
-    call addfld ('QRS_TOT_24_COS','K/s  ',plev, 'A','SW heating 24hr. cos coeff.',phys_decomp)
-    call addfld ('QRS_TOT_24_SIN','K/s  ',plev, 'A','SW heating 24hr. sin coeff.',phys_decomp)
-    call addfld ('QRS_TOT_12_COS','K/s  ',plev, 'A','SW heating 12hr. cos coeff.',phys_decomp)
-    call addfld ('QRS_TOT_12_SIN','K/s  ',plev, 'A','SW heating 12hr. sin coeff.',phys_decomp)
+    call addfld ('QRS_TOT_24_COS',(/ 'lev' /), 'A','K/s','SW heating 24hr. cos coeff.')
+    call addfld ('QRS_TOT_24_SIN',(/ 'lev' /), 'A','K/s','SW heating 24hr. sin coeff.')
+    call addfld ('QRS_TOT_12_COS',(/ 'lev' /), 'A','K/s','SW heating 12hr. cos coeff.')
+    call addfld ('QRS_TOT_12_SIN',(/ 'lev' /), 'A','K/s','SW heating 12hr. sin coeff.')
 
 ! Add default history variables to files
     call add_default ('QRL_TOT', 1, ' ')

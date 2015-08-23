@@ -15,7 +15,7 @@ module history_defaults
   use pmgrid,       only: plev, plevp
   use dycore,       only: dycore_is
 
-  use cam_history,  only: phys_decomp, dyn_decomp, addfld, add_default
+  use cam_history,  only:   addfld, horiz_only, add_default
   implicit none
 
   PRIVATE
@@ -53,8 +53,8 @@ CONTAINS
 !
 ! Call addfld to add each field to the Master Field List.
 !
-    call addfld ('SGH     ','m       ',1,    'I','Standard deviation of orography',phys_decomp)
-    call addfld ('SGH30   ','m       ',1,    'I','Standard deviation of 30s orography',phys_decomp)
+    call addfld ('SGH',horiz_only,    'I','m','Standard deviation of orography')
+    call addfld ('SGH30',horiz_only,    'I','m','Standard deviation of 30s orography')
 
 
 !jt
@@ -62,17 +62,17 @@ CONTAINS
 !jt
 
 #if ( defined BFB_CAM_SCAM_IOP )
-    call addfld ('CLAT1&IC','none      ',1,    'I','cos lat for bfb testing', dyn_decomp)
+    call addfld ('CLAT1&IC',horiz_only,    'I','none','cos lat for bfb testing', gridname=gauss_grid)
     call add_default ('CLAT1&IC       ',0, 'I')
-    call addfld ('CLON1&IC','none      ',1,    'I','cos lon for bfb testing', dyn_decomp)
+    call addfld ('CLON1&IC',horiz_only,    'I','none','cos lon for bfb testing', gridname=gauss_grid)
     call add_default ('CLON1&IC       ',0, 'I')
-    call addfld ('PHI&IC','none      ',1,    'I','lat for bfb testing', dyn_decomp)
+    call addfld ('PHI&IC',horiz_only,    'I','none','lat for bfb testing', gridname=gauss_grid)
     call add_default ('PHI&IC       ',0, 'I')
-    call addfld ('LAM&IC','none      ',1,    'I','lon for bfb testing', dyn_decomp)
+    call addfld ('LAM&IC',horiz_only,    'I','none','lon for bfb testing', gridname=gauss_grid)
     call add_default ('LAM&IC       ',0, 'I')
 #endif
 
-    call addfld ('DQP     ','kg/kg/s ',pver, 'A','Specific humidity tendency due to precipitation',phys_decomp)
+    call addfld ('DQP',(/ 'lev' /), 'A','kg/kg/s','Specific humidity tendency due to precipitation')
 
   end subroutine bldfld
 
@@ -97,48 +97,48 @@ CONTAINS
 ! !LOCAL VARIABLES:
     integer m
 !-----------------------------------------------------------------------
-    call addfld ('CLAT ','none      ',1,    'A','cos lat for bfb testing', dyn_decomp)
+    call addfld ('CLAT',horiz_only,    'A','none','cos lat for bfb testing', gridname=gauss_grid)
     call add_default ('CLAT',2,' ')
-    call addfld ('q','kg/kg   ',plev, 'A','Q for scam',dyn_decomp)
+    call addfld ('q',(/ 'lev' /), 'A','kg/kg','Q for scam',gridname=gauss_grid)
     call add_default ('q',2, ' ')
-    call addfld ('u','m/s     ',plev, 'A','U for scam',dyn_decomp)
+    call addfld ('u',(/ 'lev' /), 'A','m/s','U for scam',gridname=gauss_grid)
     call add_default ('u',2,' ')
-    call addfld ('v','m/s     ',plev, 'A','V for scam',dyn_decomp)
+    call addfld ('v',(/ 'lev' /), 'A','m/s','V for scam',gridname=gauss_grid)
     call add_default ('v',2,' ')
-    call addfld ('t','K       ',plev, 'A','Temperature for scam',dyn_decomp)
+    call addfld ('t',(/ 'lev' /), 'A','K','Temperature for scam',gridname=gauss_grid)
     call add_default ('t',2,' ')
-    call addfld ('Tg','K      ',1,    'A','Surface temperature (radiative) for scam',phys_decomp)
+    call addfld ('Tg',horiz_only,    'A','K','Surface temperature (radiative) for scam')
     call add_default ('Tg',2,' ')
-    call addfld ('Ps','Pa      ',1, 'A','Ps for scam',dyn_decomp)
+    call addfld ('Ps',horiz_only, 'A','Pa','Ps for scam',gridname=gauss_grid)
     call add_default ('Ps',2,' ')
-    call addfld ('divT3d','K       ',plev, 'A','Dynamics Residual for T',dyn_decomp)
+    call addfld ('divT3d',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname=gauss_grid)
     call add_default ('divT3d',2,' ')
-    call addfld ('fixmas','percent',1, 'A','Mass fixer',dyn_decomp)
+    call addfld ('fixmas',horiz_only, 'A','percent','Mass fixer',gridname=gauss_grid)
     call add_default ('fixmas',2,' ')
-    call addfld ('beta','percent  ',1, 'A','Mass fixer',dyn_decomp)
+    call addfld ('beta',horiz_only, 'A','percent','Mass fixer',gridname=gauss_grid)
     call add_default ('beta',2,' ')
     do m=1,pcnst
-       call addfld (trim(cnst_name(m))//'_dten','kg/kg   ',plev, 'A', &
-            trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),dyn_decomp)
+       call addfld (trim(cnst_name(m))//'_dten',(/ 'lev' /), 'A','kg/kg', &
+            trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname=gauss_grid)
        call add_default (trim(cnst_name(m))//'_dten',2,' ')
-       call addfld (trim(cnst_name(m))//'_alph','kg/kg   ',1, 'A',trim(cnst_name(m))//' alpha constituent fixer',dyn_decomp)
+       call addfld (trim(cnst_name(m))//'_alph',horiz_only, 'A','kg/kg',trim(cnst_name(m))//' alpha constituent fixer',gridname=gauss_grid)
        call add_default (trim(cnst_name(m))//'_alph',2,' ')
-       call addfld (trim(cnst_name(m))//'_dqfx','kg/kg   ',plev, 'A',trim(cnst_name(m))//' dqfx3 fixer',dyn_decomp)
+       call addfld (trim(cnst_name(m))//'_dqfx',(/ 'lev' /), 'A','kg/kg',trim(cnst_name(m))//' dqfx3 fixer',gridname=gauss_grid)
        call add_default (trim(cnst_name(m))//'_dqfx',2,' ')
     end do
-    call addfld ('shflx ','W/m2    ',1,    'A','Surface sensible heat flux for scam',phys_decomp)
+    call addfld ('shflx',horiz_only,    'A','W/m2','Surface sensible heat flux for scam')
     call add_default ('shflx ',2,' ')
-    call addfld ('lhflx   ','W/m2    ',1,    'A','Surface latent heat flux for scam',phys_decomp)
+    call addfld ('lhflx',horiz_only,    'A','W/m2','Surface latent heat flux for scam')
     call add_default ('lhflx   ',2,' ')
-    call addfld ('trefht  ','K       ',1,    'A','Reference height temperature',phys_decomp)
+    call addfld ('trefht',horiz_only,    'A','K','Reference height temperature')
     call add_default ('trefht  ',2,' ')
-    call addfld ('Tsair  ','K       ',1,    'A','Reference height temperature for scam',phys_decomp)
+    call addfld ('Tsair',horiz_only,    'A','K','Reference height temperature for scam')
     call add_default ('Tsair  ',2,' ')
-    call addfld ('phis   ','m2/s2   ',1,    'I','Surface geopotential for scam',phys_decomp)
+    call addfld ('phis',horiz_only,    'I','m2/s2','Surface geopotential for scam')
     call add_default ('phis   ',2,' ')
-    call addfld ('Prec   ','m/s     ',1,    'A','Total (convective and large-scale) precipitation rate for scam',phys_decomp)
+    call addfld ('Prec',horiz_only,    'A','m/s','Total (convective and large-scale) precipitation rate for scam')
     call add_default ('Prec   ',2,' ')
-    call addfld ('omega   ','Pa/s    ',pver, 'A','Vertical velocity (pressure)',phys_decomp)
+    call addfld ('omega',(/ 'lev' /), 'A','Pa/s','Vertical velocity (pressure)')
     call add_default ('omega   ',2,' ')
 
   end subroutine initialize_iop_history

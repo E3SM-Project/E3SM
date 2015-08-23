@@ -1,3 +1,4 @@
+
 !================================================================================================
 ! output data necessary to drive radiation offline
 ! Francis Vitt -- Created 15 Dec 2009
@@ -6,7 +7,7 @@ module radiation_data
 
   use shr_kind_mod,     only: r8=>shr_kind_r8
   use ppgrid,           only: pcols, pver, pverp
-  use cam_history,      only: addfld, add_default, phys_decomp, outfld
+  use cam_history,      only: addfld, horiz_only, add_default, outfld
   use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_gas, rad_cnst_get_aer_mmr
   use radconstants,     only: nradgas, gaslist
   use cam_history_support, only: fieldname_len, fillvalue
@@ -153,86 +154,86 @@ contains
        cldfsnow_ifld = pbuf_get_index('CLDFSNOW')
     endif
 
-    call addfld (lndfrc_fldn, 'fraction', 1,    rad_data_avgflag,&
-         'radiation input: land fraction',phys_decomp)
-    call addfld (icefrc_fldn, 'fraction', 1,    rad_data_avgflag,&
-         'radiation input: ice fraction',phys_decomp)
-    call addfld (snowh_fldn,  'm',        1,    rad_data_avgflag,&
-         'radiation input: water equivalent snow depth',phys_decomp)
-    call addfld (landm_fldn,  'none',     1,    rad_data_avgflag,&
-         'radiation input: land mask: ocean(0), continent(1), transition(0-1)',phys_decomp)
+    call addfld (lndfrc_fldn, horiz_only,    rad_data_avgflag, 'fraction',&
+         'radiation input: land fraction')
+    call addfld (icefrc_fldn, horiz_only,    rad_data_avgflag, 'fraction',&
+         'radiation input: ice fraction')
+    call addfld (snowh_fldn,        horiz_only,    rad_data_avgflag,  'm',&
+         'radiation input: water equivalent snow depth')
+    call addfld (landm_fldn,     horiz_only,    rad_data_avgflag,  'none',&
+         'radiation input: land mask: ocean(0), continent(1), transition(0-1)')
 
-    call addfld (asdir_fldn,  '1',        1,    rad_data_avgflag,&
-         'radiation input: short wave direct albedo',phys_decomp, flag_xyfill=.true.)
-    call addfld (asdif_fldn,  '1',        1,    rad_data_avgflag,&
-         'radiation input: short wave difuse albedo',phys_decomp, flag_xyfill=.true.)
-    call addfld (aldir_fldn,  '1',        1,    rad_data_avgflag,&
-         'radiation input: long wave direct albedo', phys_decomp, flag_xyfill=.true.)
-    call addfld (aldif_fldn,  '1',        1,    rad_data_avgflag,&
-         'radiation input: long wave difuse albedo', phys_decomp, flag_xyfill=.true.)
+    call addfld (asdir_fldn,        horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: short wave direct albedo', flag_xyfill=.true.)
+    call addfld (asdif_fldn,        horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: short wave difuse albedo', flag_xyfill=.true.)
+    call addfld (aldir_fldn,        horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: long wave direct albedo', flag_xyfill=.true.)
+    call addfld (aldif_fldn,        horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: long wave difuse albedo', flag_xyfill=.true.)
 
-    call addfld (coszen_fldn,     '1', 1,    rad_data_avgflag,&
-         'radiation input: cosine solar zenith when positive', phys_decomp, flag_xyfill=.true.)
-    call addfld (asdir_pos_fldn,  '1', 1,    rad_data_avgflag,&
-         'radiation input: short wave direct albedo weighted by coszen', phys_decomp, flag_xyfill=.true.)
-    call addfld (asdif_pos_fldn,  '1', 1,    rad_data_avgflag,&
-         'radiation input: short wave difuse albedo weighted by coszen', phys_decomp, flag_xyfill=.true.)
-    call addfld (aldir_pos_fldn,  '1', 1,    rad_data_avgflag,&
-         'radiation input: long wave direct albedo weighted by coszen', phys_decomp, flag_xyfill=.true.)
-    call addfld (aldif_pos_fldn,  '1', 1,    rad_data_avgflag,&
-         'radiation input: long wave difuse albedo weighted by coszen', phys_decomp, flag_xyfill=.true.)
+    call addfld (coszen_fldn, horiz_only,    rad_data_avgflag,     '1',&
+         'radiation input: cosine solar zenith when positive', flag_xyfill=.true.)
+    call addfld (asdir_pos_fldn, horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: short wave direct albedo weighted by coszen', flag_xyfill=.true.)
+    call addfld (asdif_pos_fldn, horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: short wave difuse albedo weighted by coszen', flag_xyfill=.true.)
+    call addfld (aldir_pos_fldn, horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: long wave direct albedo weighted by coszen', flag_xyfill=.true.)
+    call addfld (aldif_pos_fldn, horiz_only,    rad_data_avgflag,  '1',&
+         'radiation input: long wave difuse albedo weighted by coszen', flag_xyfill=.true.)
     
-    call addfld (lwup_fldn,   'W/m2',     1,    rad_data_avgflag,&
-         'radiation input: long wave up radiation flux ',phys_decomp)
-    call addfld (ts_fldn,     'K',        1,    rad_data_avgflag,&
-         'radiation input: surface temperature',phys_decomp)
+    call addfld (lwup_fldn,     horiz_only,    rad_data_avgflag,   'W/m2',&
+         'radiation input: long wave up radiation flux ')
+    call addfld (ts_fldn,        horiz_only,    rad_data_avgflag,     'K',&
+         'radiation input: surface temperature')
 
-    call addfld (temp_fldn,   'K',        pver, rad_data_avgflag,&
-         'radiation input: midpoint temperature',phys_decomp)
-    call addfld (pdel_fldn,   'Pa',       pver, rad_data_avgflag,&
-         'radiation input: pressure layer thickness',phys_decomp)
-    call addfld (pdeldry_fldn,'Pa',       pver, rad_data_avgflag,&
-         'radiation input: dry pressure layer thickness',phys_decomp)
-    call addfld (pmid_fldn,   'Pa',       pver, rad_data_avgflag,&
-         'radiation input: midpoint pressure',phys_decomp)
-    call addfld (watice_fldn, 'kg/kg',    pver, rad_data_avgflag,&
-         'radiation input: cloud ice',phys_decomp)
-    call addfld (watliq_fldn, 'kg/kg',    pver, rad_data_avgflag,&
-         'radiation input: cloud liquid water',phys_decomp)
-    call addfld (watvap_fldn, 'kg/kg',    pver, rad_data_avgflag,&
-         'radiation input: water vapor',phys_decomp)
+    call addfld (temp_fldn,        (/ 'lev' /), rad_data_avgflag,   'K',&
+         'radiation input: midpoint temperature')
+    call addfld (pdel_fldn,       (/ 'lev' /), rad_data_avgflag,   'Pa',&
+         'radiation input: pressure layer thickness')
+    call addfld (pdeldry_fldn,       (/ 'lev' /), rad_data_avgflag,'Pa',&
+         'radiation input: dry pressure layer thickness')
+    call addfld (pmid_fldn,       (/ 'lev' /), rad_data_avgflag,   'Pa',&
+         'radiation input: midpoint pressure')
+    call addfld (watice_fldn,    (/ 'lev' /), rad_data_avgflag, 'kg/kg',&
+         'radiation input: cloud ice')
+    call addfld (watliq_fldn,    (/ 'lev' /), rad_data_avgflag, 'kg/kg',&
+         'radiation input: cloud liquid water')
+    call addfld (watvap_fldn,    (/ 'lev' /), rad_data_avgflag, 'kg/kg',&
+         'radiation input: water vapor')
 
-    call addfld (zint_fldn,   'km',       pverp,rad_data_avgflag,&
-         'radiation input: interface height',phys_decomp)
-    call addfld (pint_fldn,   'Pa',       pverp,rad_data_avgflag,&
-         'radiation input: interface pressure',phys_decomp)
+    call addfld (zint_fldn,       (/ 'ilev' /),rad_data_avgflag,   'km',&
+         'radiation input: interface height')
+    call addfld (pint_fldn,       (/ 'ilev' /),rad_data_avgflag,   'Pa',&
+         'radiation input: interface pressure')
 
-    call addfld (cld_fldn,    'fraction', pver, rad_data_avgflag,&
-         'radiation input: cloud fraction',phys_decomp)
-    call addfld (concld_fldn, 'fraction', pver, rad_data_avgflag,&
-         'radiation input: convective cloud fraction',phys_decomp)
-    call addfld (rel_fldn,    'micron',   pver, rad_data_avgflag,&
-         'radiation input: effective liquid drop radius',phys_decomp)
-    call addfld (rei_fldn,    'micron',   pver, rad_data_avgflag,&
-         'radiation input: effective ice partical radius',phys_decomp)
+    call addfld (cld_fldn, (/ 'lev' /), rad_data_avgflag,    'fraction',&
+         'radiation input: cloud fraction')
+    call addfld (concld_fldn, (/ 'lev' /), rad_data_avgflag, 'fraction',&
+         'radiation input: convective cloud fraction')
+    call addfld (rel_fldn,   (/ 'lev' /), rad_data_avgflag,    'micron',&
+         'radiation input: effective liquid drop radius')
+    call addfld (rei_fldn,   (/ 'lev' /), rad_data_avgflag,    'micron',&
+         'radiation input: effective ice partical radius')
     
     if (mg_microphys) then
-       call addfld (dei_fldn,    'micron',   pver, rad_data_avgflag,&
-            'radiation input: effective ice partical diameter',phys_decomp)
-       call addfld (des_fldn,    'micron',   pver, rad_data_avgflag,&
-            'radiation input: effective snow partical diameter',phys_decomp)
-       call addfld (mu_fldn,     ' ',        pver, rad_data_avgflag,&
-            'radiation input: ice gamma parameter for optics (radiation)',phys_decomp)
-       call addfld (lambdac_fldn,' ',        pver, rad_data_avgflag,&
-            'radiation input: slope of droplet distribution for optics (radiation)',phys_decomp)
-       call addfld (iciwp_fldn,  'kg/m2',    pver, rad_data_avgflag,&
-            'radiation input: In-cloud ice water path',phys_decomp)
-       call addfld (iclwp_fldn,  'kg/m2',    pver, rad_data_avgflag,&
-            'radiation input: In-cloud liquid water path',phys_decomp)
-       call addfld (icswp_fldn,  'kg/m2',    pver, rad_data_avgflag,&
-            'radiation input: In-cloud snow water path',phys_decomp)
-       call addfld (cldfsnow_fldn, 'fraction', pver, rad_data_avgflag,&
-            'radiation input: cloud liquid drops + snow',phys_decomp)
+       call addfld (dei_fldn,   (/ 'lev' /), rad_data_avgflag,    'micron',&
+            'radiation input: effective ice partical diameter')
+       call addfld (des_fldn,   (/ 'lev' /), rad_data_avgflag,    'micron',&
+            'radiation input: effective snow partical diameter')
+       call addfld (mu_fldn,        (/ 'lev' /), rad_data_avgflag,     ' ',&
+            'radiation input: ice gamma parameter for optics (radiation)')
+       call addfld (lambdac_fldn,        (/ 'lev' /), rad_data_avgflag,' ',&
+            'radiation input: slope of droplet distribution for optics (radiation)')
+       call addfld (iciwp_fldn,    (/ 'lev' /), rad_data_avgflag,  'kg/m2',&
+            'radiation input: In-cloud ice water path')
+       call addfld (iclwp_fldn,    (/ 'lev' /), rad_data_avgflag,  'kg/m2',&
+            'radiation input: In-cloud liquid water path')
+       call addfld (icswp_fldn,    (/ 'lev' /), rad_data_avgflag,  'kg/m2',&
+            'radiation input: In-cloud snow water path')
+       call addfld (cldfsnow_fldn, (/ 'lev' /), rad_data_avgflag, 'fraction',&
+            'radiation input: cloud liquid drops + snow')
     endif
 
     call add_default (lndfrc_fldn,    rad_data_histfile_num, ' ')
@@ -297,7 +298,7 @@ contains
     do i = 1, ngas
        long_name = trim(gasnames(i))//trim(long_name_description)
        name = 'rad_'//gasnames(i)
-       call addfld(trim(name), 'kg/kg', pver, rad_data_avgflag, trim(long_name), phys_decomp)
+       call addfld(trim(name), (/ 'lev' /), rad_data_avgflag, 'kg/kg', trim(long_name))
        call add_default (trim(name), rad_data_histfile_num, ' ')
     end do
 
@@ -308,7 +309,7 @@ contains
        do i = 1, naer
           long_name = trim(aernames(i))//trim(long_name_description)
           name = 'rad_'//aernames(i)
-          call addfld(trim(name), 'kg/kg', pver, rad_data_avgflag, trim(long_name), phys_decomp)
+          call addfld(trim(name), (/ 'lev' /), rad_data_avgflag, 'kg/kg', trim(long_name))
           call add_default (trim(name), rad_data_histfile_num, ' ')
        end do
     end if

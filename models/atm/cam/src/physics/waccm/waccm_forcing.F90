@@ -1,3 +1,4 @@
+
 module waccm_forcing
 !================================================================================================
 !
@@ -149,7 +150,7 @@ contains
   subroutine waccm_forcing_init()
 
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld
     use physics_buffer, only : physics_buffer_desc
 
     implicit none
@@ -163,7 +164,7 @@ contains
                        rmv_file, cycle_yr, fixed_ymd, fixed_tod, datatype)
 
     do i = 1,N_FLDS
-       call addfld( 'WFRC_'//trim(fields(i)%fldnam), fields(i)%units, pver, 'I', 'for waccm forcing', phys_decomp )
+       call addfld( 'WFRC_'//trim(fields(i)%fldnam), (/ 'lev' /), 'I', fields(i)%units, 'for waccm forcing' )
     enddo
 
     return

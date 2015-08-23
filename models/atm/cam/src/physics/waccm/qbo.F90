@@ -1,4 +1,5 @@
 
+
 module qbo
 !--------------------------------------------------------------------
 ! This module performes a relaxation towards either a cyclic idealized
@@ -607,10 +608,10 @@ master_proc : &
 !----------------------------------------------------------------------
 ! 
 !----------------------------------------------------------------------
-    call addfld ('QBOTEND ','M/S/S   ',plev, 'A','Wind tendency from QBO relaxation',phys_decomp)
+    call addfld ('QBOTEND',(/ 'lev' /), 'A','M/S/S','Wind tendency from QBO relaxation')
     call add_default ('QBOTEND', 1, ' ')
 
-    call addfld ('QBO_U0 ','M/S   ',plev, 'A','Specified wind used for QBO',phys_decomp)
+    call addfld ('QBO_U0',(/ 'lev' /), 'A','M/S','Specified wind used for QBO')
     call add_default ('QBO_U0', 1, ' ')
 
 !----------------------------------------------------------------------

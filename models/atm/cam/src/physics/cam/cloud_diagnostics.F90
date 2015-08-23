@@ -1,3 +1,4 @@
+
 module cloud_diagnostics
 
 !---------------------------------------------------------------------------------
@@ -16,7 +17,7 @@ module cloud_diagnostics
    use ppgrid,        only: pcols, pver,pverp
    use physconst,     only: gravit
    use cam_history,   only: outfld
-   use cam_history,   only: addfld, add_default, phys_decomp
+   use cam_history,   only: addfld, horiz_only, add_default
 
    implicit none
    private
@@ -98,10 +99,10 @@ contains
 
     if (mg_clouds) then
 
-       call addfld ('ICWMR    ', 'kg/kg   ', pver, 'A', 'Prognostic in-cloud water mixing ratio'                  ,phys_decomp)
-       call addfld ('ICIMR    ', 'kg/kg   ', pver, 'A', 'Prognostic in-cloud ice mixing ratio'                    ,phys_decomp)
-       call addfld ('IWC      ', 'kg/m3   ', pver, 'A', 'Grid box average ice water content'                      ,phys_decomp)
-       call addfld ('LWC      ', 'kg/m3   ', pver, 'A', 'Grid box average liquid water content'                   ,phys_decomp)
+       call addfld ('ICWMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud water mixing ratio'                  )
+       call addfld ('ICIMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud ice mixing ratio'                    )
+       call addfld ('IWC', (/ 'lev' /), 'A', 'kg/m3', 'Grid box average ice water content'                      )
+       call addfld ('LWC', (/ 'lev' /), 'A', 'kg/m3', 'Grid box average liquid water content'                   )
 
        ! determine the add_default fields
        call phys_getopts(history_amwg_out           = history_amwg) 
@@ -140,39 +141,39 @@ contains
        sampling_seq=''
     endif
 
-    call addfld ('ICLDIWP', wpunits, pver, 'A','In-cloud ice water path'               ,phys_decomp, sampling_seq=sampling_seq)
-    call addfld ('ICLDTWP ',wpunits, pver, 'A','In-cloud cloud total water path (liquid and ice)',phys_decomp, &
+    call addfld ('ICLDIWP', (/ 'lev' /), 'A', wpunits,'In-cloud ice water path'               , sampling_seq=sampling_seq)
+    call addfld ('ICLDTWP', (/ 'lev' /), 'A',wpunits,'In-cloud cloud total water path (liquid and ice)', &
          sampling_seq=sampling_seq)
 
-    call addfld ('GCLDLWP ',wpunits,pver, 'A','Grid-box cloud water path'             ,phys_decomp, &
+    call addfld ('GCLDLWP',(/ 'lev' /), 'A',wpunits,'Grid-box cloud water path'             , &
          sampling_seq=sampling_seq)
-    call addfld ('TGCLDCWP',wpunits,1,    'A','Total grid-box cloud water path (liquid and ice)',phys_decomp, &
+    call addfld ('TGCLDCWP',horiz_only,    'A',wpunits,'Total grid-box cloud water path (liquid and ice)', &
          sampling_seq=sampling_seq)
-    call addfld ('TGCLDLWP',wpunits,1,    'A','Total grid-box cloud liquid water path',phys_decomp, &
+    call addfld ('TGCLDLWP',horiz_only,    'A',wpunits,'Total grid-box cloud liquid water path', &
          sampling_seq=sampling_seq)
-    call addfld ('TGCLDIWP',wpunits,1,    'A','Total grid-box cloud ice water path'   ,phys_decomp, &
+    call addfld ('TGCLDIWP',horiz_only,    'A',wpunits,'Total grid-box cloud ice water path'   , &
          sampling_seq=sampling_seq)
     
     if(mg_clouds) then
-       call addfld ('lambda_cloud','1/meter',pver,'I','lambda in cloud', phys_decomp)
-       call addfld ('mu_cloud','1',pver,'I','mu in cloud', phys_decomp)
-       call addfld ('dei_cloud','micrometers',pver,'I','ice radiative effective diameter in cloud', phys_decomp)
+       call addfld ('lambda_cloud',(/ 'lev' /),'I','1/meter','lambda in cloud')
+       call addfld ('mu_cloud',(/ 'lev' /),'I','1','mu in cloud')
+       call addfld ('dei_cloud',(/ 'lev' /),'I','micrometers','ice radiative effective diameter in cloud')
     endif
 
     if(rk_clouds) then
-       call addfld ('rel_cloud','1/meter',pver,'I','effective radius of liq in cloud', phys_decomp, sampling_seq=sampling_seq)
-       call addfld ('rei_cloud','1',pver,'I','effective radius of ice in cloud', phys_decomp, sampling_seq=sampling_seq)
+       call addfld ('rel_cloud',(/ 'lev' /),'I','1/meter','effective radius of liq in cloud', sampling_seq=sampling_seq)
+       call addfld ('rei_cloud',(/ 'lev' /),'I','1','effective radius of ice in cloud', sampling_seq=sampling_seq)
     endif
 
-    call addfld ('SETLWP  ','gram/m2 ',pver, 'A','Prescribed liquid water path'          ,phys_decomp, sampling_seq=sampling_seq)
-    call addfld ('LWSH    ','m       ',1,    'A','Liquid water scale height'             ,phys_decomp, sampling_seq=sampling_seq)
+    call addfld ('SETLWP',(/ 'lev' /), 'A','gram/m2','Prescribed liquid water path'          , sampling_seq=sampling_seq)
+    call addfld ('LWSH',horiz_only,    'A','m','Liquid water scale height'             , sampling_seq=sampling_seq)
 
-    call addfld ('EFFCLD  ','fraction',pver, 'A','Effective cloud fraction'              ,phys_decomp, sampling_seq=sampling_seq)
+    call addfld ('EFFCLD',(/ 'lev' /), 'A','fraction','Effective cloud fraction'              , sampling_seq=sampling_seq)
 
     if (camrt_rad) then
-       call addfld ('EMIS', '1', pver, 'A','cloud emissivity'                      ,phys_decomp, sampling_seq=sampling_seq)
+       call addfld ('EMIS', (/ 'lev' /), 'A', '1','cloud emissivity'                      , sampling_seq=sampling_seq)
     else
-       call addfld ('EMISCLD', '1', pver, 'A','cloud emissivity'                      ,phys_decomp, sampling_seq=sampling_seq)
+       call addfld ('EMISCLD', (/ 'lev' /), 'A', '1','cloud emissivity'                      , sampling_seq=sampling_seq)
     endif
 
     call cloud_cover_diags_init(sampling_seq)

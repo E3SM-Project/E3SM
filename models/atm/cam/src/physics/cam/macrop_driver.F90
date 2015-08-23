@@ -1,4 +1,5 @@
-  module macrop_driver
+
+module macrop_driver
 
   !-------------------------------------------------------------------------------------------------------
   ! Purpose:
@@ -186,7 +187,7 @@ end subroutine macrop_driver_readnl
   !                                             ! 
   !-------------------------------------------- !
     use physics_buffer, only : pbuf_get_index
-    use cam_history,     only: addfld, add_default, phys_decomp
+    use cam_history,     only: addfld, add_default
     use convect_shallow, only: convect_shallow_use_shfrc
     
 
@@ -216,47 +217,47 @@ end subroutine macrop_driver_readnl
     endif
 
 
-    call addfld ('DPDLFLIQ ', 'kg/kg/s ', pver, 'A', 'Detrained liquid water from deep convection'             ,phys_decomp)
-    call addfld ('DPDLFICE ', 'kg/kg/s ', pver, 'A', 'Detrained ice from deep convection'                      ,phys_decomp)
-    call addfld ('SHDLFLIQ ', 'kg/kg/s ', pver, 'A', 'Detrained liquid water from shallow convection'          ,phys_decomp)
-    call addfld ('SHDLFICE ', 'kg/kg/s ', pver, 'A', 'Detrained ice from shallow convection'                   ,phys_decomp)
-    call addfld ('DPDLFT   ', 'K/s     ', pver, 'A', 'T-tendency due to deep convective detrainment'           ,phys_decomp)
-    call addfld ('SHDLFT   ', 'K/s     ', pver, 'A', 'T-tendency due to shallow convective detrainment'        ,phys_decomp)
+    call addfld ('DPDLFLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained liquid water from deep convection'             )
+    call addfld ('DPDLFICE', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained ice from deep convection'                      )
+    call addfld ('SHDLFLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained liquid water from shallow convection'          )
+    call addfld ('SHDLFICE', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained ice from shallow convection'                   )
+    call addfld ('DPDLFT', (/ 'lev' /), 'A', 'K/s', 'T-tendency due to deep convective detrainment'           )
+    call addfld ('SHDLFT', (/ 'lev' /), 'A', 'K/s', 'T-tendency due to shallow convective detrainment'        )
 
-    call addfld ('ZMDLF    ', 'kg/kg/s ', pver, 'A', 'Detrained liquid water from ZM convection'               ,phys_decomp)
+    call addfld ('ZMDLF', (/ 'lev' /), 'A', 'kg/kg/s', 'Detrained liquid water from ZM convection'               )
 
-    call addfld ('MACPDT   ', 'W/kg    ', pver, 'A', 'Heating tendency - Revised  macrophysics'                ,phys_decomp)
-    call addfld ('MACPDQ   ', 'kg/kg/s ', pver, 'A', 'Q tendency - Revised macrophysics'                       ,phys_decomp)
-    call addfld ('MACPDLIQ ', 'kg/kg/s ', pver, 'A', 'CLDLIQ tendency - Revised macrophysics'                  ,phys_decomp)
-    call addfld ('MACPDICE ', 'kg/kg/s ', pver, 'A', 'CLDICE tendency - Revised macrophysics'                  ,phys_decomp)
+    call addfld ('MACPDT', (/ 'lev' /), 'A', 'W/kg', 'Heating tendency - Revised  macrophysics'                )
+    call addfld ('MACPDQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Q tendency - Revised macrophysics'                       )
+    call addfld ('MACPDLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ tendency - Revised macrophysics'                  )
+    call addfld ('MACPDICE', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE tendency - Revised macrophysics'                  )
 
-    call addfld ('CLDVAPADJ', 'kg/kg/s ', pver, 'A', &
-         'Q tendency associated with liq/ice adjustment - Revised macrophysics' ,phys_decomp)
-    call addfld ('CLDLIQADJ', 'kg/kg/s ', pver, 'A', 'CLDLIQ adjustment tendency - Revised macrophysics'       ,phys_decomp)
-    call addfld ('CLDICEADJ', 'kg/kg/s ', pver, 'A', 'CLDICE adjustment tendency - Revised macrophysics'       ,phys_decomp)
-    call addfld ('CLDLIQDET', 'kg/kg/s ', pver, 'A', &
-         'Detrainment of conv cld liq into envrionment  - Revised macrophysics' ,phys_decomp)
-    call addfld ('CLDICEDET', 'kg/kg/s ', pver, 'A', &
-         'Detrainment of conv cld ice into envrionment  - Revised macrophysics' ,phys_decomp)
-    call addfld ('CLDLIQLIM', 'kg/kg/s ', pver, 'A', 'CLDLIQ limiting tendency - Revised macrophysics'         ,phys_decomp)
-    call addfld ('CLDICELIM', 'kg/kg/s ', pver, 'A', 'CLDICE limiting tendency - Revised macrophysics'         ,phys_decomp)
+    call addfld ('CLDVAPADJ', (/ 'lev' /), 'A', 'kg/kg/s', &
+         'Q tendency associated with liq/ice adjustment - Revised macrophysics' )
+    call addfld ('CLDLIQADJ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ adjustment tendency - Revised macrophysics'       )
+    call addfld ('CLDICEADJ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE adjustment tendency - Revised macrophysics'       )
+    call addfld ('CLDLIQDET', (/ 'lev' /), 'A', 'kg/kg/s', &
+         'Detrainment of conv cld liq into envrionment  - Revised macrophysics' )
+    call addfld ('CLDICEDET', (/ 'lev' /), 'A', 'kg/kg/s', &
+         'Detrainment of conv cld ice into envrionment  - Revised macrophysics' )
+    call addfld ('CLDLIQLIM', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ limiting tendency - Revised macrophysics'         )
+    call addfld ('CLDICELIM', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE limiting tendency - Revised macrophysics'         )
 
-    call addfld ('AST',       '1',        pver, 'A', 'Stratus cloud fraction',                                  phys_decomp)
-    call addfld ('LIQCLDF',   '1',        pver, 'A', 'Stratus Liquid cloud fraction',                           phys_decomp)
+    call addfld ('AST',        (/ 'lev' /), 'A',       '1', 'Stratus cloud fraction')
+    call addfld ('LIQCLDF',        (/ 'lev' /), 'A',   '1', 'Stratus Liquid cloud fraction')
     call add_default('LIQCLDF', 1, ' ')
-    call addfld ('ICECLDF',   '1',        pver, 'A', 'Stratus ICE cloud fraction',                              phys_decomp)
+    call addfld ('ICECLDF',        (/ 'lev' /), 'A',   '1', 'Stratus ICE cloud fraction')
 
-    call addfld ('CLDST    ', 'fraction', pver, 'A', 'Stratus cloud fraction'                                  ,phys_decomp)
-    call addfld ('CONCLD   ', 'fraction', pver, 'A', 'Convective cloud cover'                                  ,phys_decomp)
+    call addfld ('CLDST', (/ 'lev' /), 'A', 'fraction', 'Stratus cloud fraction'                                  )
+    call addfld ('CONCLD', (/ 'lev' /), 'A', 'fraction', 'Convective cloud cover'                                  )
  
-    call addfld ('CLDLIQSTR   ', 'kg/kg', pver, 'A', 'Stratiform CLDLIQ'                                  ,phys_decomp)
-    call addfld ('CLDICESTR   ', 'kg/kg', pver, 'A', 'Stratiform CLDICE'                                  ,phys_decomp)
-    call addfld ('CLDLIQCON   ', 'kg/kg', pver, 'A', 'Convective CLDLIQ'                                  ,phys_decomp)
-    call addfld ('CLDICECON   ', 'kg/kg', pver, 'A', 'Convective CLDICE'                                  ,phys_decomp)
+    call addfld ('CLDLIQSTR', (/ 'lev' /), 'A', 'kg/kg', 'Stratiform CLDLIQ'                                  )
+    call addfld ('CLDICESTR', (/ 'lev' /), 'A', 'kg/kg', 'Stratiform CLDICE'                                  )
+    call addfld ('CLDLIQCON', (/ 'lev' /), 'A', 'kg/kg', 'Convective CLDLIQ'                                  )
+    call addfld ('CLDICECON', (/ 'lev' /), 'A', 'kg/kg', 'Convective CLDICE'                                  )
 
-    call addfld ('CLDSICE  ', 'kg/kg   ', pver, 'A', 'CloudSat equivalent ice mass mixing ratio'               ,phys_decomp)
+    call addfld ('CLDSICE', (/ 'lev' /), 'A', 'kg/kg', 'CloudSat equivalent ice mass mixing ratio'               )
 
-    call addfld ('CMELIQ   ', 'kg/kg/s ', pver, 'A', 'Rate of cond-evap of liq within the cloud'               ,phys_decomp)
+    call addfld ('CMELIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of cond-evap of liq within the cloud'               )
 
     if ( history_budget ) then
 
