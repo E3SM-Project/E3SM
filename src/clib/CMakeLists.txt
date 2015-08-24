@@ -119,20 +119,12 @@ if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_TEMPLATE_SOURCES)
         execute_process (
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_put_template.c
                                              ${CMAKE_CURRENT_BINARY_DIR}/pio_c_put_template.c
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        execute_process (
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_get_template.c
                                              ${CMAKE_CURRENT_BINARY_DIR}/pio_c_get_template.c
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        execute_process (
             COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncputgetparser.pl 
                                        ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        execute_process (
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_template.c
                                              ${CMAKE_CURRENT_BINARY_DIR}/pio_c_template.c
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-        execute_process (
             COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncparser.pl
                                        ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
