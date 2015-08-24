@@ -888,6 +888,8 @@ contains
       call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 
 print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
+!write(*,'(A40,12E14.6)')"DEBUG | nuptake_prof=",nuptake_prof(1,1:nlevdecomp)
+!write(*,'(A40,12E14.6)')"DEBUG | puptake_prof=",puptake_prof(1,1:nlevdecomp)
 
       if (.not. use_nitrif_denitrif) then
 
@@ -2143,7 +2145,7 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
 !-----------------------------------------------------------------------
   subroutine calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
 !     use clm_varcon          , only : dzsoi_decomp  !! declared in module CNAllocationMod
-    !!wgs: nuptake_prof is used in CNAllocation1 & 2
+    ! nuptake_prof is used in CNAllocation1 & 2
     ! !USES:
     use clm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
@@ -2157,8 +2159,8 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
 
     integer :: c,j,fc                                            !indices
-    real(r8):: sminn_vr_loc(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+    real(r8):: sminn_vr_loc(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: sminn_tot(bounds%begc:bounds%endc)
 
 

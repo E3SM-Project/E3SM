@@ -17,7 +17,8 @@ module PStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  use clm_varctl             , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -82,6 +83,10 @@ contains
          ps%seedp_col(c) = ps%seedp_col(c) - pf%dwt_seedp_to_deadstem_col(c) * dt
       end do
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -142,8 +147,8 @@ contains
          end if
       end do
 
-
-
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch loop
 

@@ -465,7 +465,7 @@ contains
          topo       =>  col%glc_topo   , &  ! surface elevation (m)
          micro_sigma=>  col%micro_sigma, &  ! microtopography pdf sigma (m)
          slope      =>  col%topo_slope , &  ! gridcell topographic slope
-         topo_std      =>  col%topo_std  &  ! gridcell elevation standard deviation
+         topo_std   =>  col%topo_std     &  ! gridcell elevation standard deviation
          )
 
     !------------------------------------------------------------------------
@@ -816,7 +816,6 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
     ! (1) passing TH states from CLM to PF, if not H/TH mode NOT on in PF, every CLM time-step
 
     ! if PF T/H mode not available, have to pass those from CLM to global variable in PF to drive BGC/H
-    ! wgs: beg
     if ((.not.pf_tmode .or. .not.pf_hmode) .and. (.not.isinitpf)) then
         call get_clm_soil_th(pf_tmode, pf_hmode,  &
            bounds, num_soilc, filter_soilc,         &
@@ -826,7 +825,6 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
         call pflotranModelUpdateTHfromCLM(pflotran_m, pf_hmode, pf_tmode)
     endif
-    ! wgs: end
 
     ! ice-len adjusted porostiy
     if (.not.pf_frzmode) then
@@ -835,7 +833,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
            soilstate_vars, waterstate_vars)
 
         call pflotranModelResetSoilPorosityFromCLM(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelResetSoilPorosityFromCLM"
+!write(*,*)">>>DEBUG | pflotranModelResetSoilPorosityFromCLM"
     endif
 
     ! (2) pass CLM water fluxes to CLM-PFLOTRAN interface
@@ -879,12 +877,12 @@ write(*,*)">>>DEBUG | pflotranModelResetSoilPorosityFromCLM"
            ch4_vars)
 
         call pflotranModelSetBgcConcFromCLM(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelSetBgcConcFromCLM"
+!write(*,*)">>>DEBUG | pflotranModelSetBgcConcFromCLM"
         if ( (.not.pf_hmode .or. .not.pf_frzmode)) then
         ! this is needed, because at step 0, PF's interface data is empty
         !which causes Aq. conc. adjustment balance issue
            call pflotranModelGetSaturationFromPF(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
+!write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
         endif
 !      endif     ! NOTE: if only initialize ONCE, uncomment this 'if...endif' block
 
@@ -892,7 +890,7 @@ write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
       ! when NOT coupled with PF Hydrology or NOT in freezing-mode (porosity will be forced to vary from CLM)
         if (.not.pf_hmode .or. .not.pf_frzmode) then
            call pflotranModelUpdateAqConcFromCLM(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelUpdateAqConcFromCLM"
+!write(*,*)">>>DEBUG | pflotranModelUpdateAqConcFromCLM"
         endif
 
       ! (4c) bgc rate (source/sink) from CLM to PFLOTRAN
@@ -903,7 +901,7 @@ write(*,*)">>>DEBUG | pflotranModelUpdateAqConcFromCLM"
             nitrogenflux_vars)
 
         call pflotranModelSetBgcRatesFromCLM(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelSetBgcRatesFromCLM"
+!write(*,*)">>>DEBUG | pflotranModelSetBgcRatesFromCLM"
     endif
 
 #ifdef CLM_PF_DEBUG
@@ -915,9 +913,11 @@ if(nstep>=48*210 .and. nstep<=48*211) then
 endif
 #endif
 
+write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: BEG"
     ! (5) the main callings of PFLOTRAN
     call pflotranModelStepperRunTillPauseTime( pflotran_m, (nstep+1.0d0)*dtime, dtime, .false. )
-write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime"
+write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: END"
+
 #ifdef CLM_PF_DEBUG
 if(nstep>=48*210 .and. nstep<=48*211) then
   call cpu_time(t2)
@@ -947,7 +947,7 @@ endif
     ! bgc variables
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelGetBgcVariablesFromPF"
+!write(*,*)">>>DEBUG | pflotranModelGetBgcVariablesFromPF"
         call update_soil_bgc_pf2clm(bounds,      &
            num_soilc, filter_soilc,              &
            atm2lnd_vars, waterstate_vars,        &
@@ -956,13 +956,13 @@ write(*,*)">>>DEBUG | pflotranModelGetBgcVariablesFromPF"
            nitrogenstate_vars,nitrogenflux_vars, &
            ch4_vars                              &
            )
-write(*,*)">>>DEBUG | update_soil_bgc_pf2clm"
+!write(*,*)">>>DEBUG | update_soil_bgc_pf2clm"
         ! need to save the current time-step PF porosity/liq. saturation for bgc species mass conservation
         ! if CLM forced changing them into PF at NEXT timestep
         if (.not.pf_hmode .or. .not.pf_frzmode) then
            call pflotranModelGetSaturationFromPF(pflotran_m)
         endif
-write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
+!write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
     endif
 
     ! the actual infiltration/runoff/drainage and solute flux with BC, if defined,
@@ -2230,32 +2230,32 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     CHKERRQ(ierr)
 #else
 !write(*,'(A,10E14.6)')">>>DEBUG | dzsoi_decomp(nlevsoi)=",dzsoi_decomp(1:nlevsoi)
-!write(*,'(A,50(1h-))')">>>DEBUG | get_bgc_conc_clm2pf,lev=1 for C & N"
-!write(*,'(12A14)')"lit1","lit2","lit3","cwd","som1","som2","som3","som4","no3","nh4","nh4sorb"
-!write(*,'(12E14.6)')decomp_cpools_vr(1,1,1:8)
-!write(*,'(12E14.6)')decomp_npools_vr(1,1,1:8),smin_no3_vr(1,1),smin_nh4_vr(1,1),smin_nh4sorb_vr(1,1)
-write(*,'(A30,12I14)')"DEBUG | nlevdecomp=",(j,j=1,nlevdecomp)
-write(*,'(A30,12E14.6)')"DEBUG | cpool_lit1=",decomp_cpools_vr_lit1_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_lit2=",decomp_cpools_vr_lit2_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_lit3=",decomp_cpools_vr_lit3_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_cwd=",decomp_cpools_vr_cwd_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_som1=",decomp_cpools_vr_som1_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_som2=",decomp_cpools_vr_som2_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_som3=",decomp_cpools_vr_som3_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | cpool_som4=",decomp_cpools_vr_som4_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
-
-write(*,'(A30,12E14.6)')"DEBUG | npool_lit1=",decomp_npools_vr_lit1_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_lit2=",decomp_npools_vr_lit2_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_lit3=",decomp_npools_vr_lit3_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_cwd=",decomp_npools_vr_cwd_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_som1=",decomp_npools_vr_som1_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_som2=",decomp_npools_vr_som2_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_som3=",decomp_npools_vr_som3_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | npool_som4=",decomp_npools_vr_som4_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-
-write(*,'(A30,12E14.6)')"DEBUG | no3=",smin_no3_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | nh4=",smin_nh4_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,12E14.6)')"DEBUG | nh4sorb=",smin_nh4sorb_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+write(*,'(A,50(1h-))')">>>DEBUG | get_clm_bgc_conc,lev=1 for C & N"
+write(*,'(12A14)')"lit1","lit2","lit3","cwd","som1","som2","som3","som4","no3","nh4","nh4sorb"
+write(*,'(12E14.6)')decomp_cpools_vr(1,1,1:8)
+write(*,'(12E14.6)')decomp_npools_vr(1,1,1:8),smin_no3_vr(1,1),smin_nh4_vr(1,1),smin_nh4sorb_vr(1,1)
+!write(*,'(A30,12I14)')"DEBUG | nlevdecomp=",(j,j=1,nlevdecomp)
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_lit1=",decomp_cpools_vr_lit1_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_lit2=",decomp_cpools_vr_lit2_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_lit3=",decomp_cpools_vr_lit3_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_cwd=",decomp_cpools_vr_cwd_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_som1=",decomp_cpools_vr_som1_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_som2=",decomp_cpools_vr_som2_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_som3=",decomp_cpools_vr_som3_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | cpool_som4=",decomp_cpools_vr_som4_clm_loc(1:nlevdecomp)*clm_pf_idata%C_molecular_weight
+!
+!write(*,'(A30,12E14.6)')"DEBUG | npool_lit1=",decomp_npools_vr_lit1_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_lit2=",decomp_npools_vr_lit2_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_lit3=",decomp_npools_vr_lit3_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_cwd=",decomp_npools_vr_cwd_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_som1=",decomp_npools_vr_som1_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_som2=",decomp_npools_vr_som2_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_som3=",decomp_npools_vr_som3_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | npool_som4=",decomp_npools_vr_som4_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!
+!write(*,'(A30,12E14.6)')"DEBUG | no3=",smin_no3_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | nh4=",smin_nh4_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,12E14.6)')"DEBUG | nh4sorb=",smin_nh4sorb_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
 write(*,*)'---------------------------------------'
 
     call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_lit1_clmp, decomp_cpools_vr_lit1_clm_loc, ierr)
@@ -2606,27 +2606,35 @@ write(*,*)'---------------------------------------'
     call VecRestoreArrayF90(clm_pf_idata%rate_decomp_n_clmp, rate_decomp_n_clm_loc, ierr)
     CHKERRQ(ierr)
 #else
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit1c=",rate_lit1c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit2c=",rate_lit2c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit3c=",rate_lit3c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_cwdc=", rate_cwdc_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som1c=",rate_som1c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som2c=",rate_som2c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som3c=",rate_som3c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som4c=",rate_som4c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
-!
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit1n=",rate_lit1n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit2n=",rate_lit2n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit3n=",rate_lit3n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_cwdn=", rate_cwdn_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som1n=",rate_som1n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som2n=",rate_som2n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som3n=",rate_som3n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_som4n=",rate_som4n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+write(*,'(A,50(1h-))')">>>DEBUG | get_clm_bgc_rate,lev=1 for C & N"
+write(*,'(12A14)')"lit1","lit2","lit3","cwd","som1","som2","som3","som4","no3","nh4","plantNdemand"
+write(*,'(12E14.6)')col_net_to_decomp_cpools_vr(1,1,1:ndecomp_pools)
+write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
+                (rate_smin_no3_clm_loc(1))*clm_pf_idata%N_molecular_weight, &
+                (rate_smin_nh4_clm_loc(1))*clm_pf_idata%N_molecular_weight, &
+                (rate_plantndemand_clm_loc(1))*clm_pf_idata%N_molecular_weight
 
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_nh4=",(rate_smin_nh4_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_no3=",(rate_smin_no3_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
-write(*,'(A30,10E14.6)')">>>DEBUG | rate_plantndemand=",(rate_plantndemand_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit1c=",rate_lit1c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit2c=",rate_lit2c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit3c=",rate_lit3c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_cwdc=", rate_cwdc_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som1c=",rate_som1c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som2c=",rate_som2c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som3c=",rate_som3c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som4c=",rate_som4c_clm_loc(1:10)*clm_pf_idata%C_molecular_weight
+!!
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit1n=",rate_lit1n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit2n=",rate_lit2n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_lit3n=",rate_lit3n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_cwdn=", rate_cwdn_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som1n=",rate_som1n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som2n=",rate_som2n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som3n=",rate_som3n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_som4n=",rate_som4n_clm_loc(1:10)*clm_pf_idata%N_molecular_weight
+!
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_nh4=",(rate_smin_nh4_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_no3=",(rate_smin_no3_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
+!write(*,'(A30,10E14.6)')">>>DEBUG | rate_plantndemand=",(rate_plantndemand_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
 
     call VecRestoreArrayF90(clm_pf_idata%rate_lit1c_clmp, rate_lit1c_clm_loc, ierr)
     CHKERRQ(ierr)

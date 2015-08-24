@@ -71,8 +71,6 @@ contains
             cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%m_c_to_litr_lig_fire_col(c,j)* dt
          end do
       end do
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
-      !------------------------------------------------------------------
 
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools
@@ -83,6 +81,8 @@ contains
             end do
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch loop
       do fp = 1,num_soilp

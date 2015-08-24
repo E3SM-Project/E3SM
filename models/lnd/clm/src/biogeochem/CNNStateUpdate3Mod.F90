@@ -88,8 +88,6 @@ contains
             ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%m_n_to_litr_lig_fire_col(c,j)* dt
          end do ! end of column loop
       end do
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
-      !------------------------------------------------------------------
 
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools
@@ -101,6 +99,8 @@ contains
             end do
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch-level nitrogen fluxes 
 
