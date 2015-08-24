@@ -742,6 +742,7 @@ contains
     use MultiPhysicsProbConstants, only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants, only : VAR_PRESSURE
     use MultiPhysicsProbConstants, only : VAR_LIQ_SAT
+    use MultiPhysicsProbConstants, only : VAR_FRAC_LIQ_SAT
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
     use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
@@ -851,6 +852,7 @@ contains
          mflx_drain_col_1d =>    waterflux_vars%mflx_drain_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
          mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
 
+         vsfm_fliq_col_1d  =>    waterstate_vars%vsfm_fliq_col_1d   , & ! Output: [real(r8) (:)   ]  1D fraction of liquid saturation for VSFM [-]
          vsfm_sat_col_1d   =>    waterstate_vars%vsfm_sat_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
          vsfm_mass_col_1d  =>    waterstate_vars%vsfm_mass_col_1d   , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
          vsfm_smpl_col_1d  =>    waterstate_vars%vsfm_smpl_col_1d   , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
@@ -1040,14 +1042,21 @@ contains
       call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_MASS, soe_auxvar_id, vsfm_mass_col_1d)
 
       frac_ice(:,:) = 0.d0
+      vsfm_fliq_col_1d(:) = 1.d0
       do fc = 1,num_hydrologyc
          c = filter_hydrologyc(fc)
          do j = 1, nlevgrnd
-            idx = (c-bounds%begc)*nlevgrnd + j
-            frac_ice(c,j) = h2osoi_liq(c,j)/vsfm_mass_col_1d(idx)
+
             frac_ice(c,j) = h2osoi_ice(c,j)/(h2osoi_liq(c,j) + h2osoi_ice(c,j))
+
+            idx = (c-bounds%begc)*nlevgrnd + j
+            vsfm_fliq_col_1d(idx) = 1._r8 - frac_ice(c,j)
          end do
       end do
+
+      ! Set frac_liq
+      soe_auxvar_id = 1;
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL, VAR_FRAC_LIQ_SAT, soe_auxvar_id, vsfm_fliq_col_1d)
 
 #ifdef VSFM_DEBUG
       mass_beg        = 0.d0
