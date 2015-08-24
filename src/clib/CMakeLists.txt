@@ -111,7 +111,7 @@ endif ()
 
 #===== Generate missing sources from templates =====
 # If both NetCDF and PnetCDF were found, then create templates
-if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_TEMPLATE_SOURCES)
+if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_SOURCES_FROM_TEMPLATES)
 
     # Find perl
     find_package (Perl REQUIRED)
