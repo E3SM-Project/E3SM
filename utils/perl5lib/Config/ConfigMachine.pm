@@ -31,7 +31,7 @@ END
 #-----------------------------------------------------------------------------------------------
 sub setMachineFile
 {
-    my ($machine, $cimeroot, $input_file) = @_;
+    my ($machine, $model, $cimeroot, $input_file) = @_;
 
     # Determine the machines specificaiton file and see if the
     # target machine is supported
@@ -40,6 +40,7 @@ sub setMachineFile
     my @nodes = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/default_value");
     my $machines_file = $nodes[0]->textContent();
     $machines_file =~ s/\$CIMEROOT/$cimeroot/;
+    $machines_file =~ s/\$MODEL/$model/;
     (-f "$machines_file")  or  die "*** Cannot find supported machines file $machines_file ***\n";
 
     if ($machine =~ /(.*)_(.*)/){
@@ -65,7 +66,9 @@ sub setMachineValues
     # Set the parameters for the specified machine.  
     my ($file_config, $primary_component, $machine, $compiler, $print_flag, $config) = @_;
 
+    my $model = $config->get('MODEL');
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
+    $machines_file =~ s/\$MODEL/$model/;
     (-f "$machines_file")  or  die "*** Cannot find supported machines file $machines_file ***\n";
     my $machines_dir  = dirname($machines_file);
 

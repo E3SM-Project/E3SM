@@ -144,7 +144,7 @@ sub getCompsetLongname
 #-------------------------------------------------------------------------------
 sub getGridLongname
 {
-    my ($config, $grid_input) = @_;
+    my ($grid_input, $config) = @_;
 
     my ($grid_longname, $grid_shortname, $grid_aliasname);
     my $compset_match;
@@ -153,8 +153,8 @@ sub getGridLongname
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($grids_file);
     my @nodes_alias = $xml->findnodes(".//grid[alias=\"$grid_input\"]");
-    my @nodes_lname = $xml->findnodes(".//grid[lname=\"$grid_input\"]");
     my @nodes_sname = $xml->findnodes(".//grid[sname=\"$grid_input\"]");
+    my @nodes_lname = $xml->findnodes(".//grid[lname=\"$grid_input\"]");
 
     my $grid_node;
     if (@nodes_alias) {
@@ -188,7 +188,19 @@ sub getGridLongname
     $grid_longname =~ /(w%)(.+)$/     ; $compgrid{'wav'}  = $2; 
     $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2; 
 
-    return ($grid_longname, $grid_shortname, $grid_aliasname);
+    my @nodes = $xml->findnodes(".//grid[lname=\"$grid_longname\"]");
+    if ($#nodes != 0) {
+	die "ERROR ConfigCompsetGrid::checkGrid : no match found for $grid_longname \n";
+    } 
+    my $attr = $nodes[0]->getAttribute('compset');
+    if (defined $attr) {
+	my $compset = $config->get('COMPSET');
+	if ($compset !~ m/$attr/) {
+	    die "ERROR ConfigCompsetGrid::getGridLongame $grid_longname is not supported for $compset \n";
+	}
+    }
+
+    return ($grid_longname);
 }
 
 #-----------------------------------------------------------------------------------------------

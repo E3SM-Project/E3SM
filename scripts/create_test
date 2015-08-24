@@ -48,6 +48,7 @@ my $scriptsroot;
 my $cimeroot;
 my $srcroot;
 my $caseroot;
+my $model;
 my $definitions_file;
 my $testlistsubdirxml;
 my $testlid; 
@@ -388,7 +389,7 @@ sub initialize()
 	xml_mach             => undef,
 	xml_compiler         => undef,
 	xml_category         => undef,
-	mach_dir             => "$cimeroot/machines",
+	mach_dir             => undef,
 	mach                 => undef,
 	mpilib               => undef,
 	nlcompareonly        => undef,
@@ -465,7 +466,7 @@ sub options
 
 	# Set the definitions file for the general xml variables that will be needed
 	# TODO: how can the MODEL setting ben generalized?
-	my $model = 'cesm';
+	$model = 'cesm';
 	if ($ENV{'MODEL'}) { 
 	    $model = $ENV{'MODEL'};
 	}
@@ -652,14 +653,15 @@ sub checkOptions
 
     # If a user-defined machines directory is supplied, and it doesn't exist, 
     # exit with usage. 
-    if( defined $opts{'mach_dir'})
+    if( ! defined $opts{'mach_dir'})
     {
-	if(! -e $opts{'mach_dir'})
-	{
-	    print "** The machines directory $opts{'mach_dir'} doesn't exist.\n";
-	    print "** Please specify a valid machines directory. \n";
-	    exit(1);
-	}
+	$opts{'mach_dir'} = "$cimeroot/cime_config/$model/machines";
+    }
+    if(! -e $opts{'mach_dir'})
+    {
+	print "** The machines directory $opts{'mach_dir'} doesn't exist.\n";
+	print "** Please specify a valid machines directory. \n";
+	exit(1);
     }
 
     if(defined $opts{'mach'})
@@ -694,7 +696,7 @@ sub checkOptions
     # otherwise use the supplied machine value. 
     
     my $machines_file;
-    $machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, $file_config);
+    $machines_file = ConfigMachine::setMachineFile($machine, $model, $cimeroot, $file_config);
 #TODO - is the following incorrect???
 #    if( defined $opts{'nlcompareonly'})
 #    {

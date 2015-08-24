@@ -147,7 +147,7 @@ my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_IC
 foreach my $model (@modelsorder) {
     my $comp = $models{$model};
     my $file = "$dirs{$model}/buildnml";
-    print "***** Calling $file *****\n";
+    print "     Calling $file \n";
     if ($opts{'verbose'}) {
 	my $sysmod = "env PREVIEW_NML=1 $file $CASEROOT";
 	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";

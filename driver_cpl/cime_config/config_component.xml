@@ -79,14 +79,6 @@
     <desc>full pathname of source root directory</desc>
   </entry> 
 
-  <entry id="CCSMROOT"> 
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>full pathname of source root directory (currently equal to SRCROOT for backwards compatibility)</desc>
-  </entry> 
-
   <entry id="CIMEROOT"> 
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -153,14 +145,6 @@
     <group>case_desc</group>
     <file>env_case.xml</file>
     <desc>case user name</desc>
-  </entry> 
-
-  <entry id="CCSMUSER"> 
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>case_desc</group>
-    <file>env_case.xml</file>
-    <desc>case user name (this will be depracated in favor of USER moving forwards)</desc>
   </entry> 
 
   <!-- ===================================================================== -->

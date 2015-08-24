@@ -110,7 +110,7 @@ sub add_config_variables
 {
     # define variables in $cfg_ref from xml file
 
-    my ($self, $file, $srcroot, $cimeroot) = @_;
+    my ($self, $file, $srcroot, $cimeroot, $model) = @_;
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my @nodes = $xml->findnodes(".//entry");
@@ -128,6 +128,7 @@ sub add_config_variables
 	    if (defined $node_value) {
 		$node_value =~ s/\$CIMEROOT/$cimeroot/;
 		$node_value =~ s/\$SRCROOT/$srcroot/;
+		$node_value =~ s/\$MODEL/$model/;
 
 		# now set the initial value to the default value - this can get overwritten
 		if ($node_name eq 'default_value') {

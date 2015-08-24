@@ -71,8 +71,8 @@ OPTIONS
      -clone <cloneroot>   Specify the case to be cloned.
      -mach_dir            Optional location of machines directory
      -project <name>      Specify a project id for the case (optional)
-      default: user-specified environment variable PROJECT or ACCOUNT
-               or read from ~/.cesm_proj or ~/.ccsm_proj
+                          default: user-specified environment variable PROJECT or ACCOUNT
+                          or read from ~/.cesm_proj or ~/.ccsm_proj
      -silent [or -s]      Turns on silent mode - only fatal messages issued.
      -verbose [or -v]     Turn on verbose echoing of settings.
 EOF
@@ -269,18 +269,18 @@ push(@INC, $perl5lib);
 require Batch::BatchMaker;
 
 # --- Create $case.build
-$sysmod = "cp $cimeroot/scripts/Tools/cesm_build.csh  $caseroot/$case.build";
+$sysmod = "cp $cimeroot/scripts/Tools/build.csh  $caseroot/$case.build";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 $sysmod = "chmod 755 $caseroot/$case.build";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.clean_build
-$sysmod = "cp $cimeroot/scripts/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+$sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.submit
-$sysmod = "cp  $cimeroot/scripts/Tools/cesm_submit $caseroot/$case.submit"; 
+$sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # --- Create $case.l_archive

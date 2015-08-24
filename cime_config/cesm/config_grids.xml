@@ -48,38 +48,38 @@
       <lname>a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>1x1_camdenNJ</sname>
       <lname>a%1x1_camdenNJ_l%1x1_camdenNJ_oi%1x1_camdenNJ_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>1x1_mexicocityMEX</sname>
       <lname>a%1x1_mexicocityMEX_l%1x1_mexicocityMEX_oi%1x1_mexicocityMEX_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>1x1_vancouverCAN</sname>
       <lname>a%1x1_vancouverCAN_l%1x1_vancouverCAN_oi%1x1_vancouverCAN_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>1x1_tropicAtl</sname>
       <lname>a%1x1_tropicAtl_l%1x1_tropicAtl_oi%1x1_tropicAtl_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>1x1_urbanc_alpha</sname>
       <lname>a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>5x5_amazon</sname>
       <alias>5amazon</alias>
       <lname>a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="DATM.+CLM">
+    <grid compset="DATM.+CLM">
       <sname>hcru_hcru</sname>
       <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</lname>
     </grid>
@@ -297,25 +297,25 @@
       <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne30np4_ne30np4</sname>
       <alias>ne30_ne30</alias>    
       <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne60np4_ne60np4</sname>
       <alias>ne60_ne60</alias>    
       <lname>a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne120np4_ne120np4</sname>
       <alias>ne120_ne120</alias>  
       <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid  compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne240np4_ne240np4</sname>
       <alias>ne240_ne240</alias>  
       <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</lname>
@@ -409,13 +409,13 @@
 
     <!-- new runoff grids for data runoff model DROF -->
 
-    <grid  compset="_DROF">
+    <grid compset="_DROF">
       <sname>T31_gx3v7_rx1</sname>
       <alias>T31_g37_rx1</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid  compset="_DROF">
+    <grid compset="_DROF">
       <sname>4x5_gx3v7_rx1</sname>
       <alias>f45_g37_rx1</alias>
       <lname>a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</lname>
@@ -427,13 +427,13 @@
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid  compset="_DROF">
+    <grid compset="_DROF">
       <sname>ne30np4_gx1v6_rx1</sname>
       <alias>ne30_g16_rx1</alias>
       <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid  compset="_DROF">
+    <grid compset="_DROF">
       <sname>ne30np4_1.9x2.5_gx1v6_rx1</sname>
       <alias>ne30_f19_g16_rx1</alias>
       <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
@@ -441,7 +441,7 @@
 
     <!-- ww3 grids -->
 
-    <grid  compset="_WW3">
+    <grid compset="_WW3">
       <sname>ww3a_ww3a</sname>
       <alias>ww3a_ww3a</alias>
       <lname>a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a</lname>

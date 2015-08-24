@@ -278,17 +278,13 @@ my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
 my $config = ConfigCase->new("");
 
 # Add all the elements of the config_files.xml to $config
-$config->add_config_variables($files_spec_file, $srcroot, $cimeroot);
+$config->add_config_variables($files_spec_file, $srcroot, $cimeroot, $model);
 
 # Determine the driver_cpl config_component.xml file 
-my $drv_file = $config->get('CONFIG_DRV_FILE');
-$drv_file =~ s/\$CIMEROOT/$cimeroot/;
-$drv_file =~ s/\$SRCROOT/$srcroot/;
-$drv_file =~ s/\$MODEL/$model/;
+my $file = $config->get('CONFIG_DRV_FILE');
 
 # Add all the elements of the driver_cpl/cime_config/config_component.xml to $config
-$config->add_config_variables($drv_file, $srcroot, $cimeroot);
-
+$config->add_config_variables($file, $srcroot, $cimeroot, $model);
 $config->set('CIMEROOT', $cimeroot); 
 $config->set('SRCROOT' , $srcroot); 
 $config->set('MODEL'   , $model); 
@@ -376,27 +372,6 @@ $config->set('CASE'	  , "$case");
 $config->set('CIMEROOT'	  , "$cimeroot");
 $config->set('UTILROOT'	  , "$cimeroot/scripts/Tools");
 $config->set('SRCROOT'	  , "$srcroot");
-$config->set('CCSMROOT'	  , "$srcroot");  #TODO - deprecate CCSMROOT = put out message
-$config->set('CCSMUSER'	  , "$username"); #TODO - deprecate - remove CCSMUSER in $config
-
-#------------------------------------------------------------------------------------------
-# *** Determine grid specification file
-#------------------------------------------------------------------------------------------
-my $grids_dir;
-if (defined $opts{'user_grid_dir'}){
-    # Determine file specifying set of supported model grids
-    $grids_dir = $opts{'user_grid_dir'};
-    (-d $grids_dir)  or  die "** ERROR create_newcase: cannot find user specified grid directory $grids_dir **\n";
-    my $grids_file = "$grids_dir/grids.xml";
-    (-f "$grids_file")  or  die "** ERROR create_newcase: cannot find user specified grids file $grids_file **\n";
-    $config->set('GRIDS_DIR', "$grids_dir");
-} else {
-    $grids_dir = $config->get('GRIDS_DIR');
-    $grids_dir =~ s/\$MODEL/$model/;
-    (-d "$grids_dir")  or  die "** ERROR create_newcase: cannot find grids dir $grids_dir ***\n";
-}    
-my $file = "$grids_dir" . '/' . "config_grids.xml";
-$config->set('GRIDS_SPEC_FILE', "$file");
 
 #------------------------------------------------------------------------------------------
 # *** Options for listing (exit after listing) 
@@ -410,26 +385,20 @@ if ($opts{'testlist'}) {
 #------------------------------------------------------------------------------------------
 # *** Determine grid settings
 #------------------------------------------------------------------------------------------
-# First determine the grid longname and alias 
-my ($grid_longname, $grid_shortname, $grid_aliasname, $compset_match ) = 
-    ConfigCompsetGrid::getGridLongname($config, $grid); 
+# First determine the grid longname
+if (defined $opts{'user_grid_file'}){
+    # Determine file specifying set of supported model grids
+    $file = $opts{'user_grid_file'};
+    (-f "$file")  or  die "** ERROR create_newcase: cannot find user specified grids file $file **\n";
+    $config->set('GRIDS_SPEC_FILE', "$file");
+}
+my $grid_longname = ConfigCompsetGrid::getGridLongname($grid, $config); 
 $config->set('GRID', "$grid_longname");
 
-# Check if the grid and compset consistent - TODO put this logic back in getGridLongname
-if ($compset_match) {
-    # if there is a compset attribute, does the compset longname 
-    if ($compset_longname !~ /$compset_match/) {
-	die " ERROR: no supported match for target grid $grid and target compset-match $compset_match \n";
-    }
-}
-
-my $grids_file = $config->get('GRIDS_SPEC_FILE');
-
-# set grid component domains and related variables
-ConfigCompsetGrid::setGridDomain($grids_file, $config);
-
-# set grid mapping variables
-ConfigCompsetGrid::setGridMaps($grids_file, $config);
+# Set grid component domains and mapping files
+my $file = $config->get('GRIDS_SPEC_FILE');
+ConfigCompsetGrid::setGridDomain($file, $config);
+ConfigCompsetGrid::setGridMaps($file, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Determine compset component configurations 
@@ -449,7 +418,8 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 # *** Determine machines file specifying set of out-of-the box machines and then
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
-ConfigMachine::setMachineValues($drv_file, $pes_setby, $machine, $compiler, $print, $config);
+my $file = $config->get('CONFIG_DRV_FILE');
+ConfigMachine::setMachineValues($file, $pes_setby, $machine, $compiler, $print, $config);
 
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
@@ -457,13 +427,13 @@ ConfigMachine::setMachineValues($drv_file, $pes_setby, $machine, $compiler, $pri
 ConfigPes::setPes($pecount, $pes_setby, \%opts, $config);
 
 #------------------------------------------------------------------------------------------
-# *** Determine all <value> settings in driver_cpl/cime_config/config_component.xml
+# *** Determine all <value> settings in CONFIG_DRV_FILE
 #------------------------------------------------------------------------------------------
 # Note -this needs to come AFTER call to setPES since it might override some of the settings
 # e.g. this effectively works like an override mechanism for NTASKS_GLC and NTHRDS_GLC
 # which must be set to 1 when GLC is CISM1
 
-my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml"; #TODO - get this from $config
+my $file = $config->get('CONFIG_DRV_FILE');
 ConfigCompsetGrid::setComponent($file, $config); 
 
 #------------------------------------------------------------------------------------------
@@ -508,7 +478,8 @@ if ($run_refcase ne 'case.std') {
 }
 
 # Print compset/grid info
-ConfigCompsetGrid::printGridCompsetInfo($grids_file, $print, $config );
+my $file = $config->get('GRIDS_SPEC_FILE');
+ConfigCompsetGrid::printGridCompsetInfo($file, $print, $config);
 
 if ($print >= 2) { 
     my $compset = $config->get('COMPSET');
@@ -523,7 +494,7 @@ my $testsforcase;
 if ( $opts{'compset'} ) {
    my %case;
    $case{'compset'} = $opts{'compset'};
-   $case{'grid'} = $opts{'res'};
+   $case{'grid'}    = $opts{'res'};
    #   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir); TODO
    #   $testsforcase = $testlistobj->findTestsForCase(\%case); TODO
 } else {
@@ -874,10 +845,6 @@ sub _create_caseroot_tools
     # Copy relevant files into $caseroot/Tools/
     @files = ("$cimeroot/cime_config/${model}/archive.xml",
 	      "$cimeroot/cime_config/${model}/archive.xsd",
-	      "$cimeroot/scripts/Tools/cesm_buildnml", 
-	      "$cimeroot/scripts/Tools/cesm_prestage", 
-	      "$cimeroot/scripts/Tools/cesm_prerun_setup", 
-	      "$cimeroot/scripts/Tools/cesm_postrun_setup", 
 	      "$cimeroot/scripts/Tools/check_lockedfiles", 
 	      "$cimeroot/scripts/Tools/lt_archive.sh", 
 	      "$cimeroot/scripts/Tools/st_archive", 
@@ -900,7 +867,9 @@ sub _create_caseroot_files
 {
     my ($case, $caseroot, $cimeroot, $machine, $compiler, $print, $config) = @_;
 
+    my $model         = $config->get('MODEL');
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
+
     my $machines_dir  = dirname($machines_file);
     my $mkbatch_file = "$ENV{'HOME'}/.cime/mkbatch.$machine";
     if (! -f "$mkbatch_file") {
@@ -910,24 +879,24 @@ sub _create_caseroot_files
     }
 
     # Create $case.build
-    $sysmod = "cp $cimeroot/scripts/Tools/cesm_build.csh  $caseroot/$case.build";
+    $sysmod = "cp $cimeroot/scripts/Tools/build.csh  $caseroot/$case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     $sysmod = "chmod 755 $caseroot/$case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
-    # Create $caseroot/Buildconf/cesm_build.pl
-    $sysmod = "cp $cimeroot/scripts/Tools/cesm_build.pl  $caseroot/Buildconf/cesm_build.pl";
+    # Create $caseroot/Buildconf/build.pl
+    $sysmod = "cp $cimeroot/scripts/Tools/build.pl  $caseroot/Buildconf/build.pl";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
-    $sysmod = "chmod 755 $caseroot/Buildconf/cesm_build.pl";
+    $sysmod = "chmod 755 $caseroot/Buildconf/build.pl";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     
     # Create $case.clean_build
-    $sysmod = "cp $cimeroot/scripts/Tools/cesm_clean_build $caseroot/$case.clean_build"; 
+    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     
     # Create $case.submit
-    $sysmod = "cp  $cimeroot/scripts/Tools/cesm_submit $caseroot/$case.submit"; 
+    $sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     # Create $case.l_archive
@@ -960,9 +929,7 @@ sub _create_caseroot_files
     }
 
     # Create env_case.xml
-    my $model = $config->get('MODEL');
     my $file = $config->get('CASEFILE_HEADERS');
-    $file =~ s/\$MODEL/$model/;
     (-f $file) or die "ERROR: create_newcase case header file $file does not exist \n";
 
     $config->write_file("$caseroot/env_case.xml", "$file", $caseroot, $cimeroot );
@@ -1019,7 +986,7 @@ sub _create_caseroot_sourcemods
     foreach my $comp (@comps)  {
 	mkpath("$caseroot/SourceMods/src.$comp"); 
 
-	# ---TODO: this is CESM specific given that we are referencing cism explitly
+	# Note: this is CESM specific given that we are referencing cism explitly
 	if ($comp eq 'cism') {
 	    mkpath("$caseroot/SourceMods/src.cism/glimmer-cism");
 	    open(README, ">", "$caseroot/SourceMods/src.$comp/README") or
