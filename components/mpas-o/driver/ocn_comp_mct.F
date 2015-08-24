@@ -315,7 +315,7 @@ contains
     call ocn_setup_domain(domain_ptr)
 
     ! Override the names of the stream and namelist files
-    domain_ptr % namelist_filename = 'mpaso_in'
+    domain_ptr % namelist_filename = 'mpas-o_in'
     domain_ptr % streams_filename = 'streams.ocean'
 
     ! Setup namelist variables, and read the namelist
