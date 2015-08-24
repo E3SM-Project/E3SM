@@ -26,6 +26,10 @@
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
+                <nml_option name="config_AM_mixedLayerDepths_compute_on_startup" type="logical" default_value=".true." units="unitless"
+                        description="Logical flag determining if an analysis member computation occurs on start-up"
+                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_AM_mixedLayerDepths_threshold_method" type="logical" default_value=".true." units="unitless"
 			description="Logical flag that determines if MLDs are calculated using a critical threshold"
 			possible_values=".true. or .false."
