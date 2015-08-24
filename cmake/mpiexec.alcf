@@ -9,4 +9,12 @@
 NP=$1
 shift
 
-${BGQ_RUNJOB:-runjob} --np $NP --block $COBALT_PARTNAME : $@
+${BGQ_RUNJOB:-runjob} --np $NP --block $COBALT_PARTNAME \
+    --env GPFSMPIO_NAGG_PSET=16 \
+    --env GPFSMPIO_ONESIDED_ALWAYS_RMW=1 \ 
+    --env GPFSMPIO_BALANCECONTIG=1 \
+    --env GPFSMPIO_WRITE_AGGMETHOD=2 \
+    --env GPFSMPIO_READ_AGGMETHOD=2 \ 
+    --env PAMID_TYPED_ONESIDED=1 \
+    --env PAMID_RMA_PENDING=1M \
+    --env GPFSMPIO_BRIDGERINGAGG=1 : $@
