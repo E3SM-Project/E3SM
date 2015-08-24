@@ -5,19 +5,19 @@ project (PIOC C)
 #  DEFINE THE TARGET
 #==============================================================================
 
-set (PIO_C_SRCS topology.c
-                pio_nc.c
-                pio_file.c
-                pioc_support.c
-                pio_lists.c
-                pioc.c
-                pioc_sc.c
-                pio_spmd.c
-                pio_rearrange.c
-                pio_darray.c
-                pio_put_nc.c 
-                pio_get_nc.c
-                bget.c)
+set (PIO_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/topology.c
+                ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pio_file.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pioc_support.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pio_lists.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pioc.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pioc_sc.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pio_spmd.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pio_rearrange.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/pio_darray.c
+                ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c 
+                ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
+                ${CMAKE_CURRENT_SOURCE_DIR}/bget.c)
 
 add_library (pioc ${PIO_C_SRCS})
 
@@ -108,6 +108,50 @@ if (PIO_C_EXTRA_LINK_FLAGS)
     set_target_properties(pioc PROPERTIES 
         LINK_FLAGS ${PIO_C_EXTRA_LINK_FLAGS})
 endif ()
+
+#===== Generate missing sources from templates =====
+# If both NetCDF and PnetCDF were found, then create templates
+if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_TEMPLATE_SOURCES)
+
+    # Find perl
+    find_package (Perl REQUIRED)
+    if (Perl_FOUND)
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_put_template.c
+                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_c_put_template.c
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_get_template.c
+                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_c_get_template.c
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        execute_process (
+            COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncputgetparser.pl 
+                                       ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_template.c
+                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_c_template.c
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        execute_process (
+            COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncparser.pl
+                                       ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    else ()
+        message (FATAL_ERROR "Need Perl to create PIO C source files from templates")
+    endif ()
+    
+# If both NetCDF and PnetCDF are NOT found, then just copy existing source files
+else ()
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
+                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
+                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
+                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif ()
+
 
 #===== Check for necessities =====
 if (NOT PnetCDF_C_FOUND AND NOT NetCDF_C_FOUND)
