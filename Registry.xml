@@ -312,7 +312,7 @@
 	</nml_record>
 	<nml_record name="mesoscale_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_standardGM" type="logical" default_value=".false." units="NA"
-					description="If true, the standard GM for the tracer advection and mixing is turned on."
+					description="If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
