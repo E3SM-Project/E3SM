@@ -94,12 +94,13 @@ contains
       real (kind=RKIND) :: depth, contSlopeWidthRad, widthWindASFRad, windStress
       real (kind=RKIND) :: widthQSouth, widthQMiddle, widthQNorth, heatFluxZonal, heatFlux1, heatFlux2
       real (kind=RKIND) :: temperature
-      real (kind=RKIND), dimension(100) :: dzarray
       real (kind=RKIND), dimension(30) :: featureDepth
+
+      real (kind=RKIND), dimension(:), pointer :: interfaceLocations
       
       
       ! Define config variable pointers
-      character (len=StrKIND), pointer :: config_init_configuration
+      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
       
       integer, pointer :: config_iso_vert_levels
       real (kind=RKIND), pointer :: config_iso_main_channel_depth
@@ -185,13 +186,13 @@ contains
       real (kind=RKIND), pointer :: config_iso_temperature_restore_lcy4
 
       ! Define dimension pointers
-      integer, pointer :: nVertLevels, nCellsSolve
+      integer, pointer :: nVertLevels, nCells, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity, index_tracer1
       
       ! Define variable pointers
       logical, pointer :: on_a_sphere
       integer, dimension(:), pointer :: maxLevelCell
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), pointer :: sphere_radius
       real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, bottomDepth
@@ -238,11 +239,14 @@ contains
       real (kind=RKIND) :: tempRestoreT4, tempRestoreLcx4, tempRestoreLcy4
 
       iErr = 0
+
+      write(stderrUnit, *) ' iso start 0'
       
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('iso')) return
       
       ! get config variables
+      call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
       call mpas_pool_get_config(domain % configs, 'config_iso_vert_levels', config_iso_vert_levels)
       call mpas_pool_get_config(domain % configs, 'config_iso_main_channel_depth', config_iso_main_channel_depth)
       call mpas_pool_get_config(domain % configs, 'config_iso_north_wall_lat', config_iso_north_wall_lat)
@@ -328,6 +332,7 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
       sphereRadius = sphere_radius
@@ -339,6 +344,13 @@ contains
         return
       end if
 
+      write(stderrUnit, *) 'iso 1', nVertLevelsP1
+
+      ! Define interface locations
+      allocate( interfaceLocations( nVertLevelsP1 ) )
+      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
+
+      write(stderrUnit, *) ' iso 2', interfaceLocations
 
       ! assign config variables
       nVertLevels  = config_iso_vert_levels
@@ -425,46 +437,41 @@ contains
       tempRestoreLcy4 = config_iso_temperature_restore_lcy4
 
 
+      write(stderrUnit, *) 'iso 3'
+
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Setup the vertical grid
       !!!!!!!!!!!!!!!!!!!!!!!!!
-      write(*,*) 'setting up vertical grid'
-
-      ! get the layer thickness array
-      call get_thickness_array(dzarray)
-      dzarray = dzarray * mainChannelDepth
       
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
-        call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+        call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         
-      
-        ! Set refBottomDepth
-        call set_layerBottomDepth_from_layerThickness(nVertLevels, dzarray, refBottomDepth)
-        ! Set refZMid
-        call set_zMid_from_layerThickness(nVertLevels, dzarray, refZMid)
         ! Set layerThickness and restingThickness
-        do iCell = 1, nCellsSolve
-          do k = 1, nVertLevels
-            ! Set layerThicknes
-            layerThickness(k, iCell) = dzarray(k)
-            ! Set restingThickness
-            restingThickness(k, iCell) = dzarray(k)
-          end do
+        do k = 1, nVertLevels
+           layerThickness(k, :) = config_iso_main_channel_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
+           restingThickness(k, :) = layerThickness(k, :)
         end do
+
+         ! Set refBottomDepth
+         do k = 1, nVertLevels
+            refBottomDepth(k) = config_iso_main_channel_depth * interfaceLocations(k+1)
+            refZMid(k) = -config_iso_main_channel_depth * (interfaceLocations(k)+interfaceLocations(k+1))/2.0_RKIND
+         end do
 
         block_ptr => block_ptr % next
       
       end do
 
-      
+      write(stderrUnit, *) 'iso 4', refZMid
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Set Topography
@@ -484,7 +491,7 @@ contains
         contSlopeWidthRad = &
            pii * 0.5 * (-shelfDepth + mainChannelDepth) / maxContSlope / sphereRadius
         
-        do iCell = 1, nCellsSolve
+        do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
 
@@ -537,8 +544,6 @@ contains
 
            ! choose the shallowest
            bottomDepth(iCell) = min(minval(featureDepth), bottomDepth(iCell))
-
-
            
 
            !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -585,8 +590,6 @@ contains
              maxLevelCell(iCell) = -1
            endif
           
-
-           
            
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Determine maxLevelCell based on bottomDepth and refBottomDepth
@@ -605,15 +608,24 @@ contains
                 end do
              end if
            end if
-
-        
         
         enddo ! Looping through with iCell
         
         block_ptr => block_ptr % next
       enddo ! done setting topography
 
-     
+      write(stderrUnit, *) 'iso 5', maxval(bottomDepth), maxval(maxLevelCell)
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! mark cells for culling
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       block_ptr => domain % blocklist
+       do while (associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call ocn_mark_maxlevelcell(meshPool, iErr)
+          block_ptr => block_ptr % next
+       end do
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Set forcing boundary conditions and initial conditions
@@ -626,10 +638,8 @@ contains
         call mpas_pool_get_array(meshPool, 'latCell', latCell)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-        call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-        call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
         call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
         call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
@@ -639,12 +649,14 @@ contains
         call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
         call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
         call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional, 1)
+        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+        call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
         call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
         call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
 
-        do iCell = 1, nCellsSolve
+        do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
            
@@ -665,7 +677,6 @@ contains
            ! Set up debugging tracers
            idx = index_tracer1
            debugTracers(idx, :, iCell) = 1.0_RKIND
-           
            
            ! Heat fluxes
            heatFluxZonal = 0.0_RKIND
@@ -705,97 +716,97 @@ contains
               endif
            endif
 
-
            if (currentLat < transSM) then
              sensibleHeatFlux(iCell) = min(heatFluxZonal, heatFlux1, heatFlux2)
            else
              sensibleHeatFlux(iCell) = heatFluxZonal
            endif
 
-          
-            ! Set interior restoring
-            do k = 1, nVertLevels
-               zMid = refZMid(k)
+           ! Set interior restoring
+           do k = 1, nVertLevels
+              zMid = refZMid(k)
                
-               !Temperature
-               !Interior restoring along northern wall 
-               distance = sphereRadius * ( currentLat - northWallLat)
-               if(abs(distance) <= 3.0_RKIND*tempSpongeWeightL1) then
-                  idx = index_temperature
-                  temperature = tempSpongeT1 * exp(zMid/tempSpongeh1)
-                  activeTracersInteriorRestoringValue(idx,k,iCell) = temperature
-               
-                  idx = index_temperature
-                  ! note to juan: activeTracersInteriorRestoringRate has units of 1/s throughout
-                  activeTracersInteriorRestoringRate(idx, k,iCell) = exp(-abs(distance)/tempSpongeWeightL1)
+              !Temperature
+              !Interior restoring along northern wall 
+              distance = sphereRadius * ( currentLat - northWallLat)
+              if(abs(distance) <= 3.0_RKIND*tempSpongeWeightL1) then
+                 idx = index_temperature
+                 temperature = tempSpongeT1 * exp(zMid/tempSpongeh1)
+                 activeTracersInteriorRestoringValue(idx, k, iCell) = temperature
+              
+                 idx = index_temperature
+                 ! note to juan: activeTracersInteriorRestoringRate has units of 1/s throughout
+                 activeTracersInteriorRestoringRate(idx, k, iCell) = exp(-abs(distance)/tempSpongeWeightL1)
+              endif
+             
+              ! Interior restoring at localized region 1
+              if (tempRestoreFlag1) then
+                 xDistance = (currentLon - regionCenterLon1) * sphereRadius*cos(currentLat)
+                 yDistance = (currentLat - regionCenterLat1) * sphereRadius
+                 if (abs(yDistance) <= tempRestoreLcy1 .and. abs(xDistance) <= tempRestoreLcx1) then
+                    idx = index_temperature
+                    activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT1
+                 
+                    idx = index_temperature
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                       exp(-(2.0_RKIND*xDistance/tempRestoreLcx1)**2 - (2.0_RKIND*yDistance/tempRestoreLcy1)**2 )
+                 endif
+              endif
+ 
+              ! Interior restoring at localized region 2
+              if (tempRestoreFlag2) then
+                 xDistance = (currentLon - regionCenterLon2) * sphereRadius*cos(currentLat)
+                 yDistance = (currentLat - regionCenterLat2) * sphereRadius
+                 if (abs(yDistance) <= tempRestoreLcy2 .and. abs(xDistance) <= tempRestoreLcx2) then
+                    idx = index_temperature
+                    activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT2
+                    
+                    idx = index_temperature
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                       exp(-(2.0_RKIND*xDistance/tempRestoreLcx2)**2 - (2.0_RKIND*yDistance/tempRestoreLcy2)**2 )
+                 endif
+              endif
+              
+              ! Interior restoring at localized region 3
+              if (tempRestoreFlag3) then
+                 xDistance = (currentLon - regionCenterLon3) * sphereRadius*cos(currentLat)
+                 yDistance = (currentLat - regionCenterLat3) * sphereRadius
+                 if (abs(yDistance) <= tempRestoreLcy3 .and. abs(xDistance) <= tempRestoreLcx3) then
+                    idx = index_temperature
+                    activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT3
+                    
+                    idx = index_temperature
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                       exp(-(2.0_RKIND*xDistance/tempRestoreLcx3)**2 - (2.0_RKIND*yDistance/tempRestoreLcy3)**2 )
+                 endif
+              endif
+              
+              ! Interior restoring at localized region 4
+              if (tempRestoreFlag4) then
+                 xDistance = (currentLon - regionCenterLon4) * sphereRadius*cos(currentLat)
+                 yDistance = (currentLat - regionCenterLat4) * sphereRadius
+                 if (abs(yDistance) <= tempRestoreLcy4 .and. abs(xDistance) <= tempRestoreLcx4) then
+                    idx = index_temperature
+                    activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT4
+                    
+                    idx = index_temperature
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                       exp(-(2.0_RKIND*xDistance/tempRestoreLcx4)**2 - (2.0_RKIND*yDistance/tempRestoreLcy4)**2 )
+                endif
                endif
               
-               ! Interior restoring at localized region 1
-               if (tempRestoreFlag1) then
-                  xDistance = (currentLon - regionCenterLon1) * sphereRadius*cos(currentLat)
-                  yDistance = (currentLat - regionCenterLat1) * sphereRadius
-                  if (abs(yDistance) <= tempRestoreLcy1 .and. abs(xDistance) <= tempRestoreLcx1) then
-                     idx = index_temperature
-                     activeTracersInteriorRestoringValue(idx,k,iCell) = TempRestoreT1
-                  
-                     idx = index_temperature
-                     activeTracersInteriorRestoringRate(idx, k,iCell) = &
-                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx1)**2 - (2.0_RKIND*yDistance/tempRestoreLcy1)**2 )
-                  endif
-               endif
- 
-               ! Interior restoring at localized region 2
-               if (tempRestoreFlag2) then
-                  xDistance = (currentLon - regionCenterLon2) * sphereRadius*cos(currentLat)
-                  yDistance = (currentLat - regionCenterLat2) * sphereRadius
-                  if (abs(yDistance) <= tempRestoreLcy2 .and. abs(xDistance) <= tempRestoreLcx2) then
-                     idx = index_temperature
-                     activeTracersInteriorRestoringValue(idx,k,iCell) = TempRestoreT2
-                     
-                     idx = index_temperature
-                     activeTracersInteriorRestoringRate(idx, k,iCell) = &
-                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx2)**2 - (2.0_RKIND*yDistance/tempRestoreLcy2)**2 )
-                  endif
-               endif
-               
-               ! Interior restoring at localized region 3
-               if (tempRestoreFlag3) then
-                  xDistance = (currentLon - regionCenterLon3) * sphereRadius*cos(currentLat)
-                  yDistance = (currentLat - regionCenterLat3) * sphereRadius
-                  if (abs(yDistance) <= tempRestoreLcy3 .and. abs(xDistance) <= tempRestoreLcx3) then
-                     idx = index_temperature
-                     activeTracersInteriorRestoringValue(idx,k,iCell) = TempRestoreT3
-                     
-                     idx = index_temperature
-                     activeTracersInteriorRestoringRate(idx, k,iCell) = &
-                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx3)**2 - (2.0_RKIND*yDistance/tempRestoreLcy3)**2 )
-                  endif
-               endif
-               
-               ! Interior restoring at localized region 4
-               if (tempRestoreFlag4) then
-                  xDistance = (currentLon - regionCenterLon4) * sphereRadius*cos(currentLat)
-                  yDistance = (currentLat - regionCenterLat4) * sphereRadius
-                  if (abs(yDistance) <= tempRestoreLcy4 .and. abs(xDistance) <= tempRestoreLcx4) then
-                     idx = index_temperature
-                     activeTracersInteriorRestoringValue(idx,k,iCell) = TempRestoreT4
-                     
-                     idx = index_temperature
-                     activeTracersInteriorRestoringRate(idx, k,iCell) = &
-                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx4)**2 - (2.0_RKIND*yDistance/tempRestoreLcy4)**2 )
-                  endif
-               endif
-               
-               ! Salinity 
-               idx = index_salinity
-               activeTracersInteriorRestoringValue(idx,k,iCell) = salinity0
-               idx = index_salinity
-               activeTracersInteriorRestoringRate(idx, k,iCell) = 0.0_RKIND
- 
-            enddo ! k = 1, nVertLevels, interior restoring loop
+              ! Salinity 
+              idx = index_salinity
+              activeTracersInteriorRestoringValue(idx, k, iCell) = salinity0
+              idx = index_salinity
+              activeTracersInteriorRestoringRate(idx, k, iCell) = 0.0_RKIND
+
+           enddo ! k = 1, nVertLevels, interior restoring loop
+          
            
-           
-        end do ! iCell = 1, nCellsSolve
+        end do ! iCell = 1, nCells
+
+      write(stderrUnit, *) 'iso 6'
 
         ! juan: add code here for surface restoring. can be toggled on/off at runtime
         ! fill activeTracersSurfaceRestoringValue with correct values
@@ -805,7 +816,7 @@ contains
         
         ! Set wind stress
         widthWindASFRad = 1.1*contSlopeWidthRad
-        do iCell = 1, nCellsSolve
+        do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
            windStress = 0.0
@@ -873,122 +884,6 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_validate_iso!}}}
-
-!***********************************************************************
-!
-!  routine get_thickness_array
-!
-!> \brief   Define the thickness array
-!> \author  Juan A. Saenz
-!> \date    01/27/2015
-!> \details 
-!>  This routine sets up a vertical grid with 100 levels.
-!>  It uses dz output from todd's cvt_1d code with hashtag: f0c6bda0
-!
-!-----------------------------------------------------------------------
-
-   subroutine get_thickness_array(dzarray)!{{{
-
-      real (kind=RKIND), dimension(100) :: dzarray
-
-      ! --- the parameters define below result in the folloing
-      ! --------  dz(1)=1.51 m
-      ! --------  dz(nVertLevels)=221.1 m
-      ! --------  25 layers in the top 100 m
-      ! --------  61 layers in the top 1000 m
-      integer, parameter :: nVertLevels=100
-      real*8, parameter :: stretch1=1.0770
-      real*8, parameter :: stretch2=1.0275
-      real*8, parameter :: dzTopLayer=1.2
-      real*8, parameter :: maxBottomDepth=4000.0
-
-      real*8  totalDepth, stretch
-      real*8, dimension(nVertLevels) :: dz, zMid, zTop
-
-      integer :: k
-
-      ! compute profile starting at top and stretch dz as we move down
-      dz(1) = dzTopLayer
-      zMid(1) = -dz(1)/2.0;
-      zTop(1) = 0.0
-      totalDepth = dz(1)
-      do k=2,nVertLevels
-         stretch = stretch1 + (stretch2-stretch1)*k/nVertLevels
-         dz(k)=stretch*dz(k-1);
-         zMid(k) = zMid(k-1) - (dz(k-1)+dz(k))/2.0;
-         zTop(k) = zTop(k-1) - dz(k-1);
-         totalDepth = totalDepth + dz(k)
-      enddo
-
-      ! normalize to that positions span 0 to 1
-      dz(:) = dz(:) / totalDepth
-      zMid(:) = zMid(:) / totalDepth
-      zTop(:) = zTop(:) / totalDepth
-
-      dzarray = dz
-      
-      ! force the sum to be equal to 1
-      dzarray(100) = 1.0-sum(dzarray(1:99)) - 1.0E-10
-
-   end subroutine get_thickness_array!}}}
-
-
-!***********************************************************************
-!
-!  routine set_layerBottomDepth_from_layerThickness
-!
-!> \brief   Set layer bottom depths using layerThickness 
-!> \author  Juan A. Saenz
-!> \date    01/27/2015
-!> \details 
-!>  This routine sets layer bottom depths using layerThickness.
-!>  It can be used to define refBottomDepth.
-!
-!-----------------------------------------------------------------------
-
-   subroutine set_layerBottomDepth_from_layerThickness(nVertLevels, dzarray, layerBottomDepth)!{{{
-
-      integer, intent(in) :: nVertLevels
-      real (kind=RKIND), dimension(:), intent(in) :: dzarray
-      real (kind=RKIND), dimension(:), intent(out) :: layerBottomDepth
-
-      integer :: k
-
-      layerBottomDepth(1) = dzarray(1)
-      do k = 2, nVertLevels
-        layerBottomDepth(k) = layerBottomDepth(k-1) + dzarray(k) 
-      end do
-   
-   end subroutine set_layerBottomDepth_from_layerThickness!}}}
-
-   
-!***********************************************************************
-!
-!  routine set_zMid_from_layerThickness
-!
-!> \brief   Set zMid using layerThickness 
-!> \author  Juan A. Saenz
-!> \date    01/27/2015
-!> \details 
-!>  This routine sets zMid, the depth at middle of layers, using layerThickness.
-!>  It can be used to define refZMid
-!
-!-----------------------------------------------------------------------
-
-   subroutine set_zMid_from_layerThickness(nVertLevels, dzarray, zMid)!{{{
-
-      integer, intent(in) :: nVertLevels
-      real (kind=RKIND), dimension(:), intent(in) :: dzarray
-      real (kind=RKIND), dimension(:), intent(out) :: zMid
-
-      integer :: k
-
-      zMid(1) = - dzarray(1) / 2.0
-      do k = 2, nVertLevels
-        zMid(k) = zMid(k-1) - (dzarray(k-1) + dzarray(k) ) / 2.0
-      end do
-   
-   end subroutine set_zMid_from_layerThickness!}}}
 
 end module ocn_init_iso
 
