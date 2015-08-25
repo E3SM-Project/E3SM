@@ -1325,6 +1325,7 @@ sub writeEnvTestXML
     my $config = ConfigCase->new("");
     $config->add_config_variables($file, $srcroot, $cimeroot);
 
+    &Debug( "writeEnvTestXML");
     &Debug( eval {Dumper $test} );
 
     $config->set('TESTCASE'   , $test->{'testname'});
@@ -1536,6 +1537,13 @@ sub writeTestListXML
   elsif(defined $opts{'compiler'})
   {
       $compiler = $opts{'compiler'};
+  }
+  elsif(! defined $opts{'xml_compiler'} && ! defined $opts{'compiler'})
+  {
+     &Debug("compiler and xml_compiler not defined in \$opts");
+	 my $firsttest = $testspec[0];
+	 &Debug( eval { Dumper $firsttest} );
+	 $compiler = $$firsttest{'compiler'};
   }
 
   if(defined $opts{'xml_mach'})
@@ -1855,6 +1863,8 @@ sub doonetest{
     my $testhash;
 
     $testhash = ParseTestName($testname);
+    Debug("testhash after ParseTestName: ");
+	Debug( eval {Dumper $testhash});
 
     checkTestCase($testhash);
     documentTestCase($testhash);

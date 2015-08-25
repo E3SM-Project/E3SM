@@ -103,17 +103,21 @@ contains
   !  megan_factors_file = '$datapath/megan_emis_factors.nc'
   ! /
   !-------------------------------------------------------------------------
-  subroutine shr_megan_readnl( NLFileName, megan_fields )
+  subroutine shr_megan_readnl( NLFileName, ID, megan_fields )
 
     use shr_nl_mod,     only : shr_nl_find_group_name
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
+    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs
+    use shr_mpi_mod,    only : shr_mpi_bcast
 
     character(len=*), intent(in)  :: NLFileName
+    integer         , intent(in)  :: ID          ! seq_comm ID
     character(len=*), intent(out) :: megan_fields	
 
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
+    integer :: mpicom           ! MPI communicator
 
     integer, parameter :: maxspc = 100
 
@@ -125,36 +129,42 @@ contains
 
     namelist /megan_emis_nl/ megan_specifier, megan_factors_file, megan_mapped_emisfctrs
 
-    inquire( file=trim(NLFileName), exist=exists)
+    call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
+       inquire( file=trim(NLFileName), exist=exists)
 
-    if ( exists ) then
+       if ( exists ) then
 
-       unitn = shr_file_getUnit()
-       open( unitn, file=trim(NLFilename), status='old' )
-       if ( loglev > 0 ) write(logunit,F00) &
-            'Read in megan_emis_readnl namelist from: ', trim(NLFilename)
+          unitn = shr_file_getUnit()
+          open( unitn, file=trim(NLFilename), status='old' )
+          if ( loglev > 0 ) write(logunit,F00) &
+               'Read in megan_emis_readnl namelist from: ', trim(NLFilename)
 
-       call shr_nl_find_group_name(unitn, 'megan_emis_nl', status=ierr)
-       ! If ierr /= 0, no namelist present.
+          call shr_nl_find_group_name(unitn, 'megan_emis_nl', status=ierr)
+          ! If ierr /= 0, no namelist present.
 
-       if (ierr == 0) then
-          read(unitn, megan_emis_nl, iostat=ierr)
+          if (ierr == 0) then
+             read(unitn, megan_emis_nl, iostat=ierr)
 
-          if (ierr > 0) then
-             call shr_sys_abort( 'problem on read of megan_emis_nl namelist in shr_megan_readnl' )
+             if (ierr > 0) then
+                call shr_sys_abort( 'problem on read of megan_emis_nl namelist in shr_megan_readnl' )
+             endif
           endif
-       endif
 
-       shr_megan_factors_file = megan_factors_file
-       shr_megan_mapped_emisfctrs = megan_mapped_emisfctrs
+          close( unitn )
+          call shr_file_freeUnit( unitn )
 
-       ! parse the namelist info and initialize the module data
-       call shr_megan_init( megan_specifier, megan_fields )
-
-       close( unitn )
-       call shr_file_freeUnit( unitn )
-
+       end if
     end if
+    call shr_mpi_bcast( megan_specifier, mpicom )
+    call shr_mpi_bcast( megan_factors_file, mpicom )
+    call shr_mpi_bcast( megan_mapped_emisfctrs, mpicom )
+
+    shr_megan_factors_file = megan_factors_file
+    shr_megan_mapped_emisfctrs = megan_mapped_emisfctrs
+
+    ! parse the namelist info and initialize the module data
+    call shr_megan_init( megan_specifier, megan_fields )
 
   end subroutine shr_megan_readnl
 

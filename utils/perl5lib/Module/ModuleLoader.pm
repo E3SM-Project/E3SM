@@ -54,13 +54,13 @@ sub loadModules()
 	my %oldenv = %ENV;
 	my $envfile = $self->{'caseroot'} . "/env_mach_specific";
 	my $cshenv = "env ";
+
 	$cshenv .= "COMPILER=". $self->{'compiler'} . " " ;
 	$cshenv .= "MPILIB=". $self->{'mpilib'} . " " ;
 	$cshenv .= "DEBUG=". $self->{'debug'} . " " ;
 	$cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
 	$cshenv .= "PERL=TRUE ";
-	#my $cmd = $cshenv . " " . $envfile;
-	#my $cmd = $cshenv . " " . $envfile . " && printenv";
+
 	my $cmd = $cshenv . " " . $envfile ;
 	#print "running command $cmd\n";
 	my @output;

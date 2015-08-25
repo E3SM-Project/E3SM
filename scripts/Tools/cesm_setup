@@ -7,7 +7,6 @@
 use strict;
 use Cwd;
 use English;
-use Cwd qw( getcwd abs_path chdir);
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
@@ -275,21 +274,11 @@ if (! $clean ) {
 	print "Creating user_nl_xxx files for components and cpl$eol";
     }
     my @models = qw( ATM LND ICE OCN GLC ROF WAV );
-    my @multi_support = qw(cam datm clm dlnd cice dice pop docn rtm drof cism ww3);
     # loop over models
     foreach my $model (@models) {
 	# what is actual component associated with each model
 	my $comp = $xmlvars{"COMP_${model}"};
-
-	# loop over components 
-	foreach my $comp_multi (@multi_support) {
-	    # determine if component is one that has multi-instance support and 
-	    # if have multi-instance support - then create appropriate user_nl_fiels
-	    if ($comp eq $comp_multi) {
-		_build_usernl_files($caseroot, $cimeroot, $model, $comp);
-		last;
-	    }
-	}
+	_build_usernl_files($caseroot, $cimeroot, $model, $comp);
 	if ($comp eq "cism")  {
 	    my $sysmod = "$caseroot/Buildconf/cism.template $caseroot";
 	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
@@ -390,7 +379,6 @@ if ($clean) {
 sub _build_usernl_files {
     # Create user_nl_xxx files
     my ($caseroot, $cimeroot, $model, $comp) = @_;
-
 
     my $model = uc($model);
     my $dir = `./xmlquery CONFIG_${model}_DIR -value`;
