@@ -1129,7 +1129,7 @@ contains
     call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
 
     PETSC_COMM_SELF  = MPI_COMM_SELF
-    PETSC_COMM_WORLD = MPI_COMM_WORLD
+    PETSC_COMM_WORLD = mpicom
 
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
