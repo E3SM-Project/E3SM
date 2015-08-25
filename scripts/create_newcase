@@ -1074,7 +1074,7 @@ if( -e "$scriptsroot/Tools/cesm_postbuild" ) {
   $sysmod = "cp $scriptsroot/Tools/cesm_postbuild $caseroot/Tools/cesm_postbuild";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }else{
-  $sysmod = "cp $scriptsroot/Tools/cesm_postbuild.noop $caseroot/Tools/cesm_postbuildn";
+  $sysmod = "cp $scriptsroot/Tools/cesm_postbuild.noop $caseroot/Tools/cesm_postbuild";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
