@@ -1,15 +1,18 @@
 #!/usr/bin/perl 
 use strict;
 
-my $netcdf_inc = "$ENV{NETCDF}/include/netcdf.h";
-my $pnetcdf_inc = "$ENV{PNETCDF}/include/pnetcdf.h";
+my $netcdf_incdir = $ARGV[0];
+my $pnetcdf_incdir = $ARGV[1];
+
+my $netcdf_inc = "$netcdf_incdir/netcdf.h";
+my $pnetcdf_inc = "$pnetcdf_incdir/pnetcdf.h";
 
 my $functions;
 
 my $typemap = {text=>"MPI_CHAR", short=>"MPI_SHORT", uchar=>"MPI_UNSIGNED_CHAR",
-                             schar =>"MPI_CHAR", float=>"MPI_FLOAT", ushort=>"MPI_UNSIGNED_SHORT",
-                             ulonglong=>"MPI_UNSIGNED_LONG_LONG",longlong=>"MPI_LONG_LONG",
-                             double=>"MPI_DOUBLE",uint=>"MPI_UNSIGNED",int=>"MPI_INT",long=>"MPI_LONG"};
+               schar =>"MPI_CHAR", float=>"MPI_FLOAT", ushort=>"MPI_UNSIGNED_SHORT",
+               ulonglong=>"MPI_UNSIGNED_LONG_LONG",longlong=>"MPI_LONG_LONG",
+               double=>"MPI_DOUBLE",uint=>"MPI_UNSIGNED",int=>"MPI_INT",long=>"MPI_LONG"};
 
 
 open(PF,$pnetcdf_inc) or die "Could not open $pnetcdf_inc";
@@ -175,9 +178,10 @@ close(F);
 open(F,">pio_get_nc.c");
 print F "#include <pio.h>
 #include <pio_internal.h>\n\n";
-  open(T,"pio_c_get_template.c") or die "Could not open file pio_c_get_template.c";
-  my @template = <T>;
-  close(T);
+
+open(T,"pio_c_get_template.c") or die "Could not open file pio_c_get_template.c";
+my @template = <T>;
+close(T);
 
 foreach my $func (keys %{$functions}){
   next unless($func=~/get_var/);
