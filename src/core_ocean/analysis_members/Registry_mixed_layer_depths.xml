@@ -101,7 +101,9 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/> 
-			<var name="thresholdMLD"/> 
+	                <var name="latCell"/>
+                        <var name="lonCell"/>
+          		<var name="thresholdMLD"/> 
 			<var name="gradientMLD"/> 
 		</stream>
 	</streams>

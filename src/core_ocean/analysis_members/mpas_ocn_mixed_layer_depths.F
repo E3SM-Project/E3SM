@@ -186,8 +186,9 @@ contains
       real (kind=RKIND), pointer :: refPress
       real (kind=RKIND), allocatable, dimension(:,:) :: gradientBins, thresholdBins
       real (kind=RKIND), allocatable, dimension(:,:) :: densityGradient, temperatureGradient
-      real (kind=RKIND) :: dTempThres, dDenThres, dTempGrad, dDenGrad
-      real (kind=RKIND) :: dz,temp_ref_lev, den_ref_lev, dV, dVm1, dVp1
+      real (kind=RKIND) :: mldTemp,dTempThres, dDenThres, dTempGrad, dDenGrad
+      real (kind=RKIND) :: dz,temp_ref_lev, den_ref_lev, dV, dVm1, dVp1, localVals(6)
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
       err = 0
 
       dminfo = domain % dminfo
@@ -236,6 +237,8 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
+         call mpas_pool_get_array(meshPool, 'latCell', latCell)
+         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
          if(thresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'thresholdMLD',thresholdMLD)
@@ -257,37 +260,50 @@ contains
 
                do k=1, maxLevelCell(iCell)
                   if(pressure(k+1,iCell) > refPress) then
-                     call interp_bw_levels(tracers(index_temperature,k,iCell),tracers(index_temperature,k+1,iCell), &
-                                   pressure(k,iCell),pressure(k+1,iCell),refPress,interp_local,                &
-                                   pressure(k-1,iCell),tracers(index_temperature,k-1,iCell),temp_ref_lev)
+                     localvals(2:3)=tracers(index_temperature,k:k+1,iCell)
+                     localvals(5:6)=pressure(k:k+1,iCell)
+                     
+                     call interp_bw_levels(localVals(2),localVals(3), &
+                                   localVals(5),localVals(6),refPress,interp_local,                &
+                                   temp_ref_lev)
 
-                     call interp_bw_levels(potentialDensity(k,iCell),potentialDensity(k+1,iCell), &
-                                   pressure(k,iCell),pressure(k+1,iCell),refPress,interp_local,                &
-                                   pressure(k-1,iCell),potentialDensity(k-1,iCell),den_ref_lev) 
+                     localVals(2:3)=potentialDensity(k:k+1,iCell)
+                     call interp_bw_levels(localVals(2),localVals(3), &
+                                   localVals(5),localVals(6),refPress,interp_local,                &
+                                   den_ref_lev) 
                     
-                     refIndex = k+1
+                     refIndex = k
                      exit
                    endif
                enddo
 
+               
                do i=1,nThresholdBins
                   do k=refIndex,maxLevelCell(iCell)
   
-                    if( abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. thresholdBins(1,i)) then
+                    if(.not. found_temp_mld .and. abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. thresholdBins(1,i)) then
                         dVp1 = abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev)
                         dV   = abs(tracers(index_temperature,k  ,iCell) - temp_ref_lev)
                         dVm1 = abs(tracers(index_temperature,k-1,iCell) - temp_ref_lev)
-                        call interp_bw_levels(zMid(k,iCell),zMid(k+1,iCell), dV, dVp1, thresholdBins(1,i),     &
-                                   interp_local, dVm1, zMid(k-1,iCell), thresholdMLD(1,i,iCell))
+                        localVals(1:3)=zMid(k-1:k+1,iCell)
+                        call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, thresholdBins(1,i),     &
+                                   interp_local, mldTemp)!,dVm1, localVals(1))
+                        mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
+                        thresholdMLD(1,i,iCell)=min(mldTemp,zMid(k,iCell)) !MLD should be deeper than zMid(k)
                         found_temp_mld = .true.
                      endif
 
-                     if( abs(potentialDensity(k+1,iCell) - den_ref_lev) .ge. thresholdBins(2,i)) then
+                     if( .not. found_den_mld .and. abs(potentialDensity(k,iCell) - den_ref_lev) .ge. thresholdBins(2,i)) then
                         dVp1 = abs(potentialDensity(k+1,iCell) - den_ref_lev)
                         dV   = abs(potentialDensity(k  ,iCell) - den_ref_lev)
                         dVm1 = abs(potentialDensity(k-1,iCell) - den_ref_lev)
-                        call interp_bw_levels(zMid(k,iCell),zMid(k+1,iCell), dV, dVp1, thresholdBins(2,i),     &
-                                   interp_local, dVm1, zMid(k-1,iCell), thresholdMLD(2,i,iCell))
+                        localVals(1:3)=zMid(k-1:k+1,iCell)
+                        call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, thresholdBins(2,i),     &
+                                   interp_local, mldTemp)!,dVm1,localVals(1))
+
+                        mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
+                        thresholdMLD(2,i,iCell)=min(mldTemp,zMid(k,iCell)) !MLD should be deeper than zMid(k)
+
                         found_den_mld = .true.
                      endif
           
@@ -299,6 +315,7 @@ contains
                   if(.not. found_temp_mld) thresholdMLD(1,i,iCell) = zMid(maxLevelCell(iCell),iCell)
                 enddo !i=1,nThresholdBins
              enddo !iCell
+
          endif !if thresholdflag
 
 ! Compute the mixed layer depth based on a gradient threshold in temperature and density
@@ -344,14 +361,19 @@ contains
                do i=1, nGradientBins
 
                do k=2, maxLevelCell(iCell)
-                  if(densityGradient(1,k+1) .ge. gradientBins(2,i)) then
+                  if(.not. found_den_mld .and. densityGradient(1,k+1) .ge. gradientBins(2,i)) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),densityGradient(k,1),densityGradient(k+1,1),           &
-                           gradientBins(2,i), interp_local,densityGradient(k-1,1),zTop(k-1,iCell), gradientMLD(2,i,iCell))                   
+                           gradientBins(2,i), interp_local,mldTemp,densityGradient(k-1,1),zTop(k-1,iCell))                   
+                        mldTemp=max(mldTemp,zTop(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
+                        gradientMLD(2,i,iCell)=min(mldTemp,zTop(k,iCell)) !MLD should be deeper than zMid(k)                    
                     found_den_mld=.true.
                   endif
-                  if(temperatureGradient(k+1,1) .ge. gradientBins(1,i)) then
+                  if(.not. found_temp_mld .and. temperatureGradient(k+1,1) .ge. gradientBins(1,i)) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),temperatureGradient(k,1),temperatureGradient(k+1,1),          &
-                           gradientBins(1,i), interp_local,temperatureGradient(k-1,1),zTop(k-1,iCell), gradientMLD(1,i,iCell))
+                           gradientBins(1,i), interp_local,mldTemp,temperatureGradient(k-1,1),zTop(k-1,iCell))
+                        mldTemp=max(mldTemp,zTop(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)                           
+                        gradientMLD(1,i,iCell)=min(mldTemp,zTop(k,iCell)) !MLD should be deeper than zMid(k)  
+
                     found_temp_mld=.true.
                   endif
 
@@ -408,7 +430,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine interp_bw_levels(y0,y1,x0,x1,xT,interp_f,xm1,ym1,yT)!{{{
+   subroutine interp_bw_levels(y0,y1,x0,x1,xT,interp_f,yT,xm1,ym1)!{{{
 
    integer,intent(in) :: interp_f  ! linear, quadratic, or spline
    real(kind=RKIND),intent(in)  :: y0,y1,x0,x1,xT
