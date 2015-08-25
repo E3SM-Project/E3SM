@@ -370,9 +370,9 @@ contains
 
     if (atm_present .and. lnd_present .and. samegrid_al) then
        if (iamroot) write(logunit,F00) ' --- checking atm/land domains ---'
-       call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=maskl)
-       call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=maskl)
-       call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=maskl)
+       call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'lat' , eps=eps_oigrid, mpicom=mpicom_cplid, mask=maskl)
+       call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'lon' , eps=eps_oigrid, mpicom=mpicom_cplid, mask=maskl)
+       call seq_domain_check_grid(atmdom_a%data, lnddom_a%data, 'area', eps=eps_oiarea, mpicom=mpicom_cplid, mask=maskl)
     endif
 
     !------------------------------------------------------------------------------
@@ -381,16 +381,16 @@ contains
 
     if (atm_present .and. ice_present .and. samegrid_ao) then
        if (iamroot) write(logunit,F00) ' --- checking atm/ice domains ---'
-       call seq_domain_check_grid(atmdom_a%data, icedom_a%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=maski)
-       call seq_domain_check_grid(atmdom_a%data, icedom_a%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=maski)
-       call seq_domain_check_grid(atmdom_a%data, icedom_a%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=maski)
+       call seq_domain_check_grid(atmdom_a%data, icedom_a%data, 'lat' , eps=eps_oigrid, mpicom=mpicom_cplid, mask=maski)
+       call seq_domain_check_grid(atmdom_a%data, icedom_a%data, 'lon' , eps=eps_oigrid, mpicom=mpicom_cplid, mask=maski)
+       call seq_domain_check_grid(atmdom_a%data, icedom_a%data, 'area', eps=eps_oiarea, mpicom=mpicom_cplid, mask=maski)
     endif
 
     if (atm_present .and. ocn_present .and. samegrid_ao) then
        if (iamroot) write(logunit,F00) ' --- checking atm/ocn domains ---'
-       call seq_domain_check_grid(atmdom_a%data, ocndom_a%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=masko)
-       call seq_domain_check_grid(atmdom_a%data, ocndom_a%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=masko)
-       call seq_domain_check_grid(atmdom_a%data, ocndom_a%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=masko)
+       call seq_domain_check_grid(atmdom_a%data, ocndom_a%data, 'lat' , eps=eps_oigrid, mpicom=mpicom_cplid, mask=masko)
+       call seq_domain_check_grid(atmdom_a%data, ocndom_a%data, 'lon' , eps=eps_oigrid, mpicom=mpicom_cplid, mask=masko)
+       call seq_domain_check_grid(atmdom_a%data, ocndom_a%data, 'area', eps=eps_oiarea, mpicom=mpicom_cplid, mask=masko)
     endif
 
     !------------------------------------------------------------------------------
