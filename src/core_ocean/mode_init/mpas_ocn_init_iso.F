@@ -240,8 +240,6 @@ contains
 
       iErr = 0
 
-      write(stderrUnit, *) ' iso start 0'
-      
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('iso')) return
       
@@ -342,15 +340,13 @@ contains
         write(stderrUnit, *) 'ERROR: ISO test case can only be defined on a spherical mesh.'
         iErr = 1
         return
+      else
+       write(stderrUnit, *) 'ISO test case using spherical radius of size: ', sphereRadius
       end if
-
-      write(stderrUnit, *) 'iso 1', nVertLevelsP1
 
       ! Define interface locations
       allocate( interfaceLocations( nVertLevelsP1 ) )
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
-
-      write(stderrUnit, *) ' iso 2', interfaceLocations
 
       ! assign config variables
       nVertLevels  = config_iso_vert_levels
@@ -437,8 +433,6 @@ contains
       tempRestoreLcy4 = config_iso_temperature_restore_lcy4
 
 
-      write(stderrUnit, *) 'iso 3'
-
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Setup the vertical grid
       !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -469,9 +463,6 @@ contains
         block_ptr => block_ptr % next
       
       end do
-
-      write(stderrUnit, *) 'iso 4', refZMid
-
 
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Set Topography
@@ -613,8 +604,6 @@ contains
         
         block_ptr => block_ptr % next
       enddo ! done setting topography
-
-      write(stderrUnit, *) 'iso 5', maxval(bottomDepth), maxval(maxLevelCell)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! mark cells for culling
@@ -805,8 +794,6 @@ contains
           
            
         end do ! iCell = 1, nCells
-
-      write(stderrUnit, *) 'iso 6'
 
         ! juan: add code here for surface restoring. can be toggled on/off at runtime
         ! fill activeTracersSurfaceRestoringValue with correct values

@@ -86,8 +86,8 @@ contains
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
       integer :: iCell, k
-      real (kind=RKIND) :: distance, zMid, sphereRadius
-      real (kind=RKIND) :: currentLon, currentLat
+      real (kind=RKIND) :: distance, deltaLon, deltaLat, xDistance, yDistance, zMid, sphereRadius
+      real (kind=RKIND) :: lonCurrent, latCurrent
       real (kind=RKIND) :: deltay, depth, factor, latCenter, lonCenter, windStress
       real (kind=RKIND) :: temperature, salinity
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
@@ -123,15 +123,8 @@ contains
       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
 
-! TDR SOMA variable here
-      ! Define variables for SOMA test case
-      real (kind=RKIND) :: tmpREAL
-      logical :: tmpLOGICAL
-
       iErr = 0
 
-      write(stderrUnit, *) ' soma start 0'
-      
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('soma')) return
       
@@ -152,36 +145,31 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+      sphereRadius = sphere_radius
 
       if(.not. on_a_sphere) then
         write(stderrUnit, *) 'ERROR: SOMA test case can only be defined on a spherical mesh.'
         iErr = 1
         return
+      else
+       write(stderrUnit, *) 'SOMA test case using spherical radius of size: ', sphereRadius
       end if
-
-      write(stderrUnit, *) 'soma 1', nVertLevelsP1
 
       ! Define interface locations
       allocate( interfaceLocations( nVertLevelsP1 ) )
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
 
-      write(stderrUnit, *) ' soma 2', interfaceLocations
-
       ! assign config variables
       nVertLevels  = config_soma_vert_levels
-
-!TDR assign variables here
 
       ! Convert center locations to radians from degrees
       latCenter = config_soma_center_latitude * pii / 180.0
       lonCenter = config_soma_center_longitude * pii / 180.0
 
-      write(stderrUnit, *) 'soma 3'
-
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Setup the vertical grid
       !!!!!!!!!!!!!!!!!!!!!!!!!
-      
+
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -195,27 +183,26 @@ contains
         
         ! Set layerThickness and restingThickness
         do k = 1, nVertLevels
-           layerThickness(k, :) = config_soma_basin_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
+           layerThickness(k, :) = config_soma_bottom_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
            restingThickness(k, :) = layerThickness(k, :)
         end do
 
          ! Set refBottomDepth
          do k = 1, nVertLevels
-            refBottomDepth(k) = config_soma_basin_depth * interfaceLocations(k+1)
-            refZMid(k) = -config_soma_basin_depth * (interfaceLocations(k)+interfaceLocations(k+1))/2.0_RKIND
+            refBottomDepth(k) = config_soma_bottom_depth * interfaceLocations(k+1)
+            refZMid(k) = -config_soma_bottom_depth * (interfaceLocations(k)+interfaceLocations(k+1))/2.0_RKIND
          end do
+
 
         block_ptr => block_ptr % next
       
       end do
 
-      write(stderrUnit, *) 'soma 4', refZMid
-
 
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Set Topography
       !!!!!!!!!!!!!!!!!!!!!!!!!
-      write(*,*) 'setting up topography'
+      write(stderrUnit,*) 'setting up topography'
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -228,20 +215,30 @@ contains
         ! set bottomDepth
         bottomDepth(:) = 0.0_RKIND
         do iCell = 1, nCells
-           currentLon = lonCell(iCell)
-           currentLat = latCell(iCell)
+           lonCurrent = lonCell(iCell)
+           latCurrent = latCell(iCell)
 
-           distance = sqrt( sin(0.5*(latCenter-currentLat))**2 +  &
-                   cos(latCell)*cos(latCenter)*sin(0.5*(lonCenter-currentLon))**2 )
-           distance = 2.0 * sphere_radius * asin(distance)
-           distance = 1.0 - distance**2 / config_soma_domain_width**2
+           sphereRadius = 6371.0*1000.0
+           deltaLon = abs (mod(lonCurrent - lonCenter, 2.0_RKIND*pii))
+           deltaLat = abs (latCurrent - latCenter)
+           xDistance = deltaLon * sphereRadius * cos(latCurrent)
+           yDistance = deltaLat * sphereRadius
+           distance = sqrt( xDistance**2 + yDistance**2 ) 
+           factor = 1.0 - distance**2 / config_soma_domain_width**2
 
-           if(distance > config_soma_shelf_width) then
-              depth = -100.0 - (config_soma_bottom_depth-100.0)/2.0 * (1.0 + tanh(distance/config_soma_phi))
+           write(20,10) iCell, deltaLon, deltaLat, xDistance, yDistance, distance
+           10 format(i6, 6e14.4)
+
+           if(distance < config_soma_domain_width) then
+             if(factor > config_soma_shelf_width) then
+                depth =  100.0 + (config_soma_bottom_depth-100.0)/2.0 * (1.0 + tanh(distance/config_soma_phi))
+             else
+                depth = 100.0
+             endif
+             bottomDepth(iCell) = depth
            else
-              depth = 100.0
+             bottomDepth(iCell) = -1.0_RKIND
            endif
-           bottomDepth(iCell) = -depth
 
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Set maxLevelCell to -1 for cells to be culled
@@ -275,8 +272,6 @@ contains
 
       enddo !  done setting topography
 
-      write(stderrUnit, *) 'soma 5', maxval(bottomDepth), maxval(maxLevelCell)
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! mark cells for culling
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -290,7 +285,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Set forcing boundary conditions and initial conditions
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      write(*,*) 'setting up forcing and boundary conditions'
+      write(stderrUnit,*) 'setting up forcing and boundary conditions'
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -317,8 +312,8 @@ contains
         call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
 
         do iCell = 1, nCells
-           currentLon = lonCell(iCell)
-           currentLat = latCell(iCell)
+           lonCurrent = lonCell(iCell)
+           latCurrent = latCell(iCell)
            
            ! Set initial temperature and salinity
            do k = 1, nVertLevels
@@ -341,14 +336,12 @@ contains
            
         end do ! iCell = 1, nCells
 
-        write(stderrUnit, *) 'soma 6'
-
         ! Set wind stress
         do iCell = 1, nCells
-           currentLon = lonCell(iCell)
-           currentLat = latCell(iCell)
+           lonCurrent = lonCell(iCell)
+           latCurrent = latCell(iCell)
 
-           deltay = sphere_radius * ( currentLat - latCenter * pii / 180.0)
+           deltay =  sphereRadius * ( latCurrent - latCenter ) 
            factor = 1.0 - 0.5 * deltay / config_soma_domain_width
            windstress = factor * 0.1 * exp( -(deltay / config_soma_domain_width)**2 ) &
                  * cos(pii * deltay / config_soma_domain_width)
@@ -361,7 +354,7 @@ contains
         block_ptr => block_ptr % next
       end do
 
-      write(*,*) 'exiting ocn_init_setup_soma'
+      write(stderrUnit,*) 'exiting ocn_init_setup_soma'
    
    !--------------------------------------------------------------------
 
