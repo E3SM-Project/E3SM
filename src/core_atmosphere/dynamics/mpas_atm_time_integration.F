@@ -1282,7 +1282,7 @@ module atm_time_integration
       integer, pointer :: nCellsSolve, nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
-      real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
+      real (kind=RKIND), dimension(:), pointer :: fzm, fzp
       real (kind=RKIND) :: flux
       real (kind=RKIND), dimension(:,:), pointer :: ruAvg, wwAvg
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
@@ -1309,8 +1309,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
@@ -1435,7 +1433,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: rw
       real (kind=RKIND), dimension(:,:), pointer :: rw_save
 
-      real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw, dcEdge, areaCell, cofrz, dvEdge
+      real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw, invDcEdge, invAreaCell, cofrz, dvEdge
 
       real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -1497,9 +1495,9 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
       call mpas_pool_get_array(mesh, 'rdzw', rdzw)
-      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'invDcEdge', invDcEdge)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
 
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
@@ -1575,7 +1573,7 @@ module atm_time_integration
 
             do k=1,nVertLevels
                pgrad =     ((zz_rtheta_pp_old(k,cell2)                    &
-                            -zz_rtheta_pp_old(k,cell1))/dcEdge(iEdge)     &
+                            -zz_rtheta_pp_old(k,cell1)) * invDcEdge(iEdge)     &
                           -zxu(k,iEdge)*(drthetadz(k,cell1)+drthetadz(k,cell2)))/(.5*(zz(k,cell2)+zz(k,cell1)))
                pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
 
@@ -1621,7 +1619,7 @@ module atm_time_integration
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             do k=1,nVertLevels
-               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge)/areaCell(iCell)
+               flux = edgesOnCell_sign(i,iCell)*dts*dvEdge(iEdge)*ru_p(k,iEdge) * invAreaCell(iCell)
                rs(k,iCell) = rs(k,iCell)-flux
                ts(k,iCell) = ts(k,iCell)-flux*0.5*(theta_m(k,cell2)+theta_m(k,cell1))
             end do
@@ -1736,7 +1734,7 @@ module atm_time_integration
                                                     exner, exner_base, rtheta_base, pressure_p,         &
                                                     zz, theta_m, pressure_b, pressure_p_old
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
-      real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
+      real (kind=RKIND), dimension(:), pointer :: fzm, fzp
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -1744,7 +1742,7 @@ module atm_time_integration
 
       integer :: i, iCell, iEdge, k, cell1, cell2
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nEdges, nEdgesSolve
-      real (kind=RKIND) :: rcv, p0, flux
+      real (kind=RKIND) :: invNs, rcv, p0, flux
       real (kind=RKIND), pointer :: cf1, cf2, cf3, coef_3rd_order
 
 
@@ -1788,8 +1786,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
@@ -1814,6 +1810,7 @@ module atm_time_integration
       ! compute new density everywhere so we can compute u from ru.
       ! we will also need it to compute theta_m below
 
+      invNs = 1 / real(ns,RKIND)
       do iCell=cellStart,cellEnd
 
          do k = 1, nVertLevels
@@ -1825,7 +1822,7 @@ module atm_time_integration
          w(1,iCell) = 0.0
 
          do k = 2, nVertLevels
-            wwAvg(k,iCell) = rw_save(k,iCell) + (wwAvg(k,iCell) / real(ns,RKIND))
+            wwAvg(k,iCell) = rw_save(k,iCell) + (wwAvg(k,iCell) * invNs)
             rw(k,iCell) = rw_save(k,iCell) + rw_p(k,iCell)
 
           ! pick up part of diagnosed w from omega - divide by density later
@@ -1871,7 +1868,7 @@ module atm_time_integration
          cell2 = cellsOnEdge(2,iEdge)
 
          do k = 1, nVertLevels
-            ruAvg(k,iEdge) = ru_save(k,iEdge) + (ruAvg(k,iEdge) / real(ns,RKIND))
+            ruAvg(k,iEdge) = ru_save(k,iEdge) + (ruAvg(k,iEdge) * invNs)
             ru(k,iEdge) = ru_save(k,iEdge) + ru_p(k,iEdge)
             u(k,iEdge) = 2.*ru(k,iEdge)/(rho_zz(k,cell1)+rho_zz(k,cell2))
          end do
@@ -1964,7 +1961,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend_save
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, qv_init
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer, dimension(:,:), pointer :: advCellsForEdge, edgesOnCell
@@ -2014,7 +2011,6 @@ module atm_time_integration
 
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
@@ -2114,10 +2110,10 @@ module atm_time_integration
                ! here we add the horizontal flux divergence into the scalar tendency.
                ! note that the scalar tendency is modified.
                do k=1,nVertLevels
-                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)*invAreaCell(iCell)
+                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge) * invAreaCell(iCell)
                   do iScalar=1,num_scalars
                         scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
-                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)*invAreaCell(iCell)
+                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge) * invAreaCell(iCell)
                   end do
                end do
                
@@ -2146,7 +2142,7 @@ module atm_time_integration
                do k=1,nVertLevels
                   do iScalar=1,num_scalars
                         scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
-                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)*invAreaCell(iCell)
+                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge) * invAreaCell(iCell)
                   end do
                end do
                
@@ -2255,7 +2251,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, invAreaCell, qv_init
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, invAreaCell, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
@@ -2323,7 +2319,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
@@ -2784,7 +2779,7 @@ module atm_time_integration
 
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq, iAdvCell
-      real (kind=RKIND) :: flux, workpv
+      real (kind=RKIND) :: invDt, flux, workpv
       real (kind=RKIND) :: edge_sign, pr_scale, r_dc, r_dv, u_mix_scale
 
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
@@ -2792,7 +2787,8 @@ module atm_time_integration
       real (kind=RKIND) :: h_mom_eddy_visc4
       real (kind=RKIND) :: h_theta_eddy_visc4
       real (kind=RKIND) :: u_diffusion
-      real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, areaCell, areaTriangle, meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, &
+                                                   meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
                                                     divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
@@ -2832,9 +2828,11 @@ module atm_time_integration
       real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv
 
       real (kind=RKIND), pointer :: r_earth
+      real (kind=RKIND) :: inv_r_earth
       real (kind=RKIND), dimension(:,:), pointer :: ur_cell, vr_cell
 
-      real (kind=RKIND), dimension( nVertLevels ) :: d_diag, d_off_diag, flux_arr
+      !real (kind=RKIND), parameter :: c_s = 0.125
+      real (kind=RKIND), dimension( nVertLevels+1 ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
 
       real(kind=RKIND), dimension(:,:), pointer :: tend_w_pgf, tend_w_buoy
@@ -2916,8 +2914,10 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
-      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'invDcEdge', invDcEdge)
+      call mpas_pool_get_array(mesh, 'invDvEdge', invDvEdge)
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
+      call mpas_pool_get_array(mesh, 'invAreaTriangle', invAreaTriangle)
       call mpas_pool_get_array(mesh, 'fEdge', fEdge)
       call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
       call mpas_pool_get_array(mesh, 'zz', zz)
@@ -2975,7 +2975,8 @@ module atm_time_integration
 
 
       prandtl_inv = 1.0_RKIND / prandtl
-
+      invDt = 1.0_RKIND / dt
+      inv_r_earth = 1.0_RKIND / r_earth
 
       if (rk_step == 1) then
 
@@ -2999,7 +3000,7 @@ module atm_time_integration
                ! here is the Smagorinsky formulation, 
                ! followed by imposition of an upper bound on the eddy viscosity
                kdiff(k,iCell) = (c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2)
-               kdiff(k,iCell) = min(kdiff(k,iCell),(0.01*config_len_disp**2)/dt)
+               kdiff(k,iCell) = min(kdiff(k,iCell),(0.01*config_len_disp**2) * invDt)
             end do
          end do
 
@@ -3031,7 +3032,7 @@ module atm_time_integration
 
       do iCell = cellStart,cellEnd
 !         qtot(1:nVertLevels,iCell) = 0.0
-         r = 1.0 / areaCell(iCell)
+         r = invAreaCell(iCell)
          do k = 1,nVertLevels
             h_divergence(k,iCell) = h_divergence(k,iCell) * r
 
@@ -3091,7 +3092,7 @@ module atm_time_integration
       if(rk_step == 1) then
 !  first push to tend_u_euler
          do k=1,nVertLevels
-            tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*((pp_fwd(k,cell2)-pp_fwd(k,cell1))/dcEdge(iEdge)   &
+            tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*((pp_fwd(k,cell2)-pp_fwd(k,cell1)) * invDcEdge(iEdge)   &
                                         - zxu(k,iEdge)*(dpdz(k,cell1)+dpdz(k,cell2)) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
          end do
       end if
@@ -3134,7 +3135,7 @@ module atm_time_integration
             ! horizontal ke gradient and vorticity terms in the vector invariant formulation
             ! of the horizontal momentum equation
             tend_u(k,iEdge) = tend_u(k,iEdge) + rho_edge(k,iEdge)* (q(k) - (ke(k,cell2) - ke(k,cell1))       &
-                                                                 / dcEdge(iEdge))                            &
+                                                                 * invDcEdge(iEdge))                            &
                                              - u(k,iEdge)*0.5*(h_divergence(k,cell1)+h_divergence(k,cell2)) 
 #ifdef CURVATURE
             ! curvature terms for the sphere
@@ -3142,7 +3143,7 @@ module atm_time_integration
                              - 2.*omega*cos(angleEdge(iEdge))*cos(latEdge(iEdge))  &
                                *rho_edge(k,iEdge)*.25*(w(k,cell1)+w(k+1,cell1)+w(k,cell2)+w(k+1,cell2))          & 
                              - u(k,iEdge)*.25*(w(k+1,cell1)+w(k,cell1)+w(k,cell2)+w(k+1,cell2))                  &
-                               *rho_edge(k,iEdge)/r_earth
+                               *rho_edge(k,iEdge) * inv_r_earth
 #endif
          end do
       end do
@@ -3173,8 +3174,8 @@ module atm_time_integration
                ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
                !                    only valid for h_mom_eddy_visc2 == constant
                !
-!               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
-!                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge),0.25*dcEdge(iEdge))
+!               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) * invDcEdge(iEdge)  &
+!                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) * min(invDvEdge(iEdge),4*invDcEdge(iEdge))
 !               u_diffusion = rho_edge(k,iEdge)* 0.5*(kdiff(k,cell1)+kdiff(k,cell2)) * u_diffusion
 !               u_diffusion = u_diffusion * meshScalingDel2(iEdge)
 !   
@@ -3193,8 +3194,8 @@ module atm_time_integration
             cell2 = cellsOnEdge(2,iEdge)
             vertex1 = verticesOnEdge(1,iEdge)
             vertex2 = verticesOnEdge(2,iEdge)
-            r_dc = 1./dcEdge(iEdge)
-            r_dv = 1./max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
+            r_dc = invDcEdge(iEdge)
+            r_dv = min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
             do k=1,nVertLevels
 
@@ -3202,10 +3203,10 @@ module atm_time_integration
                ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
                !                    only valid for h_mom_eddy_visc4 == constant
                !
-!               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) / dcEdge(iEdge)  &
-!                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) / max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
+!               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) * invDcEdge(iEdge)  &
+!                              -( vorticity(k,vertex2) - vorticity(k,vertex1) ) * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
-               u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) * r_dc  &
+              u_diffusion =   ( divergence(k,cell2)  - divergence(k,cell1) ) * r_dc  &
                               -( vorticity(k,vertex2) - vorticity(k,vertex1) ) * r_dv
 
                delsq_u(k,iEdge) = delsq_u(k,iEdge) + u_diffusion
@@ -3222,10 +3223,9 @@ module atm_time_integration
          do iVertex=vertexStart,vertexEnd
 !            delsq_circulation(1:nVertLevels,iVertex) = 0.0
             delsq_vorticity(1:nVertLevels,iVertex) = 0.0
-            r = 1.0 / areaTriangle(iVertex)
             do i=1,vertexDegree
                iEdge = edgesOnVertex(i,iVertex)
-               edge_sign = r * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
+               edge_sign = invAreaTriangle(iVertex) * dcEdge(iEdge) * edgesOnVertex_sign(i,iVertex)
                do k=1,nVertLevels
 !                  delsq_circulation(k,iVertex) = delsq_circulation(k,iVertex) + edge_sign * delsq_u(k,iEdge)
                   delsq_vorticity(k,iVertex) = delsq_vorticity(k,iVertex) + edge_sign * delsq_u(k,iEdge)
@@ -3240,7 +3240,7 @@ module atm_time_integration
 
          do iCell=cellStart,cellEnd
             delsq_divergence(1:nVertLevels,iCell) = 0.0
-            r = 1.0 / areaCell(iCell)
+            r = invAreaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                edge_sign = r * dvEdge(iEdge) * edgesOnCell_sign(i,iCell)
@@ -3262,8 +3262,8 @@ module atm_time_integration
             vertex2 = verticesOnEdge(2,iEdge)
 
             u_mix_scale = meshScalingDel4(iEdge)*h_mom_eddy_visc4
-            r_dc = u_mix_scale*config_del4u_div_factor/dcEdge(iEdge)
-            r_dv = u_mix_scale/max(dvEdge(iEdge), 0.25*dcEdge(iEdge))
+            r_dc = u_mix_scale * config_del4u_div_factor * invDcEdge(iEdge)
+            r_dv = u_mix_scale * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
             do k=1,nVertLevels
 
@@ -3275,8 +3275,8 @@ module atm_time_integration
                !    relative to the rotational part.  The stability constraint on the divergence component is much less
                !    stringent than the rotational part, and this flexibility may be useful.
                !
-!               u_diffusion =  rho_edge(k,iEdge) * ( config_del4u_div_factor * ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) / dcEdge(iEdge)  &
-!                           -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) / max(dvEdge(iEdge), 0.25*dcEdge(iEdge)) &
+!               u_diffusion =  rho_edge(k,iEdge) * ( config_del4u_div_factor * ( delsq_divergence(k,cell2)  - delsq_divergence(k,cell1) ) * invDcEdge(iEdge)  &
+!                           -( delsq_vorticity(k,vertex2) - delsq_vorticity(k,vertex1) ) * min(invDvEdge(iEdge), 4*invDcEdge(iEdge)) &
 !                                                  )
 !
 !               u_diffusion = u_diffusion * meshScalingDel4(iEdge)
@@ -3371,10 +3371,10 @@ module atm_time_integration
 !
 !               do k=2,nVertLevels
 !                  w_turb_flux = 0.25 * (kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
-!                                         * (w(k,cell2) - w(k,cell1)) / dcEdge(iEdge)
+!                                         * (w(k,cell2) - w(k,cell1)) * invDcEdge(iEdge)
 !                  w_turb_flux = w_turb_flux * meshScalingDel2(iEdge)
 !                  flux = 0.5 * dvEdge(iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * w_turb_flux
-!                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+!                  tend_w_euler(k,iCell) = tend_w_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux * invAreaCell(iCell)
 !               end do
 !           
 !            end do
@@ -3393,11 +3393,11 @@ module atm_time_integration
 
          do iCell=cellStart,cellEnd
             tend_w_euler(1:nVertLevels+1,iCell) = 0.0
-            r_areaCell = 1./areaCell(iCell)
+            r_areaCell = invAreaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
 
-               edge_sign = 0.5 * r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
+               edge_sign = 0.5 * r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * invDcEdge(iEdge)
 
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -3415,7 +3415,7 @@ module atm_time_integration
          end do
 
 !         do iCell = cellStart,cellEnd
-!            r = 1.0 / areaCell(iCell)
+!            r = invAreaCell(iCell)
 !            do k=2,nVertLevels
 !               delsq_w(k,iCell) = delsq_w(k,iCell) * r
 !            end do
@@ -3425,13 +3425,13 @@ module atm_time_integration
 
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
 !!            tend_theta_euler(1:nVertLevels,iCell) = 0.0  ! why is this here???
-            r_areaCell = h_mom_eddy_visc4/areaCell(iCell)
+            r_areaCell = h_mom_eddy_visc4 * invAreaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
-               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)/dcEdge(iEdge)
+               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell) * invDcEdge(iEdge)
 
                do k=2,nVertLevels
                   tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - edge_sign * (delsq_w(k,cell2) - delsq_w(k,cell1))
@@ -3472,7 +3472,7 @@ module atm_time_integration
       !  Note: next we are also dividing through by the cell area after the horizontal flux divergence
 
          do k=2,nVertLevels
-            tend_w(k,iCell) = tend_w(k,iCell)/areaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))
+            tend_w(k,iCell) = tend_w(k,iCell) * invAreaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))
          end do
 
 !  change from rtheta_pp defined as difference from time t.
@@ -3565,10 +3565,10 @@ module atm_time_integration
 !
 !               do k=1,nVertLevels
 !                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv  &
-!                                        *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+!                                        *(theta_m(k,cell2) - theta_m(k,cell1)) * invDcEdge(iEdge)
 !                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
 !                  flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
-!                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+!                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux * invAreaCell(iCell)
 !               end do
 !
 !            end do
@@ -3578,10 +3578,10 @@ module atm_time_integration
 
          do iCell=cellStart,cellEnd
             tend_theta_euler(1:nVertLevels,iCell) = 0.0
-            r_areaCell = 1./areaCell(iCell)
+            r_areaCell = invAreaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
-               edge_sign = r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) / dcEdge(iEdge)
+               edge_sign = r_areaCell*edgesOnCell_sign(i,iCell) * dvEdge(iEdge) * invDcEdge(iEdge)
                pr_scale = prandtl_inv * meshScalingDel2(iEdge)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -3596,14 +3596,14 @@ module atm_time_integration
                   tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + theta_turb_flux
 
 !!                  theta_turb_flux = 0.5*(kdiff(k,cell1)+kdiff(k,cell2))*prandtl_inv & 
-!!                                        *(theta_m(k,cell2) - theta_m(k,cell1))/dcEdge(iEdge)
+!!                                        *(theta_m(k,cell2) - theta_m(k,cell1)) * invDcEdge(iEdge)
 !!                  theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
 !!                  flux = dvEdge(iEdge) * rho_edge(k,iEdge) * theta_turb_flux
-!!                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux / areaCell(iCell)
+!!                  tend_theta_euler(k,iCell) = tend_theta_euler(k,iCell) + edgesOnCell_sign(i,iCell) * flux * invAreaCell(iCell)
 
                end do
             end do
-!!            r = 1.0 / areaCell(iCell)
+!!            r = invAreaCell(iCell)
 !!            do k=1,nVertLevels
 !!               delsq_theta(k,iCell) = delsq_theta(k,iCell) * r
 !!            end do
@@ -3612,11 +3612,11 @@ module atm_time_integration
 !$OMP BARRIER
 
          do iCell=cellSolveStart,cellSolveEnd    ! Technically updating fewer cells than before...
-            r_areaCell = h_theta_eddy_visc4*prandtl_inv/areaCell(iCell)
+            r_areaCell = h_theta_eddy_visc4 * prandtl_inv * invAreaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
 
                iEdge = edgesOnCell(i,iCell)
-               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)/dcEdge(iEdge)
+               edge_sign = meshScalingDel4(iEdge)*r_areaCell*dvEdge(iEdge)*edgesOnCell_sign(i,iCell)*invDcEdge(iEdge)
 
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -3654,7 +3654,7 @@ module atm_time_integration
          wdtz(nVertLevels+1) = 0.0
 
          do k=1,nVertLevels
-            tend_theta(k,iCell) = tend_theta(k,iCell)/areaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k))
+            tend_theta(k,iCell) = tend_theta(k,iCell)*invAreaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k))
             tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do
@@ -3694,10 +3694,11 @@ module atm_time_integration
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i, j
       real (kind=RKIND) :: h_vertex, r, s
-      real (kind=RKIND) :: invAreaTriangle, r1, r2
+      real (kind=RKIND) :: r1, r2
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
-      real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, dvEdge, dcEdge, areaCell, areaTriangle, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, invAreaTriangle, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, invDvEdge, invDcEdge
       real (kind=RKIND), dimension(:,:), pointer :: vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
                                                     vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
                                                     divergence
@@ -3745,9 +3746,10 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'kiteForCell', kiteForCell)
       call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
       call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'invDcEdge', invDcEdge)
+      call mpas_pool_get_array(mesh, 'invDvEdge', invDvEdge)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'invAreaTriangle', invAreaTriangle)
       call mpas_pool_get_array(mesh, 'fVertex', fVertex)
       call mpas_pool_get_array(mesh, 'fEdge', fEdge)
 
@@ -3791,9 +3793,8 @@ module atm_time_integration
                vorticity(k,iVertex) = vorticity(k,iVertex) + s * u(k,iEdge)
             end do
          end do
-         invAreaTriangle = 1.0_RKIND / areaTriangle(iVertex)
          do k=1,nVertLevels
-            vorticity(k,iVertex) = vorticity(k,iVertex) * invAreaTriangle
+            vorticity(k,iVertex) = vorticity(k,iVertex) * invAreaTriangle(iVertex)
          end do
       end do
 
@@ -3810,7 +3811,7 @@ module atm_time_integration
               divergence(k,iCell) = divergence(k,iCell) + s * u(k,iEdge)
             end do
          end do
-         r = 1.0 / areaCell(iCell)
+         r = invAreaCell(iCell)
          do k = 1,nVertLevels
             divergence(k,iCell) = divergence(k,iCell) * r
          end do
@@ -3848,7 +3849,7 @@ module atm_time_integration
          ! Replace 2.0 with 2 in exponentiation to avoid outside chance that
          ! compiler will actually allow "float raised to float" operation
          do iVertex=vertexStart,vertexEnd
-            r = 0.25 / areaTriangle(iVertex) 
+            r = 0.25 * invAreaTriangle(iVertex) 
             do k=1,nVertLevels
 
 !               ke_vertex(k,iVertex) = (  dcEdge(EdgesOnVertex(1,iVertex))*dvEdge(EdgesOnVertex(1,iVertex))*u(k,EdgesOnVertex(1,iVertex))**2  &
@@ -3875,12 +3876,8 @@ module atm_time_integration
          end do
 
 
-         ! Avoid FP errors caused by a potential division by zero below by 
-         ! initializing the "garbage cell" of areaCell to a non-zero value
-         areaCell(nCells+1) = 1.0
-
          do iCell=cellStart,cellEnd
-            r = 1.0 / areaCell(iCell)
+            r = invAreaCell(iCell)
             do i=1,nEdgesOnCell(iCell)
                iVertex = verticesOnCell(i,iCell)
                j = kiteForCell(i,iCell)
@@ -3953,7 +3950,7 @@ module atm_time_integration
       !
       do iCell=cellStart,cellEnd
          pv_cell(1:nVertLevels,iCell) = 0.0
-         r = 1.0 / areaCell(iCell)
+         r = invAreaCell(iCell)
          do i=1,nEdgesOnCell(iCell)
             iVertex = verticesOnCell(i,iCell)
             j = kiteForCell(i,iCell)
@@ -3982,8 +3979,8 @@ module atm_time_integration
          !
          r = config_apvm_upwinding * dt
          do iEdge = edgeStart,edgeEnd
-            r1 = 1.0_RKIND / dvEdge(iEdge)
-            r2 = 1.0_RKIND / dcEdge(iEdge)
+            r1 = 1.0_RKIND * invDvEdge(iEdge)
+            r2 = 1.0_RKIND * invDcEdge(iEdge)
             do k = 1,nVertLevels
                gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) * r1
                gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) * r2
@@ -4184,6 +4181,8 @@ module atm_time_integration
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
+      real (kind=RKIND) :: inv_dynamics_split
+      
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: ru_save
       real (kind=RKIND), dimension(:,:), pointer :: rw
@@ -4222,6 +4221,8 @@ module atm_time_integration
       call mpas_pool_get_array(state, 'rho_zz', rho_zz_1, 1)
       call mpas_pool_get_array(state, 'rho_zz', rho_zz_2, 2)
 
+      inv_dynamics_split = 1.0_RKIND / real(dynamics_split)
+      
       if (dynamics_substep < dynamics_split) then
 
          ru_save(:,edgeStart:edgeEnd) = ru(:,edgeStart:edgeEnd)
@@ -4245,8 +4246,8 @@ module atm_time_integration
       end if
 
       if (dynamics_substep == dynamics_split) then
-         ruAvg(:,edgeStart:edgeEnd) = ruAvg_split(:,edgeStart:edgeEnd)/real(dynamics_split)
-         wwAvg(:,cellStart:cellEnd) = wwAvg_split(:,cellStart:cellEnd)/real(dynamics_split)
+         ruAvg(:,edgeStart:edgeEnd) = ruAvg_split(:,edgeStart:edgeEnd) * inv_dynamics_split
+         wwAvg(:,cellStart:cellEnd) = wwAvg_split(:,cellStart:cellEnd) * inv_dynamics_split
          rho_zz_1(:,cellStart:cellEnd) = rho_zz_old_split(:,cellStart:cellEnd)
       end if
 

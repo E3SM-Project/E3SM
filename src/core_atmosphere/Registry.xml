@@ -686,11 +686,14 @@
                 <var name="edgesOnEdge"               type="integer"  dimensions="maxEdges2 nEdges"/>
                 <var name="weightsOnEdge"             type="real"     dimensions="maxEdges2 nEdges"/>
                 <var name="dvEdge"                    type="real"     dimensions="nEdges"/>
+                <var name="invDvEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="dcEdge"                    type="real"     dimensions="nEdges"/>
+                <var name="invDcEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="angleEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="areaCell"                  type="real"     dimensions="nCells"/>
                 <var name="invAreaCell"               type="real"     dimensions="nCells"/>
                 <var name="areaTriangle"              type="real"     dimensions="nVertices"/>
+                <var name="invAreaTriangle"           type="real"     dimensions="nVertices"/>
                 <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"/>
                 <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"/>
                 <var name="cellTangentPlane"          type="real"     dimensions="R3 TWO nCells"/>

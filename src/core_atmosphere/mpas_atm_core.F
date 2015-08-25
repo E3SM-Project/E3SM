@@ -229,17 +229,19 @@ module atm_core
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: atm_input
 
-      integer :: iCell
+      integer :: iCell,iEdge,iVertex
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, invDvEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, invDcEdge
+      real (kind=RKIND), dimension(:), pointer :: areaTriangle, invAreaTriangle
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, nEdgesSolve
       integer :: thread
       character(len=StrKIND), pointer :: mminlu
 
       logical, pointer :: config_do_restart, config_do_DAcycling
-
 
       call atm_compute_signs(mesh)
    
@@ -251,15 +253,43 @@ module atm_core
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!! Compute inverses to avoid divides later
+      
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-  
+      
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)      
+      call mpas_pool_get_array(mesh, 'invDvEdge', invDvEdge)
+      call mpas_pool_get_array(mesh, 'invDcEdge', invDcEdge)      
+      
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'invAreaTriangle', invAreaTriangle)
+      
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)      
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+ 
       do iCell=1,nCells 
          invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
       end do
-
-      call mpas_pool_get_dimension(state, 'nEdges', nEdges)
+        
+      do iEdge=1,nEdges 
+         invDvEdge(iEdge) = 1.0_RKIND / dvEdge(iEdge)
+      end do
+      
+      do iEdge=1,nEdges 
+         invDcEdge(iEdge) = 1.0_RKIND / dcEdge(iEdge)
+      end do
+      
+      do iVertex=1,nVertices
+         invAreaTriangle(iVertex) = 1.0_RKIND / areaTriangle(iVertex)
+      end do
+      
+      !!!!! End compute inverses
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
       call mpas_pool_get_dimension(state, 'nVertices', nVertices)
       call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
