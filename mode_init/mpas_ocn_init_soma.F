@@ -68,7 +68,7 @@ contains
 !> \date    02/26/2014
 !> \details 
 !>  This routine sets up the initial conditions for the
-!>  Idealized Southern Ocean configuration.
+!>  SOMA configuration.
 !
 !-----------------------------------------------------------------------
 
@@ -97,6 +97,11 @@ contains
       
       ! SOMA test case run-time configuration parameters
       integer, pointer :: config_soma_vert_levels
+      real, pointer :: config_eos_linear_alpha
+      real, pointer :: config_soma_surface_salinity
+      real, pointer :: config_soma_surface_temperature
+      real, pointer :: config_soma_density_difference_linear
+      real, pointer :: config_soma_thermocline_depth
       real, pointer :: config_soma_center_latitude
       real, pointer :: config_soma_center_longitude
       real, pointer :: config_soma_domain_width
@@ -124,12 +129,19 @@ contains
       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
 
+      ! assume no error
       iErr = 0
 
+      ! test if SOMA is the desired configuration
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('soma')) return
       
       ! get config variables
+      call mpas_pool_get_config(domain % configs, 'config_eos_linear_alpha', config_eos_linear_alpha)
+      call mpas_pool_get_config(domain % configs, 'config_soma_density_difference_linear', config_soma_density_difference_linear)
+      call mpas_pool_get_config(domain % configs, 'config_soma_thermocline_depth', config_soma_thermocline_depth)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temperature', config_soma_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_salinity', config_soma_surface_salinity)
       call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
       call mpas_pool_get_config(domain % configs, 'config_soma_vert_levels', config_soma_vert_levels)
       call mpas_pool_get_config(domain % configs, 'config_soma_center_latitude', config_soma_center_latitude)
@@ -149,6 +161,7 @@ contains
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
       sphereRadius = sphere_radius
 
+      ! error checking
       if(.not. on_a_sphere) then
         write(stderrUnit, *) 'ERROR: SOMA test case can only be defined on a spherical mesh.'
         iErr = 1
@@ -163,15 +176,15 @@ contains
 
       ! assign config variables
       nVertLevels  = config_soma_vert_levels
-
+      nVertLevelsP1 = nVertLevels + 1
+ 
+      ! set center of SOMA domain
       ! Convert center locations to radians from degrees
       latCenter = config_soma_center_latitude * pii / 180.0
       lonCenter = config_soma_center_longitude * pii / 180.0
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Setup the vertical grid
-      !!!!!!!!!!!!!!!!!!!!!!!!!
-
+      ! Setup the vertical grid and layerThickness initial condition
+      write(stderrUnit,*) 'setting up vertical grid and layer thickness'
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -184,6 +197,7 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
         
         ! Set layerThickness and restingThickness
+        ! Uniform layer thickness across lat/lon
         do k = 1, nVertLevels
            layerThickness(k, :) = config_soma_bottom_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
            restingThickness(k, :) = layerThickness(k, :)
@@ -195,16 +209,12 @@ contains
             refZMid(k) = -config_soma_bottom_depth * (interfaceLocations(k)+interfaceLocations(k+1))/2.0_RKIND
          end do
 
-
         block_ptr => block_ptr % next
       
       end do
 
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Set Topography
-      !!!!!!!!!!!!!!!!!!!!!!!!!
-      write(stderrUnit,*) 'setting up topography'
+      ! Set bathymetry
+      write(stderrUnit,*) 'setting up bathymetry'
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -234,7 +244,6 @@ contains
               bottomDepth(iCell) = -1.0_RKIND
            endif
 
-           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Set maxLevelCell to -1 for cells to be culled
            if (bottomDepth(iCell) > 0.0) then
              maxLevelCell(iCell) = 1
@@ -242,7 +251,6 @@ contains
              maxLevelCell(iCell) = -1
            endif
            
-           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Determine maxLevelCell based on bottomDepth and refBottomDepth
            ! Also set botomDepth based on refBottomDepth, since
            ! above bottomDepth was set with continuous analytical functions,
@@ -264,11 +272,9 @@ contains
         
         block_ptr => block_ptr % next
 
-      enddo !  done setting topography
+      enddo !  done setting bathymetry
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! mark cells for culling
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        block_ptr => domain % blocklist
        do while (associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -276,10 +282,8 @@ contains
           block_ptr => block_ptr % next
        end do
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Set forcing boundary conditions and initial conditions
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      write(stderrUnit,*) 'setting up forcing and boundary conditions'
+      ! Set forcing boundary conditions and initial conditions for temperature and salinity
+      write(stderrUnit,*) 'setting up forcing and initial T/S conditions'
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -313,12 +317,14 @@ contains
            do k = 1, nVertLevels
               zMid = refZMid(k)
 
-              distance = config_soma_ref_density - (1.0 - 0.05) * config_soma_density_difference * tanh(zMid / 300.0) &
-                    - 0.05 * config_soma_density_difference * zMid / config_soma_bottom_depth
-              factor = (config_soma_ref_density - distance) / 0.25_RKIND
-              temperature = 20.0 + factor
-              factor = - zMid / 1250.0_RKIND
-              salinity = 34.0 + factor
+              distance = config_soma_ref_density & 
+                  - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference * tanh(zMid / config_soma_thermocline_depth) &
+                  - config_soma_density_difference_linear * config_soma_density_difference * zMid / config_soma_bottom_depth
+              factor = (config_soma_ref_density - distance) / config_eos_linear_alpha
+              temperature = config_soma_surface_temperature + factor
+
+              factor = - zMid / config_soma_bottom_depth
+              salinity = config_soma_surface_salinity + factor
 
               activeTracers(index_temperature, k, iCell) = temperature
               activeTracers(index_salinity, k, iCell) = salinity 
@@ -396,10 +402,6 @@ contains
    end subroutine ocn_init_validate_soma!}}}
 
 end module ocn_init_soma
-
-
-
-
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
