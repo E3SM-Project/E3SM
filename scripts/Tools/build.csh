@@ -11,9 +11,9 @@ echo " .... determining environment variables from env_mach_specific "
 
 source env_mach_specific || exit -1
 
-echo " .... building model executable (calling ./Buildconf/cesm_build.pl) "
+echo " .... building model executable (calling ./Buildconf/build.pl) "
 
-./Buildconf/cesm_build.pl $CASEROOT || exit -1
+./Buildconf/build.pl $CASEROOT || exit -1
 
 echo " .... successfully built model executable"
 
