@@ -243,7 +243,9 @@ contains
         end do
 
         block_ptr % domain % sphere_radius = newRadius
+        sphere_radius = newRadius
         block_ptr => block_ptr % next
+ 
       end do
 
    !--------------------------------------------------------------------

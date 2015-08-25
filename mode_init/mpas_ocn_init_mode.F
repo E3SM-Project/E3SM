@@ -45,6 +45,7 @@ module ocn_init_mode
    use ocn_init_global_realistic
    use ocn_init_cvmix_WSwSBF
    use ocn_init_iso
+   use ocn_init_soma
 
    implicit none
    private
@@ -251,9 +252,10 @@ module ocn_init_mode
       call ocn_init_setup_global_realistic(domain, ierr)
       call ocn_init_setup_cvmix_WSwSBF(domain, ierr)
       call ocn_init_setup_iso(domain, ierr)
-      write(stderrUnit, *) ' return from init_setup'
+      call ocn_init_setup_soma(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
+      write(stderrUnit, *) ' Completed setup of: ' // trim(config_init_configuration)
       call mpas_timer_start('io_write', .false.)
       call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
       call mpas_timer_stop('io_write')
@@ -336,6 +338,8 @@ module ocn_init_mode
       call ocn_init_validate_cvmix_WSwSBF(configPool, packagePool, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_iso(configPool, packagePool, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_soma(configPool, packagePool, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_config_TEMPLATE_validate(configPool, packagePool, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
