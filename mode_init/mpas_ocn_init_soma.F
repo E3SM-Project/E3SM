@@ -101,6 +101,7 @@ contains
       real, pointer :: config_soma_center_longitude
       real, pointer :: config_soma_domain_width
       real, pointer :: config_soma_shelf_width
+      real, pointer :: config_soma_shelf_depth
       real, pointer :: config_soma_bottom_depth
       real, pointer :: config_soma_phi
       real, pointer :: config_soma_ref_density
@@ -135,6 +136,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_soma_center_longitude', config_soma_center_longitude)
       call mpas_pool_get_config(domain % configs, 'config_soma_domain_width', config_soma_domain_width)
       call mpas_pool_get_config(domain % configs, 'config_soma_shelf_width', config_soma_shelf_width)
+      call mpas_pool_get_config(domain % configs, 'config_soma_shelf_depth', config_soma_shelf_depth)
       call mpas_pool_get_config(domain % configs, 'config_soma_bottom_depth', config_soma_bottom_depth)
       call mpas_pool_get_config(domain % configs, 'config_soma_phi', config_soma_phi)
       call mpas_pool_get_config(domain % configs, 'config_soma_ref_density', config_soma_ref_density)
@@ -225,18 +227,11 @@ contains
            yDistance = deltaLat * sphereRadius
            distance = sqrt( xDistance**2 + yDistance**2 ) 
            factor = 1.0 - distance**2 / config_soma_domain_width**2
-           write(20,10) iCell, deltaLon, deltaLat, sphereRadius, distance
-           10 format(i5,4e20.10)
 
-           if(distance < config_soma_domain_width) then
-             if(factor > config_soma_shelf_width) then
-                depth =  100.0 + (config_soma_bottom_depth-100.0)/2.0 * (1.0 + tanh(distance/config_soma_phi))
-             else
-                depth = 100.0
-             endif
-             bottomDepth(iCell) = depth
+           if(factor > config_soma_shelf_width) then
+              bottomDepth(iCell) =  config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0 * (1.0 + tanh(factor/config_soma_phi))
            else
-             bottomDepth(iCell) = -1.0_RKIND
+              bottomDepth(iCell) = -1.0_RKIND
            endif
 
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

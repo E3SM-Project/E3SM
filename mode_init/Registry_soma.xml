@@ -27,6 +27,10 @@
                                         description="Width of the continential shelf."
                                         possible_values="Any real number"
                 />
+                <nml_option name="config_soma_shelf_depth" type="real" default_value="100.0" units="m"
+                                        description="Depth of the continential shelf."
+                                        possible_values="Any real positive number"
+                />
                 <nml_option name="config_soma_ref_density" type="real" default_value="1000.0" units="kg m^{-3}"
                                         description="Reference density for the SOMA test case."
                                         possible_values="Any real number."
