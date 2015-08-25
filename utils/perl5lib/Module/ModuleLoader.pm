@@ -41,7 +41,7 @@ sub new
 	};
 	if(! defined $params{'debug'} )
 	{
-		$self->{debug} = 'FALSE';
+		$self->{debug} = 'false';
 	}
 	$self->{machroot} = Cwd::abs_path($self->{cimeroot}) . "/machines/";
 	my $toolsroot = $self->{'caseroot'} . "/Tools";
@@ -179,6 +179,10 @@ sub moduleInit()
     {
         @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'sh\']");
     }
+	elsif($self->{modulesystemtype} eq 'dotkit')
+	{
+        @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'csh\']");
+	}
     elsif($self->{modulesystemtype} eq 'module')
     {
         @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'perl\']");
@@ -197,6 +201,10 @@ sub moduleInit()
 	if($self->{modulesystemtype} eq 'soft')
 	{
 		@cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'sh\']");
+	}
+	elsif($self->{modulesystemtype} eq 'dotkit')
+	{
+		@cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'csh\']");
 	}
 	elsif($self->{modulesystemtype} eq 'module')
 	{
@@ -251,11 +259,13 @@ sub findModulesFromMachinesDir()
 			my $attrmatch = 0;
 			foreach my $qualifier (qw/ machine compiler mpilib debug /)
 			{
-				if($mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) eq $self->{$qualifier})
+				if($mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) eq lc $self->{$qualifier})
 				{
+					#print '=' x 80, "\n";
 				    #print "qualifier match : $qualifier\n";
 					#print "mod attribute: ", $mod->getAttribute($qualifier), "\n";
 					#print "self qualifier: ", $self->{$qualifier}, "\n";
+					#print '=' x 80, "\n";
 					$attrmatch = 1;
 				}
 				elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) =~ /^\!/)
@@ -265,7 +275,7 @@ sub findModulesFromMachinesDir()
 					#print "negated attr is: $negatedattr\n";
 					#print "mod attr is ", $mod->getAttribute($qualifier), "\n";
 					#print "self attr is ", $self->{$qualifier}, "\n";
-					if($negatedattr ne $self->{$qualifier})
+					if(lc $negatedattr ne lc $self->{$qualifier})
 					{
 						#print "negated attributes do not match, this is a match\n";
 						$attrmatch = 1;
@@ -279,11 +289,13 @@ sub findModulesFromMachinesDir()
 					}
 
 				}
-				elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) ne $self->{$qualifier})
+				elsif( $mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) ne lc $self->{$qualifier})
 				{
+					#print '=' x 80, "\n";
 				    #print "qualifier no match: $qualifier\n";
 					#print "mod attribute: ", $mod->getAttribute($qualifier), "\n";
 					#print "self qualifier: ", $self->{$qualifier}, "\n";
+					#print '=' x 80, "\n";
 					$attrmatch = 0;
 					last;
 				}
@@ -297,6 +309,7 @@ sub findModulesFromMachinesDir()
 					my $action = $child->getAttribute('name');
 					my $actupon = $child->textContent();	
 					my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum };
+					#print Dumper $modhash;
 					push(@modulenodes, $modhash);
 					$seqnum += 1;
 				}
@@ -406,7 +419,7 @@ sub findModules()
 			foreach my $qualifier ( qw/ machine compiler mpilib debug/)
 			{
 				
-				if($mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) eq $self->{$qualifier})
+				if($mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) eq lc $self->{$qualifier})
 				{
 					$attrmatch = 1;
 				}
@@ -432,7 +445,7 @@ sub findModules()
 
                 }
 				# if the qualifier exists as an attribute but doesn't match, skip the entire block. 
-				elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) ne $self->{$qualifier})
+				elsif( $mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) ne lc $self->{$qualifier})
 				{
 					$attrmatch = 0;
 					last;
@@ -468,6 +481,64 @@ sub loadModules()
     {
         $self->loadSoftModules();
     }
+	elsif($self->{modulesystemtype} eq 'dotkit')
+	{
+		$self->loadDotKitModules();
+	}
+}
+
+sub loadDotKitModules()
+{
+	my $self = shift;
+	
+	if(! defined $self->{modulestoload})
+	{
+		$self->findModulesForCase();
+	}
+	$self->findEnvVars();
+	$self->findLimits();
+	
+	if(! defined $self->{cshmodulecode})
+	{
+        $self->getCshModuleCode();
+	}
+	
+	my %oldenv = %ENV;
+	my %newenv;
+	my @output;
+	my $cmd = $self->{cshmodulecode};
+	$cmd .= "\nprintenv";
+	
+	eval { @output = qx($cmd); }; 
+	chomp @output;
+	foreach my $line(@output)
+	{
+		if(length($line) > 0)
+		{
+			chomp $line;
+			my ($key, $value) = split('=', $line, 2);
+			$newenv{$key} = $value;
+		}
+	}
+	
+	my %newbuildenv;
+	
+	foreach my $k(keys %newenv)
+	{
+		if(! defined $oldenv{$k})
+		{
+			$newbuildenv{$k} = $newenv{$k};
+			$ENV{$k} = $newenv{$k};
+		}
+		if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
+		{
+			$newbuildenv{$k} = $newenv{$k};
+			$ENV{$k} = $newenv{$k};
+
+		}
+	}
+	$self->writeCshModuleFile();
+	$self->writeShModuleFile();
 }
 
 sub loadModuleModules()
@@ -649,7 +720,7 @@ my $csh =<<"START";
 #===============================================================================
 # Automatically generated module settings for $self->{machine}
 # DO NOT EDIT THIS FILE DIRECTLY!  Please edit env_mach_specific.xml 
-# in your CASEROOT
+# in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
 
 source $self->{cshinitpath}
@@ -719,20 +790,26 @@ START
 	}
 	
     my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables/env");
-    foreach my $enode(@envnodes)
-    {
-        my $name = $enode->getAttribute('name');
-        my $value = $enode->textContent();
-		$csh .= "setenv $name $value\n";
+    if(@envnodes)
+	{
+        foreach my $enode(@envnodes)
+        {
+            my $name = $enode->getAttribute('name');
+            my $value = $enode->textContent();
+	    	$csh .= "setenv $name $value\n";
+        }
     }
 
 	my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/limits/limit");
-	foreach my $lnode(@limitnodes)
-	{
-		my $name = $lnode->getAttribute('name');
-		my $value = $lnode->textContent();
-		$csh .= "limit $name $value\n";
-	}
+    if(@limitnodes)
+    {
+	    foreach my $lnode(@limitnodes)
+	    {
+	    	my $name = $lnode->getAttribute('name');
+	    	my $value = $lnode->textContent();
+	    	$csh .= "limit $name $value\n";
+	    }
+    }
 	
     $self->{cshmodulecode} = $csh;
 }
@@ -865,21 +942,28 @@ START
 
 
     my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables/env");
-    foreach my $enode(@envnodes)
+    if(@envnodes)
     {
-        my $name = $enode->getAttribute('name');
-        my $value = $enode->textContent();
-        $sh .= "export $name=$value\n";
+        foreach my $enode(@envnodes)
+        {
+            my $name = $enode->getAttribute('name');
+            my $value = $enode->textContent();
+            $sh .= "export $name=$value\n";
+        }
     }
 
     my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/limits/limit");
-    foreach my $lnode(@limitnodes)
+    if(@limitnodes)
     {
-        my $name = $lnode->getAttribute('name');
-        my $value = $lnode->textContent();
-		my $shname = $cshtosh{$name};
-        $sh .= "ulimit $shname $value\n";
-    }
+        foreach my $lnode(@limitnodes)
+        {
+            my $name = $lnode->getAttribute('name');
+            my $value = $lnode->textContent();
+            print "name: $name, value: $value\n";
+	    	my $shname = $cshtosh{$name};
+            $sh .= "ulimit $shname $value\n";
+        }
+     }
     $self->{shmodulecode} = $sh;
 }
 
