@@ -218,16 +218,15 @@ contains
            lonCurrent = lonCell(iCell)
            latCurrent = latCell(iCell)
 
-           sphereRadius = 6371.0*1000.0
-           deltaLon = abs (mod(lonCurrent - lonCenter, 2.0_RKIND*pii))
-           deltaLat = abs (latCurrent - latCenter)
+           deltaLon = abs(lonCurrent - lonCenter)
+           if (deltaLon .gt. pii) deltaLon = deltaLon - 2.0_RKIND*pii
+           deltaLat = latCurrent - latCenter
            xDistance = deltaLon * sphereRadius * cos(latCurrent)
            yDistance = deltaLat * sphereRadius
            distance = sqrt( xDistance**2 + yDistance**2 ) 
            factor = 1.0 - distance**2 / config_soma_domain_width**2
-
-           write(20,10) iCell, deltaLon, deltaLat, xDistance, yDistance, distance
-           10 format(i6, 6e14.4)
+           write(20,10) iCell, deltaLon, deltaLat, sphereRadius, distance
+           10 format(i5,4e20.10)
 
            if(distance < config_soma_domain_width) then
              if(factor > config_soma_shelf_width) then

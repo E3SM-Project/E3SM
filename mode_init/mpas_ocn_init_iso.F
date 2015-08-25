@@ -798,8 +798,9 @@ contains
         ! juan: add code here for surface restoring. can be toggled on/off at runtime
         ! fill activeTracersSurfaceRestoringValue with correct values
         ! fill activeTracersPistonVelocity with correct values
-        activeTracersSurfaceRestoringValue(:,:) = 0.0_RKIND
-        activeTracersPistonVelocity(:,:) = 0.0_RKIND
+        activeTracersSurfaceRestoringValue(index_temperature,:) = activeTracers(index_temperature, 1, :)
+        activeTracersSurfaceRestoringValue(index_salinity,:) = activeTracers(index_salinity, 1, :)
+        activeTracersPistonVelocity(:,:) = 0.0
         
         ! Set wind stress
         widthWindASFRad = 1.1*contSlopeWidthRad
