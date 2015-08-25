@@ -143,6 +143,7 @@ contains
       real (kind=RKIND), pointer :: config_iso_heat_flux_lat_ss
       real (kind=RKIND), pointer :: config_iso_heat_flux_lat_sm
       real (kind=RKIND), pointer :: config_iso_heat_flux_lat_mn
+      real (kind=RKIND), pointer :: config_iso_surface_temp_piston_vel
       real (kind=RKIND), pointer :: config_iso_initial_temp_t1
       real (kind=RKIND), pointer :: config_iso_initial_temp_t2
       real (kind=RKIND), pointer :: config_iso_initial_temp_h0
@@ -167,6 +168,7 @@ contains
       real (kind=RKIND), pointer :: config_iso_temperature_sponge_t1
       real (kind=RKIND), pointer :: config_iso_temperature_sponge_h1
       real (kind=RKIND), pointer :: config_iso_temperature_sponge_l1 
+      real (kind=RKIND), pointer :: config_iso_temperature_sponge_tau1 
       
       logical, pointer :: config_iso_temperature_restore_region1_flag
       real (kind=RKIND), pointer :: config_iso_temperature_restore_t1
@@ -221,14 +223,14 @@ contains
       real (kind=RKIND) :: salinity0
       real (kind=RKIND) :: windStressMax, windASF, windACC, latWindTrans
       real (kind=RKIND) :: QSouth, QNorth, QMiddle, transSS, transSM, transMN
-      real (kind=RKIND) :: tempT1, tempT2, temph1, tempmT, temph0, tempLatS, tempLatN
+      real (kind=RKIND) :: tempPistonVel, tempT1, tempT2, temph1, tempmT, temph0, tempLatS, tempLatN
       real (kind=RKIND) :: regionCenterLat1, regionCenterLon1, regionCenterLat2, regionCenterLon2
       real (kind=RKIND) :: regionCenterLat3, regionCenterLon3, regionCenterLat4, regionCenterLon4
       logical :: heatRegionFlag1
       real (kind=RKIND) :: heatRegion1flux, heatRegion1Radius
       logical :: heatRegionFlag2
       real (kind=RKIND) :: heatRegion2flux, heatRegion2Radius
-      real (kind=RKIND) :: tempSpongeT1, tempSpongeh1, tempSpongeWeightL1
+      real (kind=RKIND) :: tempSpongeT1, tempSpongeh1, tempSpongeWeightL1, tempSpongeTau1
       logical :: tempRestoreFlag1
       real (kind=RKIND) :: tempRestoreT1, tempRestoreLcx1, tempRestoreLcy1
       logical :: tempRestoreFlag2
@@ -286,6 +288,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_ss', config_iso_heat_flux_lat_ss)
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_sm', config_iso_heat_flux_lat_sm)
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_mn', config_iso_heat_flux_lat_mn)
+      call mpas_pool_get_config(domain % configs, 'config_iso_surface_temp_piston_vel', config_iso_surface_temp_piston_vel)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t1', config_iso_initial_temp_t1)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t2', config_iso_initial_temp_t2)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_h0', config_iso_initial_temp_h0)
@@ -310,6 +313,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_t1', config_iso_temperature_sponge_t1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_h1', config_iso_temperature_sponge_h1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_l1', config_iso_temperature_sponge_l1)
+      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_tau1', config_iso_temperature_sponge_tau1)
       
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region1_flag', config_iso_temperature_restore_region1_flag)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t1', config_iso_temperature_restore_t1)
@@ -390,6 +394,7 @@ contains
       transSS = config_iso_heat_flux_lat_ss * pii/180.0
       transSM = config_iso_heat_flux_lat_sm * pii/180.0
       transMN = config_iso_heat_flux_lat_mn * pii/180.0
+      tempPistonVel = config_iso_surface_temp_piston_vel
       tempT1 = config_iso_initial_temp_t1
       tempT2 = config_iso_initial_temp_t2
       temph0 = config_iso_initial_temp_h0
@@ -414,6 +419,7 @@ contains
       tempSpongeT1 = config_iso_temperature_sponge_t1
       tempSpongeh1 = config_iso_temperature_sponge_h1
       tempSpongeWeightL1 = config_iso_temperature_sponge_l1 
+      tempSpongeTau1 = config_iso_temperature_sponge_tau1 
       
       tempRestoreFlag1 = config_iso_temperature_restore_region1_flag
       tempRestoreT1 = config_iso_temperature_restore_t1
@@ -645,6 +651,11 @@ contains
         call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
         call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
 
+        activeTracersInteriorRestoringRate(:,:,:) = 0.0_RKIND
+        activeTracersInteriorRestoringValue(:,:,:) = 0.0_RKIND
+        activeTracersPistonVelocity(:,:)  = 0.0_RKIND
+        activeTracersSurfaceRestoringValue(:,:) = 0.0_RKIND
+
         do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
@@ -724,8 +735,7 @@ contains
                  activeTracersInteriorRestoringValue(idx, k, iCell) = temperature
               
                  idx = index_temperature
-                 ! note to juan: activeTracersInteriorRestoringRate has units of 1/s throughout
-                 activeTracersInteriorRestoringRate(idx, k, iCell) = exp(-abs(distance)/tempSpongeWeightL1)
+                 activeTracersInteriorRestoringRate(idx, k, iCell) = exp(-abs(distance)/tempSpongeWeightL1) * ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND))
               endif
              
               ! Interior restoring at localized region 1
@@ -737,7 +747,7 @@ contains
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT1
                  
                     idx = index_temperature
-                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx1)**2 - (2.0_RKIND*yDistance/tempRestoreLcy1)**2 )
                  endif
               endif
@@ -751,7 +761,7 @@ contains
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT2
                     
                     idx = index_temperature
-                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx2)**2 - (2.0_RKIND*yDistance/tempRestoreLcy2)**2 )
                  endif
               endif
@@ -765,7 +775,7 @@ contains
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT3
                     
                     idx = index_temperature
-                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx3)**2 - (2.0_RKIND*yDistance/tempRestoreLcy3)**2 )
                  endif
               endif
@@ -779,7 +789,7 @@ contains
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT4
                     
                     idx = index_temperature
-                    activeTracersInteriorRestoringRate(idx, k, iCell) = &
+                    activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx4)**2 - (2.0_RKIND*yDistance/tempRestoreLcy4)**2 )
                 endif
                endif
@@ -795,12 +805,12 @@ contains
            
         end do ! iCell = 1, nCells
 
-        ! juan: add code here for surface restoring. can be toggled on/off at runtime
-        ! fill activeTracersSurfaceRestoringValue with correct values
-        ! fill activeTracersPistonVelocity with correct values
+        ! fill activeTracersSurfaceRestoringValue surface restoring values
+        ! fill activeTracersPistonVelocity with surface restoring rate
         activeTracersSurfaceRestoringValue(index_temperature,:) = activeTracers(index_temperature, 1, :)
+        activeTracersPistonVelocity(index_temperature,:) = tempPistonVel
         activeTracersSurfaceRestoringValue(index_salinity,:) = activeTracers(index_salinity, 1, :)
-        activeTracersPistonVelocity(:,:) = 0.0
+        activeTracersPistonVelocity(index_salinity,:) = 0.0_RKIND
         
         ! Set wind stress
         widthWindASFRad = 1.1*contSlopeWidthRad
