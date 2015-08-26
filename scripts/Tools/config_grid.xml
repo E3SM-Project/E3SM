@@ -537,7 +537,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <griddom grid="01col" mask="01col">
   <ATM_DOMAIN_FILE>domain.ocn.01col.ArcticOcean.20150824.nc</ATM_DOMAIN_FILE>
-  <LND_DOMAIN_FILE>domain.lnd.01col.ArcticOcean.20150824.nc</LND_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.ocn.01col.ArcticOcean.20150824.nc</LND_DOMAIN_FILE>
   <ICE_DOMAIN_FILE>domain.ocn.01col.ArcticOcean.20150824.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.01col.ArcticOcean.20150824.nc</OCN_DOMAIN_FILE>
 </griddom>
