@@ -28,7 +28,7 @@ define_package_component (GPTL DEFAULT
 # Define GPTL Fortran Component
 define_package_component (GPTL
                           COMPONENT Fortran
-                          INCLUDE_NAMES gptl.mod gptl.inc
+                          INCLUDE_NAMES perf_mod.mod
                           LIBRARY_NAMES gptl)
 
 # Search for list of valid components requested
