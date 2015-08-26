@@ -24,6 +24,7 @@ contains
     ! Finalize land surface model
     !
     ! !USES:
+    use clm_varctl             , only : use_vsfm
     !
     ! !ARGUMENTS
     implicit none
@@ -35,7 +36,9 @@ contains
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr
 
-    call PetscFinalize(ierr)
+    if (use_vsfm) then
+       call PetscFinalize(ierr)
+    endif
 #endif
 
   end subroutine final
