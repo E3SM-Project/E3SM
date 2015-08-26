@@ -2,7 +2,7 @@
 #include "Registry_lock_exchange.xml"
 #include "Registry_internal_waves.xml"
 #include "Registry_overflow.xml"
-#include "Registry_global_realistic.xml"
+#include "Registry_global_ocean.xml"
 #include "Registry_cvmix_WSwSBF.xml"
 #include "Registry_iso.xml"
 #include "Registry_soma.xml"

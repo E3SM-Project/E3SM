@@ -13,7 +13,7 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_cvmix_WSwSBF.o \
              mpas_ocn_init_iso.o \
              mpas_ocn_init_soma.o \
-             mpas_ocn_init_global_realistic.o
+             mpas_ocn_init_global_ocean.o
              #mpas_ocn_init_TEMPLATE.o
 
 all: init_mode
@@ -40,7 +40,7 @@ mpas_ocn_init_internal_waves.o: $(UTILS)
 
 mpas_ocn_init_overflow.o: $(UTILS)
 
-mpas_ocn_init_global_realistic.o: $(UTILS)
+mpas_ocn_init_global_ocean.o: $(UTILS)
 
 mpas_ocn_init_cvmix_WSwSBF.o: $(UTILS)
 
