@@ -88,6 +88,7 @@ contains
     use landunit_varcon   , only : istsoil
     use clm_time_manager  , only : get_step_size
     use AerosolMod        , only : AerosolFluxes
+    use clm_varctl        , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds            
@@ -150,6 +151,8 @@ contains
          qflx_snow_melt => waterflux_vars%qflx_snow_melt_col , & ! Output: [real(r8) (:)   ] net snow melt                           
          qflx_top_soil  => waterflux_vars%qflx_top_soil_col  , & ! Output: [real(r8) (:)   ] net water input into soil from top (mm/s)
 
+         mflx_neg_snow_col_1d =>  waterflux_vars%mflx_neg_snow_col_1d , & ! Output:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
+
          mss_bcphi      => aerosol_vars%mss_bcphi_col        , & ! Output: [real(r8) (:,:) ] hydrophillic BC mass in snow (col,lyr) [kg]
          mss_bcpho      => aerosol_vars%mss_bcpho_col        , & ! Output: [real(r8) (:,:) ] hydrophobic  BC mass in snow (col,lyr) [kg]
          mss_ocphi      => aerosol_vars%mss_ocphi_col        , & ! Output: [real(r8) (:,:) ] hydrophillic OC mass in snow (col,lyr) [kg]
@@ -169,6 +172,8 @@ contains
 
       ! Renew the mass of ice lens (h2osoi_ice) and liquid (h2osoi_liq) in the
       ! surface snow layer resulting from sublimation (frost) / evaporation (condense)
+
+      mflx_neg_snow_col_1d(:) = 0._r8
 
       do fc = 1,num_snowc
          c = filter_snowc(fc)
@@ -201,7 +206,11 @@ contains
                wgdif=h2osoi_liq(c,j)
                if (wgdif >= 0._r8) exit
                h2osoi_liq(c,j) = 0._r8
-               h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
+               if (.not.(j+1 > 0 .and. use_vsfm)) then
+                  h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
+               else
+                  mflx_neg_snow_col_1d(c-bounds%begc+1) = wgdif/dtime
+               endif
             enddo
          end if
       end do
