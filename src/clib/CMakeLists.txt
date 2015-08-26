@@ -42,17 +42,25 @@ endif()
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
     
-#===== GPTL =====
-if (PIO_ENABLE_TIMING)
-    target_compile_definitions (pioc
-        PUBLIC TIMING)
-    target_link_libraries (pioc
-        PUBLIC gptl)
-endif ()
-
 #===== MPI =====
 find_package (MPI REQUIRED)
     
+#===== GPTL =====
+if (PIO_ENABLE_TIMING)
+    find_package (GPTL COMPONENTS C)
+    if (GPTL_C_FOUND)
+        target_include_directories (pioc 
+            PUBLIC ${GPTL_C_INCLUDE_DIRS})
+        target_link_libraries (pioc
+            PUBLIC ${GPTL_C_LIBRARIES})
+    else ()
+        target_link_libraries (pioc
+            PUBLIC gptl)
+    endif ()
+    target_compile_definitions (pioc
+        PUBLIC TIMING)
+endif ()
+
 #===== NetCDF-C =====
 find_package (NetCDF "4.3.3" COMPONENTS C)
 if (NetCDF_C_FOUND)
