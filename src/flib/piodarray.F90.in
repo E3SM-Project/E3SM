@@ -11,11 +11,7 @@ module piodarray
   use pio_support, only : piodie
   use iso_c_binding
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
-  use perf_mod, only : t_startf, t_stopf        !_EXTERNAL
-#else
-  use gptl    , only : gptlstart, gptlstop      !_EXTERNAL
-#endif
+  use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
 #endif
   implicit none
 
@@ -139,20 +135,11 @@ contains
     integer,intent(in) :: arraylen
     integer(i4), intent(out) :: iostat
     integer(C_SIZE_T) :: carraylen
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     type(C_PTR) :: cptr
     carraylen = int(arraylen,C_SIZE_T)
     cptr = C_LOC(array)
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:write_darray_{TYPE}")    
-#else
-    gptlret = gptlstart("PIO:write_darray_{TYPE}")
-#endif
 #endif
     if(present(fillval)) then
        iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen,cptr, C_LOC(fillval))
@@ -160,11 +147,7 @@ contains
        iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen, cptr, C_NULL_PTR)
     endif
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:write_darray_{TYPE}")    
-#else
-    gptlret = gptlstop("PIO:write_darray_{TYPE}")
-#endif
 #endif
   end subroutine write_darray_1d_cinterface_{TYPE}
 

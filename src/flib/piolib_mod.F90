@@ -22,11 +22,7 @@ module piolib_mod
 
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
   use perf_mod, only : t_startf, t_stopf     ! _EXTERNAL
-#else
-  use gptl    , only : gptlstart, gptlstop   ! _EXTERNAL
-#endif
 #endif
 #ifndef NO_MPIMOD
   use mpi    ! _EXTERNAL
@@ -816,30 +812,18 @@ contains
     integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
     integer :: maplen
+
 #ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
-    
-#ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:initdecomp_dof")
-#else
-    gptlret = gptlstart("PIO:initdecomp_dof")
 #endif
-#endif
+
     maplen = size(compdof)
 
     call PIO_initdecomp_internal(iosystem, basepiotype, dims, maplen, compdof, iodesc, rearr, iostart,iocount)
 
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:initdecomp_dof")
-#else
-    gptlret = gptlstop("PIO:initdecomp_dof")
-#endif
 #endif
 
   end subroutine PIO_initdecomp_dof_i8
@@ -872,12 +856,6 @@ contains
     integer(i4), intent(in),optional :: base
     integer :: lbase
     integer :: ierr
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
-
     interface
        integer(c_int) function PIOc_Init_Intracomm_from_F90(f90_comp_comm, num_iotasks, stride,base,rearr,iosysidp) &
             bind(C,name="PIOc_Init_Intracomm_from_F90")
@@ -892,24 +870,15 @@ contains
     end interface
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:init")
-#else
-    gptlret = gptlstart("PIO:init")
-#endif
 #endif
     lbase=0
     if(present(base)) lbase=base
     ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,rearr,iosystem%iosysid)
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:init")
-#else
-    gptlret = gptlstop("PIO:init")
 #endif
-#endif
-
   end subroutine init_intracom
 
 
@@ -944,18 +913,9 @@ contains
     integer(i4), pointer :: iotmp(:)
     character(len=5) :: cb_nodes
     integer :: itmp
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:init")
-#else
-    gptlret = gptlstart("PIO:init")
-#endif
 #endif
 #if defined(NO_MPI2) || defined(_MPISERIAL)
     call piodie( __PIO_FILE__,__LINE__, &
@@ -1145,13 +1105,8 @@ contains
     
     if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem(1)%ioranks
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:init")
-#else
-    gptlret = gptlstop("PIO:init")
 #endif
-#endif
-
 #endif
 #endif
   end subroutine init_intercom
@@ -1272,17 +1227,7 @@ contains
     character, allocatable :: cfname(:)
     integer :: i, nl
 #ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
-
-#ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:createfile")
-#else
-    gptlret = gptlstart("PIO:createfile")
-#endif
 #endif
     mode = 0
     if(present(amode_in)) mode = amode_in
@@ -1296,11 +1241,7 @@ contains
     deallocate(cfname)
     file%iosystem => iosystem
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:createfile")
-#else
-    gptlret = gptlstop("PIO:createfile")
-#endif
 #endif
   end function createfile
 !> 
@@ -1343,18 +1284,9 @@ contains
        end function PIOc_openfile
     end interface
     integer :: imode=0, i, nl
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     character, allocatable :: cfname(:)
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:openfile")
-#else
-    gptlret = gptlstart("PIO:openfile")
-#endif
 #endif
     if(present(mode)) imode = mode
     nl = len_trim(fname)
@@ -1368,13 +1300,8 @@ contains
     file%iosystem => iosystem
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:openfile")
-#else
-    gptlret = gptlstop("PIO:openfile")
 #endif
-#endif
-
   end function PIO_openfile
 
 !> 
@@ -1453,11 +1380,6 @@ contains
   subroutine closefile(file)
     type(file_desc_t) :: file
     integer :: ierr
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     interface
        integer(c_int) function PIOc_closefile(ncid) &
             bind(C,name="PIOc_closefile")
@@ -1466,20 +1388,12 @@ contains
        end function PIOc_closefile
     end interface
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:closefile")
-#else
-    gptlret = gptlstart("PIO:closefile")
-#endif
 #endif
     ierr = PIOc_closefile(file%fh)
     nullify(file%iosystem)
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:closefile")
-#else
-    gptlret = gptlstop("PIO:closefile")
-#endif
 #endif
 
   end subroutine closefile

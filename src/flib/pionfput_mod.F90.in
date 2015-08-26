@@ -7,11 +7,7 @@
 !<
 module pionfput_mod
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
-#else
-  use gptl    , only : gptlstart, gptlstop    ! _EXTERNAL
-#endif
 #endif
   use iso_c_binding
   use pio_kinds, only: i4,r4,r8
@@ -117,11 +113,6 @@ contains
     integer :: i
 #ifdef DOTHIS
     integer :: clen, i
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     integer(C_SIZE_T), allocatable :: cindex(:)
     interface
        integer(C_INT) function PIOc_put_var1_text(ncid, varid, index, op) &
@@ -135,12 +126,8 @@ contains
     end interface
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:put_var1_text")
-#else
-    gptlret = gptlstart("PIO:put_var1_text")
-#endif
-#endif
+#endif 
     clen = len(ival)
     allocate(cval(clen+1))
     cval = C_NULL_CHAR
@@ -157,12 +144,8 @@ contains
     deallocate(cindex)
     deallocate(cval)
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:put_var1_text")
-#else
-    gptlret = gptlstop("PIO:put_var1_text")
-#endif
-#endif
+#endif 
 #else
     integer, allocatable :: count(:)
     integer :: ndims
@@ -199,11 +182,6 @@ contains
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(in) :: ival
     integer :: clen, i
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     integer(C_SIZE_T), allocatable :: cindex(:)
     interface
        integer(C_INT) function PIOc_put_var1_{NCTYPE}(ncid, varid, index, op) &
@@ -217,12 +195,8 @@ contains
     end interface
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:put_var1_{TYPE}")
-#else
-    gptlret = gptlstart("PIO:put_var1_{TYPE}")
-#endif
-#endif
+#endif 
     clen = size(index)
     allocate(cindex(clen))
     do i=1,clen
@@ -232,12 +206,8 @@ contains
     ierr = PIOc_put_var1_{NCTYPE} (file%fh, varid-1, cindex, ival)
     deallocate(cindex)
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:put_var1_{TYPE}")
-#else
-    gptlret = gptlstop("PIO:put_var1_{TYPE}")
-#endif
-#endif
+#endif 
   end function put_var1_{TYPE}
 
 !>
@@ -404,29 +374,16 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
     ierr=PIO_NOERR
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:put_var_0d_{TYPE}")
-#else
-    gptlret = gptlstart("PIO:put_var_0d_{TYPE}")
-#endif
-#endif
+#endif 
 
     ierr = put_var_internal_{TYPE} (File%fh, varid, (/ival/))
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:put_var_0d_{TYPE}")
-#else
-    gptlret = gptlstop("PIO:put_var_0d_{TYPE}")
-#endif
-#endif
+#endif 
   end function put_var_0d_{TYPE}
 
 
@@ -632,29 +589,17 @@ contains
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
-#ifdef TIMING
-#ifndef USE_INTERNAL_GPTL
-    integer :: gptlret
-#endif
-#endif
+
     {VTYPE}, intent(in) :: ival{DIMSTR}
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:put_vara_{DIMS}d_{TYPE}")
-#else
-    gptlret = gptlstart("PIO:put_vara_{DIMS}d_{TYPE}")
-#endif
-#endif
+#endif 
 
     ierr = put_vara_internal_{TYPE} (File%fh, varid, start, count, ival)
 
 #ifdef TIMING
-#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:put_vara_{DIMS}d_{TYPE}")
-#else
-    gptlret = gptlstop("PIO:put_vara_{DIMS}d_{TYPE}")
-#endif
-#endif
+#endif 
   end function put_vara_{DIMS}d_{TYPE}
 
 ! DIMS 1,2,3,4,5
