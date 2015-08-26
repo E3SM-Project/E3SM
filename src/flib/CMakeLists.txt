@@ -93,14 +93,6 @@ foreach (SRC_FILE IN LISTS PIO_GenF90_SRCS)
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
 endforeach ()
 
-#===== GPTL =====
-if (PIO_ENABLE_TIMING)
-    target_compile_definitions (piof
-        PUBLIC TIMING)
-    target_link_libraries (piof 
-        PUBLIC gptl)
-endif ()
-
 #===== MPI =====
 find_package (MPI REQUIRED)
 
@@ -133,6 +125,20 @@ else ()
     message (STATUS "MPI Fortran module not detected and therefore disabled.")
     target_compile_definitions (piof
         PUBLIC NO_MPIMOD)
+endif ()
+
+#===== GPTL =====
+if (PIO_ENABLE_TIMING)
+    find_package (GPTL COMPONENTS Fortran)
+    if (GPTL_Fortran_FOUND)
+        target_include_directories (piof 
+            PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
+        target_link_libraries (piof
+            PUBLIC ${GPTL_Fortran_LIBRARIES})
+    else ()
+        target_compile_definitions (piof
+            PUBLIC USE_INTERNAL_GPTL)
+    endif ()
 endif ()
 
 #===== NetCDF-Fortran =====
@@ -176,7 +182,6 @@ else ()
     target_compile_definitions (piof 
         PUBLIC _NOPNETCDF)
 endif ()
-
 
 #===== Add EXTRAs =====
 target_include_directories (piof
