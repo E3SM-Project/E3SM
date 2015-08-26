@@ -59,7 +59,7 @@ contains
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
+!      if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
 
       ! column-level phosporus fluxes from gap-phase mortality
@@ -78,7 +78,7 @@ contains
                  ps%decomp_ppools_vr_col(c,j,i_cwd)     + pf%gap_mortality_p_to_cwdp_col(c,j)       * dt
          end do
       end do
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
+!      endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
 
       ! patch -level phosporus fluxes from gap-phase mortality

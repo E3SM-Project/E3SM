@@ -1422,8 +1422,17 @@ and pct_nat_pft read from the surface dataset.
 </entry>
 
 <!-- =========================================================================================  -->
-<!-- Namelist options related to the pflotran interface
+<!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
+<entry id="use_bgc_interface" type="logical" category="default_settings"
+    group="clm_inparm" valid_values="">
+    Runtime flag to turn on/off bgc interface.
+</entry>
+
+<entry id="use_clm_bgc" type="logical" category="default_settings"
+    group="clm_inparm" valid_values="">
+    Runtime flag to turn on/off clm-bgc.
+</entry>
 
 <entry id="use_pflotran" type="logical" category="default_settings"
     group="clm_inparm" valid_values="">

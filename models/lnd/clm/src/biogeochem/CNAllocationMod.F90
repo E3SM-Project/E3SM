@@ -29,7 +29,7 @@ module CNAllocationMod
   use ColumnType          , only : col                
   use PatchType           , only : pft
   ! pflotran module switches
-  use clm_varctl          , only: use_pflotran, pf_cmode
+  use clm_varctl          , only: use_bgc_interface,use_clm_bgc, use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -40,8 +40,8 @@ module CNAllocationMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: readCNAllocParams
   public :: CNAllocationInit         ! Initialization
-!  public :: CNAllocation             ! run method
-  public :: CNAllocation1, CNAllocation2 !run method
+!  public :: CNAllocation             ! run method, divided into 3 subroutines/phases (see below)
+  public :: CNAllocation1_AG, CNAllocation2_BG, CNAllocation3_AG !run method
 
 
   type :: CNAllocParamsType
@@ -224,12 +224,12 @@ contains
   end subroutine CNAllocationInit
 
  !-----------------------------------------------------------------------
-  subroutine CNAllocation1 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CNAllocation1_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
-    !!wgs: Split CNAllocation to 2 subroutines: CNAllocation1 & CNAllocation2
+    !! 1st phase of CNAllocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
@@ -315,10 +315,6 @@ contains
     real(r8):: residual_sminp(bounds%begc:bounds%endc)
     real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
 
-    ! wgs: BEGIN
-!!wgs:    real(r8) totc, totcstorage                      !temporary variables for summing plant C and storage C
-!!wgs:    real(r8) stor_to_xsmr, fstor_to_xsmr, tmp_xsmr  !temporary variables for transfering storage C to xsmrpool
-    ! wgs: END
 
     !-----------------------------------------------------------------------
 
@@ -887,7 +883,1323 @@ contains
       call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
       call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 
-print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
+      ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
+         if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+            do j = 1, nlevdecomp
+               do fc=1, num_soilc
+                  c = filter_soilc(fc)
+                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+               end do
+            end do
+         endif
+
+!print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
+!!write(*,'(A40,12E14.6)')"DEBUG | nuptake_prof=",nuptake_prof(1,1:nlevdecomp)
+!!write(*,'(A40,12E14.6)')"DEBUG | puptake_prof=",puptake_prof(1,1:nlevdecomp)
+!
+!      if (.not. use_nitrif_denitrif) then
+!
+!         ! column loops to resolve plant/heterotroph competition for mineral N
+!         ! init sminn_tot
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sum_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j)
+!               sum_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
+!            end do
+!         end do
+!
+!
+!    !------------------------------------------------------------------
+!    !! wgs: BEGIN
+!         ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
+!!         if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+!!            do j = 1, nlevdecomp
+!!               do fc=1, num_soilc
+!!                  c = filter_soilc(fc)
+!!                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!!                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!!               end do
+!!            end do
+!!         endif
+!         ! note that 'Carbon_only' option generated 'supplement_to_sminn_vr' will not be available to PFLOTRAN
+!
+!        ! when coupled with pflotran, cphase 1 is actually ending at this point
+!        ! i.e., column loops to resolve plant/heterotroph competition
+!        ! for mineral SMINN below in this subroutine will not be implemented
+!        ! (this point is the block starting)
+!        if (.not. (use_pflotran .and. pf_cmode)) then
+!    !! wgs: END
+!    !------------------------------------------------------------------
+!    !------------------------------------------------------------------
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               l = col%landunit(c)
+!               if (sum_ndemand_vr(c,j)*dt < sminn_vr(c,j)) then
+!
+!                  ! N availability is not limiting immobilization or plant
+!                  ! uptake, and both can proceed at their potential rates
+!                  nlimit(c,j) = 0
+!                  fpi_vr(c,j) = 1.0_r8
+!                  actual_immob_vr(c,j) = potential_immob_vr(c,j)
+!                  sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!               else if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then !.or. &
+!                  !                (crop_supln .and. (lun%itype(l) == istcrop) .and. &
+!                  !                (ivt(col%pfti(c)) >= npcropmin)) )then
+!                  ! this code block controls the addition of N to sminn pool
+!                  ! to eliminate any N limitation, when Carbon_Only is set.  This lets the
+!                  ! model behave essentially as a carbon-only model, but with the
+!                  ! benefit of keeping track of the N additions needed to
+!                  ! eliminate N limitations, so there is still a diagnostic quantity
+!                  ! that describes the degree of N limitation at steady-state.
+!
+!                  nlimit(c,j) = 1
+!                  fpi_vr(c,j) = 1.0_r8
+!                  actual_immob_vr(c,j) = potential_immob_vr(c,j)
+!                  sminn_to_plant_vr(c,j) =  col_plant_ndemand(c) * nuptake_prof(c,j)
+!                  supplement_to_sminn_vr(c,j) = sum_ndemand_vr(c,j) - (sminn_vr(c,j)/dt)
+!               else
+!                  ! N availability can not satisfy the sum of immobilization and
+!                  ! plant growth demands, so these two demands compete for available
+!                  ! soil mineral N resource.
+!
+!                  nlimit(c,j) = 1
+!                  if (sum_ndemand_vr(c,j) > 0.0_r8 .and. sminn_vr(c,j) > 0.0_r8) then
+!                     actual_immob_vr(c,j) = (sminn_vr(c,j)/dt)*(potential_immob_vr(c,j) / sum_ndemand_vr(c,j))
+!                  else
+!                     actual_immob_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_vr(c,j) > 0.0_r8) then
+!                     fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
+!                  else
+!                     fpi_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  sminn_to_plant_vr(c,j) = (sminn_vr(c,j)/dt) - actual_immob_vr(c,j)
+!               end if
+!            end do
+!         end do
+!
+!
+!!------------------------------------------------------------------
+!! phosphorus: puptake_prof(c,j)
+!! moved to Line 911-938
+!!------------------------------------------------------------------
+!
+!        ! add phosphorus
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               l = col%landunit(c)
+!               if (sum_pdemand_vr(c,j)*dt < solutionp_vr(c,j)) then
+!
+!                  ! P availability is not limiting immobilization or plant
+!                  ! uptake, and both can proceed at their potential rates
+!                  plimit(c,j) = 0
+!                  fpi_p_vr(c,j) = 1.0_r8
+!                  actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
+!                  sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!
+!               else if ( cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then !.or. &
+!
+!                  plimit(c,j) = 1
+!                  fpi_p_vr(c,j) = 1.0_r8
+!                  actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
+!                  sminp_to_plant_vr(c,j) =  col_plant_pdemand(c) * puptake_prof(c,j)
+!                  supplement_to_sminp_vr(c,j) = sum_pdemand_vr(c,j) - (solutionp_vr(c,j)/dt)
+!
+!               else
+!                  ! P availability can not satisfy the sum of immobilization and
+!                  ! plant growth demands, so these two demands compete for
+!                  ! available soil mineral solution P resource.
+!
+!                  plimit(c,j) = 1
+!                  if (sum_pdemand_vr(c,j) > 0.0_r8 .and. solutionp_vr(c,j) >0._r8) then
+!                     actual_immob_p_vr(c,j) = (solutionp_vr(c,j)/dt)*(potential_immob_p_vr(c,j) / sum_pdemand_vr(c,j))
+!                  else
+!                     actual_immob_p_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_p_vr(c,j) > 0.0_r8) then
+!                     fpi_p_vr(c,j) = actual_immob_p_vr(c,j) / potential_immob_p_vr(c,j)
+!                  else
+!                     fpi_p_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  sminp_to_plant_vr(c,j) = max( 0._r8,(solutionp_vr(c,j)/dt) - actual_immob_p_vr(c,j) )
+!               end if
+!            end do
+!         end do
+!
+!         !!!  resolving N limitation vs. P limitation for decomposition
+!         !!!  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
+!         if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
+!
+!           do j = 1, nlevdecomp
+!              do fc=1,num_soilc
+!                 c = filter_soilc(fc)
+!
+!                 if (nlimit(c,j) == 1.and.plimit(c,j) == 0) then
+!
+!                     actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
+!                     sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!
+!                 elseif (nlimit(c,j) == 0.and.plimit(c,j) == 1) then
+!
+!                     actual_immob_vr(c,j)   = potential_immob_vr(c,j) *fpi_p_vr(c,j)
+!                     sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!
+!                 elseif (nlimit(c,j) == 1.and.plimit(c,j) == 1)then
+!
+!                     if( fpi_vr(c,j) <=fpi_p_vr(c,j) )then
+!
+!                         actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) *fpi_vr(c,j)
+!                         sminp_to_plant_vr(c,j) = min( max( 0._r8,(solutionp_vr(c,j)/dt) - actual_immob_p_vr(c,j) ),col_plant_pdemand(c)*puptake_prof(c,j) )
+!
+!                     else
+!
+!                         actual_immob_vr(c,j)=potential_immob_vr(c,j) * fpi_p_vr(c,j)
+!                         sminn_to_plant_vr(c,j) = min( (sminn_vr(c,j)/dt) - actual_immob_vr(c,j),col_plant_ndemand(c)*nuptake_prof(c,j) )
+!
+!                     endif
+!
+!                 endif
+!
+!              enddo
+!           enddo
+!
+!         endif
+!
+!         if(cnallocate_carbonnitrogen_only())then
+!           actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
+!           sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!         endif
+!
+!         ! sum up N and P  fluxes to plant    ??????WAS sminn_to_plant(c)
+!         ! INITIALIZED AS ZERO --- CHECK   X.YANG
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!            sminp_to_plant(c) = 0._r8
+!         end do
+!
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+!               sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!        ! give plants a second pass to see if there is any mineral N left over with which to satisfy residual N demand.
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_sminn(c) = 0._r8
+!            residual_sminp(c) = 0._r8
+!         end do
+!
+!         ! sum up total N left over after initial plant and immobilization fluxes
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_plant_ndemand(c) = col_plant_ndemand(c) - sminn_to_plant(c)
+!            residual_plant_pdemand(c) = col_plant_pdemand(c) - sminp_to_plant(c)
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if (residual_plant_ndemand(c)  >  0._r8 ) then
+!                  if (nlimit(c,j) .eq. 0) then
+!                     residual_sminn_vr(c,j) = max(sminn_vr(c,j) - (actual_immob_vr(c,j) + sminn_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_sminn(c) = residual_sminn(c) + residual_sminn_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_sminn_vr(c,j)  = 0._r8
+!                  endif
+!               endif
+!               !!! add phosphorus - X.YANG
+!               if (residual_plant_pdemand(c)  >  0._r8 ) then
+!                  if (plimit(c,j) .eq. 0) then
+!                     residual_sminp_vr(c,j) = max(solutionp_vr(c,j) - (actual_immob_p_vr(c,j) + sminp_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_sminp(c) = residual_sminp(c) + residual_sminp_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_sminp_vr(c,j)  = 0._r8
+!                  endif
+!               endif
+!            end do
+!         end do
+!
+!         ! distribute residual N and P to plants
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if ( residual_plant_ndemand(c)  >  0._r8 .and. residual_sminn(c)  >  0._r8 .and. nlimit(c,j) .eq. 0) then
+!                  sminn_to_plant_vr(c,j) = sminn_to_plant_vr(c,j) + residual_sminn_vr(c,j) * &
+!                       min(( residual_plant_ndemand(c) *  dt ) / residual_sminn(c), 1._r8) / dt
+!               endif
+!
+!               if ( residual_plant_pdemand(c)  >  0._r8 .and. residual_sminp(c)  >  0._r8 .and. plimit(c,j) .eq. 0) then
+!                  sminp_to_plant_vr(c,j) = sminp_to_plant_vr(c,j) + residual_sminp_vr(c,j) * &
+!                       min(( residual_plant_pdemand(c) *  dt ) / residual_sminp(c), 1._r8) / dt
+!               endif
+!            end do
+!         end do
+!
+!         ! re-sum up N and P fluxes to plant
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!            sminp_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+!               sum_ndemand_vr(c,j) = potential_immob_vr(c,j) + sminn_to_plant_vr(c,j)
+!
+!               !!! for phosphorus
+!               sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+!               sum_pdemand_vr(c,j) = potential_immob_p_vr(c,j) + sminp_to_plant_vr(c,j)
+!            end do
+!         end do
+!
+!         ! under conditions of excess N, some proportion is assumed to
+!         ! be lost to denitrification, in addition to the constant
+!         ! proportion lost in the decomposition pathways
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if ((sminn_to_plant_vr(c,j) + actual_immob_vr(c,j))*dt < sminn_vr(c,j)) then
+!                  sminn_to_denit_excess_vr(c,j) = max(bdnr*((sminn_vr(c,j)/dt) - sum_ndemand_vr(c,j)),0._r8)
+!               else
+!                  sminn_to_denit_excess_vr(c,j) = 0._r8
+!               endif
+!            end do
+!         end do
+!
+!         ! sum up N and P fluxes to immobilization
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j) * dzsoi_decomp(j)
+!               potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j) * dzsoi_decomp(j)
+!               !!! phosphorus
+!               actual_immob_p(c) = actual_immob_p(c) + actual_immob_p_vr(c,j) * dzsoi_decomp(j)
+!               potential_immob_p(c) = potential_immob_p(c) + potential_immob_p_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! calculate the fraction of potential growth that can be
+!            ! acheived with the N available to plants
+!            if (col_plant_ndemand(c) > 0.0_r8) then
+!               fpg(c) = sminn_to_plant(c) / col_plant_ndemand(c)
+!            else
+!               fpg(c) = 1.0_r8
+!            end if
+!
+!            ! calculate the fraction of immobilization realized (for diagnostic purposes)
+!            if (potential_immob(c) > 0.0_r8) then
+!               fpi(c) = actual_immob(c) / potential_immob(c)
+!            else
+!               fpi(c) = 1.0_r8
+!            end if
+!         end do
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! calculate the fraction of potential growth that can be
+!            ! acheived with the P available to plants
+!            if (col_plant_pdemand(c) > 0.0_r8) then
+!               fpg_p(c) = sminp_to_plant(c) / col_plant_pdemand(c)
+!            else
+!               fpg_p(c) = 1.0_r8
+!            end if
+!
+!            ! calculate the fraction of immobilization realized (for diagnostic purposes)
+!            if (potential_immob(c) > 0.0_r8) then
+!               fpi_p(c) = actual_immob_p(c) / potential_immob_p(c)
+!            else
+!               fpi_p(c) = 1.0_r8
+!            end if
+!         end do
+!    !------------------------------------------------------------------
+!        ! above column loops to resolve plant/heterotroph competition
+!        ! for mineral SMINN in this subroutine will not be implemented
+!        ! (this point is the block ending)
+!        end if !(.not. (use_pflotran .and. pf_cmode)) line ~927
+!    !------------------------------------------------------------------
+!
+!      else  !----------NITRIF_DENITRIF-------------!
+!         ! column loops to resolve plant/heterotroph/nitrifier/denitrifier competition for mineral N
+!         !read constants from external netcdf file
+!         compet_plant_no3 = CNAllocParamsInst%compet_plant_no3
+!         compet_plant_nh4 = CNAllocParamsInst%compet_plant_nh4
+!         compet_decomp_no3 = CNAllocParamsInst%compet_decomp_no3
+!         compet_decomp_nh4 = CNAllocParamsInst%compet_decomp_nh4
+!         compet_denit = CNAllocParamsInst%compet_denit
+!         compet_nit = CNAllocParamsInst%compet_nit
+!
+!      !------------------------------------------------------------------
+!      !! wgs: BEGIN
+!         ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
+!!         if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+!!            do j = 1, nlevdecomp
+!!               do fc = 1, num_soilc
+!!                  c = filter_soilc(fc)
+!!                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!!                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)  !!wgs: phosphorus
+!!               end do
+!!            end do
+!!         endif
+!
+!         ! note that 'Carbon_only' option generated 'supplement_to_sminn_vr' will not be available to PFLOTRAN
+!
+!         ! when coupled with pflotran, cphase 1 is actually ending at this point
+!         ! i.e., column loops to resolve plant/heterotroph/nitrifier/denitrifier competition
+!         ! for mineral NO3 and NH4 below in this subroutine will not be implemented
+!         ! (this point is the block starting)
+!         if (.not. (use_pflotran .and. pf_cmode)) then
+!      !! wgs: END
+!      !------------------------------------------------------------------
+!
+!         ! main column/vertical loop
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               l = col%landunit(c)
+!
+!               !  first compete for nh4
+!               sum_nh4_demand(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j) + pot_f_nit_vr(c,j)
+!               sum_nh4_demand_scaled(c,j) = col_plant_ndemand(c)* nuptake_prof(c,j) * compet_plant_nh4 + &
+!                    potential_immob_vr(c,j)*compet_decomp_nh4 + pot_f_nit_vr(c,j)*compet_nit
+!               if (sum_nh4_demand(c,j)*dt < smin_nh4_vr(c,j)) then
+!                  ! NH4 availability is not limiting immobilization or plant
+!                  ! uptake, and all can proceed at their potential rates
+!                  nlimit_nh4(c,j) = 0
+!                  fpi_nh4_vr(c,j) = 1.0_r8
+!                  actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
+!                  smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!
+!                  f_nit_vr(c,j) = pot_f_nit_vr(c,j)
+!
+!               else
+!
+!                  ! NH4 availability can not satisfy the sum of immobilization, nitrification, and
+!                  ! plant growth demands, so these three demands compete for available
+!                  ! soil mineral NH4 resource.
+!                  nlimit_nh4(c,j) = 1
+!                  if (sum_nh4_demand(c,j) > 0.0_r8) then
+!                     actual_immob_nh4_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(potential_immob_vr(c,j)* &
+!                          compet_decomp_nh4 / sum_nh4_demand_scaled(c,j)), potential_immob_vr(c,j))
+!                     smin_nh4_to_plant_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(col_plant_ndemand(c)* &
+!                          nuptake_prof(c,j)*compet_plant_nh4 / sum_nh4_demand_scaled(c,j)), col_plant_ndemand(c)*nuptake_prof(c,j))
+!                     f_nit_vr(c,j) =  min((smin_nh4_vr(c,j)/dt)*(pot_f_nit_vr(c,j)*compet_nit / &
+!                          sum_nh4_demand_scaled(c,j)), pot_f_nit_vr(c,j))
+!                  else
+!                     actual_immob_nh4_vr(c,j) = 0.0_r8
+!                     smin_nh4_to_plant_vr(c,j) = 0.0_r8
+!                     f_nit_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_vr(c,j) > 0.0_r8) then
+!                     fpi_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) / potential_immob_vr(c,j)
+!                  else
+!                     fpi_nh4_vr(c,j) = 0.0_r8
+!                  end if
+!
+!               end if
+!
+!               ! next compete for no3
+!               sum_no3_demand(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j)) + &
+!                    (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j)) + pot_f_denit_vr(c,j)
+!               sum_no3_demand_scaled(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))*compet_plant_no3 + &
+!                    (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))*compet_decomp_no3 + pot_f_denit_vr(c,j)*compet_denit
+!
+!               if (sum_no3_demand(c,j)*dt < smin_no3_vr(c,j)) then
+!                  ! NO3 availability is not limiting immobilization or plant
+!                  ! uptake, and all can proceed at their potential rates
+!                  nlimit_no3(c,j) = 1
+!                  fpi_no3_vr(c,j) = 1.0_r8 -  fpi_nh4_vr(c,j)
+!                  actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
+!                  smin_no3_to_plant_vr(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
+!
+!                  f_denit_vr(c,j) = pot_f_denit_vr(c,j)
+!
+!               else
+!
+!                  ! NO3 availability can not satisfy the sum of immobilization, denitrification, and
+!                  ! plant growth demands, so these three demands compete for available
+!                  ! soil mineral NO3 resource.
+!                  nlimit_no3(c,j) = 1
+!                  if (sum_no3_demand(c,j) > 0.0_r8) then
+!                     actual_immob_no3_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((potential_immob_vr(c,j)- &
+!                          actual_immob_nh4_vr(c,j))*compet_decomp_no3 / sum_no3_demand_scaled(c,j)), &
+!                          potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
+!                     smin_no3_to_plant_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((col_plant_ndemand(c)* &
+!                          nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))*compet_plant_no3 / sum_no3_demand_scaled(c,j)), &
+!                          col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
+!                     f_denit_vr(c,j) =  min((smin_no3_vr(c,j)/dt)*(pot_f_denit_vr(c,j)*compet_denit / &
+!                          sum_no3_demand_scaled(c,j)), pot_f_denit_vr(c,j))
+!                  else
+!                     actual_immob_no3_vr(c,j) = 0.0_r8
+!                     smin_no3_to_plant_vr(c,j) = 0.0_r8
+!                     f_denit_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_vr(c,j) > 0.0_r8) then
+!                     fpi_no3_vr(c,j) = actual_immob_no3_vr(c,j) / potential_immob_vr(c,j)
+!                  else
+!                     fpi_no3_vr(c,j) = 0.0_r8
+!                  end if
+!
+!               end if
+!
+!
+!               ! n2o emissions: n2o from nitr is const fraction, n2o from denitr is calculated in nitrif_denitrif
+!               f_n2o_nit_vr(c,j) = f_nit_vr(c,j) * nitrif_n2o_loss_frac
+!               f_n2o_denit_vr(c,j) = f_denit_vr(c,j) / (1._r8 + n2_n2o_ratio_denit_vr(c,j))
+!
+!
+!               ! this code block controls the addition of N to sminn pool
+!               ! to eliminate any N limitation, when Carbon_Only is set.  This lets the
+!               ! model behave essentially as a carbon-only model, but with the
+!               ! benefit of keeping track of the N additions needed to
+!               ! eliminate N limitations, so there is still a diagnostic quantity
+!               ! that describes the degree of N limitation at steady-state.
+!
+!               if ( cnallocate_carbon_only()) then !.or. &
+!                  !              (crop_supln .and. (lun%itype(l) == istcrop) .and. &
+!                  !               (ivt(col%pfti(c)) >= npcropmin)) ) then
+!
+!                  if ( fpi_no3_vr(c,j) + fpi_nh4_vr(c,j) < 1._r8 ) then
+!                     fpi_nh4_vr(c,j) = 1.0_r8 - fpi_no3_vr(c,j)
+!                     supplement_to_sminn_vr(c,j) = (potential_immob_vr(c,j) - actual_immob_no3_vr(c,j)) - actual_immob_nh4_vr(c,j)
+!                     ! update to new values that satisfy demand
+!                     actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j) -  actual_immob_no3_vr(c,j)
+!                  end if
+!                  if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand(c)*nuptake_prof(c,j) ) then
+!                     supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
+!                          (col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
+!                     smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)
+!                  end if
+!                  sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
+!               end if
+!
+!               ! sum up no3 and nh4 fluxes
+!               fpi_vr(c,j) = fpi_no3_vr(c,j) + fpi_nh4_vr(c,j)
+!               sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
+!               actual_immob_vr(c,j) = actual_immob_no3_vr(c,j) + actual_immob_nh4_vr(c,j)
+!            end do
+!         end do
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! sum up N fluxes to plant after initial competition
+!            sminn_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         ! give plants a second pass to see if there is any mineral N left over with which to satisfy residual N demand.
+!         ! first take frm nh4 pool; then take from no3 pool
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_plant_ndemand(c) = col_plant_ndemand(c) - sminn_to_plant(c)
+!            residual_smin_nh4(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if (residual_plant_ndemand(c)  >  0._r8 ) then
+!                  if (nlimit_nh4(c,j) .eq. 0) then
+!                     residual_smin_nh4_vr(c,j) = max(smin_nh4_vr(c,j) - (actual_immob_vr(c,j) + &
+!                          smin_nh4_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_smin_nh4(c) = residual_smin_nh4(c) + residual_smin_nh4_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_smin_nh4_vr(c,j)  = 0._r8
+!                  endif
+!
+!                  if ( residual_smin_nh4(c) > 0._r8 .and. nlimit_nh4(c,j) .eq. 0 ) then
+!                     smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + residual_smin_nh4_vr(c,j) * &
+!                          min(( residual_plant_ndemand(c) *  dt ) / residual_smin_nh4(c), 1._r8) / dt
+!                  endif
+!               end if
+!            end do
+!         end do
+!
+!         ! re-sum up N fluxes to plant after second pass for nh4
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
+!               sminn_to_plant(c) = sminn_to_plant(c) + (sminn_to_plant_vr(c,j)) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         !
+!         ! and now do second pass for no3
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_plant_ndemand(c) = col_plant_ndemand(c) - sminn_to_plant(c)
+!            residual_smin_no3(c) = 0._r8
+!         end do
+!
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if (residual_plant_ndemand(c) > 0._r8 ) then
+!                  if (nlimit_no3(c,j) .eq. 0) then
+!                     residual_smin_no3_vr(c,j) = max(smin_no3_vr(c,j) - (actual_immob_vr(c,j) + &
+!                          smin_no3_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_smin_no3(c) = residual_smin_no3(c) + residual_smin_no3_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_smin_no3_vr(c,j)  = 0._r8
+!                  endif
+!
+!                  if ( residual_smin_no3(c) > 0._r8 .and. nlimit_no3(c,j) .eq. 0) then
+!                     smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + residual_smin_no3_vr(c,j) * &
+!                          min(( residual_plant_ndemand(c) *  dt ) / residual_smin_no3(c), 1._r8) / dt
+!                  endif
+!               endif
+!            end do
+!         end do
+!
+!         ! re-sum up N fluxes to plant after second passes of both no3 and nh4
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
+!               sminn_to_plant(c) = sminn_to_plant(c) + (sminn_to_plant_vr(c,j)) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         ! sum up N fluxes to immobilization
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            actual_immob(c) = 0._r8
+!            potential_immob(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j) * dzsoi_decomp(j)
+!               potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! calculate the fraction of potential growth that can be
+!            ! acheived with the N available to plants
+!            if (col_plant_ndemand(c) > 0.0_r8) then
+!               fpg(c) = sminn_to_plant(c) / col_plant_ndemand(c)
+!            else
+!               fpg(c) = 1._r8
+!            end if
+!
+!            ! calculate the fraction of immobilization realized (for diagnostic purposes)
+!            if (potential_immob(c) > 0.0_r8) then
+!               fpi(c) = actual_immob(c) / potential_immob(c)
+!            else
+!               fpi(c) = 1._r8
+!            end if
+!         end do ! end of column loops
+!    !------------------------------------------------------------------
+!         ! above column loops to resolve plant/heterotroph/nitrifier/denitrifier competition
+!         ! for mineral NO3 and NH4 in this subroutine will not be implemented
+!         ! (this point is the block ending)
+!         end if !(.not. (use_pflotran .and. pf_cmode)) line ~1308
+!    !------------------------------------------------------------------
+!      end if  !end of if_not_use_nitrif_denitrif
+
+    !-------------------------------------------------------------------
+      !'plant available N distribution and C allocation' portion is in 'CNAllocation2'
+      !================================================================================================
+
+    end associate
+
+ end subroutine CNAllocation1_AG
+
+ !-----------------------------------------------------------------------
+  subroutine CNAllocation2_BG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
+       carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
+       nitrogenstate_vars, nitrogenflux_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
+    !! 2nd phase of CNAllocation:  resolving N/P limitation
+    ! !USES:
+    use shr_sys_mod      , only: shr_sys_flush
+    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+                                 cnallocate_carbonphosphorus_only
+    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
+    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean !!
+    use clm_varpar       , only: nlevdecomp !!wgs: nlevsoi,
+    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+!!wgs    use landunit_varcon  , only: istsoil, istcrop
+    use clm_time_manager , only: get_step_size
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds
+    integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+    integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
+    type(photosyns_type)     , intent(in)    :: photosyns_vars
+    type(crop_type)          , intent(in)    :: crop_vars
+    type(canopystate_type)   , intent(in)    :: canopystate_vars
+    type(cnstate_type)       , intent(inout) :: cnstate_vars
+    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+!     !!  add phosphorus  -X.YANG
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    !
+    ! !LOCAL VARIABLES: wgs: ALL
+    real(r8) :: compet_plant_no3       ! (unitless) relative compettiveness of plants for NO3
+    real(r8) :: compet_plant_nh4       ! (unitless) relative compettiveness of plants for NH4
+    real(r8) :: compet_decomp_no3      ! (unitless) relative competitiveness of immobilizers for NO3
+    real(r8) :: compet_decomp_nh4      ! (unitless) relative competitiveness of immobilizers for NH4
+    real(r8) :: compet_denit           ! (unitless) relative competitiveness of denitrifiers for NO3
+    real(r8) :: compet_nit             ! (unitless) relative competitiveness of nitrifiers for NH4
+    real(r8) :: fpi_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
+    real(r8) :: fpi_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
+    real(r8) :: sum_nh4_demand(bounds%begc:bounds%endc,1:nlevdecomp)
+    real(r8) :: sum_nh4_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
+    real(r8) :: sum_no3_demand(bounds%begc:bounds%endc,1:nlevdecomp)
+    real(r8) :: sum_no3_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
+    !
+    integer :: c,p,l,j                                               !indices
+!!wgs:  integer pi,                                                      !indices
+    integer :: fp                                                    !lake filter pft index
+    integer :: fc                                                    !lake filter column index
+    real(r8):: mr                                                    !maintenance respiration (gC/m2/s)
+    real(r8):: f1,f2,f3,f4,g1,g2                                     !allocation parameters
+    real(r8):: cnl,cnfr,cnlw,cndw                                    !C:N ratios for leaf, fine root, and wood
+!!wgs:     real(r8):: fcur                                                  !fraction of current psn displayed as growth
+!!wgs:     real(r8):: gresp_storage                                         !temporary variable for growth resp to storage
+!!wgs:     real(r8):: nlc                                                   !temporary variable for total new leaf carbon allocation
+    real(r8):: curmr, curmr_ratio                                    !xsmrpool temporary variables
+    real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
+    real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+!!wgs:     real(r8):: sminn_tot(bounds%begc:bounds%endc)
+    real(r8) f5                                                      !grain allocation parameter
+    real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
+    real(r8) fleaf                                                   !fraction allocated to leaf
+    real(r8) t1                                                      !temporary variable
+    integer :: nlimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for N limitation
+    real(r8):: residual_sminn_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+    real(r8):: residual_sminn(bounds%begc:bounds%endc)
+    integer :: nlimit_no3(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NO3 limitation
+    integer :: nlimit_nh4(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NH4 limitation
+    real(r8):: residual_smin_nh4_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+    real(r8):: residual_smin_no3_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+    real(r8):: residual_smin_nh4(bounds%begc:bounds%endc)
+    real(r8):: residual_smin_no3(bounds%begc:bounds%endc)
+    real(r8):: residual_plant_ndemand(bounds%begc:bounds%endc)
+
+    !! Local P variables
+    real(r8):: cpl,cpfr,cplw,cpdw                                     !C:P ratios for leaf, fine root, and wood
+!!wgs:    real(r8):: cpg                                                  !C:P ratio
+    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column P demand (gN/m3/s) at a given level
+    real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+!!wgs:    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
+    integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for P limitation
+    real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+    real(r8):: residual_sminp(bounds%begc:bounds%endc)
+    real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
+
+    ! wgs: BEGIN
+!!wgs:    real(r8) totc, totcstorage                      !temporary variables for summing plant C and storage C
+!!wgs:    real(r8) stor_to_xsmr, fstor_to_xsmr, tmp_xsmr  !temporary variables for transfering storage C to xsmrpool
+    ! wgs: END
+
+    !-----------------------------------------------------------------------
+
+    associate(                                                                                 &
+         ivt                          => pft%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type
+!
+         woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
+         croot_stem                   => ecophyscon%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
+         stem_leaf                    => ecophyscon%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
+         flivewd                      => ecophyscon%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
+         leafcn                       => ecophyscon%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)
+         frootcn                      => ecophyscon%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)
+         livewdcn                     => ecophyscon%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
+         deadwdcn                     => ecophyscon%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
+!!wgs:         fcur2                        => ecophyscon%fcur                                     , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
+         graincn                      => ecophyscon%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)
+         fleafcn                      => ecophyscon%fleafcn                                  , & ! Input:  [real(r8) (:)   ]  leaf c:n during organ fill
+         ffrootcn                     => ecophyscon%ffrootcn                                 , & ! Input:  [real(r8) (:)   ]  froot c:n during organ fill
+         fstemcn                      => ecophyscon%fstemcn                                  , & ! Input:  [real(r8) (:)   ]  stem c:n during organ fill
+
+         psnsun                       => photosyns_vars%psnsun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
+         psnsha                       => photosyns_vars%psnsha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
+         c13_psnsun                   => photosyns_vars%c13_psnsun_patch                     , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
+         c13_psnsha                   => photosyns_vars%c13_psnsha_patch                     , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
+         c14_psnsun                   => photosyns_vars%c14_psnsun_patch                     , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
+         c14_psnsha                   => photosyns_vars%c14_psnsha_patch                     , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
+
+         laisun                       => canopystate_vars%laisun_patch                       , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index
+         laisha                       => canopystate_vars%laisha_patch                       , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index
+!
+         hui                          => crop_vars%gddplant_patch                            , & ! Input:  [real(r8) (:)   ]  =gdd since planting (gddplant)
+         leafout                      => crop_vars%gddtsoi_patch                             , & ! Input:  [real(r8) (:)   ]  =gdd from top soil layer temperature
+
+!!wgs:         xsmrpool                     => carbonstate_vars%xsmrpool_patch                     , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool
+         leafc                        => carbonstate_vars%leafc_patch                        , & ! Input:  [real(r8) (:)   ]
+         frootc                       => carbonstate_vars%frootc_patch                       , & ! Input:  [real(r8) (:)   ]
+         livestemc                    => carbonstate_vars%livestemc_patch                    , & ! Input:  [real(r8) (:)   ]
+
+         !! wgs: BEGIN
+         !!------------------------------------------------------------------------
+!!wgs         cpool                        => carbonstate_vars%cpool_patch                        , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool
+         xsmrpool                     => carbonstate_vars%xsmrpool_patch                     , & ! Input:  [real(r8) (:)   ]  (gC/m2) abstract C pool to meet excess MR demand
+!
+!!wgs          livecrootc                   => carbonstate_vars%livecrootc_patch                   , & ! Input:  [real(r8) (:)   ]
+!!wgs          deadstemc                    => carbonstate_vars%deadstemc_patch                    , & ! Input:  [real(r8) (:)   ]
+!!wgs          deadcrootc                   => carbonstate_vars%deadcrootc_patch                   , & ! Input:  [real(r8) (:)   ]
+!
+!!wgs          leafc_storage                => carbonstate_vars%leafc_storage_patch                , & ! Input:  [real(r8) (:)   ]  (gC/m2) leaf C storage
+!!wgs          frootc_storage               => carbonstate_vars%frootc_storage_patch               , & ! Input:  [real(r8) (:)   ]  (gC/m2) fine root C storage
+!!wgs          livestemc_storage            => carbonstate_vars%livestemc_storage_patch            , & ! Input:  [real(r8) (:)   ]  (gC/m2) live stem C storage
+!!wgs          deadstemc_storage            => carbonstate_vars%deadstemc_storage_patch            , & ! Input:  [real(r8) (:)   ]  (gC/m2) dead stem C storage
+!!wgs          livecrootc_storage           => carbonstate_vars%livecrootc_storage_patch           , & ! Input:  [real(r8) (:)   ]  (gC/m2) live coarse root C storage
+!!wgs          deadcrootc_storage           => carbonstate_vars%deadcrootc_storage_patch           , & ! Input:  [real(r8) (:)   ]  (gC/m2) dead coarse root C storage
+!
+!!wgs          activeroot_prof              => cnstate_vars%activeroot_prof_col                    , & ! Input:  [real(r8) (:,:) ]  active root distributed through column (1/m)
+!!wgs          annsum_grainc                => cnstate_vars%annsum_grainc_patch                    , & ! Input:  [real(r8) (:)   ]  annual sum of grainc
+!
+!!wgs          gross_nmin_vr                => nitrogenflux_vars%gross_nmin_vr_col                 , & ! Input:  [real(r8) (:,:) ]
+         col_plant_ndemand_vr         => nitrogenflux_vars%plant_ndemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
+         col_plant_pdemand_vr         => phosphorusflux_vars%plant_pdemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
+         !!------------------------------------------------------------------------
+         !! wgs: END
+
+         gddmaturity                  => cnstate_vars%gddmaturity_patch                      , & ! Input:  [real(r8) (:)   ]  gdd needed to harvest
+         huileaf                      => cnstate_vars%huileaf_patch                          , & ! Input:  [real(r8) (:)   ]  heat unit index needed from planting to leaf emergence
+         huigrain                     => cnstate_vars%huigrain_patch                         , & ! Input:  [real(r8) (:)   ]  same to reach vegetative maturity
+         croplive                     => cnstate_vars%croplive_patch                         , & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
+         peaklai                      => cnstate_vars%peaklai_patch                          , & ! Input:  [integer  (:)   ]  1: max allowed lai; 0: not at max
+!         !lgsf                        => cnstate_vars%lgsf_patch                             , & ! Input:  [real(r8) (:)   ]  long growing season factor [0-1]
+         aleafi                       => cnstate_vars%aleafi_patch                           , & ! Output: [real(r8) (:)   ]  saved allocation coefficient from phase 2
+         astemi                       => cnstate_vars%astemi_patch                           , & ! Output: [real(r8) (:)   ]  saved allocation coefficient from phase 2
+         aleaf                        => cnstate_vars%aleaf_patch                            , & ! Output: [real(r8) (:)   ]  leaf allocation coefficient
+         astem                        => cnstate_vars%astem_patch                            , & ! Output: [real(r8) (:)   ]  stem allocation coefficient
+         fpg                          => cnstate_vars%fpg_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
+         fpi                          => cnstate_vars%fpi_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
+         fpi_vr                       => cnstate_vars%fpi_vr_col                             , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
+
+         !!! add phosphorus
+         leafcp                       => ecophyscon%leafcp                                   , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
+         frootcp                      => ecophyscon%frootcp                                  , & ! Input:  [real(r8) (:)   ]  fine root C:P (gC/gP)
+         livewdcp                     => ecophyscon%livewdcp                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
+         deadwdcp                     => ecophyscon%deadwdcp                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:P (gC/gP)
+!!wgs:         graincp                      => ecophyscon%graincp                                  , & ! Input:  [real(r8) (:)   ]  grain C:P (gC/gP)
+         fpg_p                        => cnstate_vars%fpg_p_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
+         fpi_p                        => cnstate_vars%fpi_p_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
+         fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                             , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
+
+!!wgs:         nfixation_prof               => cnstate_vars%nfixation_prof_col                     , & ! Output: [real(r8) (:,:) ]
+         grain_flag                   => cnstate_vars%grain_flag_patch                       , & ! Output: [real(r8) (:)   ]  1: grain fill stage; 0: not
+         c_allometry                  => cnstate_vars%c_allometry_patch                      , & ! Output: [real(r8) (:)   ]  C allocation index (DIM)
+         n_allometry                  => cnstate_vars%n_allometry_patch                      , & ! Output: [real(r8) (:)   ]  N allocation index (DIM)
+         tempsum_potential_gpp        => cnstate_vars%tempsum_potential_gpp_patch            , & ! Output: [real(r8) (:)   ]  temporary annual sum of potential GPP
+         tempmax_retransn             => cnstate_vars%tempmax_retransn_patch                 , & ! Output: [real(r8) (:)   ]  temporary annual max of retranslocated N pool (gN/m2)
+         annsum_potential_gpp         => cnstate_vars%annsum_potential_gpp_patch             , & ! Output: [real(r8) (:)   ]  annual sum of potential GPP
+         annmax_retransn              => cnstate_vars%annmax_retransn_patch                  , & ! Output: [real(r8) (:)   ]  annual max of retranslocated N pool
+!!wgs:         downreg                      => cnstate_vars%downreg_patch                          , & ! Output: [real(r8) (:)   ]  fractional reduction in GPP due to N limitation (DIM)
+
+         leaf_mr                      => carbonflux_vars%leaf_mr_patch                       , & ! Input:  [real(r8) (:)   ]
+         froot_mr                     => carbonflux_vars%froot_mr_patch                      , & ! Input:  [real(r8) (:)   ]
+         livestem_mr                  => carbonflux_vars%livestem_mr_patch                   , & ! Input:  [real(r8) (:)   ]
+         livecroot_mr                 => carbonflux_vars%livecroot_mr_patch                  , & ! Input:  [real(r8) (:)   ]
+         grain_mr                     => carbonflux_vars%grain_mr_patch                      , & ! Input:  [real(r8) (:)   ]
+         annsum_npp                   => carbonflux_vars%annsum_npp_patch                    , & ! Input:  [real(r8) (:)   ]  annual sum of NPP, for wood allocation
+         gpp                          => carbonflux_vars%gpp_before_downreg_patch            , & ! Output: [real(r8) (:)   ]  GPP flux before downregulation (gC/m2/s)
+         availc                       => carbonflux_vars%availc_patch                        , & ! Output: [real(r8) (:)   ]  C flux available for allocation (gC/m2/s)
+         xsmrpool_recover             => carbonflux_vars%xsmrpool_recover_patch              , & ! Output: [real(r8) (:)   ]  C flux assigned to recovery of negative cpool (gC/m2/s)
+!!wgs:         excess_cflux                 => carbonflux_vars%excess_cflux_patch                  , & ! Output: [real(r8) (:)   ]  C flux not allocated due to downregulation (gC/m2/s)
+!!wgs:         plant_calloc                 => carbonflux_vars%plant_calloc_patch                  , & ! Output: [real(r8) (:)   ]  total allocated C flux (gC/m2/s)
+         psnsun_to_cpool              => carbonflux_vars%psnsun_to_cpool_patch               , & ! Output: [real(r8) (:)   ]
+         psnshade_to_cpool            => carbonflux_vars%psnshade_to_cpool_patch             , & ! Output: [real(r8) (:)   ]
+
+         leaf_curmr                   => carbonflux_vars%leaf_curmr_patch                    , &
+         froot_curmr                  => carbonflux_vars%froot_curmr_patch                   , & ! Output: [real(r8) (:)   ]
+         livestem_curmr               => carbonflux_vars%livestem_curmr_patch                , & ! Output: [real(r8) (:)   ]
+         livecroot_curmr              => carbonflux_vars%livecroot_curmr_patch               , & ! Output: [real(r8) (:)   ]
+         grain_curmr                  => carbonflux_vars%grain_curmr_patch                   , & ! Output: [real(r8) (:)   ]
+         leaf_xsmr                    => carbonflux_vars%leaf_xsmr_patch                     , & ! Output: [real(r8) (:)   ]
+         froot_xsmr                   => carbonflux_vars%froot_xsmr_patch                    , & ! Output: [real(r8) (:)   ]
+         livestem_xsmr                => carbonflux_vars%livestem_xsmr_patch                 , & ! Output: [real(r8) (:)   ]
+         livecroot_xsmr               => carbonflux_vars%livecroot_xsmr_patch                , & ! Output: [real(r8) (:)   ]
+         grain_xsmr                   => carbonflux_vars%grain_xsmr_patch                    , & ! Output: [real(r8) (:)   ]
+         cpool_to_xsmrpool            => carbonflux_vars%cpool_to_xsmrpool_patch             , & ! Output: [real(r8) (:)   ]
+!!wgs: BEGIN
+!         cpool_to_leafc               => carbonflux_vars%cpool_to_leafc_patch                , & ! Output: [real(r8) (:)   ]
+!         cpool_to_leafc_storage       => carbonflux_vars%cpool_to_leafc_storage_patch        , & ! Output: [real(r8) (:)   ]
+!         cpool_to_frootc              => carbonflux_vars%cpool_to_frootc_patch               , & ! Output: [real(r8) (:)   ]
+!         cpool_to_frootc_storage      => carbonflux_vars%cpool_to_frootc_storage_patch       , & ! Output: [real(r8) (:)   ]
+!         cpool_to_livestemc           => carbonflux_vars%cpool_to_livestemc_patch            , & ! Output: [real(r8) (:)   ]
+!         cpool_to_livestemc_storage   => carbonflux_vars%cpool_to_livestemc_storage_patch    , & ! Output: [real(r8) (:)   ]
+!         cpool_to_deadstemc           => carbonflux_vars%cpool_to_deadstemc_patch            , & ! Output: [real(r8) (:)   ]
+!         cpool_to_deadstemc_storage   => carbonflux_vars%cpool_to_deadstemc_storage_patch    , & ! Output: [real(r8) (:)   ]
+!         cpool_to_livecrootc          => carbonflux_vars%cpool_to_livecrootc_patch           , & ! Output: [real(r8) (:)   ]
+!         cpool_to_livecrootc_storage  => carbonflux_vars%cpool_to_livecrootc_storage_patch   , & ! Output: [real(r8) (:)   ]
+!         cpool_to_deadcrootc          => carbonflux_vars%cpool_to_deadcrootc_patch           , & ! Output: [real(r8) (:)   ]
+!         cpool_to_deadcrootc_storage  => carbonflux_vars%cpool_to_deadcrootc_storage_patch   , & ! Output: [real(r8) (:)   ]
+!         cpool_to_gresp_storage       => carbonflux_vars%cpool_to_gresp_storage_patch        , & ! Output: [real(r8) (:)   ]  allocation to growth respiration storage (gC/m2/s)
+!         cpool_to_grainc              => carbonflux_vars%cpool_to_grainc_patch               , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
+!         cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
+!!wgs:END
+         sminn_vr                     => nitrogenstate_vars%sminn_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
+         retransn                     => nitrogenstate_vars%retransn_patch                   , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant pool of retranslocated N
+         smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4
+         smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3
+
+         plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
+!!wgs         plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
+         avail_retransn               => nitrogenflux_vars%avail_retransn_patch              , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
+!         npool_to_grainn              => nitrogenflux_vars%npool_to_grainn_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)
+!         npool_to_grainn_storage      => nitrogenflux_vars%npool_to_grainn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s)
+         retransn_to_npool            => nitrogenflux_vars%retransn_to_npool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
+!         sminn_to_npool               => nitrogenflux_vars%sminn_to_npool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
+!         npool_to_leafn               => nitrogenflux_vars%npool_to_leafn_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)
+!         npool_to_leafn_storage       => nitrogenflux_vars%npool_to_leafn_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)
+!         npool_to_frootn              => nitrogenflux_vars%npool_to_frootn_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)
+!         npool_to_frootn_storage      => nitrogenflux_vars%npool_to_frootn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to fine root N storage (gN/m2/s)
+!         npool_to_livestemn           => nitrogenflux_vars%npool_to_livestemn_patch          , & ! Output: [real(r8) (:)   ]
+!         npool_to_livestemn_storage   => nitrogenflux_vars%npool_to_livestemn_storage_patch  , & ! Output: [real(r8) (:)   ]
+!         npool_to_deadstemn           => nitrogenflux_vars%npool_to_deadstemn_patch          , & ! Output: [real(r8) (:)   ]
+!         npool_to_deadstemn_storage   => nitrogenflux_vars%npool_to_deadstemn_storage_patch  , & ! Output: [real(r8) (:)   ]
+!         npool_to_livecrootn          => nitrogenflux_vars%npool_to_livecrootn_patch         , & ! Output: [real(r8) (:)   ]
+!         npool_to_livecrootn_storage  => nitrogenflux_vars%npool_to_livecrootn_storage_patch , & ! Output: [real(r8) (:)   ]
+!         npool_to_deadcrootn          => nitrogenflux_vars%npool_to_deadcrootn_patch         , & ! Output: [real(r8) (:)   ]
+!!wgs         npool_to_deadcrootn_storage  => nitrogenflux_vars%npool_to_deadcrootn_storage_patch , & ! Output: [real(r8) (:)   ]
+         leafn_to_retransn            => nitrogenflux_vars%leafn_to_retransn_patch           , & ! Output: [real(r8) (:)   ]
+         frootn_to_retransn           => nitrogenflux_vars%frootn_to_retransn_patch          , & ! Output: [real(r8) (:)   ]
+         livestemn_to_retransn        => nitrogenflux_vars%livestemn_to_retransn_patch       , & ! Output: [real(r8) (:)   ]
+         potential_immob              => nitrogenflux_vars%potential_immob_col               , & ! Output: [real(r8) (:)   ]
+         actual_immob                 => nitrogenflux_vars%actual_immob_col                  , & ! Output: [real(r8) (:)   ]
+         sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                , & ! Output: [real(r8) (:)   ]
+         sminn_to_denit_excess_vr     => nitrogenflux_vars%sminn_to_denit_excess_vr_col      , & ! Output: [real(r8) (:,:) ]
+         pot_f_nit_vr                 => nitrogenflux_vars%pot_f_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+         pot_f_denit_vr               => nitrogenflux_vars%pot_f_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
+         f_nit_vr                     => nitrogenflux_vars%f_nit_vr_col                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
+         f_denit_vr                   => nitrogenflux_vars%f_denit_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
+         actual_immob_no3_vr          => nitrogenflux_vars%actual_immob_no3_vr_col           , & ! Output: [real(r8) (:,:) ]
+         actual_immob_nh4_vr          => nitrogenflux_vars%actual_immob_nh4_vr_col           , & ! Output: [real(r8) (:,:) ]
+         smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col          , & ! Output: [real(r8) (:,:) ]
+         smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col          , & ! Output: [real(r8) (:,:) ]
+         n2_n2o_ratio_denit_vr        => nitrogenflux_vars%n2_n2o_ratio_denit_vr_col         , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         f_n2o_denit_vr               => nitrogenflux_vars%f_n2o_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
+         f_n2o_nit_vr                 => nitrogenflux_vars%f_n2o_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
+         supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col        , & ! Output: [real(r8) (:,:) ]
+         sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
+         potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col            , & ! Output: [real(r8) (:,:) ]
+         actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col               , & ! Output: [real(r8) (:,:) ]
+
+         !!! add phosphorus variables  - X. YANG
+!!wgs:         sminp_vr                     => phosphorusstate_vars%sminp_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
+         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
+         retransp                     => phosphorusstate_vars%retransp_patch                   , & ! Input:  [real(r8) (:)   ]  (gP/m2) plant pool of retranslocated P
+
+         plant_pdemand                => phosphorusflux_vars%plant_pdemand_patch               , & ! Output: [real(r8) (:)   ]  P flux required to support initial GPP (gP/m2/s)
+!!wgs         plant_palloc                 => phosphorusflux_vars%plant_palloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated P flux (gP/m2/s)
+         avail_retransp               => phosphorusflux_vars%avail_retransp_patch              , & ! Output: [real(r8) (:)   ]  P flux available from retranslocation pool (gP/m2/s)
+!!wgs         ppool_to_grainp              => phosphorusflux_vars%ppool_to_grainp_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain P (gP/m2/s)
+!!wgs        ppool_to_grainp_storage      => phosphorusflux_vars%ppool_to_grainp_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain P storage (gP/m2/s)
+         retransp_to_ppool            => phosphorusflux_vars%retransp_to_ppool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated P (gP/m2/s)
+!!wgs:         sminp_to_ppool               => phosphorusflux_vars%sminp_to_ppool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral P uptake (gP/m2/s)
+!         ppool_to_leafp               => phosphorusflux_vars%ppool_to_leafp_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf P (gP/m2/s)
+!         ppool_to_leafp_storage       => phosphorusflux_vars%ppool_to_leafp_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf P storage (gP/m2/s)
+!         ppool_to_frootp              => phosphorusflux_vars%ppool_to_frootp_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root P (gP/m2/s)
+!         ppool_to_frootp_storage      => phosphorusflux_vars%ppool_to_frootp_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to fine root P storage (gP/m2/s)
+!         ppool_to_livestemp           => phosphorusflux_vars%ppool_to_livestemp_patch          , & ! Output: [real(r8) (:)   ]
+!         ppool_to_livestemp_storage   => phosphorusflux_vars%ppool_to_livestemp_storage_patch  , & ! Output: [real(r8) (:)   ]
+!         ppool_to_deadstemp           => phosphorusflux_vars%ppool_to_deadstemp_patch          , & ! Output: [real(r8) (:)   ]
+!         ppool_to_deadstemp_storage   => phosphorusflux_vars%ppool_to_deadstemp_storage_patch  , & ! Output: [real(r8) (:)   ]
+!         ppool_to_livecrootp          => phosphorusflux_vars%ppool_to_livecrootp_patch         , & ! Output: [real(r8) (:)   ]
+!         ppool_to_livecrootp_storage  => phosphorusflux_vars%ppool_to_livecrootp_storage_patch , & ! Output: [real(r8) (:)   ]
+!         ppool_to_deadcrootp          => phosphorusflux_vars%ppool_to_deadcrootp_patch         , & ! Output: [real(r8) (:)   ]
+!         ppool_to_deadcrootp_storage  => phosphorusflux_vars%ppool_to_deadcrootp_storage_patch , & ! Output: [real(r8) (:)   ]
+!         leafp_to_retransp            => phosphorusflux_vars%leafp_to_retransp_patch           , & ! Output: [real(r8) (:)   ]
+!         frootp_to_retransp           => phosphorusflux_vars%frootp_to_retransp_patch          , & ! Output: [real(r8) (:)   ]
+!!wgs:         livestemp_to_retransp        => phosphorusflux_vars%livestemp_to_retransp_patch       , & ! Output: [real(r8) (:)   ]
+         potential_immob_p            => phosphorusflux_vars%potential_immob_p_col               , & ! Output: [real(r8) (:)   ]
+         actual_immob_p               => phosphorusflux_vars%actual_immob_p_col                  , & ! Output: [real(r8) (:)   ]
+         sminp_to_plant               => phosphorusflux_vars%sminp_to_plant_col                , & ! Output: [real(r8) (:)   ]
+         supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col        , & ! Output: [real(r8) (:,:) ]
+         sminp_to_plant_vr            => phosphorusflux_vars%sminp_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
+         potential_immob_p_vr         => phosphorusflux_vars%potential_immob_p_vr_col            , & ! Output: [real(r8) (:,:) ]
+         actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col               , & ! Output: [real(r8) (:,:) ]
+         p_allometry                  => cnstate_vars%p_allometry_patch                       , & ! Output: [real(r8) (:)   ]  P allocation index (DIM)
+         tempmax_retransp             => cnstate_vars%tempmax_retransp_patch                 , & ! Output: [real(r8) (:)   ]  temporary annual max of retranslocated P pool (gP/m2)
+         annmax_retransp              => cnstate_vars%annmax_retransp_patch                   , & ! Output: [real(r8) (:)   ]  annual max of retranslocated P pool
+
+
+         c13cf => c13_carbonflux_vars, &
+         c14cf => c14_carbonflux_vars  &
+         )
+      ! set time steps
+      dt = real( get_step_size(), r8 )
+
+     ! loop over patches to assess the total plant N demand and P demand
+!      do fp=1,num_soilp
+!         p = filter_soilp(fp)
+!
+!         ! get the time step total gross photosynthesis
+!         ! this is coming from the canopy fluxes code, and is the
+!         ! gpp that is used to control stomatal conductance.
+!         ! For the nitrogen downregulation code, this is assumed
+!         ! to be the potential gpp, and the actual gpp will be
+!         ! reduced due to N limitation.
+!
+!         ! Convert psn from umol/m2/s -> gC/m2/s
+!
+!         ! The input psn (psnsun and psnsha) are expressed per unit LAI
+!         ! in the sunlit and shaded canopy, respectively. These need to be
+!         ! scaled by laisun and laisha to get the total gpp for allocation
+!
+!         ! Note that no associate statement is used for the isotope carbon fluxes below
+!         ! since they are not always allocated AND nag compiler will complain if you try to
+!         ! to have an associate statement with unallocated memory
+!
+!         psnsun_to_cpool(p)   = psnsun(p) * laisun(p) * 12.011e-6_r8
+!         psnshade_to_cpool(p) = psnsha(p) * laisha(p) * 12.011e-6_r8
+!
+!         if ( use_c13 ) then
+!            c13cf%psnsun_to_cpool_patch(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
+!            c13cf%psnshade_to_cpool_patch(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
+!         endif
+!
+!         if ( use_c14 ) then
+!            c14cf%psnsun_to_cpool_patch(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
+!            c14cf%psnshade_to_cpool_patch(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
+!         endif
+!
+!         gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
+!
+!         ! get the time step total maintenance respiration
+!         ! These fluxes should already be in gC/m2/s
+!
+!         mr = leaf_mr(p) + froot_mr(p)
+!         if (woody(ivt(p)) == 1.0_r8) then
+!            mr = mr + livestem_mr(p) + livecroot_mr(p)
+!         else if (ivt(p) >= npcropmin) then
+!            if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
+!         end if
+!
+!         ! carbon flux available for allocation
+!         availc(p) = gpp(p) - mr
+!
+!         ! new code added for isotope calculations, 7/1/05, PET
+!         ! If mr > gpp, then some mr comes from gpp, the rest comes from
+!         ! cpool (xsmr)
+!         if (mr > 0._r8 .and. availc(p) < 0._r8) then
+!            curmr = gpp(p)
+!            curmr_ratio = curmr / mr
+!         else
+!            curmr_ratio = 1._r8
+!         end if
+!         leaf_curmr(p) = leaf_mr(p) * curmr_ratio
+!         leaf_xsmr(p) = leaf_mr(p) - leaf_curmr(p)
+!         froot_curmr(p) = froot_mr(p) * curmr_ratio
+!         froot_xsmr(p) = froot_mr(p) - froot_curmr(p)
+!         livestem_curmr(p) = livestem_mr(p) * curmr_ratio
+!         livestem_xsmr(p) = livestem_mr(p) - livestem_curmr(p)
+!         livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
+!         livecroot_xsmr(p) = livecroot_mr(p) - livecroot_curmr(p)
+!         grain_curmr(p) = grain_mr(p) * curmr_ratio
+!         grain_xsmr(p) = grain_mr(p) - grain_curmr(p)
+!
+!         ! no allocation when available c is negative
+!         availc(p) = max(availc(p),0.0_r8)
+!
+!         ! test for an xsmrpool deficit
+!         if (xsmrpool(p) < 0.0_r8) then
+!            ! Running a deficit in the xsmrpool, so the first priority is to let
+!            ! some availc from this timestep accumulate in xsmrpool.
+!            ! Determine rate of recovery for xsmrpool deficit
+!
+!            xsmrpool_recover(p) = -xsmrpool(p)/(dayscrecover*secspday)
+!            if (xsmrpool_recover(p) < availc(p)) then
+!               ! available carbon reduced by amount for xsmrpool recovery
+!               availc(p) = availc(p) - xsmrpool_recover(p)
+!            else
+!               ! all of the available carbon goes to xsmrpool recovery
+!               xsmrpool_recover(p) = availc(p)
+!               availc(p) = 0.0_r8
+!            end if
+!            cpool_to_xsmrpool(p) = xsmrpool_recover(p)
+!         end if
+!
+!         f1 = froot_leaf(ivt(p))
+!         f2 = croot_stem(ivt(p))
+!
+!         ! modified wood allocation to be 2.2 at npp=800 gC/m2/yr, 0.2 at npp=0,
+!         ! constrained so that it does not go lower than 0.2 (under negative annsum_npp)
+!         ! This variable allocation is only for trees. Shrubs have a constant
+!         ! allocation as specified in the pft-physiology file.  The value is also used
+!         ! as a trigger here: -1.0 means to use the dynamic allocation (trees).
+!
+!         if (stem_leaf(ivt(p)) == -1._r8) then
+!            f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
+!         else
+!            f3 = stem_leaf(ivt(p))
+!         end if
+!
+!         f4   = flivewd(ivt(p))
+!         g1   = grperc(ivt(p))
+!         g2   = grpnow(ivt(p))
+!         cnl  = leafcn(ivt(p))
+!         cnfr = frootcn(ivt(p))
+!         cnlw = livewdcn(ivt(p))
+!         cndw = deadwdcn(ivt(p))
+!
+!         cpl = leafcp(ivt(p))
+!         cpfr = frootcp(ivt(p))
+!         cplw = livewdcp(ivt(p))
+!         cpdw = deadwdcp(ivt(p))
+!
+!
+!         ! calculate f1 to f5 for prog crops following AgroIBIS subr phenocrop
+!
+!         f5 = 0._r8 ! continued intializations from above
+!
+!         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+!
+!            if (croplive(p)) then
+!               ! same phases appear in subroutine CropPhenology
+!
+!               ! Phase 1 completed:
+!               ! ==================
+!               ! if hui is less than the number of gdd needed for filling of grain
+!               ! leaf emergence also has to have taken place for lai changes to occur
+!               ! and carbon assimilation
+!               ! Next phase: leaf emergence to start of leaf decline
+!
+!               if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p)) then
+!
+!                  ! allocation rules for crops based on maturity and linear decrease
+!                  ! of amount allocated to roots over course of the growing season
+!
+!                  if (peaklai(p) == 1) then ! lai at maximum allowed
+!                     arepr(p) = 0._r8
+!                     aleaf(p) = 1.e-5_r8
+!                     astem(p) = 0._r8
+!                     aroot(p) = 1._r8 - arepr(p) - aleaf(p) - astem(p)
+!                  else
+!                     arepr(p) = 0._r8
+!                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
+!                          (arooti(ivt(p)) - arootf(ivt(p))) *  &
+!                          min(1._r8, hui(p)/gddmaturity(p))))
+!                     fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
+!                          exp(-bfact(ivt(p))*hui(p)/huigrain(p))) / &
+!                          (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
+!                     aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
+!                     astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
+!                  end if
+!
+!                  ! AgroIBIS included here an immediate adjustment to aleaf & astem if the
+!                  ! predicted lai from the above allocation coefficients exceeded laimx.
+!                  ! We have decided to live with lais slightly higher than laimx by
+!                  ! enforcing the cap in the following tstep through the peaklai logic above.
+!
+!                  astemi(p) = astem(p) ! save for use by equations after shift
+!                  aleafi(p) = aleaf(p) ! to reproductive phenology stage begins
+!                  grain_flag(p) = 0._r8 ! setting to 0 while in phase 2
+!
+!                  ! Phase 2 completed:
+!                  ! ==================
+!                  ! shift allocation either when enough gdd are accumulated or maximum number
+!                  ! of days has elapsed since planting
+!
+!               else if (hui(p) >= huigrain(p)) then
+!
+!                  aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) - &
+!                       (arooti(ivt(p)) - arootf(ivt(p))) * min(1._r8, hui(p)/gddmaturity(p))))
+!                  if (astemi(p) > astemf(ivt(p))) then
+!                     astem(p) = max(0._r8, max(astemf(ivt(p)), astem(p) * &
+!                          (1._r8 - min((hui(p)-                 &
+!                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
+!                          huigrain(p)),1._r8)**allconss(ivt(p)) )))
+!                  end if
+!                  if (aleafi(p) > aleaff(ivt(p))) then
+!                     aleaf(p) = max(1.e-5_r8, max(aleaff(ivt(p)), aleaf(p) * &
+!                          (1._r8 - min((hui(p)-                    &
+!                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
+!                          huigrain(p)),1._r8)**allconsl(ivt(p)) )))
+!                  end if
+!
+!                  !Beth's retranslocation of leafn, stemn, rootn to organ
+!                  !Filter excess plant N to retransn pool for organ N
+!                  !Only do one time then hold grain_flag till onset next season
+!
+!                  ! slevis: Will astem ever = astemf exactly?
+!                  ! Beth's response: ...looks like astem can equal astemf under the right circumstances.
+!                  !It might be worth a rewrite to capture what I was trying to do, but the retranslocation for
+!                  !corn and wheat begins at the beginning of the grain fill stage, but for soybean I was holding it
+!                  !until after the leaf and stem decline were complete. Looking at how astem is calculated, once the
+!                  !stem decline is near complete, astem should (usually) be set to astemf. The reason for holding off
+!                  !on soybean is that the retranslocation scheme begins at the beginning of the grain phase, when the
+!                  !leaf and stem are still growing, but declining. Since carbon is still getting allocated and now
+!                  !there is more nitrogen available, the nitrogen can be diverted from grain. For corn and wheat
+!                  !the impact was probably enough to boost productivity, but for soybean the nitrogen was better off
+!                  !fulfilling the grain fill. It seems that if the peak lai is reached for soybean though that this
+!                  !would be bypassed altogether, not the intended outcome. I checked several of my output files and
+!                  !they all seemed to be going through the retranslocation loop for soybean - good news.
+!
+!                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p))) then
+!                     if (grain_flag(p) == 0._r8) then
+!                        t1 = 1 / dt
+!                        leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
+!                             fleafcn(ivt(p))))
+!                        livestemn_to_retransn(p) = t1 * ((livestemc(p) / livewdcn(ivt(p))) - (livestemc(p) / &
+!                             fstemcn(ivt(p))))
+!                        frootn_to_retransn(p) = 0._r8
+!                        if (ffrootcn(ivt(p)) > 0._r8) then
+!                           frootn_to_retransn(p) = t1 * ((frootc(p) / frootcn(ivt(p))) - (frootc(p) / &
+!                                ffrootcn(ivt(p))))
+!                        end if
+!                        grain_flag(p) = 1._r8
+!                     end if
+!                  end if
+!
+!                  arepr(p) = 1._r8 - aroot(p) - astem(p) - aleaf(p)
+!
+!               else                   ! pre emergence
+!                  aleaf(p) = 1.e-5_r8 ! allocation coefficients should be irrelevant
+!                  astem(p) = 0._r8    ! because crops have no live carbon pools;
+!                  aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
+!                  arepr(p) = 0._r8    ! a few lines down
+!               end if
+!
+!               f1 = aroot(p) / aleaf(p)
+!               f3 = astem(p) / aleaf(p)
+!               f5 = arepr(p) / aleaf(p)
+!               g1 = 0.25_r8
+!
+!            else   ! .not croplive
+!               f1 = 0._r8
+!               f3 = 0._r8
+!               f5 = 0._r8
+!               g1 = 0.25_r8
+!            end if
+!         end if
+!
+!         ! based on available C, use constant allometric relationships to
+!         ! determine N requirements
+!         ! determine P requirements   -X. YANG
+!
+!         if (woody(ivt(p)) == 1.0_r8) then
+!            c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3*(1._r8+f2))
+!            n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
+!            p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cpdw
+!
+!         else if (ivt(p) >= npcropmin) then ! skip generic crops
+!            cng = graincn(ivt(p))
+!            c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
+!            n_allometry(p) = 1._r8/cnl + f1/cnfr + f5/cng + (f3*f4*(1._r8+f2))/cnlw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
+!            p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cpdw
+!
+!         else
+!            c_allometry(p) = 1._r8+g1+f1+f1*g1
+!            n_allometry(p) = 1._r8/cnl + f1/cnfr
+!            p_allometry(p) = 1._r8/cpl + f1/cpfr
+!         end if
+!         plant_ndemand(p) = availc(p)*(n_allometry(p)/c_allometry(p))
+!         plant_pdemand(p) = availc(p)*(p_allometry(p)/c_allometry(p))
+!
+!         ! retranslocated N deployment depends on seasonal cycle of potential GPP
+!         ! (requires one year run to accumulate demand)
+!
+!         tempsum_potential_gpp(p) = tempsum_potential_gpp(p) + gpp(p)
+!
+!         ! Adding the following line to carry max retransn info to CN Annual Update
+!         tempmax_retransn(p) = max(tempmax_retransn(p),retransn(p))
+!         tempmax_retransp(p) = max(tempmax_retransp(p),retransp(p))   !! phosphorus
+!
+!         ! Beth's code: crops pull from retransn pool only during grain fill;
+!         !              retransn pool has N from leaves, stems, and roots for
+!         !              retranslocation
+!
+!         if (ivt(p) >= npcropmin .and. grain_flag(p) == 1._r8) then
+!            avail_retransn(p) = plant_ndemand(p)
+!            avail_retransp(p) = plant_pdemand(p)
+!         else if (ivt(p) < npcropmin .and. annsum_potential_gpp(p) > 0._r8) then
+!            avail_retransn(p) = (annmax_retransn(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
+!            avail_retransp(p) = (annmax_retransp(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
+!         else
+!            avail_retransn(p) = 0.0_r8
+!            avail_retransp(p) = 0.0_r8
+!         end if
+!
+!         ! make sure available retrans N doesn't exceed storage
+!         avail_retransn(p) = min(avail_retransn(p), retransn(p)/dt)
+!         avail_retransp(p) = min(avail_retransp(p), retransp(p)/dt)    !! phosphorus
+!
+!         ! modify plant N demand according to the availability of
+!         ! retranslocated N
+!         ! take from retransn pool at most the flux required to meet
+!         ! plant ndemand
+!
+!         if (plant_ndemand(p) > avail_retransn(p)) then
+!            retransn_to_npool(p) = avail_retransn(p)
+!         else
+!            retransn_to_npool(p) = plant_ndemand(p)
+!         end if
+!         plant_ndemand(p) = plant_ndemand(p) - retransn_to_npool(p)
+!
+!         if (plant_pdemand(p) > avail_retransp(p)) then
+!            retransp_to_ppool(p) = avail_retransp(p)
+!         else
+!            retransp_to_ppool(p) = plant_pdemand(p)
+!         end if
+!         plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(p)
+!
+!
+!      end do ! end pft loop
+!
+!      ! now use the p2c routine to get the column-averaged plant_ndemand
+!      call p2c(bounds, num_soilc, filter_soilc, &
+!           plant_ndemand(bounds%begp:bounds%endp), &
+!           col_plant_ndemand(bounds%begc:bounds%endc))
+!
+!      !!! add phosphorus
+!      call p2c(bounds, num_soilc, filter_soilc, &
+!           plant_pdemand(bounds%begp:bounds%endp), &
+!           col_plant_pdemand(bounds%begc:bounds%endc))
+!
+      !!! Starting resolving N/P limitation !!!
+      call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
+      call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
+
 !write(*,'(A40,12E14.6)')"DEBUG | nuptake_prof=",nuptake_prof(1,1:nlevdecomp)
 !write(*,'(A40,12E14.6)')"DEBUG | puptake_prof=",puptake_prof(1,1:nlevdecomp)
 
@@ -903,29 +2215,6 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
             end do
          end do
 
-
-    !------------------------------------------------------------------
-    !! wgs: BEGIN
-         ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-         if (use_pflotran .and. pf_cmode) then
-            do j = 1, nlevdecomp
-               do fc=1, num_soilc
-                  c = filter_soilc(fc)
-                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
-                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
-               end do
-            end do
-         endif
-         ! note that 'Carbon_only' option generated 'supplement_to_sminn_vr' will not be available to PFLOTRAN
-
-        ! when coupled with pflotran, cphase 1 is actually ending at this point
-        ! i.e., column loops to resolve plant/heterotroph competition
-        ! for mineral SMINN below in this subroutine will not be implemented
-        ! (this point is the block starting)
-        if (.not. (use_pflotran .and. pf_cmode)) then
-    !! wgs: END
-    !------------------------------------------------------------------
-    !------------------------------------------------------------------
          do j = 1, nlevdecomp
             do fc=1,num_soilc
                c = filter_soilc(fc)
@@ -975,12 +2264,6 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
                end if
             end do
          end do
-
-
-!------------------------------------------------------------------
-! phosphorus: puptake_prof(c,j)
-! moved to Line 911-938
-!------------------------------------------------------------------
 
         ! add phosphorus
          do j = 1, nlevdecomp
@@ -1219,11 +2502,7 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
                fpi_p(c) = 1.0_r8
             end if
          end do
-    !------------------------------------------------------------------
-        ! above column loops to resolve plant/heterotroph competition
-        ! for mineral SMINN in this subroutine will not be implemented
-        ! (this point is the block ending)
-        end if !(.not. (use_pflotran .and. pf_cmode)) line ~927
+
     !------------------------------------------------------------------
 
       else  !----------NITRIF_DENITRIF-------------!
@@ -1235,29 +2514,6 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
          compet_decomp_nh4 = CNAllocParamsInst%compet_decomp_nh4
          compet_denit = CNAllocParamsInst%compet_denit
          compet_nit = CNAllocParamsInst%compet_nit
-
-      !------------------------------------------------------------------
-      !! wgs: BEGIN
-         ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-         if (use_pflotran .and. pf_cmode) then
-            do j = 1, nlevdecomp
-               do fc = 1, num_soilc
-                  c = filter_soilc(fc)
-                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
-                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)  !!wgs: phosphorus
-               end do
-            end do
-         endif
-
-         ! note that 'Carbon_only' option generated 'supplement_to_sminn_vr' will not be available to PFLOTRAN
-
-         ! when coupled with pflotran, cphase 1 is actually ending at this point
-         ! i.e., column loops to resolve plant/heterotroph/nitrifier/denitrifier competition
-         ! for mineral NO3 and NH4 below in this subroutine will not be implemented
-         ! (this point is the block starting)
-         if (.not. (use_pflotran .and. pf_cmode)) then
-      !! wgs: END
-      !------------------------------------------------------------------
 
          ! main column/vertical loop
          do j = 1, nlevdecomp
@@ -1514,46 +2770,25 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
                fpi(c) = 1._r8
             end if
          end do ! end of column loops
-    !------------------------------------------------------------------
-    !! wgs
-         ! above column loops to resolve plant/heterotroph/nitrifier/denitrifier competition
-         ! for mineral NO3 and NH4 in this subroutine will not be implemented
-         ! (this point is the block ending)
-         end if !(.not. (use_pflotran .and. pf_cmode)) line ~1308
-    !------------------------------------------------------------------
+
       end if  !end of if_not_use_nitrif_denitrif
 
-    !-------------------------------------------------------------------
-    !! wgs
-      !== if not coupled with PFLOTRAN-bgc, here will run continuously ===================================================
-
-      !'plant available N distribution and C allocation' portion is in the pf_cphase 2
-!      if (.not.pf_cphase1 .or. .not.(use_pflotran .and. pf_cmode)) then  ! this if-block allows phase 1 ending at this point
-!    !-------------------------------------------------------------------
-!
-!      ! start new pft loop to distribute the available N between the
-!      ! competing patches on the basis of relative demand, and allocate C and N to
-!      ! new growth and storage
-!
-
-!      !----------------------------------------------------------------
-!      !! wgs
-!      ! end of pf_cphase 2, if coupled with pflotran
-!      endif  ! end of if-block started at line ~1582   if (.not.pf_cphase1 .or. .not.(use_pflotran .and. pf_cmode))
-      !! QUESTION: include the rest of the code (p2c...) into this 'if'? done!
+      !-------------------------------------------------------------------
+      !'plant available N distribution and C allocation' portion is in 'CNAllocation3_AG'
       !================================================================================================
 
     end associate
 
- end subroutine CNAllocation1
-
+ end subroutine CNAllocation2_BG
  !-----------------------------------------------------------------------
-  subroutine CNAllocation2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CNAllocation3_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonstate_vars, carbonflux_vars,                               &
        c13_carbonflux_vars, c14_carbonflux_vars,                                      &
        nitrogenstate_vars, nitrogenflux_vars,                                         &
        phosphorusstate_vars, phosphorusflux_vars)
-    !!wgs: Split CNAllocation to 2 subroutines: CNAllocation1 & CNAllocation2
+    !! 3rd phase of CNAllocation: start new pft loop to distribute the available N between the
+    ! competing patches on the basis of relative demand, and allocate C and N to new growth and storage
+
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
@@ -2132,15 +3367,11 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
            end do
       end do
       !----------------------------------------------------------------
-      !! wgs
-      ! end of pf_cphase 2, if coupled with pflotran
-!      endif  ! end of if-block started at line ~1582   if (.not.pf_cphase1 .or. .not.(use_pflotran .and. pf_cmode))
-      !! QUESTION: include the rest of the code (p2c...) into this 'if'? done!
       !================================================================================================
 
     end associate
 
- end subroutine CNAllocation2
+ end subroutine CNAllocation3_AG
 
 !-----------------------------------------------------------------------
   subroutine calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
@@ -2155,8 +3386,8 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
 !     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
 !     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
 
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    type(cnstate_type)       , intent(in) :: cnstate_vars
+    type(nitrogenstate_type) , intent(in) :: nitrogenstate_vars
 
     integer :: c,j,fc                                            !indices
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
@@ -2222,8 +3453,8 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
 !     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
 !     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
 
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(cnstate_type)       , intent(in) :: cnstate_vars
+    type(phosphorusstate_type) , intent(in) :: phosphorusstate_vars
 
     integer :: c,j,fc                                            !indices
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
@@ -2269,7 +3500,1313 @@ print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
 
  end subroutine calc_puptake_prof
  !-----------------------------------------------------------------------
-
+!-----------------------------------------------------------------------
+!  subroutine CNAllocation1 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+!       photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
+!       carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
+!       nitrogenstate_vars, nitrogenflux_vars,&
+!       phosphorusstate_vars,phosphorusflux_vars)
+!    !!wgs: Split CNAllocation to 2 subroutines: CNAllocation1 & CNAllocation2
+!    ! !USES:
+!    use shr_sys_mod      , only: shr_sys_flush
+!    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+!                                 cnallocate_carbonphosphorus_only
+!    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
+!    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean !!
+!    use clm_varpar       , only: nlevdecomp !!wgs: nlevsoi,
+!    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+!!!wgs    use landunit_varcon  , only: istsoil, istcrop
+!    use clm_time_manager , only: get_step_size
+!    !
+!    ! !ARGUMENTS:
+!    type(bounds_type)        , intent(in)    :: bounds
+!    integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
+!    integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+!    integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
+!    integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
+!    type(photosyns_type)     , intent(in)    :: photosyns_vars
+!    type(crop_type)          , intent(in)    :: crop_vars
+!    type(canopystate_type)   , intent(in)    :: canopystate_vars
+!    type(cnstate_type)       , intent(inout) :: cnstate_vars
+!    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
+!    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+!    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+!    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+!    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+!    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+!!     !!  add phosphorus  -X.YANG
+!    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+!    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+!    !
+!    ! !LOCAL VARIABLES: wgs: ALL
+!    real(r8) :: compet_plant_no3       ! (unitless) relative compettiveness of plants for NO3
+!    real(r8) :: compet_plant_nh4       ! (unitless) relative compettiveness of plants for NH4
+!    real(r8) :: compet_decomp_no3      ! (unitless) relative competitiveness of immobilizers for NO3
+!    real(r8) :: compet_decomp_nh4      ! (unitless) relative competitiveness of immobilizers for NH4
+!    real(r8) :: compet_denit           ! (unitless) relative competitiveness of denitrifiers for NO3
+!    real(r8) :: compet_nit             ! (unitless) relative competitiveness of nitrifiers for NH4
+!    real(r8) :: fpi_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
+!    real(r8) :: fpi_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
+!    real(r8) :: sum_nh4_demand(bounds%begc:bounds%endc,1:nlevdecomp)
+!    real(r8) :: sum_nh4_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
+!    real(r8) :: sum_no3_demand(bounds%begc:bounds%endc,1:nlevdecomp)
+!    real(r8) :: sum_no3_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
+!    !
+!    integer :: c,p,l,j                                               !indices
+!!!wgs:  integer pi,                                                      !indices
+!    integer :: fp                                                    !lake filter pft index
+!    integer :: fc                                                    !lake filter column index
+!    real(r8):: mr                                                    !maintenance respiration (gC/m2/s)
+!    real(r8):: f1,f2,f3,f4,g1,g2                                     !allocation parameters
+!    real(r8):: cnl,cnfr,cnlw,cndw                                    !C:N ratios for leaf, fine root, and wood
+!!!wgs:     real(r8):: fcur                                                  !fraction of current psn displayed as growth
+!!!wgs:     real(r8):: gresp_storage                                         !temporary variable for growth resp to storage
+!!!wgs:     real(r8):: nlc                                                   !temporary variable for total new leaf carbon allocation
+!    real(r8):: curmr, curmr_ratio                                    !xsmrpool temporary variables
+!    real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
+!    real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+!!!wgs:     real(r8):: sminn_tot(bounds%begc:bounds%endc)
+!    real(r8) f5                                                      !grain allocation parameter
+!    real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
+!    real(r8) fleaf                                                   !fraction allocated to leaf
+!    real(r8) t1                                                      !temporary variable
+!    integer :: nlimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for N limitation
+!    real(r8):: residual_sminn_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+!    real(r8):: residual_sminn(bounds%begc:bounds%endc)
+!    integer :: nlimit_no3(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NO3 limitation
+!    integer :: nlimit_nh4(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NH4 limitation
+!    real(r8):: residual_smin_nh4_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+!    real(r8):: residual_smin_no3_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+!    real(r8):: residual_smin_nh4(bounds%begc:bounds%endc)
+!    real(r8):: residual_smin_no3(bounds%begc:bounds%endc)
+!    real(r8):: residual_plant_ndemand(bounds%begc:bounds%endc)
+!
+!    !! Local P variables
+!    real(r8):: cpl,cpfr,cplw,cpdw                                     !C:P ratios for leaf, fine root, and wood
+!!!wgs:    real(r8):: cpg                                                  !C:P ratio
+!    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column P demand (gN/m3/s) at a given level
+!    real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+!!!wgs:    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
+!    integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for P limitation
+!    real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
+!    real(r8):: residual_sminp(bounds%begc:bounds%endc)
+!    real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
+!
+!    ! wgs: BEGIN
+!!!wgs:    real(r8) totc, totcstorage                      !temporary variables for summing plant C and storage C
+!!!wgs:    real(r8) stor_to_xsmr, fstor_to_xsmr, tmp_xsmr  !temporary variables for transfering storage C to xsmrpool
+!    ! wgs: END
+!
+!    !-----------------------------------------------------------------------
+!
+!    associate(                                                                                 &
+!         ivt                          => pft%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type
+!!
+!         woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+!         froot_leaf                   => ecophyscon%froot_leaf                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new fine root C per new leaf C (gC/gC)
+!         croot_stem                   => ecophyscon%croot_stem                               , & ! Input:  [real(r8) (:)   ]  allocation parameter: new coarse root C per new stem C (gC/gC)
+!         stem_leaf                    => ecophyscon%stem_leaf                                , & ! Input:  [real(r8) (:)   ]  allocation parameter: new stem c per new leaf C (gC/gC)
+!         flivewd                      => ecophyscon%flivewd                                  , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
+!         leafcn                       => ecophyscon%leafcn                                   , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)
+!         frootcn                      => ecophyscon%frootcn                                  , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)
+!         livewdcn                     => ecophyscon%livewdcn                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
+!         deadwdcn                     => ecophyscon%deadwdcn                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:N (gC/gN)
+!!!wgs:         fcur2                        => ecophyscon%fcur                                     , & ! Input:  [real(r8) (:)   ]  allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
+!         graincn                      => ecophyscon%graincn                                  , & ! Input:  [real(r8) (:)   ]  grain C:N (gC/gN)
+!         fleafcn                      => ecophyscon%fleafcn                                  , & ! Input:  [real(r8) (:)   ]  leaf c:n during organ fill
+!         ffrootcn                     => ecophyscon%ffrootcn                                 , & ! Input:  [real(r8) (:)   ]  froot c:n during organ fill
+!         fstemcn                      => ecophyscon%fstemcn                                  , & ! Input:  [real(r8) (:)   ]  stem c:n during organ fill
+!
+!         psnsun                       => photosyns_vars%psnsun_patch                         , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
+!         psnsha                       => photosyns_vars%psnsha_patch                         , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
+!         c13_psnsun                   => photosyns_vars%c13_psnsun_patch                     , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
+!         c13_psnsha                   => photosyns_vars%c13_psnsha_patch                     , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
+!         c14_psnsun                   => photosyns_vars%c14_psnsun_patch                     , & ! Input:  [real(r8) (:)   ]  sunlit leaf-level photosynthesis (umol CO2 /m**2/ s)
+!         c14_psnsha                   => photosyns_vars%c14_psnsha_patch                     , & ! Input:  [real(r8) (:)   ]  shaded leaf-level photosynthesis (umol CO2 /m**2/ s)
+!
+!         laisun                       => canopystate_vars%laisun_patch                       , & ! Input:  [real(r8) (:)   ]  sunlit projected leaf area index
+!         laisha                       => canopystate_vars%laisha_patch                       , & ! Input:  [real(r8) (:)   ]  shaded projected leaf area index
+!!
+!         hui                          => crop_vars%gddplant_patch                            , & ! Input:  [real(r8) (:)   ]  =gdd since planting (gddplant)
+!         leafout                      => crop_vars%gddtsoi_patch                             , & ! Input:  [real(r8) (:)   ]  =gdd from top soil layer temperature
+!
+!!!wgs:         xsmrpool                     => carbonstate_vars%xsmrpool_patch                     , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool
+!         leafc                        => carbonstate_vars%leafc_patch                        , & ! Input:  [real(r8) (:)   ]
+!         frootc                       => carbonstate_vars%frootc_patch                       , & ! Input:  [real(r8) (:)   ]
+!         livestemc                    => carbonstate_vars%livestemc_patch                    , & ! Input:  [real(r8) (:)   ]
+!
+!         !! wgs: BEGIN
+!         !!------------------------------------------------------------------------
+!!!wgs         cpool                        => carbonstate_vars%cpool_patch                        , & ! Input:  [real(r8) (:)   ]  (gC/m2) temporary photosynthate C pool
+!         xsmrpool                     => carbonstate_vars%xsmrpool_patch                     , & ! Input:  [real(r8) (:)   ]  (gC/m2) abstract C pool to meet excess MR demand
+!!
+!!!wgs          livecrootc                   => carbonstate_vars%livecrootc_patch                   , & ! Input:  [real(r8) (:)   ]
+!!!wgs          deadstemc                    => carbonstate_vars%deadstemc_patch                    , & ! Input:  [real(r8) (:)   ]
+!!!wgs          deadcrootc                   => carbonstate_vars%deadcrootc_patch                   , & ! Input:  [real(r8) (:)   ]
+!!
+!!!wgs          leafc_storage                => carbonstate_vars%leafc_storage_patch                , & ! Input:  [real(r8) (:)   ]  (gC/m2) leaf C storage
+!!!wgs          frootc_storage               => carbonstate_vars%frootc_storage_patch               , & ! Input:  [real(r8) (:)   ]  (gC/m2) fine root C storage
+!!!wgs          livestemc_storage            => carbonstate_vars%livestemc_storage_patch            , & ! Input:  [real(r8) (:)   ]  (gC/m2) live stem C storage
+!!!wgs          deadstemc_storage            => carbonstate_vars%deadstemc_storage_patch            , & ! Input:  [real(r8) (:)   ]  (gC/m2) dead stem C storage
+!!!wgs          livecrootc_storage           => carbonstate_vars%livecrootc_storage_patch           , & ! Input:  [real(r8) (:)   ]  (gC/m2) live coarse root C storage
+!!!wgs          deadcrootc_storage           => carbonstate_vars%deadcrootc_storage_patch           , & ! Input:  [real(r8) (:)   ]  (gC/m2) dead coarse root C storage
+!!
+!!!wgs          activeroot_prof              => cnstate_vars%activeroot_prof_col                    , & ! Input:  [real(r8) (:,:) ]  active root distributed through column (1/m)
+!!!wgs          annsum_grainc                => cnstate_vars%annsum_grainc_patch                    , & ! Input:  [real(r8) (:)   ]  annual sum of grainc
+!!
+!!!wgs          gross_nmin_vr                => nitrogenflux_vars%gross_nmin_vr_col                 , & ! Input:  [real(r8) (:,:) ]
+!         col_plant_ndemand_vr         => nitrogenflux_vars%plant_ndemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
+!!
+!         col_plant_pdemand_vr         => phosphorusflux_vars%plant_pdemand_vr_col              , & ! Output:  [real(r8) (:,:) ]
+!         !!------------------------------------------------------------------------
+!         !! wgs: END
+!
+!         gddmaturity                  => cnstate_vars%gddmaturity_patch                      , & ! Input:  [real(r8) (:)   ]  gdd needed to harvest
+!         huileaf                      => cnstate_vars%huileaf_patch                          , & ! Input:  [real(r8) (:)   ]  heat unit index needed from planting to leaf emergence
+!         huigrain                     => cnstate_vars%huigrain_patch                         , & ! Input:  [real(r8) (:)   ]  same to reach vegetative maturity
+!         croplive                     => cnstate_vars%croplive_patch                         , & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
+!         peaklai                      => cnstate_vars%peaklai_patch                          , & ! Input:  [integer  (:)   ]  1: max allowed lai; 0: not at max
+!!         !lgsf                        => cnstate_vars%lgsf_patch                             , & ! Input:  [real(r8) (:)   ]  long growing season factor [0-1]
+!         aleafi                       => cnstate_vars%aleafi_patch                           , & ! Output: [real(r8) (:)   ]  saved allocation coefficient from phase 2
+!         astemi                       => cnstate_vars%astemi_patch                           , & ! Output: [real(r8) (:)   ]  saved allocation coefficient from phase 2
+!         aleaf                        => cnstate_vars%aleaf_patch                            , & ! Output: [real(r8) (:)   ]  leaf allocation coefficient
+!         astem                        => cnstate_vars%astem_patch                            , & ! Output: [real(r8) (:)   ]  stem allocation coefficient
+!         fpg                          => cnstate_vars%fpg_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
+!         fpi                          => cnstate_vars%fpi_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
+!         fpi_vr                       => cnstate_vars%fpi_vr_col                             , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
+!
+!         !!! add phosphorus
+!         leafcp                       => ecophyscon%leafcp                                   , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
+!         frootcp                      => ecophyscon%frootcp                                  , & ! Input:  [real(r8) (:)   ]  fine root C:P (gC/gP)
+!         livewdcp                     => ecophyscon%livewdcp                                 , & ! Input:  [real(r8) (:)   ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
+!         deadwdcp                     => ecophyscon%deadwdcp                                 , & ! Input:  [real(r8) (:)   ]  dead wood (xylem and heartwood) C:P (gC/gP)
+!!!wgs:         graincp                      => ecophyscon%graincp                                  , & ! Input:  [real(r8) (:)   ]  grain C:P (gC/gP)
+!         fpg_p                        => cnstate_vars%fpg_p_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
+!         fpi_p                        => cnstate_vars%fpi_p_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
+!         fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                             , & ! Output: [real(r8) (:,:) ]  fraction of potential immobilization (no units)
+!
+!!!wgs:         nfixation_prof               => cnstate_vars%nfixation_prof_col                     , & ! Output: [real(r8) (:,:) ]
+!         grain_flag                   => cnstate_vars%grain_flag_patch                       , & ! Output: [real(r8) (:)   ]  1: grain fill stage; 0: not
+!         c_allometry                  => cnstate_vars%c_allometry_patch                      , & ! Output: [real(r8) (:)   ]  C allocation index (DIM)
+!         n_allometry                  => cnstate_vars%n_allometry_patch                      , & ! Output: [real(r8) (:)   ]  N allocation index (DIM)
+!         tempsum_potential_gpp        => cnstate_vars%tempsum_potential_gpp_patch            , & ! Output: [real(r8) (:)   ]  temporary annual sum of potential GPP
+!         tempmax_retransn             => cnstate_vars%tempmax_retransn_patch                 , & ! Output: [real(r8) (:)   ]  temporary annual max of retranslocated N pool (gN/m2)
+!         annsum_potential_gpp         => cnstate_vars%annsum_potential_gpp_patch             , & ! Output: [real(r8) (:)   ]  annual sum of potential GPP
+!         annmax_retransn              => cnstate_vars%annmax_retransn_patch                  , & ! Output: [real(r8) (:)   ]  annual max of retranslocated N pool
+!!!wgs:         downreg                      => cnstate_vars%downreg_patch                          , & ! Output: [real(r8) (:)   ]  fractional reduction in GPP due to N limitation (DIM)
+!
+!         leaf_mr                      => carbonflux_vars%leaf_mr_patch                       , & ! Input:  [real(r8) (:)   ]
+!         froot_mr                     => carbonflux_vars%froot_mr_patch                      , & ! Input:  [real(r8) (:)   ]
+!         livestem_mr                  => carbonflux_vars%livestem_mr_patch                   , & ! Input:  [real(r8) (:)   ]
+!         livecroot_mr                 => carbonflux_vars%livecroot_mr_patch                  , & ! Input:  [real(r8) (:)   ]
+!         grain_mr                     => carbonflux_vars%grain_mr_patch                      , & ! Input:  [real(r8) (:)   ]
+!         annsum_npp                   => carbonflux_vars%annsum_npp_patch                    , & ! Input:  [real(r8) (:)   ]  annual sum of NPP, for wood allocation
+!         gpp                          => carbonflux_vars%gpp_before_downreg_patch            , & ! Output: [real(r8) (:)   ]  GPP flux before downregulation (gC/m2/s)
+!         availc                       => carbonflux_vars%availc_patch                        , & ! Output: [real(r8) (:)   ]  C flux available for allocation (gC/m2/s)
+!         xsmrpool_recover             => carbonflux_vars%xsmrpool_recover_patch              , & ! Output: [real(r8) (:)   ]  C flux assigned to recovery of negative cpool (gC/m2/s)
+!!!wgs:         excess_cflux                 => carbonflux_vars%excess_cflux_patch                  , & ! Output: [real(r8) (:)   ]  C flux not allocated due to downregulation (gC/m2/s)
+!!!wgs:         plant_calloc                 => carbonflux_vars%plant_calloc_patch                  , & ! Output: [real(r8) (:)   ]  total allocated C flux (gC/m2/s)
+!         psnsun_to_cpool              => carbonflux_vars%psnsun_to_cpool_patch               , & ! Output: [real(r8) (:)   ]
+!         psnshade_to_cpool            => carbonflux_vars%psnshade_to_cpool_patch             , & ! Output: [real(r8) (:)   ]
+!
+!         leaf_curmr                   => carbonflux_vars%leaf_curmr_patch                    , &
+!         froot_curmr                  => carbonflux_vars%froot_curmr_patch                   , & ! Output: [real(r8) (:)   ]
+!         livestem_curmr               => carbonflux_vars%livestem_curmr_patch                , & ! Output: [real(r8) (:)   ]
+!         livecroot_curmr              => carbonflux_vars%livecroot_curmr_patch               , & ! Output: [real(r8) (:)   ]
+!         grain_curmr                  => carbonflux_vars%grain_curmr_patch                   , & ! Output: [real(r8) (:)   ]
+!         leaf_xsmr                    => carbonflux_vars%leaf_xsmr_patch                     , & ! Output: [real(r8) (:)   ]
+!         froot_xsmr                   => carbonflux_vars%froot_xsmr_patch                    , & ! Output: [real(r8) (:)   ]
+!         livestem_xsmr                => carbonflux_vars%livestem_xsmr_patch                 , & ! Output: [real(r8) (:)   ]
+!         livecroot_xsmr               => carbonflux_vars%livecroot_xsmr_patch                , & ! Output: [real(r8) (:)   ]
+!         grain_xsmr                   => carbonflux_vars%grain_xsmr_patch                    , & ! Output: [real(r8) (:)   ]
+!         cpool_to_xsmrpool            => carbonflux_vars%cpool_to_xsmrpool_patch             , & ! Output: [real(r8) (:)   ]
+!!!wgs: BEGIN
+!!         cpool_to_leafc               => carbonflux_vars%cpool_to_leafc_patch                , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_leafc_storage       => carbonflux_vars%cpool_to_leafc_storage_patch        , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_frootc              => carbonflux_vars%cpool_to_frootc_patch               , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_frootc_storage      => carbonflux_vars%cpool_to_frootc_storage_patch       , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_livestemc           => carbonflux_vars%cpool_to_livestemc_patch            , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_livestemc_storage   => carbonflux_vars%cpool_to_livestemc_storage_patch    , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_deadstemc           => carbonflux_vars%cpool_to_deadstemc_patch            , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_deadstemc_storage   => carbonflux_vars%cpool_to_deadstemc_storage_patch    , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_livecrootc          => carbonflux_vars%cpool_to_livecrootc_patch           , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_livecrootc_storage  => carbonflux_vars%cpool_to_livecrootc_storage_patch   , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_deadcrootc          => carbonflux_vars%cpool_to_deadcrootc_patch           , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_deadcrootc_storage  => carbonflux_vars%cpool_to_deadcrootc_storage_patch   , & ! Output: [real(r8) (:)   ]
+!!         cpool_to_gresp_storage       => carbonflux_vars%cpool_to_gresp_storage_patch        , & ! Output: [real(r8) (:)   ]  allocation to growth respiration storage (gC/m2/s)
+!!         cpool_to_grainc              => carbonflux_vars%cpool_to_grainc_patch               , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
+!!         cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
+!!!wgs:END
+!         sminn_vr                     => nitrogenstate_vars%sminn_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N
+!         retransn                     => nitrogenstate_vars%retransn_patch                   , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant pool of retranslocated N
+!         smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4
+!         smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NO3
+!
+!         plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
+!!!wgs         plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
+!         avail_retransn               => nitrogenflux_vars%avail_retransn_patch              , & ! Output: [real(r8) (:)   ]  N flux available from retranslocation pool (gN/m2/s)
+!!         npool_to_grainn              => nitrogenflux_vars%npool_to_grainn_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain N (gN/m2/s)
+!!         npool_to_grainn_storage      => nitrogenflux_vars%npool_to_grainn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain N storage (gN/m2/s)
+!         retransn_to_npool            => nitrogenflux_vars%retransn_to_npool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated N (gN/m2/s)
+!!         sminn_to_npool               => nitrogenflux_vars%sminn_to_npool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral N uptake (gN/m2/s)
+!!         npool_to_leafn               => nitrogenflux_vars%npool_to_leafn_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf N (gN/m2/s)
+!!         npool_to_leafn_storage       => nitrogenflux_vars%npool_to_leafn_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf N storage (gN/m2/s)
+!!         npool_to_frootn              => nitrogenflux_vars%npool_to_frootn_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root N (gN/m2/s)
+!!         npool_to_frootn_storage      => nitrogenflux_vars%npool_to_frootn_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to fine root N storage (gN/m2/s)
+!!         npool_to_livestemn           => nitrogenflux_vars%npool_to_livestemn_patch          , & ! Output: [real(r8) (:)   ]
+!!         npool_to_livestemn_storage   => nitrogenflux_vars%npool_to_livestemn_storage_patch  , & ! Output: [real(r8) (:)   ]
+!!         npool_to_deadstemn           => nitrogenflux_vars%npool_to_deadstemn_patch          , & ! Output: [real(r8) (:)   ]
+!!         npool_to_deadstemn_storage   => nitrogenflux_vars%npool_to_deadstemn_storage_patch  , & ! Output: [real(r8) (:)   ]
+!!         npool_to_livecrootn          => nitrogenflux_vars%npool_to_livecrootn_patch         , & ! Output: [real(r8) (:)   ]
+!!         npool_to_livecrootn_storage  => nitrogenflux_vars%npool_to_livecrootn_storage_patch , & ! Output: [real(r8) (:)   ]
+!!         npool_to_deadcrootn          => nitrogenflux_vars%npool_to_deadcrootn_patch         , & ! Output: [real(r8) (:)   ]
+!!!wgs         npool_to_deadcrootn_storage  => nitrogenflux_vars%npool_to_deadcrootn_storage_patch , & ! Output: [real(r8) (:)   ]
+!         leafn_to_retransn            => nitrogenflux_vars%leafn_to_retransn_patch           , & ! Output: [real(r8) (:)   ]
+!         frootn_to_retransn           => nitrogenflux_vars%frootn_to_retransn_patch          , & ! Output: [real(r8) (:)   ]
+!         livestemn_to_retransn        => nitrogenflux_vars%livestemn_to_retransn_patch       , & ! Output: [real(r8) (:)   ]
+!         potential_immob              => nitrogenflux_vars%potential_immob_col               , & ! Output: [real(r8) (:)   ]
+!         actual_immob                 => nitrogenflux_vars%actual_immob_col                  , & ! Output: [real(r8) (:)   ]
+!         sminn_to_plant               => nitrogenflux_vars%sminn_to_plant_col                , & ! Output: [real(r8) (:)   ]
+!         sminn_to_denit_excess_vr     => nitrogenflux_vars%sminn_to_denit_excess_vr_col      , & ! Output: [real(r8) (:,:) ]
+!         pot_f_nit_vr                 => nitrogenflux_vars%pot_f_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
+!         pot_f_denit_vr               => nitrogenflux_vars%pot_f_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
+!         f_nit_vr                     => nitrogenflux_vars%f_nit_vr_col                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
+!         f_denit_vr                   => nitrogenflux_vars%f_denit_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
+!         actual_immob_no3_vr          => nitrogenflux_vars%actual_immob_no3_vr_col           , & ! Output: [real(r8) (:,:) ]
+!         actual_immob_nh4_vr          => nitrogenflux_vars%actual_immob_nh4_vr_col           , & ! Output: [real(r8) (:,:) ]
+!         smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col          , & ! Output: [real(r8) (:,:) ]
+!         smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col          , & ! Output: [real(r8) (:,:) ]
+!         n2_n2o_ratio_denit_vr        => nitrogenflux_vars%n2_n2o_ratio_denit_vr_col         , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+!         f_n2o_denit_vr               => nitrogenflux_vars%f_n2o_denit_vr_col                , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
+!         f_n2o_nit_vr                 => nitrogenflux_vars%f_n2o_nit_vr_col                  , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
+!         supplement_to_sminn_vr       => nitrogenflux_vars%supplement_to_sminn_vr_col        , & ! Output: [real(r8) (:,:) ]
+!         sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
+!         potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col            , & ! Output: [real(r8) (:,:) ]
+!         actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col               , & ! Output: [real(r8) (:,:) ]
+!
+!         !!! add phosphorus variables  - X. YANG
+!!!wgs:         sminp_vr                     => phosphorusstate_vars%sminp_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
+!         solutionp_vr                 => phosphorusstate_vars%solutionp_vr_col                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
+!         retransp                     => phosphorusstate_vars%retransp_patch                   , & ! Input:  [real(r8) (:)   ]  (gP/m2) plant pool of retranslocated P
+!
+!         plant_pdemand                => phosphorusflux_vars%plant_pdemand_patch               , & ! Output: [real(r8) (:)   ]  P flux required to support initial GPP (gP/m2/s)
+!!!wgs         plant_palloc                 => phosphorusflux_vars%plant_palloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated P flux (gP/m2/s)
+!         avail_retransp               => phosphorusflux_vars%avail_retransp_patch              , & ! Output: [real(r8) (:)   ]  P flux available from retranslocation pool (gP/m2/s)
+!!!wgs         ppool_to_grainp              => phosphorusflux_vars%ppool_to_grainp_patch             , & ! Output: [real(r8) (:)   ]  allocation to grain P (gP/m2/s)
+!!!wgs        ppool_to_grainp_storage      => phosphorusflux_vars%ppool_to_grainp_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to grain P storage (gP/m2/s)
+!         retransp_to_ppool            => phosphorusflux_vars%retransp_to_ppool_patch           , & ! Output: [real(r8) (:)   ]  deployment of retranslocated P (gP/m2/s)
+!!!wgs:         sminp_to_ppool               => phosphorusflux_vars%sminp_to_ppool_patch              , & ! Output: [real(r8) (:)   ]  deployment of soil mineral P uptake (gP/m2/s)
+!!         ppool_to_leafp               => phosphorusflux_vars%ppool_to_leafp_patch              , & ! Output: [real(r8) (:)   ]  allocation to leaf P (gP/m2/s)
+!!         ppool_to_leafp_storage       => phosphorusflux_vars%ppool_to_leafp_storage_patch      , & ! Output: [real(r8) (:)   ]  allocation to leaf P storage (gP/m2/s)
+!!         ppool_to_frootp              => phosphorusflux_vars%ppool_to_frootp_patch             , & ! Output: [real(r8) (:)   ]  allocation to fine root P (gP/m2/s)
+!!         ppool_to_frootp_storage      => phosphorusflux_vars%ppool_to_frootp_storage_patch     , & ! Output: [real(r8) (:)   ]  allocation to fine root P storage (gP/m2/s)
+!!         ppool_to_livestemp           => phosphorusflux_vars%ppool_to_livestemp_patch          , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_livestemp_storage   => phosphorusflux_vars%ppool_to_livestemp_storage_patch  , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_deadstemp           => phosphorusflux_vars%ppool_to_deadstemp_patch          , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_deadstemp_storage   => phosphorusflux_vars%ppool_to_deadstemp_storage_patch  , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_livecrootp          => phosphorusflux_vars%ppool_to_livecrootp_patch         , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_livecrootp_storage  => phosphorusflux_vars%ppool_to_livecrootp_storage_patch , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_deadcrootp          => phosphorusflux_vars%ppool_to_deadcrootp_patch         , & ! Output: [real(r8) (:)   ]
+!!         ppool_to_deadcrootp_storage  => phosphorusflux_vars%ppool_to_deadcrootp_storage_patch , & ! Output: [real(r8) (:)   ]
+!!         leafp_to_retransp            => phosphorusflux_vars%leafp_to_retransp_patch           , & ! Output: [real(r8) (:)   ]
+!!         frootp_to_retransp           => phosphorusflux_vars%frootp_to_retransp_patch          , & ! Output: [real(r8) (:)   ]
+!!!wgs:         livestemp_to_retransp        => phosphorusflux_vars%livestemp_to_retransp_patch       , & ! Output: [real(r8) (:)   ]
+!         potential_immob_p            => phosphorusflux_vars%potential_immob_p_col               , & ! Output: [real(r8) (:)   ]
+!         actual_immob_p               => phosphorusflux_vars%actual_immob_p_col                  , & ! Output: [real(r8) (:)   ]
+!         sminp_to_plant               => phosphorusflux_vars%sminp_to_plant_col                , & ! Output: [real(r8) (:)   ]
+!         supplement_to_sminp_vr       => phosphorusflux_vars%supplement_to_sminp_vr_col        , & ! Output: [real(r8) (:,:) ]
+!         sminp_to_plant_vr            => phosphorusflux_vars%sminp_to_plant_vr_col             , & ! Output: [real(r8) (:,:) ]
+!         potential_immob_p_vr         => phosphorusflux_vars%potential_immob_p_vr_col            , & ! Output: [real(r8) (:,:) ]
+!         actual_immob_p_vr            => phosphorusflux_vars%actual_immob_p_vr_col               , & ! Output: [real(r8) (:,:) ]
+!         p_allometry                  => cnstate_vars%p_allometry_patch                       , & ! Output: [real(r8) (:)   ]  P allocation index (DIM)
+!         tempmax_retransp             => cnstate_vars%tempmax_retransp_patch                 , & ! Output: [real(r8) (:)   ]  temporary annual max of retranslocated P pool (gP/m2)
+!         annmax_retransp              => cnstate_vars%annmax_retransp_patch                   , & ! Output: [real(r8) (:)   ]  annual max of retranslocated P pool
+!
+!
+!         c13cf => c13_carbonflux_vars, &
+!         c14cf => c14_carbonflux_vars  &
+!         )
+!      ! set time steps
+!      dt = real( get_step_size(), r8 )
+!
+!     ! loop over patches to assess the total plant N demand and P demand
+!      do fp=1,num_soilp
+!         p = filter_soilp(fp)
+!
+!         ! get the time step total gross photosynthesis
+!         ! this is coming from the canopy fluxes code, and is the
+!         ! gpp that is used to control stomatal conductance.
+!         ! For the nitrogen downregulation code, this is assumed
+!         ! to be the potential gpp, and the actual gpp will be
+!         ! reduced due to N limitation.
+!
+!         ! Convert psn from umol/m2/s -> gC/m2/s
+!
+!         ! The input psn (psnsun and psnsha) are expressed per unit LAI
+!         ! in the sunlit and shaded canopy, respectively. These need to be
+!         ! scaled by laisun and laisha to get the total gpp for allocation
+!
+!         ! Note that no associate statement is used for the isotope carbon fluxes below
+!         ! since they are not always allocated AND nag compiler will complain if you try to
+!         ! to have an associate statement with unallocated memory
+!
+!         psnsun_to_cpool(p)   = psnsun(p) * laisun(p) * 12.011e-6_r8
+!         psnshade_to_cpool(p) = psnsha(p) * laisha(p) * 12.011e-6_r8
+!
+!         if ( use_c13 ) then
+!            c13cf%psnsun_to_cpool_patch(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
+!            c13cf%psnshade_to_cpool_patch(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
+!         endif
+!
+!         if ( use_c14 ) then
+!            c14cf%psnsun_to_cpool_patch(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
+!            c14cf%psnshade_to_cpool_patch(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
+!         endif
+!
+!         gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
+!
+!         ! get the time step total maintenance respiration
+!         ! These fluxes should already be in gC/m2/s
+!
+!         mr = leaf_mr(p) + froot_mr(p)
+!         if (woody(ivt(p)) == 1.0_r8) then
+!            mr = mr + livestem_mr(p) + livecroot_mr(p)
+!         else if (ivt(p) >= npcropmin) then
+!            if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
+!         end if
+!
+!         ! carbon flux available for allocation
+!         availc(p) = gpp(p) - mr
+!
+!         ! new code added for isotope calculations, 7/1/05, PET
+!         ! If mr > gpp, then some mr comes from gpp, the rest comes from
+!         ! cpool (xsmr)
+!         if (mr > 0._r8 .and. availc(p) < 0._r8) then
+!            curmr = gpp(p)
+!            curmr_ratio = curmr / mr
+!         else
+!            curmr_ratio = 1._r8
+!         end if
+!         leaf_curmr(p) = leaf_mr(p) * curmr_ratio
+!         leaf_xsmr(p) = leaf_mr(p) - leaf_curmr(p)
+!         froot_curmr(p) = froot_mr(p) * curmr_ratio
+!         froot_xsmr(p) = froot_mr(p) - froot_curmr(p)
+!         livestem_curmr(p) = livestem_mr(p) * curmr_ratio
+!         livestem_xsmr(p) = livestem_mr(p) - livestem_curmr(p)
+!         livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
+!         livecroot_xsmr(p) = livecroot_mr(p) - livecroot_curmr(p)
+!         grain_curmr(p) = grain_mr(p) * curmr_ratio
+!         grain_xsmr(p) = grain_mr(p) - grain_curmr(p)
+!
+!         ! no allocation when available c is negative
+!         availc(p) = max(availc(p),0.0_r8)
+!
+!         ! test for an xsmrpool deficit
+!         if (xsmrpool(p) < 0.0_r8) then
+!            ! Running a deficit in the xsmrpool, so the first priority is to let
+!            ! some availc from this timestep accumulate in xsmrpool.
+!            ! Determine rate of recovery for xsmrpool deficit
+!
+!            xsmrpool_recover(p) = -xsmrpool(p)/(dayscrecover*secspday)
+!            if (xsmrpool_recover(p) < availc(p)) then
+!               ! available carbon reduced by amount for xsmrpool recovery
+!               availc(p) = availc(p) - xsmrpool_recover(p)
+!            else
+!               ! all of the available carbon goes to xsmrpool recovery
+!               xsmrpool_recover(p) = availc(p)
+!               availc(p) = 0.0_r8
+!            end if
+!            cpool_to_xsmrpool(p) = xsmrpool_recover(p)
+!         end if
+!
+!         f1 = froot_leaf(ivt(p))
+!         f2 = croot_stem(ivt(p))
+!
+!         ! modified wood allocation to be 2.2 at npp=800 gC/m2/yr, 0.2 at npp=0,
+!         ! constrained so that it does not go lower than 0.2 (under negative annsum_npp)
+!         ! This variable allocation is only for trees. Shrubs have a constant
+!         ! allocation as specified in the pft-physiology file.  The value is also used
+!         ! as a trigger here: -1.0 means to use the dynamic allocation (trees).
+!
+!         if (stem_leaf(ivt(p)) == -1._r8) then
+!            f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
+!         else
+!            f3 = stem_leaf(ivt(p))
+!         end if
+!
+!         f4   = flivewd(ivt(p))
+!         g1   = grperc(ivt(p))
+!         g2   = grpnow(ivt(p))
+!         cnl  = leafcn(ivt(p))
+!         cnfr = frootcn(ivt(p))
+!         cnlw = livewdcn(ivt(p))
+!         cndw = deadwdcn(ivt(p))
+!
+!         cpl = leafcp(ivt(p))
+!         cpfr = frootcp(ivt(p))
+!         cplw = livewdcp(ivt(p))
+!         cpdw = deadwdcp(ivt(p))
+!
+!
+!         ! calculate f1 to f5 for prog crops following AgroIBIS subr phenocrop
+!
+!         f5 = 0._r8 ! continued intializations from above
+!
+!         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+!
+!            if (croplive(p)) then
+!               ! same phases appear in subroutine CropPhenology
+!
+!               ! Phase 1 completed:
+!               ! ==================
+!               ! if hui is less than the number of gdd needed for filling of grain
+!               ! leaf emergence also has to have taken place for lai changes to occur
+!               ! and carbon assimilation
+!               ! Next phase: leaf emergence to start of leaf decline
+!
+!               if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p)) then
+!
+!                  ! allocation rules for crops based on maturity and linear decrease
+!                  ! of amount allocated to roots over course of the growing season
+!
+!                  if (peaklai(p) == 1) then ! lai at maximum allowed
+!                     arepr(p) = 0._r8
+!                     aleaf(p) = 1.e-5_r8
+!                     astem(p) = 0._r8
+!                     aroot(p) = 1._r8 - arepr(p) - aleaf(p) - astem(p)
+!                  else
+!                     arepr(p) = 0._r8
+!                     aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
+!                          (arooti(ivt(p)) - arootf(ivt(p))) *  &
+!                          min(1._r8, hui(p)/gddmaturity(p))))
+!                     fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
+!                          exp(-bfact(ivt(p))*hui(p)/huigrain(p))) / &
+!                          (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
+!                     aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
+!                     astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
+!                  end if
+!
+!                  ! AgroIBIS included here an immediate adjustment to aleaf & astem if the
+!                  ! predicted lai from the above allocation coefficients exceeded laimx.
+!                  ! We have decided to live with lais slightly higher than laimx by
+!                  ! enforcing the cap in the following tstep through the peaklai logic above.
+!
+!                  astemi(p) = astem(p) ! save for use by equations after shift
+!                  aleafi(p) = aleaf(p) ! to reproductive phenology stage begins
+!                  grain_flag(p) = 0._r8 ! setting to 0 while in phase 2
+!
+!                  ! Phase 2 completed:
+!                  ! ==================
+!                  ! shift allocation either when enough gdd are accumulated or maximum number
+!                  ! of days has elapsed since planting
+!
+!               else if (hui(p) >= huigrain(p)) then
+!
+!                  aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) - &
+!                       (arooti(ivt(p)) - arootf(ivt(p))) * min(1._r8, hui(p)/gddmaturity(p))))
+!                  if (astemi(p) > astemf(ivt(p))) then
+!                     astem(p) = max(0._r8, max(astemf(ivt(p)), astem(p) * &
+!                          (1._r8 - min((hui(p)-                 &
+!                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
+!                          huigrain(p)),1._r8)**allconss(ivt(p)) )))
+!                  end if
+!                  if (aleafi(p) > aleaff(ivt(p))) then
+!                     aleaf(p) = max(1.e-5_r8, max(aleaff(ivt(p)), aleaf(p) * &
+!                          (1._r8 - min((hui(p)-                    &
+!                          huigrain(p))/((gddmaturity(p)*declfact(ivt(p)))- &
+!                          huigrain(p)),1._r8)**allconsl(ivt(p)) )))
+!                  end if
+!
+!                  !Beth's retranslocation of leafn, stemn, rootn to organ
+!                  !Filter excess plant N to retransn pool for organ N
+!                  !Only do one time then hold grain_flag till onset next season
+!
+!                  ! slevis: Will astem ever = astemf exactly?
+!                  ! Beth's response: ...looks like astem can equal astemf under the right circumstances.
+!                  !It might be worth a rewrite to capture what I was trying to do, but the retranslocation for
+!                  !corn and wheat begins at the beginning of the grain fill stage, but for soybean I was holding it
+!                  !until after the leaf and stem decline were complete. Looking at how astem is calculated, once the
+!                  !stem decline is near complete, astem should (usually) be set to astemf. The reason for holding off
+!                  !on soybean is that the retranslocation scheme begins at the beginning of the grain phase, when the
+!                  !leaf and stem are still growing, but declining. Since carbon is still getting allocated and now
+!                  !there is more nitrogen available, the nitrogen can be diverted from grain. For corn and wheat
+!                  !the impact was probably enough to boost productivity, but for soybean the nitrogen was better off
+!                  !fulfilling the grain fill. It seems that if the peak lai is reached for soybean though that this
+!                  !would be bypassed altogether, not the intended outcome. I checked several of my output files and
+!                  !they all seemed to be going through the retranslocation loop for soybean - good news.
+!
+!                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p))) then
+!                     if (grain_flag(p) == 0._r8) then
+!                        t1 = 1 / dt
+!                        leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
+!                             fleafcn(ivt(p))))
+!                        livestemn_to_retransn(p) = t1 * ((livestemc(p) / livewdcn(ivt(p))) - (livestemc(p) / &
+!                             fstemcn(ivt(p))))
+!                        frootn_to_retransn(p) = 0._r8
+!                        if (ffrootcn(ivt(p)) > 0._r8) then
+!                           frootn_to_retransn(p) = t1 * ((frootc(p) / frootcn(ivt(p))) - (frootc(p) / &
+!                                ffrootcn(ivt(p))))
+!                        end if
+!                        grain_flag(p) = 1._r8
+!                     end if
+!                  end if
+!
+!                  arepr(p) = 1._r8 - aroot(p) - astem(p) - aleaf(p)
+!
+!               else                   ! pre emergence
+!                  aleaf(p) = 1.e-5_r8 ! allocation coefficients should be irrelevant
+!                  astem(p) = 0._r8    ! because crops have no live carbon pools;
+!                  aroot(p) = 0._r8    ! this applies to this "else" and to the "else"
+!                  arepr(p) = 0._r8    ! a few lines down
+!               end if
+!
+!               f1 = aroot(p) / aleaf(p)
+!               f3 = astem(p) / aleaf(p)
+!               f5 = arepr(p) / aleaf(p)
+!               g1 = 0.25_r8
+!
+!            else   ! .not croplive
+!               f1 = 0._r8
+!               f3 = 0._r8
+!               f5 = 0._r8
+!               g1 = 0.25_r8
+!            end if
+!         end if
+!
+!         ! based on available C, use constant allometric relationships to
+!         ! determine N requirements
+!         ! determine P requirements   -X. YANG
+!
+!         if (woody(ivt(p)) == 1.0_r8) then
+!            c_allometry(p) = (1._r8+g1)*(1._r8+f1+f3*(1._r8+f2))
+!            n_allometry(p) = 1._r8/cnl + f1/cnfr + (f3*f4*(1._r8+f2))/cnlw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
+!            p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cpdw
+!
+!         else if (ivt(p) >= npcropmin) then ! skip generic crops
+!            cng = graincn(ivt(p))
+!            c_allometry(p) = (1._r8+g1)*(1._r8+f1+f5+f3*(1._r8+f2))
+!            n_allometry(p) = 1._r8/cnl + f1/cnfr + f5/cng + (f3*f4*(1._r8+f2))/cnlw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cndw
+!            p_allometry(p) = 1._r8/cpl + f1/cpfr + (f3*f4*(1._r8+f2))/cplw + &
+!                 (f3*(1._r8-f4)*(1._r8+f2))/cpdw
+!
+!         else
+!            c_allometry(p) = 1._r8+g1+f1+f1*g1
+!            n_allometry(p) = 1._r8/cnl + f1/cnfr
+!            p_allometry(p) = 1._r8/cpl + f1/cpfr
+!         end if
+!         plant_ndemand(p) = availc(p)*(n_allometry(p)/c_allometry(p))
+!         plant_pdemand(p) = availc(p)*(p_allometry(p)/c_allometry(p))
+!
+!         ! retranslocated N deployment depends on seasonal cycle of potential GPP
+!         ! (requires one year run to accumulate demand)
+!
+!         tempsum_potential_gpp(p) = tempsum_potential_gpp(p) + gpp(p)
+!
+!         ! Adding the following line to carry max retransn info to CN Annual Update
+!         tempmax_retransn(p) = max(tempmax_retransn(p),retransn(p))
+!         tempmax_retransp(p) = max(tempmax_retransp(p),retransp(p))   !! phosphorus
+!
+!         ! Beth's code: crops pull from retransn pool only during grain fill;
+!         !              retransn pool has N from leaves, stems, and roots for
+!         !              retranslocation
+!
+!         if (ivt(p) >= npcropmin .and. grain_flag(p) == 1._r8) then
+!            avail_retransn(p) = plant_ndemand(p)
+!            avail_retransp(p) = plant_pdemand(p)
+!         else if (ivt(p) < npcropmin .and. annsum_potential_gpp(p) > 0._r8) then
+!            avail_retransn(p) = (annmax_retransn(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
+!            avail_retransp(p) = (annmax_retransp(p)/2._r8)*(gpp(p)/annsum_potential_gpp(p))/dt
+!         else
+!            avail_retransn(p) = 0.0_r8
+!            avail_retransp(p) = 0.0_r8
+!         end if
+!
+!         ! make sure available retrans N doesn't exceed storage
+!         avail_retransn(p) = min(avail_retransn(p), retransn(p)/dt)
+!         avail_retransp(p) = min(avail_retransp(p), retransp(p)/dt)    !! phosphorus
+!
+!         ! modify plant N demand according to the availability of
+!         ! retranslocated N
+!         ! take from retransn pool at most the flux required to meet
+!         ! plant ndemand
+!
+!         if (plant_ndemand(p) > avail_retransn(p)) then
+!            retransn_to_npool(p) = avail_retransn(p)
+!         else
+!            retransn_to_npool(p) = plant_ndemand(p)
+!         end if
+!         plant_ndemand(p) = plant_ndemand(p) - retransn_to_npool(p)
+!
+!         if (plant_pdemand(p) > avail_retransp(p)) then
+!            retransp_to_ppool(p) = avail_retransp(p)
+!         else
+!            retransp_to_ppool(p) = plant_pdemand(p)
+!         end if
+!         plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(p)
+!
+!
+!      end do ! end pft loop
+!
+!      ! now use the p2c routine to get the column-averaged plant_ndemand
+!      call p2c(bounds, num_soilc, filter_soilc, &
+!           plant_ndemand(bounds%begp:bounds%endp), &
+!           col_plant_ndemand(bounds%begc:bounds%endc))
+!
+!      !!! add phosphorus
+!      call p2c(bounds, num_soilc, filter_soilc, &
+!           plant_pdemand(bounds%begp:bounds%endp), &
+!           col_plant_pdemand(bounds%begc:bounds%endc))
+!
+!      !!! Starting resolving N limitation !!!
+!      call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
+!      call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
+!
+!print*,">>>DEBUG | CNAllocation1: use_nitrif_denitrif = ",use_nitrif_denitrif
+!!write(*,'(A40,12E14.6)')"DEBUG | nuptake_prof=",nuptake_prof(1,1:nlevdecomp)
+!!write(*,'(A40,12E14.6)')"DEBUG | puptake_prof=",puptake_prof(1,1:nlevdecomp)
+!
+!      if (.not. use_nitrif_denitrif) then
+!
+!         ! column loops to resolve plant/heterotroph competition for mineral N
+!         ! init sminn_tot
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sum_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j)
+!               sum_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
+!            end do
+!         end do
+!
+!
+!    !------------------------------------------------------------------
+!    !! wgs: BEGIN
+!         ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
+!         if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+!            do j = 1, nlevdecomp
+!               do fc=1, num_soilc
+!                  c = filter_soilc(fc)
+!                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!               end do
+!            end do
+!         endif
+!         ! note that 'Carbon_only' option generated 'supplement_to_sminn_vr' will not be available to PFLOTRAN
+!
+!        ! when coupled with pflotran, cphase 1 is actually ending at this point
+!        ! i.e., column loops to resolve plant/heterotroph competition
+!        ! for mineral SMINN below in this subroutine will not be implemented
+!        ! (this point is the block starting)
+!        if (.not. (use_pflotran .and. pf_cmode)) then
+!    !! wgs: END
+!    !------------------------------------------------------------------
+!    !------------------------------------------------------------------
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               l = col%landunit(c)
+!               if (sum_ndemand_vr(c,j)*dt < sminn_vr(c,j)) then
+!
+!                  ! N availability is not limiting immobilization or plant
+!                  ! uptake, and both can proceed at their potential rates
+!                  nlimit(c,j) = 0
+!                  fpi_vr(c,j) = 1.0_r8
+!                  actual_immob_vr(c,j) = potential_immob_vr(c,j)
+!                  sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!               else if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then !.or. &
+!                  !                (crop_supln .and. (lun%itype(l) == istcrop) .and. &
+!                  !                (ivt(col%pfti(c)) >= npcropmin)) )then
+!                  ! this code block controls the addition of N to sminn pool
+!                  ! to eliminate any N limitation, when Carbon_Only is set.  This lets the
+!                  ! model behave essentially as a carbon-only model, but with the
+!                  ! benefit of keeping track of the N additions needed to
+!                  ! eliminate N limitations, so there is still a diagnostic quantity
+!                  ! that describes the degree of N limitation at steady-state.
+!
+!                  nlimit(c,j) = 1
+!                  fpi_vr(c,j) = 1.0_r8
+!                  actual_immob_vr(c,j) = potential_immob_vr(c,j)
+!                  sminn_to_plant_vr(c,j) =  col_plant_ndemand(c) * nuptake_prof(c,j)
+!                  supplement_to_sminn_vr(c,j) = sum_ndemand_vr(c,j) - (sminn_vr(c,j)/dt)
+!               else
+!                  ! N availability can not satisfy the sum of immobilization and
+!                  ! plant growth demands, so these two demands compete for available
+!                  ! soil mineral N resource.
+!
+!                  nlimit(c,j) = 1
+!                  if (sum_ndemand_vr(c,j) > 0.0_r8 .and. sminn_vr(c,j) > 0.0_r8) then
+!                     actual_immob_vr(c,j) = (sminn_vr(c,j)/dt)*(potential_immob_vr(c,j) / sum_ndemand_vr(c,j))
+!                  else
+!                     actual_immob_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_vr(c,j) > 0.0_r8) then
+!                     fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
+!                  else
+!                     fpi_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  sminn_to_plant_vr(c,j) = (sminn_vr(c,j)/dt) - actual_immob_vr(c,j)
+!               end if
+!            end do
+!         end do
+!
+!
+!!------------------------------------------------------------------
+!! phosphorus: puptake_prof(c,j)
+!! moved to Line 911-938
+!!------------------------------------------------------------------
+!
+!        ! add phosphorus
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               l = col%landunit(c)
+!               if (sum_pdemand_vr(c,j)*dt < solutionp_vr(c,j)) then
+!
+!                  ! P availability is not limiting immobilization or plant
+!                  ! uptake, and both can proceed at their potential rates
+!                  plimit(c,j) = 0
+!                  fpi_p_vr(c,j) = 1.0_r8
+!                  actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
+!                  sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!
+!               else if ( cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then !.or. &
+!
+!                  plimit(c,j) = 1
+!                  fpi_p_vr(c,j) = 1.0_r8
+!                  actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
+!                  sminp_to_plant_vr(c,j) =  col_plant_pdemand(c) * puptake_prof(c,j)
+!                  supplement_to_sminp_vr(c,j) = sum_pdemand_vr(c,j) - (solutionp_vr(c,j)/dt)
+!
+!               else
+!                  ! P availability can not satisfy the sum of immobilization and
+!                  ! plant growth demands, so these two demands compete for
+!                  ! available soil mineral solution P resource.
+!
+!                  plimit(c,j) = 1
+!                  if (sum_pdemand_vr(c,j) > 0.0_r8 .and. solutionp_vr(c,j) >0._r8) then
+!                     actual_immob_p_vr(c,j) = (solutionp_vr(c,j)/dt)*(potential_immob_p_vr(c,j) / sum_pdemand_vr(c,j))
+!                  else
+!                     actual_immob_p_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_p_vr(c,j) > 0.0_r8) then
+!                     fpi_p_vr(c,j) = actual_immob_p_vr(c,j) / potential_immob_p_vr(c,j)
+!                  else
+!                     fpi_p_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  sminp_to_plant_vr(c,j) = max( 0._r8,(solutionp_vr(c,j)/dt) - actual_immob_p_vr(c,j) )
+!               end if
+!            end do
+!         end do
+!
+!         !!!  resolving N limitation vs. P limitation for decomposition
+!         !!!  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
+!         if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
+!
+!           do j = 1, nlevdecomp
+!              do fc=1,num_soilc
+!                 c = filter_soilc(fc)
+!
+!                 if (nlimit(c,j) == 1.and.plimit(c,j) == 0) then
+!
+!                     actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
+!                     sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!
+!                 elseif (nlimit(c,j) == 0.and.plimit(c,j) == 1) then
+!
+!                     actual_immob_vr(c,j)   = potential_immob_vr(c,j) *fpi_p_vr(c,j)
+!                     sminn_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!
+!                 elseif (nlimit(c,j) == 1.and.plimit(c,j) == 1)then
+!
+!                     if( fpi_vr(c,j) <=fpi_p_vr(c,j) )then
+!
+!                         actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) *fpi_vr(c,j)
+!                         sminp_to_plant_vr(c,j) = min( max( 0._r8,(solutionp_vr(c,j)/dt) - actual_immob_p_vr(c,j) ),col_plant_pdemand(c)*puptake_prof(c,j) )
+!
+!                     else
+!
+!                         actual_immob_vr(c,j)=potential_immob_vr(c,j) * fpi_p_vr(c,j)
+!                         sminn_to_plant_vr(c,j) = min( (sminn_vr(c,j)/dt) - actual_immob_vr(c,j),col_plant_ndemand(c)*nuptake_prof(c,j) )
+!
+!                     endif
+!
+!                 endif
+!
+!              enddo
+!           enddo
+!
+!         endif
+!
+!         if(cnallocate_carbonnitrogen_only())then
+!           actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
+!           sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+!         endif
+!
+!         ! sum up N and P  fluxes to plant    ??????WAS sminn_to_plant(c)
+!         ! INITIALIZED AS ZERO --- CHECK   X.YANG
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!            sminp_to_plant(c) = 0._r8
+!         end do
+!
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+!               sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!        ! give plants a second pass to see if there is any mineral N left over with which to satisfy residual N demand.
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_sminn(c) = 0._r8
+!            residual_sminp(c) = 0._r8
+!         end do
+!
+!         ! sum up total N left over after initial plant and immobilization fluxes
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_plant_ndemand(c) = col_plant_ndemand(c) - sminn_to_plant(c)
+!            residual_plant_pdemand(c) = col_plant_pdemand(c) - sminp_to_plant(c)
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if (residual_plant_ndemand(c)  >  0._r8 ) then
+!                  if (nlimit(c,j) .eq. 0) then
+!                     residual_sminn_vr(c,j) = max(sminn_vr(c,j) - (actual_immob_vr(c,j) + sminn_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_sminn(c) = residual_sminn(c) + residual_sminn_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_sminn_vr(c,j)  = 0._r8
+!                  endif
+!               endif
+!               !!! add phosphorus - X.YANG
+!               if (residual_plant_pdemand(c)  >  0._r8 ) then
+!                  if (plimit(c,j) .eq. 0) then
+!                     residual_sminp_vr(c,j) = max(solutionp_vr(c,j) - (actual_immob_p_vr(c,j) + sminp_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_sminp(c) = residual_sminp(c) + residual_sminp_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_sminp_vr(c,j)  = 0._r8
+!                  endif
+!               endif
+!            end do
+!         end do
+!
+!         ! distribute residual N and P to plants
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if ( residual_plant_ndemand(c)  >  0._r8 .and. residual_sminn(c)  >  0._r8 .and. nlimit(c,j) .eq. 0) then
+!                  sminn_to_plant_vr(c,j) = sminn_to_plant_vr(c,j) + residual_sminn_vr(c,j) * &
+!                       min(( residual_plant_ndemand(c) *  dt ) / residual_sminn(c), 1._r8) / dt
+!               endif
+!
+!               if ( residual_plant_pdemand(c)  >  0._r8 .and. residual_sminp(c)  >  0._r8 .and. plimit(c,j) .eq. 0) then
+!                  sminp_to_plant_vr(c,j) = sminp_to_plant_vr(c,j) + residual_sminp_vr(c,j) * &
+!                       min(( residual_plant_pdemand(c) *  dt ) / residual_sminp(c), 1._r8) / dt
+!               endif
+!            end do
+!         end do
+!
+!         ! re-sum up N and P fluxes to plant
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!            sminp_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+!               sum_ndemand_vr(c,j) = potential_immob_vr(c,j) + sminn_to_plant_vr(c,j)
+!
+!               !!! for phosphorus
+!               sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+!               sum_pdemand_vr(c,j) = potential_immob_p_vr(c,j) + sminp_to_plant_vr(c,j)
+!            end do
+!         end do
+!
+!         ! under conditions of excess N, some proportion is assumed to
+!         ! be lost to denitrification, in addition to the constant
+!         ! proportion lost in the decomposition pathways
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if ((sminn_to_plant_vr(c,j) + actual_immob_vr(c,j))*dt < sminn_vr(c,j)) then
+!                  sminn_to_denit_excess_vr(c,j) = max(bdnr*((sminn_vr(c,j)/dt) - sum_ndemand_vr(c,j)),0._r8)
+!               else
+!                  sminn_to_denit_excess_vr(c,j) = 0._r8
+!               endif
+!            end do
+!         end do
+!
+!         ! sum up N and P fluxes to immobilization
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j) * dzsoi_decomp(j)
+!               potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j) * dzsoi_decomp(j)
+!               !!! phosphorus
+!               actual_immob_p(c) = actual_immob_p(c) + actual_immob_p_vr(c,j) * dzsoi_decomp(j)
+!               potential_immob_p(c) = potential_immob_p(c) + potential_immob_p_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! calculate the fraction of potential growth that can be
+!            ! acheived with the N available to plants
+!            if (col_plant_ndemand(c) > 0.0_r8) then
+!               fpg(c) = sminn_to_plant(c) / col_plant_ndemand(c)
+!            else
+!               fpg(c) = 1.0_r8
+!            end if
+!
+!            ! calculate the fraction of immobilization realized (for diagnostic purposes)
+!            if (potential_immob(c) > 0.0_r8) then
+!               fpi(c) = actual_immob(c) / potential_immob(c)
+!            else
+!               fpi(c) = 1.0_r8
+!            end if
+!         end do
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! calculate the fraction of potential growth that can be
+!            ! acheived with the P available to plants
+!            if (col_plant_pdemand(c) > 0.0_r8) then
+!               fpg_p(c) = sminp_to_plant(c) / col_plant_pdemand(c)
+!            else
+!               fpg_p(c) = 1.0_r8
+!            end if
+!
+!            ! calculate the fraction of immobilization realized (for diagnostic purposes)
+!            if (potential_immob(c) > 0.0_r8) then
+!               fpi_p(c) = actual_immob_p(c) / potential_immob_p(c)
+!            else
+!               fpi_p(c) = 1.0_r8
+!            end if
+!         end do
+!    !------------------------------------------------------------------
+!        ! above column loops to resolve plant/heterotroph competition
+!        ! for mineral SMINN in this subroutine will not be implemented
+!        ! (this point is the block ending)
+!        end if !(.not. (use_pflotran .and. pf_cmode)) line ~927
+!    !------------------------------------------------------------------
+!
+!      else  !----------NITRIF_DENITRIF-------------!
+!         ! column loops to resolve plant/heterotroph/nitrifier/denitrifier competition for mineral N
+!         !read constants from external netcdf file
+!         compet_plant_no3 = CNAllocParamsInst%compet_plant_no3
+!         compet_plant_nh4 = CNAllocParamsInst%compet_plant_nh4
+!         compet_decomp_no3 = CNAllocParamsInst%compet_decomp_no3
+!         compet_decomp_nh4 = CNAllocParamsInst%compet_decomp_nh4
+!         compet_denit = CNAllocParamsInst%compet_denit
+!         compet_nit = CNAllocParamsInst%compet_nit
+!
+!      !------------------------------------------------------------------
+!      !! wgs: BEGIN
+!         ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
+!         if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
+!            do j = 1, nlevdecomp
+!               do fc = 1, num_soilc
+!                  c = filter_soilc(fc)
+!                  col_plant_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!                  col_plant_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)  !!wgs: phosphorus
+!               end do
+!            end do
+!         endif
+!
+!         ! note that 'Carbon_only' option generated 'supplement_to_sminn_vr' will not be available to PFLOTRAN
+!
+!         ! when coupled with pflotran, cphase 1 is actually ending at this point
+!         ! i.e., column loops to resolve plant/heterotroph/nitrifier/denitrifier competition
+!         ! for mineral NO3 and NH4 below in this subroutine will not be implemented
+!         ! (this point is the block starting)
+!         if (.not. (use_pflotran .and. pf_cmode)) then
+!      !! wgs: END
+!      !------------------------------------------------------------------
+!
+!         ! main column/vertical loop
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               l = col%landunit(c)
+!
+!               !  first compete for nh4
+!               sum_nh4_demand(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j) + pot_f_nit_vr(c,j)
+!               sum_nh4_demand_scaled(c,j) = col_plant_ndemand(c)* nuptake_prof(c,j) * compet_plant_nh4 + &
+!                    potential_immob_vr(c,j)*compet_decomp_nh4 + pot_f_nit_vr(c,j)*compet_nit
+!               if (sum_nh4_demand(c,j)*dt < smin_nh4_vr(c,j)) then
+!                  ! NH4 availability is not limiting immobilization or plant
+!                  ! uptake, and all can proceed at their potential rates
+!                  nlimit_nh4(c,j) = 0
+!                  fpi_nh4_vr(c,j) = 1.0_r8
+!                  actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
+!                  smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j)
+!
+!                  f_nit_vr(c,j) = pot_f_nit_vr(c,j)
+!
+!               else
+!
+!                  ! NH4 availability can not satisfy the sum of immobilization, nitrification, and
+!                  ! plant growth demands, so these three demands compete for available
+!                  ! soil mineral NH4 resource.
+!                  nlimit_nh4(c,j) = 1
+!                  if (sum_nh4_demand(c,j) > 0.0_r8) then
+!                     actual_immob_nh4_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(potential_immob_vr(c,j)* &
+!                          compet_decomp_nh4 / sum_nh4_demand_scaled(c,j)), potential_immob_vr(c,j))
+!                     smin_nh4_to_plant_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(col_plant_ndemand(c)* &
+!                          nuptake_prof(c,j)*compet_plant_nh4 / sum_nh4_demand_scaled(c,j)), col_plant_ndemand(c)*nuptake_prof(c,j))
+!                     f_nit_vr(c,j) =  min((smin_nh4_vr(c,j)/dt)*(pot_f_nit_vr(c,j)*compet_nit / &
+!                          sum_nh4_demand_scaled(c,j)), pot_f_nit_vr(c,j))
+!                  else
+!                     actual_immob_nh4_vr(c,j) = 0.0_r8
+!                     smin_nh4_to_plant_vr(c,j) = 0.0_r8
+!                     f_nit_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_vr(c,j) > 0.0_r8) then
+!                     fpi_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) / potential_immob_vr(c,j)
+!                  else
+!                     fpi_nh4_vr(c,j) = 0.0_r8
+!                  end if
+!
+!               end if
+!
+!               ! next compete for no3
+!               sum_no3_demand(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j)) + &
+!                    (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j)) + pot_f_denit_vr(c,j)
+!               sum_no3_demand_scaled(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))*compet_plant_no3 + &
+!                    (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))*compet_decomp_no3 + pot_f_denit_vr(c,j)*compet_denit
+!
+!               if (sum_no3_demand(c,j)*dt < smin_no3_vr(c,j)) then
+!                  ! NO3 availability is not limiting immobilization or plant
+!                  ! uptake, and all can proceed at their potential rates
+!                  nlimit_no3(c,j) = 1
+!                  fpi_no3_vr(c,j) = 1.0_r8 -  fpi_nh4_vr(c,j)
+!                  actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
+!                  smin_no3_to_plant_vr(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
+!
+!                  f_denit_vr(c,j) = pot_f_denit_vr(c,j)
+!
+!               else
+!
+!                  ! NO3 availability can not satisfy the sum of immobilization, denitrification, and
+!                  ! plant growth demands, so these three demands compete for available
+!                  ! soil mineral NO3 resource.
+!                  nlimit_no3(c,j) = 1
+!                  if (sum_no3_demand(c,j) > 0.0_r8) then
+!                     actual_immob_no3_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((potential_immob_vr(c,j)- &
+!                          actual_immob_nh4_vr(c,j))*compet_decomp_no3 / sum_no3_demand_scaled(c,j)), &
+!                          potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
+!                     smin_no3_to_plant_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((col_plant_ndemand(c)* &
+!                          nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))*compet_plant_no3 / sum_no3_demand_scaled(c,j)), &
+!                          col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
+!                     f_denit_vr(c,j) =  min((smin_no3_vr(c,j)/dt)*(pot_f_denit_vr(c,j)*compet_denit / &
+!                          sum_no3_demand_scaled(c,j)), pot_f_denit_vr(c,j))
+!                  else
+!                     actual_immob_no3_vr(c,j) = 0.0_r8
+!                     smin_no3_to_plant_vr(c,j) = 0.0_r8
+!                     f_denit_vr(c,j) = 0.0_r8
+!                  end if
+!
+!                  if (potential_immob_vr(c,j) > 0.0_r8) then
+!                     fpi_no3_vr(c,j) = actual_immob_no3_vr(c,j) / potential_immob_vr(c,j)
+!                  else
+!                     fpi_no3_vr(c,j) = 0.0_r8
+!                  end if
+!
+!               end if
+!
+!
+!               ! n2o emissions: n2o from nitr is const fraction, n2o from denitr is calculated in nitrif_denitrif
+!               f_n2o_nit_vr(c,j) = f_nit_vr(c,j) * nitrif_n2o_loss_frac
+!               f_n2o_denit_vr(c,j) = f_denit_vr(c,j) / (1._r8 + n2_n2o_ratio_denit_vr(c,j))
+!
+!
+!               ! this code block controls the addition of N to sminn pool
+!               ! to eliminate any N limitation, when Carbon_Only is set.  This lets the
+!               ! model behave essentially as a carbon-only model, but with the
+!               ! benefit of keeping track of the N additions needed to
+!               ! eliminate N limitations, so there is still a diagnostic quantity
+!               ! that describes the degree of N limitation at steady-state.
+!
+!               if ( cnallocate_carbon_only()) then !.or. &
+!                  !              (crop_supln .and. (lun%itype(l) == istcrop) .and. &
+!                  !               (ivt(col%pfti(c)) >= npcropmin)) ) then
+!
+!                  if ( fpi_no3_vr(c,j) + fpi_nh4_vr(c,j) < 1._r8 ) then
+!                     fpi_nh4_vr(c,j) = 1.0_r8 - fpi_no3_vr(c,j)
+!                     supplement_to_sminn_vr(c,j) = (potential_immob_vr(c,j) - actual_immob_no3_vr(c,j)) - actual_immob_nh4_vr(c,j)
+!                     ! update to new values that satisfy demand
+!                     actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j) -  actual_immob_no3_vr(c,j)
+!                  end if
+!                  if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand(c)*nuptake_prof(c,j) ) then
+!                     supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
+!                          (col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
+!                     smin_nh4_to_plant_vr(c,j) = col_plant_ndemand(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)
+!                  end if
+!                  sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
+!               end if
+!
+!               ! sum up no3 and nh4 fluxes
+!               fpi_vr(c,j) = fpi_no3_vr(c,j) + fpi_nh4_vr(c,j)
+!               sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
+!               actual_immob_vr(c,j) = actual_immob_no3_vr(c,j) + actual_immob_nh4_vr(c,j)
+!            end do
+!         end do
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! sum up N fluxes to plant after initial competition
+!            sminn_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         ! give plants a second pass to see if there is any mineral N left over with which to satisfy residual N demand.
+!         ! first take frm nh4 pool; then take from no3 pool
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_plant_ndemand(c) = col_plant_ndemand(c) - sminn_to_plant(c)
+!            residual_smin_nh4(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if (residual_plant_ndemand(c)  >  0._r8 ) then
+!                  if (nlimit_nh4(c,j) .eq. 0) then
+!                     residual_smin_nh4_vr(c,j) = max(smin_nh4_vr(c,j) - (actual_immob_vr(c,j) + &
+!                          smin_nh4_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_smin_nh4(c) = residual_smin_nh4(c) + residual_smin_nh4_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_smin_nh4_vr(c,j)  = 0._r8
+!                  endif
+!
+!                  if ( residual_smin_nh4(c) > 0._r8 .and. nlimit_nh4(c,j) .eq. 0 ) then
+!                     smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + residual_smin_nh4_vr(c,j) * &
+!                          min(( residual_plant_ndemand(c) *  dt ) / residual_smin_nh4(c), 1._r8) / dt
+!                  endif
+!               end if
+!            end do
+!         end do
+!
+!         ! re-sum up N fluxes to plant after second pass for nh4
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
+!               sminn_to_plant(c) = sminn_to_plant(c) + (sminn_to_plant_vr(c,j)) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         !
+!         ! and now do second pass for no3
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            residual_plant_ndemand(c) = col_plant_ndemand(c) - sminn_to_plant(c)
+!            residual_smin_no3(c) = 0._r8
+!         end do
+!
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               if (residual_plant_ndemand(c) > 0._r8 ) then
+!                  if (nlimit_no3(c,j) .eq. 0) then
+!                     residual_smin_no3_vr(c,j) = max(smin_no3_vr(c,j) - (actual_immob_vr(c,j) + &
+!                          smin_no3_to_plant_vr(c,j) ) * dt, 0._r8)
+!                     residual_smin_no3(c) = residual_smin_no3(c) + residual_smin_no3_vr(c,j) * dzsoi_decomp(j)
+!                  else
+!                     residual_smin_no3_vr(c,j)  = 0._r8
+!                  endif
+!
+!                  if ( residual_smin_no3(c) > 0._r8 .and. nlimit_no3(c,j) .eq. 0) then
+!                     smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + residual_smin_no3_vr(c,j) * &
+!                          min(( residual_plant_ndemand(c) *  dt ) / residual_smin_no3(c), 1._r8) / dt
+!                  endif
+!               endif
+!            end do
+!         end do
+!
+!         ! re-sum up N fluxes to plant after second passes of both no3 and nh4
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            sminn_to_plant(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               sminn_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
+!               sminn_to_plant(c) = sminn_to_plant(c) + (sminn_to_plant_vr(c,j)) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!         ! sum up N fluxes to immobilization
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            actual_immob(c) = 0._r8
+!            potential_immob(c) = 0._r8
+!         end do
+!         do j = 1, nlevdecomp
+!            do fc=1,num_soilc
+!               c = filter_soilc(fc)
+!               actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j) * dzsoi_decomp(j)
+!               potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j) * dzsoi_decomp(j)
+!            end do
+!         end do
+!
+!
+!         do fc=1,num_soilc
+!            c = filter_soilc(fc)
+!            ! calculate the fraction of potential growth that can be
+!            ! acheived with the N available to plants
+!            if (col_plant_ndemand(c) > 0.0_r8) then
+!               fpg(c) = sminn_to_plant(c) / col_plant_ndemand(c)
+!            else
+!               fpg(c) = 1._r8
+!            end if
+!
+!            ! calculate the fraction of immobilization realized (for diagnostic purposes)
+!            if (potential_immob(c) > 0.0_r8) then
+!               fpi(c) = actual_immob(c) / potential_immob(c)
+!            else
+!               fpi(c) = 1._r8
+!            end if
+!         end do ! end of column loops
+!    !------------------------------------------------------------------
+!         ! above column loops to resolve plant/heterotroph/nitrifier/denitrifier competition
+!         ! for mineral NO3 and NH4 in this subroutine will not be implemented
+!         ! (this point is the block ending)
+!         end if !(.not. (use_pflotran .and. pf_cmode)) line ~1308
+!    !------------------------------------------------------------------
+!      end if  !end of if_not_use_nitrif_denitrif
+!
+!    !-------------------------------------------------------------------
+!      !'plant available N distribution and C allocation' portion is in 'CNAllocation2'
+!      !================================================================================================
+!
+!    end associate
+!
+! end subroutine CNAllocation1
+!
   !-----------------------------------------------------------------------
 !  subroutine CNAllocation (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
 !       photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &

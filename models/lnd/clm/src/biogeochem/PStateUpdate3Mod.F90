@@ -74,7 +74,7 @@ contains
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
+!      if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
 
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
@@ -176,7 +176,7 @@ contains
             end do
          end do
       end do
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
+!      endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
 
       ! patch-level phosphorus fluxes 

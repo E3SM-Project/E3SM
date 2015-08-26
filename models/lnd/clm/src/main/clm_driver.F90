@@ -113,15 +113,21 @@ module clm_driver
   use clm_initializeMod      , only : lnd2glc_vars
   use clm_initializeMod      , only : EDbio_vars
   use clm_initializeMod      , only : soil_water_retention_curve
+  ! bgc interface
+  use clm_initializeMod      , only : clm_bgc_data
+  use clm_bgc_interfaceMod   , only : get_clm_bgc_data
+
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
-  ! pflotran
-  use clm_varctl             , only : use_pflotran
+  ! bgc & pflotran interface
+  use clm_varctl             , only : use_bgc_interface, use_clm_bgc, use_pflotran, use_nitrif_denitrif
   use clm_varctl             , only : pf_hmode, pf_tmode, pf_cmode
-  use clm_bgc_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
-!  use clm_bgc_interfaceMod   , only : clm_pf_finalize
+  use clm_bgc_interfaceMod   , only : clm_bgc_run
+  use clm_pflotran_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
+!  use clm_pflotran_interfaceMod   , only : clm_pf_finalize
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -514,51 +520,6 @@ contains
 
        call t_stopf('bgc')
 
-       ! pflotran: beg
-       ! ============================================================================
-!       if (use_pflotran) then
-!        if ((.not.use_ed .and. use_cn) .and. pf_cmode) then
-!            call CNEcosystemDynNoLeaching1(bounds_clump,                               &
-!                       filter(nc)%num_soilc, filter(nc)%soilc,                          &
-!                       filter(nc)%num_soilp, filter(nc)%soilp,                          &!!num_pcropp, filter_pcropp, doalb, &
-!                       cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-!                       c13_carbonflux_vars,                                             &!!c13_carbonstate_vars, &
-!                       c14_carbonflux_vars,                                             &!!c14_carbonstate_vars, &
-!                       nitrogenflux_vars, nitrogenstate_vars,                           &
-!                       atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
-!                       canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
-!                       ch4_vars, photosyns_vars,                                        & !!dgvs_vars, soilhydrology_vars, energyflux_vars, &
-!                       phosphorusflux_vars,phosphorusstate_vars)
-!        end if
-!
-!                call t_startf('pflotran')
-!               ! ===========================================================================
-!               ! PFLOTRAN calling for solving below-ground and ground-surface processes,
-!               ! including thermal, hydrological and biogeochemical processes
-!               ! ===========================================================================
-!
-!                call clm_pf_run(bounds_clump,                                      &
-!                       ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
-!                       ! at this coding stage.
-!                       ! Note: 'soilp' as input for possible future use of pft-level variables like ET/nuptake
-!                       filter(nc)%num_soilc, filter(nc)%soilc,                          &
-!                       filter(nc)%num_soilp, filter(nc)%soilp,                          &
-!                       ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-!                       atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
-!                       soilstate_vars,  temperature_vars, energyflux_vars,              &
-!                       soilhydrology_vars, soil_water_retention_curve,                  &
-!                       ! soil bgc
-!                       cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-!                       nitrogenflux_vars, nitrogenstate_vars,                           &
-!                       ch4_vars                                                         &
-!                       )
-!
-!                call t_stopf('pflotran')
-!
-!       end if
-       ! ============================================================================
-       ! pflotran: end
-
        ! ============================================================================
        ! Determine temperatures
        ! ============================================================================
@@ -717,6 +678,8 @@ contains
              ! - CNDV defined: prognostic biogeography; else prescribed
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
+             ! pflotran: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2)
+
 !             call CNEcosystemDynNoLeaching(bounds_clump,                        &
 !                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
 !                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
@@ -730,9 +693,7 @@ contains
 !                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
 !                  phosphorusflux_vars,phosphorusstate_vars)
 
-             ! pflotran: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines
-             ! wgs: beg
-!             if(.not.use_pflotran) then
+
              call CNEcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
                        filter(nc)%num_soilp, filter(nc)%soilp,                          &!!num_pcropp, filter_pcropp, doalb, &
@@ -744,36 +705,62 @@ contains
                        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
                        ch4_vars, photosyns_vars,                                        & !!dgvs_vars, soilhydrology_vars, energyflux_vars, &
                        phosphorusflux_vars,phosphorusstate_vars)
-!             end if
-             ! wgs: end
 
-             if (use_pflotran .and. pf_cmode) then
-                call t_startf('pflotran')
-               ! ===========================================================================
-               ! PFLOTRAN calling for solving below-ground and ground-surface processes,
-               ! including thermal, hydrological and biogeochemical processes
-               ! ===========================================================================
+write(*,'(10A20)')'use_bgc_interface','use_clm_bgc','use_pflotran','use_nitrif_denitrif'
+write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
+             !!--------------------------------------------------------------------------------
+             if (use_bgc_interface) then
+                 !write(*,*)'pass data from CLM to INTERFACE'
+                 call get_clm_bgc_data(clm_bgc_data,bounds_clump,                           &
+                           filter(nc)%num_soilc, filter(nc)%soilc,                          &
+                           filter(nc)%num_soilp, filter(nc)%soilp,                          &
+                           atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
+                           soilstate_vars,  temperature_vars, energyflux_vars,              &
+                           soilhydrology_vars, soil_water_retention_curve,                  &
+                           cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
+                           nitrogenflux_vars, nitrogenstate_vars,                           &
+                           ch4_vars)
 
-                call clm_pf_run(bounds_clump,                                      &
-                       ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
-                       ! at this coding stage.
-                       ! Note: 'soilp' as input for possible future use of pft-level variables like ET/nuptake
-                       filter(nc)%num_soilc, filter(nc)%soilc,                          &
-                       filter(nc)%num_soilp, filter(nc)%soilp,                          &
-                       ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-                       atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
-                       soilstate_vars,  temperature_vars, energyflux_vars,              &
-                       soilhydrology_vars, soil_water_retention_curve,                  &
-                       ! soil bgc
-                       cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-                       nitrogenflux_vars, nitrogenstate_vars,                           &
-                       ch4_vars                                                         &
-                       )
+                 if (use_pflotran .and. pf_cmode) then
+                    call t_startf('pflotran')
+                   ! ===========================================================================
+                   ! PFLOTRAN calling for solving below-ground and ground-surface processes,
+                   ! including thermal, hydrological and biogeochemical processes
+                   ! ===========================================================================
+
+                    call clm_pf_run(clm_bgc_data,bounds_clump,                                           &
+                           ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
+                           ! at this coding stage.
+                           ! Note: 'soilp' as input for possible future use of pft-level variables like ET/nuptake
+                           filter(nc)%num_soilc, filter(nc)%soilc,                          &
+                           filter(nc)%num_soilp, filter(nc)%soilp,                          &
+                           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
+                           atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
+                           soilstate_vars,  temperature_vars, energyflux_vars,              &
+                           soilhydrology_vars, soil_water_retention_curve,                  &
+                           ! soil bgc
+                           cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
+                           nitrogenflux_vars, nitrogenstate_vars,                           &
+                           ch4_vars)
 
 
 
-                call t_stopf('pflotran')
-             end if !!if (use_pflotran .and. pf_cmode)
+                    call t_stopf('pflotran')
+
+                 elseif (use_clm_bgc) then
+                    call clm_bgc_run(bounds_clump,                           &
+                           filter(nc)%num_soilc, filter(nc)%soilc,                          &
+                           filter(nc)%num_soilp, filter(nc)%soilp,                          &
+                           photosyns_vars, canopystate_vars,                                &
+                           soilstate_vars, temperature_vars, waterstate_vars,               &
+                           cnstate_vars, ch4_vars,                                          &
+                           carbonstate_vars, carbonflux_vars,                               &
+                           c13_carbonflux_vars, c14_carbonflux_vars,                        &
+                           nitrogenstate_vars, nitrogenflux_vars, crop_vars,                &
+                           phosphorusstate_vars,phosphorusflux_vars)
+                 end if !!if (use_pflotran .and. pf_cmode)
+             end if !!if (use_bgc_interface)
+             !!--------------------------------------------------------------------------------
 
              call CNEcosystemDynNoLeaching2(bounds_clump,                                   &
                    filter(nc)%num_soilc, filter(nc)%soilc,                                  &

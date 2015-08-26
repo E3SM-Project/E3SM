@@ -104,7 +104,7 @@ contains
     use fileutils        , only : getavu, relavu
     use shr_string_mod   , only : shr_string_getParentDir
     ! pflotran
-    use clm_bgc_interfaceMod, only : clm_pf_readnl
+    use clm_pflotran_interfaceMod, only : clm_pf_readnl
 
     implicit none
     !
@@ -217,8 +217,8 @@ contains
          use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
 
-    ! pflotran interface
-    namelist /clm_inparm/ use_pflotran
+    ! bgc & pflotran interface
+    namelist /clm_inparm/ use_bgc_interface, use_clm_bgc, use_pflotran
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -337,6 +337,23 @@ contains
        ! crop ar compatible
        if (use_crop) then
           use_voc = .false.
+       end if
+
+       ! ----------------------------------------------------------------------
+       !! bgc & pflotran interface
+       if(.not.use_bgc_interface) then
+            use_clm_bgc     = .true.
+            use_pflotran    = .false.
+       end if
+
+       if (use_clm_bgc) then
+            use_pflotran = .false.
+       end if
+
+       if (use_pflotran) then
+            use_clm_bgc = .false.
+            !! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools, NOT to implement 'nitrif_denitrif'
+            use_nitrif_denitrif = .true.
        end if
 
     endif   ! end of if-masterproc if-block
@@ -603,6 +620,9 @@ contains
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
 
+    ! bgc & pflotran interface
+    call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
 
   end subroutine control_spmd

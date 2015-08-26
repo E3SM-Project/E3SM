@@ -70,6 +70,8 @@ module clm_initializeMod
   use EDBioType              , only : EDbio_type         ! ED type used to interact with CLM variables
   use EDVecPatchType         , only : EDpft                   
   use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
+  ! bgc interface
+  use clm_bgc_interface_data , only : clm_bgc_interface_data_type
   !
   implicit none
   save
@@ -119,6 +121,8 @@ module clm_initializeMod
 
   type(phosphorusstate_type)    :: phosphorusstate_vars
   type(phosphorusflux_type)     :: phosphorusflux_vars
+
+  type(clm_bgc_interface_data_type) :: clm_bgc_data
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -409,8 +413,8 @@ contains
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
     ! pflotran
-    use clm_varctl            , only : use_pflotran
-    use clm_bgc_interfaceMod  , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
+    use clm_varctl            , only : use_bgc_interface, use_pflotran
+    use clm_pflotran_interfaceMod  , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     !
     ! !ARGUMENTS    
     implicit none
@@ -743,6 +747,10 @@ contains
 
        call phosphorusflux_vars%Init(bounds_proc) 
 
+       if (use_bgc_interface) then
+            call clm_bgc_data%Init(bounds_proc)
+       end if
+
        ! Note - always initialize the memory for the dgvs_vars data structure so
        ! that it can be used in associate statements (nag compiler complains otherwise)
        call dgvs_vars%Init(bounds_proc)
@@ -1056,7 +1064,7 @@ contains
     !------------------------------------------------------------
     ! PFLOTRAN initialization
     call t_startf('init_pflotran')
-    if (use_pflotran) then
+    if (use_bgc_interface.and.use_pflotran) then
        call clm_pf_interface_init(bounds_proc)
     end if
     call t_stopf('init_pflotran')

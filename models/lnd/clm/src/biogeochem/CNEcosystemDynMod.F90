@@ -35,7 +35,8 @@ module CNEcosystemDynMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   ! pflotran
-  use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
+  use clm_varctl          , only : use_bgc_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
+  use CNVerticalProfileMod   , only : decomp_vertprofiles
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -45,7 +46,7 @@ module CNEcosystemDynMod
   public :: CNEcosystemDynInit   ! Ecosystem dynamics initialization
 !  public :: CNEcosystemDynNoLeaching       ! Ecosystem dynamics: phenology, vegetation, before doing N leaching
   public :: CNEcosystemDynLeaching       ! Ecosystem dynamics: phenology, vegetation, doing N leaching
-  ! clm_bgc_interface
+  ! bgc & pflotran interface
   public :: CNEcosystemDynNoLeaching1       ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc & N leaching
   public :: CNEcosystemDynNoLeaching2       ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
   !-----------------------------------------------------------------------
@@ -259,7 +260,7 @@ contains
 !    use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
     !! wgs: BEGIN
-    use CNAllocationMod        , only: CNAllocation1 !!cnallocation
+    use CNAllocationMod        , only: CNAllocation1_AG !! 1st phase of CNAllocation
 !    use CNDecompMod            , only: CNDecompAlloc2
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
@@ -365,26 +366,31 @@ contains
             carbonflux_vars, nitrogenstate_vars)
        call t_stopf('CNMResp')
 
-       if (use_century_decomp) then
-          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-       else
-          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
-       end if
+!       if (use_century_decomp) then
+!          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
+!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+!       else
+!          call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
+!               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+!       end if
 
+        ! wgs: moved from CNDecompAlloc (nfixation_prof)
+        call decomp_vertprofiles(bounds, &
+           num_soilc, filter_soilc, num_soilp, filter_soilp, &
+           soilstate_vars, canopystate_vars, cnstate_vars)
        !----------------------------------------------------------------
        ! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
-       if (use_pflotran .and. pf_cmode) then
+!       if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
           call t_startf('CNDecompAlloc - PF phase 1')
-          call CNAllocation1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,    &
+          ! change 'CNAllocation1' to 'CNAllocation1_AG'
+          call CNAllocation1_AG(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                 &
                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars,                    &
                c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars,                &
                phosphorusstate_vars, phosphorusflux_vars)
 
           call t_stopf('CNDecompAlloc - PF phase 1')
-       endif
+!       endif !!if (use_bgc_interface.and.use_pflotran .and. pf_cmode)
 
     end if !end of if not use_ed block
 
@@ -434,10 +440,11 @@ contains
     use CropType               , only: crop_type
     use dynHarvestMod          , only: CNHarvest
 !    use clm_varpar             , only: crop_prog
-!    !! wgs: BEGIN
+
 !    use CNAllocationMod        , only: CNAllocation1 !!cnallocation  !!wgs
-    use CNDecompMod            , only: CNDecompAlloc, CNDecompAlloc2
-    !! wgs: END
+!    use CNDecompMod            , only: CNDecompAlloc
+    use CNDecompMod            , only: CNDecompAlloc1, CNDecompAlloc2 !! CNDecompAlloc is divided into 2 subroutines
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -482,25 +489,46 @@ contains
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
-       ! call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
-       ! and also call CNAllocationMod - part 2.
-       ! if coupled with pflotran
-       if (use_pflotran .and. pf_cmode) then
-          call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
+       !! directly use_clm_bgc
+       if(.not.use_bgc_interface) then
+            call CNDecompAlloc1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,             &
+                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
+                cnstate_vars, ch4_vars,                                                             &
+                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
+                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
+                phosphorusstate_vars,phosphorusflux_vars)
+       end if !!if(.not.use_bgc_interface)
+
+       !! CNDecompAlloc2 is called by both PFLOTRAN & ALM
+       call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
                 waterstate_vars, cnstate_vars, ch4_vars,                                          &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
                 nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
                 phosphorusstate_vars,phosphorusflux_vars)
 
-       else
-           call CNDecompAlloc(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,             &
-                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
-                cnstate_vars, ch4_vars,                                                             &
-                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
-                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
-                phosphorusstate_vars,phosphorusflux_vars)
-       end if !if (use_pflotran .and. pf_cmode) block
+       !----------------------------------------------------------------
+
+       ! call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
+       ! and also call CNAllocationMod - part 2.
+       ! if coupled with pflotran
+
+!       if (use_pflotran .and. pf_cmode) then
+!          call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
+!                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
+!                waterstate_vars, cnstate_vars, ch4_vars,                                          &
+!                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
+!                nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
+!                phosphorusstate_vars,phosphorusflux_vars)
+!
+!       else
+!           call CNDecompAlloc(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,             &
+!                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
+!                cnstate_vars, ch4_vars,                                                             &
+!                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
+!                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
+!                phosphorusstate_vars,phosphorusflux_vars)
+!       end if !if (use_pflotran .and. pf_cmode) block
        call t_stopf('CNDecompAlloc')
        !----------------------------------------------------------------
 

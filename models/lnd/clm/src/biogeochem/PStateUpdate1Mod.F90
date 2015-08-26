@@ -85,7 +85,7 @@ contains
 
       !------------------------------------------------------------------
       ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
+!      if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -147,7 +147,7 @@ contains
          end if
       end do
 
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
+!      endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
 
       ! patch loop

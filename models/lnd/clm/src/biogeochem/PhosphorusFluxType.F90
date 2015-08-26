@@ -263,7 +263,7 @@ module PhosphorusFluxType
      real(r8), pointer :: decomp_ppools_transport_tendency_col      (:,:,:) ! col P tendency due to vertical transport in decomposing P pools (gP/m^3/s)
 
      ! all n pools involved in decomposition
-     real(r8), pointer :: decomp_ppools_sourcesink_col              (:,:,:) ! col (gP/m3) change in decomposing n pools 
+     real(r8), pointer :: decomp_ppools_sourcesink_col              (:,:,:) ! col (gP/m3) change in decomposing P pools
                                                                             !     (sum of all additions and subtractions from stateupdate1).  
 
      ! Misc
