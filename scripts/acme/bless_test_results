@@ -13,7 +13,7 @@ with versions of the files that you should not bless.
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 
-import argparse, sys, os, socket, shutil, glob, doctest
+import argparse, sys, os, glob, doctest
 
 import wait_for_tests, compare_namelists, simple_compare
 from acme_util import expect, warning, verbose_print, run_cmd
@@ -44,20 +44,28 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
+    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_source_repo())
+
+    default_compiler, _, _, _, acme_root, _, _ = acme_util.get_machine_info()
+    default_testroot = os.path.join(acme_root, "jenkins")
+
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
 
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only analyze namelists.")
 
-    parser.add_argument("-b", "--branch",
-                        help="Force us to use baselines for a specific branch instead of the current branch.")
+    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
+                        help="Name of baselines to use.")
+
+    parser.add_argument("-c", "--compiler", default=default_compiler,
+                        help="Compiler of run you want to bless")
 
     parser.add_argument("-r", "--report-only", action="store_true",
                         help="Only report what files will be overwritten and why. Caution is a good thing when updating baselines")
 
-    parser.add_argument("-t", "--test-root",
-                        help="Instead of looking at last night's Jenkins results, use a custom test area")
+    parser.add_argument("-t", "--test-root", default=default_testroot,
+                        help="Path to test results that are being blessed")
 
     parser.add_argument("-f", "--force", action="store_true",
                         help="Update every diff without asking. VERY DANGEROUS. Should only be used within testing scripts.")
@@ -72,31 +80,18 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.branch, args.namelists_only, args.report_only, args.test_root, args.force, args.bless_tests
+    return args.baseline_name, args.test_root, args.compiler, args.namelists_only, args.report_only, args.force, args.bless_tests
 
 ###############################################################################
-def bless_test_results(baseline_branch=None, namelists_only=False, report_only=False, test_root=None, force=False, bless_tests=None):
+def bless_test_results(baseline_name, test_root, compiler, namelists_only=False, report_only=False, force=False, bless_tests=None):
 ###############################################################################
-    acme_machine = acme_util.probe_machine_name()
-    expect(acme_machine is not None,
-           "Did not recognize current machine '%s'" % socket.gethostname())
-
-    acme_repo = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    expect(os.path.isdir(os.path.join(acme_repo, ".git")),
-           "Expected '%s' to be a git repository" % acme_repo)
-
-    _, _, _, _, acme_root, baseline_root, _ = acme_util.get_machine_info(acme_machine)
-    if (test_root is None):
-        test_root = os.path.join(acme_root, "jenkins")
-
-    git_branch = acme_util.get_current_branch(repo=acme_repo) if baseline_branch is None else baseline_branch
-
     test_results = wait_for_tests.get_test_results(glob.glob("%s/*/TestStatus" % test_root),
                                                    True, # no wait
                                                    False, # don't check throughput
                                                    False) # don't ignore namelist diffs
 
-    baseline_area = os.path.join(baseline_root, git_branch)
+    baseline_root = acme_util.get_machine_info()[5]
+    baseline_area = os.path.join(baseline_root, compiler, baseline_name)
 
     for test_name, test_data in test_results.iteritems():
         if (bless_tests in [[], None] or acme_util.match_any(test_name, bless_tests)):
@@ -123,8 +118,8 @@ def bless_test_results(baseline_branch=None, namelists_only=False, report_only=F
                 case = os.path.basename(testcase_dir_for_test)
 
                 # Get user that test was run as (affects loc of hist files)
-                user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test).strip()
-                acme_root = acme_util.get_machine_info(acme_machine, user=user)[4]
+                user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test)
+                acme_root = acme_util.get_machine_info(user=user)[4]
 
                 # Find files of various types
                 namelist_files = []
@@ -168,7 +163,7 @@ def bless_test_results(baseline_branch=None, namelists_only=False, report_only=F
                                     warning("Skipping hist files for this test")
                                     continue
                                 hist_file = hist_files[0]
-                                hist_compare_script = os.path.join(os.path.dirname(__file__), "..", "ccsm_utils", "Tools", "hist_compare.csh")
+                                hist_compare_script = os.path.join(acme_util.get_source_repo(), "scripts", "ccsm_utils", "Tools", "hist_compare.csh")
                                 stat = run_cmd("%s %s %s" % (hist_compare_script, hist_file, baseline_file), arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
                                 if (stat != 0):
                                     print "Hist files '%s' and '%s' did not match" % (baseline_file, hist_file)
@@ -194,10 +189,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    baseline_branch, namelists_only, report_only, test_root, force, bless_tests = \
+    baseline_name, test_root, compiler, namelists_only, report_only, force, bless_tests = \
         parse_command_line(sys.argv, description)
 
-    bless_test_results(baseline_branch, namelists_only, report_only, test_root, force, bless_tests)
+    bless_test_results(baseline_name, test_root, compiler, namelists_only, report_only, force, bless_tests)
 
 ###############################################################################
 

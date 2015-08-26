@@ -1413,7 +1413,12 @@ sub testcaseSetup
   {
     $test->{'status'}="GEN";
     open my $TESTSTATUS, ">", "$caseroot/TestStatus" or warn $!;
-    print $TESTSTATUS "GEN ".$test->{'case'}."\n";
+    if ( defined $opts{'nlcompareonly'}) {
+        print $TESTSTATUS "PASS ".$test->{'case'}."\n";
+    }
+    else {
+        print $TESTSTATUS "GEN ".$test->{'case'}."\n";
+    }
     close $TESTSTATUS;
   }
   
@@ -1715,9 +1720,7 @@ sub namelistCompare
 		$nlcompoutput .= $output;
 	    }
 	}
-
-
-
+    
 
 	# print the compare_namelist results to TestStatus.out 
     if(defined $nlcompoutput && length $nlcompoutput > 0) 
@@ -1858,25 +1861,27 @@ sub main
 	}
 	writeTestListXML(\@testspec, $cfg_ref);
 	namelistCompareSuite(@testspec);
-	testBuildSubmit();
-	if($opts{'compare'} or $opts{'generate'}){
-	    my $cnt=0;
-	    my $pass=0;
-	    my $sfail=0;
-	    my $fail=0;
-	    my $gen=0;
-	    foreach my $test (@testspec){
-		$cnt++;
-		$sfail++ if($test->{status} eq "SFAIL");
-		$fail++ if($test->{status} eq "FAIL");
-		$pass++ if($test->{status} eq "PASS");
-		$gen++ if($test->{status} eq "GEN");
-	    }
-	    if($opts{'compare'}){
-		print "Summary: $cnt tests were run, $pass passed, $fail failed, $sfail failed to configure\n";
-	    }else{
-		print "Summary: $cnt tests were run, $gen baselines were generated, $sfail failed to configure\n" ;
-	    }
+        if( ! defined $opts{'nlcompareonly'}) {
+            testBuildSubmit();
+            if($opts{'compare'} or $opts{'generate'}){
+                my $cnt=0;
+                my $pass=0;
+                my $sfail=0;
+                my $fail=0;
+                my $gen=0;
+                foreach my $test (@testspec){
+                    $cnt++;
+                    $sfail++ if($test->{status} eq "SFAIL");
+                    $fail++ if($test->{status} eq "FAIL");
+                    $pass++ if($test->{status} eq "PASS");
+                    $gen++ if($test->{status} eq "GEN");
+                }
+                if($opts{'compare'}){
+                    print "Summary: $cnt tests were run, $pass passed, $fail failed, $sfail failed to configure\n";
+                }else{
+                    print "Summary: $cnt tests were run, $gen baselines were generated, $sfail failed to configure\n" ;
+                }
+            }
 	}
     }else{ #Create a single test. 
 	# check the options for a single test. 

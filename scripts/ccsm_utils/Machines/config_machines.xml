@@ -71,7 +71,7 @@
         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
-        <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
+        <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
         <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
         <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
@@ -92,7 +92,7 @@
         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
-        <DIN_LOC_ROOT_CLMFORC>/glade/proj2/cgd/tss</DIN_LOC_ROOT_CLMFORC>
+        <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
         <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
         <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
@@ -516,7 +516,7 @@
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/home/jgfouca/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/jgfouca/acme/ptclmdata</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT_CLMFORC>/home/jgfouca/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
 
@@ -834,7 +834,7 @@
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/acme/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc.frontend/cprnc.titan</CCSM_CPRNC>
          <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
