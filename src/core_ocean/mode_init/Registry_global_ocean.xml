@@ -63,9 +63,13 @@
 					description="Number of smoothing iterations on temperature and salinity."
 					possible_values="Any positive integer value greater or equal to 0."
 		/>
-		<nml_option name="config_global_ocean_tracer_restore" type="logical" default_value=".true." units="unitless"
-					description="Logical flag that controls if the temperatureRestore and salinityRestore fields are filled. True means these variables are filled with temperature and salinity surface values, false means they remain zero."
-					possible_values=".true. or .false."
+		<nml_option name="config_global_ocean_piston_velocity" type="real" default_value="5.0e-5" units="m s^{-1}"
+					description="Parameter controlling rate to which SST and SST are restored."
+					possible_values="Any real positive number."
+
+                <nml_option name="config_global_ocean_interior_restore_rate" type="real" default_value="1.0e-7" units="s^{-1}"
+                                        description="Parameter controlling rate to which interior temperature and salinity are restored."
+                                        possible_values="Any real positive number."
 		/>
 		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
 					description="Path to the topography initial condition file."
