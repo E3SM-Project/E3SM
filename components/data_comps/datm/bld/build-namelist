@@ -633,9 +633,6 @@ add_default($nl, 'atm_in' , 'val'=>"datm_atm_in${INST_STRING}");
 add_default($nl, 'iradsw');
 if ($DATM_MODE =~ /^CORE/) {
     my $factorfn = "$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc";
-    if ($ATM_GRID eq "01col") {
-      $factorfn = "$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.01col.20150819.nc";
-    }
     add_default($nl, 'factorfn', 'val'=>"$factorfn" );
 }
 if ($DATM_PRESAERO eq "none" ) {
