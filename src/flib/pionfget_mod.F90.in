@@ -8,7 +8,11 @@
 module pionfget_mod
   use iso_c_binding
 #ifdef TIMING
+#ifdef USE_INTERNAL_GPTL
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
+#else
+  use gptl    , only : gptlstart, gptlstop    ! _EXTERNAL
+#endif
 #endif
   use pio_kinds, only: i4,r4,r8
   use pio_types, only : file_desc_t, var_desc_t
@@ -142,6 +146,11 @@ CONTAINS
     {VTYPE}, intent(out) :: ival
     integer(C_SIZE_T), allocatable :: cindex(:)
     integer :: i, clen
+#ifdef TIMING
+#ifndef USE_INTERNAL_GPTL
+    integer :: gptlret
+#endif
+#endif
     interface
        integer(C_INT) function PIOc_get_var1_{NCTYPE} (ncid, varid, index, ival) &
             bind(C,name="PIOc_get_var1_{NCTYPE}")
@@ -154,7 +163,11 @@ CONTAINS
     end interface
 
 #ifdef TIMING
+#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:get_var1_{TYPE}")
+#else
+    gptlret = gptlstart("PIO:get_var1_{TYPE}")
+#endif
 #endif
     clen = size(index)
     allocate(cindex(clen))
@@ -165,7 +178,11 @@ CONTAINS
     ierr = PIOc_get_var1_{NCTYPE} (ncid, varid-1, cindex, ival)
     deallocate(cindex)
 #ifdef TIMING
+#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:get_var1_{TYPE}")
+#else
+    gptlret = gptlstop("PIO:get_var1_{TYPE}")
+#endif
 #endif
   end function get_var1_id_{TYPE}
 
@@ -180,6 +197,12 @@ CONTAINS
     integer(C_SIZE_T), allocatable :: cindex(:)
     integer(C_SIZE_T), allocatable :: count(:)
     integer :: i, clen
+#ifdef TIMING
+#ifndef USE_INTERNAL_GPTL
+    integer :: gptlret
+#endif
+#endif
+
 !!$    interface
 !!$       integer(C_INT) function PIOc_get_var1_text (ncid, varid, index, ival) &
 !!$            bind(C,name="PIOc_get_var1_text")
@@ -192,7 +215,11 @@ CONTAINS
 !!$    end interface
 
 #ifdef TIMING
+#ifdef USE_INTERNAL_GPTL
     call t_startf("PIO:get_var1_text")
+#else
+    gptlret = gptlstart("PIO:get_var1_text")
+#endif
 #endif
     clen = size(index)
     allocate(cindex(clen))
@@ -207,7 +234,11 @@ CONTAINS
     deallocate(cindex)
     deallocate(count)
 #ifdef TIMING
+#ifdef USE_INTERNAL_GPTL
     call t_stopf("PIO:get_var1_text")
+#else
+    gptlret = gptlstop("PIO:get_var1_text")
+#endif
 #endif
   end function get_var1_id_text_internal
 

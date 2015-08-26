@@ -1,6 +1,10 @@
 module pio_nf
 #ifdef TIMING
+#ifdef USE_INTERNAL_GPTL
   use perf_mod           , only : t_startf, t_stopf      ! _EXTERNAL
+#else
+  use gptl               , only : gptlstart, gptlstop      ! _EXTERNAL
+#endif
 #endif
   use pio_kinds           , only :  pio_offset_kind
   use pio_types           , only : file_desc_t, var_desc_t, PIO_MAX_VAR_DIMS
