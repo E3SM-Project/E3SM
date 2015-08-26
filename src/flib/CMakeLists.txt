@@ -135,9 +135,6 @@ if (PIO_ENABLE_TIMING)
             PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
         target_link_libraries (piof
             PUBLIC ${GPTL_Fortran_LIBRARIES})
-    else ()
-        target_compile_definitions (piof
-            PUBLIC USE_INTERNAL_GPTL)
     endif ()
 endif ()
 
