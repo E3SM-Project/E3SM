@@ -74,7 +74,7 @@ mpas_timekeeping.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o mpas_
 
 mpas_timer.o: mpas_kind_types.o mpas_io_units.o mpas_dmpar.o
 
-mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o
+mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_dmpar.o
 
 mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_io_units.o mpas_block_decomp.o mpas_stream_manager.o mpas_decomp.o $(DEPS)
 
