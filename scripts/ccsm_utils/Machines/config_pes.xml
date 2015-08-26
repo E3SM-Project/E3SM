@@ -319,7 +319,7 @@
     <PES_LEVEL>1rp</PES_LEVEL>
 </pes>
 
-<pes GRID="a%T31" MACH="hera|sierra" >
+<pes GRID="a%T31" MACH="cab|sierra" >
     <NTASKS_ATM>64</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <PES_LEVEL>2rm</PES_LEVEL>
 </pes>
@@ -531,7 +531,7 @@
     <PES_LEVEL>1rp</PES_LEVEL>
 </pes>
 
-<pes GRID="a%0.47x0.63" MACH="hera|sierra">
+<pes GRID="a%0.47x0.63" MACH="cab|sierra">
     <NTASKS_ATM>480</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <PES_LEVEL>2rm</PES_LEVEL>
 </pes>
@@ -546,7 +546,7 @@
     <PES_LEVEL>1rp</PES_LEVEL>
 </pes>
 
-<pes GRID="a%0.23x0.31" MACH="hera|sierra">
+<pes GRID="a%0.23x0.31" MACH="cab|sierra">
     <NTASKS_ATM>960</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <PES_LEVEL>2rm</PES_LEVEL>
 </pes>
@@ -769,7 +769,7 @@
   tasks/thread setup - GRID: low-res atm grid
  ----------------------------------------------------------------------------- -->
 
-<pes GRID="a%4x5.+oi%gx3" MACH="hera|sierra">
+<pes GRID="a%4x5.+oi%gx3" MACH="cab|sierra">
     <NTASKS_ATM>40</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <PES_LEVEL>2rm</PES_LEVEL>
 </pes>
@@ -864,7 +864,7 @@
     <PES_LEVEL>2rp</PES_LEVEL>	
 </pes>
 
-<pes GRID="a%1.9x2.5_l%1.9x2.5_oi%gx1" CCSM_LCOMPSET="CAM.+CLM.+CICE.+POP" MACH="hera|sierra" >
+<pes GRID="a%1.9x2.5_l%1.9x2.5_oi%gx1" CCSM_LCOMPSET="CAM.+CLM.+CICE.+POP" MACH="cab|sierra" >
     <NTASKS_ATM>48</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM> 0</ROOTPE_ATM>
     <NTASKS_LND> 8</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND> 0</ROOTPE_LND>
     <NTASKS_ICE>40</NTASKS_ICE> <NTHRDS_ICE>1</NTHRDS_ICE> <ROOTPE_ICE> 8</ROOTPE_ICE>

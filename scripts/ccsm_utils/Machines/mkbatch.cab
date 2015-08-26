@@ -95,7 +95,7 @@ EOF1
 else if ($PHASE == set_larch) then
 #################################################################################
 
-   #This is a long-term archiving script on hera
+   #This is a long-term archiving script on sierra
 
 if (-e ${CASEROOT}/${CASE}.l_archive) then
    echo ERROR: generate_batch.csh file ${CASE}.l_archive already exists in 
