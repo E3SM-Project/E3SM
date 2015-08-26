@@ -69,7 +69,7 @@ else
 endif
 
 module load ncarcompilers/1.0
-module load cmake/2.8.10.2
+module load cmake/3.0.2
 
 # -------------------------------------------------------------------------
 # Build and runtime environment variables - edit before the initial build 
