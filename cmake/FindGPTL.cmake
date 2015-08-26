@@ -15,7 +15,7 @@
 #   GPTL_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with GPTL
 #   GPTL_<lang>_OPTIONS      (LIST) - compiler options to use GPTL
 #
-# The available COMPONENTS are: C Fortran
+# The available COMPONENTS are: C Fortran Perfmod
 # If no components are specified, it assumes only C
 include (LibFind)
 
@@ -29,6 +29,12 @@ define_package_component (GPTL DEFAULT
 define_package_component (GPTL
                           COMPONENT Fortran
                           INCLUDE_NAMES gptl.mod
+                          LIBRARY_NAMES gptl)
+
+# Define GPTL Perfmod Component
+define_package_component (GPTL
+                          COMPONENT Perfmod
+                          INCLUDE_NAMES perf_mod.mod
                           LIBRARY_NAMES gptl)
 
 # Search for list of valid components requested
