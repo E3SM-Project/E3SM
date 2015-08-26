@@ -46,7 +46,8 @@ SUBROUTINE COSP(overlap,Ncolumns,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,mo
   type(cosp_config),intent(in) :: cfg   ! Configuration options
   type(cosp_vgrid),intent(in) :: vgrid   ! Information on vertical grid of stats
   type(cosp_gridbox),intent(inout) :: gbx
-  type(cosp_subgrid),intent(inout),target :: sgx   ! Subgrid info !+JEK ",target" per jet
+  type(cosp_subgrid),intent(inout),target :: sgx   ! Subgrid info  !!++added JEK per jet 5-11-2010
+  !!type(cosp_subgrid),intent(inout) :: sgx   ! Subgrid info
   type(cosp_sgradar),intent(inout) :: sgradar ! Output from radar simulator
   type(cosp_sglidar),intent(inout) :: sglidar ! Output from lidar simulator
   type(cosp_isccp),intent(inout)   :: isccp   ! Output from ISCCP simulator
@@ -87,17 +88,11 @@ SUBROUTINE COSP(overlap,Ncolumns,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,mo
 #endif
   type(cosp_radarstats) :: stradar_it
   type(cosp_lidarstats) :: stlidar_it
-
-!++++++++++ Dimensions ++++++++++++
+  
+  !++++++++++ Dimensions ++++++++++++
   Npoints  = gbx%Npoints
   Nlevels  = gbx%Nlevels
   Nhydro   = gbx%Nhydro
-
-!++++++++++ Depth of model layers ++++++++++++
-  do i=1,Nlevels-1
-    gbx%dlev(:,i) = gbx%zlev_half(:,i+1) - gbx%zlev_half(:,i)
-  enddo
-  gbx%dlev(:,Nlevels) = 2.0*(gbx%zlev(:,Nlevels) - gbx%zlev_half(:,Nlevels))
 
 !++++++++++ Apply sanity checks to inputs ++++++++++
   call cosp_check_input('longitude',gbx%longitude,min_val=0.0,max_val=360.0)
@@ -110,10 +105,10 @@ SUBROUTINE COSP(overlap,Ncolumns,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,mo
   call cosp_check_input('sh',gbx%sh,min_val=0.0)
   call cosp_check_input('dtau_s',gbx%dtau_s,min_val=0.0)
   call cosp_check_input('dtau_c',gbx%dtau_c,min_val=0.0)
-  call cosp_check_input('dtau_s_snow',gbx%dtau_s_snow,min_val=0.0) !+JEK
+  call cosp_check_input('dtau_s_snow',gbx%dtau_s_snow,min_val=0.0)
   call cosp_check_input('dem_s',gbx%dem_s,min_val=0.0,max_val=1.0)
   call cosp_check_input('dem_c',gbx%dem_c,min_val=0.0,max_val=1.0)
-  call cosp_check_input('dem_s_snow',gbx%dem_s_snow,min_val=0.0) !!+JEK, no max_val=1.0 per steve klein
+  call cosp_check_input('dem_s_snow',gbx%dem_s_snow,min_val=0.0) !!+jek, removed max_val=1.0 per steve klein
   ! Point information (Npoints)
   call cosp_check_input('land',gbx%land,min_val=0.0,max_val=1.0)
   call cosp_check_input('psfc',gbx%psfc,min_val=0.0)
@@ -179,15 +174,11 @@ SUBROUTINE COSP(overlap,Ncolumns,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,mo
       ! randomize for each call to COSP even when Npoints ==1
    minp = minval(gbx%psfc)
    maxp = maxval(gbx%psfc)
-
    !!if (Npoints .gt. 1) seed=int((gbx%psfc-minp)/(maxp-minp)*100000) + 1
    !! change per Yuying Zhang to make off-line and in-line COSP v1.3 results consistent.
-   !! This change to the seeding makes the COSP results independent of calling
-   !! model's domain decomposition by removing the dependence on minp and maxp.
-   if (Npoints .gt. 1) seed=(gbx%psfc-int(gbx%psfc))*1000000  
-
+   if (Npoints .gt. 1) seed=(gbx%psfc-int(gbx%psfc))*1000000
+  
    if (gbx%Npoints_it >= gbx%Npoints) then ! One iteration gbx%Npoints
-
 #ifdef RTTOV
         call cosp_iter(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,modis,rttov,stradar,stlidar)
 #else
@@ -282,6 +273,7 @@ SUBROUTINE COSP(overlap,Ncolumns,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,mo
 #endif
             if (cfg%Lradar_sim) call cosp_radarstats_cpsection(ix,iy,stradar,stradar_it)
             if (cfg%Llidar_sim) call cosp_lidarstats_cpsection(ix,iy,stlidar,stlidar_it)
+            print *,'---------ix: ',ix
 #ifdef RTTOV
             call cosp_iter(overlap,seed(ix(1):ix(2)),cfg,vgrid_it,gbx_it,sgx_it,sgradar_it, &
                            sglidar_it,isccp_it,misr_it,modis_it,rttov_it,stradar_it,stlidar_it)
@@ -334,7 +326,7 @@ SUBROUTINE COSP_ITER(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,m
 #endif
   ! Arguments
   integer,intent(in) :: overlap !  overlap type in SCOPS: 1=max, 2=rand, 3=max/rand
-  integer,dimension(:),intent(inout) :: seed !+JEK "in" to "inout"
+  integer,dimension(:),intent(inout) :: seed
   type(cosp_config),intent(in) :: cfg   ! Configuration options
   type(cosp_vgrid),intent(in) :: vgrid   ! Information on vertical grid of stats
   type(cosp_gridbox),intent(inout) :: gbx
@@ -358,7 +350,7 @@ SUBROUTINE COSP_ITER(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,m
   integer :: i,j,k
   integer :: I_HYDRO 
   real,dimension(:,:),pointer :: column_frac_out ! Array with one column of frac_out
-  real,dimension(:,:),pointer :: column_prec_out ! Array with one column of prec_frac !+JEK, no need to change
+  real,dimension(:,:),pointer :: column_prec_out ! Array with one column of prec_frac !modified by ZYY
   integer :: scops_debug=0    !  set to non-zero value to print out inputs for debugging in SCOPS
   real,dimension(:, :),allocatable :: cca_scops,ls_p_rate,cv_p_rate, &
                      tca_scops ! Cloud cover in each model level (HORIZONTAL gridbox fraction) of total cloud.
@@ -428,21 +420,21 @@ SUBROUTINE COSP_ITER(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,m
             prec_cv(j,k)=prec_cv(j,k)/Ncolumns
         enddo  !k
         enddo  !j
-
-        !adjust grid-box mean snow properties to local properties !!+JEK
-        !convert longwave optical depth to longwave emissivity !!+JEK
-        !n.b.: both prec_ls and gbx% are ordered from bottom to top at this point (I believe!?!) !!+JEK
-        do j=1,Npoints,1 !!+JEK
-        do k=1,Nlevels,1 !!+JEK
-             if (prec_ls(j,k) .ne. 0. .and. gbx%dtau_s_snow(j,k) .gt. 0.) then !!+JEK
-                    gbx%dtau_s_snow(j,k) = gbx%dtau_s_snow(j,k)/prec_ls(j,k)  !!+JEK
-             end if !!+JEK
-             if (prec_ls(j,k) .ne. 0. .and. gbx%dem_s_snow(j,k) .gt. 0.) then !!+JEK
-                    gbx%dem_s_snow(j,k) = gbx%dem_s_snow(j,k)/prec_ls(j,k) !!+JEK
-                    gbx%dem_s_snow(j,k) = 1. - exp ( -1. * gbx%dem_s_snow(j,k)) !!+JEK
-             end if !!+JEK
-        enddo !k +JEK
-        enddo !j +JEK
+        
+        !adjust grid-box mean snow properties to local properties
+        !convert longwave optical depth to longwave emissivity
+        !n.b.: both prec_ls and gbx% are ordered from bottom to top at this point (I believe!?!)
+        do j=1,Npoints,1
+        do k=1,Nlevels,1
+            if (prec_ls(j,k) .ne. 0. .and. gbx%dtau_s_snow(j,k) .gt. 0.) then
+                   gbx%dtau_s_snow(j,k) = gbx%dtau_s_snow(j,k)/prec_ls(j,k)
+            end if
+            if (prec_ls(j,k) .ne. 0. .and. gbx%dem_s_snow(j,k) .gt. 0.) then
+                   gbx%dem_s_snow(j,k) = gbx%dem_s_snow(j,k)/prec_ls(j,k)
+                   gbx%dem_s_snow(j,k) = 1. - exp ( -1. * gbx%dem_s_snow(j,k))
+            end if
+        enddo !k
+        enddo !j
 
          ! Levels from SURFACE to TOA.
         if (Npoints*Ncolumns*Nlevels < 10000) then
@@ -467,40 +459,34 @@ SUBROUTINE COSP_ITER(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,m
             where (column_frac_out == I_LSC)     !+++++++++++ LS clouds ++++++++
                 sghydro%mr_hydro(:,k,:,I_LSCLIQ) = gbx%mr_hydro(:,:,I_LSCLIQ)
                 sghydro%mr_hydro(:,k,:,I_LSCICE) = gbx%mr_hydro(:,:,I_LSCICE)
-
+                
                 sghydro%Reff(:,k,:,I_LSCLIQ)     = gbx%Reff(:,:,I_LSCLIQ)
                 sghydro%Reff(:,k,:,I_LSCICE)     = gbx%Reff(:,:,I_LSCICE)
-
-                sghydro%Np(:,k,:,I_LSCLIQ)     = gbx%Np(:,:,I_LSCLIQ)
-                sghydro%Np(:,k,:,I_LSCICE)     = gbx%Np(:,:,I_LSCICE)
-
+              ! sghydro%Reff(:,k,:,I_LSRAIN)     = gbx%Reff(:,:,I_LSRAIN)
+              ! sghydro%Reff(:,k,:,I_LSSNOW)     = gbx%Reff(:,:,I_LSSNOW)
+              ! sghydro%Reff(:,k,:,I_LSGRPL)     = gbx%Reff(:,:,I_LSGRPL)
             elsewhere (column_frac_out == I_CVC) !+++++++++++ CONV clouds ++++++++
-                sghydro%mr_hydro(:,k,:,I_CVCLIQ) = gbx%mr_hydro(:,:,I_CVCLIQ)
-                sghydro%mr_hydro(:,k,:,I_CVCICE) = gbx%mr_hydro(:,:,I_CVCICE)
-
-                sghydro%Reff(:,k,:,I_CVCLIQ)     = gbx%Reff(:,:,I_CVCLIQ)
-                sghydro%Reff(:,k,:,I_CVCICE)     = gbx%Reff(:,:,I_CVCICE)
-
-                sghydro%Np(:,k,:,I_CVCLIQ)     = gbx%Np(:,:,I_CVCLIQ)
-                sghydro%Np(:,k,:,I_CVCICE)     = gbx%Np(:,:,I_CVCICE)
-
+                sghydro%mr_hydro(:,k,:,I_CVCLIQ) = gbx%mr_hydro(:,:,I_CVCLIQ) 
+                sghydro%mr_hydro(:,k,:,I_CVCICE) = gbx%mr_hydro(:,:,I_CVCICE) 
+                
+                sghydro%Reff(:,k,:,I_CVCLIQ)     = gbx%Reff(:,:,I_CVCLIQ) 
+                sghydro%Reff(:,k,:,I_CVCICE)     = gbx%Reff(:,:,I_CVCICE) 
+              ! sghydro%Reff(:,k,:,I_CVRAIN)     = gbx%Reff(:,:,I_CVRAIN) 
+              ! sghydro%Reff(:,k,:,I_CVSNOW)     = gbx%Reff(:,:,I_CVSNOW) 
             end where
+                        !modified by ZYY on Apr
             column_prec_out => sgx%prec_frac(:,k,:)
+
             where ((column_prec_out == 1) .or. (column_prec_out == 3) )  !++++ LS precip ++++
-                sghydro%Reff(:,k,:,I_LSRAIN) = gbx%Reff(:,:,I_LSRAIN) 
-                sghydro%Reff(:,k,:,I_LSSNOW) = gbx%Reff(:,:,I_LSSNOW)
-                sghydro%Reff(:,k,:,I_LSGRPL) = gbx%Reff(:,:,I_LSGRPL)
-
-                sghydro%Np(:,k,:,I_LSRAIN)     = gbx%Np(:,:,I_LSRAIN)
-                sghydro%Np(:,k,:,I_LSSNOW)     = gbx%Np(:,:,I_LSSNOW)
-                sghydro%Np(:,k,:,I_LSGRPL)     = gbx%Np(:,:,I_LSGRPL)
+                sghydro%Reff(:,k,:,I_LSRAIN)     = gbx%Reff(:,:,I_LSRAIN)
+                sghydro%Reff(:,k,:,I_LSSNOW)     = gbx%Reff(:,:,I_LSSNOW)
+                sghydro%Reff(:,k,:,I_LSGRPL)     = gbx%Reff(:,:,I_LSGRPL)
             elsewhere ((column_prec_out == 2) .or. (column_prec_out == 3)) !++++ CONV precip ++++
-                sghydro%Reff(:,k,:,I_CVRAIN) = gbx%Reff(:,:,I_CVRAIN)
-                sghydro%Reff(:,k,:,I_CVSNOW) = gbx%Reff(:,:,I_CVSNOW)
-
-                sghydro%Np(:,k,:,I_CVRAIN)     = gbx%Np(:,:,I_CVRAIN)
-                sghydro%Np(:,k,:,I_CVSNOW)     = gbx%Np(:,:,I_CVSNOW)
+                sghydro%Reff(:,k,:,I_CVRAIN)     = gbx%Reff(:,:,I_CVRAIN) 
+                sghydro%Reff(:,k,:,I_CVSNOW)     = gbx%Reff(:,:,I_CVSNOW) 
             end where
+            !end of modification of ZYY on Apr
+
             !--------- Precip -------
             if (.not. gbx%use_precipitation_fluxes) then
                 where (column_frac_out == I_LSC)  !+++++++++++ LS Precipitation ++++++++
@@ -508,8 +494,8 @@ SUBROUTINE COSP_ITER(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,m
                     sghydro%mr_hydro(:,k,:,I_LSSNOW) = gbx%mr_hydro(:,:,I_LSSNOW)
                     sghydro%mr_hydro(:,k,:,I_LSGRPL) = gbx%mr_hydro(:,:,I_LSGRPL)
                 elsewhere (column_frac_out == I_CVC) !+++++++++++ CONV Precipitation ++++++++
-                    sghydro%mr_hydro(:,k,:,I_CVRAIN) = gbx%mr_hydro(:,:,I_CVRAIN)
-                    sghydro%mr_hydro(:,k,:,I_CVSNOW) = gbx%mr_hydro(:,:,I_CVSNOW)
+                    sghydro%mr_hydro(:,k,:,I_CVRAIN) = gbx%mr_hydro(:,:,I_CVRAIN) 
+                    sghydro%mr_hydro(:,k,:,I_CVSNOW) = gbx%mr_hydro(:,:,I_CVSNOW) 
                 end where 
             endif
         enddo
@@ -552,56 +538,40 @@ SUBROUTINE COSP_ITER(overlap,seed,cfg,vgrid,gbx,sgx,sgradar,sglidar,isccp,misr,m
         deallocate(frac_ls,prec_ls,frac_cv,prec_cv)
         
         if (gbx%use_precipitation_fluxes) then
-        
-#ifdef MMF_V3p5_TWO_MOMENT
-
-        write(*,*) 'Precipitation Flux to Mixing Ratio conversion not (yet?) supported ', &
-               'for MMF3.5 Two Moment Microphysics'
-        stop
-#else
             ! Density
             allocate(rho(Npoints,Nlevels))
             I_HYDRO = I_LSRAIN
             call cosp_precip_mxratio(Npoints,Nlevels,Ncolumns,gbx%p,gbx%T,sgx%prec_frac,1., &
                     n_ax(I_HYDRO),n_bx(I_HYDRO),alpha_x(I_HYDRO),c_x(I_HYDRO),d_x(I_HYDRO), &
-                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO), &
-                    gamma_1(I_HYDRO),gamma_2(I_HYDRO),gamma_3(I_HYDRO),gamma_4(I_HYDRO), &
-                    gbx%rain_ls,sghydro%mr_hydro(:,:,:,I_HYDRO),sghydro%Reff(:,:,:,I_HYDRO))
+                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO),gamma_1(I_HYDRO),gamma_2(I_HYDRO), &
+                    gbx%rain_ls,sghydro%mr_hydro(:,:,:,I_HYDRO))
             I_HYDRO = I_LSSNOW
             call cosp_precip_mxratio(Npoints,Nlevels,Ncolumns,gbx%p,gbx%T,sgx%prec_frac,1., &
                     n_ax(I_HYDRO),n_bx(I_HYDRO),alpha_x(I_HYDRO),c_x(I_HYDRO),d_x(I_HYDRO), &
-                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO), &
-                    gamma_1(I_HYDRO),gamma_2(I_HYDRO),gamma_3(I_HYDRO),gamma_4(I_HYDRO), &
-                    gbx%snow_ls,sghydro%mr_hydro(:,:,:,I_HYDRO),sghydro%Reff(:,:,:,I_HYDRO))
+                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO),gamma_1(I_HYDRO),gamma_2(I_HYDRO), &
+                    gbx%snow_ls,sghydro%mr_hydro(:,:,:,I_HYDRO))
             I_HYDRO = I_CVRAIN
             call cosp_precip_mxratio(Npoints,Nlevels,Ncolumns,gbx%p,gbx%T,sgx%prec_frac,2., &
                     n_ax(I_HYDRO),n_bx(I_HYDRO),alpha_x(I_HYDRO),c_x(I_HYDRO),d_x(I_HYDRO), &
-                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO), &
-                    gamma_1(I_HYDRO),gamma_2(I_HYDRO),gamma_3(I_HYDRO),gamma_4(I_HYDRO), &
-                    gbx%rain_cv,sghydro%mr_hydro(:,:,:,I_HYDRO),sghydro%Reff(:,:,:,I_HYDRO))
+                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO),gamma_1(I_HYDRO),gamma_2(I_HYDRO), &
+                    gbx%rain_cv,sghydro%mr_hydro(:,:,:,I_HYDRO))
             I_HYDRO = I_CVSNOW
             call cosp_precip_mxratio(Npoints,Nlevels,Ncolumns,gbx%p,gbx%T,sgx%prec_frac,2., &
                     n_ax(I_HYDRO),n_bx(I_HYDRO),alpha_x(I_HYDRO),c_x(I_HYDRO),d_x(I_HYDRO), &
-                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO), &
-                    gamma_1(I_HYDRO),gamma_2(I_HYDRO),gamma_3(I_HYDRO),gamma_4(I_HYDRO), &
-                    gbx%snow_cv,sghydro%mr_hydro(:,:,:,I_HYDRO),sghydro%Reff(:,:,:,I_HYDRO))
+                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO),gamma_1(I_HYDRO),gamma_2(I_HYDRO), &
+                    gbx%snow_cv,sghydro%mr_hydro(:,:,:,I_HYDRO))
             I_HYDRO = I_LSGRPL
             call cosp_precip_mxratio(Npoints,Nlevels,Ncolumns,gbx%p,gbx%T,sgx%prec_frac,1., &
                     n_ax(I_HYDRO),n_bx(I_HYDRO),alpha_x(I_HYDRO),c_x(I_HYDRO),d_x(I_HYDRO), &
-                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO), &
-                    gamma_1(I_HYDRO),gamma_2(I_HYDRO),gamma_3(I_HYDRO),gamma_4(I_HYDRO), &
-                    gbx%grpl_ls,sghydro%mr_hydro(:,:,:,I_HYDRO),sghydro%Reff(:,:,:,I_HYDRO))
+                    g_x(I_HYDRO),a_x(I_HYDRO),b_x(I_HYDRO),gamma_1(I_HYDRO),gamma_2(I_HYDRO), &
+                    gbx%grpl_ls,sghydro%mr_hydro(:,:,:,I_HYDRO))
             if(allocated(rho)) deallocate(rho)
-#endif
-
         endif
    !++++++++++ CRM mode ++++++++++
    else
       call construct_cosp_sghydro(Npoints,Ncolumns,Nlevels,Nhydro,sghydro)
       sghydro%mr_hydro(:,1,:,:) = gbx%mr_hydro
       sghydro%Reff(:,1,:,:) = gbx%Reff
-      sghydro%Np(:,1,:,:) = gbx%Np      ! added by Roj with Quickbeam V3.0
-      
       !--------- Clouds -------
       where ((gbx%dtau_s > 0.0))
              sgx%frac_out(:,1,:) = 1  ! Subgrid cloud array. Dimensions (Npoints,Ncolumns,Nlevels)

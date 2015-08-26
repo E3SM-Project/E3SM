@@ -1,7 +1,5 @@
 ! (c) British Crown Copyright 2008, the Met Office.
 ! All rights reserved.
-! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/cosp_defs.h $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -24,7 +22,6 @@
 ! IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT 
 ! OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+!#define USE_CMOR1 use_cmor1
 !#define RTTOV rttov
 !#define SYS_SX sys_sx
-#define MMF_V3_SINGLE_MOMENT mmf_v3_single_moment
-!#define MMF_V3p5_TWO_MOMENT mmf_v3p5_two_moment

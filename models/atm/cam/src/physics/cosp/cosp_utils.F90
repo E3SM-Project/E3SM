@@ -1,7 +1,5 @@
 ! (c) British Crown Copyright 2008, the Met Office.
 ! All rights reserved.
-! $Revision: 23 $, $Date: 2011-03-31 07:41:37 -0600 (Thu, 31 Mar 2011) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/cosp_utils.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -46,30 +44,29 @@ CONTAINS
 !------------------- SUBROUTINE COSP_PRECIP_MXRATIO --------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE COSP_PRECIP_MXRATIO(Npoints,Nlevels,Ncolumns,p,T,prec_frac,prec_type, &
-                          n_ax,n_bx,alpha_x,c_x,d_x,g_x,a_x,b_x,gamma1,gamma2,gamma3,gamma4, &
-                          flux,mxratio,reff)
+                          n_ax,n_bx,alpha_x,c_x,d_x,g_x,a_x,b_x,gamma1,gamma2, &
+                          flux,mxratio)
 
     ! Input arguments, (IN)
     integer,intent(in) :: Npoints,Nlevels,Ncolumns
     real,intent(in),dimension(Npoints,Nlevels) :: p,T,flux
     real,intent(in),dimension(Npoints,Ncolumns,Nlevels) :: prec_frac
-    real,intent(in) :: n_ax,n_bx,alpha_x,c_x,d_x,g_x,a_x,b_x,gamma1,gamma2,gamma3,gamma4,prec_type
+    real,intent(in) :: n_ax,n_bx,alpha_x,c_x,d_x,g_x,a_x,b_x,gamma1,gamma2,prec_type
     ! Input arguments, (OUT)
     real,intent(out),dimension(Npoints,Ncolumns,Nlevels) :: mxratio
-    real,intent(inout),dimension(Npoints,Ncolumns,Nlevels) :: reff
     ! Local variables
     integer :: i,j,k
-    real :: sigma,one_over_xip1,xi,rho0,rho,lambda_x,gamma_4_3_2,delta
+    real :: sigma,one_over_xip1,xi,rho0,rho
     
     mxratio = 0.0
 
     if (n_ax >= 0.0) then ! N_ax is used to control which hydrometeors need to be computed
+        !gamma1  = gamma(alpha_x + b_x + d_x + 1.0)
+        !gamma2  = gamma(alpha_x + b_x + 1.0)
         xi      = d_x/(alpha_x + b_x - n_bx + 1.0)
         rho0    = 1.29
         sigma   = (gamma2/(gamma1*c_x))*(n_ax*a_x*gamma2)**xi
         one_over_xip1 = 1.0/(xi + 1.0)
-        gamma_4_3_2 = 0.5*gamma4/gamma3
-        delta = (alpha_x + b_x + d_x - n_bx + 1.0)
         
         do k=1,Nlevels
             do j=1,Ncolumns
@@ -78,11 +75,6 @@ SUBROUTINE COSP_PRECIP_MXRATIO(Npoints,Nlevels,Ncolumns,p,T,prec_frac,prec_type,
                         rho = p(i,k)/(287.05*T(i,k))
                         mxratio(i,j,k)=(flux(i,k)*((rho/rho0)**g_x)*sigma)**one_over_xip1
                         mxratio(i,j,k)=mxratio(i,j,k)/rho
-                        ! Compute effective radius
-                        if ((reff(i,j,k) <= 0.0).and.(flux(i,k) /= 0.0)) then
-                           lambda_x = (a_x*c_x*((rho0/rho)**g_x)*n_ax*gamma1/flux(i,k))**(1./delta)
-                           reff(i,j,k) = gamma_4_3_2/lambda_x
-                        endif
                     endif
                 enddo
             enddo

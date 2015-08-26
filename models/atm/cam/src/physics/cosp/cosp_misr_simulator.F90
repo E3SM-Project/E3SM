@@ -1,7 +1,5 @@
 ! (c) British Crown Copyright 2008, the Met Office.
 ! All rights reserved.
-! $Revision: 23 $, $Date: 2011-03-31 07:41:37 -0600 (Thu, 31 Mar 2011) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/cosp_misr_simulator.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -51,11 +49,11 @@ SUBROUTINE COSP_MISR_SIMULATOR(gbx,sgx,y)
   ! Local variables 
   integer :: Nlevels,Npoints
   real :: dtau_s(gbx%Npoints, gbx%Nlevels)
-  real :: dtau_s_snow(gbx%Npoints, gbx%Nlevels) !+JEK
+  real :: dtau_s_snow(gbx%Npoints, gbx%Nlevels)
   real :: dtau_c(gbx%Npoints, gbx%Nlevels)
   real :: at(gbx%Npoints, gbx%Nlevels)
   real :: frac_out(gbx%Npoints, gbx%Ncolumns, gbx%Nlevels)
-  real :: prec_frac(gbx%Npoints, gbx%Ncolumns, gbx%Nlevels) !+JEK
+  real :: prec_frac(gbx%Npoints, gbx%Ncolumns, gbx%Nlevels)
   integer :: sunlit(gbx%Npoints)
   
   real :: zfull(gbx%Npoints, gbx%Nlevels) !  height (in meters) of full model levels (i.e. midpoints)
@@ -69,15 +67,15 @@ SUBROUTINE COSP_MISR_SIMULATOR(gbx,sgx,y)
   zfull  = gbx%zlev(:,Nlevels:1:-1)
   at     = gbx%T(:,Nlevels:1:-1) 
   dtau_s = gbx%dtau_s(:,Nlevels:1:-1) 
-  dtau_s_snow = gbx%dtau_s_snow(:,Nlevels:1:-1) !+JEK
+  dtau_s_snow = gbx%dtau_s_snow(:,Nlevels:1:-1) 
   dtau_c = gbx%dtau_c(:,Nlevels:1:-1) 
   frac_out(1:Npoints,:,1:Nlevels) = sgx%frac_out(1:Npoints,:,Nlevels:1:-1)
-  prec_frac(1:Npoints,:,1:Nlevels) = sgx%prec_frac(1:Npoints,:,Nlevels:1:-1) !+JEK
+  prec_frac(1:Npoints,:,1:Nlevels) = sgx%prec_frac(1:Npoints,:,Nlevels:1:-1)
   sunlit = int(gbx%sunlit)
  
   call MISR_simulator(gbx%npoints,gbx%nlevels,gbx%ncolumns,&
                      sunlit,zfull,at,dtau_s,dtau_c,dtau_s_snow,frac_out,prec_frac, R_UNDEF, &
-                     y%fq_MISR,y%MISR_dist_model_layertops,y%MISR_meanztop,y%MISR_cldarea) !!+JEK
+                     y%fq_MISR,y%MISR_dist_model_layertops,y%MISR_meanztop,y%MISR_cldarea)
             
 END SUBROUTINE COSP_MISR_SIMULATOR
 

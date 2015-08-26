@@ -1,7 +1,5 @@
 ! (c) 2008, Lawrence Livermore National Security Limited Liability Corporation.
 ! All rights reserved.
-! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/llnl/llnl_stats.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -23,12 +21,6 @@
 ! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER 
 ! IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT 
 ! OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-!
-! History
-!
-! Jan 2013 - G. Cesana        - Added betaperp_tot and temp_tot arguments 
-!
-
 
 MODULE MOD_LLNL_STATS
   USE MOD_COSP_CONSTANTS
@@ -88,40 +80,39 @@ END FUNCTION COSP_CFAD
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !------------- SUBROUTINE COSP_LIDAR_ONLY_CLOUD -----------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-SUBROUTINE COSP_LIDAR_ONLY_CLOUD(Npoints,Ncolumns,Nlevels,temp_tot,beta_tot, &
-                   betaperp_tot,beta_mol,Ze_tot,lidar_only_freq_cloud,tcc,radartcc,radartcc_no1km) !+JEK
+SUBROUTINE COSP_LIDAR_ONLY_CLOUD(Npoints,Ncolumns,Nlevels,beta_tot,beta_mol,Ze_tot, &
+           lidar_only_freq_cloud,tcc,radartcc,radartcc_no1km) !modified by ZYY
    ! Input arguments
    integer,intent(in) :: Npoints,Ncolumns,Nlevels
    real,dimension(Npoints,Nlevels),intent(in) :: beta_mol   ! Molecular backscatter
    real,dimension(Npoints,Ncolumns,Nlevels),intent(in) :: beta_tot   ! Total backscattered signal
-   real,dimension(Npoints,Nlevels)         ,intent(in) :: temp_tot   ! Total backscattered signal
-   real,dimension(Npoints,Ncolumns,Nlevels),intent(in) :: betaperp_tot   ! perpendicular Total backscattered signal
    real,dimension(Npoints,Ncolumns,Nlevels),intent(in) :: Ze_tot     ! Radar reflectivity
    ! Output arguments
    real,dimension(Npoints,Nlevels),intent(out) :: lidar_only_freq_cloud
-   real,dimension(Npoints),intent(out) :: tcc,radartcc,radartcc_no1km !+JEK
-
+   real,dimension(Npoints),intent(out) :: tcc,radartcc,radartcc_no1km !modified by ZYY
+   
    ! local variables
    real :: sc_ratio
    real :: s_cld, s_att
-   parameter (S_cld = 5.0)
+!      parameter (S_cld = 3.0)  ! Previous thresold for cloud detection
+   parameter (S_cld = 5.0)  ! New (dec 2008) thresold for cloud detection
    parameter (s_att = 0.01)
    integer :: flag_sat !first saturated level encountered from top
    integer :: flag_cld !cloudy column
    integer :: pr,i,j
-   integer :: flag_radarcld,flag_radarcld_no1km,j_1km !+JEK
-
+   integer :: flag_radarcld,flag_radarcld_no1km,j_1km !modified by ZYY
+   
    lidar_only_freq_cloud = 0.0
    tcc = 0.0
-   radartcc = 0.0 !+JEK
-   radartcc_no1km = 0.0 !+JEK
+   radartcc = 0.0 !modified by ZYY
+   radartcc_no1km = 0.0 !modified by ZYY
    do pr=1,Npoints
      do i=1,Ncolumns
        flag_sat = 0
        flag_cld = 0
-       flag_radarcld = 0 !+JEK
-       flag_radarcld_no1km=0 !+JEK
-!+JEK
+       flag_radarcld = 0 !modified by ZYY
+       flag_radarcld_no1km=0 !modified by ZYY
+!modified by ZYY
 !      look for j_1km from bottom to top
        j = 1
        do while (Ze_tot(pr,i,j) .eq. R_GROUND)  
@@ -129,31 +120,37 @@ SUBROUTINE COSP_LIDAR_ONLY_CLOUD(Npoints,Ncolumns,Nlevels,temp_tot,beta_tot, &
        enddo 
        j_1km = j+1  !this is the vertical index of 1km above surface  
 !      found j_1km     
-!+JEK
-
+!end of modification by ZYY
        do j=Nlevels,1,-1 !top->surf
         sc_ratio = beta_tot(pr,i,j)/beta_mol(pr,j)
+!         if ((pr == 1).and.(j==8)) print *, pr,i,j,sc_ratio,Ze_tot(pr,i,j)
         if ((sc_ratio .le. s_att) .and. (flag_sat .eq. 0)) flag_sat = j
         if (Ze_tot(pr,i,j) .lt. -30.) then  !radar can't detect cloud
          if ( (sc_ratio .gt. s_cld) .or. (flag_sat .eq. j) ) then  !lidar sense cloud
+!             if ((pr == 1).and.(j==8)) print *, 'L'
             lidar_only_freq_cloud(pr,j)=lidar_only_freq_cloud(pr,j)+1. !top->surf
             flag_cld=1
          endif
         else  !radar sense cloud (z%Ze_tot(pr,i,j) .ge. -30.)
+!            if ((pr == 1).and.(j==8)) print *, 'R'
            flag_cld=1
-           flag_radarcld=1 !+JEK
-           if (j .gt. j_1km) flag_radarcld_no1km=1 !+JEK
+           flag_radarcld=1 !modified by ZYY
+           if (j .gt. j_1km) flag_radarcld_no1km=1 !modified by ZYY
         endif
        enddo !levels
        if (flag_cld .eq. 1) tcc(pr)=tcc(pr)+1.
-       if (flag_radarcld .eq. 1) radartcc(pr)=radartcc(pr)+1. !+JEK
-       if (flag_radarcld_no1km .eq. 1) radartcc_no1km(pr)=radartcc_no1km(pr)+1. !+JEK
+       if (flag_radarcld .eq. 1) radartcc(pr)=radartcc(pr)+1. !modified by ZYY
+       if (flag_radarcld_no1km .eq. 1) radartcc_no1km(pr)=radartcc_no1km(pr)+1. !modified by ZYY
      enddo !columns
+!      if (tcc(pr) > Ncolumns) then
+!      print *, 'tcc(',pr,'): ', tcc(pr)
+!      tcc(pr) = Ncolumns
+!      endif
    enddo !points
    lidar_only_freq_cloud=lidar_only_freq_cloud/Ncolumns
    tcc=tcc/Ncolumns
-   radartcc=radartcc/Ncolumns !+JEK
-   radartcc_no1km=radartcc_no1km/Ncolumns !+JEK
+   radartcc=radartcc/Ncolumns !modified by ZYY
+   radartcc_no1km=radartcc_no1km/Ncolumns !modified by ZYY
 
 END SUBROUTINE COSP_LIDAR_ONLY_CLOUD
 END MODULE MOD_LLNL_STATS
