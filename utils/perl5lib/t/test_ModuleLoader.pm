@@ -2156,203 +2156,322 @@ sub test_writeShModuleFile_pleiades_has() : Test(1):
     ok($actual eq $expected);
     #unlink $actualfile;
 }
-#sub test_moduleInit_yellowstone() : Test(2)
-#{
-#	my $self = shift;
-#	my $moduleloaderys = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-#                                                   debug => "FALSE", cimeroot => "../../", caseroot => ".");
-#
-#	$moduleloaderys->moduleInit();
-#	
-#	ok($moduleloaderys->{initpath} eq '/glade/apps/opt/lmod/lmod/init/perl') || diag($moduleloaderys->{initpath});
-#	ok($moduleloaderys->{cmdpath} eq '/glade/apps/opt/lmod/lmod/libexec/lmod perl') || diag($moduleloaderys->{cmdpath});
-#}
-#
-#sub test_findModulesFromMachinesDir_yellowstone() : Test(3):
-#{
-#	my $self = shift;
-#	my @expectedintelmpichmodules = ( 
-#                            { action => 'purge', actupon => '', seqnum => 1},
-#                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
-#                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
-#                            { action => 'load', actupon => 'perlmods', seqnum => 4},
-#                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
-#                            { action => 'load', actupon => 'python', seqnum => 6},
-#                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
-#                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
-#                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
-#                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
-#                            { action => 'load', actupon => 'esmf', seqnum => 11},
-#                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-mpi-O', seqnum => 12},
-#                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 13},
-#                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 14},
-#                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 15},
-#                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 16},
-#						  );
-#	#print Dumper \@expectedintelmpichmodules;
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2', 
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#	$moduleloader->moduleInit();
-#	my @actualintelmpichmodules = $moduleloader->findModulesFromMachinesDir();
-#    #print Dumper \@expectedintelmpichmodules;
-#	#print Dumper \@actualintelmpichmodules;
-#	#print "expected: ", ref $expectedintelmpichmodules[0], "\n";
-#	#print "actual: ", ref $actualintelmpichmodules[0], "\n";
-#	is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules, "do modules match");
-#
-#    my @expectedpgimpichmodules = (
-#                            { action => 'purge', actupon => '', seqnum => 1},
-#                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
-#                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
-#                            { action => 'load', actupon => 'perlmods', seqnum => 4},
-#                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
-#                            { action => 'load', actupon => 'python', seqnum => 6},
-#                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
-#                            { action => 'load', actupon => 'pgi/15.1', seqnum => 8},
-#                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 9},
-#                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 10},
-#                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 11},
-#                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 12},
-#							);
-#	my $moduleloaderpgi = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'pgi', mpilib => 'mpich2', 
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#	$moduleloaderpgi->moduleInit();
-#	my @actualpgimpichmodules = $moduleloaderpgi->findModulesFromMachinesDir();
-#	is_deeply(\@actualpgimpichmodules, \@expectedpgimpichmodules);
-#	
-#	my @expectedintelmpiserialdebugmodules = (
-#                            { action => 'purge', actupon => '', seqnum => 1},
-#                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
-#                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
-#                            { action => 'load', actupon => 'perlmods', seqnum => 4},
-#                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
-#                            { action => 'load', actupon => 'python', seqnum => 6},
-#                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
-#                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
-#                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
-#                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
-#                            { action => 'load', actupon => 'esmf', seqnum => 11},
-#                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-uni-g', seqnum => 12},
-#                            { action => 'load', actupon => 'netcdf/4.3.3.1', seqnum => 13},
-#                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 14},
-#                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 15},
-#	);
-#	my $moduleloadermpiserialdebug = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpi-serial', 
-#                                                 debug => 'true', cimeroot => "../../", caseroot => '.');
-#	$moduleloadermpiserialdebug->moduleInit();
-#	my @actualintelmpiserialdebugmodules = $moduleloadermpiserialdebug->findModulesFromMachinesDir();
-#	is_deeply(\@actualintelmpiserialdebugmodules, \@expectedintelmpiserialdebugmodules);
-#}
-#
-#sub test_writeXMLFileForCase_yellowstone() : Test(3):
-#{
-#	my $self = shift;
-#	return;
-#    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#    $moduleloader->moduleInit();
-#	$moduleloader->writeXMLFileForCase();
-#	
-#	my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.yellowstone.xml";
-#	open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-#	binmode $EXPECTED;
-#	my $expected = do { local $/; <$EXPECTED> };
-#	close $EXPECTED;
-#
-#	my $actualfile = "./env_mach_specific.xml";
-#	open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
-#	binmode $ACTUAL;
-#	my $actual = do { local $/; <$ACTUAL> } ;
-#	close $actual;
-#	cmp_ok($actual,  'eq',  $expected);
-#	#unlink $actualfile; 
-#}
-#
-#sub test_findModulesForCase_yellowstone() : Test(1):
-#{
-#	my $self = shift;
-#	
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#
-#    $moduleloader->moduleInit();
-#	$moduleloader->writeXMLFileForCase();
-#	my @actualintelmpichmodules = $moduleloader->findModulesForCase();
-#
-#    my @expectedintelmpichmodules = (
-#                            { action => 'purge', actupon => '', seqnum => 1},
-#                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
-#                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
-#                            { action => 'load', actupon => 'perlmods', seqnum => 4},
-#                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
-#                            { action => 'load', actupon => 'python', seqnum => 6},
-#                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
-#                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
-#                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
-#                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
-#                            { action => 'load', actupon => 'esmf', seqnum => 11},
-#                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-mpi-O', seqnum => 12},
-#                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 13},
-#                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 14},
-#                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 15},
-#                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 16},
-#                          );
-#
-#	#print Dumper \@expectedintelmpichmodules;
-#	#print Dumper \@actualintelmpichmodules;
-#    is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules);
-#}
-#
-#sub test_writeCshModuleFile_yellowstone() : Test(1):
-#{
-#    my $self = shift;
-#
-#    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#
-#    $moduleloader->moduleInit();
-#    $moduleloader->writeXMLFileForCase();
-#    $moduleloader->findModulesForCase();
-#    $moduleloader->writeCshModuleFile();
-#
-#    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.yellowstone.csh";
-#    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-#    my $expected = do { local $/; <$EXPECTED> };
-#    close $EXPECTED;
-#
-#    my $actualfile = "./.env_mach_specific.csh";
-#    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
-#    my $actual = do { local $/; <$ACTUAL> };
-#    close $ACTUAL;
-#    ok($actual eq $expected);
-#    #unlink $actualfile;
-#}
-#
-#sub test_writeShModuleFile_yellowstone() : Test(1):
-#{
-#    my $self = shift;
-#
-#    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#
-#    $moduleloader->moduleInit();
-#    $moduleloader->writeXMLFileForCase();
-#    $moduleloader->findModulesForCase();
-#    $moduleloader->writeShModuleFile();
-#
-#    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.yellowstone.sh";
-#    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-#    #my $expected = <$EXPECTED>;
-#    my $expected = do { local $/; <$EXPECTED> };
-#    close $EXPECTED;
-#
-#    my $actualfile = "./.env_mach_specific.sh";
-#    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
-#    my $actual = do { local $/; <$ACTUAL> };
-#    close $ACTUAL;
-#    ok($actual eq $expected);
-#    #unlink $actualfile;
-#}
+
+sub test_moduleInit_sierra() : Test(2)
+{
+    my $self = shift;
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+
+    ok($moduleloader->{initpath} eq '/usr/global/tools/dotkit/init.csh') || diag($moduleloaderintel->{initpath});
+    ok($moduleloader->{cmdpath} eq '') || diag($moduleloaderintel->{cmdpath});
+}
+
+sub test_findModulesFromMachinesDir_sierra() : Test(3):
+{
+    my $self = shift;
+    my @expectedmodules = (
+                                 { action => 'use -q', actupon => 'pgi-11.1' , seqnum => 1},
+                                 { action => 'use -q', actupon => 'mvapich2-pgi-1.7' , seqnum => 2},
+                                 { action => 'use -q', actupon => 'netcdf-pgi-4.1.3' , seqnum => 3},
+                          );
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    my @actualmodules = $moduleloader->findModulesFromMachinesDir();
+    is_deeply(\@expectedmodules, \@actualmodules);
+}
+
+sub test_findModulesForCase_sierra() : Test(1):
+{
+    my $self = shift;
+    my @expectedmodules = (
+                                 { action => 'use -q', actupon => 'pgi-11.1' , seqnum => 1},
+                                 { action => 'use -q', actupon => 'mvapich2-pgi-1.7' , seqnum => 2},
+                                 { action => 'use -q', actupon => 'netcdf-pgi-4.1.3' , seqnum => 3},
+                          );
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->writeXMLFileForCase();
+    my @actualmodules = $moduleloader->findModulesForCase();
+    is_deeply(\@expectedmodules, \@actualmodules);
+}
+
+sub test_writeXMLFileForCase_sierra() : Test(3):
+{
+    my $self = shift;
+    my $moduleloader = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.sierra.xml";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    binmode $EXPECTED;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./env_mach_specific.xml";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    binmode $ACTUAL;
+    my $actual = do { local $/; <$ACTUAL> } ;
+    close $actual;
+    cmp_ok($actual,  'eq',  $expected);
+    unlink $actualfile;
+}
+
+sub test_writeCshModuleFile_sierra() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeCshModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.sierra.csh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    #my $expected = <$EXPECTED>;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.csh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    unlink $actualfile;
+}
+
+sub test_writeShModuleFile_sierra() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeShModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.sierra.sh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    #my $expected = <$EXPECTED>;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.sh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    unlink $actualfile;
+}
+sub test_moduleInit_yellowstone() : Test(2)
+{
+	my $self = shift;
+	my $moduleloaderys = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                   debug => "FALSE", cimeroot => "../../", caseroot => ".");
+
+	$moduleloaderys->moduleInit();
+	
+	ok($moduleloaderys->{initpath} eq '/glade/apps/opt/lmod/lmod/init/perl') || diag($moduleloaderys->{initpath});
+	ok($moduleloaderys->{cmdpath} eq '/glade/apps/opt/lmod/lmod/libexec/lmod perl') || diag($moduleloaderys->{cmdpath});
+}
+
+sub test_findModulesFromMachinesDir_yellowstone() : Test(3):
+{
+	my $self = shift;
+	my @expectedintelmpichmodules = ( 
+                            { action => 'purge', actupon => '', seqnum => 1},
+                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
+                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
+                            { action => 'load', actupon => 'perlmods', seqnum => 4},
+                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
+                            { action => 'load', actupon => 'python', seqnum => 6},
+                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
+                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
+                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
+                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
+                            { action => 'load', actupon => 'esmf', seqnum => 11},
+                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-mpi-O', seqnum => 12},
+                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 13},
+                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 14},
+                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 15},
+                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 16},
+						  );
+	#print Dumper \@expectedintelmpichmodules;
+	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2', 
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+	$moduleloader->moduleInit();
+	my @actualintelmpichmodules = $moduleloader->findModulesFromMachinesDir();
+    #print Dumper \@expectedintelmpichmodules;
+	#print Dumper \@actualintelmpichmodules;
+	#print "expected: ", ref $expectedintelmpichmodules[0], "\n";
+	#print "actual: ", ref $actualintelmpichmodules[0], "\n";
+	is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules, "do modules match");
+
+    my @expectedpgimpichmodules = (
+                            { action => 'purge', actupon => '', seqnum => 1},
+                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
+                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
+                            { action => 'load', actupon => 'perlmods', seqnum => 4},
+                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
+                            { action => 'load', actupon => 'python', seqnum => 6},
+                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
+                            { action => 'load', actupon => 'pgi/15.1', seqnum => 8},
+                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 9},
+                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 10},
+                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 11},
+                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 12},
+							);
+	my $moduleloaderpgi = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'pgi', mpilib => 'mpich2', 
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+	$moduleloaderpgi->moduleInit();
+	my @actualpgimpichmodules = $moduleloaderpgi->findModulesFromMachinesDir();
+	is_deeply(\@actualpgimpichmodules, \@expectedpgimpichmodules);
+	
+	my @expectedintelmpiserialdebugmodules = (
+                            { action => 'purge', actupon => '', seqnum => 1},
+                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
+                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
+                            { action => 'load', actupon => 'perlmods', seqnum => 4},
+                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
+                            { action => 'load', actupon => 'python', seqnum => 6},
+                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
+                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
+                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
+                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
+                            { action => 'load', actupon => 'esmf', seqnum => 11},
+                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-uni-g', seqnum => 12},
+                            { action => 'load', actupon => 'netcdf/4.3.3.1', seqnum => 13},
+                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 14},
+                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 15},
+	);
+	my $moduleloadermpiserialdebug = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpi-serial', 
+                                                 debug => 'true', cimeroot => "../../", caseroot => '.');
+	$moduleloadermpiserialdebug->moduleInit();
+	my @actualintelmpiserialdebugmodules = $moduleloadermpiserialdebug->findModulesFromMachinesDir();
+	is_deeply(\@actualintelmpiserialdebugmodules, \@expectedintelmpiserialdebugmodules);
+}
+
+sub test_writeXMLFileForCase_yellowstone() : Test(3):
+{
+	my $self = shift;
+	return;
+    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+	$moduleloader->writeXMLFileForCase();
+	
+	my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.yellowstone.xml";
+	open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+	binmode $EXPECTED;
+	my $expected = do { local $/; <$EXPECTED> };
+	close $EXPECTED;
+
+	my $actualfile = "./env_mach_specific.xml";
+	open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+	binmode $ACTUAL;
+	my $actual = do { local $/; <$ACTUAL> } ;
+	close $actual;
+	cmp_ok($actual,  'eq',  $expected);
+	#unlink $actualfile; 
+}
+
+sub test_findModulesForCase_yellowstone() : Test(1):
+{
+	my $self = shift;
+	
+	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+	$moduleloader->writeXMLFileForCase();
+	my @actualintelmpichmodules = $moduleloader->findModulesForCase();
+
+    my @expectedintelmpichmodules = (
+                            { action => 'purge', actupon => '', seqnum => 1},
+                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
+                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
+                            { action => 'load', actupon => 'perlmods', seqnum => 4},
+                            { action => 'load', actupon => 'gmake/4.1', seqnum => 5},
+                            { action => 'load', actupon => 'python', seqnum => 6},
+                            { action => 'load', actupon => 'all-python-libs', seqnum => 7},
+                            { action => 'load', actupon => 'intel/15.0.3', seqnum => 8},
+                            { action => 'load', actupon => 'mkl/11.1.2', seqnum => 9},
+                            { action => 'load', actupon => 'trilinos/11.10.2', seqnum => 10},
+                            { action => 'load', actupon => 'esmf', seqnum => 11},
+                            { action => 'load', actupon => 'esmf-6.3.0rp1-defio-mpi-O', seqnum => 12},
+                            { action => 'load', actupon => 'netcdf-mpi/4.3.3.1', seqnum => 13},
+                            { action => 'load', actupon => 'pnetcdf/1.6.0', seqnum => 14},
+                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 15},
+                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 16},
+                          );
+
+	#print Dumper \@expectedintelmpichmodules;
+	#print Dumper \@actualintelmpichmodules;
+    is_deeply(\@actualintelmpichmodules, \@expectedintelmpichmodules);
+}
+
+sub test_writeCshModuleFile_yellowstone() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeCshModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.yellowstone.csh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.csh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    #unlink $actualfile;
+}
+
+sub test_writeShModuleFile_yellowstone() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeShModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.yellowstone.sh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    #my $expected = <$EXPECTED>;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.sh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    #unlink $actualfile;
+}
 #
 ##sub test_loadModules_yellowstone()  : Test(1):
 ##{
