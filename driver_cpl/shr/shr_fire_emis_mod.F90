@@ -11,7 +11,6 @@ module shr_fire_emis_mod
   use shr_kind_mod,only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
   use shr_sys_mod, only : shr_sys_abort
   use shr_log_mod, only : loglev  => shr_log_Level
-  use shr_log_mod, only : logunit => shr_log_Unit
 
   implicit none
   save
@@ -88,17 +87,21 @@ contains
   !     corresponding chemical tracers.
   !
   !-------------------------------------------------------------------------
-  subroutine shr_fire_emis_readnl( NLFileName, emis_fields )
+  subroutine shr_fire_emis_readnl( NLFileName, ID, emis_fields )
 
     use shr_nl_mod,     only : shr_nl_find_group_name
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
+    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
+    use shr_mpi_mod,    only : shr_mpi_bcast
 
-    character(len=*), intent(in)  :: NLFileName
-    character(len=*), intent(out) :: emis_fields	
+    character(len=*), intent(in)  :: NLFileName  ! name of namelist file
+    integer         , intent(in)  :: ID          ! seq_comm ID
+    character(len=*), intent(out) :: emis_fields ! emis flux fields
 
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
+    integer :: mpicom           ! MPI communicator
 
     integer, parameter :: maxspc = 100
 
@@ -111,37 +114,42 @@ contains
 
     namelist /fire_emis_nl/ fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
 
-    inquire( file=trim(NLFileName), exist=exists)
+    call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
 
-    if ( exists ) then
+       inquire( file=trim(NLFileName), exist=exists)
 
-       unitn = shr_file_getUnit()
-       open( unitn, file=trim(NLFilename), status='old' )
-       if ( loglev > 0 ) write(logunit,F00) &
-            'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
+       if ( exists ) then
 
-       call shr_nl_find_group_name(unitn, 'fire_emis_nl', status=ierr)
-       ! If ierr /= 0, no namelist present.
+          unitn = shr_file_getUnit()
+          open( unitn, file=trim(NLFilename), status='old' )
+          if ( loglev > 0 ) write(logunit,F00) &
+               'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
 
-       if (ierr == 0) then
-          read(unitn, fire_emis_nl, iostat=ierr)
+          call shr_nl_find_group_name(unitn, 'fire_emis_nl', status=ierr)
+          ! If ierr /= 0, no namelist present.
 
-          if (ierr > 0) then
-             call shr_sys_abort( 'problem on read of fire_emis_nl namelist in shr_fire_emis_readnl' )
+          if (ierr == 0) then
+             read(unitn, fire_emis_nl, iostat=ierr)
+
+             if (ierr > 0) then
+                call shr_sys_abort( 'problem on read of fire_emis_nl namelist in shr_fire_emis_readnl' )
+             endif
           endif
-       endif
 
-       shr_fire_emis_factors_file = fire_emis_factors_file
-
-       ! parse the namelist info and initialize the module data
-       call shr_fire_emis_init( fire_emis_specifier, emis_fields )
-
-       close( unitn )
-       call shr_file_freeUnit( unitn )
-
-       shr_fire_emis_elevated = fire_emis_elevated
-
+          close( unitn )
+          call shr_file_freeUnit( unitn )
+       end if
     end if
+    call shr_mpi_bcast( fire_emis_specifier, mpicom)
+    call shr_mpi_bcast( fire_emis_factors_file, mpicom)
+    call shr_mpi_bcast( fire_emis_elevated, mpicom)
+
+    shr_fire_emis_factors_file = fire_emis_factors_file
+    shr_fire_emis_elevated = fire_emis_elevated
+
+    ! parse the namelist info and initialize the module data
+    call shr_fire_emis_init( fire_emis_specifier, emis_fields )
 
   end subroutine shr_fire_emis_readnl
 

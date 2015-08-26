@@ -9,7 +9,9 @@ my $CASETOOLS  = `./xmlquery  CASETOOLS -value `;
 # these are needed by the makefile and need to be in the environment
 
 $ENV{CASEROOT} = `./xmlquery  CASEROOT -value `;
-
+$ENV{DEBUG} = `./xmlquery  DEBUG -value `;
+$ENV{USE_ESMF_LIB}= `./xmlquery USE_ESMF_LIB -value `;
+$ENV{COMP_INTERFACE}= `./xmlquery COMP_INTERFACE -value `;
 
 sub usage {
     die <<EOF;
@@ -83,6 +85,14 @@ if( $cnt==0){
     $opts{lnd} = 1;
 }
 
+if($opts{mct}+$opts{pio}+$opts{gptl}+$opts{csmshare} >= 1){
+}
+
+
+if($opts{csmshare}==1){
+}
+
+
 my $sysmod = "$GMAKE -f $CASETOOLS/Makefile ";
 
 foreach my $lib (@opts){
@@ -91,3 +101,8 @@ foreach my $lib (@opts){
     }
 }
 system($sysmod) == 0 or die "$sysmod failed: $?\n";
+my @lockedfiles = glob("LockedFiles/env_build*");
+foreach my $lf (@lockedfiles) {
+    unlink($lf);
+}
+system("./xmlchange SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");

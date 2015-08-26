@@ -51,7 +51,7 @@ if ( $COMPILER == "intel" ) then
 endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
-    module switch cce      cce/8.3.7
+    module switch cce      cce/8.4.0.215
 endif    
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu

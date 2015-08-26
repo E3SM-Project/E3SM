@@ -48,7 +48,7 @@ contains
 
   subroutine seq_domain_check( infodata, &
        atm, ice, lnd, ocn, rof, glc, &
-       samegrid_al, samegrid_ao, samegrid_ro)
+       samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
 
     !-----------------------------------------------------------
     ! Uses
@@ -58,7 +58,7 @@ contains
     use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
     use prep_lnd_mod, only: prep_lnd_get_mapper_Fa2l
     use prep_ocn_mod, only: prep_ocn_get_mapper_SFi2o
-    use prep_glc_mod, only: prep_glc_get_mapper_SFl2g
+    use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
     !
     ! Arguments
     !
@@ -72,6 +72,7 @@ contains
     logical                  , intent(in)    :: samegrid_al ! atm lnd grid same
     logical                  , intent(in)    :: samegrid_ao ! atm ocn grid same
     logical                  , intent(in)    :: samegrid_ro ! rof ocn grid same
+    logical                  , intent(in)    :: samegrid_lg ! lnd glc grid same
     !
     ! Local variables
     !
@@ -158,7 +159,7 @@ contains
     mapper_i2a => prep_atm_get_mapper_Fi2a()
     mapper_i2o => prep_ocn_get_mapper_SFi2o()
     mapper_o2a => prep_atm_get_mapper_Fo2a()
-    mapper_l2g => prep_glc_get_mapper_SFl2g()
+    mapper_l2g => prep_glc_get_mapper_Fl2g()
     mapper_a2l => prep_lnd_get_mapper_Fa2l()
     mapper_l2a => prep_atm_get_mapper_Fl2a()
 
@@ -280,30 +281,35 @@ contains
        glcsize  = mct_avect_lsize(glcdom_g%data)
        gglcsize = mct_gsMap_gsize(gsMap_g) 
 
-       if (gglcsize /= glndsize) then
+       if (samegrid_lg .and. gglcsize /= glndsize) then
           write(logunit,*) subname,' error: global glcsize = ',gglcsize,' global lndsize= ',glndsize
           call shr_sys_flush(logunit)
           call shr_sys_abort(subname//' glc and lnd grid must have the same global size')
        end if
+
        if (iamroot) write(logunit,F00) ' --- checking glc maskfrac ---'
        call seq_domain_check_fracmask(glcdom_g%data)
        if (iamroot) write(logunit,F00) ' --- checking lnd maskfrac ---'
        call seq_domain_check_fracmask(lnddom_l%data)
-       call mct_gGrid_init(oGGrid=lnddom_g, iGGrid=lnddom_l, lsize=glcsize)
-       call mct_aVect_zero(lnddom_g%data)
-       call seq_map_map(mapper_l2g, lnddom_l%data, lnddom_g%data, norm=.false.)
-       if (iamroot) write(logunit,F00) ' --- checking glc/lnd domains ---'
-       npts = glcsize
-       allocate(mask(npts),stat=rcode)
-       if(rcode /= 0) call shr_sys_abort(subname//' allocate mask')
-       call mct_aVect_getRAttr(lnddom_g%data,"mask",mask,rcode)
-       where (mask < eps_axmask) mask = 0.0_R8
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'mask', eps=eps_axmask, mpicom=mpicom_cplid, mask=mask)
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=mask)
-       deallocate(mask,stat=rcode)
-       if(rcode /= 0) call shr_sys_abort(subname//' deallocate mask')
+       
+       if (samegrid_lg) then
+          call mct_gGrid_init(oGGrid=lnddom_g, iGGrid=lnddom_l, lsize=glcsize)
+          call mct_aVect_zero(lnddom_g%data)
+          call seq_map_map(mapper_l2g, lnddom_l%data, lnddom_g%data, norm=.false.)
+          if (iamroot) write(logunit,F00) ' --- checking glc/lnd domains ---'
+          npts = glcsize
+          allocate(mask(npts),stat=rcode)
+          if(rcode /= 0) call shr_sys_abort(subname//' allocate mask')
+          call mct_aVect_getRAttr(lnddom_g%data,"mask",mask,rcode)
+          where (mask < eps_axmask) mask = 0.0_R8
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'mask', eps=eps_axmask, mpicom=mpicom_cplid, mask=mask)
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=mask)
+          deallocate(mask,stat=rcode)
+          if(rcode /= 0) call shr_sys_abort(subname//' deallocate mask')
+       end if
+
     endif
 
     if (ice_present .and. ocn_present) then
