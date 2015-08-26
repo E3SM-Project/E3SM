@@ -1,8 +1,6 @@
 ! (c) 2009-2010, Regents of the Unversity of Colorado
 !   Author: Robert Pincus, Cooperative Institute for Research in the Environmental Sciences
 ! All rights reserved.
-! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/MODIS_simulator/modis_simulator.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -49,11 +47,10 @@
 !
 ! When error conditions are encountered this code calls the function complain_and_die, supplied at the 
 !   bottom of this module. Users probably want to replace this with something more graceful. 
-!+JEK, Note: replaced with CAM's complain_and_die
 !
 module mod_modis_sim
-  USE MOD_COSP_TYPES, only: R_UNDEF
-  USE cam_abortutils,     only: complain_and_die => endrun !+JEK
+  USE MOD_COSP_CONSTANTS, only: R_UNDEF
+  USE cam_abortutils,         only: complain_and_die => endrun
   implicit none
   ! ------------------------------
   ! Algorithmic parameters
@@ -85,12 +82,12 @@ module mod_modis_sim
   !
   ! Precompute near-IR optical params vs size for retrieval scheme
   !
-  integer, private :: i 
-  !When Fortran 2003 is supported (e.g. Lahey support is dropped), "real()" can once again be used to convert num_trial_res-1. !+JEK
-  ! Note: code in MODIS simulator released in COSP1.4 now looks like CESM.  If this isn't causing trouble - delete this note. !+JEK
+  integer, private :: i
+
+! When Fortran 2003 is supported (e.g. Lahey support is dropped), "real" can once again be used to convert num_trial_res-1.
   real, dimension(num_trial_res), parameter :: & 
-        trial_re_w = re_water_min + (re_water_max - re_water_min)/(num_trial_res-1) * (/ (i - 1, i = 1, num_trial_res) /), &
-        trial_re_i = re_ice_min   + (re_ice_max -   re_ice_min)  /(num_trial_res-1) * (/ (i - 1, i = 1, num_trial_res) /)
+        trial_re_w = re_water_min + (re_water_max - re_water_min)/(num_trial_res-1.) * (/ (i - 1, i = 1, num_trial_res) /), &
+        trial_re_i = re_ice_min   + (re_ice_max -   re_ice_min)/(num_trial_res-1.) * (/ (i - 1, i = 1, num_trial_res) /)
   
   ! Can't initialze these during compilation, but do in before looping columns in retrievals
   real, dimension(num_trial_res) ::  g_w, g_i, w0_w, w0_i
@@ -101,21 +98,22 @@ module mod_modis_sim
 
   real, private :: dummy_real 
   real, dimension(numTauHistogramBins + 1),      parameter :: &
-    tauHistogramBoundaries = (/ min_OpticalThickness, 1.3, 3.6, 9.4, 23., 60., 10000. /) 
+    tauHistogramBoundaries = (/ min_OpticalThickness, 1.3, 3.6, 9.4, 23., 60., 100000. /) 
   real, dimension(numPressureHistogramBins + 1), parameter :: & ! Units Pa 
-    pressureHistogramBoundaries = (/ 0., 18000., 31000., 44000., 56000., 68000., 80000., 1000000. /) 
-  real, parameter :: highCloudPressureLimit = 440. * 100., lowCloudPressureLimit = 680. * 100.
+    pressureHistogramBoundaries = (/ 0., 180., 310., 440., 560., 680., 800., 1000. /) * 100. 
+  real, parameter :: highCloudPressureLimit = 440. * 100., lowCloudPressureLimit = 680.  * 100.
   !
   ! For output - nominal bin centers and  bin boundaries. On output pressure bins are highest to lowest. 
   !
   integer, private :: k, l
-  !! the next line of code is causing the lehey compiler to issue a warning but it compiles anyways. !+JEK
-  !! "Element types in array constructor must be the same." !+JEK
+
+  !! +jek the next line of code is causing the lehey compiler to issue a warning but it compiles anyways.
+  !! "Element types in array constructor must be the same."
   real, parameter, dimension(2, numTauHistogramBins) ::   &
     nominalTauHistogramBoundaries =                       &
         reshape(source = (/ tauHistogramBoundaries(1),    &
                             ((tauHistogramBoundaries(k), l = 1, 2), k = 2, numTauHistogramBins), &
-                            100000. /),                    &
+                            100000. /),                   &
                 shape = (/2,  numTauHistogramBins /) )
   real, parameter, dimension(numTauHistogramBins) ::                    &
     nominalTauHistogramCenters = (nominalTauHistogramBoundaries(1, :) + &
@@ -154,10 +152,10 @@ contains
   !
   subroutine modis_L2_simulator_twoTaus(                                       &
                                 temp, pressureLayers, pressureLevels,          &
-                                liquid_opticalThickness, ice_opticalThickness, snow_opticalThickness,&
+                                liquid_opticalThickness, ice_opticalThickness, snow_opticalThickness, &
                                 waterSize, iceSize, snowSize,                  & 
                                 isccpTau, isccpCloudTopPressure,               &
-                                retrievedPhase, retrievedCloudTopPressure, retrievedTau, retrievedSize) !+JEK
+                                retrievedPhase, retrievedCloudTopPressure, retrievedTau, retrievedSize)
 
     ! Grid-mean quantities at layer centers, starting at the model top
     !   dimension nLayers
@@ -168,11 +166,11 @@ contains
     !   dimension  nSubcols, nLayers
     real, dimension(:, :), intent(in ) :: liquid_opticalThickness, & ! Layer optical thickness @ 0.67 microns due to liquid
                                           ice_opticalThickness,    & ! ditto, due to ice
-                                          snow_opticalThickness      ! ditto for snow !+JEK
+                                          snow_opticalThickness      ! ditto for snow
     real, dimension(:, :), intent(in ) :: waterSize,        & ! Cloud drop effective radius, microns
-                                          iceSize,          &   ! Cloud ice effective radius, microns
-                                          snowSize           !Snow effective radius, microns !+JEK
-                                         
+                                          iceSize,          & ! Cloud ice effective radius, microns
+                                          snowSize
+                                          
     ! Cloud properties retrieved from ISCCP using top_height = 1
     !    dimension nSubcols
     real, dimension(:),    intent(in ) :: isccpTau, &           ! Column-integrated optical thickness 
@@ -203,40 +201,31 @@ contains
               size(isccpTau), size(isccpCloudTopPressure),              &
               size(retrievedPhase), size(retrievedCloudTopPressure),    &
               size(retrievedTau), size(retrievedSize) /) /= nSubcols )) &
-       call complain_and_die("Differing number of subcolumns in one or more arrays") !+JEK
+       call complain_and_die("Failure in MODIS simulator: Differing number of subcolumns in one or more arrays") 
     
     if(any((/ size(ice_opticalThickness, 2), size(snow_opticalThickness, 2), & 
-    	      size(waterSize, 2), size(iceSize, 2), size(snowSize, 2),     &
+              size(waterSize, 2), size(iceSize, 2), size(snowSize, 2),       &
               size(temp), size(pressureLayers), size(pressureLevels)-1 /) /= nLevels )) &
-       call complain_and_die("Differing number of levels in one or more arrays") !+JEK
-        
+       call complain_and_die("Failure in MODIS simulator: Differing number of levels in one or more arrays") 
+       
     if(any( (/ any(temp <= 0.), any(pressureLayers <= 0.),  &
                any(liquid_opticalThickness < 0.),           &
                any(ice_opticalThickness < 0.),              &
                any(snow_opticalThickness < 0.),             &
                any(waterSize < 0.), any(iceSize < 0.), any(snowSize < 0.) /) )) &
-       call complain_and_die("Input values out of bounds") !+JEK
+       call complain_and_die("Failure in MODIS simulator: Input values out of bounds") 
              
     ! ---------------------------------------------------
     !
     ! Compute the total optical thickness and the proportion due to liquid in each cell
     !
-!+JEK start - replacing COSP1.4 code with COSP1.3 CESM code
-!    where(liquid_opticalThickness(:, :) + ice_opticalThickness(:, :) > 0.) 
-!      tauLiquidFraction(:, :) = liquid_opticalThickness(:, :)/(liquid_opticalThickness(:, :) + ice_opticalThickness(:, :))
-!    elsewhere
-!      tauLiquidFraction(:, :) = 0. 
-!    end  where 
-!    tauTotal(:, :) = liquid_opticalThickness(:, :) + ice_opticalThickness(:, :) 
-
     tauTotal(:, :) = liquid_opticalThickness(:, :) + ice_opticalThickness(:, :) + snow_opticalThickness(:, :)
     where(tauTotal > 0.) 
       tauLiquidFraction(:, :) = liquid_opticalThickness(:, :) / tauTotal(:, :) 
     elsewhere
       tauLiquidFraction(:, :) = 0. 
     end  where 
-!+JEK end
-   
+    
     !
     ! Optical depth retrieval 
     !   This is simply a sum over the optical thickness in each layer 
@@ -314,7 +303,7 @@ contains
           retrievedSize(i) = 1.0e-06*retrieve_re(retrievedPhase(i), retrievedTau(i), &
                obs_Refl_nir = compute_nir_reflectance(liquid_opticalThickness(i, :), waterSize(i, :)*1.0e6, & 
                ice_opticalThickness(i, :),      iceSize(i, :)*1.0e6, &
-               snow_opticalThickness(i, :),    snowSize(i, :)*1.0e6)) !+JEK
+               snow_opticalThickness(i, :),    snowSize(i, :)*1.0e6))
         end if 
       else 
         !
@@ -343,10 +332,10 @@ contains
   ! 
   subroutine modis_L2_simulator_oneTau(                                         &
                                 temp, pressureLayers, pressureLevels,           &
-                                opticalThickness, cloudWater, cloudIce, cloudSnow,    &
-                                waterSize, iceSize, snowSize,                   & 
+                                opticalThickness, cloudWater, cloudIce, cloudSnow, &
+                                waterSize, iceSize, snowSize,                      & 
                                 isccpTau, isccpCloudTopPressure,                &
-                                retrievedPhase, retrievedCloudTopPressure, retrievedTau, retrievedSize) !+JEK
+                                retrievedPhase, retrievedCloudTopPressure, retrievedTau, retrievedSize)
     ! Grid-mean quantities at layer centers, 
     !   dimension nLayers
     real, dimension(:),    intent(in ) :: temp,           & ! Temperature, K
@@ -357,11 +346,10 @@ contains
     real, dimension(:, :), intent(in ) :: opticalThickness, & ! Layer optical thickness @ 0.67 microns
                                           cloudWater,       & ! Cloud water content, arbitrary units
                                           cloudIce,         & ! Cloud water content, same units as cloudWater
-                                          cloudSnow           ! Snow content, same units as cloudWater !+JEK
-
+                                          cloudSnow           ! Snow content, same units as cloudWater
     real, dimension(:, :), intent(in ) :: waterSize,        & ! Cloud drop effective radius, microns
                                           iceSize,          & ! Cloud ice effective radius, microns
-                                          snowSize            ! Snow effective radius, microns !+JEK
+                                          snowSize            ! Snow effective radius, microns 
 
     ! Cloud properties retrieved from ISCCP using top_height = 1
     !    dimension nSubcols
@@ -378,12 +366,21 @@ contains
                                                                        !   waterSize and iceSize are supplied in)
     ! ---------------------------------------------------
     ! Local variables
-    real, dimension(size(opticalThickness, 1), size(opticalThickness, 2)) :: &
-           liquid_opticalThickness, ice_opticalThickness, snow_opticalThickness, totalExtinction !+JEK
-           logical, dimension(size(opticalThickness, 1), size(opticalThickness, 2)) :: inconsist  !+JEK
+    real, dimension(size(opticalThickness, 1), size(opticalThickness, 2)) :: & 
+           liquid_opticalThickness, ice_opticalThickness, snow_opticalThickness, totalExtinction
+    logical, dimension(size(opticalThickness, 1), size(opticalThickness, 2)) :: inconsist 
+    
     ! ---------------------------------------------------
- 
-!+JEK starts here
+    
+    ! 
+    ! Geometic optics limit - tau as LWP/re  (proportional to LWC/re) 
+    !
+    !!+jek floating point exception here.... likely because dividing by zero.
+
+!    totalExtinction = merge(cloudWater(:, :)/waterSize(:, :),                0., cloudWater(:, :) > 0.) + &
+!                      merge(cloudIce  (:, :)/(ice_density * iceSize (:, :)), 0., cloudIce  (:, :) > 0.) + &
+!                      merge(cloudSnow (:, :)/(ice_density * snowSize(:, :)), 0., cloudSnow (:, :) > 0.) 
+    
    ! 
    ! RP - compute total exinction in steps to avoid FPEs in merge statements
    !   We assume that (waterSize > 0. .eqv. cloudWater > 0.) at all times 
@@ -397,51 +394,47 @@ contains
       totalExtinction(:, :) = totalExtinction(:, :) + cloudIce  (:, :)/(ice_density * iceSize (:, :))
     where(  snowSize(:, :) > 0.) &
       totalExtinction(:, :) = totalExtinction(:, :) + cloudSnow (:, :)/(ice_density * snowSize(:, :))
-   
-   where((waterSize(:, :) > 0.) .and. (totalExtinction(:, :) > 0.))
+    
+
+!    liquid_opticalThickness(:, :) = merge(opticalThickness(:, :) * cloudWater(:, :) / &
+!                                          (             waterSize(:, :) * totalExtinction(:, :)), &
+!                                          0.,                                         &
+!                                          cloudWater(:, :) > 0.)
+!       ice_opticalThickness(:, :) = merge(opticalThickness(:, :) * cloudIce  (:, :) / &
+!                                          (ice_density * iceSize (:, :) * totalExtinction(:, :)), &
+!                                          0.,                                         &
+!                                          cloudIce(:, :) > 0.) 
+!      snow_opticalThickness(:, :) = merge(opticalThickness(:, :) * cloudSnow  (:, :) / &
+!                                          (ice_density * snowSize (:, :) * totalExtinction(:, :)), &
+!                                          0.,                                          &
+!                                          cloudsnow(:, :) > 0.) 
+    
+   where((waterSize(:, :) > 0.) .and. (totalExtinction(:, :) > 0.))   !!+jek
      liquid_opticalThickness(:, :) = opticalThickness(:, :) * cloudWater(:, :) / &
                                           (              waterSize(:, :) * totalExtinction(:, :))
     elsewhere
       liquid_opticalThickness(:, :) = 0. 
     end where 
 
-    where(  (iceSize(:, :) > 0.) .and. (totalExtinction(:, :) > 0.))
+    where(  (iceSize(:, :) > 0.) .and. (totalExtinction(:, :) > 0.))   !!+jek
         ice_opticalThickness(:, :) = opticalThickness(:, :) * cloudIce  (:, :) / &
                                           (ice_density *   iceSize(:, :) * totalExtinction(:, :))
     elsewhere
        ice_opticalThickness(:, :) = 0. 
     end where 
 
-    where( (snowSize(:, :) > 0.) .and. (totalExtinction(:, :) > 0.))
+    where( (snowSize(:, :) > 0.) .and. (totalExtinction(:, :) > 0.)) !!+jek
       snow_opticalThickness(:, :) = opticalThickness(:, :) * cloudSnow (:, :) / &
                                           (ice_density *  snowSize(:, :) * totalExtinction(:, :))
     elsewhere
       snow_opticalThickness(:, :) = 0. 
     end where 
-
-!    where(cloudIce(:, :) <= 0.) 
-!      tauLiquidFraction(:, :) = 1. 
-!    elsewhere
-!      where (cloudWater(:, :) <= 0.) 
-!        tauLiquidFraction(:, :) = 0. 
-!      elsewhere 
-!        ! 
-!        ! Geometic optics limit - tau as LWP/re  (proportional to LWC/re) 
-!        !
-!        tauLiquidFraction(:, :) = (cloudWater(:, :)/waterSize(:, :)) / &
-!                                  (cloudWater(:, :)/waterSize(:, :) + cloudIce(:, :)/(ice_density * iceSize(:, :)) ) 
-!      end where
-!    end where
-!    liquid_opticalThickness(:, :) = tauLiquidFraction(:, :) * opticalThickness(:, :) 
-!    ice_opticalThickness   (:, :) = opticalThickness(:, :) - liquid_opticalThickness(:, :)
-
-!+JEK ends here
-    
+ 
     call modis_L2_simulator_twoTaus(temp, pressureLayers, pressureLevels,          &
-                                    liquid_opticalThickness, ice_opticalThickness, snow_opticalThickness,&
+                                    liquid_opticalThickness, ice_opticalThickness, snow_opticalThickness, &
                                     waterSize, iceSize, snowSize,                  & 
                                     isccpTau, isccpCloudTopPressure,               &
-                                    retrievedPhase, retrievedCloudTopPressure, retrievedTau, retrievedSize) !+JEK
+                                    retrievedPhase, retrievedCloudTopPressure, retrievedTau, retrievedSize)
                                 
   end subroutine modis_L2_simulator_oneTau
   !------------------------------------------------------------------------------------------------
@@ -482,6 +475,8 @@ contains
       cloudMask, waterCloudMask, iceCloudMask, validRetrievalMask
     logical, dimension(size(phase, 1), size(phase, 2), numTauHistogramBins     ) :: tauMask
     logical, dimension(size(phase, 1), size(phase, 2), numPressureHistogramBins) :: pressureMask
+!+jek fix from brian eaton
+    real, dimension(size(phase, 1), size(phase, 2)) :: opt_thick_log
 
     ! ---------------------------
     
@@ -490,18 +485,18 @@ contains
     !
     ! Array conformance checks
     !
-    ! Ampersands below denote 132 character line limit. Do not write a longer line. Looks ok here... +JEK
-    if(any( (/ size(cloud_top_pressure, 1), size(optical_thickness, 1), size(particle_size, 1),                                &
-               size(Cloud_Fraction_Total_Mean),       size(Cloud_Fraction_Water_Mean),       size(Cloud_Fraction_Ice_Mean),    &
-               size(Cloud_Fraction_High_Mean),        size(Cloud_Fraction_Mid_Mean),         size(Cloud_Fraction_Low_Mean),    &
-               size(Optical_Thickness_Total_Mean),    size(Optical_Thickness_Water_Mean),    size(Optical_Thickness_Ice_Mean), &
-               size(Optical_Thickness_Total_MeanLog10), size(Optical_Thickness_Water_MeanLog10), &
-               size(Optical_Thickness_Ice_MeanLog10),   size(Cloud_Particle_Size_Water_Mean),    &
-               size(Cloud_Particle_Size_Ice_Mean),      size(Cloud_Top_Pressure_Total_Mean),     &
-               size(Liquid_Water_Path_Mean),          size(Ice_Water_Path_Mean) /) /= nPoints))  &
-      call complain_and_die("MODIS simulator: Some L3 arrays have wrong number of grid points") 
+    ! Ampersands below denote 132 character line limit. Do not write a longer line.
+    if(any( (/ size(cloud_top_pressure, 1),     size(optical_thickness, 1),            size(particle_size, 1),                     &
+         size(Cloud_Fraction_Total_Mean),       size(Cloud_Fraction_Water_Mean),       size(Cloud_Fraction_Ice_Mean),              &
+         size(Cloud_Fraction_High_Mean),        size(Cloud_Fraction_Mid_Mean),         size(Cloud_Fraction_Low_Mean),              &
+         size(Optical_Thickness_Total_Mean),    size(Optical_Thickness_Water_Mean),    size(Optical_Thickness_Ice_Mean),           &
+         size(Optical_Thickness_Total_MeanLog10), size(Optical_Thickness_Water_MeanLog10), size(Optical_Thickness_Ice_MeanLog10),  &
+                                                size(Cloud_Particle_Size_Water_Mean),  size(Cloud_Particle_Size_Ice_Mean),         &
+         size(Cloud_Top_Pressure_Total_Mean),                                                                                      &
+                                                size(Liquid_Water_Path_Mean),          size(Ice_Water_Path_Mean) /) /= nPoints))   &
+      call complain_and_die("Failure in MODIS simulator: Some L3 arrays have wrong number of grid points") 
     if(any( (/ size(cloud_top_pressure, 2), size(optical_thickness, 2), size(particle_size, 2) /)  /= nSubcols)) &
-      call complain_and_die("MODIS simulator: Some L3 arrays have wrong number of subcolumns") 
+      call complain_and_die("Failure in MODIS simulator: Some L3 arrays have wrong number of subcolumns") 
     
     
     !
@@ -532,18 +527,14 @@ contains
     Optical_Thickness_Total_Mean = sum(optical_thickness, mask = cloudMask,      dim = 2) / Cloud_Fraction_Total_Mean(:) 
     Optical_Thickness_Water_Mean = sum(optical_thickness, mask = waterCloudMask, dim = 2) / Cloud_Fraction_Water_Mean(:)
     Optical_Thickness_Ice_Mean   = sum(optical_thickness, mask = iceCloudMask,   dim = 2) / Cloud_Fraction_Ice_Mean(:)
-   
-    ! We take the absolute value of optical thickness here to satisfy compilers that complains when we 
-    !   evaluate the logarithm of a negative number, even though it's not included in the sum. 
-    !+JEK - Different than COSP1.3 CESM code but looks ok -- 
-    !+JEK If problematic - check how logs calculated in CESMCOSP1.3
-    Optical_Thickness_Total_MeanLog10 = sum(log10(abs(optical_thickness)), mask = cloudMask,      dim = 2) / &
-                                        Cloud_Fraction_Total_Mean(:)
-    Optical_Thickness_Water_MeanLog10 = sum(log10(abs(optical_thickness)), mask = waterCloudMask, dim = 2) / &
-                                        Cloud_Fraction_Water_Mean(:)
-    Optical_Thickness_Ice_MeanLog10   = sum(log10(abs(optical_thickness)), mask = iceCloudMask,   dim = 2) / &
-                                        Cloud_Fraction_Ice_Mean(:)
-   
+
+    opt_thick_log(:,:) = -1.e30
+
+    where (cloudMask) opt_thick_log = log10(optical_thickness)
+    Optical_Thickness_Total_MeanLog10 = sum(opt_thick_log, mask = cloudMask,      dim = 2) / Cloud_Fraction_Total_Mean(:)
+    Optical_Thickness_Water_MeanLog10 = sum(opt_thick_log, mask = waterCloudMask, dim = 2) / Cloud_Fraction_Water_Mean(:)
+    Optical_Thickness_Ice_MeanLog10   = sum(opt_thick_log, mask = iceCloudMask,   dim = 2) / Cloud_Fraction_Ice_Mean(:)
+
     Cloud_Particle_Size_Water_Mean = sum(particle_size, mask = waterCloudMask, dim = 2) / Cloud_Fraction_Water_Mean(:)
     Cloud_Particle_Size_Ice_Mean   = sum(particle_size, mask = iceCloudMask,   dim = 2) / Cloud_Fraction_Ice_Mean(:)
     
@@ -657,33 +648,33 @@ contains
     weight_by_extinction = totalProduct/totalTau
   end function weight_by_extinction
   !------------------------------------------------------------------------------------------------
-  pure function compute_nir_reflectance(water_tau, water_size, ice_tau, ice_size, snow_tau, snow_size) !+JEK
-    real, dimension(:), intent(in) :: water_tau, water_size, ice_tau, ice_size, snow_tau, snow_size !+JEK
+  pure function compute_nir_reflectance(water_tau, water_size, ice_tau, ice_size, snow_tau, snow_size) 
+    real, dimension(:), intent(in) :: water_tau, water_size, ice_tau, ice_size, snow_tau, snow_size
     real                           :: compute_nir_reflectance
     
     real, dimension(size(water_tau)) :: water_g, water_w0, ice_g, ice_w0, snow_g, snow_w0, &
-                                        tau, g, w0  !!+JEK
+                                        tau, g, w0
     !----------------------------------------
     water_g(:)  = get_g_nir(  phaseIsLiquid, water_size) 
     water_w0(:) = get_ssa_nir(phaseIsLiquid, water_size) 
     ice_g(:)    = get_g_nir(  phaseIsIce,    ice_size) 
     ice_w0(:)   = get_ssa_nir(phaseIsIce,    ice_size) 
-    snow_g(:)   = get_g_nir(  phaseIsIce,    snow_size) !+JEK
-    snow_w0(:)  = get_ssa_nir(phaseIsIce,    snow_size) !+JEK
+    snow_g(:)   = get_g_nir(  phaseIsIce,    snow_size) 
+    snow_w0(:)  = get_ssa_nir(phaseIsIce,    snow_size) 
     !
     ! Combine ice and water optical properties
     !
     g(:) = 0; w0(:) = 0. 
-    tau(:) = ice_tau(:) + water_tau(:) + snow_tau(:) !+JEK 
+    tau(:) = ice_tau(:) + water_tau(:) + snow_tau(:)
     where (tau(:) > 0) 
       g(:)  = (water_tau(:) * water_g(:) + &
                  ice_tau(:) *   ice_g(:) + &
                 snow_tau(:) *  snow_g(:) ) / & 
-              tau(:) !+JEK
+              tau(:) 
       w0(:) = (water_tau(:) * water_g(:) * water_w0(:) + &
                  ice_tau(:) *   ice_g(:) *   ice_w0(:) + &
                 snow_tau(:) *  snow_g(:) *  snow_w0(:) ) / &
-              (g(:) * tau(:)) !+JEK
+              (g(:) * tau(:))
     end where
     
     compute_nir_reflectance = compute_toa_reflectace(tau, g, w0)
@@ -1080,13 +1071,13 @@ contains
 
     end subroutine adding_doubling
   ! --------------------------------------------------
-!!This subroutine was commented out in CESM1.3 CESM code "Flush is a Fortran 2003 feature"  !+JEK
-!! I still comment it out because using CAM's complain_and_die subroutine !+JEK
 !  subroutine complain_and_die(message) 
 !    character(len = *), intent(in) :: message
-!    
+    
 !    write(6, *) "Failure in MODIS simulator" 
-!    write(6, *)  trim(message) 
+!    write(6, *)  trim(message)
+     !! Flush is a Fortran 2003 feature.
+!    flush(6)
 !    stop
 !  end subroutine complain_and_die
   !------------------------------------------------------------------------------------------------

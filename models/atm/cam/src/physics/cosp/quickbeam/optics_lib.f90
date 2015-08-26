@@ -1,6 +1,4 @@
-! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/quickbeam/optics_lib.f90 $
-! OPTICS_LIB: Optical procedures for F90 !+JEK
+! OPTICS_LIB: Optical procedures for for F90
 ! Compiled/Modified:
 !   07/01/06  John Haynes (haynes@atmos.colostate.edu)
 !
@@ -16,7 +14,7 @@
 ! ----------------------------------------------------------------------------
 ! subroutine M_WAT
 ! ----------------------------------------------------------------------------
-  subroutine m_wat(freq, tk, n_r, n_i)
+  subroutine m_wat(freq, t, n_r, n_i)
   implicit none
 !  
 ! Purpose:
@@ -24,7 +22,7 @@
 !
 ! Inputs:
 !   [freq]    frequency (GHz)
-!   [tk]       temperature (K)
+!   [t]       temperature (C)
 !
 ! Outputs:
 !   [n_r]     real part index of refraction
@@ -37,7 +35,7 @@
 !   03/22/05  John Haynes (haynes@atmos.colostate.edu)
   
 ! ----- INPUTS -----
-  real*8, intent(in) :: freq,tk
+  real*8, intent(in) :: freq,t
   
 ! ----- OUTPUTS -----
   real*8, intent(out) :: n_r, n_i
@@ -46,17 +44,14 @@
   real*8 ld,es,ei,a,ls,sg,tm1,cos1,sin1
   real*8 e_r,e_i
   real*8 pi
-  real*8 tc
   complex*16 e_comp, sq
 
-  tc = tk - 273.15
-
   ld = 100.*2.99792458E8/(freq*1E9)
-  es = 78.54*(1-(4.579E-3*(tc-25.)+1.19E-5*(tc-25.)**2 &
-       -2.8E-8*(tc-25.)**3))
-  ei = 5.27137+0.021647*tc-0.00131198*tc**2
-  a = -(16.8129/(tc+273.))+0.0609265
-  ls = 0.00033836*exp(2513.98/(tc+273.))
+  es = 78.54*(1-(4.579E-3*(t-25.)+1.19E-5*(t-25.)**2 &
+       -2.8E-8*(t-25.)**3))
+  ei = 5.27137+0.021647*t-0.00131198*t**2
+  a = -(16.8129/(t+273.))+0.0609265
+  ls = 0.00033836*exp(2513.98/(t+273.))
   sg = 12.5664E8
 
   tm1 = (ls/ld)**(1-a)
@@ -68,7 +63,7 @@
   e_i = (((es-ei)*tm1*cos1)/(1.+2*tm1*sin1+tm1**2)) &
         +((sg*ld)/1.885E11)
 
-  e_comp = cmplx(e_r,e_i,8)  !+JEK
+  e_comp = cmplx(e_r,e_i,8)
   sq = sqrt(e_comp)
   
   n_r = real(sq)
@@ -88,7 +83,7 @@
 !
 ! Inputs:
 !   [freq]    frequency (GHz)
-!   [t]       temperature (K)
+!   [t]       temperature (C)
 !
 ! Outputs:
 !   [n_r]     real part index of refraction
@@ -110,8 +105,8 @@
   integer*2 :: i,lt1,lt2,nwl,nwlt
   parameter(nwl=468,nwlt=62)
 
-  real*8 :: alam,cutice,pi,t1,t2,wlmax,wlmin, &
-            x,x1,x2,y,y1,y2,ylo,yhi,tk
+  real*8 :: alam,cutice,pi,t1,t2,tk,wlmax,wlmin, &
+            x,x1,x2,y,y1,y2,ylo,yhi
 
   real*8 :: &
        tabim(nwl),tabimt(nwlt,4),tabre(nwl),tabret(nwlt,4),temref(4), &
@@ -506,14 +501,15 @@
   n_r=0.0
   n_i=0.0
 
-  tk = t
-
 ! // convert frequency to wavelength (um)
   alam=3E5/freq
   if((alam < wlmin) .or. (alam > wlmax)) then
     print *, 'm_ice: wavelength out of bounds'
     stop
   endif
+
+! // convert temperature to K
+  tk = t + 273.16
 
   if (alam < cutice) then
 
@@ -670,14 +666,14 @@
           Return
       End If
       Inp2 = Inp+1
-      D(NmX) = cmplx(0,0,kind=kind(0d0))
+      D(NmX) = cmplx(0,0,8)
       Do N = Nmx-1,1,-1
          A1 = (N+1) / Y
          D(N) = A1 - 1/(A1+D(N+1))
       End Do
       Do I =1,Inp2
-         Sm(I) = cmplx(0,0,8) !+JEK
-         Sp(I) = cmplx(0,0,8) !+JEK
+         Sm(I) = cmplx(0,0,8)
+         Sp(I) = cmplx(0,0,8)
          Pi0(I) = 0
          Pi1(I) = 1
       End Do
@@ -687,8 +683,8 @@
       Chi1 = Cos(Dx)
       APsi0 = Psi0
       APsi1 = Psi1
-      Xi0 = cmplx(APsi0,Chi0,8) !+JEK
-      Xi1 = cmplx(APsi1,Chi1,8) !+JEK
+      Xi0 = cmplx(APsi0,Chi0,8)
+      Xi1 = cmplx(APsi1,Chi1,8)
       Dg = 0
       Dqsc = 0
       Dqxt = 0
@@ -703,7 +699,7 @@
          Psi = Dble(Tnm1)*Psi1/Dx - Psi0
          APsi = Psi
          Chi = Tnm1*Chi1/Dx       - Chi0
-         Xi = cmplx(APsi,Chi,8) !+JEK
+         Xi = cmplx(APsi,Chi,8)
          A = ((D(N)*Ir+Rnx)*APsi-APsi1) / ((D(N)*Ir+Rnx)*  Xi-  Xi1)
          B = ((D(N)*Cm+Rnx)*APsi-APsi1) / ((D(N)*Cm+Rnx)*  Xi-  Xi1)
          Dqxt = Tnp1 *      Dble(A + B)          + Dqxt
@@ -733,7 +729,7 @@
          Apsi1 = Psi1
          Chi0 = Chi1
          Chi1 = Chi
-         Xi1 = cmplx(APsi1,Chi1,8) !+JEK
+         Xi1 = cmplx(APsi1,Chi1,8)
       End Do
       If (Dg .GT.0) Dg = 2 * Dg / Dqsc
       Dqsc =  2 * Dqsc / Dx**2

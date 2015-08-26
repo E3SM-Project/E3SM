@@ -6,7 +6,7 @@
 # COSP_PATH, ISCCP_PATH, RS_PATH, CS_PATH, LLNL_PATH, MISR_PATH, MODIS_PATH.
 #
 # The macro CAM_BLD is also prepended.  It is the build directory of the CAM
-# code and it contains the abortutils.mod file.  The abortutils module is
+# code and it contains the cam_abortutils.mod file.  The cam_abortutils module is
 # referenced by COSP code in order to perform an abort which is appropriate
 # for the CESM system.
 #
@@ -37,15 +37,12 @@ F90FLAGS_fixed  := $(FIXEDFLAGS) $(FC_FLAGS) $(FC_AUTO_R8)
 
 VPATH := $(COSP_PATH)
 
-## +JEK - added - new in COSP1.4:calc_Re.o scale_LUTs_io.o radar_simulator_init.o 
-## +JEK - removed all mention from CESM COSP1.3 Makefile because not in CESM1.4: load_hydrometeor_classes.o
-## +JEK - didn't add from COSP1.4 Makefile because CESM doesn't use: cosp_io.o, cosp_rrtov_simulator.o
 OBJS =  cosp_radar.o cosp_types.o cosp_constants.o cosp_simulator.o \
         cosp_utils.o scops.o prec_scops.o cosp.o cosp_stats.o \
         pf_to_mr.o \
         cosp_lidar.o radar_simulator_types.o zeff.o \
-        array_lib.o atmos_lib.o dsd.o calc_Re.o format_input.o \
-        gases.o scale_LUTs_io.o radar_simulator_init.o \
+        array_lib.o atmos_lib.o dsd.o format_input.o \
+        gases.o load_hydrometeor_classes.o \
         math_lib.o mrgrnk.o optics_lib.o radar_simulator.o \
         lidar_simulator.o llnl_stats.o lmd_ipsl_stats.o \
         cosp_isccp_simulator.o icarus.o \
@@ -69,20 +66,17 @@ cosp_simulator.o: cosp_types.o cosp_radar.o cosp_lidar.o \
                   cosp_isccp_simulator.o cosp_misr_simulator.o \
                   cosp_modis_simulator.o cosp_stats.o 
 cosp_stats.o    : cosp_constants.o cosp_types.o llnl_stats.o lmd_ipsl_stats.o
-cosp_types.o    : cosp_constants.o cosp_utils.o radar_simulator_types.o \
-                  scale_LUTs_io.o radar_simulator_init.o
+cosp_types.o    : cosp_constants.o cosp_utils.o radar_simulator_types.o
 cosp_utils.o    : cosp_constants.o
 lmd_ipsl_stats.o : llnl_stats.o
 llnl_stats.o   : cosp_constants.o
 array_lib.o    : mrgrnk.o
-calc_Re.o      : math_lib.o
-dsd.o          : array_lib.o math_lib.o calc_Re.o
+dsd.o          : array_lib.o math_lib.o
 format_input.o : array_lib.o
+load_hydrometeor_classes.o: radar_simulator_types.o
 math_lib.o                : array_lib.o mrgrnk.o
 radar_simulator.o         : array_lib.o math_lib.o mrgrnk.o optics_lib.o \
 	                         radar_simulator_types.o
-radar_simulator_init.o    : radar_simulator_types.o
-scale_LUTs_io.o           : radar_simulator_types.o
 zeff.o                    : math_lib.o optics_lib.o
 cosp_isccp_simulator.o    : cosp_constants.o cosp_types.o
 cosp_misr_simulator.o     : cosp_constants.o cosp_types.o
@@ -110,12 +104,6 @@ pf_to_mr.o : $(LLNL_PATH)/pf_to_mr.f90
 radar_simulator_types.o : $(RS_PATH)/radar_simulator_types.f90
 	$(F90) $(F90FLAGS) -c $<
 
-radar_simulator_init.o : $(RS_PATH)/radar_simulator_init.f90
-	$(F90) $(F90FLAGS) -c $<
-
-scale_LUTs_io.o : $(RS_PATH)/scale_LUTs_io.f90
-	$(F90) $(F90FLAGS) -c $<
-
 atmos_lib.o : $(RS_PATH)/atmos_lib.f90
 	$(F90) $(F90FLAGS) -c $<
 
@@ -128,13 +116,13 @@ array_lib.o : $(RS_PATH)/array_lib.f90
 dsd.o : $(RS_PATH)/dsd.f90
 	$(F90) $(F90FLAGS) -c $<
 
-calc_Re.o : $(RS_PATH)/calc_Re.f90
-	$(F90) $(F90FLAGS) -c $<
-
 format_input.o : $(RS_PATH)/format_input.f90
 	$(F90) $(F90FLAGS) -c $<
 
 gases.o : $(RS_PATH)/gases.f90
+	$(F90) $(F90FLAGS) -c $<
+
+load_hydrometeor_classes.o : $(RS_PATH)/load_hydrometeor_classes.f90
 	$(F90) $(F90FLAGS) -c $<
 
 math_lib.o : $(RS_PATH)/math_lib.f90

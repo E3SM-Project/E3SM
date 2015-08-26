@@ -88,6 +88,7 @@
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel" testtype="acme_tiny">edison</machine>
+        <machine compiler="intel " testtype="acme_tiny">edison</machine>
         <machine compiler="intel" testtype="acme_developer">eos</machine>
         <machine compiler="intel" testtype="acme_integration">eos</machine>
         <machine compiler="intel" testtype="acme_tiny">eos</machine>
@@ -101,6 +102,7 @@
         <machine compiler="nag" testtype="acme_integration">goldbach</machine>
         <machine compiler="pgi" testtype="acme_integration">goldbach</machine>
         <machine compiler="intel" testtype="acme_tiny">goldbach</machine>
+        <machine compiler="lahey" testtype="acme_tiny">goldbach</machine>
         <machine compiler="nag" testtype="acme_tiny">goldbach</machine>
         <machine compiler="pgi" testtype="acme_tiny">goldbach</machine>
         <machine compiler="gnu" testtype="acme_developer">hopper</machine>
@@ -112,6 +114,7 @@
         <machine compiler="gnu" testtype="acme_tiny">hopper</machine>
         <machine compiler="intel" testtype="acme_tiny">hopper</machine>
         <machine compiler="pgi" testtype="acme_tiny">hopper</machine>
+        <machine compiler="ibm" testtype="acme_tiny">intrepid</machine>
         <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="intel" testtype="acme_tiny">janus</machine>
@@ -136,6 +139,7 @@
         <machine compiler="intel" testtype="acme_integration">mustang</machine>
         <machine compiler="gnu" testtype="acme_tiny">mustang</machine>
         <machine compiler="intel" testtype="acme_tiny">mustang</machine>
+        <machine compiler="null" testtype="acme_tiny">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="pgi" testtype="acme_tiny">olympus</machine>
@@ -168,6 +172,7 @@
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
         <machine compiler="gnu" testtype="acme_tiny">yellowstone</machine>
         <machine compiler="intel" testtype="acme_tiny">yellowstone</machine>
+        <machine compiler="intel " testtype="acme_tiny">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_tiny">yellowstone</machine>
       </test>
       <test name="ERS_D">
@@ -444,6 +449,7 @@
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel" testtype="acme_tiny">edison</machine>
+        <machine compiler="intel " testtype="acme_tiny">edison</machine>
         <machine compiler="intel" testtype="acme_developer">eos</machine>
         <machine compiler="intel" testtype="acme_integration">eos</machine>
         <machine compiler="intel" testtype="acme_tiny">eos</machine>
@@ -457,6 +463,7 @@
         <machine compiler="nag" testtype="acme_integration">goldbach</machine>
         <machine compiler="pgi" testtype="acme_integration">goldbach</machine>
         <machine compiler="intel" testtype="acme_tiny">goldbach</machine>
+        <machine compiler="lahey" testtype="acme_tiny">goldbach</machine>
         <machine compiler="nag" testtype="acme_tiny">goldbach</machine>
         <machine compiler="pgi" testtype="acme_tiny">goldbach</machine>
         <machine compiler="intel" testtype="prebeta">goldbach</machine>
@@ -471,6 +478,7 @@
         <machine compiler="intel" testtype="acme_tiny">hopper</machine>
         <machine compiler="pgi" testtype="acme_tiny">hopper</machine>
         <machine compiler="pgi" testtype="prerelease">hopper</machine>
+        <machine compiler="ibm" testtype="acme_tiny">intrepid</machine>
         <machine compiler="ibm" testtype="prerelease">intrepid</machine>
         <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_integration">janus</machine>
@@ -497,6 +505,7 @@
         <machine compiler="intel" testtype="acme_integration">mustang</machine>
         <machine compiler="gnu" testtype="acme_tiny">mustang</machine>
         <machine compiler="intel" testtype="acme_tiny">mustang</machine>
+        <machine compiler="null" testtype="acme_tiny">null</machine>
         <machine compiler="pgi" testtype="acme_developer">olympus</machine>
         <machine compiler="pgi" testtype="acme_integration">olympus</machine>
         <machine compiler="pgi" testtype="acme_tiny">olympus</machine>
@@ -530,6 +539,7 @@
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
         <machine compiler="gnu" testtype="acme_tiny">yellowstone</machine>
         <machine compiler="intel" testtype="acme_tiny">yellowstone</machine>
+        <machine compiler="intel " testtype="acme_tiny">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_tiny">yellowstone</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>

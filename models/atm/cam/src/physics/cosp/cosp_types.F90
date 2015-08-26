@@ -22,14 +22,23 @@
 ! IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT 
 ! OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+!
+! History:
+! Jul 2007 - A. Bodas-Salcedo - Initial version
+! Feb 2008 - R. Marchand      - Added Quickbeam types and initialisation
+! Oct 2008 - H. Chepfer       - Added PARASOL reflectance diagnostic
+! Nov 2008 - R. Marchand      - Added MISR diagnostics
+! Nov 2008 - V. John          - Added RTTOV diagnostics
+!
+! 
 MODULE MOD_COSP_TYPES
     USE MOD_COSP_CONSTANTS
     USE MOD_COSP_UTILS
 
-    use radar_simulator_types, only: class_param, nd, mt_nd, dmax, dmin
+    use radar_simulator_types, only: class_param, mie, nd, mt_nd, dmax, dmin, mt_ttl, mt_tti, cnt_liq, cnt_ice  ! added by roj Feb 2008
 
     IMPLICIT NONE
-
+    
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !----------------------- DERIVED TYPES ----------------------------    
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,14 +48,8 @@ MODULE MOD_COSP_TYPES
      logical :: Lradar_sim,Llidar_sim,Lisccp_sim,Lmodis_sim,Lmisr_sim,Lrttov_sim,Lstats,Lwrite_output, &
                 Lalbisccp,Latb532,Lboxptopisccp,Lboxtauisccp,LcfadDbze94, &
                 LcfadLidarsr532,Lclcalipso2,Lclcalipso,Lclhcalipso,Lclisccp,Lcllcalipso, &
-                Lclmcalipso,Lcltcalipso,Lcltlidarradar,Lcltradar,Lcltradar2,Lpctisccp,Ldbze94,Ltauisccp,Lcltisccp, & !+JEK
-                Ltoffset,LparasolRefl,LclMISR,Lmeantbisccp,Lmeantbclrisccp, &
-                Lclcalipsoliq,Lclcalipsoice,Lclcalipsoun, &
-                Lclcalipsotmp,Lclcalipsotmpliq,Lclcalipsotmpice,Lclcalipsotmpun, &
-	              Lcltcalipsoliq,Lcltcalipsoice,Lcltcalipsoun, &
-                Lclhcalipsoliq,Lclhcalipsoice,Lclhcalipsoun, &
-                Lclmcalipsoliq,Lclmcalipsoice,Lclmcalipsoun, &
-                Lcllcalipsoliq,Lcllcalipsoice,Lcllcalipsoun, &
+                Lclmcalipso,Lcltcalipso,Lcltlidarradar,Lcltradar,Lcltradar2,Lpctisccp,Ldbze94,Ltauisccp,Lcltisccp, & !modified by ZYY
+                Llongitude,Llatitude,LparasolRefl,LclMISR,Lmeantbisccp,Lmeantbclrisccp, &
                 Lfracout,LlidarBetaMol532,Ltbrttov, &
                 Lcltmodis,Lclwmodis,Lclimodis,Lclhmodis,Lclmmodis,Lcllmodis,Ltautmodis,Ltauwmodis,Ltauimodis,Ltautlogmodis, &
                 Ltauwlogmodis,Ltauilogmodis,Lreffclwmodis,Lreffclimodis,Lpctmodis,Llwpmodis, &
@@ -145,9 +148,7 @@ MODULE MOD_COSP_TYPES
     integer :: Nrefl     ! Number of parasol reflectances
     ! Arrays with dimensions (Npoints,Nlevels)
     real,dimension(:,:),pointer :: beta_mol   ! Molecular backscatter
-    real,dimension(:,:),pointer :: temp_tot
     ! Arrays with dimensions (Npoints,Ncolumns,Nlevels)
-    real,dimension(:,:,:),pointer :: betaperp_tot   ! Total backscattered signal
     real,dimension(:,:,:),pointer :: beta_tot   ! Total backscattered signal
     real,dimension(:,:,:),pointer :: tau_tot    ! Optical thickness integrated from top to level z
     ! Arrays with dimensions (Npoints,Ncolumns,Nrefl)
@@ -180,8 +181,8 @@ MODULE MOD_COSP_TYPES
     real, dimension(:,:,:), pointer :: cfad_ze ! Ze CFAD
     ! Array with dimensions (Npoints)
     real,dimension(:),pointer :: radar_lidar_tcc ! Radar&lidar total cloud amount, grid-box scale
-    real,dimension(:),pointer :: radar_tcc !Radar total cloud amount !+JEK
-    real,dimension(:),pointer :: radar_tcc_2 !Radar total cloud amount without the data for the first kilometer above surface !+JEK
+    real,dimension(:),pointer :: radar_tcc !Radar total cloud amount !modified by ZYY
+    real,dimension(:),pointer :: radar_tcc_2 !Radar total cloud amount without the data for the first kilometer above surface !modified by ZYY
     ! Arrays with dimensions (Npoints,Nlevels)
     real, dimension(:,:),pointer :: lidar_only_freq_cloud
   END TYPE COSP_RADARSTATS
@@ -201,13 +202,7 @@ MODULE MOD_COSP_TYPES
     ! Arrays with dimensions (Npoints,Nlevels)
     real, dimension(:,:),pointer :: lidarcld    ! 3D "lidar" cloud fraction 
     ! Arrays with dimensions (Npoints,LIDAR_NCAT)
-    real, dimension(:,:),pointer :: cldlayer      ! low, mid, high-level, total lidar cloud cover
-   ! Arrays with dimensions (Npoints,Nlevels,Nphase)
-    real, dimension(:,:,:),pointer :: lidarcldphase    ! 3D "lidar" phase cloud fraction 
-     ! Arrays with dimensions (Npoints,LIDAR_NCAT,Nphase)
-    real, dimension(:,:,:),pointer :: cldlayerphase      ! low, mid, high-level lidar phase cloud cover
-    ! Arrays with dimensions (Npoints,Ntemps,Nphase)
-    real, dimension(:,:,:),pointer :: lidarcldtmp    ! 3D "lidar" phase cloud temperature
+    real, dimension(:,:),pointer :: cldlayer      ! low, mid, high-level lidar cloud cover
     ! Arrays with dimensions (Npoints,PARASOL_NREFL)
     real, dimension(:,:),pointer :: parasolrefl   ! mean parasol reflectance
 
@@ -240,11 +235,6 @@ MODULE MOD_COSP_TYPES
     real,dimension(:,:,:,:),pointer :: Reff     ! Effective Radius of each hydrometeor
                                                 ! (Reff==0 means use default size)   
                                                 ! (Npoints,Ncolumns,Nlevels,Nhydro) [m]
-    real,dimension(:,:,:,:),pointer :: Np       ! Total # concentration each hydrometeor 
-                                                ! (Optional, ignored if Reff > 0).
-                                                ! (Npoints,Ncolumns,Nlevels,Nhydro) [#/kg]
-                                                ! Np = Ntot / rho_a  = [#/m^3] / [kg/m^3) 
-                                                ! added by Roj with Quickbeam V3
   END TYPE COSP_SGHYDRO
   
   ! Input data for simulator. Gridbox scale.
@@ -260,12 +250,11 @@ MODULE MOD_COSP_TYPES
     integer :: Npoints_it   ! Max number of gridpoints to be processed in one iteration
     
     ! Time [days]
-    !double precision :: time
-    !double precision :: time_bnds(2)
     ! jsb double precision -> real*8
-    real*8 :: time    !+JEK
-    real*8 :: time_bnds(2) !+JEK
-
+    real*8 :: time
+    real*8 :: time_bnds(2)
+    ! jsb
+    
     ! Radar ancillary info
     real :: radar_freq, & ! Radar frequency [GHz]
             k2 ! |K|^2, -1=use frequency dependent default
@@ -277,7 +266,10 @@ MODULE MOD_COSP_TYPES
  
     ! structures used by radar simulator that need to be set only ONCE per radar configuration (e.g. freq, pointing direction) ... added by roj Feb 2008
     type(class_param) ::  hp    ! structure used by radar simulator to store Ze and N scaling constants and other information
+    type(mie)::  mt     ! structure used by radar simulator to store mie LUT information
     integer :: nsizes       ! number of discrete drop sizes (um) used to represent the distribution
+    real*8, dimension(:), pointer :: D ! array of discrete drop sizes (um) used to represent the distribution
+    real*8, dimension(:), pointer :: mt_ttl, mt_tti ! array of temperatures used with Ze_scaling (also build into mie LUT)
     
     ! Lidar
     integer :: lidar_ice_type !ice particle shape hypothesis in lidar calculations 
@@ -285,11 +277,9 @@ MODULE MOD_COSP_TYPES
     
     ! Radar
     logical ::  use_precipitation_fluxes  ! True if precipitation fluxes are input to the algorithm 
-    logical ::  use_reff          ! True if Reff is to be used by radar (memory not allocated
-    
+    logical ::  use_reff  ! True if Reff is to be used by radar 
     
     ! Geolocation (Npoints)
-    real,dimension(:),pointer :: toffset   ! Time offset of esch point from the value in time
     real,dimension(:),pointer :: longitude ! longitude [degrees East]
     real,dimension(:),pointer :: latitude  ! latitude [deg North]
     ! Gridbox information (Npoints,Nlevels)
@@ -309,12 +299,16 @@ MODULE MOD_COSP_TYPES
                                           !         part of the grid box
     real,dimension(:,:),pointer :: dtau_c !  mean 0.67 micron optical depth of convective
                                           !  clouds in each model level.  Same note applies as in dtau_s.
-    real,dimension(:,:),pointer :: dtau_s_snow !  mean 0.67 micron optical depth of stratiform snow (in-snow) !+JEK
+    ! jsb added from steve's
+    real,dimension(:,:),pointer :: dtau_s_snow !  mean 0.67 micron optical depth of stratiform snow (in-snow)
+    !jsb
     real,dimension(:,:),pointer :: dem_s  !  10.5 micron longwave emissivity of stratiform
                                           !  clouds in each model level.  Same note applies as in dtau_s.
     real,dimension(:,:),pointer :: dem_c  !  10.5 micron longwave emissivity of convective
                                           !  clouds in each model level.  Same note applies as in dtau_s.
-    real,dimension(:,:),pointer :: dem_s_snow  !  10.5 micron longwave emissivity of stratiform snow (in-snow) !+JEK
+! jsb added from steve's
+    real,dimension(:,:),pointer :: dem_s_snow  !  10.5 micron longwave emissivity of stratiform snow (in-snow)
+!jsb
     real,dimension(:,:),pointer :: mr_ozone !  Ozone mass mixing ratio [kg/kg]
 
     ! Point information (Npoints)
@@ -322,6 +316,7 @@ MODULE MOD_COSP_TYPES
     real,dimension(:),pointer :: psfc !Surface pressure [Pa]
     real,dimension(:),pointer :: sunlit ! (npoints) 1 for day points, 0 for nightime
     real,dimension(:),pointer :: skt  ! Skin temperature (K)
+    real,dimension(:),pointer :: sfc_height  ! Surface height [m]
     real,dimension(:),pointer :: u_wind  ! eastward wind [m s-1]
     real,dimension(:),pointer :: v_wind  ! northward wind [m s-1]
 
@@ -338,13 +333,8 @@ MODULE MOD_COSP_TYPES
 !     real,dimension(:,:,:),pointer :: fr_hydro ! Fraction of the gridbox occupied by each hydrometeor (Npoints,Nlevels,Nhydro)
     real,dimension(:,:,:),pointer :: mr_hydro ! Mixing ratio of each hydrometeor (Npoints,Nlevels,Nhydro) [kg/kg]
     real,dimension(:,:),pointer   :: dist_prmts_hydro !Distributional parameters for hydrometeors (Nprmts_max_hydro,Nhydro)
-
-    ! Effective radius [m]. (Npoints,Nlevels,Nhydro) -- OPTIONAL, value of 0 mean use fixed default
+    ! Effective radius [m]. (Npoints,Nlevels,Nhydro)
     real,dimension(:,:,:),pointer :: Reff
-
-    ! Total Number Concentration [#/kg]. (Npoints,Nlevels,Nhydro) -- OPTIONAL, value of 0 mean use fixed default
-    real,dimension(:,:,:),pointer :: Np ! added by Roj with Quickbeam V3
- 
     ! Aerosols concentration and distribution parameters
     real,dimension(:,:,:),pointer :: conc_aero ! Aerosol concentration for each species (Npoints,Nlevels,Naero)
     integer,dimension(:),pointer :: dist_type_aero ! Particle size distribution type for each aerosol species (Naero)
@@ -397,27 +387,17 @@ CONTAINS
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !------------- SUBROUTINE CONSTRUCT_COSP_RTTOV -------------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  SUBROUTINE CONSTRUCT_COSP_RTTOV(cfg,Npoints,Nchan,x)
-    type(cosp_config),intent(in) :: cfg ! Configuration options
+  SUBROUTINE CONSTRUCT_COSP_RTTOV(Npoints,Nchan,x)
     integer,intent(in) :: Npoints  ! Number of sampled points
     integer,intent(in) :: Nchan ! Number of channels
     type(cosp_rttov),intent(out) :: x
-    ! Local variables
-    integer :: i,j
     
-    ! Allocate minumum storage if simulator not used
-    if (cfg%Lrttov_sim) then
-      i = Npoints
-      j = Nchan
-    else
-      i = 1
-      j = 1
-    endif
-    x%Npoints  = i
-    x%Nchan    = j
+    ! Dimensions
+    x%Npoints  = Npoints
+    x%Nchan    = Nchan
       
     ! --- Allocate arrays ---
-    allocate(x%tbs(i, j))
+    allocate(x%tbs(Npoints, Nchan))
     ! --- Initialise to zero ---
     x%tbs     = 0.0
   END SUBROUTINE CONSTRUCT_COSP_RTTOV
@@ -642,15 +622,12 @@ CONTAINS
     
     ! --- Allocate arrays ---
     allocate(x%beta_mol(i,k), x%beta_tot(i,j,k), &
-             x%tau_tot(i,j,k),x%refl(i,j,m), &
-             x%temp_tot(i,k),x%betaperp_tot(i,j,k))
+             x%tau_tot(i,j,k),x%refl(i,j,m))
     ! --- Initialise to zero ---
     x%beta_mol   = 0.0
     x%beta_tot   = 0.0
     x%tau_tot    = 0.0
     x%refl       = 0.0 ! parasol
-    x%temp_tot   	= 0.0
-    x%betaperp_tot 	= 0.0	
   END SUBROUTINE CONSTRUCT_COSP_SGLIDAR
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -659,9 +636,7 @@ CONTAINS
   SUBROUTINE FREE_COSP_SGLIDAR(x)
     type(cosp_sglidar),intent(inout) :: x
 
-    deallocate(x%beta_mol, x%beta_tot, x%tau_tot, x%refl, &
-               x%temp_tot, x%betaperp_tot)
-
+    deallocate(x%beta_mol, x%beta_tot, x%tau_tot, x%refl)
   END SUBROUTINE FREE_COSP_SGLIDAR
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -752,13 +727,13 @@ CONTAINS
     
     ! --- Allocate arrays ---
     allocate(x%cfad_ze(i,DBZE_BINS,k),x%lidar_only_freq_cloud(i,k))
-    allocate(x%radar_lidar_tcc(i),x%radar_tcc(i),x%radar_tcc_2(i)) !+JEK
+    allocate(x%radar_lidar_tcc(i),x%radar_tcc(i),x%radar_tcc_2(i)) !modified by ZYY
     ! --- Initialise to zero ---
     x%cfad_ze = 0.0
     x%lidar_only_freq_cloud = 0.0
     x%radar_lidar_tcc = 0.0
-    x%radar_tcc = 0.0   !+JEK
-    x%radar_tcc_2 = 0.0 !+JEK
+    x%radar_tcc = 0.0 !modified by ZYY
+    x%radar_tcc_2 = 0.0 !modified by ZYY
   END SUBROUTINE CONSTRUCT_COSP_RADARSTATS
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -768,7 +743,7 @@ CONTAINS
     type(cosp_radarstats),intent(inout) :: x
 
     deallocate(x%cfad_ze,x%lidar_only_freq_cloud,x%radar_lidar_tcc &
-              ,x%radar_tcc,x%radar_tcc_2) !+JEK
+              ,x%radar_tcc,x%radar_tcc_2) !modified by ZYY
   END SUBROUTINE FREE_COSP_RADARSTATS
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -808,21 +783,15 @@ CONTAINS
     x%Nrefl    = m
     
     ! --- Allocate arrays ---
-    allocate(x%srbval(SR_BINS),x%cfad_sr(i,SR_BINS,k), &
+    allocate(x%srbval(SR_BINS),x%cfad_sr(i,SR_BINS,k), & 
              x%lidarcld(i,k), x%cldlayer(i,LIDAR_NCAT), x%parasolrefl(i,m))
-    allocate(x%lidarcldphase(i,k,6),x%lidarcldtmp(i,LIDAR_NTEMP,5),&
-             x%cldlayerphase(i,LIDAR_NCAT,6))
     ! --- Initialise to zero ---
     x%srbval    = 0.0
     x%cfad_sr   = 0.0
     x%lidarcld  = 0.0
     x%cldlayer  = 0.0
     x%parasolrefl  = 0.0
-    x%lidarcldphase  = 0.0
-    x%cldlayerphase  = 0.0
-    x%lidarcldtmp  = 0.0
-
-   END SUBROUTINE CONSTRUCT_COSP_LIDARSTATS
+  END SUBROUTINE CONSTRUCT_COSP_LIDARSTATS
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !------------------ SUBROUTINE FREE_COSP_LIDARSTATS -------------
@@ -831,9 +800,8 @@ CONTAINS
     type(cosp_lidarstats),intent(inout) :: x
 
     deallocate(x%srbval, x%cfad_sr, x%lidarcld, x%cldlayer, x%parasolrefl)
-    deallocate(x%cldlayerphase, x%lidarcldtmp, x%lidarcldphase)
   END SUBROUTINE FREE_COSP_LIDARSTATS
-
+ 
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !------------- SUBROUTINE CONSTRUCT_COSP_SUBGRID ------------------
@@ -898,13 +866,10 @@ CONTAINS
 
     ! --- Allocate arrays ---
     allocate(y%mr_hydro(Npoints,Ncolumns,Nlevels,Nhydro), &
-             y%Reff(Npoints,Ncolumns,Nlevels,Nhydro), &
-             y%Np(Npoints,Ncolumns,Nlevels,Nhydro)) ! added by roj with Quickbeam V3
-             
+             y%Reff(Npoints,Ncolumns,Nlevels,Nhydro))
     ! --- Initialise to zero ---
     y%mr_hydro = 0.0
     y%Reff     = 0.0
-    y%Np       = 0.0                    ! added by roj with Quickbeam V3
 
   END SUBROUTINE CONSTRUCT_COSP_SGHYDRO
 
@@ -915,7 +880,7 @@ CONTAINS
     type(cosp_sghydro),intent(inout) :: y
     
     ! --- Deallocate arrays ---
-    deallocate(y%mr_hydro, y%Reff, y%Np)        ! added by Roj with Quickbeam V3
+    deallocate(y%mr_hydro, y%Reff)
         
   END SUBROUTINE FREE_COSP_SGHYDRO
  
@@ -923,17 +888,16 @@ CONTAINS
 !------------- SUBROUTINE CONSTRUCT_COSP_GRIDBOX ------------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   SUBROUTINE CONSTRUCT_COSP_GRIDBOX(time,time_bnds,radar_freq,surface_radar,use_mie_tables,use_gas_abs,do_ray,melt_lay,k2, &
-                                   Npoints,Nlevels,Ncolumns,Nhydro,Nprmts_max_hydro,Naero,Nprmts_max_aero,Npoints_it, &
+                                   Npoints,Nlevels,Ncolumns,Nhydro,Nprmts_max_hydro,Naero,Nprmts_max_aero,Npoints_it, & 
                                    lidar_ice_type,isccp_top_height,isccp_top_height_direction,isccp_overlap,isccp_emsfc_lw, &
                                    use_precipitation_fluxes,use_reff, &
                                    ! RTTOV inputs
                                    Plat,Sat,Inst,Nchan,ZenAng,Ichan,SurfEm,co2,ch4,n2o,co,&
-                                   y,load_LUT)
-    !jsb double precision -> real*8
-    !double precision,intent(in) :: time ! Time since start of run [days] 
-    !double precision,intent(in) :: time_bnds(2) ! Time boundaries
-    real*8,intent(in) :: time ! Time since start of run [days] !+JEK
-    real*8,intent(in) :: time_bnds(2) ! Time boundaries        !+JEK
+                                   y)
+!jsb double precision -> real*8
+    real*8,intent(in) :: time ! Time since start of run [days] 
+    real*8,intent(in) :: time_bnds(2) ! Time boundaries
+! jsb
     real,intent(in)    :: radar_freq, & ! Radar frequency [GHz]
                           k2            ! |K|^2, -1=use frequency dependent default
     integer,intent(in) :: &
@@ -965,19 +929,12 @@ CONTAINS
     real,intent(in)    :: ZenAng
     real,intent(in)    :: co2,ch4,n2o,co
     type(cosp_gridbox),intent(out) :: y
-    logical,intent(in),optional :: load_LUT
 
-
+        
     ! local variables
-    character*240 :: LUT_file_name
-    logical :: local_load_LUT
-
-    if (present(load_LUT)) then
-      local_load_LUT = load_LUT
-    else
-      local_load_LUT = RADAR_SIM_LOAD_scale_LUTs_flag
-    endif
-
+    integer i, cnt_ice, cnt_liq
+    real*8  :: delt, deltp
+ 
     ! Dimensions and scalars
     y%radar_freq       = radar_freq
     y%surface_radar    = surface_radar
@@ -1021,21 +978,22 @@ CONTAINS
     allocate(y%zlev(Npoints,Nlevels), y%zlev_half(Npoints,Nlevels), y%dlev(Npoints,Nlevels), &
              y%p(Npoints,Nlevels), y%ph(Npoints,Nlevels), y%T(Npoints,Nlevels), &
              y%q(Npoints,Nlevels), y%sh(Npoints,Nlevels), &
+             !jsb
              y%dtau_s(Npoints,Nlevels), y%dtau_c(Npoints,Nlevels),y%dtau_s_snow(Npoints,Nlevels), &
              y%dem_s(Npoints,Nlevels), y%dem_c(Npoints,Nlevels),y%dem_s_snow(Npoints,Nlevels), &
+             !jsb
              y%tca(Npoints,Nlevels), y%cca(Npoints,Nlevels), &
              y%rain_ls(Npoints,Nlevels), y%rain_cv(Npoints,Nlevels), y%grpl_ls(Npoints,Nlevels), &
-             y%snow_ls(Npoints,Nlevels), y%snow_cv(Npoints,Nlevels),y%mr_ozone(Npoints,Nlevels)) !+JEK
+             y%snow_ls(Npoints,Nlevels), y%snow_cv(Npoints,Nlevels),y%mr_ozone(Npoints,Nlevels))
              
              
     ! Surface information and geolocation (Npoints)
-    allocate(y%toffset(Npoints), y%longitude(Npoints),y%latitude(Npoints),y%psfc(Npoints), y%land(Npoints), &
-             y%sunlit(Npoints),y%skt(Npoints),y%u_wind(Npoints),y%v_wind(Npoints))
+    allocate(y%longitude(Npoints),y%latitude(Npoints),y%psfc(Npoints), y%land(Npoints), &
+             y%sunlit(Npoints),y%skt(Npoints),y%sfc_height(Npoints),y%u_wind(Npoints),y%v_wind(Npoints))
     ! Hydrometeors concentration and distribution parameters
     allocate(y%mr_hydro(Npoints,Nlevels,Nhydro), &
              y%dist_prmts_hydro(Nprmts_max_hydro,Nhydro), &
-             y%Reff(Npoints,Nlevels,Nhydro), &
-             y%Np(Npoints,Nlevels,Nhydro))      ! added by Roj with Quickbeam V3
+             y%Reff(Npoints,Nlevels,Nhydro))
     ! Aerosols concentration and distribution parameters
     allocate(y%conc_aero(Npoints,Nlevels,Naero), y%dist_type_aero(Naero), &
              y%dist_prmts_aero(Npoints,Nlevels,Nprmts_max_aero,Naero))
@@ -1058,10 +1016,14 @@ CONTAINS
     y%sh        = 0.0
     y%dtau_s    = 0.0
     y%dtau_c    = 0.0
-    y%dtau_s_snow = 0.0 !+JEK
+    ! jsb
+    y%dtau_s_snow = 0.0
+    ! jsb
     y%dem_s     = 0.0
     y%dem_c     = 0.0
-    y%dem_s_snow = 0.0 !+JEK
+    ! jsb
+    y%dem_s_snow = 0.0
+    ! jsb
     y%tca       = 0.0
     y%cca       = 0.0
     y%rain_ls   = 0.0
@@ -1070,20 +1032,20 @@ CONTAINS
     y%snow_ls   = 0.0
     y%snow_cv   = 0.0
     y%Reff      = 0.0
-    y%Np        = 0.0 ! added by Roj with Quickbeam V3
     y%mr_ozone  = 0.0
     y%u_wind    = 0.0
     y%v_wind    = 0.0
 
     
     ! (Npoints)
-    y%toffset = 0.0
+!     call zero_real(y%psfc, y%land)
     y%longitude = 0.0
     y%latitude = 0.0
     y%psfc = 0.0
     y%land = 0.0
     y%sunlit = 0.0
     y%skt = 0.0
+    y%sfc_height = 0.0
     ! (Npoints,Nlevels,Nhydro)
 !     y%fr_hydro = 0.0
     y%mr_hydro = 0.0
@@ -1093,82 +1055,145 @@ CONTAINS
     y%dist_type_aero   = 0   ! (Naero)
     y%dist_prmts_aero  = 0.0 ! (Npoints,Nlevels,Nprmts_max_aero,Naero)
 
+    y%hp%p1 = 0.0
+    y%hp%p2 = 0.0
+    y%hp%p3 = 0.0
+    y%hp%dmin = 0.0
+    y%hp%dmax = 0.0
+    y%hp%apm = 0.0
+    y%hp%bpm = 0.0
+    y%hp%rho = 0.0
+    y%hp%dtype = 0
+    y%hp%col = 0
+    y%hp%cp = 0
+    y%hp%phase = 0
+    y%hp%scaled = .false.
+    y%hp%z_flag = .false.
+    y%hp%Ze_scaled = 0.0
+    y%hp%Zr_scaled = 0.0
+    y%hp%kr_scaled = 0.0
+    y%hp%fc = 0.0
+    y%hp%rho_eff = 0.0
+    y%hp%ifc = 0
+    y%hp%idd = 0
+    y%mt%freq = 0.0
+    y%mt%tt = 0.0
+    y%mt%f = 0.0
+    y%mt%D = 0.0
+    y%mt%qext = 0.0
+    y%mt%qbsca = 0.0
+    y%mt%phase = 0
+    
+    
+    ! --- Initialize the distributional parameters for hydrometeors
+    y%dist_prmts_hydro( 1,:) = HCLASS_TYPE(:)
+    y%dist_prmts_hydro( 2,:) = HCLASS_COL(:)
+    y%dist_prmts_hydro( 3,:) = HCLASS_PHASE(:)
+    y%dist_prmts_hydro( 4,:) = HCLASS_CP(:)
+    y%dist_prmts_hydro( 5,:) = HCLASS_DMIN(:)
+    y%dist_prmts_hydro( 6,:) = HCLASS_DMAX(:)
+    y%dist_prmts_hydro( 7,:) = HCLASS_APM(:)
+    y%dist_prmts_hydro( 8,:) = HCLASS_BPM(:)
+    y%dist_prmts_hydro( 9,:) = HCLASS_RHO(:)
+    y%dist_prmts_hydro(10,:) = HCLASS_P1(:)
+    y%dist_prmts_hydro(11,:) = HCLASS_P2(:)
+    y%dist_prmts_hydro(12,:) = HCLASS_P3(:)
 
-    ! NOTE: This location use to contain initialization of some radar simulator variables
-    ! this initialization (including use of the variable "dist_prmts_hydro" - now obselete) 
-    ! has been unified in the quickbeam v3 subroutine "radar_simulator_init".   Roj, June 2010
+    ! the following code added by roj to initialize structures used by radar simulator, Feb 2008
+    call load_hydrometeor_classes(y%Nprmts_max_hydro,y%dist_prmts_hydro(:,:),y%hp,y%Nhydro)
 
-    ! --- Initialize the distributional parameters for hydrometeors in radar simulator
+    ! load mie tables ?
+    if (y%use_mie_tables == 1) then
+      print *, '%%% COSP: Mie tables option for Quickbem not supported'
+      stop
+!         ! ----- Mie tables ----
+!           mie_table_name='mie_table.dat'
+!         call load_mie_table(mie_table_name,y%mt)
+!   
+!       !   :: D specified by table ... not must match that used when mie LUT generated!
+!       y%nsizes = mt_nd
+!       allocate(y%D(y%nsizes))
+!       y%D = y%mt%D
 
-    !!write(*,*) 'RADAR_SIM microphysics scheme is set to: ', &
-    !!        trim(RADAR_SIM_MICROPHYSICS_SCHEME_NAME)  
+    else
+       ! otherwise we still need to initialize temperature arrays for Ze scaling (which is only done when not using mie table)
+       
+       cnt_ice=19
+       cnt_liq=20
+!        if (.not.(allocated(mt_ttl).and.allocated(mt_tti))) then
+!           allocate(mt_ttl(cnt_liq),mt_tti(cnt_ice))  ! note needed as this is global array ... 
+!                                                      ! which should be changed in the future
+!        endif
+          
+       do i=1,cnt_ice
+          mt_tti(i)=(i-1)*5-90
+       enddo
+    
+       do i=1,cnt_liq
+          mt_ttl(i)=(i-1)*5 - 60
+       enddo 
+    
+       allocate(y%mt_ttl(cnt_liq),y%mt_tti(cnt_ice))
 
+       y%mt_ttl = mt_ttl
+       y%mt_tti = mt_tti
 
-    if(y%Nhydro.ne.N_HYDRO) then
-
-        write(*,*) 'Number of hydrometeor input to subroutine', &
-               ' CONSTRUCT_COSP_GRIDBOX does not match value', &
-               ' specified in cosp_constants.f90!'
-        write(*,*) 
+! !------ OLD code in v0.1 ---------------------------
+!        allocate(mt_ttl(2),mt_tti(2))
+!        allocate(y%mt_ttl(2),y%mt_tti(2))
+!        mt_ttl = 0.0
+!        mt_tti = 0.0
+!        y%mt_ttl = mt_ttl
+!        y%mt_tti = mt_tti
+! !---------------------------------------------------
+       
+       ! :: D created on a log-linear scale
+       y%nsizes = nd
+       delt = (log(dmax)-log(dmin))/(y%nsizes-1)
+       deltp = exp(delt)
+       allocate(y%D(y%nsizes))
+       y%D(1) = dmin
+       do i=2,y%nsizes
+          y%D(i) = y%D(i-1)*deltp
+       enddo   
+   
     endif
 
-    ! NOTE: SAVE_scale_LUTs_flag is hard codded as .false. here 
-    ! so that radar simulator will NOT update LUT each time it 
-    ! is called, but rather will update when "Free_COSP_GRIDBOX" is called!
-    ! Roj, June 2010
-
-    LUT_file_name = trim(RADAR_SIM_LUT_DIRECTORY) // &
-                trim(RADAR_SIM_MICROPHYSICS_SCHEME_NAME)
-
-    call radar_simulator_init(radar_freq,k2, &
-                      use_gas_abs,do_ray,R_UNDEF, &
-                      y%Nhydro, &
-                      HCLASS_TYPE,HCLASS_PHASE, &
-                      HCLASS_DMIN,HCLASS_DMAX, &
-                      HCLASS_APM,HCLASS_BPM,HCLASS_RHO, &
-                      HCLASS_P1,HCLASS_P2,HCLASS_P3, &
-                      local_load_LUT,    &
-                      .false., &
-                      LUT_file_name, &
-                      y%hp)
 
 END SUBROUTINE CONSTRUCT_COSP_GRIDBOX
 
-
+  
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !------------- SUBROUTINE FREE_COSP_GRIDBOX -----------------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  SUBROUTINE FREE_COSP_GRIDBOX(y,dglobal,save_LUT)
-
-    use scale_LUTs_io
-
+  SUBROUTINE FREE_COSP_GRIDBOX(y,dglobal)
     type(cosp_gridbox),intent(inout) :: y
     logical,intent(in),optional :: dglobal
-    logical,intent(in),optional :: save_LUT
 
-    logical :: local_save_LUT
-
-    if (present(save_LUT)) then
-      local_save_LUT = save_LUT
-    else
-      local_save_LUT = RADAR_SIM_UPDATE_scale_LUTs_flag
-    endif
-
-    ! save any updates to radar simulator LUT
-    if (local_save_LUT) call save_scale_LUTs(y%hp)
-
+    ! --- Free arrays ---
+    deallocate(y%D,y%mt_ttl,y%mt_tti)   ! added by roj Feb 2008
+!     if (.not.present(dglobal)) deallocate(mt_ttl,mt_tti)
+    
+!     deallocate(y%hp%p1,y%hp%p2,y%hp%p3,y%hp%dmin,y%hp%dmax,y%hp%apm,y%hp%bpm,y%hp%rho, &
+!               y%hp%dtype,y%hp%col,y%hp%cp,y%hp%phase,y%hp%scaled, &
+!               y%hp%z_flag,y%hp%Ze_scaled,y%hp%Zr_scaled,y%hp%kr_scaled, &
+!               y%hp%fc, y%hp%rho_eff, y%hp%ifc, y%hp%idd)
+!     deallocate(y%mt%freq, y%mt%tt, y%mt%f, y%mt%D, y%mt%qext, y%mt%qbsca, y%mt%phase)
+    
     deallocate(y%zlev, y%zlev_half, y%dlev, y%p, y%ph, y%T, y%q, &
                y%sh, y%dtau_s, y%dtau_c, y%dem_s, y%dem_c, &
+               !jsb
                y%dtau_s_snow,y%dem_s_snow, &
-               y%toffset, y%longitude,y%latitude,y%psfc, y%land, y%tca, y%cca, &
+               !jsb
+               y%longitude,y%latitude,y%psfc, y%land, y%tca, y%cca, &
                y%mr_hydro, y%dist_prmts_hydro, &
                y%conc_aero, y%dist_type_aero, y%dist_prmts_aero, &
                y%rain_ls, y%rain_cv, y%snow_ls, y%snow_cv, y%grpl_ls, &
-               y%sunlit, y%skt, y%Reff,y%Np, &
-               y%ichan,y%surfem, &
-               y%mr_ozone,y%u_wind,y%v_wind) !+JEK
-
+               y%sunlit, y%skt, y%sfc_height, y%Reff,y%ichan,y%surfem, &
+               y%mr_ozone,y%u_wind,y%v_wind)
+ 
   END SUBROUTINE FREE_COSP_GRIDBOX
+  
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !------------- SUBROUTINE COSP_GRIDBOX_CPHP ----------------------
@@ -1176,12 +1201,12 @@ END SUBROUTINE CONSTRUCT_COSP_GRIDBOX
 SUBROUTINE COSP_GRIDBOX_CPHP(x,y)
     type(cosp_gridbox),intent(in) :: x
     type(cosp_gridbox),intent(inout) :: y
-
+    
     integer :: i,j,k,sz(3)
-    ! jsb double precision -> real*8
-    !double precision :: tny
-    real*8 :: tny !+JEK
-
+    ! jsb
+    real*8 :: tny
+    ! jsb
+    
     tny = tiny(tny)
     y%hp%p1      = x%hp%p1
     y%hp%p2      = x%hp%p2
@@ -1198,14 +1223,14 @@ SUBROUTINE COSP_GRIDBOX_CPHP(x,y)
 
     y%hp%fc      = x%hp%fc
     y%hp%rho_eff = x%hp%rho_eff
-    ! y%hp%ifc     = x%hp%ifc       obsolete, Roj, June 2010
-    ! y%hp%idd     = x%hp%idd
-    sz = shape(x%hp%Z_scale_flag)
+    y%hp%ifc     = x%hp%ifc
+    y%hp%idd     = x%hp%idd
+    sz = shape(x%hp%z_flag)
     do k=1,sz(3)
       do j=1,sz(2)
         do i=1,sz(1)
-           if (x%hp%N_scale_flag(i,k))   y%hp%N_scale_flag(i,k)      = .true.
-           if (x%hp%Z_scale_flag(i,j,k)) y%hp%Z_scale_flag(i,j,k)    = .true.
+           if (x%hp%scaled(i,k))   y%hp%scaled(i,k)      = .true.
+           if (x%hp%z_flag(i,j,k)) y%hp%z_flag(i,j,k)    = .true.
            if (abs(x%hp%Ze_scaled(i,j,k)) > tny) y%hp%Ze_scaled(i,j,k) = x%hp%Ze_scaled(i,j,k)
            if (abs(x%hp%Zr_scaled(i,j,k)) > tny) y%hp%Zr_scaled(i,j,k) = x%hp%Zr_scaled(i,j,k)
            if (abs(x%hp%kr_scaled(i,j,k)) > tny) y%hp%kr_scaled(i,j,k) = x%hp%kr_scaled(i,j,k)
@@ -1226,7 +1251,10 @@ SUBROUTINE COSP_GRIDBOX_CPSECTION(ix,iy,x,y)
     ! --- Copy arrays without Npoints as dimension ---
     y%dist_prmts_hydro = x%dist_prmts_hydro
     y%dist_type_aero   = x%dist_type_aero
-  
+    y%D                = x%D
+    y%mt_ttl           = x%mt_ttl
+    y%mt_tti           = x%mt_tti
+    
     
 !     call cosp_gridbox_cphp(x,y)    
     
@@ -1237,6 +1265,7 @@ SUBROUTINE COSP_GRIDBOX_CPSECTION(ix,iy,x,y)
     y%land(iy(1):iy(2))       = x%land(ix(1):ix(2))
     y%sunlit(iy(1):iy(2))     = x%sunlit(ix(1):ix(2))
     y%skt(iy(1):iy(2))        = x%skt(ix(1):ix(2))
+    y%sfc_height(iy(1):iy(2)) = x%sfc_height(ix(1):ix(2))
     y%u_wind(iy(1):iy(2))     = x%u_wind(ix(1):ix(2))
     y%v_wind(iy(1):iy(2))     = x%v_wind(ix(1):ix(2))
     ! 2D
@@ -1250,10 +1279,14 @@ SUBROUTINE COSP_GRIDBOX_CPSECTION(ix,iy,x,y)
     y%sh(iy(1):iy(2),:)        = x%sh(ix(1):ix(2),:)
     y%dtau_s(iy(1):iy(2),:)    = x%dtau_s(ix(1):ix(2),:)
     y%dtau_c(iy(1):iy(2),:)    = x%dtau_c(ix(1):ix(2),:)
-    y%dtau_s_snow(iy(1):iy(2),:) = x%dtau_s_snow(ix(1):ix(2),:) !+JEK
+    !jsb
+    y%dtau_s_snow(iy(1):iy(2),:) = x%dtau_s_snow(ix(1):ix(2),:)
+    !jsb
     y%dem_s(iy(1):iy(2),:)     = x%dem_s(ix(1):ix(2),:)
     y%dem_c(iy(1):iy(2),:)     = x%dem_c(ix(1):ix(2),:)
-    y%dem_s_snow(iy(1):iy(2),:) = x%dem_s_snow(ix(1):ix(2),:)   !+JEK
+    !jsb
+    y%dem_s_snow(iy(1):iy(2),:) = x%dem_s_snow(ix(1):ix(2),:)
+    !jsb
     y%tca(iy(1):iy(2),:)       = x%tca(ix(1):ix(2),:)
     y%cca(iy(1):iy(2),:)       = x%cca(ix(1):ix(2),:)
     y%rain_ls(iy(1):iy(2),:)   = x%rain_ls(ix(1):ix(2),:)
@@ -1264,7 +1297,6 @@ SUBROUTINE COSP_GRIDBOX_CPSECTION(ix,iy,x,y)
     y%mr_ozone(iy(1):iy(2),:)  = x%mr_ozone(ix(1):ix(2),:)
     ! 3D
     y%Reff(iy(1):iy(2),:,:)      = x%Reff(ix(1):ix(2),:,:)
-    y%Np(iy(1):iy(2),:,:)      = x%Np(ix(1):ix(2),:,:)   ! added by Roj with Quickbeam V3
     y%conc_aero(iy(1):iy(2),:,:) = x%conc_aero(ix(1):ix(2),:,:)
     y%mr_hydro(iy(1):iy(2),:,:)  = x%mr_hydro(ix(1):ix(2),:,:)
     ! 4D
@@ -1303,9 +1335,7 @@ SUBROUTINE COSP_SGLIDAR_CPSECTION(ix,iy,x,y)
     integer,intent(in),dimension(2) :: ix,iy
     type(cosp_sglidar),intent(in) :: x
     type(cosp_sglidar),intent(inout) :: y
-
-    y%temp_tot(iy(1):iy(2),:)       = x%temp_tot(ix(1):ix(2),:)
-    y%betaperp_tot(iy(1):iy(2),:,:) = x%betaperp_tot(ix(1):ix(2),:,:)
+    
     y%beta_mol(iy(1):iy(2),:)       = x%beta_mol(ix(1):ix(2),:)
     y%beta_tot(iy(1):iy(2),:,:)     = x%beta_tot(ix(1):ix(2),:,:)
     y%tau_tot(iy(1):iy(2),:,:)      = x%tau_tot(ix(1):ix(2),:,:)
@@ -1319,7 +1349,7 @@ SUBROUTINE COSP_ISCCP_CPSECTION(ix,iy,x,y)
     integer,intent(in),dimension(2) :: ix,iy
     type(cosp_isccp),intent(in) :: x
     type(cosp_isccp),intent(inout) :: y
-
+            
     y%fq_isccp(iy(1):iy(2),:,:)  = x%fq_isccp(ix(1):ix(2),:,:)
     y%totalcldarea(iy(1):iy(2))  = x%totalcldarea(ix(1):ix(2))
     y%meantb(iy(1):iy(2))        = x%meantb(ix(1):ix(2))
@@ -1367,8 +1397,8 @@ SUBROUTINE COSP_RADARSTATS_CPSECTION(ix,iy,x,y)
             
     y%cfad_ze(iy(1):iy(2),:,:)             = x%cfad_ze(ix(1):ix(2),:,:)
     y%radar_lidar_tcc(iy(1):iy(2))         = x%radar_lidar_tcc(ix(1):ix(2))
-    y%radar_tcc(iy(1):iy(2))         = x%radar_tcc(ix(1):ix(2))     !+JEK
-    y%radar_tcc_2(iy(1):iy(2))         = x%radar_tcc_2(ix(1):ix(2)) !+JEK
+    y%radar_tcc(iy(1):iy(2))         = x%radar_tcc(ix(1):ix(2)) !modified by ZYY
+    y%radar_tcc_2(iy(1):iy(2))         = x%radar_tcc_2(ix(1):ix(2)) !modified by ZYY
     y%lidar_only_freq_cloud(iy(1):iy(2),:) = x%lidar_only_freq_cloud(ix(1):ix(2),:)
 END SUBROUTINE COSP_RADARSTATS_CPSECTION
 
@@ -1385,9 +1415,6 @@ SUBROUTINE COSP_LIDARSTATS_CPSECTION(ix,iy,x,y)
     y%lidarcld(iy(1):iy(2),:)    = x%lidarcld(ix(1):ix(2),:)
     y%cldlayer(iy(1):iy(2),:)    = x%cldlayer(ix(1):ix(2),:)
     y%parasolrefl(iy(1):iy(2),:) = x%parasolrefl(ix(1):ix(2),:)
-    y%lidarcldphase(iy(1):iy(2),:,:)  = x%lidarcldphase(ix(1):ix(2),:,:)
-    y%cldlayerphase(iy(1):iy(2),:,:)  = x%cldlayerphase(ix(1):ix(2),:,:)
-    y%lidarcldtmp(iy(1):iy(2),:,:)    = x%lidarcldtmp(ix(1):ix(2),:,:)
 END SUBROUTINE COSP_LIDARSTATS_CPSECTION
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1415,16 +1442,19 @@ SUBROUTINE COSP_GRIDBOX_PRINT(x)
     print *,  x%radar_freq, &
             x%k2
     print *,  x%surface_radar, &
-              x%use_mie_tables, &
-              x%use_gas_abs, &
-              x%do_ray, &
-              x%melt_lay
+           x%use_mie_tables, &
+           x%use_gas_abs, &
+           x%do_ray, &
+           x%melt_lay
 
 !               print *,  'shape(x%): ',shape(x%)
  
 !     type(class_param) ::  hp  ! structure used by radar simulator to store Ze and N scaling constants and other information
-!     type(mie)::  mt           ! structure used by radar simulator to store mie LUT information
+!     type(mie)::  mt       ! structure used by radar simulator to store mie LUT information
     print *,  x%nsizes
+    print *,  'shape(x%D): ',shape(x%D)
+    print *,  'shape(x%mt_ttl): ',shape(x%mt_ttl)
+    print *,  'shape(x%mt_tti): ',shape(x%mt_tti)
     
     ! Lidar
     print *,  x%lidar_ice_type
@@ -1447,10 +1477,14 @@ SUBROUTINE COSP_GRIDBOX_PRINT(x)
     print *,  'shape(x%sh): ',shape(x%sh)
     print *,  'shape(x%dtau_s): ',shape(x%dtau_s)
     print *,  'shape(x%dtau_c): ',shape(x%dtau_c)
-    print *,  'shape(x%dtau_s_snow): ',shape(x%dtau_s_snow) !+JEK
     print *,  'shape(x%dem_s): ',shape(x%dem_s)
+    ! jsb
+    print *,  'shape(x%dtau_s_snow): ',shape(x%dtau_s_snow)
+    !jsb
     print *,  'shape(x%dem_c): ',shape(x%dem_c)
-    print *,  'shape(x%dem_s_snow): ',shape(x%dem_s_snow) !+JEK
+    ! jsb
+    print *,  'shape(x%dem_s_snow): ',shape(x%dem_s_snow)
+    !jsb
     print *,  'shape(x%mr_ozone): ',shape(x%mr_ozone)
 
     ! Point information (Npoints)
@@ -1458,6 +1492,7 @@ SUBROUTINE COSP_GRIDBOX_PRINT(x)
     print *,  'shape(x%psfc): ',shape(x%psfc)
     print *,  'shape(x%sunlit): ',shape(x%sunlit)
     print *,  'shape(x%skt): ',shape(x%skt)
+    print *,  'shape(x%sfc_height): ',shape(x%sfc_height)
     print *,  'shape(x%u_wind): ',shape(x%u_wind)
     print *,  'shape(x%v_wind): ',shape(x%v_wind)
 
@@ -1475,7 +1510,6 @@ SUBROUTINE COSP_GRIDBOX_PRINT(x)
     print *,  'shape(x%dist_prmts_hydro): ',shape(x%dist_prmts_hydro)
     ! Effective radius [m]. (Npoints,Nlevels,Nhydro)
     print *,  'shape(x%Reff): ',shape(x%Reff)
-    print *,  'shape(x%Np): ',shape(x%Np)       ! added by roj with Quickbeam V3
     ! Aerosols concentration and distribution parameters
     print *,  'shape(x%conc_aero): ',shape(x%conc_aero)
     print *,  'shape(x%dist_type_aero): ',shape(x%dist_type_aero)
@@ -1605,8 +1639,8 @@ SUBROUTINE COSP_RADARSTATS_PRINT(x)
     print *, x%Nhydro
     print *, 'shape(x%cfad_ze): ',shape(x%cfad_ze)
     print *, 'shape(x%radar_lidar_tcc): ',shape(x%radar_lidar_tcc)
-    print *, 'shape(x%radar_tcc): ',shape(x%radar_tcc)     !+JEK
-    print *, 'shape(x%radar_tcc_2): ',shape(x%radar_tcc_2) !+JEK
+    print *, 'shape(x%radar_tcc): ',shape(x%radar_tcc) !modified by ZYY
+    print *, 'shape(x%radar_tcc_2): ',shape(x%radar_tcc_2) !modified by ZYY
     print *, 'shape(x%lidar_only_freq_cloud): ',shape(x%lidar_only_freq_cloud)
 END SUBROUTINE COSP_RADARSTATS_PRINT
 
@@ -1630,13 +1664,6 @@ SUBROUTINE COSP_LIDARSTATS_PRINT(x)
     print *, 'shape(x%cldlayer): ',shape(x%cldlayer)
     ! Arrays with dimensions (Npoints,PARASOL_NREFL)
     print *, 'shape(x%parasolrefl): ',shape(x%parasolrefl)
-     ! Arrays with dimensions (Npoints,Nlevels,Nphase)
-    print *, 'shape(x%lidarcldphase): ',shape(x%lidarcldphase)
-     ! Arrays with dimensions (Npoints,LIDAR_NCAT,Nphase)
-    print *, 'shape(x%cldlayerphase): ',shape(x%cldlayerphase)
-     ! Arrays with dimensions (Npoints,Ntemps,Nphase)
-    print *, 'shape(x%lidarcldphase): ',shape(x%lidarcldtmp)
-
 END SUBROUTINE COSP_LIDARSTATS_PRINT
 
 SUBROUTINE COSP_SUBGRID_PRINT(x)
@@ -1663,7 +1690,6 @@ SUBROUTINE COSP_SGHYDRO_PRINT(x)
     
     print *, 'shape(x%mr_hydro): ',shape(x%mr_hydro)
     print *, 'shape(x%Reff): ',shape(x%Reff)
-    print *, 'shape(x%Np): ',shape(x%Np)         ! added by roj with Quickbeam V3
 END SUBROUTINE COSP_SGHYDRO_PRINT
 
 END MODULE MOD_COSP_TYPES

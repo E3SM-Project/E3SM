@@ -1,7 +1,5 @@
 ! (c) British Crown Copyright 2008, the Met Office.
 ! All rights reserved.
-! $Revision: 23 $, $Date: 2011-03-31 07:41:37 -0600 (Thu, 31 Mar 2011) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/cosp_isccp_simulator.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -51,13 +49,13 @@ SUBROUTINE COSP_ISCCP_SIMULATOR(gbx,sgx,y)
   real :: conv(gbx%Npoints, gbx%Nlevels)
   real :: dtau_s(gbx%Npoints, gbx%Nlevels)
   real :: dtau_c(gbx%Npoints, gbx%Nlevels)
-  real :: dtau_s_snow(gbx%Npoints, gbx%Nlevels) !!+JEK
+  real :: dtau_s_snow(gbx%Npoints, gbx%Nlevels)
   real :: at(gbx%Npoints, gbx%Nlevels)
   real :: dem_s(gbx%Npoints, gbx%Nlevels)
   real :: dem_c(gbx%Npoints, gbx%Nlevels)
-  real :: dem_s_snow(gbx%Npoints, gbx%Nlevels) !!+JEK
+  real :: dem_s_snow(gbx%Npoints, gbx%Nlevels)
   real :: frac_out(gbx%Npoints, gbx%Ncolumns, gbx%Nlevels)
-  real :: prec_frac(gbx%Npoints, gbx%Ncolumns, gbx%Nlevels) !!+JEK
+  real :: prec_frac(gbx%Npoints, gbx%Ncolumns, gbx%Nlevels)
   integer :: sunlit(gbx%Npoints)
   
   Nlevels = gbx%Nlevels
@@ -71,21 +69,22 @@ SUBROUTINE COSP_ISCCP_SIMULATOR(gbx,sgx,y)
   conv   = 0.999999*gbx%cca(:,Nlevels:1:-1) 
   dtau_s = gbx%dtau_s(:,Nlevels:1:-1) 
   dtau_c = gbx%dtau_c(:,Nlevels:1:-1) 
-  dtau_s_snow = gbx%dtau_s_snow(:,Nlevels:1:-1) !!+JEK
+  dtau_s_snow = gbx%dtau_s_snow(:,Nlevels:1:-1) 
   at     = gbx%T(:,Nlevels:1:-1) 
   dem_s  = gbx%dem_s(:,Nlevels:1:-1) 
   dem_c  = gbx%dem_c(:,Nlevels:1:-1) 
-  dem_s_snow  = gbx%dem_s_snow(:,Nlevels:1:-1) !!+JEK
+  dem_s_snow  = gbx%dem_s_snow(:,Nlevels:1:-1) 
   frac_out(1:Npoints,:,1:Nlevels) = sgx%frac_out(1:Npoints,:,Nlevels:1:-1)
-  prec_frac(1:Npoints,:,1:Nlevels) = sgx%prec_frac(1:Npoints,:,Nlevels:1:-1) !!+JEK
+  prec_frac(1:Npoints,:,1:Nlevels) = sgx%prec_frac(1:Npoints,:,Nlevels:1:-1)
   sunlit = int(gbx%sunlit)
   call icarus(0,0,gbx%npoints,sunlit,gbx%nlevels,gbx%ncolumns, &
             pfull,phalf,qv,cc,conv,dtau_s,dtau_c, dtau_s_snow, &
             gbx%isccp_top_height,gbx%isccp_top_height_direction, &
             gbx%isccp_overlap,frac_out,prec_frac, &
-            gbx%skt,gbx%isccp_emsfc_lw,at,dem_s,dem_c,dem_s_snow,y%fq_isccp,y%totalcldarea, &
+            gbx%skt,gbx%isccp_emsfc_lw,at,dem_s,dem_c, dem_s_snow, &
+            y%fq_isccp,y%totalcldarea, &
             y%meanptop,y%meantaucld,y%meanalbedocld, &
-            y%meantb,y%meantbclr,y%boxtau,y%boxptop) !!+JEK
+            y%meantb,y%meantbclr,y%boxtau,y%boxptop)
 
   ! Flip outputs. Levels from surface to TOA
   ! --- (npoints,tau=7,pressure=7)
