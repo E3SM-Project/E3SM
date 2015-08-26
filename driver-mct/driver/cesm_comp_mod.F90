@@ -1449,10 +1449,6 @@ subroutine cesm_init()
       call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
    endif
 
-   if (.not. samegrid_lg) then
-      call shr_sys_abort(subname//' ERROR: samegrid_lg is false')
-   endif
-
    !----------------------------------------------------------
    !| Check instances of prognostic components
    !----------------------------------------------------------
@@ -1508,7 +1504,8 @@ subroutine cesm_init()
    if (iamin_CPLID) then
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-      call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, samegrid_ro)
+      call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
+           samegrid_ro, samegrid_lg)
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
    endif ! iamin_CPLID
@@ -1530,7 +1527,7 @@ subroutine cesm_init()
 
          call seq_domain_check( infodata,                                             &
               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1),       &
-              samegrid_al, samegrid_ao, samegrid_ro)
+              samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
 
       endif
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2699,9 +2696,9 @@ end subroutine cesm_init
                call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-               call prep_glc_calc_l2x_gx(timer='CPL:glcprep_lnd2glc')
+               call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-               call prep_glc_mrg(infodata, timer_mrg='CPL:glcprep_mrgx2g')
+               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
 
                call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                     info_debug=info_debug, timer_diag='CPL:glcprep_diagav')

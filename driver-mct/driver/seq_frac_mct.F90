@@ -24,7 +24,7 @@
 !    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
 !    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
 !    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-!    character(*),parameter :: fraclist_g = 'gfrac'
+!    character(*),parameter :: fraclist_g = 'gfrac:lfrac'
 !    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
 !
 !  we assume ocean and ice are on the same grids, same masks
@@ -74,6 +74,7 @@
 !        to attempt to preserve non-land gridcells.
 !      fractions_l(lfrac) = mapa2l(fractions_a(lfrac))
 !      fractions_r(lfrac) = mapl2r(fractions_l(lfrac))
+!      fractions_g(lfrac) = mapl2g(fractions_l(lfrac))
 !
 !  run-time (frac_set):
 !    update fractions on ice grid
@@ -94,6 +95,8 @@
 !    mapo2a uses *fractions_o(ofrac) and /fractions_a(ofrac)
 !    mapi2a uses *fractions_i(ifrac) and /fractions_a(ifrac)
 !    mapl2a uses *fractions_l(lfrin) and /fractions_a(lfrin)
+!    mapl2g weights by fractions_l(lfrac) with normalization, and multiplies by
+!      fractions_g(lfrac)
 !    mapa2* should use *fractions_a(afrac) and /fractions_*(afrac) but this
 !      has been defered since the ratio always close to 1.0
 !
@@ -143,7 +146,8 @@ module seq_frac_mct
   use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fi2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fl2a   
-
+  use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
+  
   use component_type_mod
 
   implicit none
@@ -193,7 +197,8 @@ module seq_frac_mct
   type(seq_map)  , pointer :: mapper_i2o
   type(seq_map)  , pointer :: mapper_a2l
   type(seq_map)  , pointer :: mapper_l2r
-
+  type(seq_map)  , pointer :: mapper_l2g
+  
   private seq_frac_check
 
 !===============================================================================
@@ -257,7 +262,7 @@ subroutine seq_frac_init( infodata,         &
 
    integer :: j,n            ! indices
    integer :: ka, ki, kl, ko ! indices
-   integer :: kf, kk, kr     ! indices 
+   integer :: kf, kk, kr, kg ! indices 
    integer :: lsize          ! local size of ice av
    integer :: debug_old      ! old debug value
 
@@ -265,7 +270,7 @@ subroutine seq_frac_init( infodata,         &
    character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-   character(*),parameter :: fraclist_g = 'gfrac'
+   character(*),parameter :: fraclist_g = 'gfrac:lfrac'
    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
    character(*),parameter :: fraclist_w = 'wfrac'
 
@@ -314,7 +319,10 @@ subroutine seq_frac_init( infodata,         &
       lSize = mct_aVect_lSize(dom_g%data)
       call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=lsize)
       call mct_aVect_zero(fractions_g)
-      fractions_g%rAttr(:,:) = 1.0_r8
+
+      kg = mct_aVect_indexRA(fractions_g,"gfrac",perrWith=subName)
+      kf = mct_aVect_indexRA(dom_g%data ,"frac" ,perrWith=subName)
+      fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:)
    end if
       
    ! Initialize fractions on land grid decomp, just an initial "guess", updated later
@@ -440,15 +448,27 @@ subroutine seq_frac_init( infodata,         &
 
    ! --- finally, set fractions_l(lfrac) from fractions_a(lfrac)
    ! --- and fractions_r(lfrac) from fractions_l(lfrac)
+   ! --- and fractions_g(lfrac) from fractions_l(lfrac)
 
-   if (atm_present .and. lnd_present) then
-      mapper_a2l => prep_lnd_get_mapper_Fa2l()
-      call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='lfrac', norm=.false.)
+   if (lnd_present) then
+      if (atm_present) then
+         mapper_a2l => prep_lnd_get_mapper_Fa2l()
+         call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='lfrac', norm=.false.)
+      else
+         ! If the atmosphere is absent, then simply set fractions_l(lfrac) = fractions_l(lfrin)
+         kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
+         kl = mct_aVect_indexRA(fractions_l,"lfrac",perrWith=subName)
+         fractions_l%rAttr(kl,:) = fractions_l%rAttr(kk,:)
+      end if
    end if
    if (lnd_present .and. rof_present) then
       mapper_l2r => prep_rof_get_mapper_Fl2r()
       call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac', norm=.false.)
    endif
+   if (lnd_present .and. glc_present) then
+      mapper_l2g => prep_glc_get_mapper_Fl2g()
+      call seq_map_map(mapper_l2g, fractions_l, fractions_g, fldlist='lfrac', norm=.false.)
+   end if
 
    if (lnd_present) call seq_frac_check(fractions_l,'lnd init')
    if (glc_present) call seq_frac_check(fractions_g,'glc init')
