@@ -103,7 +103,6 @@ foreach my $k (@nldef_cats) {
 
 my @categories = qw/
 cism
-grid
 time
 cism_config_grid
 cism_config_sigma
@@ -119,7 +118,6 @@ cism_config_isostasy
 
 my %cat_heading = (
     'cism'        		      => 'CISM:  General Settings',
-    'grid'        		      => 'CISM:  Grid Settings',
     'time'        		      => 'CISM:  Time Manager Settings',
     'cism_config_grid'                => 'CISM:  cism.config Grid Settings',
     'cism_config_sigma'               => 'CISM:  cism.config Sigma Settings',

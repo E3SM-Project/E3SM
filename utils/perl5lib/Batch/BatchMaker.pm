@@ -784,27 +784,35 @@ sub _test()
 }
 sub setTaskInfo()
 {
-	my $self = shift;
+    my $self = shift;
     $self->SUPER::setTaskInfo();
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+    my $pes_per_node = ${$taskmaker->{'config'}}{'PES_PER_NODE'};
 
-	$self->{'mppsize'}  = $taskmaker->sumTasks();
-    if($self->{'mppsize'} % $maxTasksPerNode > 0)
-    {
-        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
-        $mppnodes += 1;
-        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
-    }
-	$self->{'mppsum'} = $taskmaker->sumPES();
+    # Handle the case where
 
-    if($self->{'mppsum'} > 1)
+    $self->{'mppsize'}  = $taskmaker->sumTasks();
+
+    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $maxTasksPerNode > 0)
     {
-        $self->{'mppwidth'} = $self->{'mppsum'} / 2;
+	die("odd number of tasks to handle");
+#        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+#        $mppnodes += 1;
+#        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
     }
-    else
-    {
-        $self->{'mppwidth'} = 1;
+
+    $self->{'mppsum'} = $taskmaker->sumPES();
+    
+    if($self->{maxthreads} == 1){
+	$self->{mppwidth} = $self->{mppsum};
+    }else{
+	$self->{mppwidth} = $self->{mppsum} * $pes_per_node/ $maxTasksPerNode;
+    }
+
+    if($self->{mppwidth} < $pes_per_node){
+	$self->{mppwidth} = $pes_per_node;
     }
 
 }
