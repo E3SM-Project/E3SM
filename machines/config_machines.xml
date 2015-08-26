@@ -1625,6 +1625,7 @@
              <command name="load">cray-libsci/13.0.1</command>
              <command name="load">esmf/5.2.0rp2</command>
              <command name="switch">atp atp/1.7.5</command>
+             <command name="add">cudatoolkit</command>
            </modules>
            <modules compiler="pgi">
              <command name="load">PrgEnv-pgi</command>
@@ -1638,8 +1639,34 @@
              <command name="switch">intel intel/14.0.2.144</command>
              <command name="load">cray-mpich/7.0.4</command>
            </modules>
-       
+           <modules mpilib="mpi-serial">
+             <command name="load">cray-netcdf/4.3.0</command>
+           </modules>
+           <modules mpilib="!mpi-serial">
+             <command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="load">cray-parallel-netcdf/1.5.0</command>
+           </modules>
+           <modules>
+             <command name="load">subversion</command>
+             <command name="load">cmake/2.8.11.2</command>
+           </modules>
          </module_system>
+         <environment_variables compiler="pgicuda">
+             <env name="CRAY_CPU_TARGET">istanbul</env>
+             <env name="CRAY_CUDA_PROXY">1</env>
+         </environment_variables>
+         <environment_variables compiler="pgi">
+             <env name="CRAY_CPU_TARGET">istanbul</env>
+         </environment_variables>
+         <environment_variables>
+             <env name="MPICH_ENV_DISPLAY">1</env>
+             <env name="MPICH_VERSION_DISPLAY">1</env>
+             <env name="MPICH_CPUMASK_DPSPLAY">1</env>
+             <env name="MPICH_RANK_REORDER_DISPLAY">1</env>
+             <env name="MPSTKZ">64M</env>
+             <env name="OMP_STACKSIZE">64M</env>
+         </environment_variables>
+         
      
          
 </machine>
