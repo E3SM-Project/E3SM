@@ -1,8 +1,6 @@
-! (c) 2009, Regents of the Unversity of Colorado
+! (c) 2009, Regents of the University of Colorado
 !   Author: Robert Pincus, Cooperative Institute for Research in the Environmental Sciences
 ! All rights reserved.
-! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/cosp_modis_simulator.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -52,19 +50,20 @@ MODULE MOD_COSP_Modis_Simulator
      !
      ! Grid means; dimension nPoints
      ! 
-     real, dimension(:),       pointer :: & 
-       Cloud_Fraction_Total_Mean,       Cloud_Fraction_Water_Mean,       Cloud_Fraction_Ice_Mean,       &
-       Cloud_Fraction_High_Mean,        Cloud_Fraction_Mid_Mean,         Cloud_Fraction_Low_Mean,       &
-       Optical_Thickness_Total_Mean,    Optical_Thickness_Water_Mean,    Optical_Thickness_Ice_Mean,    &
-       Optical_Thickness_Total_LogMean, Optical_Thickness_Water_LogMean, Optical_Thickness_Ice_LogMean, &
-                                        Cloud_Particle_Size_Water_Mean,  Cloud_Particle_Size_Ice_Mean,  &
-       Cloud_Top_Pressure_Total_Mean,                                                                   &
-                                        Liquid_Water_Path_Mean,          Ice_Water_Path_Mean
+     real, dimension(:),       pointer :: &
+          Cloud_Fraction_Total_Mean => null(),       Cloud_Fraction_Water_Mean => null(),       &
+          Cloud_Fraction_Ice_Mean => null(),         Cloud_Fraction_High_Mean => null(),        &
+          Cloud_Fraction_Mid_Mean => null(),         Cloud_Fraction_Low_Mean => null(),         &
+          Optical_Thickness_Total_Mean => null(),    Optical_Thickness_Water_Mean => null(),    &
+          Optical_Thickness_Ice_Mean => null(),      Optical_Thickness_Total_LogMean => null(), &
+          Optical_Thickness_Water_LogMean => null(), Optical_Thickness_Ice_LogMean => null(),   &
+          Cloud_Particle_Size_Water_Mean => null(),  Cloud_Particle_Size_Ice_Mean => null(),    &
+          Cloud_Top_Pressure_Total_Mean => null(),   Liquid_Water_Path_Mean => null(),          &
+          Ice_Water_Path_Mean => null()
      !
      ! Also need the ISCCP-type optical thickness/cloud top pressure histogram
      !
-     !real, dimension(:, :, :), pointer :: Optical_Thickness_vs_Cloud_Top_Pressure !+JEK
-     real, dimension(:, :, :), pointer :: Optical_Thickness_vs_Cloud_Top_Pressure => null() !+JEK
+     real, dimension(:, :, :), pointer :: Optical_Thickness_vs_Cloud_Top_Pressure => null()
   end type COSP_MODIS 
   
 contains
@@ -75,7 +74,7 @@ contains
     type(cosp_subgrid), intent(in   ) :: subCols     ! subCol indicators of convective/stratiform 
     type(cosp_sghydro), intent(in   ) :: subcolHydro ! subcol hydrometeor contens
     type(cosp_isccp),   intent(in   ) :: isccpSim    ! ISCCP simulator output
-    type(cosp_modis),   intent(inout) :: modisSim    ! MODIS simulator subcol output !!+JEK
+    type(cosp_modis),   intent(inout) :: modisSim    ! MODIS simulator subcol output
     
     ! ------------------------------------------------------------
     ! Local variables 
@@ -94,7 +93,7 @@ contains
     ! Subcol quantities, dimension nPoints, nSubCols, nLevels 
     real, &
       dimension(count(gridBox%sunlit(:) > 0), subCols%nColumns, gridBox%nLevels) :: & 
-        opticalThickness, cloudWater, cloudIce, waterSize, iceSize, cloudSnow, snowSize !!+JEK
+        opticalThickness, cloudWater, cloudIce, waterSize, iceSize, cloudSnow, snowSize
     
     ! Vertically-integrated subcol quantities; dimensions nPoints, nSubcols 
     integer, &
@@ -147,8 +146,8 @@ contains
       ! Subcolumn properties - first stratiform cloud...
       ! 
       where(subCols%frac_out(sunlit(:), :, :) == I_LSC)
-        !opticalThickness(:, :, :) = & 
-        !               spread(gridBox%dtau_s      (sunlit(:),    :), dim = 2, nCopies = nSubCols) 
+        opticalThickness(:, :, :) = & 
+                       spread(gridBox%dtau_s      (sunlit(:),    :), dim = 2, nCopies = nSubCols)
         cloudWater(:, :, :) = subcolHydro%mr_hydro(sunlit(:), :, :, I_LSCLIQ)
         waterSize (:, :, :) = subcolHydro%reff    (sunlit(:), :, :, I_LSCLIQ)
         cloudIce  (:, :, :) = subcolHydro%mr_hydro(sunlit(:), :, :, I_LSCICE)
@@ -161,7 +160,7 @@ contains
         iceSize         (:, :, :) = 0.
       end where
 
-      ! Loop version of spread above - intrinsic doesn't work on certain platforms. 
+      ! Loop version of spread above - spread isn't working on bluefire +jek
       do k = 1, nLevels
         do j = 1, nSubCols
           do i = 1, nSunlit
@@ -178,15 +177,15 @@ contains
       ! .. then add convective cloud...
       !
       where(subCols%frac_out(sunlit(:), :, :) == I_CVC) 
-        !opticalThickness(:, :, :) = &
-        !               spread(gridBox%dtau_c(      sunlit(:),    :), dim = 2, nCopies = nSubCols)
+        opticalThickness(:, :, :) = &
+                       spread(gridBox%dtau_c(      sunlit(:),    :), dim = 2, nCopies = nSubCols)
         cloudWater(:, :, :) = subcolHydro%mr_hydro(sunlit(:), :, :, I_CVCLIQ)
         waterSize (:, :, :) = subcolHydro%reff    (sunlit(:), :, :, I_CVCLIQ)
         cloudIce  (:, :, :) = subcolHydro%mr_hydro(sunlit(:), :, :, I_CVCICE)
         iceSize   (:, :, :) = subcolHydro%reff    (sunlit(:), :, :, I_CVCICE)
       end where
 
-      ! Loop version of spread above - intrinsic doesn't work on certain platforms. 
+      ! Loop version of spread above - spread isn't working on bluefire +jek
       do k = 1, nLevels
         do j = 1, nSubCols
           do i = 1, nSunlit
@@ -196,7 +195,7 @@ contains
       end do
 
       !
-      ! .. and finally snow (!+JEK)
+      ! .. and finally snow 
       !
       ! prec_frac == 1 means stratiform, 3 means strat and convective (apparently not in cosp_constants). 
       !   Also filter on the presence of snow
@@ -206,15 +205,15 @@ contains
              subCols%prec_frac(sunlit(:), :, :) == 3) .and. &
             snowSize(:, :, :) > 0.                    .and. &
             spread(gridBox%dtau_s_snow(sunlit(:),    :), dim = 2, nCopies = nSubCols) > 0.) 
-        !opticalThickness(:, :, :) = opticalThickness(:, :, :) + &
-        !               spread(gridBox%dtau_s_snow(sunlit(:),    :), dim = 2, nCopies = nSubCols)
+        opticalThickness(:, :, :) = opticalThickness(:, :, :) + &
+                       spread(gridBox%dtau_s_snow(sunlit(:),    :), dim = 2, nCopies = nSubCols)
         cloudSnow(:, :, :) = subcolHydro%mr_hydro(sunlit(:), :, :, I_LSSNOW)
       elsewhere 
         cloudSnow       (:, :, :) = 0.
         snowSize        (:, :, :) = 0. 
       end where
 
-      ! Loop version of spread above - intrinsic doesn't work on certain platforms.
+      ! Loop version of spread above - spread isn't working on bluefire +jek
       do k = 1, nLevels
         do j = 1, nSubCols
           do i = 1, nSunlit
@@ -230,8 +229,8 @@ contains
             end if 
           end do 
         end do
-      end do !+JEK
-
+      end do
+      
       !
       ! Reverse vertical order 
       !
@@ -240,20 +239,20 @@ contains
       waterSize       (:, :, :)  = waterSize       (:, :, nLevels:1:-1)
       cloudIce        (:, :, :)  = cloudIce        (:, :, nLevels:1:-1)
       iceSize         (:, :, :)  = iceSize         (:, :, nLevels:1:-1)
-      cloudSnow       (:, :, :)  = cloudSnow       (:, :, nLevels:1:-1) !+JEK
-      snowSize        (:, :, :)  = snowSize        (:, :, nLevels:1:-1) !+JEK
+      cloudSnow       (:, :, :)  = cloudSnow       (:, :, nLevels:1:-1)
+      snowSize        (:, :, :)  = snowSize        (:, :, nLevels:1:-1)
       
       isccpTau(:, :)              = isccpSim%boxtau (sunlit(:), :)
       isccpCloudTopPressure(:, :) = isccpSim%boxptop(sunlit(:), :)
-      
+
       do i = 1, nSunlit
         call modis_L2_simulator(temperature(i, :), pressureLayers(i, :), pressureLevels(i, :),     &
                                 opticalThickness(i, :, :), cloudWater(i, :, :), cloudIce(i, :, :), &
                                 cloudSnow(i, :, :),                                         &
-                                waterSize(i, :, :), iceSize(i, :, :),  snowSize(i, :, :),    &
+                                waterSize(i, :, :), iceSize(i, :, :), snowSize(i, :, :),    &
                                 isccpTau(i, :), isccpCloudTopPressure(i, :),                &
                                 retrievedPhase(i, :), retrievedCloudTopPressure(i, :),      & 
-                                retrievedTau(i, :), retrievedSize(i, :)) !+JEK
+                                retrievedTau(i, :), retrievedSize(i, :))
       end do
       call modis_L3_simulator(retrievedPhase,              &
                               retrievedCloudTopPressure,   &
@@ -292,10 +291,8 @@ contains
   
       modisSim%Liquid_Water_Path_Mean(sunlit(:)) = meanLiquidWaterPath
       modisSim%Ice_Water_Path_Mean   (sunlit(:)) = meanIceWaterPath
-
-      modisSim%Optical_Thickness_vs_Cloud_Top_Pressure(sunlit(:), :, :) = jointHistogram(:, :, :)    
-      !!modisSim%Optical_Thickness_vs_Cloud_Top_Pressure(sunlit(:), 2:numModisTauBins+1, :) = jointHistogram(:, :, :) !!+JEK
-
+      
+      modisSim%Optical_Thickness_vs_Cloud_Top_Pressure(sunlit(:), :, :) = jointHistogram(:, :, :)
       ! 
       ! Reorder pressure bins in joint histogram to go from surface to TOA 
       !
@@ -403,10 +400,8 @@ contains
     
     allocate(x%Liquid_Water_Path_Mean(x%nPoints)) 
     allocate(x%Ice_Water_Path_Mean(x%nPoints)) 
-     
-    allocate(x%Optical_Thickness_vs_Cloud_Top_Pressure(nPoints, numModisTauBins, numModisPressureBins)) !!+JEK
-    !allocate(x%Optical_Thickness_vs_Cloud_Top_Pressure(nPoints, numModisTauBins+1, numModisPressureBins))
-    x%Optical_Thickness_vs_Cloud_Top_Pressure(:, :, :) = R_UNDEF
+      
+    allocate(x%Optical_Thickness_vs_Cloud_Top_Pressure(nPoints, numModisTauBins, numModisPressureBins))
   END SUBROUTINE CONSTRUCT_COSP_MODIS
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -452,7 +447,7 @@ contains
   SUBROUTINE COSP_MODIS_CPSECTION(ix, iy, orig, copy)
     integer, dimension(2), intent(in) :: ix, iy
     type(cosp_modis),      intent(in   ) :: orig
-    type(cosp_modis),      intent(inout) :: copy !!+JEK
+    type(cosp_modis),      intent(inout) :: copy
     !
     ! Copy a set of grid points from one cosp_modis variable to another.
     !   Should test to be sure ix and iy refer to the same number of grid points 

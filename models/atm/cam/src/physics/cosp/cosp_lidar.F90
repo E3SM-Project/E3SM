@@ -1,7 +1,5 @@
 ! (c) British Crown Copyright 2008, the Met Office.
 ! All rights reserved.
-! $Revision: 88 $, $Date: 2013-11-13 07:08:38 -0700 (Wed, 13 Nov 2013) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/cosp_lidar.F90 $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -30,7 +28,6 @@
 ! Oct 2008 - S. Bony          - Instructions "Call for large-scale cloud" removed  -> sgx%frac_out is used instead.
 !                               Call lidar_simulator changed (lsca, gbx%cca and depol removed; 
 !                               frac_out changed in sgx%frac_out)
-! Jun 2011 - G. Cesana        - Added betaperp_tot argument
 !
 ! 
 MODULE MOD_COSP_LIDAR
@@ -45,22 +42,22 @@ CONTAINS
 !------------------- SUBROUTINE COSP_LIDAR ------------------------
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE COSP_LIDAR(gbx,sgx,sghydro,y)
-
+  
   ! Arguments
   type(cosp_gridbox),intent(in) :: gbx  ! Gridbox info
   type(cosp_subgrid),intent(in) :: sgx  ! Subgrid info
   type(cosp_sghydro),intent(in) :: sghydro  ! Subgrid info for hydrometeors
   type(cosp_sglidar),intent(inout) :: y ! Subgrid output
-
+  
   ! Local variables 
   integer :: i
   real :: presf(sgx%Npoints, sgx%Nlevels + 1)
   real,dimension(sgx%Npoints, sgx%Nlevels) :: lsca,mr_ll,mr_li,mr_cl,mr_ci
   real,dimension(sgx%Npoints, sgx%Nlevels) :: beta_tot,tau_tot
-  real,dimension(sgx%Npoints, sgx%Nlevels) :: betaperp_tot
   real,dimension(sgx%Npoints, PARASOL_NREFL)  :: refle
-  real,dimension(sgx%Npoints, sgx%Nlevels) :: mr_lsnow !+JEK
-
+  real,dimension(sgx%Npoints, sgx%Nlevels) :: mr_lsnow !modified by ZYY
+  
+  
   presf(:,1:sgx%Nlevels) = gbx%ph
   presf(:,sgx%Nlevels + 1) = 0.0
   lsca = gbx%tca-gbx%cca
@@ -70,17 +67,17 @@ SUBROUTINE COSP_LIDAR(gbx,sgx,sghydro,y)
       mr_li(:,:) = sghydro%mr_hydro(:,i,:,I_LSCICE)
       mr_cl(:,:) = sghydro%mr_hydro(:,i,:,I_CVCLIQ)
       mr_ci(:,:) = sghydro%mr_hydro(:,i,:,I_CVCICE)
-      mr_lsnow(:,:) = sghydro%mr_hydro(:,i,:,I_LSSNOW) !+JEK
+      mr_lsnow(:,:) = sghydro%mr_hydro(:,i,:,I_LSSNOW) !modified by ZYY
 
-      call lidar_simulator(sgx%Npoints, sgx%Nlevels, 5, PARASOL_NREFL, LIDAR_UNDEF  &
-                 , gbx%p, presf, gbx%T, mr_ll, mr_li, mr_cl, mr_ci &
-                 , gbx%Reff(:,:,I_LSCLIQ), gbx%Reff(:,:,I_LSCICE) &
-                 , gbx%Reff(:,:,I_CVCLIQ), gbx%Reff(:,:,I_CVCICE) &
-                 , gbx%lidar_ice_type, y%beta_mol, beta_tot &
-                 , betaperp_tot, tau_tot, refle &
-                 , gbx%Reff(:,:,I_LSSNOW), mr_lsnow,sgx%prec_frac) !+JEK
-
-      y%betaperp_tot(:,i,:) = betaperp_tot(:,:)
+      call lidar_simulator(sgx%Npoints, sgx%Nlevels, 5 & !modified by ZYY
+                 , PARASOL_NREFL, LIDAR_UNDEF  &
+                 , gbx%p, presf, gbx%T &
+                 , mr_ll, mr_li, mr_cl, mr_ci &
+                 , gbx%Reff(:,:,I_LSCLIQ), gbx%Reff(:,:,I_LSCICE), gbx%Reff(:,:,I_CVCLIQ), gbx%Reff(:,:,I_CVCICE) &
+                 , sgx%frac_out, gbx%lidar_ice_type, y%beta_mol, beta_tot, tau_tot  &
+                 , refle &
+                 , gbx%Reff(:,:,I_LSSNOW), mr_lsnow,sgx%prec_frac) ! reflectance !modified by ZYY
+      
       y%beta_tot(:,i,:) = beta_tot(:,:)
       y%tau_tot(:,i,:)  = tau_tot(:,:)
       y%refl(:,i,:)     = refle(:,:)

@@ -1,8 +1,6 @@
 ! 
 ! Copyright (c) 2009,  Roger Marchand, version 1.2
 ! All rights reserved.
-! $Revision: 23 $, $Date: 2011-03-31 07:41:37 -0600 (Thu, 31 Mar 2011) $
-! $URL: http://cfmip-obs-sim.googlecode.com/svn/stable/v1.4.0/MISR_simulator/MISR_simulator.f $
 ! 
 ! Redistribution and use in source and binary forms, with or without modification, are permitted 
 ! provided that the following conditions are met:
@@ -32,7 +30,7 @@
      &     at,
      &     dtau_s,
      &     dtau_c,
-     &     dtau_s_snow, 
+     &     dtau_s_snow,
      &     frac_out,
      &     prec_frac,
      &     missing_value,
@@ -40,7 +38,7 @@
      &     dist_model_layertops,
      &     MISR_mean_ztop,
      &     MISR_cldarea
-     & ) !+JEK
+     & )
     
 
       implicit none
@@ -70,16 +68,18 @@
  
       REAL dtau_s(npoints,nlev)         !  visible wavelength cloud optical depth ... for "stratiform" condensate
                                         !  NOTE:  this the cloud optical depth of only the
-                    !     the model cell (i,j)
+                    			!     the model cell (i,j)
+
                     
       REAL dtau_c(npoints,nlev)         !  visible wavelength cloud optical depth ... for "convective" condensate
                                         !  NOTE:  this the cloud optical depth of only the
-                    !     the model cell (i,j)
-
-      REAL dtau_s_snow(npoints,nlev)      !  visible wavelength SNOW optical depth ... !+JEK
+                    			!     the model cell (i,j)
+      
+      REAL dtau_s_snow(npoints,nlev)      !  visible wavelength SNOW optical depth ... 
                                      
       REAL frac_out(npoints,ncol,nlev)  !  NOTE: only need if columns>1 ... subgrid scheme in use.
-      REAL prec_frac(npoints,ncol,nlev)  !  same as frac_out but for precipitation -- for Steve's snow scheme !+JEK      
+      REAL prec_frac(npoints,ncol,nlev)  !  same as frac_out but for precipitation -- for Steve's snow scheme 
+      
       REAL missing_value
                                  
 !     ------
@@ -114,10 +114,10 @@
       
       real dtau, cloud_dtau, MISR_penetration_height,ztest     
       
-      real MISR_CTH_boundaries(n_MISR_CTH)
+      real MISR_CTH_boundaries(n_MISR_CTH+1)
       
       DATA MISR_CTH_boundaries / -99, 0, 0.5, 1, 1.5, 2, 2.5, 3,
-     c                    4, 5, 7, 9, 11, 13, 15, 17 /
+     c                    4, 5, 7, 9, 11, 13, 15, 17, 99 /
       
       DATA isccp_taumin / 0.3 /
     
@@ -145,12 +145,12 @@
         ! find MISR layer that contains this level
         ! note, the first MISR level is "no height" level
         iMISR_ztop=2
-        do loop=3,n_MISR_CTH
+        do loop=2,n_MISR_CTH
         
             if ( ztest .gt.
-     &                1000*MISR_CTH_boundaries(loop) ) then
+     &                1000*MISR_CTH_boundaries(loop+1) ) then
         
-                iMISR_ztop=loop
+                iMISR_ztop=loop+1
             endif
         enddo
 
@@ -176,19 +176,19 @@
      
              dtau=0
              
-             if (frac_out(j,ibox,ilev).eq.1) then
+                 if (frac_out(j,ibox,ilev).eq.1) then
                         dtau = dtau_s(j,ilev)
                  endif
                  
                  if (frac_out(j,ibox,ilev).eq.2) then
                         dtau = dtau_c(j,ilev)
                  end if 
-!+JEK
+                 
 		 if ((prec_frac(j,ibox,ilev).eq.1) .or.
      &               (prec_frac(j,ibox,ilev).eq.3)) then
                          dtau = dtau + dtau_s_snow(j,ilev)
-                 end if   
-!+JEK                
+                 end if    
+ 
              tau(j,ibox)=tau(j,ibox)+ dtau
               
                      
@@ -422,12 +422,12 @@
 
             iMISR_ztop=2
             
-            do loop=3,n_MISR_CTH
+            do loop=2,n_MISR_CTH
         
                 if ( box_MISR_ztop(j,ibox) .gt.
-     &                1000*MISR_CTH_boundaries(loop) ) then
+     &                1000*MISR_CTH_boundaries(loop+1) ) then
         
-                  iMISR_ztop=loop
+                  iMISR_ztop=loop+1
 
                 endif
             enddo
