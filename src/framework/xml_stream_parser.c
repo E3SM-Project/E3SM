@@ -863,6 +863,111 @@ int build_stream_path(const char *stream, const char *template, int *mpi_comm)
 
 /*********************************************************************************
  *
+ *  Function: extract_stream_interval
+ *
+ *  Given an interval specification for a stream (interval) that references 
+ *  an interval in another stream (e.g., "stream:history:output_interval"), and 
+ *  an interval type (interval_type, either "input_interval" or "output_interval"), 
+ *  extracts the value of the interval from the other stream and returns it in 
+ *  the output argument interval2.
+ *
+ *  If the interval specification in the interval argument does not reference 
+ *  another stream, the contents of interval2 are unchanged upon return from 
+ *  this function.
+ *
+ *  In case the input interval references an interval in another stream and this 
+ *  interval cannot found, this function returns a value of 1; otherwise, this 
+ *  function returns 0.
+ *
+ *********************************************************************************/
+int extract_stream_interval(const char *interval, const char *interval_type, const char **interval2, const char *streamID, ezxml_t streams)
+{
+	int i;
+	int stream_found, copy_start, copy_from, copy_to;
+	char match_stream_name[256];
+	char interval_name[256];
+	const char *streamID2;
+	ezxml_t stream2_xml;
+	ezxml_t streammatch_xml;
+
+
+	if ( strncmp(interval, "stream:", 7) == 0 ) {
+
+		/* Extract the name of the stream, and the name of the interval to use for interval */
+		snprintf(match_stream_name, 256, "%s", (interval)+7);
+		copy_start = -1;
+		copy_from = -1;
+		copy_to = 0;
+		for ( i = 0; i < strlen(match_stream_name); i++ ) {
+			if ( match_stream_name[i] == ':' ) {
+				copy_start = i;
+				copy_from = copy_start+1;
+			}
+
+			if ( copy_from == i ) {
+				interval_name[copy_to] = match_stream_name[copy_from];
+				copy_from++;
+				copy_to++;
+			}
+		}
+		match_stream_name[copy_start] = '\0';
+		interval_name[copy_to] = '\0';
+
+		if ( strcmp(match_stream_name, streamID) == 0 && strcmp(interval_name, interval_type) == 0 ) {
+			fprintf(stderr, "ERROR: Attribute '%s' of stream '%s' references itself.\n", interval_type, streamID);
+			return 1;
+		}
+
+		if ( strcmp(interval_name, "input_interval") != 0 && strcmp(interval_name, "output_interval") != 0 ) {
+			fprintf(stderr, "ERROR: Attribute '%s' of stream '%s' references an invalid attribute: '%s'.\n", interval_type, streamID, interval_name);
+			fprintf(stderr, "       Valid attributes are 'input_interval' and 'output_interval'.\n");
+			return 1;
+		}
+
+		stream_found = 0;
+		for ( stream2_xml = ezxml_child(streams, "immutable_stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next ) {
+			streamID2 = ezxml_attr(stream2_xml, "name");
+
+			if ( strcmp(streamID2, match_stream_name) == 0 ){
+				stream_found = 1;
+				streammatch_xml = stream2_xml;
+			}
+		}
+
+		for ( stream2_xml = ezxml_child(streams, "stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next ) {
+			streamID2 = ezxml_attr(stream2_xml, "name");
+
+			if ( strcmp(streamID2, match_stream_name) == 0 ) {
+				stream_found = 1;
+				streammatch_xml = stream2_xml;
+			}
+		}
+
+		if ( stream_found == 1 ) {
+			*interval2 = ezxml_attr(streammatch_xml, interval_name);
+		} 
+		else {
+			fprintf(stderr, "ERROR: The '%s' attribute of stream '%s' refers to an undefined stream named '%s'.\n", interval_type, streamID, match_stream_name);
+			return 1;
+		}
+
+
+		if ( *interval2 == NULL ) {
+			fprintf(stderr, "ERROR: The '%s' attribute of stream '%s' refers to an undefined attribute named '%s' of stream '%s'.\n", interval_type, streamID, interval_name, match_stream_name);
+			return 1;
+		} 
+		else if ( strcmp(*interval2, "input_interval") == 0 || strcmp(*interval2, "output_interval") == 0 || strncmp(*interval2, "stream:", 7) == 0 ) {
+			fprintf(stderr, "ERROR: The '%s' attribute of stream '%s' contains an unexpandable value: '%s'.\n", interval_type, streamID, *interval2);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*********************************************************************************
+ *
  *  Function: xml_stream_parser
  *
  *  Parses an XML file and builds streams using the MPAS_stream_manager module
@@ -885,7 +990,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	ezxml_t varstruct_xml;
 	ezxml_t substream_xml;
 	ezxml_t stream2_xml;
-	ezxml_t streamsmatch_xml, streammatch_xml;
+	ezxml_t streammatch_xml;
 	const char *compstreamname_const, *structname_const;
 	const char *streamID, *filename_template, *filename_interval, *direction, *varfile, *fieldname_const, *reference_time, *record_interval, *streamname_const, *precision;
 	const char *interval_in, *interval_out, *packagelist;
@@ -900,6 +1005,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 	char rec_intv_local[256];
 	char fieldname[256];
 	char packages_local[256];
+	char interval_type[32];
 	FILE *fd;
 	char msgbuf[MSGSIZE];
 	int itype;
@@ -954,157 +1060,19 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		/* Extract the input interval, if it refer to other streams */
 		if ( interval_in ) {
-			if ( strncmp(interval_in, "stream:", 7) == 0 ) {
-
-				/* Extract the name of the stream, and the name of the interval to use for input interval */
-				snprintf(match_stream_name, 256, "%s", (interval_in)+7);
-				copy_start = -1;
-				copy_from = -1;
-				copy_to = 0;
-				for (i = 0; i < strlen(match_stream_name); i++){
-					if ( match_stream_name[i] == ':' ) {
-						copy_start = i;
-						copy_from = copy_start+1;
-					}
-
-					//if ( copy_start > 0 && i > copy_start ) {
-					if ( copy_from == i ) {
-						interval_name[copy_to] = match_stream_name[copy_from];
-						copy_from++;
-						copy_to++;
-					}
-				}
-				match_stream_name[copy_start] = '\0';
-				interval_name[copy_to+1] = '\0';
-
-				if ( strcmp(match_stream_name, streamID) == 0 && strcmp(interval_name, "input_interval") == 0 ) {
-					fprintf(stderr, "ERROR: Attribute 'input_interval' on stream '%s' references itself.\n", streamID);
-					*status = 1;
-					return;
-				}
-
-				if ( strcmp(interval_name, "input_interval") != 0 && strcmp(interval_name, "output_interval") != 0 ){
-					fprintf(stderr, "ERROR: Attribute 'input_interval' on stream '%s' references an invalid option '%s'.\n", streamID, interval_name);
-					fprintf(stderr, "       This must be 'input_interval' or 'output_interval'.\n");
-					*status = 1;
-					return;
-				}
-
-				stream_found = 0;
-				for ( stream2_xml = ezxml_child(streams, "immutable_stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				for ( stream2_xml = ezxml_child(streams, "stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				if ( stream_found == 1 ) {
-					interval_in2 = ezxml_attr(streammatch_xml, interval_name);
-				} else {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' refers to an undefined stream named '%s'\n", streamID, match_stream_name);
-					*status = 1;
-					return;
-				}
-
-
-				if ( interval_in2 == NULL ) {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' refers to an undefined attribute named '%s' on stream '%s'\n", streamID, interval_name, match_stream_name);
-					*status = 1;
-					return;
-				} else if ( strcmp(interval_in2, "input_interval") == 0 || strcmp(interval_in2, "output_interval") == 0 || strncmp(interval_in2, "stream:", 7) == 0 ) {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' expands to an unexpandable value of: '%s'\n", streamID, interval_in2);
-					*status = 1;
-					return;
-				}
+			sprintf(interval_type, "input_interval");
+			*status = extract_stream_interval(interval_in, interval_type, &interval_in2, streamID, streams);
+			if ( *status != 0 ) {
+				return;
 			}
 		}
 
 		/* Extract the output interval, if it refer to other streams */
 		if ( interval_out ) {
-			if ( strncmp(interval_out, "stream:", 7) == 0 ) {
-
-				/* Extract the name of the stream, and the name of the interval to use for input interval */
-				snprintf(match_stream_name, 256, "%s", (interval_out)+7);
-				copy_start = -1;
-				copy_from = -1;
-				copy_to = 0;
-				for (i = 0; i < strlen(match_stream_name); i++){
-					if ( match_stream_name[i] == ':' ) {
-						copy_start = i;
-						copy_from = copy_start+1;
-					}
-
-					//if ( copy_start > 0 && i > copy_start ) {
-					if ( copy_from == i ) {
-						interval_name[copy_to] = match_stream_name[copy_from];
-						copy_from++;
-						copy_to++;
-					}
-				}
-				match_stream_name[copy_start] = '\0';
-				interval_name[copy_to+1] = '\0';
-
-				if ( strcmp(match_stream_name, streamID) == 0 && strcmp(interval_name, "output_interval") == 0 ) {
-					fprintf(stderr, "ERROR: Attribute 'output_interval' on stream '%s' references itself.\n", streamID);
-					*status = 1;
-					return;
-				}
-
-				if ( strcmp(interval_name, "input_interval") != 0 && strcmp(interval_name, "output_interval") != 0 ){
-					fprintf(stderr, "ERROR: Attribute 'output_interval' on stream '%s' references an invalid option '%s'.\n", streamID, interval_name);
-					fprintf(stderr, "       This must be 'input_interval' or 'output_interval'.\n");
-					*status = 1;
-					return;
-				}
-
-				stream_found = 0;
-				for ( stream2_xml = ezxml_child(streams, "immutable_stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				for ( stream2_xml = ezxml_child(streams, "stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				if ( stream_found == 1 ) {
-					interval_out2 = ezxml_attr(streammatch_xml, interval_name);
-				} else {
-					fprintf(stderr, "ERROR: The 'output_interval' attribute of stream '%s' refers to an undefined stream named '%s'\n", streamID, match_stream_name);
-					*status = 1;
-					return;
-				}
-
-
-				if ( interval_out2 == NULL ) {
-					fprintf(stderr, "ERROR: The 'output_interval' attribute of stream '%s' refers to an undefined attribute named '%s' on stream '%s'\n", streamID, interval_name, match_stream_name);
-					*status = 1;
-					return;
-				} else if ( strcmp(interval_out2, "input_interval") == 0 || strcmp(interval_out2, "output_interval") == 0 || strncmp(interval_out2, "stream:", 7) == 0 ) {
-					fprintf(stderr, "ERROR: The 'output_interval' attribute of stream '%s' expands to an unexpandable value of: '%s'\n", streamID, interval_out2);
-					*status = 1;
-					return;
-				}
+			sprintf(interval_type, "output_interval");
+			*status = extract_stream_interval(interval_out, interval_type, &interval_out2, streamID, streams);
+			if ( *status != 0 ) {
+				return;
 			}
 		}
 
@@ -1374,157 +1342,19 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 
 		/* Extract the input interval, if it refer to other streams */
 		if ( interval_in ) {
-			if ( strncmp(interval_in, "stream:", 7) == 0 ) {
-
-				/* Extract the name of the stream, and the name of the interval to use for input interval */
-				snprintf(match_stream_name, 256, "%s", (interval_in)+7);
-				copy_start = -1;
-				copy_from = -1;
-				copy_to = 0;
-				for (i = 0; i < strlen(match_stream_name); i++){
-					if ( match_stream_name[i] == ':' ) {
-						copy_start = i;
-						copy_from = copy_start+1;
-					}
-
-					//if ( copy_start > 0 && i > copy_start ) {
-					if ( copy_from == i ) {
-						interval_name[copy_to] = match_stream_name[copy_from];
-						copy_from++;
-						copy_to++;
-					}
-				}
-				match_stream_name[copy_start] = '\0';
-				interval_name[copy_to+1] = '\0';
-
-				if ( strcmp(match_stream_name, streamID) == 0 && strcmp(interval_name, "input_interval") == 0 ) {
-					fprintf(stderr, "ERROR: Attribute 'input_interval' on stream '%s' references itself.\n", streamID);
-					*status = 1;
-					return;
-				}
-
-				if ( strcmp(interval_name, "input_interval") != 0 && strcmp(interval_name, "output_interval") != 0 ){
-					fprintf(stderr, "ERROR: Attribute 'input_interval' on stream '%s' references an invalid option '%s'.\n", streamID, interval_name);
-					fprintf(stderr, "       This must be 'input_interval' or 'output_interval'.\n");
-					*status = 1;
-					return;
-				}
-
-				stream_found = 0;
-				for ( stream2_xml = ezxml_child(streams, "immutable_stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				for ( stream2_xml = ezxml_child(streams, "stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				if ( stream_found == 1 ) {
-					interval_in2 = ezxml_attr(streammatch_xml, interval_name);
-				} else {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' refers to an undefined stream named '%s'\n", streamID, match_stream_name);
-					*status = 1;
-					return;
-				}
-
-
-				if ( interval_in2 == NULL ) {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' refers to an undefined attribute named '%s' on stream '%s'\n", streamID, interval_name, match_stream_name);
-					*status = 1;
-					return;
-				} else if ( strcmp(interval_in2, "input_interval") == 0 || strcmp(interval_in2, "output_interval") == 0 || strncmp(interval_in2, "stream:", 7) == 0 ) {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' expands to an unexpandable value of: '%s'\n", streamID, interval_in2);
-					*status = 1;
-					return;
-				}
+			sprintf(interval_type, "input_interval");
+			*status = extract_stream_interval(interval_in, interval_type, &interval_in2, streamID, streams);
+			if ( *status != 0 ) {
+				return;
 			}
 		}
 
 		/* Extract the output interval, if it refer to other streams */
 		if ( interval_out ) {
-			if ( strncmp(interval_out, "stream:", 7) == 0 ) {
-
-				/* Extract the name of the stream, and the name of the interval to use for input interval */
-				snprintf(match_stream_name, 256, "%s", (interval_out)+7);
-				copy_start = -1;
-				copy_from = -1;
-				copy_to = 0;
-				for (i = 0; i < strlen(match_stream_name); i++){
-					if ( match_stream_name[i] == ':' ) {
-						copy_start = i;
-						copy_from = copy_start+1;
-					}
-
-					//if ( copy_start > 0 && i > copy_start ) {
-					if ( copy_from == i ) {
-						interval_name[copy_to] = match_stream_name[copy_from];
-						copy_from++;
-						copy_to++;
-					}
-				}
-				match_stream_name[copy_start] = '\0';
-				interval_name[copy_to+1] = '\0';
-
-				if ( strcmp(match_stream_name, streamID) == 0 && strcmp(interval_name, "output_interval") == 0 ) {
-					fprintf(stderr, "ERROR: Attribute 'output_interval' on stream '%s' references itself.\n", streamID);
-					*status = 1;
-					return;
-				}
-
-				if ( strcmp(interval_name, "input_interval") != 0 && strcmp(interval_name, "output_interval") != 0 ){
-					fprintf(stderr, "ERROR: Attribute 'output_interval' on stream '%s' references an invalid option '%s'.\n", streamID, interval_name);
-					fprintf(stderr, "       This must be 'input_interval' or 'output_interval'.\n");
-					*status = 1;
-					return;
-				}
-
-				stream_found = 0;
-				for ( stream2_xml = ezxml_child(streams, "immutable_stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				for ( stream2_xml = ezxml_child(streams, "stream"); stream2_xml && !stream_found; stream2_xml = stream2_xml->next){
-					streamID2 = ezxml_attr(stream2_xml, "name");
-
-					if ( strcmp(streamID2, match_stream_name) == 0 ){
-						stream_found = 1;
-						streammatch_xml = stream2_xml;
-					}
-				}
-
-				if ( stream_found == 1 ) {
-					interval_out2 = ezxml_attr(streammatch_xml, interval_name);
-				} else {
-					fprintf(stderr, "ERROR: The 'output_interval' attribute of stream '%s' refers to an undefined stream named '%s'\n", streamID, match_stream_name);
-					*status = 1;
-					return;
-				}
-
-
-				if ( interval_out2 == NULL ) {
-					fprintf(stderr, "ERROR: The 'output_interval' attribute of stream '%s' refers to an undefined attribute named '%s' on stream '%s'\n", streamID, interval_name, match_stream_name);
-					*status = 1;
-					return;
-				} else if ( strcmp(interval_out2, "input_interval") == 0 || strcmp(interval_out2, "output_interval") == 0 || strncmp(interval_out2, "stream:", 7) == 0 ) {
-					fprintf(stderr, "ERROR: The 'input_interval' attribute of stream '%s' expands to an unexpandable value of: '%s'\n", streamID, interval_out2);
-					*status = 1;
-					return;
-				}
+			sprintf(interval_type, "output_interval");
+			*status = extract_stream_interval(interval_out, interval_type, &interval_out2, streamID, streams);
+			if ( *status != 0 ) {
+				return;
 			}
 		}
 
