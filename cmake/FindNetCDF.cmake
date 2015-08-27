@@ -1,7 +1,7 @@
 # - Try to find NetCDF
 #
-# This can be controlled by setting the NetCDF_DIR (or, equivalently, the 
-# NETCDF environment variable), or NetCDF_<lang>_DIR CMake variables, where
+# This can be controlled by setting the NetCDF_PATH (or, equivalently, the 
+# NETCDF environment variable), or NetCDF_<lang>_PATH CMake variables, where
 # <lang> is the COMPONENT language one needs.
 #
 # Once done, this will define:

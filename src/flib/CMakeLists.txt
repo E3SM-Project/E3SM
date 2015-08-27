@@ -93,19 +93,11 @@ foreach (SRC_FILE IN LISTS PIO_GenF90_SRCS)
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in genf90)
 endforeach ()
 
-#===== GPTL =====
-if (PIO_ENABLE_TIMING)
-    target_compile_definitions (piof
-        PUBLIC TIMING)
-    target_link_libraries (piof 
-        PUBLIC gptl)
-endif ()
-
 #===== MPI =====
 find_package (MPI REQUIRED)
 
 # Check MPI I/O capabilities
-if (PIO_ENABLE_MPIIO)
+if (PIO_USE_MPIIO)
     check_macro (MPIIO_DETECTED
                  NAME TryMPIIO.f90
                  HINTS ${USER_CMAKE_MODULE_PATH}
@@ -114,10 +106,10 @@ if (PIO_ENABLE_MPIIO)
         message (STATUS "MPIIO detected and enabled.")
     else ()
         message (STATUS "MPIIO not detected and therefore disabled.")
-        set (PIO_ENABLE_MPIIO FALSE)
+        set (PIO_USE_MPIIO FALSE)
     endif ()
 endif ()
-if (${PIO_ENABLE_MPIIO}) 
+if (${PIO_USE_MPIIO}) 
     target_compile_definitions (piof
         PUBLIC USEMPIIO)
 endif ()
@@ -133,6 +125,22 @@ else ()
     message (STATUS "MPI Fortran module not detected and therefore disabled.")
     target_compile_definitions (piof
         PUBLIC NO_MPIMOD)
+endif ()
+
+#===== GPTL =====
+if (PIO_ENABLE_TIMING)
+    find_package (GPTL COMPONENTS Fortran_Perf QUIET)
+    if (GPTL_Fortran_Perf_FOUND)
+        message (STATUS "Found GPTL Fortran Perf: ${GPTL_Fortran_Perf_LIBRARIES}")
+        target_include_directories (piof 
+            PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
+        target_link_libraries (piof
+            PUBLIC ${GPTL_Fortran_LIBRARIES})
+    else ()
+        message (STATUS "Using internal GPTL Fortran library for timing")
+        target_link_libraries (piof
+            PUBLIC gptl)
+    endif ()
 endif ()
 
 #===== NetCDF-Fortran =====
@@ -154,7 +162,9 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF "1.6" COMPONENTS Fortran)
+if (WITH_PNETCDF)
+    find_package (PnetCDF "1.6" COMPONENTS Fortran REQUIRED)
+endif ()
 if (PnetCDF_Fortran_FOUND)
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
@@ -176,7 +186,6 @@ else ()
     target_compile_definitions (piof 
         PUBLIC _NOPNETCDF)
 endif ()
-
 
 #===== Add EXTRAs =====
 target_include_directories (piof
