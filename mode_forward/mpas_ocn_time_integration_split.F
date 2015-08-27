@@ -306,11 +306,13 @@ module ocn_time_integration_split
                call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupCur, 1)
                call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
 
-               do iCell = 1, nCells  
-                  do k = 1, maxLevelCell(iCell)
-                     tracersGroupNew(:,k,iCell) = tracersGroupCur(:,k,iCell) 
+               if ( associated(tracersGroupCur) .and. associated(tracersGroupNew) ) then
+                  do iCell = 1, nCells  
+                     do k = 1, maxLevelCell(iCell)
+                        tracersGroupNew(:,k,iCell) = tracersGroupCur(:,k,iCell) 
+                     end do
                   end do
-               end do
+               end if
             end if
          end do
 

@@ -496,16 +496,19 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                   if ( groupItr % memberType == MPAS_POOL_FIELD ) then
                      call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
 
-                     do iCell = 1, nCells
-                        ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
-                        zMidPBC = -0.5_RKIND * (bottomDepth(iCell) + refBottomDepthTopOfCell(k))
-                        km1 = max(k-1,1)
-                        tracersGroup(:, k, iCell) = tracersGroup(:, k, iCell) &
-                           + (tracersGroup(:, km1, iCell) - tracersGroup(:, k, iCell)) &
-                            /(zMidZLevel(km1) - zMidZLevel(k) + 1.0e-16_RKIND) &
-                            *(zMidPBC - zMidZLevel(k))
+                     if ( associated(tracersGroup) ) then
+                        do iCell = 1, nCells
+                           ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
+                           k = maxLevelCell(iCell)
+                           zMidPBC = -0.5_RKIND * (bottomDepth(iCell) + refBottomDepthTopOfCell(k))
+                           km1 = max(k-1,1)
+                           tracersGroup(:, k, iCell) = tracersGroup(:, k, iCell) &
+                              + (tracersGroup(:, km1, iCell) - tracersGroup(:, k, iCell)) &
+                               /(zMidZLevel(km1) - zMidZLevel(k) + 1.0e-16_RKIND) &
+                               *(zMidPBC - zMidZLevel(k))
       
-                     end do
+                        end do
+                     end if
                   end if
                end do
 
@@ -703,9 +706,11 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
-            do iCell=1,nCells
-               tracersGroup(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34
-            end do
+            if ( associated(tracersGroup) ) then
+               do iCell=1,nCells
+                  tracersGroup(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34
+               end do
+            end if
          end if
       end do
 
