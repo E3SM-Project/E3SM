@@ -192,8 +192,8 @@ contains
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-        call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
         call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -240,17 +240,19 @@ contains
 
         do iCell = 1, nCellsSolve
            ! Set temperature
-           if ( trim(config_overflow_layer_type) == 'sigma' .or. trim(config_overflow_layer_type) == 'z-level' ) then
-              do k = 1, maxLevelCell(iCell)
-                 if(yCell(iCell) < yMinGlobal + plugWidth) then
-                    activeTracers(index_temperature, k, iCell) = config_overflow_plug_temperature
-                 else
-                    activeTracers(index_temperature, k, iCell) = config_overflow_domain_temperature
-                 end if
-              end do
-           else if ( trim(config_overflow_layer_type) == 'isopycnal' ) then
-              activeTracers(index_temperature, 1, :) = config_overflow_domain_temperature
-              activeTracers(index_temperature, 2:nVertLevels, :) = config_overflow_plug_temperature
+           if ( associated(activeTracers) ) then
+              if ( trim(config_overflow_layer_type) == 'sigma' .or. trim(config_overflow_layer_type) == 'z-level' ) then
+                 do k = 1, maxLevelCell(iCell)
+                    if(yCell(iCell) < yMinGlobal + plugWidth) then
+                       activeTracers(index_temperature, k, iCell) = config_overflow_plug_temperature
+                    else
+                       activeTracers(index_temperature, k, iCell) = config_overflow_domain_temperature
+                    end if
+                 end do
+              else if ( trim(config_overflow_layer_type) == 'isopycnal' ) then
+                 activeTracers(index_temperature, 1, :) = config_overflow_domain_temperature
+                 activeTracers(index_temperature, 2:nVertLevels, :) = config_overflow_plug_temperature
+              end if
            end if
 
            ! Set layerThickness and restingThickness
@@ -278,12 +280,16 @@ contains
            end if
 
            ! Set salinity
-           activeTracers(index_salinity, :, iCell) = config_overflow_salinity
+           if ( associated(activeTracers) ) then
+              activeTracers(index_salinity, :, iCell) = config_overflow_salinity
+           end if
 
            ! Set debug tracer
-           do k = 1, nVertLevels
-             debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
-           enddo
+           if ( associated(debugTracers) ) then
+              do k = 1, nVertLevels
+                debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+              end do
+           end if
 
         end do
 
