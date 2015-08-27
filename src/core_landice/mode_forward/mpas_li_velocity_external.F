@@ -398,7 +398,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          tracers
       real (kind=RKIND), pointer :: deltat
-      integer, dimension(:), pointer :: vertexMask, edgeMask, floatingEdges
+      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
@@ -423,6 +423,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
 
@@ -453,7 +454,7 @@ contains
          write(stdoutUnit,*) "Generating new external velocity solver FEM grid."
          flush(stdoutUnit)  ! Flush log files before handing control to C++
          flush(stderrUnit)
-         call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
+         call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
               floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
       endif
 
@@ -676,14 +677,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, floatingEdges, &
+   subroutine generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, floatingEdges, &
               layerThicknessFractions, lowerSurface, thickness, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       character (len=StrKIND), pointer :: config_velocity_solver
-      integer, pointer, dimension(:), intent(in) :: vertexMask, floatingEdges
+      integer, pointer, dimension(:), intent(in) :: vertexMask, cellMask, floatingEdges
       integer, pointer, dimension(:,:), intent(in) :: dirichletVelocityMask
       real(kind=RKIND), pointer, dimension(:), intent(in) :: layerThicknessFractions, &
              lowerSurface, thickness
@@ -706,7 +707,7 @@ contains
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
           call mpas_timer_start("velocity_solver_compute_2d_grid")
-          call velocity_solver_compute_2d_grid(vertexMask, dirichletVelocityMask, floatingEdges)
+          call velocity_solver_compute_2d_grid(vertexMask, cellMask, dirichletVelocityMask, floatingEdges)
           call mpas_timer_stop("velocity_solver_compute_2d_grid")
 #else
           write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."

@@ -29,7 +29,7 @@ int nVertices, nEdges, nTriangles, nGlobalVertices, nGlobalEdges,
 int maxNEdgesOnCell_F;
 int const *cellsOnEdge_F, *cellsOnVertex_F, *verticesOnCell_F,
     *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *nEdgesOnCells_F,
-    *dirichletCellsMask_F, *floatingEdgesMask_F, *verticesMask_F;
+    *cellsMask_F, *dirichletCellsMask_F, *floatingEdgesMask_F, *verticesMask_F;
 std::vector<double> layersRatio, levelsNormalizedThickness;
 int nLayers;
 double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, *areaTriangle_F;
@@ -495,9 +495,10 @@ void velocity_solver_finalize() {
  *
  */
 
-void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
+void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cellsMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
   int numProcs, me;
 
+  cellsMask_F = _cellsMask_F;
   verticesMask_F = _verticesMask_F;
   dirichletCellsMask_F = _dirichletCellsMask_F;
   floatingEdgesMask_F = _floatingEdgesMask_F;
@@ -1301,9 +1302,9 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
   std::set<int>::const_iterator iter;
 
   for (int iV = 0; iV < nVertices; iV++) {
-    if (isVertexBoundary[iV]) {
+    int fCell = vertexToFCell[iV];
+    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & ice_present_bit_value)) {
       int c;
-      int fCell = vertexToFCell[iV];
       int nEdg = nEdgesOnCells_F[fCell];
       bool isFloating = false;
       for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
@@ -1311,17 +1312,19 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
         isFloating = (floatingEdgesMask_F[fEdge] != 0);
       }
       if(!isFloating) continue;
+
       double elevTemp =1e10;
       for (int j = 0; j < nEdg; j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
-            && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
-        if (!keep)
-          continue;
+        // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+        //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
+        // if (!keep)
+        //   continue;
 
         int c0 = cellsOnEdge_F[2 * fEdge] - 1;
         int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
         c = (fCellToVertex[c0] == iV) ? c1 : c0;
+        if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
         double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
 
         if (elevTemp > elev) {
