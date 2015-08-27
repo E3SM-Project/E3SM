@@ -1,7 +1,7 @@
 # - Try to find PnetCDF
 #
-# This can be controlled by setting the PnetCDF_DIR (or, equivalently, the 
-# PNETCDF environment variable), or PnetCDF_<lang>_DIR CMake variables, where
+# This can be controlled by setting the PnetCDF_PATH (or, equivalently, the 
+# PNETCDF environment variable), or PnetCDF_<lang>_PATH CMake variables, where
 # <lang> is the COMPONENT language one needs.
 #
 # Once done, this will define:
