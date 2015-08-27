@@ -31,7 +31,8 @@ installation path with the CMake variable `XXX_PATH`.  If the `C` and
 `Fortran` libraries for the dependency are installed in different locations
 (such as can be done with NetCDF), then you can specify individually
 `XXX_C_PATH` and `XXX_Fortran_PATH`.  Hence, you can specify the locations
-of both NetCDF-C, NetCDF-Fortran, and PnetCDF with the CMake line:
+of both NetCDF-C and NetCDF-Fortran, as well as PnetCDF, with the following
+CMake configuration line:
 
 ```
 CC=mpicc FC=mpif90 cmake -DNetCDF_C_PATH=/path/to/netcdf-c \
@@ -42,10 +43,36 @@ CC=mpicc FC=mpif90 cmake -DNetCDF_C_PATH=/path/to/netcdf-c \
 
 This works for the dependencies: `NetCDF`, `PnetCDF`, `HDF5`, `LIBZ`, `SZIP`.
 
+### Additional CMake Options
+
+Additional configuration options can be specified on the command line.
+
+The `PIO_ENABLE_TIMING` option can be set to `ON` or `OFF` to enable or
+disable the use of GPTL timing in the PIO libraries.  This feature requires
+the GPTL C library for the PIO `C` library and the GPTL Fortran library with
+the `perf_mod.mod` and `perf_utils.mod` interface modules.  If these GPTL
+libraries are already installed on the system, the user can point PIO to the
+location of these libraries with the `GPTL_PATH` variable (or, individually,
+`GPTL_C_PATH` and `GPTL_Fortran_Perf_PATH` variables).  However, if these
+GPTL libraries are not installed on the system, and GPTL cannot be found,
+then PIO will build its own internal version of GPTL.  
+
+If PnetCDF is not installed on the system, the user can disable its use by
+setting `-DWITH_PNETCDF=OFF`.  This will disable the search for PnetCDF on the
+system and disable the use of PnetCDF from within PIO.
+
+If the user wishes to disable the PIO tests, then the user can set the
+variable `-DPIO_ENABLE_TESTS=OFF`.  This will entirely disable the CTest 
+testing suite, as well as remove all of the test build targets.
+
+If you wish to install PIO in a safe location for use later with other
+software, you may set the `CMAKE_INSTALL_PREFIX` variable to point to the
+desired install location.
+
 ## Building
 
-Once you have configured PIO with CMake in a build directory.  From within
-the build directory, build PIO with:
+Once you have successfully configured PIO with CMake in a build directory.
+From within the build directory, build PIO with:
 
 ```
 make
@@ -55,7 +82,8 @@ This will build the `pioc` and `piof` libraries.
 
 ## Testing
 
-If you desire to do testing, you may build the test executables with:
+If you desire to do testing, and `PIO_ENABLE_TESTS=ON` (which is the default
+setting), you may build the test executables with:
 
 ```
 make tests
@@ -67,13 +95,17 @@ Once the tests have been built, you may run tests with:
 ctest
 ```
 
-Alternatively, you may build the test executables and then run tests immediately with:
+If you have not run `make tests` before you run `ctest`, then you will see
+all of the tests fail.
+
+Alternatively, you may build the test executables and then run tests 
+immediately with:
 
 ```
 make check
 ```
 
-which operates similarly to the `make check` Autotools target.
+(similar to the typical `make check` Autotools target).
 
 **NOTE:** It is important to note that these tests are designed to run in parallel.
 If you are on one of the supported supercomputing platforms (i.e., NERSC, NWSC, ALCF, 
@@ -85,3 +117,15 @@ job submission script.  It is important to understand, however, that `ctest` its
 will preface all of the test executable commands with the appropriate `mpirun`/`mpiexec`/`runjob`/etc.
 Hence, you should not further preface the `ctest` command with these MPI launchers.
 
+## Installing
+
+Once you have built the PIO libraries, you may install them in the location
+specified by the `CMAKE_INSTALL_PREFIX`.  To do this, simply type:
+
+```
+make install
+```
+
+If the internal GPTL libraries were built (because GPTL could not be found
+and the `PIO_ENABLE_TIMING` variable is set to `ON`), then these libraries
+will be installed with PIO.
