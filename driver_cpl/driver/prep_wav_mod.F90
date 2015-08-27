@@ -194,6 +194,7 @@ contains
        efi = mod((ewi-1),num_inst_frc) + 1
 
        x2w_wx => component_get_x2c_cx(wav(ewi)) 
+
        call prep_wav_merge(a2x_wx(eai), o2x_wx(eoi), i2x_wx(eii), fractions_wx(efi), x2w_wx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
@@ -265,6 +266,7 @@ contains
 
     ! Create input wave state directly from atm, ocn, ice output state
 
+    call mct_avect_zero(x2w_w)
     call mct_aVect_copy(aVin=a2x_w, aVout=x2w_w, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     call mct_aVect_copy(aVin=o2x_w, aVout=x2w_w, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     call mct_aVect_copy(aVin=i2x_w, aVout=x2w_w, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
