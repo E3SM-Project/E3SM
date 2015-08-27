@@ -154,6 +154,7 @@ contains
            soilhydrology_vars, soil_water_retention_curve,        &
            cnstate_vars, carbonflux_vars, carbonstate_vars,       &
            nitrogenflux_vars, nitrogenstate_vars,                 &
+           phosphorusflux_vars, phosphorusstate_vars,             &
            ch4_vars                                               &
            )
 
@@ -174,24 +175,39 @@ contains
     type(energyflux_type)    , intent(inout) :: energyflux_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
 
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(ch4_type)           , intent(inout) :: ch4_vars
+    type(cnstate_type)          , intent(inout) :: cnstate_vars
+    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
+    type(carbonstate_type)      , intent(inout) :: carbonstate_vars
+    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
+    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
+    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
+    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
+    type(ch4_type)              , intent(inout) :: ch4_vars
     type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
     !-----------------------------------------------------------------------
 
     character(len=256) :: subname = "get_clm_bgc_data"
 
-    call get_clm_soil_property(clm_bgc_data, bounds, num_soilc, filter_soilc, soilstate_vars)
-    call get_clm_soil_tempwater(clm_bgc_data,     &
-           bounds, num_soilc, filter_soilc,           &
-           atm2lnd_vars, soilstate_vars,              &
-           waterstate_vars, temperature_vars,         &
-           soil_water_retention_curve)
+    call get_clm_soil_property(clm_bgc_data,            &
+                    bounds, num_soilc, filter_soilc,    &
+                    soilstate_vars)
+
+    call get_clm_soil_tempwater(clm_bgc_data,           &
+                    bounds, num_soilc, filter_soilc,    &
+                    atm2lnd_vars, soilstate_vars,       &
+                    waterstate_vars, temperature_vars,  &
+                    soil_water_retention_curve)
+
+    call get_clm_bgc_state(clm_bgc_data,                    &
+                    bounds, num_soilc, filter_soilc,        &
+                    carbonstate_vars, nitrogenstate_vars,   &
+                    phosphorusstate_vars)
+
+    call get_clm_bgc_flux(clm_bgc_data,                                 &
+                    bounds, num_soilc, filter_soilc,                    &
+                    cnstate_vars, carbonflux_vars, nitrogenflux_vars,   &
+                    phosphorusflux_vars)
 
   end subroutine get_clm_bgc_data
   !-----------------------------------------------------------------------
@@ -1117,7 +1133,9 @@ contains
   ! !IROUTINE: get_clm_soil_properties
   !
   ! !INTERFACE:
-  subroutine get_clm_soil_property(clm_bgc_data, bounds, num_soilc, filter_soilc, soilstate_vars)
+  subroutine get_clm_soil_property(clm_bgc_data,            &
+                        bounds, num_soilc, filter_soilc,    &
+                        soilstate_vars)
     !
     ! !DESCRIPTION:
     ! get soil column physical properties to PFLOTRAN
@@ -1165,7 +1183,10 @@ contains
          hksat      =>  soilstate_vars%hksat_col      , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
          sucsat     =>  soilstate_vars%sucsat_col     , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
          watsat     =>  soilstate_vars%watsat_col     , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
-         watfc      =>  soilstate_vars%watfc_col        & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+         watfc      =>  soilstate_vars%watfc_col      , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+
+         porosity   =>  soilstate_vars%porosity_col   , &
+         eff_porosity=> soilstate_vars%eff_porosity_col &
          )
 
 !-------------------------------------------------------------------------------------
@@ -1182,6 +1203,9 @@ contains
             clm_bgc_data%sucsat_col(c,j)    = sucsat(c,j)
             clm_bgc_data%watsat_col(c,j)    = watsat(c,j)
             clm_bgc_data%watfc_col(c,j)     = watfc(c,j)
+
+            clm_bgc_data%porosity_col(c,j)      = porosity(c,j)
+            clm_bgc_data%eff_porosity_col(c,j)  = eff_porosity(c,j)
         end do
     end do
 
@@ -1203,11 +1227,11 @@ contains
   ! !ROUTINE: get_clm_soil_th
   !
   ! !INTERFACE:
-  subroutine get_clm_soil_tempwater(clm_bgc_data,     &
-           bounds, num_soilc, filter_soilc,           &
-           atm2lnd_vars, soilstate_vars,              &
-           waterstate_vars, temperature_vars,         &
-           soil_water_retention_curve)
+  subroutine get_clm_soil_tempwater(clm_bgc_data,           &
+                       bounds, num_soilc, filter_soilc,     &
+                       atm2lnd_vars, soilstate_vars,        &
+                       waterstate_vars, temperature_vars,   &
+                       soil_water_retention_curve)
   !
   ! !DESCRIPTION:
   !  update soil temperature/saturation from CLM to PFLOTRAN for driving PF's BGC
@@ -1217,14 +1241,11 @@ contains
     use clm_time_manager    , only : get_nstep
     use shr_const_mod       , only : SHR_CONST_G
 
-    use PFLOTRAN_Constants_module
+!    use PFLOTRAN_Constants_module
 
   ! !ARGUMENTS:
     implicit none
 
-!#include "finclude/petscsys.h"
-!#include "finclude/petscvec.h"
-!#include "finclude/petscvec.h90"
 !    logical                  , intent(in) :: pftmode, pfhmode
     type(bounds_type)        , intent(in) :: bounds           ! bounds
     integer                  , intent(in) :: num_soilc        ! number of column soil points in column filter
@@ -1942,264 +1963,74 @@ contains
   !
   ! !INTERFACE:
 
-  subroutine get_clm_bgc_state(bounds,    &
-           num_soilc, filter_soilc,      &
-           carbonstate_vars,             &
-           nitrogenstate_vars,           &
-           ch4_vars                      &
-           )
+  subroutine get_clm_bgc_state(clm_bgc_data,                    &
+                        bounds, num_soilc, filter_soilc,        &
+                        carbonstate_vars, nitrogenstate_vars,   &
+                        phosphorusstate_vars)
 
-#ifndef FLEXIBLE_POOLS
-    use clm_varpar, only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-#endif
 
     implicit none
 
-    type(bounds_type)        , intent(in) :: bounds
-    integer                  , intent(in) :: num_soilc         ! number of soil columns in filter
-    integer                  , intent(in) :: filter_soilc(:)   ! filter for soil columns
+    type(bounds_type)           , intent(in) :: bounds
+    integer                     , intent(in) :: num_soilc         ! number of soil columns in filter
+    integer                     , intent(in) :: filter_soilc(:)   ! filter for soil columns
 
-    type(carbonstate_type)   , intent(in) :: carbonstate_vars
-    type(nitrogenstate_type) , intent(in) :: nitrogenstate_vars
-    type(ch4_type)           , intent(in) :: ch4_vars
+    type(carbonstate_type)      , intent(in) :: carbonstate_vars
+    type(nitrogenstate_type)    , intent(in) :: nitrogenstate_vars
+    type(phosphorusstate_type)  , intent(in) :: phosphorusstate_vars
+!    type(ch4_type)           , intent(in) :: ch4_vars
+    type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
-    character(len=256) :: subname = "get_clm_bgc_concentration"
-
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscvec.h90"
+    character(len=256) :: subname = "get_clm_bgc_state"
 
     ! Local variables
-    integer  :: g, fc, c, j, k
-    integer  :: gcount, cellcount
-    real(r8) :: wtgcell, realc_gcell, realn_gcell
+    integer  :: fc, c, j, k
+!    integer  :: gcount, cellcount
+!    real(r8) :: wtgcell, realc_gcell, realn_gcell
 
-!#ifdef FLEXIBLE_POOLS
-!    integer  :: vec_offset
-!    PetscScalar, pointer :: decomp_cpools_vr_clm_loc(:)      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_npools_vr_clm_loc(:)      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-!#else
-!    integer  :: isom
-!    PetscScalar, pointer :: decomp_cpools_vr_lit1_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_lit2_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_lit3_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_cwd_clm_loc(:)  ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_som1_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_som2_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_som3_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_cpools_vr_som4_clm_loc(:) ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-!    PetscScalar, pointer :: decomp_npools_vr_lit1_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-!    PetscScalar, pointer :: decomp_npools_vr_lit2_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-!    PetscScalar, pointer :: decomp_npools_vr_lit3_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-!    PetscScalar, pointer :: decomp_npools_vr_cwd_clm_loc(:)  ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-!    PetscScalar, pointer :: decomp_npools_vr_som1_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) n pools
-!    PetscScalar, pointer :: decomp_npools_vr_som2_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) n pools
-!    PetscScalar, pointer :: decomp_npools_vr_som3_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) n pools
-!    PetscScalar, pointer :: decomp_npools_vr_som4_clm_loc(:) ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) n pools
-!#endif
-!
-!    PetscScalar, pointer :: smin_no3_vr_clm_loc(:)           ! (gN/m3) vertically-resolved soil mineral NO3
-!    PetscScalar, pointer :: smin_nh4_vr_clm_loc(:)           ! (gN/m3) vertically-resolved soil mineral NH4
-!    PetscScalar, pointer :: smin_nh4sorb_vr_clm_loc(:)       ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
-!
-!    PetscErrorCode :: ierr
-    !
+
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr=> carbonstate_vars%decomp_cpools_vr_col   , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-       decomp_npools_vr=> nitrogenstate_vars%decomp_npools_vr_col , &      ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-       smin_no3_vr     => nitrogenstate_vars%smin_no3_vr_col      , &      ! (gN/m3) vertically-resolved soil mineral NO3
-       smin_nh4_vr     => nitrogenstate_vars%smin_nh4_vr_col      , &      ! (gN/m3) vertically-resolved soil mineral NH4
-       smin_nh4sorb_vr => nitrogenstate_vars%smin_nh4sorb_vr_col   &       ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
-    )
+       decomp_cpools_vr=> carbonstate_vars%decomp_cpools_vr_col     , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+       decomp_npools_vr=> nitrogenstate_vars%decomp_npools_vr_col   , &      ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+       decomp_ppools_vr=> phosphorusstate_vars%decomp_ppools_vr_col , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
 
-!#ifdef FLEXIBLE_POOLS
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_clmp, decomp_cpools_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_clmp, decomp_npools_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!#else
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_lit1_clmp, decomp_cpools_vr_lit1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_lit2_clmp, decomp_cpools_vr_lit2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_lit3_clmp, decomp_cpools_vr_lit3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_cwd_clmp,  decomp_cpools_vr_cwd_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_som1_clmp, decomp_cpools_vr_som1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_som2_clmp, decomp_cpools_vr_som2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_som3_clmp, decomp_cpools_vr_som3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_cpools_vr_som4_clmp, decomp_cpools_vr_som4_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_lit1_clmp, decomp_npools_vr_lit1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_lit2_clmp, decomp_npools_vr_lit2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_lit3_clmp, decomp_npools_vr_lit3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_cwd_clmp,  decomp_npools_vr_cwd_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_som1_clmp, decomp_npools_vr_som1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_som2_clmp, decomp_npools_vr_som2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_som3_clmp, decomp_npools_vr_som3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%decomp_npools_vr_som4_clmp, decomp_npools_vr_som4_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!#endif
+       smin_no3_vr     => nitrogenstate_vars%smin_no3_vr_col        , &      ! (gN/m3) vertically-resolved soil mineral NO3
+       smin_nh4_vr     => nitrogenstate_vars%smin_nh4_vr_col        , &      ! (gN/m3) vertically-resolved soil mineral NH4
+       smin_nh4sorb_vr => nitrogenstate_vars%smin_nh4sorb_vr_col    , &      ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+
+       solutionp_vr    => phosphorusstate_vars%solutionp_vr_col     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+       labilep_vr      => phosphorusstate_vars%labilep_vr_col       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+       secondp_vr      => phosphorusstate_vars%secondp_vr_col       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+       sminp_vr        => phosphorusstate_vars%sminp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
+       occlp_vr        => phosphorusstate_vars%occlp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+       primp_vr        => phosphorusstate_vars%primp_vr_col           & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
+    )
 !
-!    call VecGetArrayF90(clm_pf_idata%smin_no3_vr_clmp, smin_no3_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%smin_nh4_vr_clmp, smin_nh4_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%smin_nh4sorb_vr_clmp, smin_nh4sorb_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
+    do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        do j = 1, nlevdecomp
+            do k = 1, ndecomp_pools
+                clm_bgc_data%decomp_cpools_vr_col(c,j,k)    = decomp_cpools_vr(c,j,k)
+                clm_bgc_data%decomp_npools_vr_col(c,j,k)    = decomp_npools_vr(c,j,k)
+                clm_bgc_data%decomp_ppools_vr_col(c,j,k)    = decomp_ppools_vr(c,j,k)
+            end do
+
+            clm_bgc_data%smin_no3_vr_col(c,j)           = smin_no3_vr(c,j)
+            clm_bgc_data%smin_nh4_vr_col(c,j)           = smin_nh4_vr(c,j)
+            clm_bgc_data%smin_nh4sorb_vr_col(c,j)       = smin_nh4sorb_vr(c,j)
+
+            clm_bgc_data%solutionp_vr_col(c,j)          = solutionp_vr(c,j)
+            clm_bgc_data%labilep_vr_col(c,j)            = labilep_vr(c,j)
+            clm_bgc_data%secondp_vr_col(c,j)            = secondp_vr(c,j)
+            clm_bgc_data%sminp_vr_col(c,j)              = solutionp_vr(c,j) + labilep_vr(c,j) + secondp_vr(c,j)
+            clm_bgc_data%occlp_vr_col(c,j)              = occlp_vr(c,j)
+            clm_bgc_data%primp_vr_col(c,j)              = primp_vr(c,j)
+        end do
+    end do
 !
-!#ifdef FLEXIBLE_POOLS
-!    decomp_cpools_vr_clm_loc(:) = 0._r8
-!    decomp_npools_vr_clm_loc(:) = 0._r8
-!#else
-!    decomp_cpools_vr_lit1_clm_loc(:) = 0._r8
-!    decomp_cpools_vr_lit2_clm_loc(:) = 0._r8
-!    decomp_cpools_vr_lit3_clm_loc(:) = 0._r8
-!    decomp_cpools_vr_cwd_clm_loc(:)  = 0._r8
-!    decomp_cpools_vr_som1_clm_loc(:) = 0._r8
-!    decomp_cpools_vr_som2_clm_loc(:) = 0._r8
-!    decomp_cpools_vr_som3_clm_loc(:) = 0._r8
-!    decomp_cpools_vr_som4_clm_loc(:) = 0._r8
-!    decomp_npools_vr_lit1_clm_loc(:) = 0._r8
-!    decomp_npools_vr_lit2_clm_loc(:) = 0._r8
-!    decomp_npools_vr_lit3_clm_loc(:) = 0._r8
-!    decomp_npools_vr_cwd_clm_loc(:)  = 0._r8
-!    decomp_npools_vr_som1_clm_loc(:) = 0._r8
-!    decomp_npools_vr_som2_clm_loc(:) = 0._r8
-!    decomp_npools_vr_som3_clm_loc(:) = 0._r8
-!    decomp_npools_vr_som4_clm_loc(:) = 0._r8
-!#endif
-!
-!    smin_no3_vr_clm_loc(:)      = 0._r8
-!    smin_nh4_vr_clm_loc(:)      = 0._r8
-!    smin_nh4sorb_vr_clm_loc(:)  = 0._r8
-!
-!    do fc = 1, num_soilc  ! will need to extend to multiple columns?
-!       c = filter_soilc(fc)
-!
-!       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data to PF for inactive cell
-!
-!       g       = col%gridcell(c)
-!       wtgcell = col%wtgcell(c)
-!
-!       gcount = g - bounds%begg
-!       do j = 1, nlevdecomp
-!
-!          ! note: all clm-pf soil layers are 'nzclm_mapped' for both TH/BGC,
-!          !       but in CLM, TH is within nlevsoi, bgc within 'nlevdecomp'
-!
-!          cellcount = gcount*clm_pf_idata%nzclm_mapped+j
-!
-!          if(j <= clm_pf_idata%nzclm_mapped) then
-!
-!             do k = 1, ndecomp_pools
-!                 realc_gcell = decomp_cpools_vr(c,j,k) &
-!                              /clm_pf_idata%C_molecular_weight * wtgcell
-!                 realn_gcell = decomp_npools_vr(c,j,k) &
-!                              /clm_pf_idata%N_molecular_weight * wtgcell
-!
-!#ifdef FLEXIBLE_POOLS
-!                 vec_offset = (k-1)*clm_pf_idata%ngclm_sub       ! decomp_pool vec: 'cell' first, then 'species'
-!
-!                 decomp_cpools_vr_clm_loc(vec_offset+cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_clm_loc(vec_offset+cellcount)
-!                 decomp_npools_vr_clm_loc(vec_offset+cellcount) = realn_gcell &
-!                         + decomp_npools_vr_clm_loc(vec_offset+cellcount)
-!
-!#else
-!                 if (k==i_met_lit) then
-!                    decomp_cpools_vr_lit1_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_lit1_clm_loc(cellcount)
-!                    decomp_npools_vr_lit1_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_lit1_clm_loc(cellcount)
-!
-!                 elseif (k==i_cel_lit) then
-!                    decomp_cpools_vr_lit2_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_lit2_clm_loc(cellcount)
-!                    decomp_npools_vr_lit2_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_lit2_clm_loc(cellcount)
-!
-!                 elseif (k==i_lig_lit) then
-!                    decomp_cpools_vr_lit3_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_lit3_clm_loc(cellcount)
-!                    decomp_npools_vr_lit3_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_lit3_clm_loc(cellcount)
-!
-!                 elseif (k==i_cwd) then
-!                    decomp_cpools_vr_cwd_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_cwd_clm_loc(cellcount)
-!                    decomp_npools_vr_cwd_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_cwd_clm_loc(cellcount)
-!
-!                 else
-!                    isom = k-i_cwd
-!                    if (isom==1 .and. isom<=ndecomp_pools) then
-!                       decomp_cpools_vr_som1_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_som1_clm_loc(cellcount)
-!                       decomp_npools_vr_som1_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_som1_clm_loc(cellcount)
-!
-!                    elseif (isom==2 .and. isom<=ndecomp_pools) then
-!                       decomp_cpools_vr_som2_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_som2_clm_loc(cellcount)
-!                       decomp_npools_vr_som2_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_som2_clm_loc(cellcount)
-!
-!                    elseif (isom==3 .and. isom<=ndecomp_pools) then
-!                       decomp_cpools_vr_som3_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_som3_clm_loc(cellcount)
-!                       decomp_npools_vr_som3_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_som3_clm_loc(cellcount)
-!
-!                    elseif (isom==4 .and. isom<=ndecomp_pools) then       ! if using 'century' type, will end here
-!                       decomp_cpools_vr_som4_clm_loc(cellcount) = realc_gcell &
-!                         + decomp_cpools_vr_som4_clm_loc(cellcount)
-!                       decomp_npools_vr_som4_clm_loc(cellcount) = realn_gcell &
-!                         + decomp_npools_vr_som4_clm_loc(cellcount)
-!                    end if
-!
-!                end if
-!#endif
-!
-!             enddo ! do k=1, ndecomp_pools
-!
-!             realn_gcell = smin_no3_vr(c,j)/clm_pf_idata%N_molecular_weight * wtgcell
-!             smin_no3_vr_clm_loc(cellcount) = realn_gcell &
-!                         + smin_no3_vr_clm_loc(cellcount)
-!
-!             realn_gcell = smin_nh4_vr(c,j)/clm_pf_idata%N_molecular_weight * wtgcell
-!             smin_nh4_vr_clm_loc(cellcount) = realn_gcell &
-!                         + smin_nh4_vr_clm_loc(cellcount)
-!
-!             realn_gcell = smin_nh4sorb_vr(c,j)/clm_pf_idata%N_molecular_weight * wtgcell
-!             smin_nh4sorb_vr_clm_loc(cellcount) = realn_gcell &
-!                         + smin_nh4sorb_vr_clm_loc(cellcount)
-!
-!           endif
-!
-!       enddo ! do j = 1, nlevdecomp
-!
-!    enddo ! do c = begc, endc
-!
-!#ifdef FLEXIBLE_POOLS
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_clmp, decomp_cpools_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_clmp, decomp_npools_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!#else
+
 !write(*,'(A,10E14.6)')">>>DEBUG | dzsoi_decomp(nlevsoi)=",dzsoi_decomp(1:nlevsoi)
 write(*,'(A,50(1h-))')">>>DEBUG | get_clm_bgc_conc,lev=1 for C & N"
 write(*,'(12A14)')"lit1","lit2","lit3","cwd","som1","som2","som3","som4","no3","nh4","nh4sorb"
@@ -2227,47 +2058,6 @@ write(*,'(12E14.6)')decomp_npools_vr(1,1,1:8),smin_no3_vr(1,1),smin_nh4_vr(1,1),
 !write(*,'(A30,12E14.6)')"DEBUG | no3=",smin_no3_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
 !write(*,'(A30,12E14.6)')"DEBUG | nh4=",smin_nh4_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
 !write(*,'(A30,12E14.6)')"DEBUG | nh4sorb=",smin_nh4sorb_vr_clm_loc(1:nlevdecomp)*clm_pf_idata%N_molecular_weight
-write(*,*)'---------------------------------------'
-
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_lit1_clmp, decomp_cpools_vr_lit1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_lit2_clmp, decomp_cpools_vr_lit2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_lit3_clmp, decomp_cpools_vr_lit3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_cwd_clmp,  decomp_cpools_vr_cwd_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_som1_clmp, decomp_cpools_vr_som1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_som2_clmp, decomp_cpools_vr_som2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_som3_clmp, decomp_cpools_vr_som3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_cpools_vr_som4_clmp, decomp_cpools_vr_som4_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_lit1_clmp, decomp_npools_vr_lit1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_lit2_clmp, decomp_npools_vr_lit2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_lit3_clmp, decomp_npools_vr_lit3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_cwd_clmp,  decomp_npools_vr_cwd_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_som1_clmp, decomp_npools_vr_som1_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_som2_clmp, decomp_npools_vr_som2_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_som3_clmp, decomp_npools_vr_som3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%decomp_npools_vr_som4_clmp, decomp_npools_vr_som4_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!#endif
-!    call VecRestoreArrayF90(clm_pf_idata%smin_no3_vr_clmp, smin_no3_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%smin_nh4_vr_clmp, smin_nh4_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%smin_nh4sorb_vr_clmp, smin_nh4sorb_vr_clm_loc, ierr)
-!    CHKERRQ(ierr)
 
   end associate
   end subroutine get_clm_bgc_state
@@ -2277,9 +2067,10 @@ write(*,*)'---------------------------------------'
   ! !IROUTINE: get_clm_bgc_rate()
   !
   ! !INTERFACE:
-  subroutine get_clm_bgc_flux(bounds, &
-          num_soilc, filter_soilc,    &
-          cnstate_vars, carbonflux_vars, nitrogenflux_vars)
+  subroutine get_clm_bgc_flux(clm_bgc_data,                                 &
+                        bounds, num_soilc, filter_soilc,                    &
+                        cnstate_vars, carbonflux_vars, nitrogenflux_vars,   &
+                        phosphorusflux_vars)
 
   !
   ! !DESCRIPTION:
@@ -2299,20 +2090,19 @@ write(*,*)'---------------------------------------'
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
 
-    type(cnstate_type)       , intent(in) :: cnstate_vars
-    type(carbonflux_type)    , intent(in) :: carbonflux_vars
-    type(nitrogenflux_type)  , intent(in) :: nitrogenflux_vars
+    type(cnstate_type)                  , intent(in) :: cnstate_vars
+    type(carbonflux_type)               , intent(in) :: carbonflux_vars
+    type(nitrogenflux_type)             , intent(in) :: nitrogenflux_vars
+    type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
+    type(clm_bgc_interface_data_type)   , intent(inout) :: clm_bgc_data
 
-    character(len=256) :: subname = "get_clm_bgc_rate"
+    character(len=256) :: subname = "get_clm_bgc_flux"
 
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscvec.h90"
 
  ! !LOCAL VARIABLES:
     integer  :: fc, c, g, j, k                         ! do loop indices
-    integer  :: gcount, cellcount
-    real(r8) :: wtgcell, realc_gcell, realn_gcell
+!    integer  :: gcount, cellcount
+!    real(r8) :: wtgcell, realc_gcell, realn_gcell
 
     real(r8) :: dtime                               ! land model time step (sec)
 
@@ -2321,44 +2111,16 @@ write(*,*)'---------------------------------------'
     real(r8) :: r_nh4_no3_fert(bounds%begc:bounds%endc)
     real(r8) :: fnh4_dep, fnh4_fert
 
-    ! C/N source/sink rates as inputs for pflotran: Units - moles/m3/s (note: do unit conversion here for input rates)
-!#ifdef FLEXIBLE_POOLS
-!    integer  :: vec_offset
-!    PetscScalar, pointer :: rate_decomp_c_clm_loc(:)       !
-!    PetscScalar, pointer :: rate_decomp_n_clm_loc(:)       !
-!#else
-!    integer  :: isom
-!    PetscScalar, pointer :: rate_lit1c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_lit2c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_lit3c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_cwdc_clm_loc(:)    !
-!    PetscScalar, pointer :: rate_som1c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_som2c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_som3c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_som4c_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_lit1n_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_lit2n_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_lit3n_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_cwdn_clm_loc(:)    !
-!    PetscScalar, pointer :: rate_som1n_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_som2n_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_som3n_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_som4n_clm_loc(:)   !
-!#endif
-!
-!    PetscScalar, pointer :: rate_plantndemand_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_smin_no3_clm_loc(:)   !
-!    PetscScalar, pointer :: rate_smin_nh4_clm_loc(:)   !
-!
-!    PetscErrorCode :: ierr
+    ! C/N source/sink rates as inputs for soil bgc
 
     !
     !---------------------------------------------------------------------------
     !
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
-      col_net_to_decomp_cpools_vr    => carbonflux_vars%externalc_to_decomp_cpools_col   , &
-      col_net_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col , &
+      externalc_to_decomp_cpools_vr    => carbonflux_vars%externalc_to_decomp_cpools_col   , &
+      externaln_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col , &
+      externalp_to_decomp_ppools_vr    => phosphorusflux_vars%externalp_to_decomp_ppools_col , &
       ! inorg. nitrogen source
       ndep_to_sminn                  => nitrogenflux_vars%ndep_to_sminn_col                 , &
       nfix_to_sminn                  => nitrogenflux_vars%nfix_to_sminn_col                 , &
@@ -2372,211 +2134,60 @@ write(*,*)'---------------------------------------'
       ! inorg. nitrogen sink (if not going to be done in PF)
       no3_net_transport_vr           => nitrogenflux_vars%no3_net_transport_vr_col          , &
       ! inorg. nitrogen sink potential
-      col_plant_ndemand_vr           => nitrogenflux_vars%plant_ndemand_vr_col          &
+      col_plant_ndemand_vr           => nitrogenflux_vars%plant_ndemand_vr_col              , &
+
+      pdep_to_sminp                   => phosphorusflux_vars%pdep_to_sminp_col             , &
+      ! assume pdep_prof = ndep_prof
+      fert_p_to_sminp                 => phosphorusflux_vars%fert_p_to_sminp_col           , &
+      supplement_to_sminp_vr          => phosphorusflux_vars%supplement_to_sminp_vr_col    , &
+
+      sminp_net_transport_vr         => phosphorusflux_vars%sminp_net_transport_vr_col      , &
+      col_plant_pdemand_vr           => phosphorusflux_vars%plant_pdemand_vr_col              &
     )
 
     dtime = get_step_size()
 
-!#ifdef FLEXIBLE_POOLS
-!    call VecGetArrayF90(clm_pf_idata%rate_decomp_c_clmp, rate_decomp_c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_decomp_n_clmp, rate_decomp_n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!#else
-!    call VecGetArrayF90(clm_pf_idata%rate_lit1c_clmp, rate_lit1c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_lit2c_clmp, rate_lit2c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_lit3c_clmp, rate_lit3c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_cwdc_clmp, rate_cwdc_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som1c_clmp, rate_som1c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som2c_clmp, rate_som2c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som3c_clmp, rate_som3c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som4c_clmp, rate_som4c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_lit1n_clmp, rate_lit1n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_lit2n_clmp, rate_lit2n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_lit3n_clmp, rate_lit3n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_cwdn_clmp, rate_cwdn_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som1n_clmp, rate_som1n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som2n_clmp, rate_som2n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som3n_clmp, rate_som3n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_som4n_clmp, rate_som4n_clm_loc, ierr)
-!#endif
+
 !
-!    call VecGetArrayF90(clm_pf_idata%rate_plantndemand_clmp, rate_plantndemand_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_smin_no3_clmp, rate_smin_no3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%rate_smin_nh4_clmp, rate_smin_nh4_clm_loc, ierr)
-!    CHKERRQ(ierr)
+    r_nh4_no3_dep(:)  = 1.0_r8      ! temporarily assuming half of N dep is in NH4 and another half in NO3
+    r_nh4_no3_fert(:) = 1.0_r8      ! temporarily assiming half of N fertilization is in NH4 and another half in NO3
 !
-!    ! Initialize to ZERO
-!#ifdef FLEXIBLE_POOLS
-!    rate_decomp_c_clm_loc(:) = 0.0_r8
-!    rate_decomp_n_clm_loc(:) = 0.0_r8
-!#else
-!    rate_lit1c_clm_loc(:) = 0.0_r8
-!    rate_lit2c_clm_loc(:) = 0.0_r8
-!    rate_lit3c_clm_loc(:) = 0.0_r8
-!    rate_cwdc_clm_loc (:) = 0.0_r8
-!    rate_som1c_clm_loc(:) = 0.0_r8
-!    rate_som2c_clm_loc(:) = 0.0_r8
-!    rate_som3c_clm_loc(:) = 0.0_r8
-!    rate_som4c_clm_loc(:) = 0.0_r8
-!    rate_lit1n_clm_loc(:) = 0.0_r8
-!    rate_lit2n_clm_loc(:) = 0.0_r8
-!    rate_lit3n_clm_loc(:) = 0.0_r8
-!    rate_cwdn_clm_loc (:) = 0.0_r8
-!    rate_som1n_clm_loc(:) = 0.0_r8
-!    rate_som2n_clm_loc(:) = 0.0_r8
-!    rate_som3n_clm_loc(:) = 0.0_r8
-!    rate_som4n_clm_loc(:) = 0.0_r8
-!#endif
-!    rate_smin_no3_clm_loc(:) = 0.0_r8
-!    rate_smin_nh4_clm_loc(:) = 0.0_r8
-!    rate_plantndemand_clm_loc(:) = 0.0_r8
-!
-!    r_nh4_no3_dep(:)  = 1.0_r8      ! temporarily assuming half of N dep is in NH4 and another half in NO3
-!    r_nh4_no3_fert(:) = 1.0_r8      ! temporarily assiming half of N fertilization is in NH4 and another half in NO3
-!
-!    do fc = 1,num_soilc
-!       c = filter_soilc(fc)
-!       if ( col%wtgcell(c) <= 0._r8 .or. (.not.col%active(c)) ) cycle     ! don't assign data from PF for inactive cell
-!
-!       g = col%gridcell(c)
-!       gcount = g - bounds%begg
-!       wtgcell = col%wtgcell(c)
-!
-!       do j = 1, nlevdecomp
-!          cellcount = gcount*clm_pf_idata%nzclm_mapped+j
-!
-!          ! note: all clm-pf soil layers are 'clm_pf_idata%nzclm_mapped' for both TH/BGC,
-!          ! but in CLM, TH is within clm_pf_idata%nzclm_mapped, bgc within 'nlevdecomp'
-!          if(j <= clm_pf_idata%nzclm_mapped) then
-!
-!              do k = 1, ndecomp_pools
-!                ! need more checking here: how to weight column data onto grid (F.-M. Yuan)
-!                 realc_gcell = col_net_to_decomp_cpools_vr(c,j,k) &
-!                              /clm_pf_idata%C_molecular_weight * wtgcell
-!                 realn_gcell = col_net_to_decomp_npools_vr(c,j,k) &
-!                              /clm_pf_idata%N_molecular_weight * wtgcell
-!
-!#ifdef FLEXIBLE_POOLS
-!                 vec_offset = (k-1)*clm_pf_idata%ngclm_sub       ! decomp_pool vec: 'cell' first, then 'species'
-!
-!                 rate_decomp_c_clm_loc(vec_offset+cellcount) = realc_gcell &
-!                         + rate_decomp_c_clm_loc(vec_offset+cellcount)
-!                 rate_decomp_n_clm_loc(vec_offset+cellcount) = realn_gcell &
-!                         + rate_decomp_n_clm_loc(vec_offset+cellcount)
-!#else
-!                 if (k==i_met_lit) then
-!                    rate_lit1c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_lit1c_clm_loc(cellcount)
-!                    rate_lit1n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_lit1n_clm_loc(cellcount)
-!                 else if(k==i_cel_lit) then
-!                    rate_lit2c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_lit2c_clm_loc(cellcount)
-!                    rate_lit2n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_lit2n_clm_loc(cellcount)
-!                 else if(k==i_lig_lit) then
-!                    rate_lit3c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_lit3c_clm_loc(cellcount)
-!                    rate_lit3n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_lit3n_clm_loc(cellcount)
-!                 else if(k==i_cwd) then
-!                    rate_cwdc_clm_loc(cellcount) = realc_gcell &
-!                         + rate_cwdc_clm_loc(cellcount)
-!                    rate_cwdn_clm_loc(cellcount) = realn_gcell &
-!                         + rate_cwdn_clm_loc(cellcount)
-!                 !
-!                 else
-!                    isom = k-i_cwd
-!                    if(isom==1 .and. isom<=ndecomp_pools) then
-!                       rate_som1c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_som1c_clm_loc(cellcount)
-!                       rate_som1n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_som1n_clm_loc(cellcount)
-!                    else if(isom==2 .and. isom<=ndecomp_pools) then
-!                       rate_som2c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_som2c_clm_loc(cellcount)
-!                       rate_som2n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_som2n_clm_loc(cellcount)
-!                    else if(isom==3 .and. isom<=ndecomp_pools) then
-!                       rate_som3c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_som3c_clm_loc(cellcount)
-!                       rate_som3n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_som3n_clm_loc(cellcount)
-!                    else if(isom==4 .and. isom<=ndecomp_pools) then       ! if using 'century' type, will end here
-!                       rate_som4c_clm_loc(cellcount) = realc_gcell &
-!                         + rate_som4c_clm_loc(cellcount)
-!                       rate_som4n_clm_loc(cellcount) = realn_gcell &
-!                         + rate_som4n_clm_loc(cellcount)
-!                    end if
-!
-!                 endif
-!#endif
-!              enddo ! do k=1, ndecomp_pools
-!
-!              fnh4_dep  = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_dep(c)+1._r8)))
-!              fnh4_fert = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_fert(c)+1._r8)))
-!
-!              realn_gcell = &
-!                        ( fnh4_dep*ndep_to_sminn(c) * ndep_prof(c, j) +  &
-!                          fnh4_fert*fert_to_sminn(c) * ndep_prof(c, j) + &
-!                          fnh4_fert*supplement_to_sminn_vr(c,j) +        &
-!                          nfix_to_sminn(c) * nfixation_prof(c, j) +      &
-!                          soyfixn_to_sminn(c) * nfixation_prof(c, j)    &
-!                         )/ clm_pf_idata%N_molecular_weight * wtgcell
-!              rate_smin_nh4_clm_loc(cellcount) = realn_gcell + rate_smin_nh4_clm_loc(cellcount)
-!
-!              realn_gcell = &
-!                         ( (1._r8-fnh4_dep)*ndep_to_sminn(c) * ndep_prof(c, j) +  &
-!                           (1._r8-fnh4_fert)*fert_to_sminn(c) * ndep_prof(c, j) + &
-!                           (1._r8-fnh4_fert)*supplement_to_sminn_vr(c,j) &
-!                         )/ clm_pf_idata%N_molecular_weight * wtgcell
-!              ! PF hydrological mode is OFF, then NO3 transport NOT to calculate in PF
-!              ! then it's done in CLM, so need to pass those to PF as source/sink term (RT mass transfer)
-!              if(.not.pf_hmode) then
-!                realn_gcell = realn_gcell - (no3_net_transport_vr(c,j) &
-!                         )/ clm_pf_idata%N_molecular_weight * wtgcell
-!              endif
-!              rate_smin_no3_clm_loc(cellcount) = realn_gcell + rate_smin_no3_clm_loc(cellcount)
-!
-!              ! plant N uptake rate here IS the N demand (potential uptake)
-!              realn_gcell = col_plant_ndemand_vr(c,j) &
-!                           /clm_pf_idata%N_molecular_weight * wtgcell
-!              rate_plantndemand_clm_loc(cellcount) = rate_plantndemand_clm_loc(cellcount) + realn_gcell
-!
-!#ifdef CLM_PF_DEBUG
-!      write(pflotran_m%option%myrank+200,*) 'checking bgc-mass-rate - clm: ', &
-!        'rank=',pflotran_m%option%myrank, 'column=',c, 'layer_id=',j, &
-!        'rate_nh4_clm(layer_id)=',rate_smin_nh4_clm_loc(cellcount)
-!#endif
-!
-!          endif ! if (j<=clm_pf_idata%nzclm_mapped)
-!       enddo ! do j=1, nlevdecomp
-!    enddo ! do fc=1,numsoic
-!
-!#ifdef FLEXIBLE_POOLS
-!    call VecRestoreArrayF90(clm_pf_idata%rate_decomp_c_clmp, rate_decomp_c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_decomp_n_clmp, rate_decomp_n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!#else
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        fnh4_dep  = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_dep(c)+1._r8)))
+        fnh4_fert = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_fert(c)+1._r8)))
+
+        do j = 1, nlevdecomp
+            do k = 1, ndecomp_pools
+                clm_bgc_data%externalc_to_decomp_cpools_col(c,j,k)  = externalc_to_decomp_cpools_vr(c,j,k)
+                clm_bgc_data%externaln_to_decomp_npools_col(c,j,k)  = externaln_to_decomp_npools_vr(c,j,k)
+                clm_bgc_data%externalp_to_decomp_ppools_col(c,j,k)  = externalp_to_decomp_ppools_vr(c,j,k)
+            end do
+
+            clm_bgc_data%externaln_to_nh4_col(c,j)          =   fnh4_dep*ndep_to_sminn(c) * ndep_prof(c,j) +  &
+                                                                fnh4_fert*fert_to_sminn(c) * ndep_prof(c,j) + &
+                                                                fnh4_fert*supplement_to_sminn_vr(c,j) +       &
+                                                                nfix_to_sminn(c) * nfixation_prof(c,j) +      &
+                                                                soyfixn_to_sminn(c) * nfixation_prof(c,j)
+
+            clm_bgc_data%externaln_to_no3_col(c,j)          =   (1._r8-fnh4_dep)*ndep_to_sminn(c) * ndep_prof(c, j) +  &
+                                                                (1._r8-fnh4_fert)*fert_to_sminn(c) * ndep_prof(c, j) + &
+                                                                (1._r8-fnh4_fert)*supplement_to_sminn_vr(c,j)
+
+            clm_bgc_data%externalp_to_primp_col(c,j)        =   pdep_to_sminp(c)*ndep_prof(c, j)
+            clm_bgc_data%externalp_to_labilep_col(c,j)      =   fert_p_to_sminp(c)*ndep_prof(c, j)
+            clm_bgc_data%externalp_to_solutionp_col(c,j)    =   supplement_to_sminp_vr(c,j)
+
+            !! net flux to no3 = externaln_to_no3_col(c,j) - no3_net_transport_vr_col(c,j)
+            clm_bgc_data%no3_net_transport_vr_col(c,j)      = no3_net_transport_vr(c,j)
+            clm_bgc_data%sminp_net_transport_vr_col(c,j)    = sminp_net_transport_vr(c,j)  !!from solutionp
+
+            clm_bgc_data%plant_ndemand_vr_col(c,j)          = col_plant_ndemand_vr(c,j)
+            clm_bgc_data%plant_pdemand_vr_col(c,j)          = col_plant_pdemand_vr(c,j)
+
+        end do
+    end do
+
 !write(*,'(A,50(1h-))')">>>DEBUG | get_clm_bgc_rate,lev=1 for C & N"
 !write(*,'(12A14)')"lit1","lit2","lit3","cwd","som1","som2","som3","som4","no3","nh4","plantNdemand"
 !write(*,'(12E14.6)')col_net_to_decomp_cpools_vr(1,1,1:ndecomp_pools)
@@ -2606,46 +2217,6 @@ write(*,*)'---------------------------------------'
 !write(*,'(A30,10E14.6)')">>>DEBUG | rate_nh4=",(rate_smin_nh4_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
 !write(*,'(A30,10E14.6)')">>>DEBUG | rate_no3=",(rate_smin_no3_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
 !write(*,'(A30,10E14.6)')">>>DEBUG | rate_plantndemand=",(rate_plantndemand_clm_loc(1:10))*clm_pf_idata%N_molecular_weight
-
-!    call VecRestoreArrayF90(clm_pf_idata%rate_lit1c_clmp, rate_lit1c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_lit2c_clmp, rate_lit2c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_lit3c_clmp, rate_lit3c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_cwdc_clmp, rate_cwdc_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som1c_clmp, rate_som1c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som2c_clmp, rate_som2c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som3c_clmp, rate_som3c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som4c_clmp, rate_som4c_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_lit1n_clmp, rate_lit1n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_lit2n_clmp, rate_lit2n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_lit3n_clmp, rate_lit3n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_cwdn_clmp, rate_cwdn_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som1n_clmp, rate_som1n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som2n_clmp, rate_som2n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som3n_clmp, rate_som3n_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_som4n_clmp, rate_som4n_clm_loc, ierr)
-!#endif
-!
-!    call VecRestoreArrayF90(clm_pf_idata%rate_plantndemand_clmp, rate_plantndemand_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_smin_no3_clmp, rate_smin_no3_clm_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%rate_smin_nh4_clmp, rate_smin_nh4_clm_loc, ierr)
-!    CHKERRQ(ierr)
 
     end associate
   end subroutine get_clm_bgc_flux

@@ -788,9 +788,11 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
        call pflotranModelUpdateFinalWaypoint(pflotran_m, total_clmstep*dtime, ispfprint)
 
        ! Set CLM soil properties onto PFLOTRAN grid
-       call get_clm_soil_properties(bounds,  &
-              num_soilc, filter_soilc,       &
-              soilstate_vars)
+!       call get_clm_soil_properties(bounds,  &
+!              num_soilc, filter_soilc,       &
+!              soilstate_vars)
+       call get_clm_soil_properties(clm_bgc_data, &
+                    bounds, num_soilc, filter_soilc)
        call pflotranModelSetSoilProp(pflotran_m)
 
        ! if initializing soil 'TH' states from CLM to pflotran
@@ -843,10 +845,11 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
     ! ice-len adjusted porostiy
     if (.not.pf_frzmode) then
-        call get_clm_iceadj_porosity(               &
-           bounds, num_soilc, filter_soilc,         &
-           soilstate_vars, waterstate_vars)
-
+!        call get_clm_iceadj_porosity(               &
+!           bounds, num_soilc, filter_soilc,         &
+!           soilstate_vars, waterstate_vars)
+        call get_clm_iceadj_porosity(clm_bgc_data, &
+                    bounds, num_soilc, filter_soilc)
         call pflotranModelResetSoilPorosityFromCLM(pflotran_m)
 !write(*,*)">>>DEBUG | pflotranModelResetSoilPorosityFromCLM"
     endif
@@ -885,11 +888,13 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
       ! (4b) reset PFLOTRAN bgc state variables from CLM-CN, every CLM time-step
 !      if (isinitpf) then     ! NOTE: if only initialize ONCE, uncomment this 'if...endif' block
-        call get_clm_bgc_conc(bounds,    &
-           num_soilc, filter_soilc,      &
-           carbonstate_vars,             &
-           nitrogenstate_vars,           &
-           ch4_vars)
+!        call get_clm_bgc_conc(bounds,    &
+!           num_soilc, filter_soilc,      &
+!           carbonstate_vars,             &
+!           nitrogenstate_vars,           &
+!           ch4_vars)
+        call get_clm_bgc_conc(clm_bgc_data,     &
+                    bounds, num_soilc, filter_soilc)
 
         call pflotranModelSetBgcConcFromCLM(pflotran_m)
 !write(*,*)">>>DEBUG | pflotranModelSetBgcConcFromCLM"
@@ -909,11 +914,14 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
         endif
 
       ! (4c) bgc rate (source/sink) from CLM to PFLOTRAN
-        call get_clm_bgc_rate(bounds,   &
-            num_soilc, filter_soilc,    &
-            cnstate_vars,               &
-            carbonflux_vars,            &
-            nitrogenflux_vars)
+!        call get_clm_bgc_rate(bounds,   &
+!            num_soilc, filter_soilc,    &
+!            cnstate_vars,               &
+!            carbonflux_vars,            &
+!            nitrogenflux_vars)
+
+        call get_clm_bgc_rate(clm_bgc_data,  &
+                    bounds, num_soilc, filter_soilc)
 
         call pflotranModelSetBgcRatesFromCLM(pflotran_m)
 !write(*,*)">>>DEBUG | pflotranModelSetBgcRatesFromCLM"
@@ -1067,7 +1075,9 @@ endif
   ! !IROUTINE: get_clm_soil_properties
   !
   ! !INTERFACE:
-  subroutine get_clm_soil_properties(bounds, num_soilc, filter_soilc, soilstate_vars)
+!  subroutine get_clm_soil_properties(bounds, num_soilc, filter_soilc, soilstate_vars)
+  subroutine get_clm_soil_properties(clm_bgc_data, &
+                    bounds, num_soilc, filter_soilc)
     !
     ! !DESCRIPTION:
     ! get soil column physical properties to PFLOTRAN
@@ -1097,7 +1107,8 @@ endif
     type(bounds_type)        , intent(in) :: bounds           ! bounds
     integer                  , intent(in) :: num_soilc        ! number of column soil points in column filter
     integer                  , intent(in) :: filter_soilc(:)  ! column filter for soil points
-    type(soilstate_type)     , intent(in) :: soilstate_vars
+!    type(soilstate_type)     , intent(in) :: soilstate_vars
+    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
 
     integer  :: fc, g, l, c, j      ! indices
     integer  :: gcount, cellcount
@@ -1123,16 +1134,16 @@ endif
          cgridcell  =>  col%gridcell   , & !  [integer (:)]  gridcell index of column
          wtgcell    =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
          cactive    =>  col%active     , & !  [logical (:)]  column active or not
-         z          =>  col%z          , & !  [real(r8) (:,:)]  layer depth (m)
-         dz         =>  col%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
+         z          =>  clm_bgc_data%z          , & !  [real(r8) (:,:)]  layer depth (m)
+         dz         =>  clm_bgc_data%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
          zi         =>  col%zi         , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
          !
-         bd         =>  soilstate_vars%bd_col         , & !
-         bsw        =>  soilstate_vars%bsw_col        , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
-         hksat      =>  soilstate_vars%hksat_col      , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
-         sucsat     =>  soilstate_vars%sucsat_col     , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
-         watsat     =>  soilstate_vars%watsat_col     , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
-         watfc      =>  soilstate_vars%watfc_col        & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+         bd         =>  clm_bgc_data%bd_col         , & !
+         bsw        =>  clm_bgc_data%bsw_col        , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
+         hksat      =>  clm_bgc_data%hksat_col      , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
+         sucsat     =>  clm_bgc_data%sucsat_col     , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
+         watsat     =>  clm_bgc_data%watsat_col     , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+         watfc      =>  clm_bgc_data%watfc_col        & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
          )
 
 !-------------------------------------------------------------------------------------
@@ -1544,9 +1555,11 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !ROUTINE: get_clm_iceadj_porosity
   !
   ! !INTERFACE:
-  subroutine get_clm_iceadj_porosity(bounds, &
-           num_soilc, filter_soilc,          &
-           soilstate_vars, waterstate_vars)
+!  subroutine get_clm_iceadj_porosity(bounds, &
+!           num_soilc, filter_soilc,          &
+!           soilstate_vars, waterstate_vars)
+  subroutine get_clm_iceadj_porosity(clm_bgc_data, &
+                    bounds, num_soilc, filter_soilc)
   !
   ! !DESCRIPTION:
   !  update soil effective porosity from CLM to PFLOTRAN if PF freezing mode is off
@@ -1566,8 +1579,9 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     type(bounds_type)        , intent(in) :: bounds           ! bounds
     integer                  , intent(in) :: num_soilc        ! number of column soil points in column filter
     integer                  , intent(in) :: filter_soilc(:)  ! column filter for soil points
-    type(soilstate_type)     , intent(in) :: soilstate_vars
-    type(waterstate_type)    , intent(in) :: waterstate_vars
+!    type(soilstate_type)     , intent(in) :: soilstate_vars
+!    type(waterstate_type)    , intent(in) :: waterstate_vars
+    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, j, gcount, cellcount       ! indices
@@ -1584,8 +1598,8 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     wtgcell         => col%wtgcell      , & ! column's weight relative to gridcell
     cactive         => col%active       , & ! column's active or not
     dz              => col%dz           , & ! layer thickness depth (m)
-    watsat          => soilstate_vars%watsat_col       , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
-    h2osoi_ice      => waterstate_vars%h2osoi_ice_col    & ! ice lens (kg/m2)
+    watsat          => clm_bgc_data%watsat_col       , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
+    h2osoi_ice      => clm_bgc_data%h2osoi_ice_col    & ! ice lens (kg/m2)
     )
 
     ! if 'pf_tmode' is NOT using freezing option, the phase-change of soil water done in 'SoilTemperatureMod.F90' in 'bgp2'
@@ -2139,11 +2153,8 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   !
   ! !INTERFACE:
 
-  subroutine get_clm_bgc_conc(bounds,    &
-           num_soilc, filter_soilc,      &
-           carbonstate_vars,             &
-           nitrogenstate_vars,           &
-           ch4_vars                      &
+  subroutine get_clm_bgc_conc(clm_bgc_data, &
+           bounds, num_soilc, filter_soilc  &
            )
 
 #ifndef FLEXIBLE_POOLS
@@ -2156,9 +2167,11 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     integer                  , intent(in) :: num_soilc         ! number of soil columns in filter
     integer                  , intent(in) :: filter_soilc(:)   ! filter for soil columns
 
-    type(carbonstate_type)   , intent(in) :: carbonstate_vars
-    type(nitrogenstate_type) , intent(in) :: nitrogenstate_vars
-    type(ch4_type)           , intent(in) :: ch4_vars
+!    type(carbonstate_type)      , intent(in) :: carbonstate_vars
+!    type(nitrogenstate_type)    , intent(in) :: nitrogenstate_vars
+!    type(phosphorusstate_type)  , intent(in) :: phosphorusstate_vars
+!    type(ch4_type)              , intent(in) :: ch4_vars
+    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
 
     character(len=256) :: subname = "get_clm_bgc_concentration"
 
@@ -2204,11 +2217,19 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr=> carbonstate_vars%decomp_cpools_vr_col   , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-       decomp_npools_vr=> nitrogenstate_vars%decomp_npools_vr_col , &      ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-       smin_no3_vr     => nitrogenstate_vars%smin_no3_vr_col      , &      ! (gN/m3) vertically-resolved soil mineral NO3
-       smin_nh4_vr     => nitrogenstate_vars%smin_nh4_vr_col      , &      ! (gN/m3) vertically-resolved soil mineral NH4
-       smin_nh4sorb_vr => nitrogenstate_vars%smin_nh4sorb_vr_col   &       ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+       decomp_cpools_vr=> clm_bgc_data%decomp_cpools_vr_col     , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+       decomp_npools_vr=> clm_bgc_data%decomp_npools_vr_col     , &      ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+       smin_no3_vr     => clm_bgc_data%smin_no3_vr_col          , &      ! (gN/m3) vertically-resolved soil mineral NO3
+       smin_nh4_vr     => clm_bgc_data%smin_nh4_vr_col          , &      ! (gN/m3) vertically-resolved soil mineral NH4
+       smin_nh4sorb_vr => clm_bgc_data%smin_nh4sorb_vr_col      , &       ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+
+       decomp_ppools_vr=> clm_bgc_data%decomp_ppools_vr_col     , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+       solutionp_vr    => clm_bgc_data%solutionp_vr_col         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+       labilep_vr      => clm_bgc_data%labilep_vr_col           , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+       secondp_vr      => clm_bgc_data%secondp_vr_col           , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+       occlp_vr        => clm_bgc_data%occlp_vr_col             , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+       primp_vr        => clm_bgc_data%primp_vr_col             , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
+       sminp_vr        => clm_bgc_data%sminp_vr_col               & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
     )
 
 #ifdef FLEXIBLE_POOLS
@@ -2474,9 +2495,11 @@ write(*,*)'---------------------------------------'
   ! !IROUTINE: get_clm_bgc_rate()
   !
   ! !INTERFACE:
-  subroutine get_clm_bgc_rate(bounds, &
-          num_soilc, filter_soilc,    &
-          cnstate_vars, carbonflux_vars, nitrogenflux_vars)
+!  subroutine get_clm_bgc_rate(bounds, &
+!          num_soilc, filter_soilc,    &
+!          cnstate_vars, carbonflux_vars, nitrogenflux_vars)
+  subroutine get_clm_bgc_rate(clm_bgc_data,  &
+          bounds, num_soilc, filter_soilc)
 
   !
   ! !DESCRIPTION:
@@ -2496,9 +2519,11 @@ write(*,*)'---------------------------------------'
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
 
-    type(cnstate_type)       , intent(in) :: cnstate_vars
-    type(carbonflux_type)    , intent(in) :: carbonflux_vars
-    type(nitrogenflux_type)  , intent(in) :: nitrogenflux_vars
+    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
+
+!    type(cnstate_type)       , intent(in) :: cnstate_vars
+!    type(carbonflux_type)    , intent(in) :: carbonflux_vars
+!    type(nitrogenflux_type)  , intent(in) :: nitrogenflux_vars
 
     character(len=256) :: subname = "get_clm_bgc_rate"
 
@@ -2514,9 +2539,9 @@ write(*,*)'---------------------------------------'
     real(r8) :: dtime                               ! land model time step (sec)
 
     ! ratios of NH4:NO3 in N deposition and fertilization (temporarily set here, will be as inputs)
-    real(r8) :: r_nh4_no3_dep(bounds%begc:bounds%endc)
-    real(r8) :: r_nh4_no3_fert(bounds%begc:bounds%endc)
-    real(r8) :: fnh4_dep, fnh4_fert
+!    real(r8) :: r_nh4_no3_dep(bounds%begc:bounds%endc)
+!    real(r8) :: r_nh4_no3_fert(bounds%begc:bounds%endc)
+!    real(r8) :: fnh4_dep, fnh4_fert
 
     ! C/N source/sink rates as inputs for pflotran: Units - moles/m3/s (note: do unit conversion here for input rates)
 #ifdef FLEXIBLE_POOLS
@@ -2554,22 +2579,32 @@ write(*,*)'---------------------------------------'
     !
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
-      col_net_to_decomp_cpools_vr    => carbonflux_vars%externalc_to_decomp_cpools_col   , &
-      col_net_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col , &
+      col_net_to_decomp_cpools_vr       => clm_bgc_data%externalc_to_decomp_cpools_col  , &
+      col_net_to_decomp_npools_vr       => clm_bgc_data%externaln_to_decomp_npools_col  , &
       ! inorg. nitrogen source
-      ndep_to_sminn                  => nitrogenflux_vars%ndep_to_sminn_col                 , &
-      nfix_to_sminn                  => nitrogenflux_vars%nfix_to_sminn_col                 , &
-      fert_to_sminn                  => nitrogenflux_vars%fert_to_sminn_col                 , &
-      soyfixn_to_sminn               => nitrogenflux_vars%soyfixn_to_sminn_col              , &
-      supplement_to_sminn_vr         => nitrogenflux_vars%supplement_to_sminn_vr_col        , &
-      !
-      nfixation_prof                 => cnstate_vars%nfixation_prof_col                     , &
-      ndep_prof                      => cnstate_vars%ndep_prof_col                          , &
+!      ndep_to_sminn                  => nitrogenflux_vars%ndep_to_sminn_col                 , &
+!      nfix_to_sminn                  => nitrogenflux_vars%nfix_to_sminn_col                 , &
+!      fert_to_sminn                  => nitrogenflux_vars%fert_to_sminn_col                 , &
+!      soyfixn_to_sminn               => nitrogenflux_vars%soyfixn_to_sminn_col              , &
+!      supplement_to_sminn_vr         => nitrogenflux_vars%supplement_to_sminn_vr_col        , &
+!      !
+!      nfixation_prof                 => cnstate_vars%nfixation_prof_col                     , &
+!      ndep_prof                      => cnstate_vars%ndep_prof_col                          , &
 !      activeroot_prof                => cnstate_vars%activeroot_prof_col                    , &
       ! inorg. nitrogen sink (if not going to be done in PF)
-      no3_net_transport_vr           => nitrogenflux_vars%no3_net_transport_vr_col          , &
+      no3_net_transport_vr              => clm_bgc_data%no3_net_transport_vr_col        , &
       ! inorg. nitrogen sink potential
-      col_plant_ndemand_vr           => nitrogenflux_vars%plant_ndemand_vr_col          &
+      col_plant_ndemand_vr              => clm_bgc_data%plant_ndemand_vr_col            , &
+
+      externaln_to_nh4_vr               => clm_bgc_data%externaln_to_nh4_col            , &
+      externaln_to_no3_vr               => clm_bgc_data%externaln_to_no3_col            , &
+
+      col_net_to_decomp_ppools_vr       => clm_bgc_data%externalp_to_decomp_ppools_col  , &
+      externalp_to_primp_vr             => clm_bgc_data%externalp_to_primp_col          , &
+      externalp_to_labilep_vr           => clm_bgc_data%externalp_to_labilep_col        , &
+      externalp_to_solutionp            => clm_bgc_data%externalp_to_solutionp_col      , &
+      sminp_net_transport_vr            => clm_bgc_data%sminp_net_transport_vr_col      , &
+      col_plant_pdemand_vr              => clm_bgc_data%plant_pdemand_vr_col              &
     )
 
     dtime = get_step_size()
@@ -2646,8 +2681,8 @@ write(*,*)'---------------------------------------'
     rate_smin_nh4_clm_loc(:) = 0.0_r8
     rate_plantndemand_clm_loc(:) = 0.0_r8
 
-    r_nh4_no3_dep(:)  = 1.0_r8      ! temporarily assuming half of N dep is in NH4 and another half in NO3
-    r_nh4_no3_fert(:) = 1.0_r8      ! temporarily assiming half of N fertilization is in NH4 and another half in NO3
+!    r_nh4_no3_dep(:)  = 1.0_r8      ! temporarily assuming half of N dep is in NH4 and another half in NO3
+!    r_nh4_no3_fert(:) = 1.0_r8      ! temporarily assiming half of N fertilization is in NH4 and another half in NO3
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -2728,23 +2763,27 @@ write(*,*)'---------------------------------------'
 #endif
               enddo ! do k=1, ndecomp_pools
 
-              fnh4_dep  = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_dep(c)+1._r8)))
-              fnh4_fert = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_fert(c)+1._r8)))
+!              fnh4_dep  = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_dep(c)+1._r8)))
+!              fnh4_fert = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_fert(c)+1._r8)))
 
-              realn_gcell = &
-                        ( fnh4_dep*ndep_to_sminn(c) * ndep_prof(c, j) +  &
-                          fnh4_fert*fert_to_sminn(c) * ndep_prof(c, j) + &
-                          fnh4_fert*supplement_to_sminn_vr(c,j) +        &
-                          nfix_to_sminn(c) * nfixation_prof(c, j) +      &
-                          soyfixn_to_sminn(c) * nfixation_prof(c, j)    &
-                         )/ clm_pf_idata%N_molecular_weight * wtgcell
+!              realn_gcell = &
+!                        ( fnh4_dep*ndep_to_sminn(c) * ndep_prof(c, j) +  &
+!                          fnh4_fert*fert_to_sminn(c) * ndep_prof(c, j) + &
+!                          fnh4_fert*supplement_to_sminn_vr(c,j) +        &
+!                          nfix_to_sminn(c) * nfixation_prof(c, j) +      &
+!                          soyfixn_to_sminn(c) * nfixation_prof(c, j)    &
+!                         )/ clm_pf_idata%N_molecular_weight * wtgcell
+
+              realn_gcell = externaln_to_nh4_vr(c,j)/ clm_pf_idata%N_molecular_weight * wtgcell
               rate_smin_nh4_clm_loc(cellcount) = realn_gcell + rate_smin_nh4_clm_loc(cellcount)
 
-              realn_gcell = &
-                         ( (1._r8-fnh4_dep)*ndep_to_sminn(c) * ndep_prof(c, j) +  &
-                           (1._r8-fnh4_fert)*fert_to_sminn(c) * ndep_prof(c, j) + &
-                           (1._r8-fnh4_fert)*supplement_to_sminn_vr(c,j) &
-                         )/ clm_pf_idata%N_molecular_weight * wtgcell
+!              realn_gcell = &
+!                         ( (1._r8-fnh4_dep)*ndep_to_sminn(c) * ndep_prof(c, j) +  &
+!                           (1._r8-fnh4_fert)*fert_to_sminn(c) * ndep_prof(c, j) + &
+!                           (1._r8-fnh4_fert)*supplement_to_sminn_vr(c,j) &
+!                         )/ clm_pf_idata%N_molecular_weight * wtgcell
+
+              realn_gcell = externaln_to_no3_vr(c,j)/ clm_pf_idata%N_molecular_weight * wtgcell
               ! PF hydrological mode is OFF, then NO3 transport NOT to calculate in PF
               ! then it's done in CLM, so need to pass those to PF as source/sink term (RT mass transfer)
               if(.not.pf_hmode) then

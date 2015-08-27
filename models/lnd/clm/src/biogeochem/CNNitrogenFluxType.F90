@@ -2056,7 +2056,7 @@ contains
           end if
        end if
 
-    end if
+    end if !! if (use_pflotran .and. pf_cmode)
   end subroutine Restart
 
   !-----------------------------------------------------------------------

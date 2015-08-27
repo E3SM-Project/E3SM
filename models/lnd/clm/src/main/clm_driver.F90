@@ -711,14 +711,15 @@ write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
              !!--------------------------------------------------------------------------------
              if (use_bgc_interface) then
                  !write(*,*)'pass data from CLM to INTERFACE'
-                 call get_clm_bgc_data(clm_bgc_data,bounds_clump,                           &
-                           filter(nc)%num_soilc, filter(nc)%soilc,                          &
-                           filter(nc)%num_soilp, filter(nc)%soilp,                          &
-                           atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
-                           soilstate_vars,  temperature_vars, energyflux_vars,              &
-                           soilhydrology_vars, soil_water_retention_curve,                  &
-                           cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-                           nitrogenflux_vars, nitrogenstate_vars,                           &
+                 call get_clm_bgc_data(clm_bgc_data,bounds_clump,                       &
+                           filter(nc)%num_soilc, filter(nc)%soilc,                      &
+                           filter(nc)%num_soilp, filter(nc)%soilp,                      &
+                           atm2lnd_vars, waterstate_vars, waterflux_vars,               &
+                           soilstate_vars,  temperature_vars, energyflux_vars,          &
+                           soilhydrology_vars, soil_water_retention_curve,              &
+                           cnstate_vars, carbonflux_vars, carbonstate_vars,             &
+                           nitrogenflux_vars, nitrogenstate_vars,                       &
+                           phosphorusflux_vars, phosphorusstate_vars,                   &
                            ch4_vars)
 
                  if (use_pflotran .and. pf_cmode) then
