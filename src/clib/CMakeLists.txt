@@ -54,6 +54,7 @@ if (PIO_ENABLE_TIMING)
         target_link_libraries (pioc
             PUBLIC ${GPTL_C_LIBRARIES})
     else ()
+        message (STATUS "Using internal GPTL C library for timing")
         target_link_libraries (pioc
             PUBLIC gptl)
     endif ()

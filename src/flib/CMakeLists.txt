@@ -129,12 +129,16 @@ endif ()
 
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
-    find_package (GPTL COMPONENTS Fortran)
-    if (GPTL_Fortran_FOUND)
+    find_package (GPTL COMPONENTS Fortran_Perf)
+    if (GPTL_Fortran_Perf_FOUND)
         target_include_directories (piof 
             PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
         target_link_libraries (piof
             PUBLIC ${GPTL_Fortran_LIBRARIES})
+    else ()
+        message (STATUS "Using internal GPTL Fortran library for timing")
+        target_link_libraries (piof
+            PUBLIC gptl)
     endif ()
 endif ()
 
