@@ -31,9 +31,9 @@ define_package_component (GPTL
                           INCLUDE_NAMES gptl.mod
                           LIBRARY_NAMES gptl)
 
-# Define GPTL Perfmod Component
+# Define GPTL Fortran_Perf Component
 define_package_component (GPTL
-                          COMPONENT Perfmod
+                          COMPONENT Fortran_Perf
                           INCLUDE_NAMES perf_mod.mod
                           LIBRARY_NAMES gptl)
 
