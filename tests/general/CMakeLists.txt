@@ -25,7 +25,7 @@ foreach (SRC_FILE IN LISTS GENERATED_SRCS)
 endforeach ()
 
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
-    list (APPEND COMPILE_OPTIONS -ffree-line-length-none)
+    add_definitions(-ffree-line-length-none)
 endif()
 
 #==============================================================================
