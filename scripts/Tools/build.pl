@@ -1,4 +1,4 @@
-a#!/usr/bin/env perl 
+#!/usr/bin/env perl 
 
 # specify minimum version of perl
 use 5.010;

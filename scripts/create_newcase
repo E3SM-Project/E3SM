@@ -804,8 +804,9 @@ sub _create_caseroot
     $fh->close;
 
     # Copy README/disclaimer file 
-    $sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #TODO - this needs to be updated
+#    $sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
+#    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
     _create_caseroot_sourcemods($caseroot, $cimeroot, $config);  
     _create_caseroot_tools($caseroot, $cimeroot);
