@@ -420,11 +420,26 @@ sub setWallTime()
 sub setProject()
 {
 	my $self = shift;
-	my $project = ProjectTools::find_project();
-	if(defined $project && length($project) > 0)
+    my $envrunfile = "$self->{'caseroot'}/env_case.xml";
+ 	my $envrunparser = XML::LibXML->new(no_blanks => 1);
+    my $envrunxml = $envrunparser->parse_file($envrunfile);
+	my @projelems = $envrunxml->findnodes("//entry[\@id=\'PROJECT\']");
+	my $project; 
+	
+	foreach my $projelem(@projelems)
 	{
-		$self->{'account'} = $project;
+		$project = $projelem->getAttribute('value');
+	}
+	if(defined $project)
+	{
+
 		$self->{'project'} = $project;
+		$self->{'account'} = $project;
+	}
+	else
+	{
+		$self->{'project'} = undef;
+		$self->{'account'} = undef;
 	}
 }
 
