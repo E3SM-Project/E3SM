@@ -39,6 +39,16 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 #==============================================================================
+#  DEFINE THE INSTALL
+#==============================================================================
+
+# Library
+install (TARGETS pioc DESTINATION lib)
+
+# Include/Header File
+install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
+
+#==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
     

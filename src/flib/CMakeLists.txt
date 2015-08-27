@@ -18,6 +18,17 @@ set (PIO_GenF90_SRCS pionfatt_mod.F90
                      pionfput_mod.F90
                      pionfget_mod.F90
                      piodarray.F90)
+                     
+set (PIO_Fortran_MODS ${CMAKE_CURRENT_BINARY_DIR}/pio.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pio_nf.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pio_types.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/piolib_mod.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pionfget_mod.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pio_kinds.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pio_support.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/piodarray.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pionfatt_mod.mod
+                      ${CMAKE_CURRENT_BINARY_DIR}/pionfput_mod.mod)
 
 add_library (piof ${PIO_Fortran_SRCS} ${PIO_GenF90_SRCS})
 if (NOT PIO_ENABLE_FORTRAN)
@@ -57,6 +68,16 @@ if (PIO_FILESYSTEM_HINTS)
         message (WARNING "${PIO_FILESYSTEM_HINTS} not valid option for PIO_FILESYSTEM_HINTS; use gpfs or lustre.")
     endif ()
 endif ()
+
+#==============================================================================
+#  DEFINE THE INSTALL
+#==============================================================================
+
+# Library
+install (TARGETS piof DESTINATION lib)
+
+# Fortran Modules
+install (FILES ${PIO_Fortran_MODS} DESTINATION include)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES

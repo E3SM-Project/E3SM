@@ -19,7 +19,10 @@ set (GPTL_C_SRCS GPTLget_memusage.c
 set (GPTL_Fortran_SRCS perf_mod.F90
                        perf_utils.F90)
 
-add_library (gptl EXCLUDE_FROM_ALL ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
+set (GPTL_Fortran_MODS ${CMAKE_CURRENT_BINARY_DIR}/perf_mod.mod
+                       ${CMAKE_CURRENT_BINARY_DIR}/perf_utils.mod)
+
+add_library (gptl ${GPTL_Fortran_SRCS} ${GPTL_C_SRCS})
 
 target_include_directories (gptl
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -27,6 +30,19 @@ target_include_directories (gptl
 
 target_compile_definitions (gptl
     PUBLIC INCLUDE_CMAKE_FCI)
+    
+#==============================================================================
+#  DEFINE THE INSTALL
+#==============================================================================
+
+# Library
+install (TARGETS gptl DESTINATION lib)
+
+# Header/Include File
+install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/gptl.h DESTINATION include)
+
+# Fortran Modules
+install (FILES ${GPTL_Fortran_MODS} DESTINATION include)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES

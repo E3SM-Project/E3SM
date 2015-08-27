@@ -7,7 +7,7 @@ project (PIO C)
 
 #===== Library Options =====
 option (PIO_ENABLE_FORTRAN   "Enable the Fortran library builds"            ON)
-option (PIO_ENABLE_TIMING    "Enable GPTL timing"                           ON)
+option (PIO_ENABLE_TIMING    "Enable the use of the GPTL timing library"    ON)
 option (PIO_TEST_BIG_ENDIAN  "Enable test to see if machine is big endian"  ON)
 option (PIO_USE_MPIIO        "Enable support for MPI-IO auto detect"        ON)
 option (WITH_PNETCDF         "Require the use of PnetCDF"                   ON)
