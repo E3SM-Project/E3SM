@@ -4,7 +4,6 @@ module vdiff_lu_solver
 
 ! This module was created solely to share vd_lu_decomp and vd_lu_solve
 ! between gw_drag and diffusion_solver.
-use module_perturb
 
 implicit none
 private
@@ -45,7 +44,7 @@ contains
 
 subroutine vd_lu_decomp(pcols, pver, ncol,                          &
                         ksrf,  kv,   tmpi,   rpdel,  ztodt,  gravit,&
-                        cc_top, ntop,  nbot, decomp, cpairv, flb,lchnk)
+                        cc_top, ntop,  nbot, decomp, cpairv)
 
   !---------------------------------------------------------------------- !
   ! Determine superdiagonal (ca(k)) and subdiagonal (cc(k)) coeffs of the !
@@ -57,7 +56,7 @@ subroutine vd_lu_decomp(pcols, pver, ncol,                          &
   ! ---------------------- !
   ! Input-Output Arguments !
   ! ---------------------- !
-  integer,  intent(in),optional  :: flb,lchnk
+
   ! Allocated column and level dimensions.
   integer,  intent(in)  :: pcols, pver
   ! Columns actually used during computation.
@@ -122,15 +121,6 @@ subroutine vd_lu_decomp(pcols, pver, ncol,                          &
         do i = 1, ncol
            decomp%ca(i,k  ) = kv(i,k+1) * tmpi(i,k+1) * rpdel(i,k  )
            decomp%cc(i,k+1) = kv(i,k+1) * tmpi(i,k+1) * rpdel(i,k+1)
-
-           if(present(lchnk) .and. present(flb)) then
-              if(flb==1 .and. icolprnt(lchnk) ==i .and. k==kprnt)then
-                 !decomp%ca(i,k  ) = 0.0_r8 * tmpi(i,k+1) * rpdel(i,k  )!BALLI WRONG
-                 !decomp%cc(i,k+1) = 0.0_r8 * tmpi(i,k+1) * rpdel(i,k+1)!BALLI WRONG
-                 write(202,*)'--->luvdecomp_2:',decomp%ca(i,k),kv(i,k+1),tmpi(i,k+1),rpdel(i,k),rpdel(i,k +1),'WRONG'
-              endif
-           endif
-           
         end do
      end do
   endif
@@ -153,12 +143,6 @@ subroutine vd_lu_decomp(pcols, pver, ncol,                          &
         decomp%dnom(i,k) = 1._r8/ &
              (1._r8 + decomp%ca(i,k) + decomp%cc(i,k) - &
              decomp%ca(i,k)*decomp%ze(i,k+1))
-
-        if(present(lchnk) .and. present(flb)) then
-           if(flb==1 .and. icolprnt(lchnk) ==i .and. k==kprnt)then
-              write(202,*)'--->luvdecomp_1:',decomp%dnom(i,k),decomp%ca(i,k),decomp%cc(i,k),decomp%ze(i,k+1)
-           endif
-        endif
         decomp%ze(i,k)   = decomp%cc(i,k) * decomp%dnom(i,k)
      end do
   end do
@@ -174,7 +158,7 @@ end subroutine vd_lu_decomp
 ! ========================================================================!
 
 subroutine vd_lu_solve(pcols, pver,   ncol, &
-                       q,     decomp, ntop, nbot, cd_top, flb,lchnk)
+                       q,     decomp, ntop, nbot, cd_top)
   !-----------------------------------------------------------------------!
   ! Solve the implicit vertical diffusion equation with zero flux         !
   ! boundary conditions. Actual surface fluxes are explicit (rather than  !
@@ -205,7 +189,7 @@ subroutine vd_lu_solve(pcols, pver,   ncol, &
   ! ---------------------- !
   ! Input-Output Arguments !
   ! ---------------------- !
-  integer, optional :: flb,lchnk
+
   ! Allocated column and level dimensions.
   integer,  intent(in)  :: pcols, pver
   ! Columns actually used during computation.
@@ -246,13 +230,6 @@ subroutine vd_lu_solve(pcols, pver,   ncol, &
   do k = nbot - 1, ntop + 1, -1
      do i = 1, ncol
         zf(i,k) = (q(i,k) + decomp%ca(i,k)*zf(i,k+1)) * decomp%dnom(i,k)
-        if(present(lchnk) .and. present(flb)) then
-           if(flb==1 .and. icolprnt(lchnk) ==i .and. k==kprnt)then
-              !zf(i,k) = (q(i,k) + 0.0_r8*zf(i,k+1)) * 1.0_r8 !BALLI WRONG
-              write(202,*)'--->luvdiff_2:',zf(i,k), q(i,k), decomp%ca(i,k),zf(i,k+1),&
-                decomp%dnom(i,k)!, 'WRONG!!!'
-           endif
-        endif
      end do
   end do
 
@@ -273,9 +250,6 @@ subroutine vd_lu_solve(pcols, pver,   ncol, &
   do k = ntop + 1, nbot, +1
      do i = 1, ncol
         q(i,k) = zf(i,k) + decomp%ze(i,k)*q(i,k-1)
-        if(present(lchnk) .and. present(flb)) then
-           if(flb==1 .and.icolprnt(lchnk) ==i .and. k==kprnt)write(202,*)'--->luvdiff_1:',q(i,k),zf(i,k),decomp%ze(i,k), q(i,k-1)
-        endif
      end do
   end do
 

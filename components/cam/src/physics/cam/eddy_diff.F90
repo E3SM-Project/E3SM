@@ -1,5 +1,5 @@
   module eddy_diff
-    use module_perturb
+
   !--------------------------------------------------------------------------------- !
   !                                                                                  !
   ! The University of Washington Moist Turbulence Scheme to compute eddy diffusion   ! 
@@ -652,7 +652,7 @@
                      ebrk      , wbrk      , lbrk      , ricl     , ghcl   , & 
                      shcl      , smcl      , ghi       , shi      , smi    , &
                      rii       , lengi     , wcap      , pblhp    , cldn   , &
-                     ipbl      , kpblh     , wsedl     , wsed)
+                     ipbl      , kpblh     , wsedl)
 
      ! Calculate errorPBL to check whether PBL produced convergent solutions or not.
 
@@ -1376,7 +1376,7 @@
                         shcl         , smcl         ,                                           &
                         gh_a         , sh_a         , sm_a        , ri_a       , leng         , & 
                         wcap         , pblhp        , cld         , ipbl       , kpblh        , &
-                        wsedl        , wsed_CL)
+                        wsedl        )
 
     !--------------------------------------------------------------------------------- !
     !                                                                                  !

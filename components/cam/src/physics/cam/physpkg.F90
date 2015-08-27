@@ -1720,12 +1720,9 @@ if (l_vdiff) then
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
        call mspd_intr (ztodt    ,state    ,ptend)
     endif
-    if(icolprnt(lchnk) > 0)write(202,*)'physpkg2:PTEND:',ptend%s(icolprnt(lchnk),kprnt)
-    call physics_update(state, ptend, ztodt, tend)
-    if(icolprnt(lchnk) > 0)write(202,*)'physpkg1:',state%t(icolprnt(lchnk),kprnt),nstep
-    if(icolprnt(lchnk) > 0 .and. nstep == 0) call endrun('BALLI: forced exit for nstep=0')
-       
-    call t_stopf ('vertical_diffusion_tend')
+
+       call physics_update(state, ptend, ztodt, tend)
+       call t_stopf ('vertical_diffusion_tend')
     
     endif
 
