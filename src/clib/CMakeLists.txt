@@ -39,20 +39,40 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 #==============================================================================
+#  DEFINE THE INSTALL
+#==============================================================================
+
+# Library
+install (TARGETS pioc DESTINATION lib)
+
+# Include/Header File
+install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
+
+#==============================================================================
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
     
-#===== GPTL =====
-if (PIO_ENABLE_TIMING)
-    target_compile_definitions (pioc
-        PUBLIC TIMING)
-    target_link_libraries (pioc
-        PUBLIC gptl)
-endif ()
-
 #===== MPI =====
 find_package (MPI REQUIRED)
     
+#===== GPTL =====
+if (PIO_ENABLE_TIMING)
+    find_package (GPTL COMPONENTS C QUIET)
+    if (GPTL_C_FOUND)
+        message (STATUS "Found GPTL C: ${GPTL_C_LIBRARIES}")
+        target_include_directories (pioc 
+            PUBLIC ${GPTL_C_INCLUDE_DIRS})
+        target_link_libraries (pioc
+            PUBLIC ${GPTL_C_LIBRARIES})
+    else ()
+        message (STATUS "Using internal GPTL C library for timing")
+        target_link_libraries (pioc
+            PUBLIC gptl)
+    endif ()
+    target_compile_definitions (pioc
+        PUBLIC TIMING)
+endif ()
+
 #===== NetCDF-C =====
 find_package (NetCDF "4.3.3" COMPONENTS C)
 if (NetCDF_C_FOUND)
@@ -72,7 +92,9 @@ else ()
 endif ()
 
 #===== PnetCDF-C =====
-find_package (PnetCDF "1.6" COMPONENTS C)
+if (WITH_PNETCDF)
+    find_package (PnetCDF "1.6" COMPONENTS C REQUIRED)
+endif ()
 if (PnetCDF_C_FOUND)
     target_include_directories (pioc 
         PUBLIC ${PnetCDF_C_INCLUDE_DIRS})

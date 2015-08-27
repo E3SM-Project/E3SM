@@ -25,9 +25,9 @@
 
 Before running cmake, you will need to know the location of some supporting libraries. 
 
-- Set the NETCDF_DIR environment variable to the netcdf install directory.
+- Set the NETCDF_PATH environment variable to the netcdf install directory.
 
-- Set the PNETCDF_DIR environment variable to the pnetcdf install directory, This will enable support
+- Set the PNETCDF_PATH environment variable to the pnetcdf install directory, This will enable support
 for parallel-netcdf
 
 - Set the CC, FC, MPICC, and MPIFC environment variables to the serial and parallel C and Fortran 90 compiler names.

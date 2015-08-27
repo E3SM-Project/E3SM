@@ -7,16 +7,33 @@ project (PIO C)
 
 #===== Library Options =====
 option (PIO_ENABLE_FORTRAN   "Enable the Fortran library builds"            ON)
-option (PIO_ENABLE_TIMING    "Enable GPTL timing"                           ON)
+option (PIO_ENABLE_TIMING    "Enable the use of the GPTL timing library"    ON)
 option (PIO_TEST_BIG_ENDIAN  "Enable test to see if machine is big endian"  ON)
-option (PIO_ENABLE_MPIIO     "Enable support for MPI-IO auto detect"        ON)
+option (PIO_USE_MPIIO        "Enable support for MPI-IO auto detect"        ON)
+option (WITH_PNETCDF         "Require the use of PnetCDF"                   ON)
 
-#===== Library Variables
+#===== Library Variables =====
 set (PIO_FILESYSTEM_HINTS IGNORE CACHE STRING "Filesystem hints (lustre or gpfs)")
 
 #===== Testing Options =====
 option (PIO_ENABLE_TESTS  "Enable the testing builds"                           ON)
 option (PIO_HDF5_LOGGING  "Enable hdf5 logging (requires instrumented netcdf4)" OFF)
+
+#==============================================================================
+#  BACKWARDS COMPATIBILITY
+#==============================================================================
+
+# Old NETCDF_DIR variable --> NetCDF_PATH
+if (DEFINED NETCDF_DIR)
+    set (NetCDF_PATH ${NETCDF_DIR}
+         CACHE STRING "Location of the NetCDF library installation")
+endif ()
+
+# Old PNETCDF_DIR variable --> PnetCDF_PATH
+if (DEFINED PNETCDF_DIR)
+    set (PnetCDF_PATH ${PNETCDF_DIR}
+         CACHE STRING "Location of the PnetCDF library installation")
+endif ()
 
 #==============================================================================
 #  APPEND TO CMAKE MODULE PATH
@@ -26,25 +43,25 @@ option (PIO_HDF5_LOGGING  "Enable hdf5 logging (requires instrumented netcdf4)" 
 list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 #===== External modules =====
-if (NOT DEFINED CMAKE_UTILS_PATH)
+if (NOT DEFINED USER_CMAKE_MODULE_PATH)
     message (STATUS "Importing CMake_Fortran_utils")
     execute_process(
         COMMAND git clone https://github.com/CESM-Development/CMake_Fortran_utils
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         OUTPUT_QUIET
         ERROR_QUIET)
-    find_path (CMAKE_UTILS_PATH
+    find_path (USER_CMAKE_MODULE_PATH
                NAMES mpiexec.cmake
                HINTS ${CMAKE_BINARY_DIR}/CMake_Fortran_utils)
-    if (CMAKE_UTILS_PATH)
+    if (USER_CMAKE_MODULE_PATH)
         message (STATUS "Importing CMake_Fortran_utils - success")
     else ()
         message (FATAL_ERROR "Failed to import CMake_Fortran_utils")
     endif ()
 endif ()
-set (CMAKE_UTILS_PATH ${CMAKE_UTILS_PATH}
+set (USER_CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH}
      CACHE STRING "Location of the CMake_Fortran_utils")
-list (APPEND CMAKE_MODULE_PATH ${CMAKE_UTILS_PATH})
+list (APPEND CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH})
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES

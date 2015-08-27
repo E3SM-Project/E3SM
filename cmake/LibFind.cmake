@@ -150,6 +150,14 @@ function (find_package_component PKG)
     string (TOUPPER ${PKG} PKGUP)
     string (TOUPPER ${PKGCOMP} PKGCOMPUP)
     
+    # Handle QUIET and REQUIRED arguments
+    if (${${PKG}_FIND_QUIETLY})
+        set (${PKGCOMP}_FIND_QUIETLY TRUE)
+    endif ()
+    if (${${PKG}_FIND_REQUIRED})
+        set (${PKGCOMP}_FIND_REQUIRED TRUE)
+    endif ()
+    
     # Determine include dir search order
     set (INCLUDE_HINTS)
     if (${PKG}_INCLUDE_HINTS)
