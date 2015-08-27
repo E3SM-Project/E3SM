@@ -129,8 +129,9 @@ endif ()
 
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
-    find_package (GPTL COMPONENTS Fortran_Perf)
+    find_package (GPTL COMPONENTS Fortran_Perf QUIET)
     if (GPTL_Fortran_Perf_FOUND)
+        message (STATUS "Found GPTL Fortran Perf: ${GPTL_Fortran_Perf_LIBRARIES}")
         target_include_directories (piof 
             PUBLIC ${GPTL_Fortran_INCLUDE_DIRS})
         target_link_libraries (piof

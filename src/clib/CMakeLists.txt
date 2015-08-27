@@ -47,8 +47,9 @@ find_package (MPI REQUIRED)
     
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
-    find_package (GPTL COMPONENTS C)
+    find_package (GPTL COMPONENTS C QUIET)
     if (GPTL_C_FOUND)
+        message (STATUS "Found GPTL C: ${GPTL_C_LIBRARIES}")
         target_include_directories (pioc 
             PUBLIC ${GPTL_C_INCLUDE_DIRS})
         target_link_libraries (pioc
