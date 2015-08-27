@@ -93,6 +93,12 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 # -----------------------------------------------------------  
 
 ## -- Checkout command
+
+# -----------------------------------------------------------  
+# -- CTest Step Commands
+# -----------------------------------------------------------  
+
+## -- Checkout command
 if(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
     set (CTEST_GIT_URL "https://github.com/PARALLELIO/ParallelIO")
     set (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone ${CTEST_GIT_URL} ${CTEST_SOURCE_DIRECTORY}")
@@ -128,8 +134,11 @@ message (" -- Build ${MODEL} - ${CTEST_BUILD_NAME} --")
 ctest_build ()
 
 ## -- TEST
-#message (" -- Test ${MODEL} - ${CTEST_BUILD_NAME} --")
+message (" -- Test ${MODEL} - ${CTEST_BUILD_NAME} --")
 #ctest_test ()
+execute_process (COMMAND which ctest
+                 OUTPUT_VARIABLE MY_CTEST_VAR)
+message (" ***** CTest is ${MY_CTEST_VAR} *****")
 
 ## -- SUBMIT
 #message (" -- Submit ${MODEL} - ${CTEST_BUILD_NAME} --")
