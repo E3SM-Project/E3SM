@@ -179,10 +179,11 @@ contains
       real (kind=RKIND), dimension(:), pointer :: buoyancyMidRef
       real (kind=RKIND), dimension(:), pointer :: buoyancyInterfaceRef
 
-      logical, pointer :: amEPFTActive, config_eliassen_palm_do_restart
-      integer, pointer :: config_eliassen_palm_nBuoyancyLayers
-      real (kind=RKIND), pointer :: config_eliassen_palm_rhomax_buoycoor
-      real (kind=RKIND), pointer :: config_eliassen_palm_rhomin_buoycoor
+      logical, pointer :: amEPFTActive, config_AM_eliassenPalm_do_restart
+      logical, pointer :: config_AM_eliassenPalm_compute_on_startup
+      integer, pointer :: config_AM_eliassenPalm_nBuoyancyLayers
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomin_buoycoor
       real (kind=RKIND), pointer :: config_density0
 
       integer, pointer :: nSamplesEA
@@ -207,14 +208,16 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_do_restart', &
-        config_eliassen_palm_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_nBuoyancyLayers', &
-        config_eliassen_palm_nBuoyancyLayers)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomax_buoycoor', &
-        config_eliassen_palm_rhomax_buoycoor)
-      call mpas_pool_get_config(domain % configs, 'config_eliassen_palm_rhomin_buoycoor', &
-        config_eliassen_palm_rhomin_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_do_restart', &
+        config_AM_eliassenPalm_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_compute_on_startup', &
+        config_AM_eliassenPalm_compute_on_startup)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_nBuoyancyLayers', &
+        config_AM_eliassenPalm_nBuoyancyLayers)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomax_buoycoor', &
+        config_AM_eliassenPalm_rhomax_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomin_buoycoor', &
+        config_AM_eliassenPalm_rhomin_buoycoor)
       
       call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
       
@@ -303,6 +306,10 @@ contains
             uvsigmaEA = 0.0
             uvarpisigmaEA = 0.0
             vvarpisigmaEA = 0.0
+         end if
+
+         if (config_AM_eliassenPalm_do_restart .and. config_AM_eliassenPalm_compute_on_startup) then
+            write(stderrUnit,*) ' *** WARNING:: Compute on startup was requested on a restart of AM eliassen_palm.'
          end if
 
          block => block % next
@@ -1701,11 +1708,11 @@ contains
       
       if (printWarning) then
          write(stderrUnit,*)
-         write(stderrUnit,*) 'Warning: in eliassen_palm analysis member, subroutine check_potentialDensityRef_range.'
-         write(stderrUnit,*) 'One or more columns in the ocean domain have densities that are not'
-         write(stderrUnit,*) 'contained in the defined buoyancy space of the EPFT module'
-         if (iCellMinBound.gt.0) write(stderrUnit,*) 'fluid is lighter than min buoyancy at cell: ',iCellMinBound
-         if (iCellMaxBound.gt.0) write(stderrUnit,*) 'fluid is lighter than max buoyancy at cell: ',iCellMaxBound
+         write(stderrUnit,*) ' *** WARNING: in eliassen_palm analysis member, subroutine check_potentialDensityRef_range.'
+         write(stderrUnit,*) '  One or more columns in the ocean domain have densities that are not'
+         write(stderrUnit,*) '  contained in the defined buoyancy space of the EPFT module'
+         if (iCellMinBound.gt.0) write(stderrUnit,*) '  fluid is lighter than min buoyancy at cell: ',iCellMinBound
+         if (iCellMaxBound.gt.0) write(stderrUnit,*) '  fluid is lighter than max buoyancy at cell: ',iCellMaxBound
          write(stderrUnit,*)
       end if
       
