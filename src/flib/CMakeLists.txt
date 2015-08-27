@@ -97,7 +97,7 @@ endforeach ()
 find_package (MPI REQUIRED)
 
 # Check MPI I/O capabilities
-if (PIO_ENABLE_MPIIO)
+if (PIO_USE_MPIIO)
     check_macro (MPIIO_DETECTED
                  NAME TryMPIIO.f90
                  HINTS ${USER_CMAKE_MODULE_PATH}
@@ -106,10 +106,10 @@ if (PIO_ENABLE_MPIIO)
         message (STATUS "MPIIO detected and enabled.")
     else ()
         message (STATUS "MPIIO not detected and therefore disabled.")
-        set (PIO_ENABLE_MPIIO FALSE)
+        set (PIO_USE_MPIIO FALSE)
     endif ()
 endif ()
-if (${PIO_ENABLE_MPIIO}) 
+if (${PIO_USE_MPIIO}) 
     target_compile_definitions (piof
         PUBLIC USEMPIIO)
 endif ()
@@ -162,7 +162,9 @@ else ()
 endif ()
 
 #===== PnetCDF =====
-find_package (PnetCDF "1.6" COMPONENTS Fortran)
+if (WITH_PNETCDF)
+    find_package (PnetCDF "1.6" COMPONENTS Fortran REQUIRED)
+endif ()
 if (PnetCDF_Fortran_FOUND)
     target_include_directories (piof 
         PUBLIC ${PnetCDF_Fortran_INCLUDE_DIRS})
