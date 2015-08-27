@@ -500,7 +500,9 @@ contains
 
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, timeLevel)
-            call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, err)
+            if ( associated(tracersGroup) ) then
+               call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, err)
+            end if
          end if
       end do
 
