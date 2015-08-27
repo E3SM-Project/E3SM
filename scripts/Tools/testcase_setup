@@ -100,6 +100,7 @@ my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
 my $casetools           =  `./xmlquery CASETOOLS            -value`;
 my $compiler            =  `./xmlquery COMPILER             -value`;
 my $mpilib              =  `./xmlquery MPILIB               -value`;
+my $build_threaded      =  `./xmlquery BUILD_THREADED       -value`;
 
 # generate baseline test flag
 my $basegen_dir;
@@ -137,10 +138,15 @@ require Task::TaskMaker;
 require ConfigCase; 
 # ------------------ testcase_begin ------------------------------------------
 # -- Make batch script using the BatchMaker module --- 
-my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, ccsmroot => $cimeroot,
-                                                     case     => $case,     mpilib => $mpilib,
-                                                     scriptsroot => $scriptsroot, machroot => $ccsm_machdir,
-                                                     machine     => $mach,        compiler => $compiler);
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, 
+                                                     ccsmroot => $cimeroot,
+                                                     case     => $case,
+                                                     mpilib => $mpilib,
+                                                     scriptsroot => $scriptsroot, 
+                                                     machroot => $ccsm_machdir,
+                                                     machine     => $mach,        
+                                                     compiler => $compiler, 
+                                                     threaded => $build_threaded);
 
 my $batchdirectives = $batchmaker->getBatchDirectives();
                                                      
