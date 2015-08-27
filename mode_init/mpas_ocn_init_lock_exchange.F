@@ -203,10 +203,12 @@ contains
          do iCell = 1, nCellsSolve
             ! Set temperature, layerThickness, and restingThickness
             if ( trim(config_lock_exchange_layer_type) == 'z-level' ) then
-               if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
-                  activeTracers(index_temperature, :, iCell) = config_lock_exchange_south_temp
-               else
-                  activeTracers(index_temperature, :, iCell) = config_lock_exchange_north_temp
+               if ( associated(activeTracers) ) then
+                  if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
+                     activeTracers(index_temperature, :, iCell) = config_lock_exchange_south_temp
+                  else
+                     activeTracers(index_temperature, :, iCell) = config_lock_exchange_north_temp
+                  end if
                end if
 
                ! Set layerThickness and restingThickness
@@ -215,8 +217,10 @@ contains
                   restingThickness(k, iCell) = layerThickness(k, iCell)
                end do
             else if ( trim(config_lock_exchange_layer_type) == 'isopycnal' ) then
-               activeTracers(index_temperature, 1, iCell) = config_lock_exchange_north_temp
-               activeTracers(index_temperature, 2:nVertLevels, iCell) = config_lock_exchange_south_temp
+               if ( associated(activeTracers) ) then
+                  activeTracers(index_temperature, 1, iCell) = config_lock_exchange_north_temp
+                  activeTracers(index_temperature, 2:nVertLevels, iCell) = config_lock_exchange_south_temp
+               end if
 
                if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
                   layerThickness(1, iCell) = config_lock_exchange_isopycnal_min_thickness
@@ -230,12 +234,16 @@ contains
             end if
 
             ! Set salinity
-            activeTracers(index_salinity, :, iCell) = config_lock_exchange_salinity
+            if ( associated(activeTracers) ) then
+               activeTracers(index_salinity, :, iCell) = config_lock_exchange_salinity
+            end if
 
             ! Set debugging tracer
-           do k = 1, nVertLevels
-             debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
-           enddo
+            if ( associated(debugTracers) ) then
+               do k = 1, nVertLevels
+                 debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+               enddo
+            end if
 
             ! Set bottomDepth
             bottomDepth(iCell) = config_lock_exchange_bottom_depth

@@ -1046,8 +1046,10 @@ contains
                 end do
 
                 do k = 1, maxLevelCell(iCell)
-                   activeTracers(idxTemperature, k, iCell) = temperatureIC % array(lonSearch, latSearch, k)
-                   activeTracers(idxSalinity, k, iCell) = salinityIC % array(lonSearch, latSearch, k)
+                   if ( associated(activeTracers) ) then
+                      activeTracers(idxTemperature, k, iCell) = temperatureIC % array(lonSearch, latSearch, k)
+                      activeTracers(idxSalinity, k, iCell) = salinityIC % array(lonSearch, latSearch, k)
+                   end if
                 end do
              end do
 
@@ -1122,17 +1124,19 @@ contains
                 ! formulas from http://en.wikipedia.org/wiki/Bilinear_interpolation
                 do k = 1, maxLevelCell(iCell)
 
-                   activeTracers(idxTemperature, k, iCell) = coef*( &
-                          coef11* temperatureIC % array(xInd1,yInd1, k) &
-                        + coef21* temperatureIC % array(xInd2,yInd1, k) &
-                        + coef12* temperatureIC % array(xInd1,yInd2, k) &
-                        + coef22* temperatureIC % array(xInd2,yInd2, k) )
+                   if ( associated(activeTracers) ) then
+                      activeTracers(idxTemperature, k, iCell) = coef*( &
+                             coef11* temperatureIC % array(xInd1,yInd1, k) &
+                           + coef21* temperatureIC % array(xInd2,yInd1, k) &
+                           + coef12* temperatureIC % array(xInd1,yInd2, k) &
+                           + coef22* temperatureIC % array(xInd2,yInd2, k) )
 
-                   activeTracers(idxSalinity, k, iCell) = coef*( &
-                          coef11* salinityIC % array(xInd1,yInd1, k) &
-                        + coef21* salinityIC % array(xInd2,yInd1, k) &
-                        + coef12* salinityIC % array(xInd1,yInd2, k) &
-                        + coef22* salinityIC % array(xInd2,yInd2, k) )
+                      activeTracers(idxSalinity, k, iCell) = coef*( &
+                             coef11* salinityIC % array(xInd1,yInd1, k) &
+                           + coef21* salinityIC % array(xInd2,yInd1, k) &
+                           + coef12* salinityIC % array(xInd1,yInd2, k) &
+                           + coef22* salinityIC % array(xInd2,yInd2, k) )
+                   end if
 
                 end do
 
@@ -1146,19 +1150,29 @@ contains
 
            ! set surface restoring values and rate
            do iCell=1,nCells
-             activeTracersSurfaceRestoringValue(idxTemperature, iCell) = activeTracers(idxTemperature, 1, iCell)
-             activeTracersSurfaceRestoringValue(idxSalinity, iCell) = activeTracers(idxSalinity, 1, iCell)
-             activeTracersPistonVelocity(idxTemperature, iCell) = config_global_ocean_piston_velocity
-             activeTracersPistonVelocity(idxSalinity, iCell) =  config_global_ocean_piston_velocity
+             if ( associated(activeTracersSurfaceRestoringValue) .and. associated(activeTracers) ) then
+                activeTracersSurfaceRestoringValue(idxTemperature, iCell) = activeTracers(idxTemperature, 1, iCell)
+                activeTracersSurfaceRestoringValue(idxSalinity, iCell) = activeTracers(idxSalinity, 1, iCell)
+             end if
+
+             if ( associated(activeTracersPistonVelocity) ) then
+                activeTracersPistonVelocity(idxTemperature, iCell) = config_global_ocean_piston_velocity
+                activeTracersPistonVelocity(idxSalinity, iCell) =  config_global_ocean_piston_velocity
+             end if
            enddo
 
           ! set interior restoring values and rate
           do iCell=1,nCells
             do k = 1, maxLevelCell(iCell)
-              activeTracersInteriorRestoringValue(idxTemperature, k, iCell) = activeTracers(idxTemperature, k, iCell)
-              activeTracersInteriorRestoringValue(idxSalinity, k, iCell) = activeTracers(idxSalinity, k, iCell)
-              activeTracersInteriorRestoringRate(idxTemperature, k, iCell) = config_global_ocean_interior_restore_rate
-              activeTracersInteriorRestoringRate(idxSalinity, k, iCell) = config_global_ocean_interior_restore_rate
+              if ( associated(activeTracersInteriorRestoringValue) .and. associated(activeTracers) ) then
+                 activeTracersInteriorRestoringValue(idxTemperature, k, iCell) = activeTracers(idxTemperature, k, iCell)
+                 activeTracersInteriorRestoringValue(idxSalinity, k, iCell) = activeTracers(idxSalinity, k, iCell)
+              end if
+
+              if ( associated(activeTracersInteriorRestoringRate) ) then
+                 activeTracersInteriorRestoringRate(idxTemperature, k, iCell) = config_global_ocean_interior_restore_rate
+                 activeTracersInteriorRestoringRate(idxSalinity, k, iCell) = config_global_ocean_interior_restore_rate
+              end if
             enddo
           enddo
 
@@ -1209,8 +1223,10 @@ contains
 
                 do iCell = 1, nCells
                    do k = 1, maxLevelCell(iCell)
-                      smoothedtemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
-                      smoothedsalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
+                      if ( associated(activeTracers) ) then
+                         smoothedtemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
+                         smoothedsalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
+                      end if
                       counter = 1
 
                       do j = 1, nEdgesOnCell(iCell)
@@ -1218,8 +1234,10 @@ contains
                          ! check if coc not 0 (or nCells+1)?
                          if (k .le. maxLevelCell(coc)) then
 
-                            smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) + activeTracers (idxTemperature, k, coc)
-                            smoothedsalinity(k, iCell) = smoothedsalinity(k, iCell) + activeTracers(idxSalinity, k, coc)
+                            if ( associated(activeTracers) ) then
+                               smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) + activeTracers (idxTemperature, k, coc)
+                               smoothedsalinity(k, iCell) = smoothedsalinity(k, iCell) + activeTracers(idxSalinity, k, coc)
+                            end if
                             counter = counter + 1
 
                          end if
@@ -1232,11 +1250,17 @@ contains
 
                 end do ! iCell
 
-                activeTracers(idxTemperature, :, :) = smoothedtemperature(:,:) 
-                activeTracers(idxSalinity, :, :) = smoothedsalinity(:,:) 
+                if ( associated(activeTracers) ) then
+                   activeTracers(idxTemperature, :, :) = smoothedtemperature(:,:) 
+                   activeTracers(idxSalinity, :, :) = smoothedsalinity(:,:) 
+                end if
 
-                activeTracersInteriorRestoringValue(:,:,:) = activeTracers(:,:,:)
-                activeTracersSurfaceRestoringValue(:,:) = activeTracers(:,1,:)
+                if ( associated(activeTracersInteriorRestoringValue) .and. associated(activeTracers) ) then
+                   activeTracersInteriorRestoringValue(:,:,:) = activeTracers(:,:,:)
+                end if
+                if ( associated(activeTracersSurfaceRestoringValue) .and. associated(activeTracers) ) then
+                   activeTracersSurfaceRestoringValue(:,:) = activeTracers(:,1,:)
+                end if
 
                 block_ptr => block_ptr % next
              end do

@@ -241,47 +241,51 @@ contains
            yOffset = perturbationWidth * sin (6.0_RKIND * pii * (xCell(iCell) - xMinGlobal) / (xMaxGlobal - xMinGlobal))
 
            ! Set debug tracer
-           idx = index_tracer1
-           do k = 1, nVertLevels
-             debugTracers(idx, k, iCell) = 1.0_RKIND
-           enddo
+           if ( associated(debugTracers) ) then
+              idx = index_tracer1
+              do k = 1, nVertLevels
+                 debugTracers(idx, k, iCell) = 1.0_RKIND
+              enddo
+           end if
 
            ! Set stratification based on northern half of domain temperature
-           idx = index_temperature
-           do k = nVertLevels, 1, -1
-              temperature = config_baroclinic_channel_bottom_temperature &
-                          + (config_baroclinic_channel_surface_temperature - config_baroclinic_channel_bottom_temperature) &
-                          * ( (refZMid(k) + refBottomDepth(nVertLevels)) / refBottomDepth(nVertLevels) )
-              activeTracers(idx, k, iCell) = temperature
-           end do
+           if ( associated(activeTracers) ) then
+              idx = index_temperature
+              do k = nVertLevels, 1, -1
+                 temperature = config_baroclinic_channel_bottom_temperature &
+                             + (config_baroclinic_channel_surface_temperature - config_baroclinic_channel_bottom_temperature) &
+                             * ( (refZMid(k) + refBottomDepth(nVertLevels)) / refBottomDepth(nVertLevels) )
+                 activeTracers(idx, k, iCell) = temperature
+              end do
 
-           if(yCell(iCell) < yMidGlobal - yOffset) then
-                ! If cell is in the southern half, outside the sin width, subtract temperature difference
-                activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
-           else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
-                   yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
-                activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
-                              - ((yMaxGlobal + yMinGlobal) * 0.5 - yOffset)) / perturbationWidth)
+              if(yCell(iCell) < yMidGlobal - yOffset) then
+                   ! If cell is in the southern half, outside the sin width, subtract temperature difference
+                   activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
+              else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
+                      yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
+                   activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
+                                 - ((yMaxGlobal + yMinGlobal) * 0.5 - yOffset)) / perturbationWidth)
+              end if
+
+              ! Determine yOffset for 3rd crest in sin wave.
+              yOffset = 0.5_RKIND * perturbationWidth * sin(pii * (xCell(iCell) - xPerturbationMin)/(xPerturbationMax - xPerturbationMin))
+
+              if ( yCell(iCell) >= yMidGlobal - yOffset - 0.5_RKIND * perturbationWidth .and. &
+                   yCell(iCell) <= yMidGlobal - yOffset + 0.5_RKIND * perturbationWidth .and. &
+                   xCell(iCell) >= xPerturbationMin .and. &
+                   xCell(iCell) <= xPerturbationMax) then
+
+
+                   do k = 1, nVertLevels
+                      activeTracers(idx, k, iCell) = activeTracers(idx, k, iCell) + &
+                                0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) /(0.5_RKIND * perturbationWidth)))
+                   end do
+              end if
+
+              ! Set salinity
+              idx = index_salinity
+              activeTracers(idx, :, iCell) = config_baroclinic_channel_salinity
            end if
-
-           ! Determine yOffset for 3rd crest in sin wave.
-           yOffset = 0.5_RKIND * perturbationWidth * sin(pii * (xCell(iCell) - xPerturbationMin)/(xPerturbationMax - xPerturbationMin))
-
-           if ( yCell(iCell) >= yMidGlobal - yOffset - 0.5_RKIND * perturbationWidth .and. &
-                yCell(iCell) <= yMidGlobal - yOffset + 0.5_RKIND * perturbationWidth .and. &
-                xCell(iCell) >= xPerturbationMin .and. &
-                xCell(iCell) <= xPerturbationMax) then
-
-
-                do k = 1, nVertLevels
-                   activeTracers(idx, k, iCell) = activeTracers(idx, k, iCell) + &
-                             0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) /(0.5_RKIND * perturbationWidth)))
-                end do
-           end if
-
-           ! Set salinity
-           idx = index_salinity
-           activeTracers(idx, :, iCell) = config_baroclinic_channel_salinity
 
            ! Set layerThickness and restingThickness
            do k = 1, nVertLevels

@@ -326,13 +326,17 @@ contains
               factor = - zMid / config_soma_bottom_depth
               salinity = config_soma_surface_salinity + factor
 
-              activeTracers(index_temperature, k, iCell) = temperature
-              activeTracers(index_salinity, k, iCell) = salinity 
+              if ( associated(activeTracers) ) then
+                 activeTracers(index_temperature, k, iCell) = temperature
+                 activeTracers(index_salinity, k, iCell) = salinity 
+              end if
 
            enddo
            
            ! Set up debugging tracers
-           debugTracers(index_tracer1, :, iCell) = 1.0_RKIND
+           if ( associated(debugTracers) ) then
+              debugTracers(index_tracer1, :, iCell) = 1.0_RKIND
+           end if
            
         end do ! iCell = 1, nCells
 

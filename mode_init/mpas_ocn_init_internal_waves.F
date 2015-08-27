@@ -239,28 +239,32 @@ contains
         do iCell = 1, nCellsSolve
 
            ! Set debug tracer
-           do k = 1, nVertLevels
-             debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
-           enddo
+           if ( associated(debugTracers) ) then
+              do k = 1, nVertLevels
+                debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+              enddo
+           end if
 
            if ( trim(config_internal_waves_layer_type) == 'z-level' ) then
 
               ! Set stratified temperature
-              do k = nVertLevels, 1, -1
-                 temperature = config_internal_waves_bottom_temperature &
-                      + (config_internal_waves_surface_temperature - config_internal_waves_bottom_temperature) &
-                      * ( (refZMid(k) - refZMid(nVertLevels)) / (-refZMid(nVertLevels) ))
-                 activeTracers(index_temperature, k, iCell) = temperature
-              end do
-
-              if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth ) then
-                 ! If cell is in the southern half, outside the sin width, subtract temperature difference
-                 do k = 2, nVertLevels
-                    temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) - yMidGlobal) / perturbationWidth) &
-                         * sin ( pii * refBottomDepth(k-1) / refBottomDepth(nVertLevels-1) )
-
-                    activeTracers(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell) + temperature
+              if ( associated(activeTracers) ) then
+                 do k = nVertLevels, 1, -1
+                    temperature = config_internal_waves_bottom_temperature &
+                         + (config_internal_waves_surface_temperature - config_internal_waves_bottom_temperature) &
+                         * ( (refZMid(k) - refZMid(nVertLevels)) / (-refZMid(nVertLevels) ))
+                    activeTracers(index_temperature, k, iCell) = temperature
                  end do
+
+                 if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth ) then
+                    ! If cell is in the southern half, outside the sin width, subtract temperature difference
+                    do k = 2, nVertLevels
+                       temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) - yMidGlobal) / perturbationWidth) &
+                            * sin ( pii * refBottomDepth(k-1) / refBottomDepth(nVertLevels-1) )
+
+                       activeTracers(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell) + temperature
+                    end do
+                 end if
               end if
 
               ! Set layerThickness
@@ -270,7 +274,9 @@ contains
            else if ( trim(config_internal_waves_layer_type) == 'isopycnal' ) then
 
               ! Set stratified temperature
-              activeTracers(index_temperature, :, iCell) =  refTemperature(:)
+              if ( associated(activeTracers) ) then
+                 activeTracers(index_temperature, :, iCell) =  refTemperature(:)
+              end if
 
               ! Set layerThickness
               if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth) then
@@ -296,7 +302,9 @@ contains
            endif
 
            ! Set salinity
-           activeTracers(index_salinity, :, iCell) = config_internal_waves_salinity
+           if ( associated(activeTracers) ) then
+              activeTracers(index_salinity, :, iCell) = config_internal_waves_salinity
+           end if
 
            ! Set bottomDepth
            bottomDepth(iCell) = config_internal_waves_bottom_depth

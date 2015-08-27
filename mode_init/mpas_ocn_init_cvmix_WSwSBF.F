@@ -231,11 +231,16 @@ contains
         do iCell = 1, nCellsSolve
            ! Set temperature and salinity
            do k = 1, nVertLevels
-              temperature = config_cvmix_WSwSBF_surface_temperature + refZMid(k) * config_cvmix_WSwSBF_temperature_gradient
-              activeTracers(index_temperature, k, iCell) = temperature
-              salinity = config_cvmix_WSwSBF_surface_salinity + refZMid(k) * config_cvmix_WSwSBF_salinity_gradient
-              activeTracers(index_salinity, k, iCell) = salinity
-              debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+              if ( associated(activeTracers) ) then
+                 temperature = config_cvmix_WSwSBF_surface_temperature + refZMid(k) * config_cvmix_WSwSBF_temperature_gradient
+                 activeTracers(index_temperature, k, iCell) = temperature
+                 salinity = config_cvmix_WSwSBF_surface_salinity + refZMid(k) * config_cvmix_WSwSBF_salinity_gradient
+                 activeTracers(index_salinity, k, iCell) = salinity
+              end if
+              
+              if ( associated(debugTracers) ) then
+                 debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+              end if
            end do
 
            ! Set layerThickness
@@ -246,13 +251,21 @@ contains
 
            ! Set surface temperature restoring value and rate
            ! Value in units of C, piston velocity in units of m/s
-           activeTracersSurfaceRestoringValue(index_temperature, iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
-           activeTracersPistonVelocity(index_temperature, iCell) = config_cvmix_WSwSBF_surface_temperature_piston_velocity
+           if ( associated(activeTracersSurfaceRestoringValue) ) then
+              activeTracersSurfaceRestoringValue(index_temperature, iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
+           end if
+           if ( associated(activeTracersPistonVelocity) ) then
+              activeTracersPistonVelocity(index_temperature, iCell) = config_cvmix_WSwSBF_surface_temperature_piston_velocity
+           end if
 
            ! Set surface salinity restoring value and rate
            ! Value in units of PSU, piston velocity in units of m/s
-           activeTracersSurfaceRestoringValue(index_salinity, iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
-           activeTracersPistonVelocity(index_salinity, iCell) = config_cvmix_WSwSBF_surface_salinity_piston_velocity
+           if ( associated(activeTracersSurfaceRestoringValue) ) then
+              activeTracersSurfaceRestoringValue(index_salinity, iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
+           end if
+           if ( associated(activeTracersPistonVelocity) ) then
+              activeTracersPistonVelocity(index_salinity, iCell) = config_cvmix_WSwSBF_surface_salinity_piston_velocity
+           end if
 
            ! Set sensible heat flux
            sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
@@ -269,14 +282,22 @@ contains
 
            ! Set interior temperature restoring value and rate
            do k = 1, nVertLevels
-              activeTracersInteriorRestoringValue(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell)
-              activeTracersInteriorRestoringRate(index_temperature, k, iCell) = config_cvmix_WSwSBF_interior_temperature_restoring_rate
+              if ( associated(activeTracersInteriorRestoringValue) ) then
+                 activeTracersInteriorRestoringValue(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell)
+              end if
+              if ( associated(activeTracersInteriorRestoringRate) ) then
+                 activeTracersInteriorRestoringRate(index_temperature, k, iCell) = config_cvmix_WSwSBF_interior_temperature_restoring_rate
+              end if
            enddo
 
            ! Set interior salinity restoring value and rate
            do k = 1, nVertLevels
-              activeTracersInteriorRestoringValue(index_salinity, k, iCell) = activeTracers(index_salinity, k, iCell)
-              activeTracersInteriorRestoringRate(index_salinity, k, iCell) = config_cvmix_WSwSBF_interior_salinity_restoring_rate
+              if ( associated(activeTracersInteriorRestoringValue) ) then
+                 activeTracersInteriorRestoringValue(index_salinity, k, iCell) = activeTracers(index_salinity, k, iCell)
+              end if
+              if ( associated(activeTracersInteriorRestoringRate) ) then
+                 activeTracersInteriorRestoringRate(index_salinity, k, iCell) = config_cvmix_WSwSBF_interior_salinity_restoring_rate
+              end if
            enddo
 
            ! Set Coriolis parameter
