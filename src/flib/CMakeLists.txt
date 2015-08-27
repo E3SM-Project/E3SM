@@ -49,7 +49,7 @@ check_macro (Fortran_CSIZEOF
              NAME TryCSizeOf.f90
              HINTS ${CMAKE_MODULE_PATH}
              COMMENT "whether Fortran compiler supports c_sizeof")
-if (Fortran_CSIZEOF)
+if (NOT Fortran_CSIZEOF)
     target_compile_definitions (piof
         PUBLIC NO_C_SIZEOF)
 endif()
