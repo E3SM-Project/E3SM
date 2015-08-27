@@ -506,6 +506,42 @@
   </entry> 
 
   <!-- ===================================================================== -->
+  <!-- definitions machines specific -->
+  <!-- ===================================================================== -->
+
+  <entry id="environment_variables">
+     <type>char</type>
+     <default_value>UNSET</default_value>
+     <group>config_batch</group>
+     <file>env_mach_specific.xml</file>
+     <desc>The environment variables that will be loaded for this machine</desc>
+  </entry>
+
+  <entry id="env">
+     <type>char</type>
+     <default_value>UNSET</default_value>
+     <group>config_batch</group>
+     <file>env_mach_specific.xml</file>
+     <desc>The individual environment variable entry for config_machines</desc>
+  </entry>
+
+  <entry id="limits">
+     <type>char</type>
+     <default_value>UNSET</default_value>
+     <group>config_batch</group>
+     <file>env_mach_specific.xml</file>
+     <desc>The limits tag</desc>
+  </entry>
+
+  <entry id="limit">
+     <type>char</type>
+     <default_value>UNSET</default_value>
+     <group>config_batch</group>
+     <file>env_mach_specific.xml</file>
+     <desc>The individual limit variable</desc>
+  </entry>
+
+  <!-- ===================================================================== -->
   <!-- definitions batch -->
   <!-- ===================================================================== -->
 
