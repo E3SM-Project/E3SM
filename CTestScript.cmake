@@ -66,7 +66,11 @@ find_program (MAKE NAMES make)
 # -- build specific
 # -----------------------------------------------------------  
 
-set(MODEL "Experimental")
+## -- Get the CTest Dashboard Model
+set (MODEL Experimental)
+if (${CTEST_SCRIPT_ARG} MATCHES Nightly)
+  set (MODEL Nightly)
+endif ()
 
 ## -- Dashboard Root Dir
 if (DEFINED ENV{PIO_DASHBOARD_ROOT})
@@ -81,13 +85,11 @@ set (CTEST_SOURCE_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/src")
 ## -- BIN Dir                                            
 set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
 
-## -- Build options
-set (CTEST_BUILD_OPTIONS      "")
-
+## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 # -----------------------------------------------------------  
-# -- commands
+# -- CTest Step Commands
 # -----------------------------------------------------------  
 
 ## -- Checkout command
@@ -97,29 +99,13 @@ if(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
 endif()
 
 ## -- Update Command
-set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
 ## -- Configure Command
-set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} -DCMAKE_VERBOSE_MAKEFILE=1 ${CTEST_SOURCE_DIRECTORY}")
+set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_BUILD_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
 
 ## -- Build Command
-set(CTEST_BUILD_COMMAND "${MAKE} ${CTEST_BUILD_OPTIONS} all tests")
-
-# -----------------------------------------------------------  
-# -- Configure CTest
-# -----------------------------------------------------------  
-
-## -- CTest Config
-#configure_file($ENV{HOME}/CTestConfiguration/CTestConfig.cmake  ${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake)
-
-## -- CTest Custom
-#configure_file($ENV{HOME}/CTestConfiguration/CTestCustom.cmake ${CTEST_BINARY_DIRECTORY}/CTestCustom.cmake)
-
-## -- CTest Testfile
-#configure_file($ENV{HOME}/CTestConfiguration/CTestTestfile.cmake ${CTEST_BINARY_DIRECTORY}/CTestTestfile.cmake)
-
-## -- read CTestCustom.cmake file
-#ctest_read_custom_files("${CTEST_BINARY_DIRECTORY}")
+set (CTEST_BUILD_COMMAND "${MAKE} all tests")
 
 # -----------------------------------------------------------  
 # -- Run CTest
@@ -142,11 +128,11 @@ message (" -- Build ${MODEL} - ${CTEST_BUILD_NAME} --")
 ctest_build ()
 
 ## -- TEST
-message (" -- Test ${MODEL} - ${CTEST_BUILD_NAME} --")
-ctest_test ()
+#message (" -- Test ${MODEL} - ${CTEST_BUILD_NAME} --")
+#ctest_test ()
 
 ## -- SUBMIT
-message (" -- Submit ${MODEL} - ${CTEST_BUILD_NAME} --")
-ctest_submit ()
+#message (" -- Submit ${MODEL} - ${CTEST_BUILD_NAME} --")
+#ctest_submit ()
 
 message (" -- Finished ${MODEL}  - ${CTEST_BUILD_NAME} --")
