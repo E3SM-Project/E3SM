@@ -593,7 +593,7 @@ sub buildModel()
 	print " .... locking file $file\n";
     }
     
-    my $sdate = strftime("%y%m%d-%H%M%S", localtime);
+    my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
     open my $CS, ">>", "./CaseStatus";
     print $CS "build complete $sdate\n";
     close $CS;
