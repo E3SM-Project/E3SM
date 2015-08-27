@@ -151,7 +151,7 @@ EOF
 # Look for them under the directory that contains the configure script.
 
 # The root directory to utils Tools
-my $cimeroot = abs_path($CIMEROO);
+my $cimeroot = abs_path($CIMEROOT);
 my $perl5lib = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
