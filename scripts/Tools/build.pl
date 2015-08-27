@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+a#!/usr/bin/env perl 
 
 # specify minimum version of perl
 use 5.010;
@@ -10,7 +10,7 @@ use File::Copy;
 use File::Spec;
 use File::Basename;
 use Data::Dumper;
-use Cwd;
+use Cwd qw(abs_path);
 use POSIX qw(strftime);
 
 use English;
@@ -67,10 +67,8 @@ my $banner = "------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------
 sub main {
 
-    if ($#ARGV == -1) {
-	die " ERROR: must specify a caseroot input argument";
-    }
-    ($CASEROOT) = @ARGV;
+    $CASEROOT = abs_path(".");
+    print "CASEROOT: $CASEROOT\n";
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 
@@ -115,6 +113,7 @@ sub main {
     my $MACH		= `./xmlquery  MACH		-value `;
     my $OS	        = `./xmlquery  OS		-value `;
     my $COMP_CPL	= `./xmlquery  COMP_CPL		-value `;
+    my $MODEL           = `./xmlquery  MODEL            -value `;
     my $machines_file   = `./xmlquery  MACHINES_SPEC_FILE -value `;
     $machines_dir       = dirname($machines_file);
 
@@ -162,13 +161,26 @@ sub main {
     # the future there may be others -- so USE_TRILINOS will be true if
     # ANY of those are true.
     my $use_trilinos = 'FALSE';
-    if ($COMP_GLC eq 'cam') {
-	$CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
+    if (defined $CISM_USE_TRILINOS) {
 	if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
 	my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
 	$ENV{USE_TRILINOS} = ${use_trilinos};
 	$ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
     }
+
+    my $perl5libdir = "$CIMEROOT/utils/perl5lib";
+    push(@INC, $perl5libdir);
+    require Module::ModuleLoader;
+    my $moduleloader = Module::ModuleLoader->new(machine   => $MACH, 
+						 compiler  => $COMPILER, 
+						 mpilib	   => $MPILIB, 
+						 debug	   => $DEBUG, 
+						 caseroot  => $CASEROOT, 
+						 cimeroot  => $CIMEROOT, 
+						 model	   => $MODEL);
+    $moduleloader->moduleInit();
+    $moduleloader->findModulesForCase();
+    $moduleloader->loadModules();
 
     print "    .... checking namelists (calling ./preview_namelists) \n";
     $sysmod = "./preview_namelists > /dev/null";
@@ -178,7 +190,6 @@ sub main {
     buildChecks();
     buildLibraries();
     buildModel();
-    
 }
 
 
@@ -204,8 +215,8 @@ sub checkInputData()
     if (@unknown) {
 	print "      Any files with \"status uknown\" below were not found in the expected \n";
 	print "      location, and are not from the input data repository. This is for \n";
-	print "      informational only; this script will not attempt to find thse files. If\n";
-	print "      If CESM can find (or does not need) these files no error will result. \n";
+	print "      informational only; this script will not attempt to find thse files. \n";
+	print "      If these files are found or are not needed no error will result. \n";
 	map {print "$_\n" } @unknown;
     }
 	
@@ -287,7 +298,7 @@ sub checkInputData()
 #-----------------------------------------------------------------------------------------------
 sub buildChecks()
 {
-    print "    .... calling cesm build checks \n";
+    print "    .... calling build checks \n";
 	
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 	
@@ -433,7 +444,7 @@ sub buildChecks()
 #-----------------------------------------------------------------------------------------------
 sub buildLibraries()
 {
-    print "    .... calling cesm builds for utility libraries (compiler is $COMPILER) \n";
+    print "    .... calling builds for utility libraries (compiler is $COMPILER) \n";
 
     chdir $EXEROOT;
 

@@ -7,7 +7,7 @@
 #
 # The command is echoed to the CaseStatus file, unless -noecho is given. The
 # purpose of this echoing is to provide a "paper trail" of changes made by the
-# user, so calls to xmlchange by cesm scripts that are part of the normal case
+# user, so calls to xmlchange by the cime scripts that are part of the normal case
 # setup/build process should generally use -noecho.
 #
 #-----------------------------------------------------------------------------------------------

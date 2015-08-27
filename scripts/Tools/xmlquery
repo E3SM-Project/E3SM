@@ -56,7 +56,7 @@ if ($#ARGV == -1) {
 # descriptions to be printed to STDOUT before the error messages start.
 *STDOUT->autoflush();                  
 
-# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
+# Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 

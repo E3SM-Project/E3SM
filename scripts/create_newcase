@@ -217,6 +217,7 @@ require SetupTools;
 require Project::ProjectTools;
 require UserMods::UserModsTools;
 require Testing::TestLists; 
+require Module::ModuleLoader;
 
 # Global variables
 my $model;
@@ -420,6 +421,18 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 #------------------------------------------------------------------------------------------
 my $file = $config->get('CONFIG_DRV_FILE');
 ConfigMachine::setMachineValues($file, $pes_setby, $machine, $compiler, $print, $config);
+# now potentially override with unsupported user config_pes.xml file.
+# TODO - put this change in for the new create_newcase changes - these were there in the old code
+# Set the parameters for the specified machine.  Try looking for
+# the machine in the users ~/.cesm directory. If it is not found
+# the machine in the users ~/.cime directory. If it is not found
+# then check the standard machines location. The parameters are
+# read from an input file, and if no machine matches are found
+# then issue error message.  This routine uses the configuration
+#my $pes_file = "$ENV{'HOME'}/.cime/config_pes.xml";
+#if ( -f "$pes_file") {
+#    print "\nUsing UNSUPPORTED userdefined config_pes.xml : \"~/.cime/config_pes.xml\"\n";
+#}
 
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
@@ -532,19 +545,13 @@ if (defined $opts{'confopts'}) {
 # Check for optional project; if not given, see if we can find a project to use
 #------------------------------------------------------------------------------------------
 if ($opts{'project'}) {
-   $project = $opts{'project'};
+    $project = $opts{'project'};
+} else {
+    $project = ProjectTools::find_project();
 }
-else {
-   $project = ProjectTools::find_project();
-}
-
 if ($config->get('PROJECT_REQUIRED') eq "TRUE") {
     ProjectTools::check_project_required_but_unset($project);
 }
-if (ProjectTools::set_project($project)) {
-    $config->set('PROJECT', $project);
-} 
-
 #------------------------------------------------------------------------------------------
 # *** Set the mpi library 
 #------------------------------------------------------------------------------------------
@@ -878,17 +885,10 @@ sub _create_caseroot_files
 	print "\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"\n";
     }
 
-    # Create $case.build
-    $sysmod = "cp $cimeroot/scripts/Tools/build.csh  $caseroot/$case.build";
+    # Create $caseroot/Buildconf/build.pl
+    $sysmod = "cp $cimeroot/scripts/Tools/build.pl  $caseroot/$case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     $sysmod = "chmod 755 $caseroot/$case.build";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
-    # Create $caseroot/Buildconf/build.pl
-    $sysmod = "cp $cimeroot/scripts/Tools/build.pl  $caseroot/Buildconf/build.pl";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
-    $sysmod = "chmod 755 $caseroot/Buildconf/build.pl";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     
     # Create $case.clean_build
@@ -898,6 +898,18 @@ sub _create_caseroot_files
     # Create $case.submit
     $sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+    # Create machine specific module files (env_mach_specific)
+    my $dbug = $config->get("DEBUG");
+    my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
+    						 compiler => $compiler, 
+    						 mpilib   => $mpilib, 
+    						 debug    => $dbug, 
+    						 caseroot => $caseroot, 
+    						 cimeroot => $cimeroot,
+     						 model    => $model);
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
 
     # Create $case.l_archive
     #$sysmod = "env USER=$username CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch_file";
@@ -910,14 +922,6 @@ sub _create_caseroot_files
 
     $sysmod = "chmod 755 $file";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
-    if (-e "$machines_dir/env_mach_specific.$machine" ) {
-	$sysmod = "cp $machines_dir/env_mach_specific.$machine $caseroot/env_mach_specific";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    } else {
-	$sysmod = "touch $caseroot/env_mach_specific";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    }
 
     if ( -e "$machines_dir/Depends.$machine" ) {
 	$sysmod = "cp $machines_dir/Depends.$machine $caseroot/";

@@ -23,6 +23,9 @@
     </directives>
   </batch_system>
 
+  <batch_system type="none">
+  </batch_system>
+
    <batch_system type="cobalt" version="x.y">
      <batch_query>qstat</batch_query>
      <batch_submit>bash</batch_submit>
@@ -94,6 +97,12 @@
      </directives>
    </batch_system>
 
+   <batch_system MACH="goldbach">
+   <directives>
+     <directive>-q {{ fake_queue }}</directive>
+   </directives>
+   </batch_system>
+
     <!-- edison is PBS -->
     <batch_system MACH="edison" version="x.y">
       <directives>
@@ -136,6 +145,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-has" version="x.y">
+  <jobid_pattern>(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:has</directive>
@@ -145,6 +155,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-ivy" version="x.y">
+  <jobid_pattern>(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:ivy</directive>
@@ -154,6 +165,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-san" version="x.y">
+  <jobid_pattern>(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:san</directive>

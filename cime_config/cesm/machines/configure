@@ -73,8 +73,8 @@ OPTIONS
 
      The following arguments are required for a generic machine. Otherwise, they will be ignored. 
 
-     -scratchroot <name>           cesm executable directory (EXEROOT will be scratchroot/CASE) (char)
-     -din_loc_root <name>          cesm input data root directory (char)
+     -scratchroot <name>           executable directory (EXEROOT will be scratchroot/CASE) (char)
+     -din_loc_root <name>          input data root directory (char)
      -max_tasks_per_node <value>   maximum mpi tasks per machine node (integer)
 
 EXAMPLES
@@ -176,16 +176,9 @@ $cimeroot = absolute_path($ENV{CIMEROOT}) unless defined($cimeroot);
 ** Cannot find cimeroot directory \"$cimeroot\"  
 EOF
 my $scriptdir = "$cimeroot/scripts";
-$machdir   = "$cimeroot/machines" unless defined($machdir);
+$machdir   = "$cimeroot/cime_config/cesm/machines" unless defined($machdir);
 (-d "$machdir")  or  die <<"EOF";
 ** Cannot find machines directory \"$machdir\"  
-EOF
-
-# Check for the configuration definition file.
-my $config_def_file = "config_definition.xml";
-(-f "$scriptdir/Tools/$config_def_file")  or  die <<"EOF";
-** Cannot find configuration definition file \"$config_def_file\" in directory 
-    \"$scriptdir/Tools/$config_def_file\" **
 EOF
 
 my $output_dir = ".";
@@ -213,7 +206,7 @@ my %cfg = ();           # build configuration
 # 
 
 (-d "$machdir")   or  die <<"EOF";
-** Cannot find cesm Machines directory \"$machdir\" **
+** Cannot find machines directory \"$machdir\" **
 EOF
 
 #-----------------------------------------------------------------------------------------------
@@ -237,22 +230,23 @@ EOF
 if ($print>=2) { print "Setting configuration directory to $scriptdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-my @dirs = ( "$scriptdir/Tools", "$cimeroot/utils/perl5lib" );
+my @dirs = ("$cimeroot/utils/perl5lib" );
 
 unshift @INC, @dirs;
-require ConfigCase;
 require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
 if ($opts{'list'}) {
-    ConfigCase::print_machines("$machdir/$machine_file");
+    #TODO add this correctly - since there is no longer a print_machines in ConfigCase
+#    ConfigCase::print_machines("$machdir/$machine_file");
 # to do - add print_compilers
     if ($print>=2) { print "finished listing valid values, now exiting $eol"; }
     exit;
 }
 
 #-----------------------------------------------------------------------------------------------
+#TODO: need to completely rework this script to account for the removal of config_def_file
 # Create new config object if not just listing valid values
 my $cfg_ref = ConfigCase->new("$scriptdir/Tools/$config_def_file"); 
 

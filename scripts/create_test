@@ -1680,8 +1680,6 @@ sub namelistCompare
     chdir($testpath) or die "couldn't change directory to $testpath\n";
     my $cprnml = "$testpath/Tools/compare_namelists.pl";
 
-    my $configtemplate = "$scriptsroot/Tools/config_definition.xml";
-    &Debug("config template is $configtemplate\n");
     &Debug("test path is  $testpath\n");
 
     my $baseroot = $opts{'baselineroot'};

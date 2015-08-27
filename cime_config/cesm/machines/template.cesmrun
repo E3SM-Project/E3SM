@@ -114,15 +114,18 @@ sub doPreRunChecks()
     # Now, load the module environment... 
     # ModuleLoader for module-based systems.  
     
-    my $moduleloader = new Module::ModuleLoader(machine => $config{'MACH'}, 
+    my $moduleloader = new Module::ModuleLoader(machine  => $config{'MACH'}, 
 						compiler => $config{'COMPILER'},
-						mpilib => $config{'MPILIB'}, 
-						debug => $config{'DEBUG'}, 
-						caseroot => $config{'CASEROOT'});
+						mpilib   => $config{'MPILIB'}, 
+						debug    => $config{'DEBUG'}, 
+						caseroot => $config{'CASEROOT'},
+	                                        model    => $config{'MODEL'});
+    
+    $moduleloader->moduleInit();
+    $moduleloader->findModulesForCase();
     $moduleloader->loadModules();
     
     my $mpilib = `./xmlquery -value MPILIB`;
-
     if($mpilib =~ /mpi-serial/)
     {
         delete $ENV{'MP_MPILIB'};
@@ -344,6 +347,14 @@ sub postRun()
     if(length($logfile) <= 0)
     {
         print "Model did not complete, no cesm.log file present\n";
+    }
+
+    if(! defined $cpllogfile)
+    {
+        my $msg = "Model did not complete - no cpl.log file corresponding to most recent CESM log: $config{'RUNDIR'}/$cesmlogfile";
+        print("$msg\n");
+        appendCaseStatus($msg);
+        exit(-1);
     }
 
     if(length($cpllogfile) <= 0)

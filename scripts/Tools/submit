@@ -21,6 +21,8 @@ my $compiler	= $config{'COMPILER'};
 my $mpilib	= $config{'MPILIB'};
 my $caseroot	= $config{'CASEROOT'};
 my $case	= $config{'CASE'};
+my $model       = $config{'MODEL'};
+my $debug       = $config{'DEBUG'};
 
 my $lastjobid = undef;
 
@@ -40,14 +42,18 @@ sub main
         exit(-1);
     }
     
-    my $moduleloader = new Module::ModuleLoader(machine	    => $config{'MACH'}, 
-						compiler    => $config{'COMPILER'},
-						mpilib	    => $config{'MPILIB'}, 
-						debug	    => $config{'DEBUG'},
-						caseroot    => $config{'CASEROOT'});
+    my $moduleloader = Module::ModuleLoader->new(machine  => $mach, 
+						 compiler => $compiler, 
+						 mpilib   => $mpilib, 
+						 debug    => $dbug, 
+						 caseroot => $caseroot, 
+						 cimeroot => $cimeroot,
+						 model    => $model);
+
+    $moduleloader->moduleInit();
+    $moduleloader->findModulesForCase();
     $moduleloader->loadModules();
 
-    #my $batchutils = new Batch::BatchUtils(machine => $machine, machroot => $machroot, caseconfig => \%config);
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case, 
 							      caseconfig   => \%config, 
 							      caseroot	   => $caseroot, 

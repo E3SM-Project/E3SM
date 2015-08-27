@@ -149,13 +149,13 @@ sub getxmlvars
 sub set_compiler
 {
     # Parse the config_compiler.xml file into a Macros file for the
-    # given machine and compiler. Search the user's ~/.cesm directory
+    # given machine and compiler. Search the user's ~/.cime directory
     # first, then use the standard compiler file if it is not available.
     my ($os,$compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile, $output_format) = @_;
 
     # Read compiler xml 
     my @compiler_settings;
-    my @files = ("$ENV{\"HOME\"}/.cesm/config_compilers.xml", "$compiler_file");
+    my @files = ("$ENV{\"HOME\"}/.cime/config_compilers.xml", "$compiler_file");
     foreach my $file (@files) {
 	if (-f $file) {
 	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);

@@ -7,9 +7,9 @@ setenv MPILIB     `./xmlquery  MPILIB   -value `
 setenv COMPILER	  `./xmlquery  COMPILER	-value `
 setenv CASEROOT   `./xmlquery  CASEROOT	-value `
 
-echo " .... determining environment variables from env_mach_specific "
+#echo " .... determining environment variables from env_mach_specific "
 
-source env_mach_specific || exit -1
+#source env_mach_specific || exit -1
 
 echo " .... building model executable (calling ./Buildconf/build.pl) "
 
