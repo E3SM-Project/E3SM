@@ -240,6 +240,7 @@ contains
       !
       !-----------------------------------------------------------------
       integer, pointer :: nCells, nVertices, nEdges, vertexDegree
+      integer, pointer :: nVertInterfaces
       real(KIND=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:), pointer :: nEdgesOnCell, cellMask, vertexMask, edgeMask
       integer, dimension(:,:), pointer :: cellsOnCell, cellsOnVertex, cellsOnEdge, dirichletVelocityMask
@@ -261,6 +262,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+      call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -279,6 +281,10 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
+      if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
+         call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
+      endif
+
       ! ====
       ! Calculate cellMask values===========================
       ! ====
@@ -294,15 +300,14 @@ contains
       end where
 
       ! Identify cells where the ice is above the ice dynamics thickness limit
-      if (config_velocity_solver == 'sia') then
+      if ( (trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none') ) then
          where ( thickness > config_dynamic_thickness )
             cellMask = ior(cellMask, li_mask_ValueDynamicIce)
          end where
       else  ! HO external FEM dycore
-         call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
          where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
-              (dirichletVelocityMask(1,:) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  To ignore dirichlet b.c. on the basal boundary, just check the surface level
+                 (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary, so we ignore the basal level
             cellMask = ior(cellMask, li_mask_ValueDynamicIce)
          end where
       endif
