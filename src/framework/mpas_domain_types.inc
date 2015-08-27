@@ -6,13 +6,17 @@
       type (MPAS_Clock_type), pointer :: clock
       type (MPAS_streamManager_type), pointer :: streamManager
       type (mpas_decomp_list), pointer :: decompositions => null()
+      type (mpas_io_context_type), pointer :: ioContext => null()
 
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo
 
       ! Domain specific constants
       logical :: on_a_sphere
+      logical :: is_periodic
       real (kind=RKIND) :: sphere_radius
+      real (kind=RKIND) :: x_period
+      real (kind=RKIND) :: y_period
       character (len=StrKIND) :: namelist_filename !< Constant: Name of namelist file
       character (len=StrKIND) :: streams_filename !< Constant: Name of stream configuration file
       character (len=StrKIND) :: mesh_spec !< mesh_spec attribute, read in from input file.

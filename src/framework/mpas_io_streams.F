@@ -75,12 +75,13 @@ module mpas_io_streams
    contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, &
+   subroutine MPAS_createStream(stream, ioContext, fileName, ioFormat, ioDirection, precision, &
                                 clobberRecords, clobberFiles, truncateFiles, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(out) :: stream
+      type (mpas_io_context_type), pointer :: ioContext
       character (len=*), intent(in) :: fileName
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
@@ -95,7 +96,7 @@ module mpas_io_streams
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
 
-      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, clobber_file=clobberFiles, truncate_file=truncateFiles, &
+      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, ioContext, clobber_file=clobberFiles, truncate_file=truncateFiles, &
                                          ierr=io_err) 
       !
       ! Catch a few special errors

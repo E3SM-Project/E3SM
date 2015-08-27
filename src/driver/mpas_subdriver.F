@@ -280,7 +280,8 @@ module mpas_subdriver
       !
       ! Set up run-time streams
       !
-      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % clock, domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
+      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % ioContext, domain_ptr % clock, &
+                                domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
 
       call add_stream_attributes(domain_ptr)
 
@@ -400,6 +401,9 @@ module mpas_subdriver
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'is_periodic', domain % is_periodic)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'x_period', domain % x_period)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'y_period', domain % y_period)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
 !     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)

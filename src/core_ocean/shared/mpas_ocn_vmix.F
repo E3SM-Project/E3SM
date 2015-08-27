@@ -547,7 +547,6 @@ contains
       call ocn_vmix_coefs_redi_init(err_tmp)
       err = ior(err, err_tmp)
 
-      write(6,*) 'ocn_vmix_init complete'
    !--------------------------------------------------------------------
 
    end subroutine ocn_vmix_init!}}}

@@ -104,9 +104,9 @@ contains
       type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostics information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux
+      real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, &
-         vertAleTransportTop, tend_layerThickness, normalTransportVelocity, transmissionCoefficients
+         vertAleTransportTop, tend_layerThickness, normalTransportVelocity, fractionAbsorbed
 
       integer :: err
 
@@ -122,8 +122,8 @@ contains
 
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
 
-      call mpas_pool_get_array(forcingPool, 'surfaceMassFlux', surfaceMassFlux)
-      call mpas_pool_get_array(forcingPool, 'transmissionCoefficients', transmissionCoefficients)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
                   
       !
       ! height tendency: start accumulating tendency terms
@@ -156,7 +156,7 @@ contains
       !
       call mpas_timer_start("surface flux", .false.)
 
-      call ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceMassFlux, tend_layerThickness, err)
+      call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, surfaceThicknessFlux, tend_layerThickness, err)
       call mpas_timer_stop("surface flux")
 
       call mpas_timer_stop("ocn_tend_thick")
@@ -331,7 +331,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
-        tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, transmissionCoefficients, zMid, relativeSlopeTopOfEdge, &
+        tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
         relativeSlopeTapering, relativeSlopeTaperingCell
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         tracers, tend_tr, vertNonLocalFlux
@@ -368,7 +368,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
-      call mpas_pool_get_array(forcingPool, 'transmissionCoefficients', transmissionCoefficients)
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
 
       call mpas_pool_get_array(tendPool, 'tracers', tend_tr)
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
@@ -415,7 +415,7 @@ contains
       ! Perform forcing from surface fluxes
       !
       call mpas_timer_start("surface_flux", .false.)
-      call ocn_tracer_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceTracerFlux, tend_tr, err)
+      call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, surfaceTracerFlux, tend_tr, err)
       call mpas_timer_stop("surface_flux")
 
       !
