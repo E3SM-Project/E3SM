@@ -21,6 +21,10 @@ set (SRCS basic_tests.F90
 
 add_executable (pio_unit_test EXCLUDE_FROM_ALL ${SRCS})
 target_link_libraries (pio_unit_test piof)
+if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    target_compile_options (pio_unit_test
+        PRIVATE -ffree-line-length-none)
+endif()
 add_dependencies (tests pio_unit_test)
 
 # Test Timeout (4 min = 240 sec)

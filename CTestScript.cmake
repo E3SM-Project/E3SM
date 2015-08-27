@@ -76,7 +76,7 @@ else ()
 endif ()
 
 ## -- SRC Dir
-set (CTEST_SOURCE_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/src")
+set (CTEST_SOURCE_DIRECTORY   "$ENV{HOME}/Development/Workspace/git/ParallelIO")
 
 ## -- BIN Dir                                            
 set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
@@ -92,9 +92,10 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ## -- Checkout command
 if(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
-    set (CTEST_GIT_URL "https://github.com/PARALLELIO/ParallelIO")
+    #set (CTEST_GIT_URL "https://github.com/PARALLELIO/ParallelIO")
+    set (CTEST_GIT_URL "file://$ENV{HOME}/Development/Workspace/git/ParallelIO")
     set (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone ${CTEST_GIT_URL} ${CTEST_SOURCE_DIRECTORY}")
-endif(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
+endif()
 
 ## -- Update Command
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
@@ -127,11 +128,11 @@ set(CTEST_BUILD_COMMAND "${MAKE} ${CTEST_BUILD_OPTIONS} all tests")
 
 ## -- Start
 message (" -- Start dashboard ${MODEL} - ${CTEST_BUILD_NAME} --")
-ctest_start("Experimental")
+ctest_start("${MODEL}")
 
 ## -- Update
-message (" -- Update ${MODEL} - ${CTEST_BUILD_NAME} --")
-ctest_update ()
+#message (" -- Update ${MODEL} - ${CTEST_BUILD_NAME} --")
+#ctest_update ()
 
 ## -- Configure 
 message (" -- Configure ${MODEL} - ${CTEST_BUILD_NAME} --")

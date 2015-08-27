@@ -24,6 +24,10 @@ foreach (SRC_FILE IN LISTS GENERATED_SRCS)
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}.in)
 endforeach ()
 
+if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    list (APPEND COMPILE_OPTIONS -ffree-line-length-none)
+endif()
+
 #==============================================================================
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================
@@ -71,6 +75,10 @@ add_executable (pio_file_fail EXCLUDE_FROM_ALL
     pio_file_fail.F90
     ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 target_link_libraries (pio_file_fail piof)
+if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    target_compile_options (pio_init_finalize
+        PRIVATE -ffree-line-length-none)
+endif()
 add_dependencies (tests pio_file_fail)
 
 add_mpi_test(pio_file_fail
