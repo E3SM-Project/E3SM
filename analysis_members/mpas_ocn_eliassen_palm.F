@@ -20,8 +20,8 @@
 
 module ocn_eliassen_palm
 
-   use mpas_grid_types
-   use mpas_timer
+   use mpas_derived_types
+   use mpas_pool_routines
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -59,7 +59,6 @@ module ocn_eliassen_palm
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: am_eliassen_palmTimer
    real (kind=RKIND), parameter :: epsilonEPFT=1.0e-15
 
 !***********************************************************************
@@ -605,11 +604,6 @@ contains
       RMSPVFlux2global = 0.0
      
       dminfo = domain % dminfo
-      
-      
-      call mpas_timer_start("compute_eliassen_palm", .false., &
-        am_eliassen_palmTimer)
-      
       
       !--------------------------------------------------
       ! get config variables
@@ -1452,10 +1446,7 @@ contains
  
       endif
 
-
-      call mpas_timer_stop("eliassen_palm", am_eliassen_palmTimer)
-
-      if(config_eliassen_palm_debug) then
+      if(config_AM_eliassenPalm_debug) then
          write(stderrUnit, *) ' '
          write(stderrUnit, *) 'exiting ocn_compute_epft'
          write(stderrUnit, *) ' '
