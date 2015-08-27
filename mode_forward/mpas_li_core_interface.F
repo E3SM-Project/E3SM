@@ -42,6 +42,7 @@ module li_core_interface
       core % get_mesh_stream => li_get_mesh_stream
       core % setup_immutable_streams => li_setup_immutable_streams
       core % setup_derived_dimensions => li_setup_derived_dimensions
+      core % setup_decomposed_dimensions => li_setup_decomposed_dimensions
       core % setup_block => li_setup_block
       core % setup_namelist => li_setup_namelists
 
