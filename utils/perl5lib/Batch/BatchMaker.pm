@@ -74,7 +74,6 @@ sub new
 	require ConfigCase;
 	require ProjectTools;
 	$self->{'cwd'} = Cwd::getcwd();
-	print Dumper $self;
 	bless $self, $class;
 	return $self;
 }
@@ -540,13 +539,6 @@ sub setCESMRun()
 		    {
 		    	my $attrName = $attr->getName();
 		    	my $attrValue = $attr->getValue();
-		    	print "attr Name: $attrName \n";
-		    	print "attr Value: $attrValue \n";
-		    	#if(defined $self->{$attrName} && (lc $self->{$attrName} eq $attrValue))
-		    	#{
-		    	#	$attrmatch = 0;
-		    	#	last;
-		    	#}
 		    	if(defined $self->{$attrName} && (lc $self->{$attrName} ne $attrValue))
 		    	{
 		    		$attrMatch = 0;
@@ -560,14 +552,12 @@ sub setCESMRun()
 		}
 	}
 	
-	#print Dumper $self;
 	# if we don't have an mpirun command, find the default. 
 	if(! defined $chosenmpielem)
 	{
 		my @defaultmpielems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/mpirun[\@mpilib=\'default\']");
 		foreach my $defelem(@defaultmpielems)
 		{
-			print "element name: ", $defelem->getName(), "\n";
 			if(! $defelem->hasAttributes() )
 			{
 				$chosenmpielem = $defelem;
@@ -576,24 +566,19 @@ sub setCESMRun()
 			{
 				my $attrMatch = 1;
 				my @attrs = $defelem->getAttributes();
-				print "default attributes\n";
 				foreach my $attr(@attrs)
 				{
 					my $attrName = $attr->getName();
 					my $attrValue = $attr->getValue();
 					next if($attrValue eq 'default');
-		    	    print "attr Name: $attrName \n";
-		    	    print "attr Value: $attrValue \n";
 					my $lcAttrName = lc $attrName;
 					if(defined $self->{$lcAttrName} && (lc $self->{$attrName} eq lc $attrValue))
 					{
-						print "attributes match!!\n";
 						$attrMatch = 1;
 						next;
 					}
 					if(defined $self->{$lcAttrName} && (lc $self->{$attrName} ne lc $attrValue))
 					{
-						print "attrbutes dont match!!!\n";
 						$attrMatch = 0;
 						last;	
 					}
