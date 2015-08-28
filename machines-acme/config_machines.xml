@@ -309,20 +309,21 @@
          <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+         <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
          <BATCHQUERY>qstat -f</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
          <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
+         <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     	 <PES_PER_NODE>24</PES_PER_NODE>
@@ -514,44 +515,6 @@
          </mpirun>
 </machine>
 
-<machine MACH="hobart">
-         <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
-         <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-         <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
-         <RUNDIR>/scratch/cluster/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/scratch/cluster/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
-         <OBJROOT>$EXEROOT</OBJROOT>
-         <INCROOT>$EXEROOT/lib/include</INCROOT>
-         <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/scratch/cluster/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_64/cprnc</CCSM_CPRNC>
-         <OS>LINUX</OS>
-         <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHREDIRECT></BATCHREDIRECT>
-         <BATCHSUBMIT>qsub </BATCHSUBMIT>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-         <batch_system type="pbs" version="x.y">
-           <queues>
-             <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
-             <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
-           </queues>
-           <walltimes>
-             <walltime default="true">02:00:00</walltime>
-           </walltimes>
-         </batch_system>
-         <mpirun mpilib="default">
-           <executable>mpiexec</executable>
-           <arguments>
-             <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
-             <arg name="num_tasks"> -n {{ num_tasks }} </arg>
-           </arguments>
-         </mpirun>
-</machine>
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
          <COMPILERS>pgi,intel</COMPILERS>

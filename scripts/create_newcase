@@ -921,6 +921,8 @@ if (! -f "$mkbatch") {
     "$scriptsroot/Tools/SetupTools.pm",
     "$scriptsroot/Tools/ProjectTools.pm",
     "$scriptsroot/Tools/compare_namelists.pl",
+    "$scriptsroot/Tools/mdiag_reduce.csh",
+    "$scriptsroot/Tools/mdiag_reduce.pl",
     "$machdir/ccsm_getenv", 
     "$machdir/taskmaker.pl", 
     "$machdir/Makefile",
@@ -1052,6 +1054,10 @@ $sysmod = "chmod 755 $caseroot/env_mach_specific";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Copy Depends files if they exist
+if( -e "$machdir/Depends.$mach.$compiler" ) {
+    $sysmod = "cp $machdir/Depends.$mach.$compiler $caseroot/";
+    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
 if( -e "$machdir/Depends.$mach" ) {
     $sysmod = "cp $machdir/Depends.$mach $caseroot/";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -1059,6 +1065,53 @@ if( -e "$machdir/Depends.$mach" ) {
 if( -e "$machdir/Depends.$compiler" ) {
     $sysmod = "cp $machdir/Depends.$compiler $caseroot/";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+}
+
+# The following creates cesm_postbuild, cesm_prerun, cesm_postrun, cesm_postrun2, and mach_syslog
+# The following creates cesm_postbuild
+if( -e "$scriptsroot/Tools/cesm_postbuild" ) {
+  $sysmod = "cp $scriptsroot/Tools/cesm_postbuild $caseroot/Tools/cesm_postbuild";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $scriptsroot/Tools/cesm_postbuild.noop $caseroot/Tools/cesm_postbuild";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# The following creates cesm_prerun
+if( -e "$machdir/cesm_prerun.$mach" ) {
+  $sysmod = "cp $machdir/cesm_prerun.$mach $caseroot/Tools/cesm_prerun";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $machdir/cesm_prerun.noop $caseroot/Tools/cesm_prerun";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# The following creates cesm_postrun
+if( -e "$machdir/cesm_postrun.$mach" ) {
+  $sysmod = "cp $machdir/cesm_postrun.$mach $caseroot/Tools/cesm_postrun";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $machdir/cesm_postrun.noop $caseroot/Tools/cesm_postrun";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# The following creates cesm_postrun2
+if( -e "$machdir/cesm_postrun2.$mach" ) {
+  $sysmod = "cp $machdir/cesm_postrun2.$mach $caseroot/Tools/cesm_postrun2";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $machdir/cesm_postrun2.noop $caseroot/Tools/cesm_postrun2";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# The following creates mach_syslog
+if( -e "$machdir/syslog.$mach" ) {
+  $sysmod = "cp $machdir/syslog.$mach $caseroot/Tools/mach_syslog";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $machdir/syslog.noop $caseroot/Tools/mach_syslog";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Write the xml files

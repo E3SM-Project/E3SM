@@ -1959,7 +1959,7 @@
 
   <entry id="DOCN_MODE" 
 	 type="char"
-	 valid_values="prescribed,som,copyall,interannual,null" 
+	 valid_values="prescribed,som,copyall,null" 
 	 value="prescribed"
 	 group="run_component_docn"
 	 sdesc="DOCN mode"
@@ -3102,6 +3102,14 @@
 	 sdesc="level of debug output, 0=minimum, 1=normal, 2=more, 3=too much"
 	 ></entry> 
 
+  <entry id="TIMER_DETAIL" 
+         type="integer"
+         valid_values="0,1,2"  
+         value="1" 
+         group="run_flags"
+         sdesc="timer output detail"
+         ></entry>
+
   <entry id="TIMER_LEVEL" 
 	 type="integer"
 	 valid_values=""
@@ -3110,6 +3118,23 @@
 	 sdesc="timer output depth"
 	 ></entry>
 
+  <entry id="TPROF_TOTAL" 
+         type="integer"
+         valid_values=""  
+         value="12" 
+         group="run_flags"
+         sdesc="number of timing output checkpoints"
+         ></entry>
+
+  <entry id="SYSLOG_N" 
+         type="integer"
+         valid_values=""  
+         value="900" 
+         group="run_flags"
+         sdesc="system workload snapshot frequency"
+         ldesc="system workload snapshot frequency (in seconds, if greater than 0; disabled otherwise)"
+         ></entry>
+ 
   <entry id="NCPL_BASE_PERIOD" 
 	 type="char"
 	 valid_values="hour,day,year,decade" 
@@ -3559,10 +3584,18 @@
   <entry id="SAVE_TIMING" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="FALSE" 
+	 value="TRUE" 
 	 group="run_flags"
 	 sdesc="logical to save timing files in rundir"
 	 ></entry>
+
+  <entry id="SAVE_TIMING_DIR" 
+         type="char"
+         valid_values=""  
+         value="/UNSET" 
+         group="run_flags"
+         sdesc="directory for archiving performance data"
+         ></entry> 
 
   <!-- ======================================================================= -->
   <!-- env_run.xml - pio                                                       -->
@@ -3631,6 +3664,46 @@
 	 group="run_pio"
 	 sdesc="pio buffer size limit"
 	 ></entry>
+
+  <entry id="PIO_REARR_COMM_TYPE"
+         type="char"
+         valid_values="p2p,coll,default"
+         value="p2p" 
+         group="run_pio"
+         sdesc="pio rearranger communication type"
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_FCD"
+         type="char"
+         valid_values="2denable,io2comp,comp2io,disable,default"
+         value="2denable" 
+         group="run_pio"
+         sdesc="pio rearranger communication flow control direction"
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ"
+         type="integer"
+         valid_values="" 
+         value="64" 
+         group="run_pio"
+         sdesc="pio rearranger communication max pending requests"
+         ></entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_HS"
+         type="logical"
+         valid_values="TRUE,FALSE"  
+         value="TRUE" 
+         group="run_pio"
+         sdesc="pio rearranger communiation options: TRUE implies enable handshake" 
+         ></entry> 
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND"
+         type="logical"
+         valid_values="TRUE,FALSE"  
+         value="FALSE" 
+         group="run_pio"
+         sdesc="pio rearranger communiation options: TRUE implies enable isend" 
+         ></entry> 
 
   <entry id="OCN_PIO_STRIDE"
 	 type="integer"

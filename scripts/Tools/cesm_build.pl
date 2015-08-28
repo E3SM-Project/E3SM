@@ -74,6 +74,9 @@ sub main {
     $sysmod = "./Tools/check_lockedfiles";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
 
+#pw++
+    my $CCSMROOT        = `./xmlquery  CCSMROOT 	-value `;
+#pw--
     $BUILD_THREADED	= `./xmlquery  BUILD_THREADED	-value `;
     $CASEBUILD	        = `./xmlquery  CASEBUILD	-value `;
     $CASETOOLS          = `./xmlquery  CASETOOLS	-value `;
@@ -134,7 +137,11 @@ sub main {
     
     $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
     $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
-    $ENV{LID}  =  "`date +%y%m%d-%H%M%S`";
+#pw    $ENV{LID}  =  "`date +%y%m%d-%H%M%S`";
+#pw++
+    my $lid  =  "`date +%y%m%d-%H%M%S`";
+    $ENV{LID}  =  $lid;
+#pw--
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the 
     # XXX_USE_TRILINOS variables are TRUE. 
@@ -152,11 +159,29 @@ sub main {
     $sysmod = "./preview_namelists > /dev/null";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
     
+#pw++
+    my $sdate = strftime("%y%m%d-%H%M%S", localtime);
+    open my $CS, ">>", "./CaseStatus";
+    print $CS "check input started $sdate\n";
+#pw--
     checkInputData();
     buildChecks();
+#pw++
+    $sdate = strftime("%y%m%d-%H%M%S", localtime);
+    print $CS "build started $sdate\n";
+#pw--
     buildLibraries();
     buildModel();
+#pw++
+    $sdate = strftime("%y%m%d-%H%M%S", localtime);
+    print $CS "build complete $sdate\n";
+    close $CS;
+#pw--
     
+#pw++
+    qx($CASEROOT/Tools/cesm_postbuild -cesmid $lid -cesmroot $CCSMROOT -caseroot $CASEROOT -exedir $EXEROOT)
+#pw--
+
 }
 
 sub checkInputData()
@@ -593,10 +618,10 @@ sub buildModel()
 	print " .... locking file $file\n";
     }
     
-    my $sdate = strftime("%y%m%d-%H%M%S", localtime);
-    open my $CS, ">>", "./CaseStatus";
-    print $CS "build complete $sdate\n";
-    close $CS;
+#pw    my $sdate = strftime("%y%m%d-%H%M%S", localtime);
+#pw    open my $CS, ">>", "./CaseStatus";
+#pw    print $CS "build complete $sdate\n";
+#pw    close $CS;
 }
 
 main() unless caller; 

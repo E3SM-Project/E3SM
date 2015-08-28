@@ -295,7 +295,7 @@ else
        # get the base path to the compiler without any 
        # acrobatics.
        CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf53
     endif
   endif
 endif
@@ -725,7 +725,7 @@ ifneq ($(MAKECMDGOALS), db_flags)
 ifneq ($(MAKECMDGOALS), mostlyclean)
 ifneq ($(MAKECMDGOALS), clean)
 ifneq ($(MAKECMDGOALS), realclean)
-    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH)
+    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
 endif
