@@ -83,6 +83,13 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
+## -- Add the CTest script directory to the module path
+set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
+set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${CTEST_SITE_ID}")
+set (CTEST_RUNCTEST_SCRIPT "${CTEST_EXTRA_SCRIPT_PATH}/runctest-${CTEST_SITE_ID}.sh")
+
+list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
+
 #-----------------------------------------------------------  
 #-- CTest Commands for each Step
 #-----------------------------------------------------------  
@@ -115,9 +122,7 @@ message (" -- Update source - ${CTEST_BUILD_NAME} --")
 ctest_update ()
 
 ## -- Machine-specific environment
-list (APPEND CMAKE_MODULE_PATH ${CTEST_SOURCE_DIRECTORY}/ctest)
-include (CTestEnvironment-${CTEST_SITE_ID})
-message ("ENV{ABC} = $ENV{ABC}")
+include (${CTEST_ENVIRONMENT_SCRIPT})
 
 ## -- Configure 
 message (" -- Configure build - ${CTEST_BUILD_NAME} --")
@@ -129,6 +134,8 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
+execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} Nightly
+                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 #ctest_test ()
 
 ## -- SUBMIT

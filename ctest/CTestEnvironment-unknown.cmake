@@ -1,6 +1,6 @@
 #==============================================================================
 #
-#  This file sets the environment variables needed to configure and run
+#  This file sets the environment variables needed to configure and build
 #  CTest on the default ("unknown") system.
 #
 #==============================================================================
