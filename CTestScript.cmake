@@ -115,7 +115,7 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
-execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} Nightly
+execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_SCRIPT_ARG}
                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
