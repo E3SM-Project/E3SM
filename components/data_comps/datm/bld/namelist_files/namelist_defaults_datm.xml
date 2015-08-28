@@ -729,7 +729,7 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_year_end   stream="CORE2_IAF.01col">2011</strm_year_end>
 <strm_year_align stream="CORE2_IAF.01col">1</strm_year_align>
 <strm_domdir     stream="CORE2_IAF.01col">$DIN_LOC_ROOT/share/domains</strm_domdir>
-<strm_domfil     stream="CORE2_IAF.01col">domain.01col.SouthernOcean.20150824.nc</strm_domfil>
+<strm_domfil     stream="CORE2_IAF.01col">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
 <strm_datdir     stream="CORE2_IAF.01col">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
 <strm_datfil     stream="CORE2_IAF.01col">
 SOFS.buoy.01col.2010-2011.nc
@@ -2292,6 +2292,7 @@ af.rlds.ccsm4.rcp45.2006-2300.nc
 <factorfn>unused</factorfn> 
 <factorfn stream="CORE2_NYF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
 <factorfn stream="CORE2_IAF">$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc</factorfn>
+<factorfn stream="CORE2_IAF" atm_grid="01col">unused</factorfn> 
 
 </namelist_defaults>
 
