@@ -15,7 +15,8 @@
 
 find_program (HOSTNAME_CMD NAMES hostname)
 execute_process (COMMAND ${HOSTNAME_CMD}
-                 OUTPUT_VARIABLE HOSTNAME)
+                 OUTPUT_VARIABLE HOSTNAME
+                 OUTPUT_STRIP_TRAILING_WHITESPACE)
                  
 set (CTEST_SITE "${HOSTNAME}")
 
