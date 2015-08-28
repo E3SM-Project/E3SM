@@ -567,15 +567,16 @@ write(*,*)">>>DEBUG | CNDecompAlloc1: decomp_rate_constants!!!"
       end if
 
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
-      do j = 1,nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            net_nmin(c) = net_nmin(c) + net_nmin_vr(c,j) * dzsoi_decomp(j)
-            gross_nmin(c) = gross_nmin(c) + gross_nmin_vr(c,j) * dzsoi_decomp(j)
-            net_pmin(c) = net_pmin(c) + net_pmin_vr(c,j) * dzsoi_decomp(j)
-            gross_pmin(c) = gross_pmin(c) + gross_pmin_vr(c,j) * dzsoi_decomp(j)
-         end do
-      end do
+      ! moved to CNDecompAlloc2
+!      do j = 1,nlevdecomp
+!         do fc = 1,num_soilc
+!            c = filter_soilc(fc)
+!            net_nmin(c) = net_nmin(c) + net_nmin_vr(c,j) * dzsoi_decomp(j)
+!            gross_nmin(c) = gross_nmin(c) + gross_nmin_vr(c,j) * dzsoi_decomp(j)
+!            net_pmin(c) = net_pmin(c) + net_pmin_vr(c,j) * dzsoi_decomp(j)
+!            gross_pmin(c) = gross_pmin(c) + gross_pmin_vr(c,j) * dzsoi_decomp(j)
+!         end do
+!      end do
 
     end associate
 
@@ -673,8 +674,8 @@ write(*,*)">>>DEBUG | CNDecompAlloc1: decomp_rate_constants!!!"
 !           num_soilc, filter_soilc, num_soilp, filter_soilp, &
 !           soilstate_vars, canopystate_vars, cnstate_vars)
 
-      !!-------------------------------------------------------
-      if(use_bgc_interface.and.use_pflotran.and.pf_cmode) then
+    !!-------------------------------------------------------
+    if(use_bgc_interface.and.use_pflotran.and.pf_cmode) then
       ! fpg calculation
       do fc=1,num_soilc
          c = filter_soilc(fc)
@@ -705,24 +706,6 @@ write(*,*)">>>DEBUG | CNDecompAlloc1: decomp_rate_constants!!!"
          end do
       end do
 
-      end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
-      !!-------------------------------------------------------
-
-
-      ! conduct the phase-3 Allocation for plants
-      call CNAllocation3_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,        &
-            cnstate_vars, carbonstate_vars, carbonflux_vars,                               &
-            c13_carbonflux_vars, c14_carbonflux_vars,                                      &
-            nitrogenstate_vars, nitrogenflux_vars,                                         &
-            phosphorusstate_vars, phosphorusflux_vars)
-
-!      call CNAllocation(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-!           photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
-!           carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
-!           nitrogenstate_vars, nitrogenflux_vars)
-
-      !!-------------------------------------------------------
-      if(use_bgc_interface.and.use_pflotran.and.pf_cmode) then
 
       if (use_lch4) then
          ! Add up potential hr for methane calculations
@@ -758,6 +741,21 @@ write(*,*)">>>DEBUG | CNDecompAlloc1: decomp_rate_constants!!!"
          end do
       end if
 
+      ! needs to zero CLM-CN variables NOT available from pflotran bgc coupling
+      call CNvariables_nan4pf(bounds, num_soilc, filter_soilc,   &
+            carbonflux_vars, nitrogenflux_vars)
+    end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
+      !!-------------------------------------------------------
+      
+
+      ! conduct the phase-3 Allocation for plants
+      call CNAllocation3_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,        &
+            cnstate_vars, carbonstate_vars, carbonflux_vars,                               &
+            c13_carbonflux_vars, c14_carbonflux_vars,                                      &
+            nitrogenstate_vars, nitrogenflux_vars,                                         &
+            phosphorusstate_vars, phosphorusflux_vars)
+
+
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
@@ -769,12 +767,6 @@ write(*,*)">>>DEBUG | CNDecompAlloc1: decomp_rate_constants!!!"
             gross_pmin(c) = gross_pmin(c) + gross_pmin_vr(c,j) * dzsoi_decomp(j)
          end do
       end do
-
-      ! needs to zero CLM-CN variables NOT available from pflotran bgc coupling
-      call CNvariables_nan4pf(bounds, num_soilc, filter_soilc,   &
-            carbonflux_vars, nitrogenflux_vars)
-      end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
-      !!-------------------------------------------------------
     end associate
   end subroutine CNDecompAlloc2
  

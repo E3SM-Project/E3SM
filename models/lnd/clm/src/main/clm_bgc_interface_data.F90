@@ -46,6 +46,7 @@ module clm_bgc_interface_data
      real(r8), pointer :: watfc_col            (:,:) ! col volumetric soil water at field capacity (nlevsoi)
      real(r8), pointer :: porosity_col         (:,:) ! col soil porisity (1-bulk_density/soil_density) (VIC)
      real(r8), pointer :: eff_porosity_col     (:,:) ! col effective porosity = porosity - vol_ice (nlevgrnd)
+     real(r8), pointer :: cellorg_col          (:,:) ! col organic matter for gridcell containing column (1:nlevsoi)
 
      ! (2) soil thermohydrology
      ! (2.1) soilstate_vars:
@@ -76,7 +77,16 @@ module clm_bgc_interface_data
      real(r8), pointer :: forc_pbot_not_downscaled_grc  (:)   => null() ! not downscaled atm pressure (Pa)
      real(r8), pointer :: forc_pco2_grc                 (:)   => null() ! CO2 partial pressure (Pa)
      real(r8), pointer :: forc_pch4_grc                 (:)   => null() ! CH4 partial pressure (Pa)
-
+     ! (2.7) canopystate_vars
+     integer  , pointer :: alt_indx_col             (:)   ! col current depth of thaw
+     ! (2.8) ch4
+     real(r8), pointer  :: finundated_col             (:)   ! col fractional inundated area (excluding dedicated wetland cols)
+     real(r8), pointer  :: o2stress_unsat_col         (:,:) ! col Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
+     real(r8), pointer  :: o2stress_sat_col           (:,:) ! col Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
+     real(r8), pointer  :: conc_o2_sat_col            (:,:) ! col O2 conc in each soil layer (mol/m3) (nlevsoi)
+     real(r8), pointer  :: conc_o2_unsat_col          (:,:) ! col O2 conc in each soil layer (mol/m3) (nlevsoi)
+     real(r8), pointer  :: o2_decomp_depth_sat_col    (:,:) ! col O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
+     real(r8), pointer  :: o2_decomp_depth_unsat_col  (:,:) ! col O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
 
 
      ! (3) bgc state variables:
@@ -99,6 +109,7 @@ module clm_bgc_interface_data
      ! (3.4) decomp_cascade_type
      real(r8), pointer  :: initial_cn_ratio(:)               ! c:n ratio for initialization of pools
      real(r8), pointer  :: initial_cp_ratio(:)               ! c:n ratio for initialization of pools
+
 
      ! (4) bgc rates (fluxes), pass from clm to interface
      ! (4.1) to decomposition pools
@@ -144,21 +155,39 @@ module clm_bgc_interface_data
      real(r8), pointer :: actual_immob_vr_col                       (:,:)   ! col vertically-resolved actual N immobilization (gN/m3/s) at each level
      real(r8), pointer :: actual_immob_no3_vr_col                   (:,:)   ! col vertically-resolved actual immobilization of NO3 (gN/m3/s)
      real(r8), pointer :: actual_immob_nh4_vr_col                   (:,:)   ! col vertically-resolved actual immobilization of NH4 (gN/m3/s)
+     real(r8), pointer :: supplement_to_sminn_vr_col                (:,:)   ! col vertically-resolved supplemental N supply (gN/m3/s)
 
      real(r8), pointer :: sminn_to_plant_vr_col                     (:,:)   ! col vertically-resolved plant uptake of soil mineral N (gN/m3/s)
      real(r8), pointer :: smin_no3_to_plant_vr_col                  (:,:)   ! col vertically-resolved plant uptake of soil NO3 (gN/m3/s)
      real(r8), pointer :: smin_nh4_to_plant_vr_col                  (:,:)   ! col vertically-resolved plant uptake of soil NH4 (gN/m3/s)
 
-     real(r8), pointer :: gross_pmin_vr_col                         (:,:)   ! col vertically-resolved gross rate of P mineralization (gP/m3/s)
-     real(r8), pointer :: net_pmin_vr_col                           (:,:)   ! col vertically-resolved net rate of P mineralization (gP/m3/s)
-
+     real(r8), pointer :: potential_immob_col                       (:)     ! col vert-int (diagnostic) potential N immobilization (gN/m2/s)
+     real(r8), pointer :: actual_immob_col                          (:)     ! col vert-int (diagnostic) actual N immobilization (gN/m2/s)
+     real(r8), pointer :: sminn_to_plant_col                        (:)     ! col vert-int (diagnostic) plant uptake of soil mineral N (gN/m2/s)
+     !! phosphorus:  
      real(r8), pointer :: potential_immob_p_vr_col                  (:,:)   ! col vertically-resolved potential P immobilization (gP/m3/s) at each level
      real(r8), pointer :: actual_immob_p_vr_col                     (:,:)   ! col vertically-resolved actual P immobilization (gP/m3/s) at each level
      real(r8), pointer :: sminp_to_plant_vr_col                     (:,:)   ! col vertically-resolved plant uptake of soil mineral P (gP/m3/s)
+     real(r8), pointer :: supplement_to_sminp_vr_col                (:,:)   ! col vertically-resolved supplemental P supply (gP/m3/s)
+     
+     real(r8), pointer :: gross_pmin_vr_col                         (:,:)   ! col vertically-resolved gross rate of P mineralization (gP/m3/s)
+     real(r8), pointer :: net_pmin_vr_col                           (:,:)   ! col vertically-resolved net rate of P mineralization (gP/m3/s)
+
+     real(r8), pointer :: potential_immob_p_col                     (:)     ! col vert-int (diagnostic) potential P immobilization (gP/m2/s)
+     real(r8), pointer :: actual_immob_p_col                        (:)     ! col vert-int (diagnostic) actual P immobilization (gP/m2/s)
+     real(r8), pointer :: sminp_to_plant_col                        (:)     ! col vert-int (diagnostic) plant uptake of soil mineral P (gP/m2/s)
+     
 
      ! (5.3) nitrification / denitrification
      real(r8), pointer :: f_nit_vr_col                              (:,:)   ! col (gN/m3/s) soil nitrification flux
      real(r8), pointer :: f_denit_vr_col                            (:,:)   ! col (gN/m3/s) soil denitrification flux
+     real(r8), pointer :: pot_f_nit_vr_col                          (:,:)   ! col (gN/m3/s) potential soil nitrification flux
+     real(r8), pointer :: pot_f_denit_vr_col                        (:,:)   ! col (gN/m3/s) potential soil denitrification flux
+     real(r8), pointer :: n2_n2o_ratio_denit_vr_col                 (:,:)   ! col ratio of N2 to N2O production by denitrification [gN/gN]
+     real(r8), pointer :: f_n2o_denit_vr_col                        (:,:)   ! col flux of N2o from denitrification [gN/m^3/s]
+     real(r8), pointer :: f_n2o_nit_vr_col                          (:,:)   ! col flux of N2o from nitrification [gN/m^3/s]
+
+     real(r8), pointer :: sminn_to_denit_excess_vr_col              (:,:)   ! col vertically-resolved denitrification from excess mineral N pool (gN/m3/s)
 
      ! (5.4) inorganic P transformation
      real(r8), pointer :: primp_to_labilep_vr_col                     (:,:)   ! col (gP/m3/s) flux of P from primary mineral to labile
@@ -169,8 +198,8 @@ module clm_bgc_interface_data
      ! (5.5) gases
      real(r8), pointer :: hr_vr_col                                 (:,:)   ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
      
-     real(r8), pointer :: f_n2o_denit_vr_col                        (:,:)   ! col flux of N2o from denitrification [gN/m^3/s]
-     real(r8), pointer :: f_n2o_nit_vr_col                          (:,:)   ! col flux of N2o from nitrification [gN/m^3/s]
+!     real(r8), pointer :: f_n2o_denit_vr_col                        (:,:)   ! col flux of N2o from denitrification [gN/m^3/s]
+!     real(r8), pointer :: f_n2o_nit_vr_col                          (:,:)   ! col flux of N2o from nitrification [gN/m^3/s]
 
      real(r8), pointer :: f_co2_soil_vr_col                         (:,:)   ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
      real(r8), pointer :: f_n2o_soil_vr_col                         (:,:)   ! col flux of N2o from soil-N processes [gN/m^3/s]
@@ -179,6 +208,18 @@ module clm_bgc_interface_data
      real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
      real(r8), pointer :: f_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission from nitrification (gN/m3/s)
      real(r8), pointer :: f_ngas_denit_vr_col                       (:,:)   ! col vertically-resolved N emission from denitrification (gN/m3/s)
+
+     real(r8), pointer :: phr_vr_col                                (:,:)   ! potential hr (not N-limited) (gC/m3/s)
+     real(r8), pointer :: fphr_col                                  (:,:)   ! fraction of potential heterotrophic respiration
+
+     ! (5.6) fpi, fpg
+     real(r8) , pointer :: fpi_vr_col                  (:,:)   ! col fraction of potential immobilization (no units)
+     real(r8) , pointer :: fpi_col                     (:)     ! col fraction of potential immobilization (no units) 
+     real(r8),  pointer :: fpg_col                     (:)     ! col fraction of potential gpp (no units)
+
+     real(r8) , pointer :: fpi_p_vr_col                (:,:)   ! col fraction of potential immobilization (no units)
+     real(r8) , pointer :: fpi_p_col                   (:)     ! col fraction of potential immobilization (no units) 
+     real(r8),  pointer :: fpg_p_col                   (:)     ! col fraction of potential gpp (no units)
 
   !---------------------------------------------------------------
   contains
@@ -237,6 +278,7 @@ contains
     allocate(this%watfc_col             (begc:endc,nlevgrnd))               ; this%watfc_col            (:,:) = nan
     allocate(this%porosity_col          (begc:endc,nlevgrnd))               ; this%porosity_col         (:,:) = spval
     allocate(this%eff_porosity_col      (begc:endc,nlevgrnd))               ; this%eff_porosity_col     (:,:) = spval
+    allocate(this%cellorg_col           (begc:endc,nlevgrnd))               ; this%cellorg_col          (:,:) = nan
 
     allocate(this%soilpsi_col           (begc:endc,nlevgrnd))               ; this%soilpsi_col          (:,:) = nan
     allocate(this%rootfr_col            (begc:endc,1:nlevgrnd))             ; this%rootfr_col           (:,:) = nan
@@ -264,6 +306,15 @@ contains
     allocate( this%eflx_bot_col         (begc:endc))                        ; this%eflx_bot_col         (:)   = ival
     allocate( this%eflx_gnet_col        (begc:endc))                        ; this%eflx_bot_col         (:)   = ival
     allocate( this%eflx_soil_grnd_col   (begc:endc))                        ; this%eflx_soil_grnd_col   (:)   = ival
+
+    allocate(this%alt_indx_col          (begc:endc))                        ; this%alt_indx_col         (:)   = huge(1)
+    allocate(this%finundated_col        (begc:endc))                        ;  this%finundated_col      (:)   = nan
+    allocate(this%o2stress_unsat_col    (begc:endc,1:nlevgrnd))             ;  this%o2stress_unsat_col  (:,:) = nan
+    allocate(this%o2stress_sat_col      (begc:endc,1:nlevgrnd))             ;  this%o2stress_sat_col    (:,:) = nan
+    allocate(this%conc_o2_sat_col            (begc:endc,1:nlevgrnd)) ;  this%conc_o2_sat_col            (:,:) = nan
+    allocate(this%conc_o2_unsat_col          (begc:endc,1:nlevgrnd)) ;  this%conc_o2_unsat_col          (:,:) = nan
+    allocate(this%o2_decomp_depth_sat_col    (begc:endc,1:nlevgrnd)) ;  this%o2_decomp_depth_sat_col    (:,:) = nan
+    allocate(this%o2_decomp_depth_unsat_col  (begc:endc,1:nlevgrnd)) ;  this%o2_decomp_depth_unsat_col  (:,:) = nan
 
 
     allocate(this%decomp_cpools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_cpools_vr_col(:,:,:)= ival
@@ -331,6 +382,11 @@ contains
     allocate(this%sminn_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminn_to_plant_vr_col        (:,:) = ival
     allocate(this%smin_no3_to_plant_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_to_plant_vr_col     (:,:) = ival
     allocate(this%smin_nh4_to_plant_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%smin_nh4_to_plant_vr_col     (:,:) = ival
+    allocate(this%supplement_to_sminn_vr_col(begc:endc,1:nlevdecomp_full))  ; this%supplement_to_sminn_vr_col   (:,:) = ival
+
+    allocate(this%sminn_to_plant_col        (begc:endc))                    ; this%sminn_to_plant_col           (:)   = ival
+    allocate(this%potential_immob_col       (begc:endc))                    ; this%potential_immob_col          (:)   = ival
+    allocate(this%actual_immob_col          (begc:endc))                    ; this%actual_immob_col             (:)   = ival
 
     allocate(this%gross_pmin_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%gross_pmin_vr_col            (:,:) = ival
     allocate(this%net_pmin_vr_col           (begc:endc,1:nlevdecomp_full))  ; this%net_pmin_vr_col              (:,:) = ival
@@ -338,9 +394,21 @@ contains
     allocate(this%potential_immob_p_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%potential_immob_p_vr_col     (:,:) = ival
     allocate(this%actual_immob_p_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_p_vr_col        (:,:) = ival
     allocate(this%sminp_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminp_to_plant_vr_col        (:,:) = ival
+    allocate(this%supplement_to_sminp_vr_col (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminp_vr_col   (:,:) = ival
+
+    allocate(this%sminp_to_plant_col        (begc:endc))                    ; this%sminp_to_plant_col           (:)   = ival
+    allocate(this%potential_immob_p_col     (begc:endc))                    ; this%potential_immob_p_col        (:)   = ival
+    allocate(this%actual_immob_p_col        (begc:endc))                    ; this%actual_immob_p_col           (:)   = ival
 
     allocate(this%f_nit_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%f_nit_vr_col                 (:,:) = ival
     allocate(this%f_denit_vr_col            (begc:endc,1:nlevdecomp_full))  ; this%f_denit_vr_col               (:,:) = ival
+    allocate(this%pot_f_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%pot_f_nit_vr_col             (:,:) = nan
+    allocate(this%pot_f_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%pot_f_denit_vr_col           (:,:) = nan
+    allocate(this%n2_n2o_ratio_denit_vr_col (begc:endc,1:nlevdecomp_full))  ; this%n2_n2o_ratio_denit_vr_col    (:,:) = ival
+    allocate(this%f_n2o_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_denit_vr_col           (:,:) = ival
+    allocate(this%f_n2o_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_nit_vr_col             (:,:) = ival
+
+    allocate(this%sminn_to_denit_excess_vr_col    (begc:endc,1:nlevdecomp_full));    this%sminn_to_denit_excess_vr_col (:,:)   = ival
 
     allocate(this%primp_to_labilep_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%primp_to_labilep_vr_col      (:,:) = ival
     allocate(this%labilep_to_secondp_vr_col (begc:endc,1:nlevdecomp_full))  ; this%labilep_to_secondp_vr_col    (:,:) = ival
@@ -350,17 +418,27 @@ contains
 
     allocate(this%hr_vr_col                 (begc:endc,1:nlevdecomp_full))  ; this%hr_vr_col                    (:,:) = ival
     
-    allocate(this%f_n2o_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_denit_vr_col           (:,:) = ival
-    allocate(this%f_n2o_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_nit_vr_col             (:,:) = ival
+!    allocate(this%f_n2o_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_denit_vr_col           (:,:) = ival
+!    allocate(this%f_n2o_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_nit_vr_col             (:,:) = ival
 
-    allocate(this%f_co2_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_co2_soil_vr_col            (:,:)   = ival
-    allocate(this%f_n2o_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_soil_vr_col            (:,:)  = ival
-    allocate(this%f_n2_soil_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2_soil_vr_col             (:,:)  = ival
+    allocate(this%f_co2_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_co2_soil_vr_col            (:,:) = ival
+    allocate(this%f_n2o_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_soil_vr_col            (:,:) = ival
+    allocate(this%f_n2_soil_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2_soil_vr_col             (:,:) = ival
 
-    allocate(this%f_ngas_decomp_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr_col         (:,:)  = ival
-    allocate(this%f_ngas_nitri_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_nitri_vr_col          (:,:)  = ival
-    allocate(this%f_ngas_denit_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_denit_vr_col          (:,:)  = ival
+    allocate(this%f_ngas_decomp_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr_col         (:,:) = ival
+    allocate(this%f_ngas_nitri_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_nitri_vr_col          (:,:) = ival
+    allocate(this%f_ngas_denit_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_denit_vr_col          (:,:) = ival
     
+    allocate(this%phr_vr_col                (begc:endc,1:nlevdecomp_full))  ; this%phr_vr_col                   (:,:) = nan
+    allocate(this%fphr_col                  (begc:endc,1:nlevgrnd))         ; this%fphr_col                     (:,:) = nan
+
+    allocate(this%fpi_vr_col                (begc:endc,1:nlevdecomp_full))  ; this%fpi_vr_col                   (:,:) = nan
+    allocate(this%fpi_col                   (begc:endc))                    ; this%fpi_col                      (:)   = nan
+    allocate(this%fpg_col                   (begc:endc))                    ; this%fpg_col                      (:)   = nan
+    allocate(this%fpi_p_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%fpi_p_vr_col                 (:,:) = nan
+    allocate(this%fpi_p_col                 (begc:endc))                    ; this%fpi_p_col                    (:)   = nan
+    allocate(this%fpg_p_col                 (begc:endc))                    ; this%fpg_p_col                    (:)   = nan
+
 
   end subroutine InitAllocate
 

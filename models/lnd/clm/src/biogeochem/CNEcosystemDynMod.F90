@@ -491,6 +491,7 @@ contains
        !----------------------------------------------------------------
        !! directly use_clm_bgc
        if(.not.use_bgc_interface) then
+            ! CNDecomAlloc1 is called in clm_driver through clm_bgc_interface if (use_bgc_interface & use_clm_bgc)
             call CNDecompAlloc1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,             &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
                 cnstate_vars, ch4_vars,                                                             &
