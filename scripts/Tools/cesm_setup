@@ -187,6 +187,7 @@ if (! $clean ) {
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    wait;
 	
         # Compute cost based on PE count
 	my $pval = 1;
@@ -243,7 +244,8 @@ if (! $clean ) {
                                                   scriptsroot => $xmlvars{'SCRIPTSROOT'},
                                                   machroot => $xmlvars{'CCSM_MACHDIR'},
                                                   machine => $xmlvars{'MACH'},
-                                                  compiler => $xmlvars{'COMPILER'});
+                                                  compiler => $xmlvars{'COMPILER'},
+                                                  threaded => $build_threaded);
 	
     my $inputbatchscript = "$xmlvars{'CCSM_MACHDIR'}/template.cesmrun";
     my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
