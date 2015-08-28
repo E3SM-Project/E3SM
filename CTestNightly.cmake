@@ -83,11 +83,6 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
-## -- Load the machine-specific environment
-list (APPEND CMAKE_MODULE_PATH ${CTEST_SOURCE_DIRECTORY}/ctest)
-include (CTestEnvironment-${CTEST_SITE_ID})
-message ("ENV{ABC} = $ENV{ABC}")
-
 #-----------------------------------------------------------  
 #-- CTest Commands for each Step
 #-----------------------------------------------------------  
@@ -105,7 +100,7 @@ set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
 
 ## -- Build Command
-set (CTEST_BUILD_COMMAND "${MAKE} all tests")
+set (CTEST_BUILD_COMMAND "${MAKE} tests")
 
 # -----------------------------------------------------------  
 # -- Run CTest
@@ -118,6 +113,11 @@ ctest_start("Nightly")
 ## -- Update
 message (" -- Update source - ${CTEST_BUILD_NAME} --")
 ctest_update ()
+
+## -- Machine-specific environment
+list (APPEND CMAKE_MODULE_PATH ${CTEST_SOURCE_DIRECTORY}/ctest)
+include (CTestEnvironment-${CTEST_SITE_ID})
+message ("ENV{ABC} = $ENV{ABC}")
 
 ## -- Configure 
 message (" -- Configure build - ${CTEST_BUILD_NAME} --")

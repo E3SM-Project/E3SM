@@ -8,4 +8,4 @@
 # Assume all package locations (NetCDF, PnetCDF, HDF5, etc) are already
 # set with existing environment variables: NETCDF, PNETCDF, HDF5, etc.
 
-set (ENV{ABC} 123)
+echo "Machine unknown: Package-location environment variables must be set!"
