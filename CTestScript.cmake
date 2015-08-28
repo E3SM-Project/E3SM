@@ -28,8 +28,8 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ## -- Add the CTest script directory to the module path
-set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${CTEST_SITE_ID}")
-set (CTEST_RUNCTEST_SCRIPT "${CTEST_SCRIPT_DIRECTORY}/ctest/runctest-${CTEST_SITE_ID}.sh")
+set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${HOSTNAME_ID}")
+set (CTEST_RUNCTEST_SCRIPT "${CTEST_SCRIPT_DIRECTORY}/ctest/runctest-${HOSTNAME_ID}.sh")
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
 
 # -----------------------------------------------------------  
