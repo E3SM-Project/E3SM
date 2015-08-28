@@ -424,6 +424,7 @@ $default_namelist_opts{'atmgrid'}          = $ATM_GRID;
 $default_namelist_opts{'datm_mode'}        = $DATM_MODE;
 $default_namelist_opts{'presaero_mode'}    = $DATM_PRESAERO;
 $default_namelist_opts{'datm_co2_tseries'} = $DATM_CO2_TSERIES;
+$default_namelist_opts{'atm_grid'}         = $ATM_GRID;
 
 # Create streams template file(s) - loop over streams
 my $streams = $defaults->get_value( "streamslist", \%default_namelist_opts );

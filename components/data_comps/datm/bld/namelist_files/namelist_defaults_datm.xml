@@ -164,6 +164,7 @@ Currently the following streams are supported (term definitions precede the stre
 <streamslist datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</streamslist>
 <streamslist datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</streamslist>
 <streamslist datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</streamslist>
+<streamslist datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.01col</streamslist>
 <streamslist datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</streamslist>
 <streamslist datm_mode="WW3"      >WW3</streamslist>
 
@@ -722,6 +723,40 @@ Currently the following streams are supported (term definitions precede the stre
 <!-- ncep.u_10.T62.current   			-->
 <!-- ncep.v_10.T62.current   			-->
 <!-- =========================================  -->
+
+<!-- == Single Column SOFS forcing -->
+<strm_year_start stream="CORE2_IAF.01col">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.01col">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.01col">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.01col">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.01col">domain.01col.SouthernOcean.20150824.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.01col">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.01col">
+SOFS.buoy.01col.2010-2011.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.01col">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.01col">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.01col">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.01col">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.01col">
+  lwdn  lwdn
+  swdn  swdn 
+  swup  swup
+  prc  prec
+  dn10  dens
+  slp_  pslv
+  q_10  shum
+  t_10  tbot
+  u_10  u
+  v_10  v
+</strm_datvar>
 
 <!-- == GCGCS Precip === -->
 
