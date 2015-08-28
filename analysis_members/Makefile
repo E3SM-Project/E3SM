@@ -2,7 +2,7 @@
 
 OBJS = mpas_li_analysis_driver.o
 
-MEMBERS = 
+MEMBERS = mpas_li_global_stats.o 
 
 all: $(OBJS)
 
