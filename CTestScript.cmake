@@ -21,9 +21,6 @@ include (CTestScript-Header)
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
 
-## -- BIN Dir (in-source build)  
-set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
-
 ## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 

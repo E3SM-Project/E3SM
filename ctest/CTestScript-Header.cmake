@@ -76,3 +76,7 @@ if (DEFINED ENV{PIO_DASHBOARD_ROOT})
 else ()
     set (CTEST_DASHBOARD_ROOT "$ENV{HOME}/pio-dashboard")
 endif ()
+
+## -- BIN Dir 
+set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build")
+

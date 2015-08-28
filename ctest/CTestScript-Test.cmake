@@ -21,15 +21,12 @@ include (CTestScript-Header)
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}/..")
 
-## -- BIN Dir (in-source build)  
-set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
-
 # -----------------------------------------------------------  
 # -- Run CTest- TESTING ONLY (Appended to existing TAG)
 # -----------------------------------------------------------  
 
 ## -- Start
-ctest_start("${CTEST_SCRIPT_ARG}" APPEND)
+ctest_start("${CTEST_SCRIPT_ARG}")
 
 ## -- TEST
 ctest_test()
