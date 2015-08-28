@@ -587,11 +587,6 @@ sub setCESMRun()
 					my $attrValue = $attr->getValue();
 					next if($attrValue eq 'default');
 					my $lcAttrName = lc $attrName;
-					if(defined $self->{$lcAttrName} && (lc $self->{$attrName} eq lc $attrValue))
-					{
-						$attrMatch = 1;
-						next;
-					}
 					if(defined $self->{$lcAttrName} && (lc $self->{$attrName} ne lc $attrValue))
 					{
 						$attrMatch = 0;
