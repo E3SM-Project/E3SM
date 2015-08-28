@@ -13,4 +13,4 @@
 model=$1
 
 # Run the "ctest" command through an interactive parallel session
-DAV_CORES=4 execca ctest -S CTestScript.cmake,${model}Test
+DAV_CORES=4 execca ctest -S ctest/CTestScript-Test.cmake,${model} -V
