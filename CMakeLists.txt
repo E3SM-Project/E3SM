@@ -36,11 +36,11 @@ if (DEFINED PNETCDF_DIR)
 endif ()
 
 #==============================================================================
-#  APPEND TO CMAKE MODULE PATH
+#  PREPEND TO CMAKE MODULE PATH
 #==============================================================================
 
 #===== Local modules =====
-list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 #===== External modules =====
 if (NOT DEFINED USER_CMAKE_MODULE_PATH)
@@ -61,7 +61,7 @@ if (NOT DEFINED USER_CMAKE_MODULE_PATH)
 endif ()
 set (USER_CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH}
      CACHE STRING "Location of the CMake_Fortran_utils")
-list (APPEND CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH})
+set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
