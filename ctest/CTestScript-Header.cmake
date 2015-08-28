@@ -17,46 +17,48 @@ find_program (HOSTNAME_CMD NAMES hostname)
 execute_process (COMMAND ${HOSTNAME_CMD}
                  OUTPUT_VARIABLE HOSTNAME
                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-                 
-set (CTEST_SITE "${HOSTNAME}")
 
 ## -- Set hostname ID (e.g., alcf, nwsc, nersc, ...)
 
 # UCAR/NWSC Machines
-if (CTEST_SITE MATCHES "^yslogin" OR
-    CTEST_SITE MATCHES "^geyser" OR
-    CTEST_SITE MATCHES "^caldera")
-    set (CTEST_SITE_ID "nwsc")
+if (HOSTNAME MATCHES "^yslogin" OR
+    HOSTNAME MATCHES "^geyser" OR
+    HOSTNAME MATCHES "^caldera")
+    set (HOSTNAME_ID "nwsc")
 # ALCF/Argonne Machines
-elseif (CTEST_SITE MATCHES "^mira" OR
-        CTEST_SITE MATCHES "^cetus" OR
-        CTEST_SITE MATCHES "^vesta" OR
-        CTEST_SITE MATCHES "^cooley")
-    set (CTEST_SITE_ID "alcf")
+elseif (HOSTNAME MATCHES "^mira" OR
+        HOSTNAME MATCHES "^cetus" OR
+        HOSTNAME MATCHES "^vesta" OR
+        HOSTNAME MATCHES "^cooley")
+    set (HOSTNAME_ID "alcf")
 # ALCF/Argonne Machines
-elseif (CTEST_SITE MATCHES "^edison" OR
-        CTEST_SITE MATCHES "^carver" OR
-        CTEST_SITE MATCHES "^hopper")
-    set (CTEST_SITE_ID "nersc")
+elseif (HOSTNAME MATCHES "^edison" OR
+        HOSTNAME MATCHES "^carver" OR
+        HOSTNAME MATCHES "^hopper")
+    set (HOSTNAME_ID "nersc")
 else ()
-    set (CTEST_SITE_ID "unknown")
+    set (HOSTNAME_ID "unknown")
 endif ()
 
-## -- Set site / build name
+## -- Set the site name
+
+set (CTEST_SITE "${HOSTNAME_ID}")
+
+## -- Set the build name
 
 find_program (UNAME NAMES uname)
 function (getuname name flag)
-  execute_process (COMMAND ${UNAME} ${flag}
-                   OUTPUT_VARIABLE res)
-  string (STRIP "${res}" res)
-  set (${name} ${res} PARENT_SCOPE)
+    execute_process (COMMAND ${UNAME} ${flag}
+                     OUTPUT_VARIABLE res
+                     OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set (${name} ${res} PARENT_SCOPE)
 endfunction ()
 
 getuname (osname -s)
 getuname (osrel -r)
 getuname (cpu -m)
 
-set(CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}")
+set(CTEST_BUILD_NAME "${HOSTNAME}-${osname}-${osrel}-${cpu}")
 
 ## -- Git command
 find_program (CTEST_GIT_COMMAND NAMES git)
