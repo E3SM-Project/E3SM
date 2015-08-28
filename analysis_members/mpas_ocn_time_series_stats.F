@@ -1392,8 +1392,8 @@ subroutine operate0r_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1429,8 +1429,8 @@ subroutine operate1r_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1466,8 +1466,8 @@ subroutine operate2r_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1503,8 +1503,8 @@ subroutine operate3r_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1540,8 +1540,8 @@ subroutine operate4r_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1577,8 +1577,8 @@ subroutine operate5r_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1614,8 +1614,8 @@ subroutine operate0i_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1651,8 +1651,8 @@ subroutine operate1i_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1688,8 +1688,8 @@ subroutine operate2i_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1725,8 +1725,8 @@ subroutine operate3i_avg (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-        out_array = (out_array * \
-                (buffers(b) % total_accum - 1) + in_array) \
+        out_array = (out_array * &
+                (buffers(b) % total_accum - 1) + in_array) &
                 / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1762,8 +1762,8 @@ subroutine operate0r_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1799,8 +1799,8 @@ subroutine operate1r_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1836,8 +1836,8 @@ subroutine operate2r_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1873,8 +1873,8 @@ subroutine operate3r_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1910,8 +1910,8 @@ subroutine operate4r_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1947,8 +1947,8 @@ subroutine operate5r_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -1984,8 +1984,8 @@ subroutine operate0i_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -2021,8 +2021,8 @@ subroutine operate1i_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -2058,8 +2058,8 @@ subroutine operate2i_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -2095,8 +2095,8 @@ subroutine operate3i_min (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
@@ -2132,8 +2132,8 @@ subroutine operate0r_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2169,8 +2169,8 @@ subroutine operate1r_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2206,8 +2206,8 @@ subroutine operate2r_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2243,8 +2243,8 @@ subroutine operate3r_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2280,8 +2280,8 @@ subroutine operate4r_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2317,8 +2317,8 @@ subroutine operate5r_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2354,8 +2354,8 @@ subroutine operate0i_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2391,8 +2391,8 @@ subroutine operate1i_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2428,8 +2428,8 @@ subroutine operate2i_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
@@ -2465,8 +2465,8 @@ subroutine operate3i_max (start_block, tvar)
       if (buffers(b) % reset_flag) then
         out_array = in_array
       else 
-!        out_array = (out_array * \
-!                (buffers(b) % total_accum - 1) + in_array) \
+!        out_array = (out_array * &
+!                (buffers(b) % total_accum - 1) + in_array) &
 !                / buffers(b) % total_accum ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
