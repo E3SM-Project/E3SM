@@ -46,8 +46,6 @@ define_package_component (HDF5
 # Search for list of valid components requested
 find_valid_components (HDF5)
 
-message ("In FindHDF5")
-
 #==============================================================================
 # SEARCH FOR VALIDATED COMPONENTS
 foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
