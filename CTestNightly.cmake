@@ -136,10 +136,9 @@ ctest_build ()
 message (" -- Test - ${CTEST_BUILD_NAME} --")
 execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} Nightly
                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
-#ctest_test ()
 
 ## -- SUBMIT
-#message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
-#ctest_submit ()
+message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
+ctest_submit ()
 
 message (" -- Finished - ${CTEST_BUILD_NAME} --")
