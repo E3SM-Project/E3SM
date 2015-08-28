@@ -8,5 +8,8 @@
 #
 #==============================================================================
 
+# Get the CTest Dashboard Model
+model=$1
+
 # Run the "ctest" command in another process
-ctest -I 5,6,7,8
+ctest -S ctest/CTestScriptAppendix.cmake,${model} -I 5,8
