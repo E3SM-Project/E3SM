@@ -432,7 +432,6 @@ sub setProject()
 	}
 	if(defined $project)
 	{
-
 		$self->{'project'} = $project;
 		$self->{'account'} = $project;
 	}
@@ -441,7 +440,7 @@ sub setProject()
 		$self->{'project'} = undef;
 		$self->{'account'} = undef;
 	}
-	else
+	elsif(! defined $project)
 	{
 		$self->{'project'} = undef;
 		$self->{'account'} = undef;
