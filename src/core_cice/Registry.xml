@@ -701,6 +701,8 @@
 		<var name="yVertexOnCell"                     type="real"     dimensions="maxEdges nCells"                 name_in_code="yVertexOnCell"/>
 		<var name="xVertexOnEdge"                     type="real"     dimensions="maxVerticesPerEdgeRemap nEdges"  name_in_code="xVertexOnEdge"/>
 		<var name="yVertexOnEdge"                     type="real"     dimensions="maxVerticesPerEdgeRemap nEdges"  name_in_code="yVertexOnEdge"/>
+		<var name="xCellOnEdge"                       type="real"     dimensions="maxCellsPerEdgeRemap nEdges"     name_in_code="xCellOnEdge"/>
+		<var name="yCellOnEdge"                       type="real"     dimensions="maxCellsPerEdgeRemap nEdges"     name_in_code="yCellOnEdge"/>
 		<var name="transCellToGlobal"                 type="real"     dimensions="R3 R3 nCells"             name_in_code="transCellToGlobal"/>
 		<var name="transGlobalToCell"                 type="real"     dimensions="R3 R3 nCells"             name_in_code="transGlobalToCell"/>
 		<var name="transVertexToGlobal"               type="real"     dimensions="R3 R3 nVertices"          name_in_code="transVertexToGlobal"/>

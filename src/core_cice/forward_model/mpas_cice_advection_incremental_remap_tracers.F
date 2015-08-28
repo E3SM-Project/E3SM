@@ -138,6 +138,7 @@ module cice_advection_incremental_remap_tracers
 
    !WHL - debug
    logical, parameter :: verbose_tracers = .false.
+!!   logical, parameter :: verbose_tracers = .true.
 
 contains
 
@@ -254,7 +255,7 @@ contains
        ! search for the end of the list
        do while (associated(newTracer % nextInitial))
 
-          !TODO - do check here that not adding same child
+          !TODO - check here that not adding same child
 
           newTracer => newTracer % nextInitial
        enddo
@@ -427,9 +428,9 @@ contains
 
        if (tracer % isActive) then
           
-!          if (verbose_tracers) then
+          if (verbose_tracers) then
              write(stderrUnit,*) 'Active tracer: ', trim(tracer % tracerName)
-!          endif
+          endif
 
           ! move pointer to the next tracer
           tracerPrev => tracer
@@ -441,9 +442,9 @@ contains
           ! point the previous tracer to the next tracer (if not null) and
           ! remove this tracer from the list
 
-!          if (verbose_tracers) then
+          if (verbose_tracers) then
              write(stderrUnit,*) 'Inactive tracer:', trim(tracer % tracerName)
-!          endif
+          endif
 
           if (associated(tracer % nextInitial)) then
              tracerPrev % nextInitial => tracer % nextInitial
@@ -623,14 +624,31 @@ contains
      
        call MPAS_pool_get_field_info(tracerPool, trim(thisTracer % tracerName), thisFieldInfo)
 
-       !WHL - debug
-       if (verbose_tracers) then
-          write(stderrUnit,*) 'set pointers: ', trim(thisTracer%tracername)
+       !NOTE: As of Aug. 2015, all tracers are formally 3D. But some (e.g., iceAreaCategory) are really 2D, 
+       !       with a first (layer) index of dimension 1.
+       !      For purposes of IR, it is easier to define a 2D pointer to iceAreaCategory(1,:,:) than 
+       !       a 3D pointer to iceAreaCategory(:,:,:).  This avoids some artificial logic in the main remapping
+       !       subroutines to handle parent and child tracers that are both 3D but with different first dimensions.
+       !TODO - Remove this extra logic when fields like iceAreaCategory are formally 2D.
+               
+       if (thisFieldInfo%nDims == 2) then
+
+          thisTracer % nDims = 2
+
+       elseif (thisFieldInfo%nDims == 3) then   ! check whether the layer index has size > 1
+
+          call MPAS_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField3DReal, timeLevel)
+
+          if (size(tracerField3DReal % array, 1) == 1) then   ! treat this as a 2D tracer
+             thisTracer % nDims = 2
+          else   ! size > 1; treat this as a 3D tracer
+             thisTracer % nDims = 3
+          endif
+
        endif
 
-       select case (thisFieldInfo % nDims)
-       case (2)
-          thisTracer % ndims = 2
+       if (thisFieldInfo%nDims == 2 .and. thisTracer % nDims == 2) then    ! 2D formally and physically
+
           call MPAS_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField2DReal, timeLevel)
           thisTracer % array2D => tracerField2DReal % array
           call MPAS_pool_get_field(tracerMaskPool, trim(thisTracer % tracerName) // 'Mask', tracerField2DInteger)
@@ -659,8 +677,40 @@ contains
           thisTracer % localMin2D => tracerField2DReal % array
           call MPAS_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField2DReal)
           thisTracer % localMax2D => tracerField2DReal % array
-       case (3)
-          thisTracer % ndims = 3
+
+       elseif (thisFieldInfo%nDims == 3 .and. thisTracer % nDims == 2) then    ! 3D formally but 2D physically
+
+          call MPAS_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField3DReal, timeLevel)
+          thisTracer % array2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerMaskPool, trim(thisTracer % tracerName) // 'Mask', tracerField3DInteger)
+          thisTracer % arrayMask2D => tracerField3DInteger % array(1,:,:)
+          call MPAS_pool_get_field(tracerEdgeFluxPool, trim(thisTracer % tracerName) // 'EdgeFlux', tracerField3DReal)
+          thisTracer % edgeFlux2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerProductPool, trim(thisTracer % tracerName) // 'Product', tracerField3DReal)
+          thisTracer % massTracerProduct2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerTrianglePool, trim(thisTracer % tracerName) // 'Triangle', tracerField5DReal)
+          thisTracer % triangle2D => tracerField5DReal % array(1,:,:,:,:)
+          call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycenterx', tracerField3DReal)
+          thisTracer % xBarycenter2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycentery', tracerField3DReal)
+          thisTracer % yBarycenter2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerReconstructionPool, trim(thisTracer % tracerName) // 'Center', tracerField3DReal)
+          thisTracer % center2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerReconstructionPool, trim(thisTracer % tracerName) // 'Gradx', tracerField3DReal)
+          thisTracer % xGrad2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerReconstructionPool, trim(thisTracer % tracerName) // 'Grady', tracerField3DReal)
+          thisTracer % yGrad2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerConservationPool, trim(thisTracer % tracerName) // 'Cons', tracerField2DReal, 1)
+          thisTracer % globalSumInit2D => tracerField2DReal % array(1,:)
+          call MPAS_pool_get_field(tracerConservationPool, trim(thisTracer % tracerName) // 'Cons', tracerField2DReal, 2)
+          thisTracer % globalSumFinal2D => tracerField2DReal % array(1,:)
+          call MPAS_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField3DReal)
+          thisTracer % localMin2D => tracerField3DReal % array(1,:,:)
+          call MPAS_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField3DReal)
+          thisTracer % localMax2D => tracerField3DReal % array(1,:,:)
+
+       elseif (thisFieldInfo%nDims == 3 .and. thisTracer % nDims == 3) then    ! 3D formally and physically
+
           call MPAS_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField3DReal, timeLevel)
           thisTracer % array3D => tracerField3DReal % array
           call MPAS_pool_get_field(tracerMaskPool, trim(thisTracer % tracerName) // 'Mask', tracerField3DInteger)
@@ -689,10 +739,12 @@ contains
           thisTracer % localMin3D => tracerField3DReal % array
           call MPAS_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField3DReal)
           thisTracer % localMax3D => tracerField3DReal % array
-       end select
+
+       endif  ! nDims
 
        thisTracer => thisTracer % next
-    enddo
+
+    enddo   ! associated(tracer)
 
   end subroutine cice_set_tracer_array_pointers
 
