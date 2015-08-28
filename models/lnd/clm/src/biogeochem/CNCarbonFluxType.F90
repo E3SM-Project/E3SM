@@ -14,7 +14,9 @@ module CNCarbonFluxType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use PatchType              , only : pft                
   use ColumnType             , only : col                
-  use LandunitType           , only : lun                
+  use LandunitType           , only : lun
+  ! bgc & pflotran interface
+  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -398,8 +400,8 @@ module CNCarbonFluxType
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
      procedure , private :: InitCold
-
-     procedure , private :: CSummary_pflotran
+     ! bgc & pflotran interface
+     procedure , private :: CSummary_interface
   end type carbonflux_type
   !------------------------------------------------------------------------
 
@@ -3617,7 +3619,7 @@ contains
     use ncdio_pio
 
     ! pflotran
-    use clm_varctl       , only : use_pflotran, pf_cmode, use_vertsoilc
+!    use clm_varctl       , only : use_pflotran, pf_cmode, use_vertsoilc
     !
     ! !ARGUMENTS:
     class (carbonflux_type) :: this
@@ -4232,8 +4234,6 @@ contains
     use clm_varcon       , only: secspday
     use clm_varpar       , only: nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only: p2c 
-    ! pflotran
-    use clm_varctl       , only : use_pflotran, pf_cmode
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -4743,8 +4743,8 @@ contains
 
     ! pflotran
     !----------------------------------------------------------------
-    if (use_pflotran .and. pf_cmode) then
-        call CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
+    if (use_bgc_interface) then
+        call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
 
@@ -4927,10 +4927,10 @@ contains
 !----------------------------------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE: CSummary_pflotran
+! !IROUTINE: CSummary_interface
 !
 ! !INTERFACE:
-subroutine CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
+subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
 ! On the radiation time step, perform column-level carbon
@@ -4969,6 +4969,7 @@ subroutine CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
 
     dtime = get_step_size()
 !!---------------------------------------------------------------------------------------------------
+    if (use_pflotran.and.pf_cmode) then
      ! total heterotrophic respiration (HR)
        this%hr_col(:) = 0._r8
        do j = 1,nlevdecomp
@@ -5025,6 +5026,7 @@ subroutine CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
           end if
 
        end do
+    end if !!if (use_pflotran.and.pf_cmode)
 
    ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools for PFLOTRAN-bgc
     ! (note: this can be for general purpose, although here added an 'if...endif' block for PF-bgc)
@@ -5128,6 +5130,6 @@ subroutine CSummary_pflotran(this, bounds, num_soilc, filter_soilc)
     end do
 
     end associate
-end subroutine CSummary_pflotran
+end subroutine CSummary_interface
 !-----------------------------------------------------------------------
 end module CNCarbonFluxType

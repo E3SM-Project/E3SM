@@ -12,7 +12,9 @@ module CNNitrogenFluxType
   use abortutils             , only : endrun
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  ! bgc & pflotran interface
+  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -363,7 +365,7 @@ module CNNitrogenFluxType
      procedure , private :: InitHistory
      procedure , private :: InitCold
 
-     procedure , private :: NSummary_pflotran
+     procedure , private :: NSummary_interface
 
   end type nitrogenflux_type
   !------------------------------------------------------------------------
@@ -1880,7 +1882,7 @@ contains
     use restUtilMod
     use ncdio_pio
     ! pflotran
-    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
+!    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -2488,7 +2490,7 @@ contains
     use subgridAveMod , only: p2c
     use pftvarcon     , only : npcropmin 
     ! pflotran
-    use clm_varctl    , only: use_pflotran, pf_cmode
+!    use clm_varctl    , only: use_pflotran, pf_cmode
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -2755,8 +2757,8 @@ contains
 
     ! pflotran
     !----------------------------------------------------------------
-    if (use_pflotran .and. pf_cmode) then
-        call NSummary_pflotran(this, bounds, num_soilc, filter_soilc)
+    if (use_bgc_interface) then
+        call NSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
   end subroutine Summary
@@ -2767,7 +2769,7 @@ contains
 ! !IROUTINE: NSummary_pflotran
 !
 ! !INTERFACE:
-subroutine NSummary_pflotran(this,bounds,num_soilc, filter_soilc)
+subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
 ! On the radiation time step, perform olumn-level nitrogen
@@ -2778,7 +2780,7 @@ subroutine NSummary_pflotran(this,bounds,num_soilc, filter_soilc)
    use clm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 
-   use clm_varctl    , only: pf_hmode
+!   use clm_varctl    , only: pf_hmode
 !
 ! !ARGUMENTS:
    implicit none
@@ -2803,6 +2805,7 @@ subroutine NSummary_pflotran(this,bounds,num_soilc, filter_soilc)
    ! set time steps
     dtime = real( get_step_size(), r8 )
 
+    if (use_pflotran .and. pf_cmode) then
 ! nitrification-denitrification rates (not yet passing out from PF, but will)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -2870,6 +2873,7 @@ subroutine NSummary_pflotran(this,bounds,num_soilc, filter_soilc)
           this%sminn_leached_col(c) = this%smin_no3_leached_col(c) + this%smin_no3_runoff_col(c)
 
       end do
+    end if !! if (use_pflotran .and. pf_cmode)
 
 
        ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
@@ -2992,7 +2996,7 @@ subroutine NSummary_pflotran(this,bounds,num_soilc, filter_soilc)
           this%externaln_to_decomp_delta_col(c) = -this%externaln_to_decomp_delta_col(c)
           this%no3_net_transport_delta_col(c)   = -this%no3_net_transport_delta_col(c)
        end do
-end subroutine NSummary_pflotran
+end subroutine NSummary_interface
 
 end module CNNitrogenFluxType
 

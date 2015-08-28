@@ -50,11 +50,34 @@ module clm_bgc_interface_data
      ! (2) soil thermohydrology
      ! (2.1) soilstate_vars:
      real(r8), pointer :: soilpsi_col          (:,:) ! col soil water potential in each soil layer (MPa) (CN)
+     real(r8), pointer :: rootfr_col           (:,:) ! col fraction of roots in each soil layer (nlevgrnd)
      ! (2.2) waterstate_vars:
      real(r8), pointer :: h2osoi_liq_col         (:,:) ! col liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
      real(r8), pointer :: h2osoi_ice_col         (:,:) ! col ice lens (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-     ! (2.3) temperature_vars:
+     real(r8), pointer :: frac_sno_eff_col       (:)   ! col fraction of ground covered by snow (0 to 1)
+     real(r8), pointer :: frac_h2osfc_col        (:)   ! col fractional area with surface water greater than zero
+     real(r8), pointer :: h2osoi_vol_col         (:,:) ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+     ! (2.3) waterflux_vars:
+     real(r8), pointer :: qflx_top_soil_col        (:)   ! col net water input into soil from top (mm/s)
+     real(r8), pointer :: qflx_sub_snow_col        (:)   ! col sublimation rate from snow pack (mm H2O /s) [+]
+     real(r8), pointer :: qflx_evap_soi_col        (:)   ! col soil evaporation (mm H2O/s) (+ = to atm)
+     real(r8), pointer :: qflx_ev_h2osfc_col       (:)   ! col evaporation heat flux from soil         (W/m**2) [+ to atm]
+     real(r8), pointer :: qflx_tran_veg_col        (:)   ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+
+     ! (2.4) temperature_vars:
      real(r8), pointer :: t_soisno_col             (:,:) ! col soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+     real(r8), pointer :: t_grnd_col               (:)   ! col ground temperature (Kelvin)
+     ! (2.5) energyflux_vars:
+     real(r8), pointer :: htvp_col                (:)   ! latent heat of vapor of water (or sublimation) [j/kg]
+     real(r8), pointer :: eflx_bot_col            (:)   ! col heat flux from beneath the soil or ice column (W/m**2)
+     real(r8), pointer :: eflx_gnet_col           (:)   ! col net heat flux into ground  (W/m**2)
+     real(r8), pointer :: eflx_soil_grnd_col      (:)   ! col soil heat flux (W/m**2) [+ = into soil]
+     ! (2.6) atm2lnd:
+     real(r8), pointer :: forc_pbot_not_downscaled_grc  (:)   => null() ! not downscaled atm pressure (Pa)
+     real(r8), pointer :: forc_pco2_grc                 (:)   => null() ! CO2 partial pressure (Pa)
+     real(r8), pointer :: forc_pch4_grc                 (:)   => null() ! CH4 partial pressure (Pa)
+
+
 
      ! (3) bgc state variables:
      ! (3.1) carbonstate_vars:
@@ -73,6 +96,9 @@ module clm_bgc_interface_data
      real(r8), pointer :: occlp_vr_col                 (:,:)       ! col (gP/m3) vertically-resolved soil occluded mineral P
      real(r8), pointer :: primp_vr_col                 (:,:)       ! col (gP/m3) vertically-resolved soil parimary mineral P
      real(r8), pointer :: sminp_vr_col                 (:,:)       ! col (gP/m3) vertically-resolved soil parimary mineral P
+     ! (3.4) decomp_cascade_type
+     real(r8), pointer  :: initial_cn_ratio(:)               ! c:n ratio for initialization of pools
+     real(r8), pointer  :: initial_cp_ratio(:)               ! c:n ratio for initialization of pools
 
      ! (4) bgc rates (fluxes), pass from clm to interface
      ! (4.1) to decomposition pools
@@ -82,6 +108,7 @@ module clm_bgc_interface_data
      ! (4.2) to nh4 / no3
      real(r8), pointer :: externaln_to_nh4_col            (:,:) ! col (gN/m3/s) net N fluxes to nh4 pool: deposition + fertilization + supplement + nfix + soyfixn
      real(r8), pointer :: externaln_to_no3_col            (:,:) ! col (gN/m3/s) net N fluxes to no3 pool: deposition + fertilization + supplement
+     real(r8), pointer :: externaln_to_sminn_col          (:,:) ! col (gN/m3/s) net N fluxes to sminn pool: deposition + fertilization + supplement + nfix + soyfixn
      real(r8), pointer :: smin_no3_leached_vr_col         (:,:)   ! col vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
      real(r8), pointer :: smin_no3_runoff_vr_col          (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
      real(r8), pointer :: no3_net_transport_vr_col        (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s)
@@ -104,6 +131,10 @@ module clm_bgc_interface_data
      real(r8), pointer :: decomp_cascade_ctransfer_vr_col           (:,:,:) ! vertically-resolved C transferred along deomposition cascade (gC/m3/s)
      real(r8), pointer :: decomp_cascade_ntransfer_vr_col           (:,:,:) ! col vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
      real(r8), pointer :: decomp_cascade_ptransfer_vr_col           (:,:,:) ! col vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
+     real(r8), pointer :: decomp_cascade_sminn_flux_vr_col          (:,:,:) ! col vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+     real(r8), pointer :: decomp_cascade_sminp_flux_vr_col          (:,:,:) ! col vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
+     real(r8), pointer :: sminn_to_denit_decomp_cascade_vr_col      (:,:,:) ! col vertically-resolved denitrification along decomp cascade (gN/m3/s)
+     real(r8), pointer :: decomp_cascade_hr_vr_col                  (:,:,:) ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
 
      ! (5.2) mineralization / immobilization / uptake fluxes
      real(r8), pointer :: gross_nmin_vr_col                         (:,:)   ! col vertically-resolved gross rate of N mineralization (gN/m3/s)
@@ -136,11 +167,18 @@ module clm_bgc_interface_data
      real(r8), pointer :: secondp_to_occlp_vr_col                     (:,:)   ! col (gP/m3/s) flux of the occlusion of secondary P to occluded P
 
      ! (5.5) gases
-     real(r8), pointer :: decomp_cascade_hr_vr_col                  (:,:,:) ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
      real(r8), pointer :: hr_vr_col                                 (:,:)   ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-
+     
      real(r8), pointer :: f_n2o_denit_vr_col                        (:,:)   ! col flux of N2o from denitrification [gN/m^3/s]
      real(r8), pointer :: f_n2o_nit_vr_col                          (:,:)   ! col flux of N2o from nitrification [gN/m^3/s]
+
+     real(r8), pointer :: f_co2_soil_vr_col                         (:,:)   ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
+     real(r8), pointer :: f_n2o_soil_vr_col                         (:,:)   ! col flux of N2o from soil-N processes [gN/m^3/s]
+     real(r8), pointer :: f_n2_soil_vr_col                          (:,:)   ! col flux of N2 from soil-N processes [gN/m^3/s]
+
+     real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
+     real(r8), pointer :: f_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission from nitrification (gN/m3/s)
+     real(r8), pointer :: f_ngas_denit_vr_col                       (:,:)   ! col vertically-resolved N emission from denitrification (gN/m3/s)
 
   !---------------------------------------------------------------
   contains
@@ -175,48 +213,77 @@ contains
 
 
     !! ARGUMENTS:
+    real(r8) :: ival  = 0.0_r8  ! initial value
     class(clm_bgc_interface_data_type) :: this
     type(bounds_type), intent(in) :: bounds
 
     !! LOCAL VARIABLES:
-    integer           :: begc,endc
+    integer  :: begg, endg
+    integer  :: begc, endc
+    integer  :: begp, endp
     !------------------------------------------------------------------------
-    begc = bounds%begc; endc = bounds%endc
+    begg = bounds%begg; endg= bounds%endg
+    begc = bounds%begc; endc= bounds%endc
+    begp = bounds%begp; endp= bounds%endp
 
-    allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd)) ; this%z           (:,:) = nan
-    allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd)) ; this%dz          (:,:) = nan
+    allocate(this%z                     (begc:endc,-nlevsno+1:nlevgrnd))    ; this%z                    (:,:) = nan
+    allocate(this%dz                    (begc:endc,-nlevsno+1:nlevgrnd))    ; this%dz                   (:,:) = nan
 
-    allocate(this%bd_col                (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
-    allocate(this%hksat_col             (begc:endc,nlevgrnd))            ; this%hksat_col            (:,:) = spval
-    allocate(this%bsw_col               (begc:endc,nlevgrnd))            ; this%bsw_col              (:,:) = nan
-    allocate(this%watsat_col            (begc:endc,nlevgrnd))            ; this%watsat_col           (:,:) = nan
-    allocate(this%sucsat_col            (begc:endc,nlevgrnd))            ; this%sucsat_col           (:,:) = spval
-    allocate(this%watfc_col             (begc:endc,nlevgrnd))            ; this%watfc_col            (:,:) = nan
-    allocate(this%porosity_col          (begc:endc,nlevgrnd))              ; this%porosity_col         (:,:) = spval
-    allocate(this%eff_porosity_col      (begc:endc,nlevgrnd))            ; this%eff_porosity_col     (:,:) = spval
+    allocate(this%bd_col                (begc:endc,nlevgrnd))               ; this%bd_col               (:,:) = nan
+    allocate(this%hksat_col             (begc:endc,nlevgrnd))               ; this%hksat_col            (:,:) = spval
+    allocate(this%bsw_col               (begc:endc,nlevgrnd))               ; this%bsw_col              (:,:) = nan
+    allocate(this%watsat_col            (begc:endc,nlevgrnd))               ; this%watsat_col           (:,:) = nan
+    allocate(this%sucsat_col            (begc:endc,nlevgrnd))               ; this%sucsat_col           (:,:) = spval
+    allocate(this%watfc_col             (begc:endc,nlevgrnd))               ; this%watfc_col            (:,:) = nan
+    allocate(this%porosity_col          (begc:endc,nlevgrnd))               ; this%porosity_col         (:,:) = spval
+    allocate(this%eff_porosity_col      (begc:endc,nlevgrnd))               ; this%eff_porosity_col     (:,:) = spval
 
-    allocate(this%soilpsi_col           (begc:endc,nlevgrnd))            ; this%soilpsi_col          (:,:) = nan
+    allocate(this%soilpsi_col           (begc:endc,nlevgrnd))               ; this%soilpsi_col          (:,:) = nan
+    allocate(this%rootfr_col            (begc:endc,1:nlevgrnd))             ; this%rootfr_col           (:,:) = nan
 
-    allocate(this%h2osoi_liq_col        (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_col         (:,:) = nan
-    allocate(this%h2osoi_ice_col        (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice_col         (:,:) = nan
+    allocate(this%h2osoi_liq_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_liq_col       (:,:) = nan
+    allocate(this%h2osoi_ice_col        (begc:endc,-nlevsno+1:nlevgrnd))    ; this%h2osoi_ice_col       (:,:) = nan
+    allocate(this%frac_sno_eff_col      (begc:endc))                        ; this%frac_sno_eff_col     (:)   = nan
+    allocate(this%frac_h2osfc_col       (begc:endc))                        ; this%frac_h2osfc_col      (:)   = nan
+    allocate(this%h2osoi_vol_col        (begc:endc, 1:nlevgrnd))            ; this%h2osoi_vol_col       (:,:) = nan
 
-    allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd)) ; this%t_soisno_col             (:,:) = nan
+    allocate(this%qflx_top_soil_col     (begc:endc))                        ; this%qflx_top_soil_col    (:)   = ival
+    allocate(this%qflx_ev_h2osfc_col    (begc:endc))                        ; this%qflx_ev_h2osfc_col   (:)   = ival
+    allocate(this%qflx_evap_soi_col     (begc:endc))                        ; this%qflx_evap_soi_col    (:)   = ival
+    allocate(this%qflx_sub_snow_col     (begc:endc))                        ; this%qflx_sub_snow_col    (:)   = ival
+    allocate(this%qflx_tran_veg_col     (begc:endc))                        ; this%qflx_tran_veg_col    (:)   = ival
 
-    allocate(this%decomp_cpools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_cpools_vr_col(:,:,:)= nan
-    allocate(this%decomp_npools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_npools_vr_col(:,:,:)= nan
-    allocate(this%decomp_ppools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_ppools_vr_col(:,:,:)= nan
+    allocate(this%t_soisno_col          (begc:endc,-nlevsno+1:nlevgrnd))    ; this%t_soisno_col         (:,:) = nan
+    allocate(this%t_grnd_col            (begc:endc))                        ; this%t_grnd_col           (:)   = nan
 
-    allocate(this%sminn_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%sminn_vr_col             (:,:) = nan
-    allocate(this%smin_no3_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_vr_col          (:,:) = nan
-    allocate(this%smin_nh4_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%smin_nh4_vr_col          (:,:) = nan
-    allocate(this%smin_nh4sorb_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%smin_nh4sorb_vr_col      (:,:) = nan
+    allocate(this%forc_pbot_not_downscaled_grc  (begg:endg))                ; this%forc_pbot_not_downscaled_grc  (:)   = ival
+    allocate(this%forc_pco2_grc                 (begg:endg))                ; this%forc_pco2_grc                 (:)   = ival
+    allocate(this%forc_pch4_grc                 (begg:endg))                ; this%forc_pch4_grc                 (:)   = ival
 
-    allocate(this%solutionp_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%solutionp_vr_col         (:,:) = nan
-    allocate(this%labilep_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%labilep_vr_col           (:,:) = nan
-    allocate(this%secondp_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%secondp_vr_col           (:,:) = nan
-    allocate(this%occlp_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%occlp_vr_col             (:,:) = nan
-    allocate(this%primp_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%primp_vr_col             (:,:) = nan
-    allocate(this%sminp_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%sminp_vr_col             (:,:) = nan
+    allocate( this%htvp_col             (begc:endc))                        ; this%htvp_col             (:)   = ival
+    allocate( this%eflx_bot_col         (begc:endc))                        ; this%eflx_bot_col         (:)   = ival
+    allocate( this%eflx_gnet_col        (begc:endc))                        ; this%eflx_bot_col         (:)   = ival
+    allocate( this%eflx_soil_grnd_col   (begc:endc))                        ; this%eflx_soil_grnd_col   (:)   = ival
+
+
+    allocate(this%decomp_cpools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_cpools_vr_col(:,:,:)= ival
+    allocate(this%decomp_npools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_npools_vr_col(:,:,:)= ival
+    allocate(this%decomp_ppools_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools));  this%decomp_ppools_vr_col(:,:,:)= ival
+
+    allocate(this%sminn_vr_col          (begc:endc,1:nlevdecomp_full))      ; this%sminn_vr_col             (:,:) = ival
+    allocate(this%smin_no3_vr_col       (begc:endc,1:nlevdecomp_full))      ; this%smin_no3_vr_col          (:,:) = ival
+    allocate(this%smin_nh4_vr_col       (begc:endc,1:nlevdecomp_full))      ; this%smin_nh4_vr_col          (:,:) = ival
+    allocate(this%smin_nh4sorb_vr_col   (begc:endc,1:nlevdecomp_full))      ; this%smin_nh4sorb_vr_col      (:,:) = ival
+
+    allocate(this%solutionp_vr_col      (begc:endc,1:nlevdecomp_full))      ; this%solutionp_vr_col         (:,:) = ival
+    allocate(this%labilep_vr_col        (begc:endc,1:nlevdecomp_full))      ; this%labilep_vr_col           (:,:) = ival
+    allocate(this%secondp_vr_col        (begc:endc,1:nlevdecomp_full))      ; this%secondp_vr_col           (:,:) = ival
+    allocate(this%occlp_vr_col          (begc:endc,1:nlevdecomp_full))      ; this%occlp_vr_col             (:,:) = ival
+    allocate(this%primp_vr_col          (begc:endc,1:nlevdecomp_full))      ; this%primp_vr_col             (:,:) = ival
+    allocate(this%sminp_vr_col          (begc:endc,1:nlevdecomp_full))      ; this%sminp_vr_col             (:,:) = ival
+
+    allocate(this%initial_cn_ratio      (0:ndecomp_pools))                  ; this%initial_cn_ratio         (:) = nan
+    allocate(this%initial_cp_ratio      (0:ndecomp_pools))                  ; this%initial_cp_ratio         (:) = nan
 
     allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
     allocate(this%externaln_to_decomp_npools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externaln_to_decomp_npools_col(:,:,:) = spval
@@ -224,58 +291,76 @@ contains
 
     allocate(this%externaln_to_nh4_col      (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_nh4_col         (:,:) = spval
     allocate(this%externaln_to_no3_col      (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_no3_col         (:,:) = spval
-    allocate(this%smin_no3_leached_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_leached_vr_col      (:,:) = nan
-    allocate(this%smin_no3_runoff_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_runoff_vr_col       (:,:) = nan
+    allocate(this%externaln_to_sminn_col    (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_sminn_col       (:,:) = spval
+    allocate(this%smin_no3_leached_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_leached_vr_col      (:,:) = ival
+    allocate(this%smin_no3_runoff_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_runoff_vr_col       (:,:) = ival
     allocate(this%no3_net_transport_vr_col  (begc:endc, 1:nlevdecomp_full)) ; this%no3_net_transport_vr_col     (:,:) = spval
 
     allocate(this%externalp_to_primp_col    (begc:endc,1:nlevdecomp_full))  ; this%externalp_to_primp_col       (:,:) = spval
     allocate(this%externalp_to_labilep_col  (begc:endc,1:nlevdecomp_full))  ; this%externalp_to_labilep_col     (:,:) = spval
     allocate(this%externalp_to_solutionp_col(begc:endc,1:nlevdecomp_full))  ; this%externalp_to_solutionp_col   (:,:) = spval
-    allocate(this%sminp_leached_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%sminp_leached_vr_col         (:,:) = nan
+    allocate(this%sminp_leached_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%sminp_leached_vr_col         (:,:) = ival
     allocate(this%sminp_net_transport_vr_col(begc:endc, 1:nlevdecomp_full)) ; this%sminp_net_transport_vr_col   (:,:) = spval
 
-    allocate(this%plant_ndemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr_col         (:,:)  = nan
-    allocate(this%plant_pdemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_pdemand_vr_col         (:,:)  = nan
+    allocate(this%plant_ndemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr_col         (:,:)  = ival
+    allocate(this%plant_pdemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_pdemand_vr_col         (:,:)  = ival
 
-    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_cpools_sourcesink_col(:,:,:)= nan
-    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_npools_sourcesink_col(:,:,:)= nan
-    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_ppools_sourcesink_col(:,:,:)= nan
+    allocate(this%decomp_cpools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_cpools_sourcesink_col     (:,:,:) = ival
+    allocate(this%decomp_npools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_npools_sourcesink_col     (:,:,:) = ival
+    allocate(this%decomp_ppools_sourcesink_col      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))              ; this%decomp_ppools_sourcesink_col     (:,:,:) = ival
 
-    allocate(this%decomp_cascade_ctransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ctransfer_vr_col(:,:,:)= nan
-    allocate(this%decomp_cascade_ntransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ntransfer_vr_col(:,:,:)= nan
-    allocate(this%decomp_cascade_ptransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ptransfer_vr_col(:,:,:)= nan
+    allocate(this%decomp_cascade_ctransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ctransfer_vr_col  (:,:,:) = ival
+    allocate(this%decomp_cascade_ntransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ntransfer_vr_col  (:,:,:) = ival
+    allocate(this%decomp_cascade_ptransfer_vr_col   (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_ptransfer_vr_col  (:,:,:) = ival
 
-    allocate(this%gross_nmin_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%gross_nmin_vr_col          (:,:) = nan
-    allocate(this%net_nmin_vr_col           (begc:endc,1:nlevdecomp_full))  ; this%net_nmin_vr_col            (:,:) = nan
+    allocate(this%decomp_cascade_sminn_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_sminn_flux_vr_col (:,:,:) = ival
+    allocate(this%decomp_cascade_sminp_flux_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_sminp_flux_vr_col (:,:,:) = ival
+    allocate(this%sminn_to_denit_decomp_cascade_vr_col (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )); this%sminn_to_denit_decomp_cascade_vr_col (:,:,:) = ival
 
-    allocate(this%potential_immob_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%potential_immob_vr_col     (:,:) = nan
-    allocate(this%actual_immob_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_vr_col        (:,:) = nan
-    allocate(this%actual_immob_no3_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_no3_vr_col    (:,:) = nan
-    allocate(this%actual_immob_nh4_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_nh4_vr_col    (:,:) = nan
+    allocate(this%decomp_cascade_hr_vr_col          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); this%decomp_cascade_hr_vr_col         (:,:,:) = ival
 
-    allocate(this%sminn_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminn_to_plant_vr_col      (:,:) = nan
-    allocate(this%smin_no3_to_plant_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_to_plant_vr_col   (:,:) = nan
-    allocate(this%smin_nh4_to_plant_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%smin_nh4_to_plant_vr_col   (:,:) = nan
 
-    allocate(this%gross_pmin_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%gross_pmin_vr_col          (:,:) = nan
-    allocate(this%net_pmin_vr_col           (begc:endc,1:nlevdecomp_full))  ; this%net_pmin_vr_col            (:,:) = nan
+    allocate(this%gross_nmin_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%gross_nmin_vr_col            (:,:) = ival
+    allocate(this%net_nmin_vr_col           (begc:endc,1:nlevdecomp_full))  ; this%net_nmin_vr_col              (:,:) = ival
 
-    allocate(this%potential_immob_p_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%potential_immob_p_vr_col   (:,:) = nan
-    allocate(this%actual_immob_p_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_p_vr_col      (:,:) = nan
-    allocate(this%sminp_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminp_to_plant_vr_col      (:,:) = nan
+    allocate(this%potential_immob_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%potential_immob_vr_col       (:,:) = ival
+    allocate(this%actual_immob_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_vr_col          (:,:) = ival
+    allocate(this%actual_immob_no3_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_no3_vr_col      (:,:) = ival
+    allocate(this%actual_immob_nh4_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_nh4_vr_col      (:,:) = ival
 
-    allocate(this%f_nit_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%f_nit_vr_col               (:,:) = nan
-    allocate(this%f_denit_vr_col            (begc:endc,1:nlevdecomp_full))  ; this%f_denit_vr_col             (:,:) = nan
+    allocate(this%sminn_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminn_to_plant_vr_col        (:,:) = ival
+    allocate(this%smin_no3_to_plant_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_to_plant_vr_col     (:,:) = ival
+    allocate(this%smin_nh4_to_plant_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%smin_nh4_to_plant_vr_col     (:,:) = ival
 
-    allocate(this%primp_to_labilep_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%primp_to_labilep_vr_col    (:,:) = nan
-    allocate(this%labilep_to_secondp_vr_col (begc:endc,1:nlevdecomp_full))  ; this%labilep_to_secondp_vr_col  (:,:) = nan
-    allocate(this%secondp_to_labilep_vr_col (begc:endc,1:nlevdecomp_full))  ; this%secondp_to_labilep_vr_col  (:,:) = nan
-    allocate(this%secondp_to_occlp_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%secondp_to_occlp_vr_col    (:,:) = nan
+    allocate(this%gross_pmin_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%gross_pmin_vr_col            (:,:) = ival
+    allocate(this%net_pmin_vr_col           (begc:endc,1:nlevdecomp_full))  ; this%net_pmin_vr_col              (:,:) = ival
 
-    allocate(this%decomp_cascade_hr_vr_col  (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions))    ; this%decomp_cascade_hr_vr_col(:,:,:)= spval
-    allocate(this%hr_vr_col                 (begc:endc,1:nlevdecomp_full))  ; this%hr_vr_col                  (:,:) = nan
-    allocate(this%f_n2o_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_denit_vr_col         (:,:) = nan
-    allocate(this%f_n2o_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_nit_vr_col           (:,:) = nan
+    allocate(this%potential_immob_p_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%potential_immob_p_vr_col     (:,:) = ival
+    allocate(this%actual_immob_p_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_p_vr_col        (:,:) = ival
+    allocate(this%sminp_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminp_to_plant_vr_col        (:,:) = ival
+
+    allocate(this%f_nit_vr_col              (begc:endc,1:nlevdecomp_full))  ; this%f_nit_vr_col                 (:,:) = ival
+    allocate(this%f_denit_vr_col            (begc:endc,1:nlevdecomp_full))  ; this%f_denit_vr_col               (:,:) = ival
+
+    allocate(this%primp_to_labilep_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%primp_to_labilep_vr_col      (:,:) = ival
+    allocate(this%labilep_to_secondp_vr_col (begc:endc,1:nlevdecomp_full))  ; this%labilep_to_secondp_vr_col    (:,:) = ival
+    allocate(this%secondp_to_labilep_vr_col (begc:endc,1:nlevdecomp_full))  ; this%secondp_to_labilep_vr_col    (:,:) = ival
+    allocate(this%secondp_to_occlp_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%secondp_to_occlp_vr_col      (:,:) = ival
+
+
+    allocate(this%hr_vr_col                 (begc:endc,1:nlevdecomp_full))  ; this%hr_vr_col                    (:,:) = ival
+    
+    allocate(this%f_n2o_denit_vr_col        (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_denit_vr_col           (:,:) = ival
+    allocate(this%f_n2o_nit_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_nit_vr_col             (:,:) = ival
+
+    allocate(this%f_co2_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_co2_soil_vr_col            (:,:)   = ival
+    allocate(this%f_n2o_soil_vr_col         (begc:endc,1:nlevdecomp_full))  ; this%f_n2o_soil_vr_col            (:,:)  = ival
+    allocate(this%f_n2_soil_vr_col          (begc:endc,1:nlevdecomp_full))  ; this%f_n2_soil_vr_col             (:,:)  = ival
+
+    allocate(this%f_ngas_decomp_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr_col         (:,:)  = ival
+    allocate(this%f_ngas_nitri_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_nitri_vr_col          (:,:)  = ival
+    allocate(this%f_ngas_denit_vr_col       (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_denit_vr_col          (:,:)  = ival
+    
 
   end subroutine InitAllocate
 

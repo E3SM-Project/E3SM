@@ -34,28 +34,30 @@ module clm_pflotran_interfaceMod
   use decompMod           , only : bounds_type
 
   ! (dummy) variable definitions
-  use atm2lndType         , only : atm2lnd_type
-  use SoilStateType       , only : soilstate_type
-  use WaterStateType      , only : waterstate_type
-  use WaterFluxType       , only : waterflux_type
-  use SoilHydrologyType   , only : soilhydrology_type
-  use TemperatureType     , only : temperature_type
-  use EnergyFluxType      , only : energyflux_type
-  use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+  !! variables below are replaced by clm_bgc_data
 
-  use CNStateType         , only : cnstate_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
-
-  use ch4Mod              , only : ch4_type
-  ! bgc interface: use_clm_bgc
-  use PhotosynthesisType     , only : photosyns_type
-  use cropType               , only : crop_type
-  use CanopyStateType        , only : canopystate_type
-  use PhosphorusStateType    , only : phosphorusstate_type
-  use PhosphorusFluxType     , only : phosphorusflux_type
+!  use atm2lndType         , only : atm2lnd_type
+!  use SoilStateType       , only : soilstate_type
+!  use WaterStateType      , only : waterstate_type
+!  use WaterFluxType       , only : waterflux_type
+!  use SoilHydrologyType   , only : soilhydrology_type
+!  use TemperatureType     , only : temperature_type
+!  use EnergyFluxType      , only : energyflux_type
+!  use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+!
+!  use CNStateType         , only : cnstate_type
+!  use CNCarbonFluxType    , only : carbonflux_type
+!  use CNCarbonStateType   , only : carbonstate_type
+!  use CNNitrogenFluxType  , only : nitrogenflux_type
+!  use CNNitrogenStateType , only : nitrogenstate_type
+!
+!  use ch4Mod              , only : ch4_type
+!
+!  use PhotosynthesisType     , only : photosyns_type
+!  use cropType               , only : crop_type
+!  use CanopyStateType        , only : canopystate_type
+!  use PhosphorusStateType    , only : phosphorusstate_type
+!  use PhosphorusFluxType     , only : phosphorusflux_type
 
 
   ! PFLOTRAN thc module switchs for coupling with CLM45-CN
@@ -75,6 +77,7 @@ module clm_pflotran_interfaceMod
 
 !  use clm_bgc_interfaceMod
   use clm_bgc_interface_data, only : clm_bgc_interface_data_type
+
 
 #ifdef CLM_PFLOTRAN
   use clm_pflotran_interface_data
@@ -103,30 +106,31 @@ module clm_pflotran_interfaceMod
 
   ! wrappers around '#ifdef CLM_PFLOTRAN .... #endif' block statements to maintain sane runtime behavior
   ! when pflotran is not available.
-  public :: clm_pf_interface_init,          &
-            clm_pf_set_restart_stamp,       &
-            clm_pf_run,                     &
-            clm_pf_write_restart,           &
-            clm_pf_finalize
+  public :: clm_pf_interface_init
+  public :: clm_pf_set_restart_stamp
+  public :: clm_pf_run
+  public :: clm_pf_write_restart
+  public :: clm_pf_finalize
+
 
 #ifdef CLM_PFLOTRAN
   ! private work functions that truely require '#ifdef CLM_PFLOTRAN .... #endif'
-  private :: interface_init,        &
-       pflotran_run_onestep,        &
-       pflotran_write_checkpoint,   &
-       pflotran_finalize,           &
-       get_clm_soil_properties,       &
-       get_clm_soil_th,               &
-       get_clm_iceadj_porosity,       &
-       get_clm_bcwflx,                &
-       get_clm_bceflx,                &
-       get_clm_bgc_conc,              &
-       get_clm_bgc_rate,              &
-       update_soil_temperature_pf2clm,  &
-       update_soil_moisture_pf2clm,     &
-       update_soil_bgc_pf2clm,          &
-       update_bgc_gaslosses_pf2clm,     &
-       update_bcflow_pf2clm
+  private :: interface_init
+  private :: pflotran_run_onestep
+  private :: pflotran_write_checkpoint
+  private :: pflotran_finalize
+  private :: get_clm_soil_properties
+  private :: get_clm_soil_th
+  private :: get_clm_iceadj_porosity
+  private :: get_clm_bcwflx
+  private :: get_clm_bceflx
+  private :: get_clm_bgc_conc
+  private :: get_clm_bgc_rate
+  private :: update_soil_temperature_pf2clm
+  private :: update_soil_moisture_pf2clm
+  private :: update_soil_bgc_pf2clm
+  private :: update_bgc_gaslosses_pf2clm
+! private :: update_bcflow_pf2clm !!comment out currently for bgc-only
 
 #endif
 
@@ -280,21 +284,23 @@ contains
 
   !--------------------------------------------------------------------------------------------
 
-  subroutine clm_pf_run(clm_bgc_data,bounds,       &
-          ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
-           ! at this coding stage
-           num_soilc, filter_soilc,                               &
-           num_soilp, filter_soilp,                               &
-           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-           atm2lnd_vars,                                          &
-           waterstate_vars, waterflux_vars,                       &
-           soilstate_vars,  temperature_vars, energyflux_vars,    &
-           soilhydrology_vars, soil_water_retention_curve,        &
-           ! soil bgc
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           ch4_vars                                               &
-           )
+!  subroutine clm_pf_run(clm_bgc_data,bounds,       &
+!          ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
+!           ! at this coding stage
+!           num_soilc, filter_soilc,                               &
+!           num_soilp, filter_soilp,                               &
+!           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
+!           atm2lnd_vars,                                          &
+!           waterstate_vars, waterflux_vars,                       &
+!           soilstate_vars,  temperature_vars, energyflux_vars,    &
+!           soilhydrology_vars, soil_water_retention_curve,        &
+!           ! soil bgc
+!           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
+!           nitrogenflux_vars, nitrogenstate_vars,                 &
+!           ch4_vars                                               &
+!           )
+    subroutine clm_pf_run(clm_bgc_data,bounds,       &
+           num_soilc, filter_soilc)
 
     implicit none
 
@@ -302,23 +308,23 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(soilstate_type)     , intent(inout) :: soilstate_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
-    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
-    type(energyflux_type)    , intent(inout) :: energyflux_vars
-    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(ch4_type)           , intent(inout) :: ch4_vars
+!    integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
+!    integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+!    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+!    type(waterstate_type)    , intent(inout) :: waterstate_vars
+!    type(waterflux_type)     , intent(inout) :: waterflux_vars
+!    type(soilstate_type)     , intent(inout) :: soilstate_vars
+!    type(temperature_type)   , intent(inout) :: temperature_vars
+!    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
+!    type(energyflux_type)    , intent(inout) :: energyflux_vars
+!    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+!
+!    type(cnstate_type)       , intent(inout) :: cnstate_vars
+!    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+!    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+!    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+!    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+!    type(ch4_type)           , intent(inout) :: ch4_vars
     type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
     !-----------------------------------------------------------------------
@@ -326,19 +332,21 @@ contains
     character(len=256) :: subname = "clm_pf_run"
 
 #ifdef CLM_PFLOTRAN
-    call pflotran_run_onestep(clm_bgc_data,bounds,                             &
-           num_soilc, filter_soilc,                               &
-           num_soilp, filter_soilp,                               &
-           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-           atm2lnd_vars,                                          &
-           waterstate_vars, waterflux_vars,                       &
-           soilstate_vars,  temperature_vars, energyflux_vars,    &
-           soilhydrology_vars, soil_water_retention_curve,        &
-           ! soil bgc
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           ch4_vars                                               &
-           )
+!    call pflotran_run_onestep(clm_bgc_data,bounds,                             &
+!           num_soilc, filter_soilc,                               &
+!           num_soilp, filter_soilp,                               &
+!           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
+!           atm2lnd_vars,                                          &
+!           waterstate_vars, waterflux_vars,                       &
+!           soilstate_vars,  temperature_vars, energyflux_vars,    &
+!           soilhydrology_vars, soil_water_retention_curve,        &
+!           ! soil bgc
+!           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
+!           nitrogenflux_vars, nitrogenstate_vars,                 &
+!           ch4_vars                                               &
+!           )
+    call pflotran_run_onestep(clm_bgc_data,bounds,  &
+           num_soilc, filter_soilc)
 #else
     call pflotran_not_available(subname)
 #endif
@@ -684,18 +692,20 @@ write(*,'(A40,10A10)')"DEBUG | decomp_pool_name=",clm_pf_idata%decomp_pool_name
   ! !SUBROUTINE: pflotran_run_onestep
   !
   ! !INTERFACE:
-  subroutine pflotran_run_onestep(clm_bgc_data,bounds,                         &
-           num_soilc, filter_soilc,                               &
-           num_soilp, filter_soilp,                               &
-           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-           atm2lnd_vars,                                          &
-           waterstate_vars, waterflux_vars,                       &
-           soilstate_vars,  temperature_vars, energyflux_vars,    &
-           soilhydrology_vars, soil_water_retention_curve,        &
-           ! soil bgc
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           ch4_vars)
+!  subroutine pflotran_run_onestep(clm_bgc_data,bounds,                         &
+!           num_soilc, filter_soilc,                               &
+!           num_soilp, filter_soilp,                               &
+!           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
+!           atm2lnd_vars,                                          &
+!           waterstate_vars, waterflux_vars,                       &
+!           soilstate_vars,  temperature_vars, energyflux_vars,    &
+!           soilhydrology_vars, soil_water_retention_curve,        &
+!           ! soil bgc
+!           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
+!           nitrogenflux_vars, nitrogenstate_vars,                 &
+!           ch4_vars)
+  subroutine pflotran_run_onestep(clm_bgc_data,bounds,            &
+           num_soilc, filter_soilc)
   !
   ! !DESCRIPTION:
   !
@@ -705,7 +715,7 @@ write(*,'(A40,10A10)')"DEBUG | decomp_pool_name=",clm_pf_idata%decomp_pool_name
   ! !USES:
 
 
-    use clm_pflotran_interface_data
+!    use clm_pflotran_interface_data
     use PFLOTRAN_Constants_module
 
     use clm_time_manager  , only : get_step_size, get_nstep, nsstep, nestep,       &
@@ -720,27 +730,27 @@ write(*,'(A40,10A10)')"DEBUG | decomp_pool_name=",clm_pf_idata%decomp_pool_name
     type(bounds_type) , intent(in)  :: bounds
     integer, intent(in) :: num_soilc                  ! number of soil columns in filter
     integer, intent(in) :: filter_soilc(:)            ! filter for soil columns
-    integer, intent(in) :: num_soilp                  ! number of soil pfts in filter
-    integer, intent(in) :: filter_soilp(:)            ! filter for soil pfts
+!    integer, intent(in) :: num_soilp                  ! number of soil pfts in filter
+!    integer, intent(in) :: filter_soilp(:)            ! filter for soil pfts
 
-    type(atm2lnd_type)      , intent(in) :: atm2lnd_vars
-
-    type(soilstate_type)    , intent(in) :: soilstate_vars
-    type(soilhydrology_type), intent(in) :: soilhydrology_vars
-    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-
-    type(waterstate_type)   , intent(inout) :: waterstate_vars
-    type(waterflux_type)    , intent(inout) :: waterflux_vars
-    type(temperature_type)  , intent(inout) :: temperature_vars
-    type(energyflux_type)   , intent(inout) :: energyflux_vars
-
-    type(cnstate_type)      , intent(inout) :: cnstate_vars
-    type(carbonstate_type)  , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-    type(nitrogenstate_type), intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-
-    type(ch4_type)          , intent(inout) :: ch4_vars
+!    type(atm2lnd_type)      , intent(in) :: atm2lnd_vars
+!
+!    type(soilstate_type)    , intent(in) :: soilstate_vars
+!    type(soilhydrology_type), intent(in) :: soilhydrology_vars
+!    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+!
+!    type(waterstate_type)   , intent(inout) :: waterstate_vars
+!    type(waterflux_type)    , intent(inout) :: waterflux_vars
+!    type(temperature_type)  , intent(inout) :: temperature_vars
+!    type(energyflux_type)   , intent(inout) :: energyflux_vars
+!
+!    type(cnstate_type)      , intent(inout) :: cnstate_vars
+!    type(carbonstate_type)  , intent(inout) :: carbonstate_vars
+!    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
+!    type(nitrogenstate_type), intent(inout) :: nitrogenstate_vars
+!    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
+!
+!    type(ch4_type)          , intent(inout) :: ch4_vars
 
     type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
@@ -816,9 +826,11 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
        ! if initializaing CLM's H states from pflotran (only H mode now)
        else
           call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
-          call update_soil_moisture_pf2clm(                 &
-                    bounds, num_soilc, filter_soilc,        &
-                     soilstate_vars, waterstate_vars)
+!           call update_soil_moisture_pf2clm(                 &
+!                     bounds, num_soilc, filter_soilc,        &
+!                      soilstate_vars, waterstate_vars)
+            call update_soil_moisture_pf2clm(clm_bgc_data,                 &
+                    bounds, num_soilc, filter_soilc)
        end if
 
        ! the following is for some specific PF's hydrological parameters useful to constrain H source/sink or BC
@@ -856,11 +868,14 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
     ! (2) pass CLM water fluxes to CLM-PFLOTRAN interface
     if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
-        call get_clm_bcwflx(                        &
-            bounds, num_soilc, filter_soilc,        &
-            atm2lnd_vars, soilstate_vars,           &
-            temperature_vars, energyflux_vars,      &
-            waterstate_vars, waterflux_vars)
+!        call get_clm_bcwflx(                        &
+!            bounds, num_soilc, filter_soilc,        &
+!            atm2lnd_vars, soilstate_vars,           &
+!            temperature_vars, energyflux_vars,      &
+!            waterstate_vars, waterflux_vars)
+
+        call get_clm_bcwflx(clm_bgc_data,           &
+            bounds, num_soilc, filter_soilc)
 
         ! pass flux 'vecs' from CLM to pflotran
         call pflotranModelUpdateHSourceSink(pflotran_m)    ! H SrcSink
@@ -869,10 +884,12 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
     ! (3) CLM thermal BC to PFLOTRAN
     if (pf_tmode) then
-        call get_clm_bceflx(                        &
-            bounds, num_soilc, filter_soilc,        &
-            atm2lnd_vars, waterstate_vars,          &
-            temperature_vars, energyflux_vars)
+!        call get_clm_bceflx(                        &
+!            bounds, num_soilc, filter_soilc,        &
+!            atm2lnd_vars, waterstate_vars,          &
+!            temperature_vars, energyflux_vars)
+        call get_clm_bceflx(clm_bgc_data,           &
+            bounds, num_soilc, filter_soilc)
 
         call pflotranModelUpdateSubsurfTCond(pflotran_m)   ! SrcSink and T bc
     end if
@@ -939,68 +956,63 @@ endif
 write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: BEG"
     ! (5) the main callings of PFLOTRAN
     call pflotranModelStepperRunTillPauseTime( pflotran_m, (nstep+1.0d0)*dtime, dtime, .false. )
-write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: END"
 
-#ifdef CLM_PF_DEBUG
-if(nstep>=48*210 .and. nstep<=48*211) then
-  call cpu_time(t2)
-  if(pflotran_m%option%myrank .eq. pflotran_m%option%io_rank) then
-      write(pflotran_m%option%myrank+200,*) 'CPU_time elapsed @check-point 2 - 1: ', t2-t1
-  endif
-endif
-#endif
+write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: END...CONTINUE..."
+write(*,*)'pf_cmode=',pf_cmode
+!#ifdef CLM_PF_DEBUG
+!if(nstep>=48*210 .and. nstep<=48*211) then
+!  call cpu_time(t2)
+!  if(pflotran_m%option%myrank .eq. pflotran_m%option%io_rank) then
+!      write(pflotran_m%option%myrank+200,*) 'CPU_time elapsed @check-point 2 - 1: ', t2-t1
+!  endif
+!endif
+!#endif
 
     ! (6) update CLM variables from PFLOTRAN
-    if (pf_hmode) then
-        call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
-
-        call update_soil_moisture_pf2clm(        &
-           bounds, num_soilc, filter_soilc,      &
-           soilstate_vars, waterstate_vars)
-    endif
-
-    if (pf_tmode) then
-        call pflotranModelGetTemperatureFromPF(pflotran_m)  ! thermal states
-
-        call update_soil_temperature_pf2clm(     &
-           bounds, num_soilc, filter_soilc,      &
-           soilstate_vars, temperature_vars)
-    endif
+!    if (pf_hmode) then
+!        call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
+!
+!        call update_soil_moisture_pf2clm(clm_bgc_data,        &
+!                        bounds, num_soilc, filter_soilc)
+!    endif
+!
+!    if (pf_tmode) then
+!        call pflotranModelGetTemperatureFromPF(pflotran_m)  ! thermal states
+!
+!        call update_soil_temperature_pf2clm(clm_bgc_data,     &
+!                        bounds, num_soilc, filter_soilc)
+!    endif
 
     ! bgc variables
+write(*,*)'pf_cmode=',pf_cmode
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF(pflotran_m)
-!write(*,*)">>>DEBUG | pflotranModelGetBgcVariablesFromPF"
-        call update_soil_bgc_pf2clm(bounds,      &
-           num_soilc, filter_soilc,              &
-           atm2lnd_vars, waterstate_vars,        &
-           soilstate_vars, cnstate_vars,         &
-           carbonstate_vars, carbonflux_vars,    &
-           nitrogenstate_vars,nitrogenflux_vars, &
-           ch4_vars                              &
-           )
-!write(*,*)">>>DEBUG | update_soil_bgc_pf2clm"
+write(*,*)">>>DEBUG | pflotranModelGetBgcVariablesFromPF"
+
+        call update_soil_bgc_pf2clm(clm_bgc_data,       &
+                bounds, num_soilc, filter_soilc)
+write(*,*)">>>DEBUG | update_soil_bgc_pf2clm"
         ! need to save the current time-step PF porosity/liq. saturation for bgc species mass conservation
         ! if CLM forced changing them into PF at NEXT timestep
         if (.not.pf_hmode .or. .not.pf_frzmode) then
            call pflotranModelGetSaturationFromPF(pflotran_m)
         endif
-!write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
     endif
 
     ! the actual infiltration/runoff/drainage and solute flux with BC, if defined,
     ! are retrieving from PFLOTRAN using 'update_bcflow_pf2clm' subroutine
-    if (pf_hmode) then
-        call pflotranModelGetBCMassBalanceDeltaFromPF(pflotran_m )
+    ! TODO: comment out 'update_bcflow_pf2clm' currently
+!     if (pf_hmode) then
+!         call pflotranModelGetBCMassBalanceDeltaFromPF(pflotran_m )
 
-        call update_bcflow_pf2clm(              &
-           bounds, num_soilc, filter_soilc,     &
-           atm2lnd_vars,                        &
-           temperature_vars, energyflux_vars,   &
-           waterstate_vars, waterflux_vars)
+!         call update_bcflow_pf2clm(              &
+!            bounds, num_soilc, filter_soilc,     &
+!            atm2lnd_vars,                        &
+!            temperature_vars, energyflux_vars,   &
+!            waterstate_vars, waterflux_vars)
 
-        !(TODO) bgc BC flows (e.g. runoff/leaching)
-    endif
+!         !(TODO) bgc BC flows (e.g. runoff/leaching)
+!     endif
 
 
 #ifdef CLM_PF_DEBUG
@@ -1398,156 +1410,6 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
    end associate
   end subroutine get_clm_soil_th
 
-  !-----------------------------------------------------------------------------
-!  subroutine get_clm_soil_th(pftmode, pfhmode,        &
-!           bounds, num_soilc, filter_soilc,           &
-!           atm2lnd_vars, soilstate_vars,              &
-!           waterstate_vars, temperature_vars,         &
-!           soil_water_retention_curve)
-!  !
-!  ! !DESCRIPTION:
-!  !  update soil temperature/saturation from CLM to PFLOTRAN for driving PF's BGC
-!  !  if either NOT available inside PFLOTRAN
-!  !
-!  ! !USES:
-!    use clm_time_manager    , only : get_nstep
-!    use shr_const_mod       , only : SHR_CONST_G
-!
-!    use PFLOTRAN_Constants_module
-!
-!  ! !ARGUMENTS:
-!    implicit none
-!
-!#include "finclude/petscsys.h"
-!#include "finclude/petscvec.h"
-!#include "finclude/petscvec.h90"
-!    logical                  , intent(in) :: pftmode, pfhmode
-!    type(bounds_type)        , intent(in) :: bounds           ! bounds
-!    integer                  , intent(in) :: num_soilc        ! number of column soil points in column filter
-!    integer                  , intent(in) :: filter_soilc(:)  ! column filter for soil points
-!    type(atm2lnd_type)       , intent(in) :: atm2lnd_vars
-!    type(soilstate_type)     , intent(in) :: soilstate_vars
-!    type(waterstate_type)    , intent(in) :: waterstate_vars
-!    type(temperature_type)   , intent(in) :: temperature_vars
-!    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-!
-!  ! !LOCAL VARIABLES:
-!    integer  :: fc, c, g, j, gcount, cellcount      ! indices
-!    real(r8) :: sattmp, psitmp, itheta
-!    real(r8) :: watmin(num_soilc, nlevsoi)
-!    real(r8) :: sucmin(num_soilc, nlevsoi)
-!
-!    PetscScalar, pointer :: soilpress_clmp_loc(:)
-!    PetscScalar, pointer :: soilpsi_clmp_loc(:)
-!    PetscScalar, pointer :: soillsat_clmp_loc(:)
-!    PetscScalar, pointer :: soilisat_clmp_loc(:)
-!    PetscScalar, pointer :: soilt_clmp_loc(:)
-!    PetscErrorCode :: ierr
-!
-!  !EOP
-!  !-----------------------------------------------------------------------
-!    associate ( &
-!      gridcell        => col%gridcell     , & ! column's gridcell
-!      wtgcell         => col%wtgcell      , & ! column's weight relative to gridcell
-!      cactive         => col%active       , & ! [logical (:)]  column active or not
-!      dz              => col%dz           , & ! layer thickness depth (m)
-!      zi              => col%zi           , & ! interface depth (m)
-!    !
-!      sucsat          => soilstate_vars%sucsat_col    , & ! minimum soil suction (mm) (nlevgrnd)
-!      bsw             => soilstate_vars%bsw_col       , & ! Clapp and Hornberger "b"
-!      watsat          => soilstate_vars%watsat_col    , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
-!      soilpsi         => soilstate_vars%soilpsi_col   , & ! soil water matric potential in each soil layer (MPa)
-!    !
-!      h2osoi_liq      => waterstate_vars%h2osoi_liq_col   , & ! liquid water (kg/m2)
-!      h2osoi_ice      => waterstate_vars%h2osoi_ice_col   , & ! ice lens (kg/m2)
-!    !
-!      t_soisno        => temperature_vars%t_soisno_col    , & ! snow-soil temperature (Kelvin)
-!    !
-!      forc_pbot       => atm2lnd_vars%forc_pbot_not_downscaled_grc  &  ! atmospheric pressure (Pa)
-!    )
-!
-!    !--------------------------------------------------------------------------------------
-!    call VecGetArrayF90(clm_pf_idata%press_clmp, soilpress_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%soilpsi_clmp, soilpsi_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%soillsat_clmp, soillsat_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%soilisat_clmp, soilisat_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecGetArrayF90(clm_pf_idata%soilt_clmp, soilt_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!
-!    watmin(:,:) = 0.01_r8
-!    sucmin(:,:) = 1.e8_r8
-!
-!    soilisat_clmp_loc(:) = 0._r8
-!    soillsat_clmp_loc(:) = 0._r8
-!    soilpsi_clmp_loc(:)  = 0._r8
-!    soilpress_clmp_loc(:)= clm_pf_idata%pressure_reference
-!    soilt_clmp_loc(:)    = 0._r8
-!
-!    do fc = 1,num_soilc
-!      c = filter_soilc(fc)
-!      if ( wtgcell(c) <= 0._r8 .or. (.not.cactive(c)) ) cycle     ! don't assign data from PF for inactive cell
-!
-!      g = gridcell(c)
-!      gcount = g - bounds%begg
-!      do j = 1, nlevsoi
-!        cellcount = gcount*clm_pf_idata%nzclm_mapped + j
-!
-!        if (j<=clm_pf_idata%nzclm_mapped) then
-!          ! this adjusting should be done first, if PF-freezing-mode off, so that the following calculation can be done correctly
-!          itheta = 0._r8
-!          if(.not.pf_frzmode) then
-!             itheta = h2osoi_ice(c,j) / (dz(c,j) * denice)
-!             itheta = min(itheta, watsat(c,j)-watmin(c,j)/(dz(c,j)*denh2o))
-!             soilisat_clmp_loc(cellcount) = soilisat_clmp_loc(cellcount) + itheta/watsat(c,j)*wtgcell(c)
-!          endif
-!
-!          if (.not.pfhmode) then
-!             ! porosity will be ice-adjusted for PF, if PF freezing-mode is off,
-!             ! so need to adjust 'psi' so that 'saturation' in PF is correct
-!             sattmp = h2osoi_liq(c,j) / ((watsat(c,j)-itheta)*dz(c,j)*denh2o)
-!             sattmp = min(max(sattmp, watmin(c,j)/watsat(c,j)),1._r8)
-!             soillsat_clmp_loc(cellcount) = soillsat_clmp_loc(cellcount) + sattmp*wtgcell(c)
-!
-!             ! soil matric potential by Clapp-Hornburger method (this is the default used by CLM)
-!             ! but, this value IS different from what CLM used (not ice-content adjusted)
-!             ! So that in PF, if not ice-adjusted, the PSI is very small (negative) which implies possible water movement
-!             psitmp = sucsat(c,j) * (-SHR_CONST_G) * (sattmp**(-bsw(c,j)))  ! -Pa
-!             psitmp = min(max(psitmp,-sucmin(c,j)/SHR_CONST_G),0._r8)
-!             soilpsi_clmp_loc(cellcount)   = soilpsi_clmp_loc(cellcount) + psitmp*wtgcell(c)
-!             soilpress_clmp_loc(cellcount) = soilpress_clmp_loc(cellcount) + psitmp*wtgcell(c)
-!
-!          endif
-!
-!          if (.not.pftmode) then
-!             soilt_clmp_loc(cellcount) = soilt_clmp_loc(cellcount) + (t_soisno(c,j)-tfrz)*wtgcell(c)
-!          endif
-!
-!        endif
-!
-!      enddo
-!    enddo
-!
-!write(*,'(A30,12E14.6)')">>>DEBUG | soillsat=", soillsat_clmp_loc(1:10)
-!write(*,'(A30,12E14.6)')">>>DEBUG | gsoilpsi[Pa]=", soilpsi_clmp_loc(1:10)
-!write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
-!
-!    call VecRestoreArrayF90(clm_pf_idata%press_clmp, soilpress_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%soilpsi_clmp, soilpsi_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%soillsat_clmp, soillsat_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%soilisat_clmp, soilisat_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!    call VecRestoreArrayF90(clm_pf_idata%soilt_clmp, soilt_clmp_loc, ierr)
-!    CHKERRQ(ierr)
-!
-!   end associate
-!  end subroutine get_clm_soil_th
 
   !-----------------------------------------------------------------------------
   !BOP
@@ -1651,10 +1513,13 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !IROUTINE: get_clm_bcwflx
   !
   ! !INTERFACE:
-  subroutine get_clm_bcwflx(bounds,          &
-       num_soilc, filter_soilc,              &
-       clm_a2l, soils_vars,                  &
-       ces_vars, cef_vars, cws_vars, cwf_vars)
+!  subroutine get_clm_bcwflx(bounds,          &
+!       num_soilc, filter_soilc,              &
+!       clm_a2l, soils_vars,                  &
+!       ces_vars, cef_vars, cws_vars, cwf_vars)
+
+  subroutine get_clm_bcwflx(clm_bgc_data,           &
+       bounds, num_soilc, filter_soilc)
   !
   ! !DESCRIPTION:
   !
@@ -1679,12 +1544,13 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     integer, intent(in) :: num_soilc                 ! number of column non-lake points in column filter
     integer, intent(in) :: filter_soilc(:)           ! column filter for non-lake points
 
-    type(atm2lnd_type)       , intent(in) :: clm_a2l
-    type(soilstate_type)     , intent(in) :: soils_vars
-    type(temperature_type)   , intent(in) :: ces_vars
-    type(energyflux_type)    , intent(in) :: cef_vars
-    type(waterstate_type)    , intent(in) :: cws_vars
-    type(waterflux_type)     , intent(in) :: cwf_vars
+!    type(atm2lnd_type)       , intent(in) :: clm_a2l
+!    type(soilstate_type)     , intent(in) :: soils_vars
+!    type(temperature_type)   , intent(in) :: ces_vars
+!    type(energyflux_type)    , intent(in) :: cef_vars
+!    type(waterstate_type)    , intent(in) :: cws_vars
+!    type(waterflux_type)     , intent(in) :: cwf_vars
+    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, g, c, j, p             ! do loop indices
@@ -1739,26 +1605,28 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     pwtgcell          => pft%wtgcell                             , &! weight relative to gridcell for each pft
     pwtcol            => pft%wtcol                               , &! weight relative to column for each pft
     !
-    bsw               => soils_vars%bsw_col                  , &! Clapp and Hornberger "b" (nlevgrnd)
-    hksat             => soils_vars%hksat_col                , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
-    watsat            => soils_vars%watsat_col               , &! volumetric soil water at saturation (porosity) (nlevgrnd)
-    sucsat            => soils_vars%sucsat_col               , &! minimum soil suction (mm) (nlevgrnd)
-    rootfr_pft        => soils_vars%rootfr_patch             , & ! pft-level effective fraction of roots in each soil layer
+    bsw               => clm_bgc_data%bsw_col                  , &! Clapp and Hornberger "b" (nlevgrnd)
+    hksat             => clm_bgc_data%hksat_col                , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
+    watsat            => clm_bgc_data%watsat_col               , &! volumetric soil water at saturation (porosity) (nlevgrnd)
+    sucsat            => clm_bgc_data%sucsat_col               , &! minimum soil suction (mm) (nlevgrnd)
+    rootfr            => clm_bgc_data%rootfr_col               , &
+!    rootfr_pft        => soils_vars%rootfr_patch             , & ! pft-level effective fraction of roots in each soil layer
 
-    forc_pbot         => clm_a2l%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)]  atmospheric pressure (Pa)
-    t_grnd            => ces_vars%t_grnd_col                  , & ! Input:  [real(r8) (:)]  ground surface temperature [K]
-    htvp              => cef_vars%htvp_col                    , & ! Input:  [real(r8) (:)]  latent heat of vapor of water (or sublimation) [j/kg]
+    forc_pbot         => clm_bgc_data%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)]  atmospheric pressure (Pa)
+    t_grnd            => clm_bgc_data%t_grnd_col                  , & ! Input:  [real(r8) (:)]  ground surface temperature [K]
+    htvp              => clm_bgc_data%htvp_col                    , & ! Input:  [real(r8) (:)]  latent heat of vapor of water (or sublimation) [j/kg]
     !
-    frac_sno          => cws_vars%frac_sno_eff_col            , & ! Input: fraction of ground covered by snow (0 to 1)
-    frac_h2osfc       => cws_vars%frac_h2osfc_col             , & ! Input: fraction of ground covered by surface water (0 to 1)
-    h2osoi_liq        => cws_vars%h2osoi_liq_col              , & ! Input: liquid water (kg/m2)
-    h2osoi_ice        => cws_vars%h2osoi_ice_col              , & ! Input: ice lens (kg/m2)
+    frac_sno          => clm_bgc_data%frac_sno_eff_col            , & ! Input: fraction of ground covered by snow (0 to 1)
+    frac_h2osfc       => clm_bgc_data%frac_h2osfc_col             , & ! Input: fraction of ground covered by surface water (0 to 1)
+    h2osoi_liq        => clm_bgc_data%h2osoi_liq_col              , & ! Input: liquid water (kg/m2)
+    h2osoi_ice        => clm_bgc_data%h2osoi_ice_col              , & ! Input: ice lens (kg/m2)
     !
-    qflx_top_soil     => cwf_vars%qflx_top_soil_col           , & ! Input: net water input into soil from top (mm/s)
-    qflx_ev_h2osfc    => cwf_vars%qflx_ev_h2osfc_col          , & ! Input: column-level evaporation flux from h2osfc (W/m2) [+ to atm] : checking unit
-    qflx_evap_soil    => cwf_vars%qflx_evap_soi_col           , & ! Input: column-level soil evaporation (mm H2O/s) (+ = to atm)
-    qflx_subl_snow    => cwf_vars%qflx_sub_snow_col           , & ! Input: column-level evaporation flux from snow (mm H2O/s) [+ to atm]
-    qflx_tran_veg_pft => cwf_vars%qflx_tran_veg_patch         &   ! Input: pft-level vegetation transpiration (mm H2O/s) (+ = to atm)
+    qflx_top_soil     => clm_bgc_data%qflx_top_soil_col           , & ! Input: net water input into soil from top (mm/s)
+    qflx_ev_h2osfc    => clm_bgc_data%qflx_ev_h2osfc_col          , & ! Input: column-level evaporation flux from h2osfc (W/m2) [+ to atm] : checking unit
+    qflx_evap_soil    => clm_bgc_data%qflx_evap_soi_col           , & ! Input: column-level soil evaporation (mm H2O/s) (+ = to atm)
+    qflx_subl_snow    => clm_bgc_data%qflx_sub_snow_col           , & ! Input: column-level evaporation flux from snow (mm H2O/s) [+ to atm]
+!    qflx_tran_veg_pft => cwf_vars%qflx_tran_veg_patch         &   ! Input: pft-level vegetation transpiration (mm H2O/s) (+ = to atm)
+    qflx_tran_veg     => clm_bgc_data%qflx_tran_veg_col             &
 
     )
 
@@ -1794,33 +1662,42 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     rootfr_sum(:)    = 0._r8
     qflx_tran_col(:) = 0._r8
 
-    do pftindex = 1, max_patch_per_col
-       do fc = 1, num_soilc
-          c = filter_soilc(fc)
-          if (pftindex <= col%npfts(c)) then
-             p = pfti(c) + pftindex - 1
+!    do pftindex = 1, max_patch_per_col
+!       do fc = 1, num_soilc
+!          c = filter_soilc(fc)
+!          if (pftindex <= col%npfts(c)) then
+!             p = pfti(c) + pftindex - 1
+!
+!             if (pwtgcell(p)>0._r8) then
+!                do j = 1,nlevsoi
+!                       rootfr_col(c,j) = rootfr_col(c,j) + &
+!                            rootfr_pft(p,j) * qflx_tran_veg_pft(p) * pwtcol(p)
+!                       rootfr_sum(c) = rootfr_sum(c) + qflx_tran_veg_pft(p) * pwtcol(p)
+!                end do
+!             end if
+!
+!             qflx_tran_col(c) = qflx_tran_col(c) + qflx_tran_veg_pft(p) * pwtcol(p)
+!         end if
+!
+!       end do
+!    end do
+!    ! Compute the Transpiration sink vertical distribution
+!    do j = 1, nlevsoi
+!        do fc = 1, num_soilc
+!           c = filter_soilc(fc)
+!           if (rootfr_sum(c) /= 0._r8) then
+!                rootfr_col(c,j) = rootfr_col(c,j)/rootfr_sum(c)
+!           end if
+!        end do
+!    end do
 
-             if (pwtgcell(p)>0._r8) then
-                do j = 1,nlevsoi
-                       rootfr_col(c,j) = rootfr_col(c,j) + &
-                            rootfr_pft(p,j) * qflx_tran_veg_pft(p) * pwtcol(p)
-                       rootfr_sum(c) = rootfr_sum(c) + qflx_tran_veg_pft(p) * pwtcol(p)
-                end do
-             end if
-
-             qflx_tran_col(c) = qflx_tran_col(c) + qflx_tran_veg_pft(p) * pwtcol(p)
-         end if
-
-       end do
-    end do
-    ! Compute the Transpiration sink vertical distribution
-    do j = 1, nlevsoi
-        do fc = 1, num_soilc
-           c = filter_soilc(fc)
-           if (rootfr_sum(c) /= 0._r8) then
-                rootfr_col(c,j) = rootfr_col(c,j)/rootfr_sum(c)
-           end if
+    do fc = 1, num_soilc
+        c = filter_soilc(fc)
+            qflx_tran_col(c)  = qflx_tran_veg(c)
+        do j = 1, nlevsoi
+            rootfr_col(c,j) = rootfr(c,j)
         end do
+
     end do
 
 !----------------------------------------------------------------------------------------------------------
@@ -2021,9 +1898,11 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !IROUTINE: get_clm_bceflx
   !
   ! !INTERFACE:
-  subroutine get_clm_bceflx(bounds,          &
-       num_soilc, filter_soilc,              &
-       clm_a2l, cws_vars, ces_vars, cef_vars)
+!   subroutine get_clm_bceflx(bounds,          &
+!        num_soilc, filter_soilc,              &
+!        clm_a2l, cws_vars, ces_vars, cef_vars)
+  subroutine get_clm_bceflx(clm_bgc_data,           &
+       bounds, num_soilc, filter_soilc)
   !
   ! !DESCRIPTION:
   !
@@ -2046,10 +1925,11 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     integer, intent(in) :: num_soilc                 ! number of column non-lake points in column filter
     integer, intent(in) :: filter_soilc(:)           ! column filter for non-lake points
 
-    type(atm2lnd_type)       , intent(in) :: clm_a2l
-    type(waterstate_type)    , intent(in) :: cws_vars
-    type(temperature_type)   , intent(in) :: ces_vars
-    type(energyflux_type)    , intent(in) :: cef_vars
+!     type(atm2lnd_type)       , intent(in) :: clm_a2l
+!     type(waterstate_type)    , intent(in) :: cws_vars
+!     type(temperature_type)   , intent(in) :: ces_vars
+!     type(energyflux_type)    , intent(in) :: cef_vars
+    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, p, gcount            ! do loop indices
@@ -2072,13 +1952,15 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
     pwtgcell          => pft%wtgcell                             , &! weight relative to gridcell for each pft
     pwtcol            => pft%wtcol                               , &! weight relative to column for each pft
     !
-    frac_sno          => cws_vars%frac_sno_eff_col               , & ! Input: fraction of ground covered by snow (0 to 1)
-    frac_h2osfc       => cws_vars%frac_h2osfc_col                , & ! Input: fraction of ground covered by surface water (0 to 1)
+    frac_sno          => clm_bgc_data%frac_sno_eff_col               , & ! Input: fraction of ground covered by snow (0 to 1)
+    frac_h2osfc       => clm_bgc_data%frac_h2osfc_col                , & ! Input: fraction of ground covered by surface water (0 to 1)
     !
-    eflx_bot          => cef_vars%eflx_bot_col                   , &! heat flux from beneath column (W/m**2) [+ = upward]
-    eflx_gnet         => cef_vars%eflx_gnet_patch                , &! net ground heat flux into the surface (W/m**2) per patch
-    eflx_soil_grnd    => cef_vars%eflx_soil_grnd_patch           , &! soil heat flux (W/m**2) [+ = into soil]
-    t_grnd            => ces_vars%t_grnd_col                   & ! ground surface temperature [K]
+    eflx_bot          => clm_bgc_data%eflx_bot_col                   , &! heat flux from beneath column (W/m**2) [+ = upward]
+!     eflx_gnet         => cef_vars%eflx_gnet_patch                , &! net ground heat flux into the surface (W/m**2) per patch
+!     eflx_soil_grnd    => cef_vars%eflx_soil_grnd_patch           , &! soil heat flux (W/m**2) [+ = into soil]
+    eflx_gnet         => clm_bgc_data%eflx_gnet_col               , &
+    eflx_soil_grnd    => clm_bgc_data%eflx_soil_grnd_col          , &
+    t_grnd            => clm_bgc_data%t_grnd_col                   & ! ground surface temperature [K]
     )
 
  !----------------------------------------------------------------------------------------------------------
@@ -2105,15 +1987,17 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
        g = cgridcell(c)
        gcount = g - bounds%begg
 
-       do pftindex = 1, max_patch_per_col
-          if (pftindex <= col%npfts(c)) then
-             p = pfti(c) + pftindex - 1
-             if (pwtgcell(p)>0._r8) then
-               gflux_subsurf_clmp_loc(gcount+1)  = gflux_subsurf_clmp_loc(gcount+1) &
-                  + eflx_soil_grnd(p)*1.d-3 * pwtcol(p)           ! (TODO - checking) from W/m2 --> kJ/m2/s
-            end if
-         end if
-       end do
+       gflux_subsurf_clmp_loc(gcount+1)  = gflux_subsurf_clmp_loc(gcount+1) &
+                                         + eflx_soil_grnd(c)*1.d-3 * col%wtgcell(c)     ! 1.d-3: from W/m2 --> kJ/m2/s
+!        do pftindex = 1, max_patch_per_col
+!           if (pftindex <= col%npfts(c)) then
+!              p = pfti(c) + pftindex - 1
+!              if (pwtgcell(p)>0._r8) then
+!                gflux_subsurf_clmp_loc(gcount+1)  = gflux_subsurf_clmp_loc(gcount+1) &
+!                   + eflx_soil_grnd(p)*1.d-3 * pwtcol(p)           ! (TODO - checking) from W/m2 --> kJ/m2/s
+!             end if
+!          end if
+!        end do
     end do
 
     ! CLM column-level variables available to PFLOTRAN
@@ -2896,9 +2780,11 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   ! !IROUTINE: update_soil_moisture_pf2clm
   !
   ! !INTERFACE:
-  subroutine update_soil_moisture_pf2clm(     &
-           bounds, num_soilc, filter_soilc,   &
-           soilstate_vars, waterstate_vars)
+!   subroutine update_soil_moisture_pf2clm(     &
+!            bounds, num_soilc, filter_soilc,   &
+!            soilstate_vars, waterstate_vars)
+  subroutine update_soil_moisture_pf2clm(clm_bgc_data,     &
+           bounds, num_soilc, filter_soilc)
 
   !
   ! !DESCRIPTION:
@@ -2916,8 +2802,9 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_soilc        ! number of column soil points in column filter
     integer, intent(in) :: filter_soilc(:)  ! column filter for soil points
-    type(soilstate_type) , intent(in)    :: soilstate_vars
-    type(waterstate_type), intent(inout) :: waterstate_vars
+!     type(soilstate_type) , intent(in)    :: soilstate_vars
+!     type(waterstate_type), intent(inout) :: waterstate_vars
+    type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g, gcount      ! indices
@@ -2934,10 +2821,10 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
          wtgcell    =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
          dz         =>  col%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
          !
-         h2osoi_liq_col =>  waterstate_vars%h2osoi_liq_col      , &
-         h2osoi_ice_col =>  waterstate_vars%h2osoi_ice_col      , &
-         h2osoi_vol_col =>  waterstate_vars%h2osoi_vol_col      , &
-         watsat_col     =>  soilstate_vars%watsat_col      &
+         h2osoi_liq_col =>  clm_bgc_data%h2osoi_liq_col      , &
+         h2osoi_ice_col =>  clm_bgc_data%h2osoi_ice_col      , &
+         h2osoi_vol_col =>  clm_bgc_data%h2osoi_vol_col      , &
+         watsat_col     =>  clm_bgc_data%watsat_col      &
     )
 
     call VecGetArrayF90(clm_pf_idata%soillsat_clms, sat_clm_loc, ierr)
@@ -2997,9 +2884,11 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   ! !IROUTINE: update_soil_temperature_pf2clm
   !
   ! !INTERFACE:
-  subroutine update_soil_temperature_pf2clm(     &
-           bounds, num_soilc, filter_soilc,   &
-           soilstate_vars, temperature_vars)
+!   subroutine update_soil_temperature_pf2clm(     &
+!            bounds, num_soilc, filter_soilc,   &
+!            soilstate_vars, temperature_vars)
+  subroutine update_soil_temperature_pf2clm(clm_bgc_data,     &
+           bounds, num_soilc, filter_soilc)
 
   !
   ! !DESCRIPTION:
@@ -3017,8 +2906,9 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_soilc        ! number of column soil points in column filter
     integer, intent(in) :: filter_soilc(:)  ! column filter for soil points
-    type(soilstate_type) , intent(in)    :: soilstate_vars
-    type(temperature_type), intent(inout):: temperature_vars
+!     type(soilstate_type) , intent(in)    :: soilstate_vars
+!     type(temperature_type), intent(inout):: temperature_vars
+    type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g, gcount      ! indices
@@ -3033,7 +2923,7 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
          wtgcell    =>  col%wtgcell    , & !  [real(r8) (:)]  weight (relative to gridcell
          dz         =>  col%dz         , & !  [real(r8) (:,:)]  layer thickness depth (m)
          !
-         t_soisno   => temperature_vars%t_soisno_col   & ! snow-soil temperature (Kelvin)
+         t_soisno   => clm_bgc_data%t_soisno_col   & ! snow-soil temperature (Kelvin)
     )
 
     call VecGetArrayReadF90(clm_pf_idata%soilt_clms, soilt_clms_loc, ierr)
@@ -3075,14 +2965,16 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   !   NOTE: Don't update the organic C/N state variables, which will be updated in those 'update' subroutines
   !           and the 'CNSoilLittVertTranspMod.F90' after 'update1'.
   !
-  subroutine update_soil_bgc_pf2clm(bounds,      &
-           num_soilc, filter_soilc,              &
-           clm_a2l, waterstate_vars,             &
-           soilstate_vars, cnstate_vars,         &
-           carbonstate_vars, carbonflux_vars,    &
-           nitrogenstate_vars,nitrogenflux_vars, &
-           ch4_vars                              &
-           )
+!  subroutine update_soil_bgc_pf2clm(bounds,      &
+!           num_soilc, filter_soilc,              &
+!           clm_a2l, waterstate_vars,             &
+!           soilstate_vars, cnstate_vars,         &
+!           carbonstate_vars, carbonflux_vars,    &
+!           nitrogenstate_vars,nitrogenflux_vars, &
+!           ch4_vars                              &
+!           )
+  subroutine update_soil_bgc_pf2clm(clm_bgc_data,   &
+           bounds, num_soilc, filter_soilc)
 
     use CNDecompCascadeConType, only : decomp_cascade_con
     use clm_time_manager, only : get_step_size
@@ -3096,15 +2988,16 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
     integer                  , intent(in) :: num_soilc         ! number of soil columns in filter
     integer                  , intent(in) :: filter_soilc(:)   ! filter for soil columns
 
-    type(atm2lnd_type)       , intent(in) :: clm_a2l
-    type(waterstate_type)    , intent(in) :: waterstate_vars
-    type(soilstate_type)     , intent(in) :: soilstate_vars
-    type(cnstate_type)       , intent(in) :: cnstate_vars
-    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(ch4_type)           , intent(inout) :: ch4_vars
+!    type(atm2lnd_type)       , intent(in) :: clm_a2l
+!    type(waterstate_type)    , intent(in) :: waterstate_vars
+!    type(soilstate_type)     , intent(in) :: soilstate_vars
+!    type(cnstate_type)       , intent(in) :: cnstate_vars
+!    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+!    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+!    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+!    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+!    type(ch4_type)           , intent(inout) :: ch4_vars
+    type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
@@ -3158,21 +3051,22 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
 !------------------------------------------------------------------------------------
      !
      associate ( &
-     initial_cn_ratio             => decomp_cascade_con%initial_cn_ratio             , &
-     decomp_cpools_vr             => carbonstate_vars%decomp_cpools_vr_col           , &
-     decomp_npools_vr             => nitrogenstate_vars%decomp_npools_vr_col         , &
-     sminn_vr                     => nitrogenstate_vars%sminn_vr_col                 , &
-     smin_no3_vr                  => nitrogenstate_vars%smin_no3_vr_col              , &
-     smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col              , &
-     smin_nh4sorb_vr              => nitrogenstate_vars%smin_nh4sorb_vr_col          , &
-     decomp_cpools_delta_vr       => carbonflux_vars%decomp_cpools_sourcesink_col    , &
-     decomp_npools_delta_vr       => nitrogenflux_vars%decomp_npools_sourcesink_col  , &
-     sminn_to_plant_vr            => nitrogenflux_vars%sminn_to_plant_vr_col         , &
-     smin_no3_to_plant_vr         => nitrogenflux_vars%smin_no3_to_plant_vr_col      , &
-     smin_nh4_to_plant_vr         => nitrogenflux_vars%smin_nh4_to_plant_vr_col      , &
-     potential_immob_vr           => nitrogenflux_vars%potential_immob_vr_col        , &
-     actual_immob_vr              => nitrogenflux_vars%actual_immob_vr_col           , &
-     gross_nmin_vr                => nitrogenflux_vars%gross_nmin_vr_col               &
+     initial_cn_ratio             => clm_bgc_data%initial_cn_ratio             , &
+     decomp_cpools_vr             => clm_bgc_data%decomp_cpools_vr_col         , &
+     decomp_npools_vr             => clm_bgc_data%decomp_npools_vr_col         , &
+     sminn_vr                     => clm_bgc_data%sminn_vr_col                 , &
+     smin_no3_vr                  => clm_bgc_data%smin_no3_vr_col              , &
+     smin_nh4_vr                  => clm_bgc_data%smin_nh4_vr_col              , &
+     smin_nh4sorb_vr              => clm_bgc_data%smin_nh4sorb_vr_col          , &
+     decomp_cpools_delta_vr       => clm_bgc_data%decomp_cpools_sourcesink_col , &
+     decomp_npools_delta_vr       => clm_bgc_data%decomp_npools_sourcesink_col  , &
+     
+     sminn_to_plant_vr            => clm_bgc_data%sminn_to_plant_vr_col         , &
+     smin_no3_to_plant_vr         => clm_bgc_data%smin_no3_to_plant_vr_col      , &
+     smin_nh4_to_plant_vr         => clm_bgc_data%smin_nh4_to_plant_vr_col      , &
+     potential_immob_vr           => clm_bgc_data%potential_immob_vr_col        , &
+     actual_immob_vr              => clm_bgc_data%actual_immob_vr_col           , &
+     gross_nmin_vr                => clm_bgc_data%gross_nmin_vr_col               &
      )
 ! ------------------------------------------------------------------------
      dtime = get_step_size()
@@ -3384,6 +3278,9 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
        enddo
      enddo ! do c = 1, numsoilc
 
+write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
+write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
+
 #ifdef FLEXIBLE_POOLS
      call VecRestoreArrayReadF90(clm_pf_idata%decomp_cpools_vr_clms, decomp_cpools_vr_clm_loc, ierr)
      CHKERRQ(ierr)
@@ -3435,10 +3332,12 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
      CHKERRQ(ierr)
 
      ! update bgc gas losses
-     call update_bgc_gaslosses_pf2clm(        &
-        bounds, num_soilc, filter_soilc,      &
-        clm_a2l, waterstate_vars,             &
-        carbonflux_vars, nitrogenflux_vars)
+!     call update_bgc_gaslosses_pf2clm(        &
+!        bounds, num_soilc, filter_soilc,      &
+!        clm_a2l, waterstate_vars,             &
+!        carbonflux_vars, nitrogenflux_vars)
+     call update_bgc_gaslosses_pf2clm(clm_bgc_data, &
+        bounds, num_soilc, filter_soilc)
 
     end associate
   end subroutine update_soil_bgc_pf2clm
@@ -3453,10 +3352,12 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   ! from their aq. phase states
   ! (due to not yet available in pflotran bgc)
   !
-  subroutine update_bgc_gaslosses_pf2clm(  &
-     bounds, num_soilc, filter_soilc,      &
-     clm_a2l, waterstate_vars,             &
-     carbonflux_vars, nitrogenflux_vars)
+!  subroutine update_bgc_gaslosses_pf2clm(  &
+!     bounds, num_soilc, filter_soilc,      &
+!     clm_a2l, waterstate_vars,             &
+!     carbonflux_vars, nitrogenflux_vars)
+  subroutine update_bgc_gaslosses_pf2clm(clm_bgc_data,  &
+     bounds, num_soilc, filter_soilc)
 
      use clm_time_manager, only : get_step_size, get_nstep
 
@@ -3467,10 +3368,11 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
      integer, intent(in) :: num_soilc       ! number of soil columns in filter
      integer, intent(in) :: filter_soilc(:) ! filter for soil columns
 
-     type(atm2lnd_type)       , intent(in) :: clm_a2l
-     type(waterstate_type)    , intent(in) :: waterstate_vars
-     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+!     type(atm2lnd_type)       , intent(in) :: clm_a2l
+!     type(waterstate_type)    , intent(in) :: waterstate_vars
+!     type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+!     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+     type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
      !character(len=256) :: subname = "get_pf_bgc_gaslosses"
 
@@ -3519,19 +3421,19 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
 
 !------------------------------------------------------------------------------------
     associate ( &
-     forc_pco2                    => clm_a2l%forc_pco2_grc                  , & ! partial pressure co2 (Pa)
-     forc_pch4                    => clm_a2l%forc_pch4_grc                  , & ! partial pressure ch4 (Pa)
-     forc_pbot                    => clm_a2l%forc_pbot_not_downscaled_grc   , & ! atmospheric pressure (Pa)
-     frac_sno                     => waterstate_vars%frac_sno_eff_col       , & ! fraction of ground covered by snow (0 to 1)
-     frac_h2osfc                  => waterstate_vars%frac_h2osfc_col        , & ! fraction of ground covered by surface water (0 to 1)
-     dz                           => col%dz                                 , & ! soil layer thickness depth (m)
-     hr_vr                        => carbonflux_vars%hr_vr_col              , &
-     f_co2_soil_vr                => carbonflux_vars%f_co2_soil_vr_col      , &
-     f_n2o_soil_vr                => nitrogenflux_vars%f_n2o_soil_vr_col    , &
-     f_n2_soil_vr                 => nitrogenflux_vars%f_n2_soil_vr_col     , &
-     f_ngas_decomp_vr             => nitrogenflux_vars%f_ngas_decomp_vr_col , &
-     f_ngas_nitri_vr              => nitrogenflux_vars%f_ngas_nitri_vr_col  , &
-     f_ngas_denit_vr              => nitrogenflux_vars%f_ngas_denit_vr_col    &
+     forc_pco2                    => clm_bgc_data%forc_pco2_grc                  , & ! partial pressure co2 (Pa)
+     forc_pch4                    => clm_bgc_data%forc_pch4_grc                  , & ! partial pressure ch4 (Pa)
+     forc_pbot                    => clm_bgc_data%forc_pbot_not_downscaled_grc   , & ! atmospheric pressure (Pa)
+     frac_sno                     => clm_bgc_data%frac_sno_eff_col       , & ! fraction of ground covered by snow (0 to 1)
+     frac_h2osfc                  => clm_bgc_data%frac_h2osfc_col        , & ! fraction of ground covered by surface water (0 to 1)
+     dz                           => clm_bgc_data%dz                                 , & ! soil layer thickness depth (m)
+     hr_vr                        => clm_bgc_data%hr_vr_col              , &
+     f_co2_soil_vr                => clm_bgc_data%f_co2_soil_vr_col      , &
+     f_n2o_soil_vr                => clm_bgc_data%f_n2o_soil_vr_col    , &
+     f_n2_soil_vr                 => clm_bgc_data%f_n2_soil_vr_col     , &
+     f_ngas_decomp_vr             => clm_bgc_data%f_ngas_decomp_vr_col , &
+     f_ngas_nitri_vr              => clm_bgc_data%f_ngas_nitri_vr_col  , &
+     f_ngas_denit_vr              => clm_bgc_data%f_ngas_denit_vr_col    &
      )
 ! ------------------------------------------------------------------------
      dtime = get_step_size()
@@ -3784,148 +3686,148 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
 
   !-----------------------------------------------------------------------------
   !BOP
-  !
+  ! comment out currently for bgc-only
   ! !IROUTINE: update_bcflow_pf2clm
   !
   ! !INTERFACE:
-  subroutine update_bcflow_pf2clm(         &
-       bounds, num_soilc, filter_soilc,    &
-       clm_a2l, ces_vars, cef_vars, cws_vars, cwf_vars)
-  !
-  ! !DESCRIPTION:
-  ! update qflx_surf, qflx_infl from PF's
-  ! 'mass_balance' retrieving from PFLOTRAN
-  !
-  ! !USES:
-    use clm_time_manager, only : get_step_size
-
-    type(bounds_type), intent(in) :: bounds
-    integer, intent(in) :: num_soilc        ! number of column soil points in column filter
-    integer, intent(in) :: filter_soilc(:)  ! column filter for soil points
-
-    type(atm2lnd_type)       , intent(in) :: clm_a2l
-    type(temperature_type)   , intent(in) :: ces_vars
-    type(energyflux_type)    , intent(in) :: cef_vars
-    type(waterstate_type)    , intent(in) :: cws_vars
-    type(waterflux_type)     , intent(inout) :: cwf_vars
-
-  ! !LOCAL VARIABLES:
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscvec.h90"
-
-    integer  :: fc, c, g, gcount           ! indices
-    real(r8) :: area                       ! top face area
-    real(r8) :: dtime                      ! land model time step (sec)
-    real(r8) :: dew
-    real(r8) :: qflx_evap(bounds%begc:bounds%endc)            ! soil surface evaporation (mmH2O/s)
-
-    PetscScalar, pointer :: area_clm_loc(:)
-    PetscScalar, pointer :: qinfl_subsurf_clm_loc(:)        ! kgH2O/time-step
-    PetscScalar, pointer :: qsurf_subsurf_clm_loc(:)        ! kgH2O/time-step
-    PetscScalar, pointer :: qflux_subbase_clm_loc(:)        ! kgH2O/time-step
-    PetscErrorCode :: ierr
-
-    character(len=32) :: subname = 'update_bcflow_pf2clm'  ! subroutine name
-
-    !-----------------------------------------------------------------------
-
-    associate(&
-    clandunit         =>    col%landunit          , & ! column's landunit
-    ltype             =>    lun%itype             , & ! landunit type
-    zi                =>    col%zi                , & ! Input: (:,:) soil layer interface depth (m)
-    dz                =>    col%dz                , & ! Input: (:,:) soil layer thickness (m)
-    !
-    forc_pbot         =>    clm_a2l%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)]  atmospheric pressure (Pa)
-    t_grnd            =>    ces_vars%t_grnd_col                  , & ! Input:  [real(r8) (:)]  ground surface temperature [K]
-    htvp              =>    cef_vars%htvp_col                    , & ! Input:  [real(r8) (:)]  latent heat of vapor of water (or sublimation) [j/kg]
-    !
-    frac_sno          =>    cws_vars%frac_sno_eff_col            , & ! Input: fraction of ground covered by snow (0 to 1)
-    frac_h2osfc       =>    cws_vars%frac_h2osfc_col             , & ! Input: fraction of ground covered by surface water (0 to 1)
-    !
-    qflx_top_soil     =>    cwf_vars%qflx_top_soil_col           , & ! Input:  [real(r8) (:)]  net water input into soil from top (mm/s)
-    qflx_ev_h2osfc    =>    cwf_vars%qflx_ev_h2osfc_col          , & ! Input: column-level evaporation flux from h2osfc (W/m2) [+ to atm] : checking unit
-    qflx_evap_soil    =>    cwf_vars%qflx_evap_soi_col           , & ! Input: column-level soil evaporation (mm H2O/s) (+ = to atm)
-    qflx_subl_snow    =>    cwf_vars%qflx_sub_snow_col           , & ! Input: column-level evaporation flux from snow (mm H2O/s) [+ to atm]
-    qflx_surf         =>    cwf_vars%qflx_surf_col               , & ! Output: [real(r8) (:)]  surface runoff (mm H2O /s)
-    qflx_infl         =>    cwf_vars%qflx_infl_col               , & ! Output: [real(r8) (:)]  soil infiltration (mm H2O /s)
-    qflx_drain        =>    cwf_vars%qflx_drain_col                & ! Output: [real(r8) (:)]  sub-surface runoff (drainage) (mm H2O /s)
-    )
-
-    dtime = get_step_size()
-
-    ! the following was actually duplicated from 'get_clm_bcwflx' to calculate total water evap from 'qflx_topsoil'
-    ! in order to get potential infiltration from CLM (not yet run-off)
-    do fc = 1, num_soilc
-       c = filter_soilc(fc)
-       if (ltype(clandunit(c)) == istsoil .or. ltype(clandunit(c))==istcrop) then
-           ! not sure if using 'qflx_evap_soi_col' as a whole ground-surface better than individual surfaces, i.e. 'qflx_ev_snow/soi/h2osfc'
-           ! all of those 4 variables are calculated in 'BareGroundFluxesMod', 'CanopyFluxesMod', and then adjusted in 'Biogeophysics2' after soil temperature call
-           ! note that: all 4 variables could be negative (i.e., dew formation on ground)
-           qflx_evap(c)=(1.0_r8 - frac_sno(c) - frac_h2osfc(c))*qflx_evap_soil(c) + &
-                          frac_h2osfc(c)*qflx_ev_h2osfc(c)/htvp(c)
-                          !frac_sno(c)*qflx_evap_snow(c)   ! snow-covered area should be excluded (see SoilHydrologyMod:: infiltration)
-       else
-          ! for other types of landunits
-          qflx_evap(c) = (1.0_r8 - frac_sno(c))*qflx_evap_soil(c)
-       end if
-
-       if (t_grnd(c) <= tfrz) qflx_evap(c) = max(0._r8, qflx_evap(c))   ! frozen ground, no dew contribution to subsurface infiltration
-    end do
-
-
-    ! from PF==>CLM
-    call VecGetArrayF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
-    CHKERRQ(ierr)
-
-    call VecGetArrayF90(clm_pf_idata%qinfl_subsurf_clms,qinfl_subsurf_clm_loc,ierr)
-    CHKERRQ(ierr)
-    call VecGetArrayF90(clm_pf_idata%qsurf_subsurf_clms,qsurf_subsurf_clm_loc,ierr)
-    CHKERRQ(ierr)
-    call VecGetArrayF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
-    CHKERRQ(ierr)
-
-    do fc = 1, num_soilc
-
-      c = filter_soilc(fc)
-      g = col%gridcell(c)
-      gcount = g - bounds%begg
-
-      dew = 0._r8
-      if (t_grnd(c) > tfrz) then   ! frozen ground, no dew contribution to subsurface infiltration
-        if (ltype(clandunit(c)) == istsoil .or. ltype(clandunit(c))==istcrop) then
-           dew = -min(0._r8, (1.0_r8 - frac_sno(c) - frac_h2osfc(c))*qflx_evap_soil(c) + &
-                             frac_h2osfc(c)*qflx_ev_h2osfc(c)/htvp(c) )
-        else
-           dew = -min(0._r8, qflx_evap_soil(c))
-        end if
-      endif
-
-      !'from PF: qinfl_subsurf_clm_loc: positive - in, negative - out
-      area = area_clm_loc(gcount*clm_pf_idata%nzclm_mapped+1)
-      qflx_infl(c) = qinfl_subsurf_clm_loc(gcount+1)  &
-                       /dtime/(area*denh2o*1.e-3)     ! kgH2O/time-step ==> mmH2O/sec
-
-      qflx_surf(c) = dew + max(0._r8, qflx_top_soil(c)-qflx_evap(c)) - qflx_infl(c)
-      qflx_surf(c) = max(0._r8, qflx_surf(c))
-
-      !'from PF: qflux_subbase_clm_loc: positive - in, negative - out)
-      area = area_clm_loc((gcount+1)*clm_pf_idata%nzclm_mapped)                              ! note: this 'area_clm_loc' is in 3-D for all subsurface domain
-      qflx_drain(c) = -qflux_subbase_clm_loc(gcount+1)  &
-                       /dtime/(area*denh2o*1.e-3)     ! kgH2O/time-step ==> mmH2O/sec (+ drainage, - upward-in)
-
-    end do
-    call VecRestoreArrayF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
-    CHKERRQ(ierr)
-    call VecRestoreArrayF90(clm_pf_idata%qinfl_subsurf_clms,qinfl_subsurf_clm_loc,ierr)
-    CHKERRQ(ierr)
-    call VecRestoreArrayF90(clm_pf_idata%qsurf_subsurf_clms,qsurf_subsurf_clm_loc,ierr)
-    CHKERRQ(ierr)
-    call VecRestoreArrayF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
-    CHKERRQ(ierr)
-
-    end associate
-  end subroutine update_bcflow_pf2clm
+!  subroutine update_bcflow_pf2clm(         &
+!       bounds, num_soilc, filter_soilc,    &
+!       clm_a2l, ces_vars, cef_vars, cws_vars, cwf_vars)
+!  !
+!  ! !DESCRIPTION:
+!  ! update qflx_surf, qflx_infl from PF's
+!  ! 'mass_balance' retrieving from PFLOTRAN
+!  !
+!  ! !USES:
+!    use clm_time_manager, only : get_step_size
+!
+!    type(bounds_type), intent(in) :: bounds
+!    integer, intent(in) :: num_soilc        ! number of column soil points in column filter
+!    integer, intent(in) :: filter_soilc(:)  ! column filter for soil points
+!
+!    type(atm2lnd_type)       , intent(in) :: clm_a2l
+!    type(temperature_type)   , intent(in) :: ces_vars
+!    type(energyflux_type)    , intent(in) :: cef_vars
+!    type(waterstate_type)    , intent(in) :: cws_vars
+!    type(waterflux_type)     , intent(inout) :: cwf_vars
+!
+!  ! !LOCAL VARIABLES:
+!#include "finclude/petscsys.h"
+!#include "finclude/petscvec.h"
+!#include "finclude/petscvec.h90"
+!
+!    integer  :: fc, c, g, gcount           ! indices
+!    real(r8) :: area                       ! top face area
+!    real(r8) :: dtime                      ! land model time step (sec)
+!    real(r8) :: dew
+!    real(r8) :: qflx_evap(bounds%begc:bounds%endc)            ! soil surface evaporation (mmH2O/s)
+!
+!    PetscScalar, pointer :: area_clm_loc(:)
+!    PetscScalar, pointer :: qinfl_subsurf_clm_loc(:)        ! kgH2O/time-step
+!    PetscScalar, pointer :: qsurf_subsurf_clm_loc(:)        ! kgH2O/time-step
+!    PetscScalar, pointer :: qflux_subbase_clm_loc(:)        ! kgH2O/time-step
+!    PetscErrorCode :: ierr
+!
+!    character(len=32) :: subname = 'update_bcflow_pf2clm'  ! subroutine name
+!
+!    !-----------------------------------------------------------------------
+!
+!    associate(&
+!    clandunit         =>    col%landunit          , & ! column's landunit
+!    ltype             =>    lun%itype             , & ! landunit type
+!    zi                =>    col%zi                , & ! Input: (:,:) soil layer interface depth (m)
+!    dz                =>    col%dz                , & ! Input: (:,:) soil layer thickness (m)
+!    !
+!    forc_pbot         =>    clm_a2l%forc_pbot_not_downscaled_grc , & ! Input:  [real(r8) (:)]  atmospheric pressure (Pa)
+!    t_grnd            =>    ces_vars%t_grnd_col                  , & ! Input:  [real(r8) (:)]  ground surface temperature [K]
+!    htvp              =>    cef_vars%htvp_col                    , & ! Input:  [real(r8) (:)]  latent heat of vapor of water (or sublimation) [j/kg]
+!    !
+!    frac_sno          =>    cws_vars%frac_sno_eff_col            , & ! Input: fraction of ground covered by snow (0 to 1)
+!    frac_h2osfc       =>    cws_vars%frac_h2osfc_col             , & ! Input: fraction of ground covered by surface water (0 to 1)
+!    !
+!    qflx_top_soil     =>    cwf_vars%qflx_top_soil_col           , & ! Input:  [real(r8) (:)]  net water input into soil from top (mm/s)
+!    qflx_ev_h2osfc    =>    cwf_vars%qflx_ev_h2osfc_col          , & ! Input: column-level evaporation flux from h2osfc (W/m2) [+ to atm] : checking unit
+!    qflx_evap_soil    =>    cwf_vars%qflx_evap_soi_col           , & ! Input: column-level soil evaporation (mm H2O/s) (+ = to atm)
+!    qflx_subl_snow    =>    cwf_vars%qflx_sub_snow_col           , & ! Input: column-level evaporation flux from snow (mm H2O/s) [+ to atm]
+!    qflx_surf         =>    cwf_vars%qflx_surf_col               , & ! Output: [real(r8) (:)]  surface runoff (mm H2O /s)
+!    qflx_infl         =>    cwf_vars%qflx_infl_col               , & ! Output: [real(r8) (:)]  soil infiltration (mm H2O /s)
+!    qflx_drain        =>    cwf_vars%qflx_drain_col                & ! Output: [real(r8) (:)]  sub-surface runoff (drainage) (mm H2O /s)
+!    )
+!
+!    dtime = get_step_size()
+!
+!    ! the following was actually duplicated from 'get_clm_bcwflx' to calculate total water evap from 'qflx_topsoil'
+!    ! in order to get potential infiltration from CLM (not yet run-off)
+!    do fc = 1, num_soilc
+!       c = filter_soilc(fc)
+!       if (ltype(clandunit(c)) == istsoil .or. ltype(clandunit(c))==istcrop) then
+!           ! not sure if using 'qflx_evap_soi_col' as a whole ground-surface better than individual surfaces, i.e. 'qflx_ev_snow/soi/h2osfc'
+!           ! all of those 4 variables are calculated in 'BareGroundFluxesMod', 'CanopyFluxesMod', and then adjusted in 'Biogeophysics2' after soil temperature call
+!           ! note that: all 4 variables could be negative (i.e., dew formation on ground)
+!           qflx_evap(c)=(1.0_r8 - frac_sno(c) - frac_h2osfc(c))*qflx_evap_soil(c) + &
+!                          frac_h2osfc(c)*qflx_ev_h2osfc(c)/htvp(c)
+!                          !frac_sno(c)*qflx_evap_snow(c)   ! snow-covered area should be excluded (see SoilHydrologyMod:: infiltration)
+!       else
+!          ! for other types of landunits
+!          qflx_evap(c) = (1.0_r8 - frac_sno(c))*qflx_evap_soil(c)
+!       end if
+!
+!       if (t_grnd(c) <= tfrz) qflx_evap(c) = max(0._r8, qflx_evap(c))   ! frozen ground, no dew contribution to subsurface infiltration
+!    end do
+!
+!
+!    ! from PF==>CLM
+!    call VecGetArrayF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
+!    CHKERRQ(ierr)
+!
+!    call VecGetArrayF90(clm_pf_idata%qinfl_subsurf_clms,qinfl_subsurf_clm_loc,ierr)
+!    CHKERRQ(ierr)
+!    call VecGetArrayF90(clm_pf_idata%qsurf_subsurf_clms,qsurf_subsurf_clm_loc,ierr)
+!    CHKERRQ(ierr)
+!    call VecGetArrayF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
+!    CHKERRQ(ierr)
+!
+!    do fc = 1, num_soilc
+!
+!      c = filter_soilc(fc)
+!      g = col%gridcell(c)
+!      gcount = g - bounds%begg
+!
+!      dew = 0._r8
+!      if (t_grnd(c) > tfrz) then   ! frozen ground, no dew contribution to subsurface infiltration
+!        if (ltype(clandunit(c)) == istsoil .or. ltype(clandunit(c))==istcrop) then
+!           dew = -min(0._r8, (1.0_r8 - frac_sno(c) - frac_h2osfc(c))*qflx_evap_soil(c) + &
+!                             frac_h2osfc(c)*qflx_ev_h2osfc(c)/htvp(c) )
+!        else
+!           dew = -min(0._r8, qflx_evap_soil(c))
+!        end if
+!      endif
+!
+!      !'from PF: qinfl_subsurf_clm_loc: positive - in, negative - out
+!      area = area_clm_loc(gcount*clm_pf_idata%nzclm_mapped+1)
+!      qflx_infl(c) = qinfl_subsurf_clm_loc(gcount+1)  &
+!                       /dtime/(area*denh2o*1.e-3)     ! kgH2O/time-step ==> mmH2O/sec
+!
+!      qflx_surf(c) = dew + max(0._r8, qflx_top_soil(c)-qflx_evap(c)) - qflx_infl(c)
+!      qflx_surf(c) = max(0._r8, qflx_surf(c))
+!
+!      !'from PF: qflux_subbase_clm_loc: positive - in, negative - out)
+!      area = area_clm_loc((gcount+1)*clm_pf_idata%nzclm_mapped)                              ! note: this 'area_clm_loc' is in 3-D for all subsurface domain
+!      qflx_drain(c) = -qflux_subbase_clm_loc(gcount+1)  &
+!                       /dtime/(area*denh2o*1.e-3)     ! kgH2O/time-step ==> mmH2O/sec (+ drainage, - upward-in)
+!
+!    end do
+!    call VecRestoreArrayF90(clm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
+!    CHKERRQ(ierr)
+!    call VecRestoreArrayF90(clm_pf_idata%qinfl_subsurf_clms,qinfl_subsurf_clm_loc,ierr)
+!    CHKERRQ(ierr)
+!    call VecRestoreArrayF90(clm_pf_idata%qsurf_subsurf_clms,qsurf_subsurf_clm_loc,ierr)
+!    CHKERRQ(ierr)
+!    call VecRestoreArrayF90(clm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
+!    CHKERRQ(ierr)
+!
+!    end associate
+!  end subroutine update_bcflow_pf2clm
 
 #endif
 !----------------------------------------------------------------------------------------------

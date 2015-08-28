@@ -235,11 +235,6 @@ contains
             err_found = .true.
             err_index = c
          end if
-      end do ! end of columns loop
-
-      if (.not. use_ed) then
-         if (err_found) then
-            c = err_index
 !-----------------------------------------------------------------------------
  write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Carbon_Balance_Check: BEG"
  write(*,'(A5,10A20)')"Col","err","in-out","end-beg","in","out","end","beg"
@@ -252,6 +247,11 @@ write(*,'(10A20)')"input_gpp","CO2","fire","dwt_closs","prod_closs","hrv","soc_l
 write(*,'(10e20.10)')gpp(c)*dt,er(c)*dt, col_fire_closs(c)*dt, dwt_closs(c)*dt, product_closs(c)*dt, col_hrv_xsmrpool_to_atm(c)*dt,som_c_leached(c)*dt,col_decompc_delta(c)*dt
 write(*,'(A,120(1h-))')">>>DEBUG | ALM_Carbon_Balance_Check: END"
 !-----------------------------------------------------------------------------
+      end do ! end of columns loop
+
+      if (.not. use_ed) then
+         if (err_found) then
+            c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
             write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
             write(iulog,*)'begcb       = ',col_begcb(c)
@@ -364,10 +364,6 @@ write(*,'(A,120(1h-))')">>>DEBUG | ALM_Carbon_Balance_Check: END"
             err_found = .true.
             err_index = c
          end if
-      end do ! end of columns loop
-
-      if (err_found) then
-         c = err_index
 !-----------------------------------------------------------------------------
 write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Nitrogen_Balance_Check: BEG"
 write(*,'(A5,10A20)')"Col","err","in-out","end-beg","in","out","end","beg"
@@ -383,6 +379,10 @@ write(*,'(10E20.10)')denit(c)*dt,col_fire_nloss(c)*dt,dwt_nloss(c)*dt,product_nl
                     col_decompn_delta(c)*dt,col_no3_delta(c)*dt
 write(*,'(A,120(1h-))')">>>DEBUG | ALM_Nitrogen_Balance_Check: END"
 !-----------------------------------------------------------------------------
+      end do ! end of columns loop
+
+      if (err_found) then
+         c = err_index
          write(iulog,*)'column nbalance error = ', col_errnb(c), c
          write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
          write(iulog,*)'begnb       = ',col_begnb(c)
@@ -528,11 +528,6 @@ write(*,'(A,120(1h-))')">>>DEBUG | ALM_Nitrogen_Balance_Check: END"
             err_found = .true.
             err_index = c
          end if
-      end do ! end of columns loop
-
-
-      if (err_found) then
-         c = err_index
 !-----------------------------------------------------------------------------
 write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Phosphorus_Balance_Check: BEG"
  write(*,'(A5,10A20)')"Col","err","in-out","end-beg","in","out","end","beg"
@@ -541,6 +536,11 @@ write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Phosphorus_Balance_Check: BEG"
             col_pinputs(c)*dt,col_poutputs(c)*dt,col_endpb(c),col_begpb(c)
  write(*,'(A,120(1h-))')">>>DEBUG | ALM_Phosphorus_Balance_Check: END"
 !-----------------------------------------------------------------------------
+      end do ! end of columns loop
+
+
+      if (err_found) then
+         c = err_index
          write(iulog,*)'column pbalance error = ', col_errpb(c), c
          write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
          write(iulog,*)'begpb       = ',col_begpb(c)

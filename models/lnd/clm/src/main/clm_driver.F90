@@ -124,7 +124,7 @@ module clm_driver
   ! bgc & pflotran interface
   use clm_varctl             , only : use_bgc_interface, use_clm_bgc, use_pflotran, use_nitrif_denitrif
   use clm_varctl             , only : pf_hmode, pf_tmode, pf_cmode
-  use clm_bgc_interfaceMod   , only : clm_bgc_run
+  use clm_bgc_interfaceMod   , only : clm_bgc_run, update_bgc_data_pf2clm
   use clm_pflotran_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
 !  use clm_pflotran_interfaceMod   , only : clm_pf_finalize
 
@@ -710,7 +710,7 @@ write(*,'(10A20)')'use_bgc_interface','use_clm_bgc','use_pflotran','use_nitrif_d
 write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
              !!--------------------------------------------------------------------------------
              if (use_bgc_interface) then
-                 !write(*,*)'pass data from CLM to INTERFACE'
+                 !! STEP-1: pass data from CLM to clm_bgc_data (INTERFACE DATA TYPE)
                  call get_clm_bgc_data(clm_bgc_data,bounds_clump,                       &
                            filter(nc)%num_soilc, filter(nc)%soilc,                      &
                            filter(nc)%num_soilp, filter(nc)%soilp,                      &
@@ -729,22 +729,39 @@ write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
                    ! including thermal, hydrological and biogeochemical processes
                    ! ===========================================================================
 
-                    call clm_pf_run(clm_bgc_data,bounds_clump,                                           &
-                           ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
-                           ! at this coding stage.
-                           ! Note: 'soilp' as input for possible future use of pft-level variables like ET/nuptake
-                           filter(nc)%num_soilc, filter(nc)%soilc,                          &
-                           filter(nc)%num_soilp, filter(nc)%soilp,                          &
-                           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-                           atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
-                           soilstate_vars,  temperature_vars, energyflux_vars,              &
-                           soilhydrology_vars, soil_water_retention_curve,                  &
-                           ! soil bgc
-                           cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-                           nitrogenflux_vars, nitrogenstate_vars,                           &
+!                    call clm_pf_run(clm_bgc_data,bounds_clump,                                           &
+!                           ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
+!                           ! at this coding stage.
+!                           ! Note: 'soilp' as input for possible future use of pft-level variables like ET/nuptake
+!                           filter(nc)%num_soilc, filter(nc)%soilc,                          &
+!                           filter(nc)%num_soilp, filter(nc)%soilp,                          &
+!                           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
+!                           atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
+!                           soilstate_vars,  temperature_vars, energyflux_vars,              &
+!                           soilhydrology_vars, soil_water_retention_curve,                  &
+!                           ! soil bgc
+!                           cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
+!                           nitrogenflux_vars, nitrogenstate_vars,                           &
+!                           ch4_vars)
+
+                    !! STEP-2: (i) pass data from clm_bgc_data to pflotran;
+                    !! STEP-2: (ii) run pflotran;
+                    !! STEP-2: (iii) update clm_bgc_data from pflotran
+                    call clm_pf_run(clm_bgc_data,bounds_clump,          &
+                           filter(nc)%num_soilc, filter(nc)%soilc)
+
+                    !! STEP-3: update CLM from clm_bgc_data
+                    call update_bgc_data_pf2clm(clm_bgc_data,bounds_clump,      &
+                           filter(nc)%num_soilc, filter(nc)%soilc,              &
+                           filter(nc)%num_soilp, filter(nc)%soilp,              &
+                           atm2lnd_vars,                                        &
+                           waterstate_vars, waterflux_vars,                     &
+                           soilstate_vars,  temperature_vars, energyflux_vars,  &
+                           soilhydrology_vars, soil_water_retention_curve,      &
+                           cnstate_vars, carbonflux_vars, carbonstate_vars,     &
+                           nitrogenflux_vars, nitrogenstate_vars,               &
+                           phosphorusflux_vars, phosphorusstate_vars,           &
                            ch4_vars)
-
-
 
                     call t_stopf('pflotran')
 

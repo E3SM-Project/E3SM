@@ -12,7 +12,9 @@ module PhosphorusFluxType
   use abortutils             , only : endrun
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  ! bgc & pflotran interface
+  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -290,8 +292,8 @@ module PhosphorusFluxType
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
      procedure , private :: InitCold
-
-     procedure , private :: PSummary_pflotran
+     !! bgc & pflotran interface
+     procedure , private :: PSummary_interface
 
   end type phosphorusflux_type
   !------------------------------------------------------------------------
@@ -1520,7 +1522,7 @@ contains
     use restUtilMod
     use ncdio_pio
     ! pflotran
-    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
+!    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
     !
     ! !ARGUMENTS:
     class (phosphorusflux_type) :: this
@@ -2020,7 +2022,7 @@ contains
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c 
     ! pflotran
-    use clm_varctl    , only: use_pflotran, pf_cmode
+!    use clm_varctl    , only: use_pflotran, pf_cmode
     !
     ! !ARGUMENTS:
     class (phosphorusflux_type) :: this
@@ -2231,10 +2233,10 @@ contains
        end do
     end do
 
-    ! pflotran
+    ! bgc & pflotran interface
     !----------------------------------------------------------------
-    if (use_pflotran .and. pf_cmode) then
-        call PSummary_pflotran(this, bounds, num_soilc, filter_soilc)
+    if (use_bgc_interface) then
+        call PSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
 
@@ -2246,7 +2248,7 @@ contains
 ! !IROUTINE: PSummary_pflotran
 !
 ! !INTERFACE:
-subroutine PSummary_pflotran(this,bounds,num_soilc, filter_soilc)
+subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
 ! On the radiation time step, perform olumn-level nitrogen
@@ -2257,7 +2259,7 @@ subroutine PSummary_pflotran(this,bounds,num_soilc, filter_soilc)
    use clm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 
-   use clm_varctl    , only: pf_hmode
+!   use clm_varctl    , only: pf_hmode
 !
 ! !ARGUMENTS:
    implicit none
@@ -2276,7 +2278,9 @@ subroutine PSummary_pflotran(this,bounds,num_soilc, filter_soilc)
 
    ! set time steps
     dtime = real( get_step_size(), r8 )
-
+    if (use_pflotran .and. pf_cmode) then
+        !! TODO
+    end if
 ! nitrification-denitrification rates (not yet passing out from PF, but will)
 !      do fc = 1,num_soilc
 !         c = filter_soilc(fc)
@@ -2465,7 +2469,7 @@ subroutine PSummary_pflotran(this,bounds,num_soilc, filter_soilc)
           this%externalp_to_decomp_delta_col(c)     = -this%externalp_to_decomp_delta_col(c)
           this%sminp_net_transport_delta_col(c)     = -this%sminp_net_transport_delta_col(c)
        end do
-end subroutine PSummary_pflotran
+end subroutine PSummary_interface
 
 end module PhosphorusFluxType
 
