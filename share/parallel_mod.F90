@@ -310,7 +310,7 @@ contains
   ! =========================================================
   subroutine abortmp(string)
 #ifdef CAM
-    use cam_abortutils, only : endrun
+    use cam_abortutils, only : endrun ! _EXTENRAL
 #else
 #ifdef _MPI
     integer info,ierr
