@@ -420,11 +420,10 @@ $fh_out->open(">$CASEROOT/Buildconf/datm.input_data_list") or
 # Hash for parsing default_namelist_datm.xml
 my %default_namelist_opts;
 $default_namelist_opts{'grid'}             = $GRID;
-$default_namelist_opts{'atmgrid'}          = $ATM_GRID;
+$default_namelist_opts{'atm_grid'}         = $ATM_GRID;
 $default_namelist_opts{'datm_mode'}        = $DATM_MODE;
 $default_namelist_opts{'presaero_mode'}    = $DATM_PRESAERO;
 $default_namelist_opts{'datm_co2_tseries'} = $DATM_CO2_TSERIES;
-$default_namelist_opts{'atm_grid'}         = $ATM_GRID;
 
 # Create streams template file(s) - loop over streams
 my $streams = $defaults->get_value( "streamslist", \%default_namelist_opts );
@@ -632,7 +631,7 @@ add_default($nl, 'dtlimit',    'val' => "$odtlimit"  );
 
 add_default($nl, 'atm_in' , 'val'=>"datm_atm_in${INST_STRING}");
 add_default($nl, 'iradsw');
-if ($DATM_MODE =~ /^CORE/) {
+if ($DATM_MODE =~ /^CORE/ && $ATM_GRID ne "01col") {
     my $factorfn = "$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc";
     add_default($nl, 'factorfn', 'val'=>"$factorfn" );
 }
