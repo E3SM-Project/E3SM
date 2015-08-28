@@ -672,12 +672,13 @@ contains
          velocityVariationalPool, &
          velocitySolverPool, &
          ridgingPool
-    
+
     integer, pointer :: &
-         nCellsSolve
+         nCells
     
     integer, dimension(:), pointer :: &
-         nEdgesOnCell
+         nEdgesOnCell, &
+         solveStress
     
     real(kind=RKIND), dimension(:,:), pointer :: &
          strain11, &
@@ -713,7 +714,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
     
-    call MPAS_pool_get_dimension(meshPool, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
     
     call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
     
@@ -723,34 +724,44 @@ contains
 
     call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
     call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
+    call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
 
-    allocate(DeltaAverage(nCellsSolve))
+    allocate(DeltaAverage(nCells))
      
-    do iCell = 1, nCellsSolve
+    do iCell = 1, nCells
 
-       strainDivergenceSum = 0.0_RKIND
-       strainTensionSum    = 0.0_RKIND
-       strainShearingSum   = 0.0_RKIND
-       DeltaAverage(iCell) = 0.0_RKIND
-       
-       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+       if (solveStress(iCell) == 1) then
 
-          strainDivergence = strain11(iVertexOnCell,iCell) + strain22(iVertexOnCell,iCell)
-          strainTension    = strain11(iVertexOnCell,iCell) - strain22(iVertexOnCell,iCell)
-          strainShearing   = strain12(iVertexOnCell,iCell) * 2.0_RKIND
+          strainDivergenceSum = 0.0_RKIND
+          strainTensionSum    = 0.0_RKIND
+          strainShearingSum   = 0.0_RKIND
+          DeltaAverage(iCell) = 0.0_RKIND
 
-          Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
-          
-          strainDivergenceSum = strainDivergenceSum + strainDivergence
-          strainTensionSum    = strainTensionSum    + strainTension
-          strainShearingSum   = strainShearingSum   + strainShearing
-          DeltaAverage(iCell) = DeltaAverage(iCell) + Delta
-               
-       enddo ! iVertexOnCell
+          do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-       divergence(iCell)   = strainDivergenceSum                              / real(nEdgesOnCell(iCell),RKIND)
-       shear(iCell)        = sqrt(strainTensionSum**2 + strainShearingSum**2) / real(nEdgesOnCell(iCell),RKIND)
-       DeltaAverage(iCell) = DeltaAverage(iCell)                              / real(nEdgesOnCell(iCell),RKIND)
+             strainDivergence = strain11(iVertexOnCell,iCell) + strain22(iVertexOnCell,iCell)
+             strainTension    = strain11(iVertexOnCell,iCell) - strain22(iVertexOnCell,iCell)
+             strainShearing   = strain12(iVertexOnCell,iCell) * 2.0_RKIND
+
+             Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+
+             strainDivergenceSum = strainDivergenceSum + strainDivergence
+             strainTensionSum    = strainTensionSum    + strainTension
+             strainShearingSum   = strainShearingSum   + strainShearing
+             DeltaAverage(iCell) = DeltaAverage(iCell) + Delta
+
+          enddo ! iVertexOnCell
+
+          divergence(iCell)   = strainDivergenceSum                              / real(nEdgesOnCell(iCell),RKIND)
+          shear(iCell)        = sqrt(strainTensionSum**2 + strainShearingSum**2) / real(nEdgesOnCell(iCell),RKIND)
+          DeltaAverage(iCell) = DeltaAverage(iCell)                              / real(nEdgesOnCell(iCell),RKIND)
+
+       else
+
+          divergence(iCell)   = 0.0_RKIND
+          shear(iCell)        = 0.0_RKIND
+
+       endif
        
     enddo ! iCell
 
@@ -762,13 +773,22 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
 
        call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
-       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)       
-    
-       do iCell = 1, nCellsSolve
+       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
+
+       do iCell = 1, nCells
           
-          ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
-          ridgeShear(iCell)       = 0.5_RKIND * (DeltaAverage(iCell) - abs(divergence(iCell)))
-          
+          if (solveStress(iCell) == 1) then
+
+             ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
+             ridgeShear(iCell)       = 0.5_RKIND * (DeltaAverage(iCell) - abs(divergence(iCell)))
+
+          else
+
+             ridgeConvergence(iCell) = 0.0_RKIND
+             ridgeShear(iCell)       = 0.0_RKIND
+
+          endif
+
        enddo ! iCell
        
     endif ! pkgColumnRidgingActive

@@ -176,45 +176,92 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ice_strength(&
-       nPoints, &
+       nCells, &
+       nCategories, &
        icePressure, &
-       iceArea, &
-       iceVolume, &
-       solveStress)
+       iceAreaCell, &
+       iceVolumeCell, &
+       openWaterArea, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       solveStress, &
+       config_use_column_package, &
+       config_use_column_vertical_thermodynamics)
+
+    use ice_colpkg, only: &
+         colpkg_ice_strength
 
     integer, intent(in) :: &
-         nPoints !< Input:
+         nCells, &  !< Input:
+         nCategories !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          icePressure !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         iceArea, & !< Input:
-         iceVolume  !< Input:
+         iceAreaCell, &   !< Input:
+         iceVolumeCell, & !< Input:
+         openWaterArea    !< Input:
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         iceAreaCategory, & !< Input:
+         iceVolumeCategory  !< Input:
 
     integer, dimension(:), intent(in) :: &
          solveStress !< Input:
 
+    logical, intent(in) :: &
+         config_use_column_package, &              !< Input:
+         config_use_column_vertical_thermodynamics !< Input:
+
     integer :: &
-         iPoint
+         iCell
 
     real(kind=RKIND), parameter :: &
          Pstar = 2.75e4_RKIND, & ! constant in Hibler strength formula 
          Cstar = 20.0_RKIND      ! constant in Hibler strength formula 
 
-    do iPoint = 1, nPoints
+    if (.not. config_use_column_package .or. &
+       (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
 
-       if (solveStress(iPoint) == 1) then
+       do iCell = 1, nCells
 
-          icePressure(iPoint) = Pstar * iceVolume(iPoint) * exp(-Cstar*(1.0_RKIND-iceArea(iPoint)))
+          if (solveStress(iCell) == 1) then
 
-       else
+             icePressure(iCell) = Pstar * iceVolumeCell(iCell) * exp(-Cstar*(1.0_RKIND-iceAreaCell(iCell)))
 
-          icePressure(iPoint) = 0.0_RKIND
+          else
 
-       endif ! solveStress
+             icePressure(iCell) = 0.0_RKIND
 
-    enddo ! iPoint
+          endif ! solveStress
+
+       enddo ! iCell
+
+    else
+
+       do iCell = 1, nCells
+
+          if (solveStress(iCell) == 1) then
+
+             call colpkg_ice_strength(&
+                  nCategories, &
+                  iceAreaCell(iCell), &
+                  iceVolumeCell(iCell), &
+                  openWaterArea(iCell), &
+                  iceAreaCategory(1,:,iCell), &
+                  iceVolumeCategory(1,:,iCell), &
+                  icePressure(iCell))
+
+          else
+
+             icePressure(iCell) = 0.0_RKIND
+
+          endif ! solveStress
+
+       enddo ! iCell
+
+    endif
 
   end subroutine cice_ice_strength
 
@@ -517,7 +564,7 @@ contains
 
           uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
           vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
-          
+
        else
 
           uVelocity(iPoint) = 0.0_RKIND
@@ -748,6 +795,9 @@ contains
                                  vOceanVelocity(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint))
           oceanStressV(iPoint) = uOceanVelocity(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)) + &
                                  vOceanVelocity(iPoint) * cosOceanTurningAngle
+
+          !oceanStressU(iPoint) = 0.0_RKIND
+          !oceanStressV(iPoint) = 0.0_RKIND
           
        else
 
@@ -812,6 +862,9 @@ contains
           oceanStressCoeff(iPoint) = iceOceanDragCoeff * densityWater * iceArea(iPoint) * &
                                      sqrt((uOceanVelocity(iPoint) - uVelocity(iPoint))**2 + &
                                           (vOceanVelocity(iPoint) - vVelocity(iPoint))**2)
+
+          !oceanStressCoeff(iPoint) = 0.0_RKIND
+
        else
 
           oceanStressCoeff(iPoint) = 0.0_RKIND
@@ -950,6 +1003,9 @@ contains
           surfaceTiltForceU(iPoint) = -coriolisParameter(iPoint) * totalMass(iPoint) * vOceanVelocity(iPoint)
           surfaceTiltForceV(iPoint) =  coriolisParameter(iPoint) * totalMass(iPoint) * uOceanVelocity(iPoint)
 
+          !surfaceTiltForceU(iPoint) = 0.0_RKIND
+          !surfaceTiltForceV(iPoint) = 0.0_RKIND
+
        else
 
           surfaceTiltForceU(iPoint) = 0.0_RKIND
@@ -1040,8 +1096,6 @@ contains
     integer :: &
          iPoint
 
-    !open(48,file='principal.txt')
-
     do iPoint = 1, nPoints
 
        if (replacementPressure(iPoint) > puny) then
@@ -1063,11 +1117,7 @@ contains
 
        endif
 
-       !write(48,*) principalStress1(iPoint), principalStress2(iPoint)
-
     enddo ! iPoint
-
-    !close(48)
 
   end subroutine cice_principal_stresses
 

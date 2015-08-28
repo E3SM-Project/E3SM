@@ -332,7 +332,8 @@ contains
     type(MPAS_pool_type), pointer :: &
          mesh, &
          tracers, &
-         shortwave
+         shortwave, &
+         atmos_coupling
 
     real(kind=RKIND), dimension(:), pointer :: &
          solarZenithAngleCosine, &
@@ -348,7 +349,11 @@ contains
          snowAlbedoCell, &
          pondAlbedoCell, &
          effectivePondAreaCell, &
-         shortwaveScalingFactor
+         shortwaveScalingFactor, &
+         shortwaveVisibleDirectDown, &
+         shortwaveVisibleDiffuseDown, &
+         shortwaveIRDirectDown, &
+         shortwaveIRDiffuseDown
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          albedoVisibleDirectCategory, &
@@ -373,8 +378,12 @@ contains
 
     character(len=strKIND), pointer :: &
          config_shortwave_type
-    
+
+    logical, pointer :: &
+         config_do_restart
+
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -397,6 +406,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -431,6 +441,11 @@ contains
        call MPAS_pool_get_array(shortwave, "effectivePondAreaCategory", effectivePondAreaCategory)
 
        call MPAS_pool_get_array(shortwave, "shortwaveScalingFactor", shortwaveScalingFactor)
+
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveIRDirectDown", shortwaveIRDirectDown)
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
 
        do iCell = 1, nCellsSolve
 
@@ -478,6 +493,15 @@ contains
           albedoVisibleDiffuseArea(iCell) = albedoVisibleDiffuseCell(iCell)
           albedoIRDirectArea(iCell)       = albedoIRDirectCell(iCell)
           albedoIRDiffuseArea(iCell)      = albedoIRDiffuseCell(iCell)
+
+          ! Save net shortwave for scaling factor in scale_factor 
+          if (.not. config_do_restart) then
+             shortwaveScalingFactor(iCell) = &
+                  shortwaveVisibleDirectDown(iCell)  * (1.0_RKIND - albedoVisibleDirectArea(iCell)) + &
+                  shortwaveVisibleDiffuseDown(iCell) * (1.0_RKIND - albedoVisibleDiffuseArea(iCell)) + &
+                  shortwaveIRDirectDown(iCell)       * (1.0_RKIND - albedoIRDirectArea(iCell)) + &
+                  shortwaveIRDiffuseDown(iCell)      * (1.0_RKIND - albedoIRDiffuseArea(iCell))
+          endif
 
        enddo ! iCell
        
@@ -695,7 +719,7 @@ contains
        if (config_use_column_vertical_thermodynamics) &
             call column_vertical_thermodynamics(domain, clock)
        call mpas_timer_stop("Column vertical thermodynamics")
-        call cice_debug_write_out_fields(domain, "cice_column_predynamics_time_integration", 1)
+
        !-----------------------------------------------------------------
        ! Biogeochemistry
        !-----------------------------------------------------------------
@@ -718,9 +742,11 @@ contains
        ! Update the aggregated state variables
        !-----------------------------------------------------------------
 
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 1)
        call mpas_timer_start("Column update state")
        call cice_column_update_state(domain, config_dt, config_dt)
        call mpas_timer_stop("Column update state")
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 2)
 
     endif
 
@@ -776,9 +802,11 @@ contains
        ! Update the aggregated state variables
        !-----------------------------------------------------------------
 
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 3)
        call mpas_timer_start("Column update state")
        call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
        call mpas_timer_stop("Column update state")
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 4)
 
     endif
 
@@ -1031,6 +1059,8 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
+
+    call cice_debug_write_out_fields(domain, "column_vertical_thermodynamics", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1411,6 +1441,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_vertical_thermodynamics", 2)
     
   end subroutine column_vertical_thermodynamics
 
@@ -1516,6 +1548,8 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
+
+    call cice_debug_write_out_fields(domain, "column_itd_thermodynamics", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1656,6 +1690,8 @@ contains
        block => block % next
     end do
 
+    call cice_debug_write_out_fields(domain, "column_itd_thermodynamics", 2)
+
   end subroutine column_itd_thermodynamics
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1720,6 +1756,8 @@ contains
     integer :: &
          iCell
 
+    call cice_debug_write_out_fields(domain, "column_prep_radiation", 1)
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -1783,6 +1821,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_prep_radiation", 2)
 
   end subroutine column_prep_radiation
 
@@ -1903,6 +1943,8 @@ contains
 
     real(kind=RKIND), parameter :: &
          CCSMDayNextShortwaveCalculation = 0.0_RKIND
+
+    call cice_debug_write_out_fields(domain, "column_radiation", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -2057,6 +2099,8 @@ contains
        block => block % next
     end do
 
+    call cice_debug_write_out_fields(domain, "column_radiation", 2)
+
   end subroutine column_radiation
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2156,7 +2200,9 @@ contains
 
     character(len=strKIND) :: &
          abortMessage
-    
+
+    call cice_debug_write_out_fields(domain, "column_ridging", 1)
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -2291,6 +2337,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_ridging", 2)
 
   end subroutine column_ridging
 
@@ -2765,6 +2813,8 @@ contains
          iCell, &
          iCategory
 
+    call cice_debug_write_out_fields(domain, "cice_column_coupling_prep", 1)
+
     call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
@@ -2901,6 +2951,8 @@ contains
     enddo
 
     call cice_column_scale_fluxes(domain)
+
+    call cice_debug_write_out_fields(domain, "cice_column_coupling_prep", 2)
 
   end subroutine cice_column_coupling_prep
 

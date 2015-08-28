@@ -64,7 +64,8 @@ contains
 
     use cice_debug, only: &
          cice_prepare_output_variables, &
-         cice_test_case_output
+         cice_test_case_output, &
+         cice_debug_write_out_fields
 
     use cice_column, only: &
          cice_column_predynamics_time_integration, &
@@ -94,9 +95,10 @@ contains
 
     logical, pointer :: &
          config_perform_unit_test, &
-         config_use_velocity_solver, &
          config_use_advection, &
          config_use_vertical_thermodynamics
+
+    call cice_debug_write_out_fields(domain, "cice_timestep", 1)
 
     call store_timestep_counter(domain, itimestep)
 
@@ -106,7 +108,6 @@ contains
 
     configs => domain % configs
 
-    call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(configs, "config_use_vertical_thermodynamics", config_use_vertical_thermodynamics)
     call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
@@ -136,9 +137,7 @@ contains
 
     ! velocity solve
     call mpas_timer_start("Velocity solve")
-    if (config_use_velocity_solver) then
-       call cice_run_velocity_solver(domain, clock, dt)
-    endif
+    call cice_run_velocity_solver(domain, clock, dt)
     call mpas_timer_stop("Velocity solve")
 
     ! advection
@@ -183,6 +182,8 @@ contains
     end do
 
     call flush (stderrUnit)
+
+    call cice_debug_write_out_fields(domain, "cice_timestep", 2)
 
   end subroutine cice_timestep!}}}
 

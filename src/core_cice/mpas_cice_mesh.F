@@ -99,6 +99,10 @@ contains
     call MPAS_dmpar_exch_halo_field(interiorCellField)
     call MPAS_dmpar_exch_halo_field(interiorEdgeField)
 
+    ! testing
+    !call cice_test_rotation(domain)
+    !call cice_test_mesh_conversions(domain)
+
   end subroutine cice_init_boundary!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2478,25 +2482,49 @@ contains
 
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
+#if 0
+    ! kite area
     do iVertex = 1, nVerticesSolve
     
-       !variableVertex(iVertex) = 0.0_RKIND
-       !totalArea = 0.0_RKIND
+       variableVertex(iVertex) = 0.0_RKIND
 
-       !do iVertexDegree = 1, vertexDegree
+       do iVertexDegree = 1, vertexDegree
 
-       !   iCell = cellsOnVertex(iVertexDegree,iVertex) 
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-       !   !variableVertex(iVertex) = variableVertex(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex) * variableCell(iCell)
+          variableVertex(iVertex) = variableVertex(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex) * variableCell(iCell)
 
-       !   variableVertex(iVertex) = variableVertex(iVertex) + areaCell(iCell) * variableCell(iCell)
-       !   totalArea = totalArea + areaCell(iCell)
+       enddo ! iVertexDegree
 
-       !enddo ! iVertexDegree
+       variableVertex(iVertex) = variableVertex(iVertex) / areaTriangle(iVertex)
 
-       !variableVertex(iVertex) = variableVertex(iVertex) / totalArea
+    enddo ! iVertex
+#endif
 
-       !!variableVertex(iVertex) = variableVertex(iVertex) / areaTriangle(iVertex)
+#if 1
+    ! cell area
+    do iVertex = 1, nVerticesSolve
+
+       variableVertex(iVertex) = 0.0_RKIND
+       totalArea = 0.0_RKIND
+
+       do iVertexDegree = 1, vertexDegree
+
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
+
+          variableVertex(iVertex) = variableVertex(iVertex) + areaCell(iCell) * variableCell(iCell)
+          totalArea = totalArea + areaCell(iCell)
+
+       enddo ! iVertexDegree
+
+       variableVertex(iVertex) = variableVertex(iVertex) / totalArea
+
+    enddo ! iVertex
+#endif
+
+#if 0
+    ! cice i,j -> i,j
+    do iVertex = 1, nVerticesSolve
 
        do iCellOnVertex = 1, vertexDegree
 
@@ -2509,8 +2537,850 @@ contains
        variableVertex(iVertex) = variableCell(iCell)
 
     enddo ! iVertex
+#endif
+
+#if 0
+    ! w=0.25
+    do iVertex = 1, nVerticesSolve
+
+       variableVertex(iVertex) = 0.0_RKIND
+       totalArea = 0.0_RKIND
+
+       do iCellOnVertex = 1, vertexDegree
+
+          iCell = cellsOnVertex(iCellOnVertex,iVertex)
+
+          variableVertex(iVertex) = variableVertex(iVertex) + variableCell(iCell)
+          totalArea = totalArea + 1.0_RKIND
+
+       enddo ! iCellOnVertex
+
+       variableVertex(iVertex) = variableVertex(iVertex) / totalArea
+
+    enddo ! iVertex
+#endif
 
   end subroutine cice_interpolate_cell_to_vertex!}}}
+
+!-----------------------------------------------------------------------
+! Testing
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_test_rotation
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 24th August 2015
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_test_rotation(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    logical, parameter :: &
+         rotateGrid = .true.
+
+    real(kind=RKIND), parameter :: &
+         lonCellUA   = 3.0_RKIND, &
+         lonCellUB   = 6.0_RKIND, &
+         latCellUA   = 2.0_RKIND, &
+         latCellUB   = 8.0_RKIND, &
+         lonCellVA   = 5.0_RKIND, &
+         lonCellVB   = 2.0_RKIND, &
+         latCellVA   = 4.0_RKIND, &
+         latCellVB   = 9.0_RKIND
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         vectorCellU, &
+         vectorCellV, &
+         vectorCellMagnitude, &
+         vectorCellURotate, &
+         vectorCellVRotate, &
+         vectorCellMagnitudeRotate, &
+         vectorCellMagnitudeDiff, &
+         vectorCellURotateRotate, &
+         vectorCellVRotateRotate, &
+         vectorCellURotateRotateDiff, &
+         vectorCellVRotateRotateDiff
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         lonCell, &
+         xCell, &
+         yCell, &
+         zCell
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         xCellRotate, &
+         yCellRotate, &
+         zCellRotate
+
+    real(kind=RKIND), dimension(3) :: &
+         unitVectorEast, &
+         unitVectorNorth
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         xVectorEnd, &
+         yVectorEnd, &
+         zVectorEnd, &
+         xVectorEndRotate, &
+         yVectorEndRotate, &
+         zVectorEndRotate, &
+         vectorEndDistance
+
+    real(kind=RKIND) :: &
+         xVectorEndRotateTmp, &
+         yVectorEndRotateTmp, &
+         zVectorEndRotateTmp
+
+    write(*,*) "-------------------------------------------------"
+    write(*,*) "Rotation test"
+    write(*,*)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
+
+       call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
+
+       call MPAS_pool_get_array(meshPool, "latCell", latCell)
+       call MPAS_pool_get_array(meshPool, "lonCell", lonCell)
+       call MPAS_pool_get_array(meshPool, "xCell", xCell)
+       call MPAS_pool_get_array(meshPool, "yCell", yCell)
+       call MPAS_pool_get_array(meshPool, "zCell", zCell)
+
+       allocate(vectorCellU(nCells))
+       allocate(vectorCellV(nCells))
+       allocate(vectorCellMagnitude(nCells))
+       allocate(vectorCellURotate(nCells))
+       allocate(vectorCellVRotate(nCells))
+       allocate(vectorCellMagnitudeRotate(nCells))
+       allocate(vectorCellMagnitudeDiff(nCells))
+       allocate(vectorCellURotateRotate(nCells))
+       allocate(vectorCellVRotateRotate(nCells))
+       allocate(vectorCellURotateRotateDiff(nCells))
+       allocate(vectorCellVRotateRotateDiff(nCells))
+
+       allocate(xCellRotate(nCells))
+       allocate(yCellRotate(nCells))
+       allocate(zCellRotate(nCells))
+
+       allocate(xVectorEnd(nCells))
+       allocate(yVectorEnd(nCells))
+       allocate(zVectorEnd(nCells))
+       allocate(xVectorEndRotate(nCells))
+       allocate(yVectorEndRotate(nCells))
+       allocate(zVectorEndRotate(nCells))
+       allocate(vectorEndDistance(nCells))
+
+       ! trial fields
+       do iCell = 1, nCells
+
+          vectorCellU(iCell) = sin(lonCellUA * lonCell(iCell) + lonCellUB) * &
+                               sin(latCellUA * latCell(iCell) + latCellUB) * &
+                               cos(latCell(iCell))
+          vectorCellV(iCell) = sin(lonCellVA * lonCell(iCell) + lonCellVB) * &
+                               sin(latCellVA * latCell(iCell) + latCellVB) * &
+                               cos(latCell(iCell))
+
+          vectorCellMagnitude(iCell) = sqrt(vectorCellU(iCell)**2 + vectorCellV(iCell)**2)
+
+       enddo ! iCell
+
+       write(*,*) "vectorCellU: ", minval(vectorCellU), maxval(vectorCellU)
+       write(*,*) "vectorCellV: ", minval(vectorCellV), maxval(vectorCellV)
+       write(*,*)
+
+       ! rotate forward
+       do iCell = 1, nCells
+
+          call cice_latlon_vector_rotation_forward(&
+               vectorCellURotate(iCell), &
+               vectorCellVRotate(iCell), &
+               vectorCellU(iCell), &
+               vectorCellV(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               rotateGrid)
+
+       enddo ! iCell
+
+       ! rotated magnitude
+       do iCell = 1, nCells
+
+          vectorCellMagnitudeRotate(iCell) = sqrt(vectorCellURotate(iCell)**2 + vectorCellVRotate(iCell)**2)
+
+       enddo ! iCell
+
+       vectorCellMagnitudeDiff = vectorCellMagnitudeRotate - vectorCellMagnitude
+
+       write(*,*) "Magnitude difference: ", minval(vectorCellMagnitudeDiff), maxval(vectorCellMagnitudeDiff)
+       write(*,*)
+
+       ! rotate back
+       do iCell = 1, nCells
+
+          call cice_latlon_vector_rotation_backward(&
+               vectorCellURotateRotate(iCell), &
+               vectorCellVRotateRotate(iCell), &
+               vectorCellURotate(iCell), &
+               vectorCellVRotate(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               rotateGrid)
+
+       enddo ! iCell
+
+       vectorCellURotateRotateDiff = vectorCellURotateRotate - vectorCellU
+       vectorCellVRotateRotateDiff = vectorCellVRotateRotate - vectorCellV
+
+       write(*,*) "U double rotate diff: ", minval(vectorCellURotateRotateDiff), maxval(vectorCellURotateRotateDiff)
+       write(*,*) "V double rotate diff: ", minval(vectorCellVRotateRotateDiff), maxval(vectorCellVRotateRotateDiff)
+       write(*,*)
+
+       ! rotated coords
+       do iCell = 1, nCells
+          call cice_grid_rotation_forward(&
+               xCellRotate(iCell), &
+               yCellRotate(iCell), &
+               zCellRotate(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               rotateGrid)
+       enddo ! iCell
+
+       ! regular end of vector
+       do iCell = 1, nCells
+
+          call local_eastern_and_northern_unit_vectors(&
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               unitVectorEast, &
+               unitVectorNorth)
+
+          xVectorEnd(iCell) = xCell(iCell) + unitVectorEast(1) * vectorCellU(iCell) + unitVectorNorth(1) * vectorCellV(iCell)
+          yVectorEnd(iCell) = yCell(iCell) + unitVectorEast(2) * vectorCellU(iCell) + unitVectorNorth(2) * vectorCellV(iCell)
+          zVectorEnd(iCell) = zCell(iCell) + unitVectorEast(3) * vectorCellU(iCell) + unitVectorNorth(3) * vectorCellV(iCell)
+
+       enddo
+
+       ! rotated end of vector
+       do iCell = 1, nCells
+
+          call local_eastern_and_northern_unit_vectors(&
+               xCellRotate(iCell), &
+               yCellRotate(iCell), &
+               zCellRotate(iCell), &
+               unitVectorEast, &
+               unitVectorNorth)
+
+          xVectorEndRotateTmp = xCellRotate(iCell) + unitVectorEast(1) * vectorCellURotate(iCell) + unitVectorNorth(1) * vectorCellVRotate(iCell)
+          yVectorEndRotateTmp = yCellRotate(iCell) + unitVectorEast(2) * vectorCellURotate(iCell) + unitVectorNorth(2) * vectorCellVRotate(iCell)
+          zVectorEndRotateTmp = zCellRotate(iCell) + unitVectorEast(3) * vectorCellURotate(iCell) + unitVectorNorth(3) * vectorCellVRotate(iCell)
+
+          call grid_rotation_backward(&
+               xVectorEndRotate(iCell), yVectorEndRotate(iCell), zVectorEndRotate(iCell), &
+               xVectorEndRotateTmp,     yVectorEndRotateTmp,     zVectorEndRotateTmp, &
+               rotateGrid)
+
+       enddo
+
+       ! distance from ends of vectors
+       do iCell = 1, nCells
+
+          vectorEndDistance(iCell) = &
+               sqrt((xVectorEndRotate(iCell) - xVectorEnd(iCell))**2 + &
+                    (yVectorEndRotate(iCell) - yVectorEnd(iCell))**2 + &
+                    (zVectorEndRotate(iCell) - zVectorEnd(iCell))**2)
+
+       enddo ! iCell
+
+       write(*,*) "vector end distance: ", minval(vectorEndDistance), maxval(vectorEndDistance)
+       write(*,*)
+
+       deallocate(vectorCellU)
+       deallocate(vectorCellV)
+       deallocate(vectorCellMagnitude)
+       deallocate(vectorCellURotate)
+       deallocate(vectorCellVRotate)
+       deallocate(vectorCellMagnitudeRotate)
+       deallocate(vectorCellMagnitudeDiff)
+       deallocate(vectorCellURotateRotate)
+       deallocate(vectorCellVRotateRotate)
+       deallocate(vectorCellURotateRotateDiff)
+       deallocate(vectorCellVRotateRotateDiff)
+
+       deallocate(xCellRotate)
+       deallocate(yCellRotate)
+       deallocate(zCellRotate)
+
+       deallocate(xVectorEnd)
+       deallocate(yVectorEnd)
+       deallocate(zVectorEnd)
+       deallocate(xVectorEndRotate)
+       deallocate(yVectorEndRotate)
+       deallocate(zVectorEndRotate)
+       deallocate(vectorEndDistance)
+
+       block => block % next
+    enddo
+
+    write(*,*) "-------------------------------------------------"
+
+    stop
+
+  end subroutine cice_test_rotation
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_test_mesh_conversions
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 21st August 2015
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_test_mesh_conversions(domain)
+
+    use mpas_constants, only: &
+         pii
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         meshTestPool, &
+         boundaryPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         lonCell, &
+         xCell, &
+         yCell, &
+         zCell, &
+         latVertex, &
+         lonVertex, &
+         xVertex, &
+         yVertex, &
+         zVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         vectorCellU, &
+         vectorCellV, &
+         vectorVertexU, &
+         vectorVertexV
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         vectorCellURotate, &
+         vectorCellVRotate, &
+         vectorVertexURotate, &
+         vectorVertexVRotate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         vectorVertexUInterpolate, &
+         vectorVertexVInterpolate, &
+         vectorVertexURotateInterpolate, &
+         vectorVertexVRotateInterpolate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         vectorCellURotateRotate, &
+         vectorCellVRotateRotate, &
+         vectorVertexURotateRotate, &
+         vectorVertexVRotateRotate, &
+         vectorVertexURotateInterpolateRotate, &
+         vectorVertexVRotateInterpolateRotate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         vectorCellUDiff, &
+         vectorCellVDiff, &
+         vectorVertexUDiff, &
+         vectorVertexVDiff, &
+         vectorVertexUInterpolateDiff, &
+         vectorVertexVInterpolateDiff, &
+         vectorVertexUDiffRotate, &
+         vectorVertexVDiffRotate, &
+         vectorVertexUDiffNoRotate, &
+         vectorVertexVDiffNoRotate
+
+    integer, pointer :: &
+         nCells, &
+         nVertices
+
+    integer :: &
+         iCell, &
+         iVertex
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    logical, parameter :: &
+         rotateGrid = .true.
+
+    real(kind=RKIND), parameter :: &
+         lonCellUA   = 11.0_RKIND, &
+         lonCellUB   = 6.0_RKIND, &
+         latCellUA   = 15.0_RKIND, &
+         latCellUB   = 8.0_RKIND, &
+         lonCellVA   = 16.0_RKIND, &
+         lonCellVB   = 2.0_RKIND, &
+         latCellVA   = 12.0_RKIND, &
+         latCellVB   = 9.0_RKIND, &
+         lonVertexUA = lonCellUA, &
+         lonVertexUB = lonCellUB, &
+         latVertexUA = latCellUA, &
+         latVertexUB = latCellUB, &
+         lonVertexVA = lonCellVA, &
+         lonVertexVB = lonCellVB, &
+         latVertexVA = latCellVA, &
+         latVertexVB = latCellVB
+
+    real(kind=RKIND) :: &
+         xCellRotate, &
+         yCellRotate, &
+         zCellRotate, &
+         latCellRotate, &
+         lonCellRotate, &
+         xVertexRotate, &
+         yVertexRotate, &
+         zVertexRotate, &
+         latVertexRotate, &
+         lonVertexRotate, &
+         x3D, y3D, z3D
+
+    character(len=500), parameter :: &
+         fieldType = "3d"
+
+    real(kind=RKIND), dimension(3) :: &
+         unitVectorEast, &
+         unitVectorNorth
+
+    integer, dimension(:), pointer :: &
+         interiorVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh_test", meshTestPool)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
+
+       call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
+
+       call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
+       call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+
+       call MPAS_pool_get_array(meshPool, "latCell", latCell)
+       call MPAS_pool_get_array(meshPool, "lonCell", lonCell)
+       call MPAS_pool_get_array(meshPool, "xCell", xCell)
+       call MPAS_pool_get_array(meshPool, "yCell", yCell)
+       call MPAS_pool_get_array(meshPool, "zCell", zCell)
+
+       call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
+       call MPAS_pool_get_array(meshPool, "lonVertex", lonVertex)
+       call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
+       call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
+       call MPAS_pool_get_array(meshPool, "zVertex", zVertex)
+
+       call MPAS_pool_get_array(meshTestPool, "vectorCellU", vectorCellU)
+       call MPAS_pool_get_array(meshTestPool, "vectorCellV", vectorCellV)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexU", vectorVertexU)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexV", vectorVertexV)
+
+       call MPAS_pool_get_array(meshTestPool, "vectorCellURotate", vectorCellURotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorCellVRotate", vectorCellVRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexURotate", vectorVertexURotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVRotate", vectorVertexVRotate)
+
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexUInterpolate", vectorVertexUInterpolate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVInterpolate", vectorVertexVInterpolate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexURotateInterpolate", vectorVertexURotateInterpolate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVRotateInterpolate", vectorVertexVRotateInterpolate)
+
+       call MPAS_pool_get_array(meshTestPool, "vectorCellURotateRotate", vectorCellURotateRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorCellVRotateRotate", vectorCellVRotateRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexURotateRotate", vectorVertexURotateRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVRotateRotate", vectorVertexVRotateRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexURotateInterpolateRotate", vectorVertexURotateInterpolateRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVRotateInterpolateRotate", vectorVertexVRotateInterpolateRotate)
+
+       call MPAS_pool_get_array(meshTestPool, "vectorCellUDiff", vectorCellUDiff)
+       call MPAS_pool_get_array(meshTestPool, "vectorCellVDiff", vectorCellVDiff)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexUDiff", vectorVertexUDiff)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVDiff", vectorVertexVDiff)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexUInterpolateDiff", vectorVertexUInterpolateDiff)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVInterpolateDiff", vectorVertexVInterpolateDiff)
+
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexUDiffRotate", vectorVertexUDiffRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVDiffRotate", vectorVertexVDiffRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexUDiffNoRotate", vectorVertexUDiffNoRotate)
+       call MPAS_pool_get_array(meshTestPool, "vectorVertexVDiffNoRotate", vectorVertexVDiffNoRotate)
+
+       call MPAS_pool_get_array(boundaryPool, "interiorVertex", interiorVertex)
+
+       if (trim(fieldType) == "3d") then
+
+          !-------------------------------------------------------------------------------------
+          ! 3d
+          !-------------------------------------------------------------------------------------
+
+          do iCell = 1, nCells
+
+             !write(*,*) iCell, "x: ", xCell(iCell) - sphere_radius * cos(latCell(iCell)) * cos(lonCell(iCell))
+             !write(*,*) iCell, "y: ", yCell(iCell) - sphere_radius * cos(latCell(iCell)) * sin(lonCell(iCell))
+             !write(*,*) iCell, "z: ", zCell(iCell) - sphere_radius * sin(latCell(iCell))
+
+             x3D = sin(12.0_RKIND * (xCell(iCell)/sphere_radius) + 3.2_RKIND)
+             y3D = sin( 8.0_RKIND * (yCell(iCell)/sphere_radius) + 6.8_RKIND)
+             z3D = sin(15.0_RKIND * (zCell(iCell)/sphere_radius) + 1.5_RKIND)
+
+             call local_eastern_and_northern_unit_vectors(&
+                xCell(iCell), &
+                yCell(iCell), &
+                zCell(iCell), &
+                unitVectorEast, &
+                unitVectorNorth)
+
+             vectorCellU(iCell) = unitVectorEast(1)  * x3D + unitVectorEast(2)  * y3D + unitVectorEast(3)  * z3D
+             vectorCellV(iCell) = unitVectorNorth(1) * x3D + unitVectorNorth(2) * y3D + unitVectorNorth(3) * z3D
+
+          enddo ! iCell
+
+          do iVertex = 1, nVertices
+
+             x3D = sin(12.0_RKIND * (xVertex(iVertex)/sphere_radius) + 3.2_RKIND)
+             y3D = sin( 8.0_RKIND * (yVertex(iVertex)/sphere_radius) + 6.8_RKIND)
+             z3D = sin(15.0_RKIND * (zVertex(iVertex)/sphere_radius) + 1.5_RKIND)
+
+             call local_eastern_and_northern_unit_vectors(&
+                xVertex(iVertex), &
+                yVertex(iVertex), &
+                zVertex(iVertex), &
+                unitVectorEast, &
+                unitVectorNorth)
+
+             vectorVertexU(iVertex) = unitVectorEast(1)  * x3D + unitVectorEast(2)  * y3D + unitVectorEast(3)  * z3D
+             vectorVertexV(iVertex) = unitVectorNorth(1) * x3D + unitVectorNorth(2) * y3D + unitVectorNorth(3) * z3D
+
+          enddo ! iVertices
+
+       else if (trim(fieldType) == "sinusoidal") then
+
+          !-------------------------------------------------------------------------------------
+          ! sinusoidal
+          !-------------------------------------------------------------------------------------
+
+          ! initial fields
+          do iCell = 1, nCells
+
+             call cice_grid_rotation_forward(xCellRotate, yCellRotate, zCellRotate, xCell(iCell), yCell(iCell), zCell(iCell), rotateGrid)
+             call cice_latlon_from_xyz(latCellRotate, lonCellRotate, xCellRotate, yCellRotate, zCellRotate, sphere_radius)
+
+             !lonCellRotate = lonCell(iCell)
+             !latCellRotate = latCell(iCell)
+
+             vectorCellU(iCell) = sin(lonCellUA * lonCellRotate + lonCellUB) * &
+                                  sin(latCellUA * latCellRotate + latCellUB) * &
+                                  cos(latCellRotate)
+             vectorCellV(iCell) = sin(lonCellVA * lonCellRotate + lonCellVB) * &
+                                  sin(latCellVA * latCellRotate + latCellVB) * &
+                                  cos(latCellRotate)
+
+          enddo ! iCell
+
+          do iVertex = 1, nVertices
+
+             call cice_grid_rotation_forward(xVertexRotate, yVertexRotate, zVertexRotate, xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), rotateGrid)
+             call cice_latlon_from_xyz(latVertexRotate, lonVertexRotate, xVertexRotate, yVertexRotate, zVertexRotate, sphere_radius)
+
+             !lonVertexRotate = lonVertex(iVertex)
+             !latVertexRotate = latVertex(iVertex)
+
+             vectorVertexU(iVertex) = sin(lonVertexUA * lonVertexRotate + lonVertexUB) * &
+                                      sin(latVertexUA * latVertexRotate + latVertexUB) * &
+                                      cos(latVertexRotate)
+             vectorVertexV(iVertex) = sin(lonVertexVA * lonVertexRotate + lonVertexVB) * &
+                                      sin(latVertexVA * latVertexRotate + latVertexVB) * &
+                                      cos(latVertexRotate)
+
+          enddo ! iVertices
+
+       else if (trim(fieldType) == "u") then
+
+       !-------------------------------------------------------------------------------------
+       ! U only
+       !-------------------------------------------------------------------------------------
+
+          ! initial fields
+          do iCell = 1, nCells
+
+             vectorCellU(iCell) = 1.0_RKIND
+             vectorCellV(iCell) = 0.0_RKIND
+
+          enddo ! iCell
+
+          do iVertex = 1, nVertices
+
+             vectorVertexU(iVertex) = 1.0_RKIND
+             vectorVertexV(iVertex) = 0.0_RKIND
+
+          enddo ! iVertices
+
+       else if (trim(fieldType) == "v") then
+
+       !-------------------------------------------------------------------------------------
+       ! V only
+       !-------------------------------------------------------------------------------------
+
+          ! initial fields
+          do iCell = 1, nCells
+
+             vectorCellU(iCell) = 0.0_RKIND
+             vectorCellV(iCell) = 1.0_RKIND
+
+          enddo ! iCell
+
+          do iVertex = 1, nVertices
+
+             vectorVertexU(iVertex) = 0.0_RKIND
+             vectorVertexV(iVertex) = 1.0_RKIND
+
+          enddo ! iVertices
+
+       else if (trim(fieldType) == "uv") then
+
+       !-------------------------------------------------------------------------------------
+       ! UV only
+       !-------------------------------------------------------------------------------------
+
+          ! initial fields
+          do iCell = 1, nCells
+
+             vectorCellU(iCell) = 1.0_RKIND
+             vectorCellV(iCell) = 1.0_RKIND
+
+          enddo ! iCell
+
+          do iVertex = 1, nVertices
+
+             vectorVertexU(iVertex) = 1.0_RKIND
+             vectorVertexV(iVertex) = 1.0_RKIND
+
+          enddo ! iVertices
+
+       endif
+
+       ! rotate fields forward
+       do iCell = 1, nCells
+
+          call cice_latlon_vector_rotation_forward(&
+               vectorCellURotate(iCell), &
+               vectorCellVRotate(iCell), &
+               vectorCellU(iCell), &
+               vectorCellV(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               rotateGrid)
+
+       enddo ! iCell
+
+       do iVertex = 1, nVertices
+
+          call cice_latlon_vector_rotation_forward(&
+               vectorVertexURotate(iVertex), &
+               vectorVertexVRotate(iVertex), &
+               vectorVertexU(iVertex), &
+               vectorVertexV(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphere_radius, &
+               rotateGrid)
+
+       enddo ! iVertex
+
+       ! interpolate
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            vectorVertexUInterpolate, &
+            vectorCellU)
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            vectorVertexVInterpolate, &
+            vectorCellV)
+
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            vectorVertexURotateInterpolate, &
+            vectorCellURotate)
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            vectorVertexVRotateInterpolate, &
+            vectorCellVRotate)
+
+       ! convert back
+       do iCell = 1, nCells
+
+          call cice_latlon_vector_rotation_backward(&
+               vectorCellURotateRotate(iCell), &
+               vectorCellVRotateRotate(iCell), &
+               vectorCellURotate(iCell), &
+               vectorCellVRotate(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               rotateGrid)
+
+       enddo ! iCell
+
+       do iVertex = 1, nVertices
+
+          call cice_latlon_vector_rotation_backward(&
+               vectorVertexURotateRotate(iVertex), &
+               vectorVertexVRotateRotate(iVertex), &
+               vectorVertexURotate(iVertex), &
+               vectorVertexVRotate(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphere_radius, &
+               rotateGrid)
+
+          call cice_latlon_vector_rotation_backward(&
+               vectorVertexURotateInterpolateRotate(iVertex), &
+               vectorVertexVRotateInterpolateRotate(iVertex), &
+               vectorVertexURotateInterpolate(iVertex), &
+               vectorVertexVRotateInterpolate(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphere_radius, &
+               rotateGrid)
+
+       enddo ! iVertex
+
+       ! difference
+       vectorCellUDiff              = vectorCellURotateRotate              - vectorCellU
+       vectorCellVDiff              = vectorCellVRotateRotate              - vectorCellV
+
+       vectorVertexUDiff            = vectorVertexURotateRotate            - vectorVertexU
+       vectorVertexVDiff            = vectorVertexVRotateRotate            - vectorVertexV
+
+       vectorVertexUInterpolateDiff = vectorVertexURotateInterpolateRotate - vectorVertexUInterpolate
+       vectorVertexVInterpolateDiff = vectorVertexVRotateInterpolateRotate - vectorVertexVInterpolate
+
+       vectorVertexUDiffRotate      = vectorVertexURotateInterpolateRotate - vectorVertexU
+       vectorVertexVDiffRotate      = vectorVertexVRotateInterpolateRotate - vectorVertexV
+
+       vectorVertexUDiffNoRotate    = vectorVertexUInterpolate             - vectorVertexU
+       vectorVertexVDiffNoRotate    = vectorVertexVInterpolate             - vectorVertexV
+
+       do iVertex = 1, nVertices
+
+          ! remove equatorial belt
+          if (latVertex(iVertex) > -pii*0.05_RKIND .and. &
+              latVertex(iVertex) <  pii*0.05_RKIND) then
+
+             vectorVertexUInterpolateDiff(iVertex) = 0.0_RKIND
+             vectorVertexVInterpolateDiff(iVertex) = 0.0_RKIND
+
+             vectorVertexUDiffRotate(iVertex)   = 0.0_RKIND
+             vectorVertexVDiffRotate(iVertex)   = 0.0_RKIND
+             vectorVertexUDiffNoRotate(iVertex) = 0.0_RKIND
+             vectorVertexVDiffNoRotate(iVertex) = 0.0_RKIND
+
+          endif
+
+          ! remove north pole
+          !if (latVertex(iVertex) > pii*0.5_RKIND*0.95_RKIND) then
+
+          !   vectorVertexUInterpolateDiff(iVertex) = 0.0_RKIND
+          !   vectorVertexVInterpolateDiff(iVertex) = 0.0_RKIND
+
+          !endif
+
+          ! remove boundary vertices
+          if (interiorVertex(iVertex) == 0) then
+             vectorVertexUDiffRotate(iVertex)   = 0.0_RKIND
+             vectorVertexVDiffRotate(iVertex)   = 0.0_RKIND
+             vectorVertexUDiffNoRotate(iVertex) = 0.0_RKIND
+             vectorVertexVDiffNoRotate(iVertex) = 0.0_RKIND
+          endif
+
+       enddo ! iVertex
+
+       ! write out
+       write(*,*)
+       write(*,*) "vectorCellUDiff:              ", minval(vectorCellUDiff), maxval(vectorCellUDiff)
+       write(*,*) "vectorCellVDiff:              ", minval(vectorCellVDiff), maxval(vectorCellVDiff)
+       write(*,*)
+       write(*,*) "vectorVertexUDiff:            ", minval(vectorVertexUDiff), maxval(vectorVertexUDiff)
+       write(*,*) "vectorVertexVDiff:            ", minval(vectorVertexVDiff), maxval(vectorVertexVDiff)
+       write(*,*)
+       write(*,*) "vectorVertexUInterpolateDiff: ", minval(vectorVertexUInterpolateDiff), maxval(vectorVertexUInterpolateDiff)
+       write(*,*) "vectorVertexVInterpolateDiff: ", minval(vectorVertexVInterpolateDiff), maxval(vectorVertexVInterpolateDiff)
+       write(*,*)
+       write(*,*) "vectorVertexUDiffRotate:      ", minval(vectorVertexUDiffRotate), maxval(vectorVertexUDiffRotate)
+       write(*,*) "vectorVertexVDiffRotate:      ", minval(vectorVertexVDiffRotate), maxval(vectorVertexVDiffRotate)
+       write(*,*)
+       write(*,*) "vectorVertexUDiffNoRotate:    ", minval(vectorVertexUDiffNoRotate), maxval(vectorVertexUDiffNoRotate)
+       write(*,*) "vectorVertexVDiffNoRotate:    ", minval(vectorVertexVDiffNoRotate), maxval(vectorVertexVDiffNoRotate)
+
+       block => block % next
+    enddo
+
+    !stop
+
+  end subroutine cice_test_mesh_conversions
 
 !-----------------------------------------------------------------------
 

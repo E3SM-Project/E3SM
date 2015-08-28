@@ -170,7 +170,7 @@ contains
        clock, &
        dt)!{{{
 
-        use cice_debug, only: cice_debug_output_array
+    use cice_debug
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -192,37 +192,51 @@ contains
          iceVolumeCategoryField, &
          snowVolumeCategoryField
 
-    ! halo updates
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
+    logical, pointer :: &
+         config_use_velocity_solver
 
-    call MPAS_pool_get_field(tracers_fields, "iceAreaCategory", iceAreaCategoryField, 1)
-    call MPAS_pool_get_field(tracers_fields, "iceVolumeCategory", iceVolumeCategoryField, 1)
-    call MPAS_pool_get_field(tracers_fields, "snowVolumeCategory", snowVolumeCategoryField, 1)
+    call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
 
-    call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
-    call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
-    call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
+    if (config_use_velocity_solver) then
 
-    call cice_debug_output_array(iceAreaCategoryField % array(1,1,:)) ; stop
+       call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 1)
 
-    ! pre subcycle
-    block => domain % blocklist
-    do while (associated(block))
-       call velocity_solver_pre_subcycle(block)
-       block => block % next
-    end do
+       ! halo updates
+       call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers_fields)
 
-    ! subcycle the dynamics
-    call subcycle_velocity_solver(&
-         domain, &
-         clock)
+       call MPAS_pool_get_field(tracers_fields, "iceAreaCategory", iceAreaCategoryField, 1)
+       call MPAS_pool_get_field(tracers_fields, "iceVolumeCategory", iceVolumeCategoryField, 1)
+       call MPAS_pool_get_field(tracers_fields, "snowVolumeCategory", snowVolumeCategoryField, 1)
 
-    ! post subcycle
-    block => domain % blocklist
-    do while (associated(block))
-       call velocity_solver_post_subcycle(block)
-       block => block % next
-    end do
+       call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
+       call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
+       call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
+
+       ! pre subcycle
+       block => domain % blocklist
+       do while (associated(block))
+          call velocity_solver_pre_subcycle(block)
+          block => block % next
+       end do
+
+       ! subcycle the dynamics
+       call subcycle_velocity_solver(&
+            domain, &
+            clock)
+
+       ! post subcycle
+       block => domain % blocklist
+       do while (associated(block))
+          call velocity_solver_post_subcycle(block)
+          block => block % next
+       end do
+
+       ! geographical output
+       call geographical_velocity_diagnostics(domain)
+       
+       call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 2)
+
+    endif ! config_use_velocity_solver
 
   end subroutine cice_run_velocity_solver!}}}
 
@@ -265,7 +279,8 @@ contains
 
     integer, pointer :: &
          nCells, &
-         nVerticesSolve
+         nVerticesSolve, &
+         nCategories
 
     integer, dimension(:), pointer :: &
          solveStress, &
@@ -287,6 +302,8 @@ contains
          totalMassCell, &
          iceVolumeCell, &
          snowVolumeCell, &
+         iceAreaCellInitial, &
+         openWaterArea, &
          iceAreaVertex, &
          totalMassVertex, &
          icePressure, &
@@ -308,6 +325,16 @@ contains
          vOceanVelocity, &
          fVertex
 
+    logical, pointer :: &
+         config_use_column_package, &
+         config_use_column_vertical_thermodynamics
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
@@ -319,7 +346,7 @@ contains
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "nVerticesSolve", nVerticesSolve)
-
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
     call MPAS_pool_get_array(mesh, "fVertex", fVertex)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
@@ -330,9 +357,11 @@ contains
     call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
     call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
 
+    call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)   
     call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
-    call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
+    call MPAS_pool_get_array(icestate, "iceAreaCellInitial", iceAreaCellInitial)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
+    call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
 
     call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
     call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
@@ -378,7 +407,7 @@ contains
     call cice_interpolate_cell_to_vertex(&
          mesh, &
          iceAreaVertex, &
-         iceAreaCell)
+         iceAreaCellInitial)
 
     call cice_interpolate_cell_to_vertex(&
          mesh, &
@@ -390,7 +419,7 @@ contains
          nCells, &
          mesh, &
          solveStress, &
-         iceAreaCell, &
+         iceAreaCellInitial, &
          totalMassCell)
 
     call velocity_calculation_mask(&
@@ -427,20 +456,31 @@ contains
     ! calculate the ice strength
     call cice_ice_strength(&
          nCells, &     
+         nCategories, &
          icePressure, &
          iceAreaCell, &
          iceVolumeCell, &
-         solveStress)
+         openWaterArea, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         solveStress, &
+         config_use_column_package, &
+         config_use_column_vertical_thermodynamics)
 
     ! calculate the air stress
-    call cice_air_stress(&
-         nCells, &
-         airStressCellU, &
-         airStressCellV, &
-         uAirVelocity, & 
-         vAirVelocity, &
-         airDensity, &
-         iceAreaCell)
+    if (.not. config_use_column_package .or. &
+       (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+       call cice_air_stress(&
+            nCells, &
+            airStressCellU, &
+            airStressCellV, &
+            uAirVelocity, &
+            vAirVelocity, &
+            airDensity, &
+            iceAreaCell)
+    endif
+    !airStressCellU = 0.0_RKIND
+    !airStressCellV = 0.0_RKIND
 
     call cice_interpolate_cell_to_vertex(&
          mesh, &
@@ -1301,5 +1341,229 @@ contains
   end subroutine new_ice_velocities!}}}
     
   !-----------------------------------------------------------------------
-  
+  ! velocity diagnostics
+  !-----------------------------------------------------------------------
+
+  !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+  !
+  !  geographical_velocity_diagnostics
+  !
+  !> \brief
+  !> \author Adrian K. Turner, LANL
+  !> \date
+  !> \details
+  !>
+  !
+  !-----------------------------------------------------------------------
+
+  subroutine geographical_velocity_diagnostics(domain)
+
+    use cice_mesh, only: &
+         cice_latlon_vector_rotation_backward
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocitySolverPool, &
+         velocityGeographicalPool
+
+    ! mesh quantities
+    real(kind=RKIND), dimension(:), pointer :: &
+         latVertex, &
+         lonVertex, &
+         xVertex, &
+         yVertex, &
+         zVertex
+
+    ! other quantities
+    real(kind=RKIND), pointer :: &
+         sphereRadius
+
+    logical, pointer :: &
+         rotateCartesianGrid
+
+    ! non-geographical arrays
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         airStressVertexU, &
+         airStressVertexV, &
+         oceanStressU, &
+         oceanStressV, &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex
+
+    ! geographical arrays
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocityGeo, &
+         vVelocityGeo, &
+         stressDivergenceUGeo, &
+         stressDivergenceVGeo, &
+         airStressVertexUGeo, &
+         airStressVertexVGeo, &
+         oceanStressUGeo, &
+         oceanStressVGeo, &
+         surfaceTiltForceUGeo, &
+         surfaceTiltForceVGeo, &
+         uOceanVelocityVertexGeo, &
+         vOceanVelocityVertexGeo
+
+    integer, pointer :: &
+         nVertices
+
+    integer :: &
+         iVertex
+
+    ! get configs
+    call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", rotateCartesianGrid)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       ! get pools
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_geographical", velocityGeographicalPool)
+
+       ! mesh arrays
+       call MPAS_pool_get_config(meshPool, "sphere_radius", sphereRadius)
+       call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
+       call MPAS_pool_get_array(meshPool, "lonVertex", lonVertex)
+       call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
+       call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
+       call MPAS_pool_get_array(meshPool, "zVertex", zVertex)
+
+       call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+
+       ! get non-geographical arrays
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexV", airStressVertexV)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+       call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+
+       ! get geographical arrays
+       call MPAS_pool_get_array(velocityGeographicalPool, "uVelocityGeo", uVelocityGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "vVelocityGeo", vVelocityGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "stressDivergenceUGeo", stressDivergenceUGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "stressDivergenceVGeo", stressDivergenceVGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "airStressVertexUGeo", airStressVertexUGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "airStressVertexVGeo", airStressVertexVGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "oceanStressUGeo", oceanStressUGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "oceanStressVGeo", oceanStressVGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "surfaceTiltForceUGeo", surfaceTiltForceUGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "surfaceTiltForceVGeo", surfaceTiltForceVGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "uOceanVelocityVertexGeo", uOceanVelocityVertexGeo)
+       call MPAS_pool_get_array(velocityGeographicalPool, "vOceanVelocityVertexGeo", vOceanVelocityVertexGeo)
+
+       ! perform rotations
+       do iVertex = 1, nVertices
+
+          ! ice velocity
+          call cice_latlon_vector_rotation_backward(&
+               uVelocityGeo(iVertex), &
+               vVelocityGeo(iVertex), &
+               uVelocity(iVertex), &
+               vVelocity(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphereRadius, &
+               rotateCartesianGrid)
+
+          ! stress divergence
+          call cice_latlon_vector_rotation_backward(&
+               stressDivergenceUGeo(iVertex), &
+               stressDivergenceVGeo(iVertex), &
+               stressDivergenceU(iVertex), &
+               stressDivergenceV(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphereRadius, &
+               rotateCartesianGrid)
+
+          ! air stress
+          call cice_latlon_vector_rotation_backward(&
+               airStressVertexUGeo(iVertex), &
+               airStressVertexVGeo(iVertex), &
+               airStressVertexU(iVertex), &
+               airStressVertexV(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphereRadius, &
+               rotateCartesianGrid)
+
+          ! ocean stress
+          call cice_latlon_vector_rotation_backward(&
+               oceanStressUGeo(iVertex), &
+               oceanStressVGeo(iVertex), &
+               oceanStressU(iVertex), &
+               oceanStressV(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphereRadius, &
+               rotateCartesianGrid)
+
+          ! surface tilt
+          call cice_latlon_vector_rotation_backward(&
+               surfaceTiltForceUGeo(iVertex), &
+               surfaceTiltForceVGeo(iVertex), &
+               surfaceTiltForceU(iVertex), &
+               surfaceTiltForceV(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphereRadius, &
+               rotateCartesianGrid)
+
+          ! ocean velocity
+          call cice_latlon_vector_rotation_backward(&
+               uOceanVelocityVertexGeo(iVertex), &
+               vOceanVelocityVertexGeo(iVertex), &
+               uOceanVelocityVertex(iVertex), &
+               vOceanVelocityVertex(iVertex), &
+               latVertex(iVertex), &
+               lonVertex(iVertex), &
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphereRadius, &
+               rotateCartesianGrid)
+
+       enddo ! iVertex
+
+       block => block % next
+    enddo
+
+  end subroutine geographical_velocity_diagnostics
+
+  !-----------------------------------------------------------------------
+
 end module cice_velocity_solver

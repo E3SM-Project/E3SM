@@ -1053,6 +1053,7 @@ module mpas_block_creator
        nullify(indexToCellIDPoolField % recvList)
        nullify(indexToCellIDPoolField % copyList)
        allocate(indexToCellIDPoolField % array(nCells+1))
+       indexToCellIDPoolField % array(nCells+1) = 0
 
        call mpas_pool_add_field(block_ptr % allFields, 'indexToCellID_blk', indexToCellIDPoolField)
 
@@ -1071,6 +1072,7 @@ module mpas_block_creator
        nullify(indexToEdgeIDPoolField % recvList)
        nullify(indexToEdgeIDPoolField % copyList)
        allocate(indexToEdgeIDPoolField % array(nEdges+1))
+       indexToEdgeIDPoolField % array(nEdges+1) = 0
 
        call mpas_pool_add_field(block_ptr % allFields, 'indexToEdgeID_blk', indexToEdgeIDPoolField)
 
@@ -1090,6 +1092,7 @@ module mpas_block_creator
        nullify(indexToVertexIDPoolField % recvList)
        nullify(indexToVertexIDPoolField % copyList)
        allocate(indexToVertexIDPoolField % array(nVertices+1))
+       indexToVertexIDPoolField % array(nVertices+1) = 0
 
        call mpas_pool_add_field(block_ptr % allFields, 'indexToVertexID_blk', indexToVertexIDPoolField)
 
