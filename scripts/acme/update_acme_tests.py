@@ -31,17 +31,17 @@ __TEST_SUITES = {
 			 'SMS.hcru_hcru.I1850CRUCLM45CN']
                         ),
     "acme_integration" : ("acme_developer",
-                          ["ERB.f19_g16.B1850C5",
+                          ["ERB.ne16_g37.B1850C5",
                            "ERB.f45_g37.B1850C5",
                            "ERH.f45_g37.B1850C5",
-                           "ERS.f09_g16.B1850C5",
+                           "ERS.ne30_g16.B1850C5",
                            "ERS.f19_f19.FAMIPC5",
-                           "ERS.f19_g16.B1850C5",
+                           "ERS.ne16_g37.B1850C5",
                            "ERS_D.f45_g37.B1850C5",
                            "ERS_IOP_Ld3.f19_f19.FAMIPC5",
-                           "ERS_Ld3.f19_g16.FC5",
+                           "ERS_Ld3.ne16_g37.FC5",
                            "ERS_Ld3.ne30_ne30.FC5",
-                           "ERT.f19_g16.B1850C5",
+                           "ERT.ne16_g37.B1850C5",
                            "PET_PT.f19_g16.X",
                            "PET_PT.f45_g37_rx1.A",
                            "PFS.ne30_ne30.FC5",
@@ -49,7 +49,7 @@ __TEST_SUITES = {
                            "SEQ_PFC.f45_g37.B1850C5",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D.f19_g16.B20TRC5",
-                           "SMS_D_Ld3.f19_f19.FC5"]
+                           "SMS_D_Ld3.ne16_ne16.FC5"]
                           ),
 }
 
