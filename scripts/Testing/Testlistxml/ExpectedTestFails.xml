@@ -40,7 +40,6 @@
 <entry>RUN ERS_N2_Ld7.f19_g16.BHISTC5CN.yellowstone_gnu.allactive-default</entry>
 
 <entry>RUN ERS_D_Ld7.f19_g16.BTSC4L40CCMIS2R45.yellowstone_intel.allactive-default</entry>
-<entry>RUN NCK_Ld5.f19_g16.BGC5L45BGC.yellowstone_intel.allactive-cism-test_coupling</entry>
 <entry>RUN ERS.f09_g16.B1850C5CN.bluewaters_pgi</entry>
 <entry>RUN ERS_Ld7.ne16_g37.BC5.babbageKnc_intel</entry>
 <entry>RUN ERI.f09_g16.B1850C5L45BGC.bluewaters_pgi.allactive-default</entry>
