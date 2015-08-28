@@ -1,9 +1,7 @@
 #==============================================================================
 #
-#  This is the CTest script for builds and submission to the CTest
-#  Dashboard site: my.cdash.org.
-#
-#  This test is used to "append" to an existing tag (ctest run)
+#  This is the common CTest script header for builds and submission to the 
+#  CTest Dashboard site: my.cdash.org.
 #
 #  Example originally stolen from:
 #    http://www.vtk.org/Wiki/CTest:Using_CTEST_and_CDASH_without_CMAKE
@@ -59,6 +57,12 @@ getuname (cpu -m)
 
 set(CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}")
 
+## -- Git command
+find_program (CTEST_GIT_COMMAND NAMES git)
+
+## -- make command
+find_program (MAKE NAMES make)
+
 #-----------------------------------------------------------  
 #-- Get build-specific information
 #-----------------------------------------------------------  
@@ -69,25 +73,3 @@ if (DEFINED ENV{PIO_DASHBOARD_ROOT})
 else ()
     set (CTEST_DASHBOARD_ROOT "$ENV{HOME}/pio-dashboard")
 endif ()
-
-## -- SRC Dir (where this script exists)
-set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}/..")
-
-## -- BIN Dir (in-source build)  
-set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
-
-## -- Add the CTest script directory to the module path
-set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
-set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${CTEST_SITE_ID}")
-set (CTEST_RUNCTEST_SCRIPT "${CTEST_EXTRA_SCRIPT_PATH}/runctest-${CTEST_SITE_ID}.sh")
-list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
-
-# -----------------------------------------------------------  
-# -- Run CTest- TESTING ONLY
-# -----------------------------------------------------------  
-
-## -- Start
-ctest_start("${CTEST_SCRIPT_ARG}" APPEND)
-
-## -- TEST
-ctest_test()

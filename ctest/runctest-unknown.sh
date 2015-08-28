@@ -12,4 +12,4 @@
 model=$1
 
 # Run the "ctest" command in another process
-ctest -S ctest/CTestScriptAppendix.cmake,${model} -I 5,8
+ctest -S ctest/CTestScriptAppendix.cmake,${model} -I 5,8 -V
