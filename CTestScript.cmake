@@ -67,11 +67,18 @@ find_program (MAKE NAMES make)
 #-- Get build-specific information
 #-----------------------------------------------------------  
 
+## -- CTest Dashboard Root Directory
+if (DEFINED ENV{PIO_DASHBOARD_ROOT})
+    set (CTEST_DASHBOARD_ROOT "$ENV{PIO_DASHBOARD_ROOT}")
+else ()
+    set (CTEST_DASHBOARD_ROOT "$ENV{HOME}/pio-dashboard")
+endif ()
+
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
 
 ## -- BIN Dir (in-source build)  
-set (CTEST_BINARY_DIRECTORY   "${CTEST_SOURCE_DIRECTORY}/build-${CTEST_BUILD_NAME}")
+set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
 
 ## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
@@ -88,7 +95,7 @@ list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
 
 ## -- Start
 message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
-ctest_start("Nightly")
+ctest_start("${CTEST_SCRIPT_ARG}")
 
 ## -- Update
 message (" -- Update source - ${CTEST_BUILD_NAME} --")
