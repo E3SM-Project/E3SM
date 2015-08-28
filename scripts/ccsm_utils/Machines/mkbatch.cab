@@ -42,7 +42,7 @@ cat >! $file << EOF1
 #! /bin/csh -f
 #MSUB -V
 #MSUB -q pbatch             ##which queue to use. Options = pdebug, pbatch
-#MSUB -A ees                ##bank (other users will need to change this)
+#MSUB -A cbronze                ##bank (other users will need to change this)
 #MSUB -l nodes=$nodes       ##Number of nodes to use.
 #MSUB -l walltime=12:00:00  ##How long to run for (users will want to change)
 #MSUB -l gres=lscratchd     ##Specify needed Lustre systems (users might need to change)
@@ -95,7 +95,7 @@ EOF1
 else if ($PHASE == set_larch) then
 #################################################################################
 
-   #This is a long-term archiving script on hera
+   #This is a long-term archiving script on sierra
 
 if (-e ${CASEROOT}/${CASE}.l_archive) then
    echo ERROR: generate_batch.csh file ${CASE}.l_archive already exists in 
@@ -114,7 +114,7 @@ cat >> $CASEROOT/${CASE}.l_archive << EOF1
 #MSUB -V                                  
 
 #MSUB -q pdebug             ##which queue to use. Options = pdebug, pbatch
-#MSUB -A ees                ##bank (other users will need to change this) 
+#MSUB -A cbronze                ##bank (other users will need to change this) 
 #MSUB -l nodes=1            ##Use 1 node to archive                       
 #MSUB -l walltime=00:30:00  ##How long to run for (users will want to change)
 #MSUB -l gres=lscratchd     ##Specify needed Lustre systems (users might need to 
