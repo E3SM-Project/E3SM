@@ -26,7 +26,7 @@ set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}/..")
 # -----------------------------------------------------------  
 
 ## -- Start
-ctest_start("${CTEST_SCRIPT_ARG}")
+ctest_start("${CTEST_SCRIPT_ARG}" APPEND)
 
 ## -- TEST
 ctest_test()
