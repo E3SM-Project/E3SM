@@ -8,8 +8,5 @@
 #
 #==============================================================================
 
-# Get the CTest model name
-model=$1
-
 # Run the "ctest" command in another process
-ctest -S CTestScript.cmake,${model}Test
+ctest
