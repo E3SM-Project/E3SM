@@ -87,49 +87,34 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
 set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${CTEST_SITE_ID}")
 set (CTEST_RUNCTEST_SCRIPT "${CTEST_EXTRA_SCRIPT_PATH}/runctest-${CTEST_SITE_ID}.sh")
-
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
-
-#-----------------------------------------------------------  
-#-- CTest Commands for each Step
-#-----------------------------------------------------------  
-
-## -- Checkout command
-if(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
-    set (CTEST_GIT_URL "https://github.com/PARALLELIO/ParallelIO")
-    set (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone ${CTEST_GIT_URL} ${CTEST_SOURCE_DIRECTORY}")
-endif()
-
-## -- Update Command
-set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
-
-## -- Configure Command
-set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
-
-## -- Build Command
-set (CTEST_BUILD_COMMAND "${MAKE} tests")
 
 # -----------------------------------------------------------  
 # -- Run CTest
 # -----------------------------------------------------------  
 
-## -- Start
+## -- Start / Checkout
 message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
+if(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
+    set (CTEST_GIT_URL "https://github.com/PARALLELIO/ParallelIO")
+    set (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone ${CTEST_GIT_URL} ${CTEST_SOURCE_DIRECTORY}")
+endif()
 ctest_start("Nightly")
 
 ## -- Update
 message (" -- Update source - ${CTEST_BUILD_NAME} --")
+set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 ctest_update ()
-
-## -- Machine-specific environment
-include (${CTEST_ENVIRONMENT_SCRIPT})
 
 ## -- Configure 
 message (" -- Configure build - ${CTEST_BUILD_NAME} --")
+include (${CTEST_ENVIRONMENT_SCRIPT})
+set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
 ctest_configure ()
 
 ## -- BUILD
 message (" -- Build - ${CTEST_BUILD_NAME} --")
+set (CTEST_BUILD_COMMAND "${MAKE} tests")
 ctest_build ()
 
 ## -- TEST
