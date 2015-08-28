@@ -9,13 +9,16 @@
 #
 #==============================================================================
 
+# Get the CTest script directory
+scrdir=$1
+
 # Get the CTest model name
-model=$1
+model=$2
 
 # Write QSUB submission script with the test execution command
 echo "#!/bin/sh" > runctest.sh
 echo "CTESTCMD=`which ctest`" >> runctest.sh
-echo "\$CTESTCMD -S ctest/CTestScript-Test.cmake,${model} -V" >> runctest.sh
+echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.sh
 
 # Make the QSUB script executable
 chmod +x runctest.sh

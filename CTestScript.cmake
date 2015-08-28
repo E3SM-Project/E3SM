@@ -10,8 +10,8 @@
 #-------------------------------------------
 #-- Get the common header information
 #-------------------------------------------
-
-list (APPEND CMAKE_MODULE_PATH "${CTEST_SCRIPT_DIRECTORY}/ctest")
+set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SCRIPT_DIRECTORY}/ctest")
+list (APPEND CMAKE_MODULE_PATH "${CTEST_EXTRA_SCRIPT_PATH}")
 include (CTestScript-Header)
 
 #-----------------------------------------------------------  
@@ -26,8 +26,7 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ## -- Add the CTest script directory to the module path
 set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${HOSTNAME_ID}")
-set (CTEST_RUNCTEST_SCRIPT "${CTEST_SCRIPT_DIRECTORY}/ctest/runctest-${HOSTNAME_ID}.sh")
-list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
+set (CTEST_RUNCTEST_SCRIPT "${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh")
 
 # -----------------------------------------------------------  
 # -- Run CTest
@@ -55,8 +54,8 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
-execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_SCRIPT_ARG}
-                 WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY})
+execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
+                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
