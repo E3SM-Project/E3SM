@@ -436,6 +436,11 @@ sub setProject()
 		$self->{'project'} = $project;
 		$self->{'account'} = $project;
 	}
+	if($project =~ /UNSET/)
+	{
+		$self->{'project'} = undef;
+		$self->{'account'} = undef;
+	}
 	else
 	{
 		$self->{'project'} = undef;
