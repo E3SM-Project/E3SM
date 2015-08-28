@@ -35,6 +35,8 @@ module prim_state_mod
   ! ------------------------------
   use reduction_mod, only : parallelmax,parallelmin
   ! ------------------------------
+  use perf_mod, only : t_startf, t_stopf
+  ! ------------------------------
 #ifdef _REFSOLN
   use ref_state_mod, only : ref_state_read, ref_state_write
 #endif
@@ -158,6 +160,7 @@ contains
     integer               :: n0, nm1, pnm1, np1
     integer               :: npts,n,q
     
+    call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
        write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
     end if
@@ -516,7 +519,10 @@ contains
     endif
 
 
-    if (tl%nstep < tl%nstep0) return
+    if (tl%nstep < tl%nstep0) then
+       call t_stopf('prim_printstate')
+       return
+    endif
 
     ! ====================================================================
     !	
@@ -774,6 +780,7 @@ contains
        time0=time1
     endif
 
+  call t_stopf('prim_printstate')
   end subroutine prim_printstate
    
    
