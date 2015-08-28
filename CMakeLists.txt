@@ -40,7 +40,7 @@ endif ()
 #==============================================================================
 
 #===== Local modules =====
-set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 #===== External modules =====
 if (NOT DEFINED USER_CMAKE_MODULE_PATH)
@@ -61,7 +61,7 @@ if (NOT DEFINED USER_CMAKE_MODULE_PATH)
 endif ()
 set (USER_CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH}
      CACHE STRING "Location of the CMake_Fortran_utils")
-set (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+list (APPEND CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH})
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
