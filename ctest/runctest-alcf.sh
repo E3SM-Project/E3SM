@@ -14,8 +14,8 @@ model=$1
 
 # Write QSUB submission script with the test execution command
 echo "#!/bin/sh" > runctest.sh
-echo "CTESTCMD=`which ctest`"
-echo "\$CTESTCMD -S ctest/CTestScript-Test.cmake,${model} -V"
+echo "CTESTCMD=`which ctest`" >> runctest.sh
+echo "\$CTESTCMD -S ctest/CTestScript-Test.cmake,${model} -V" >> runctest.sh
 
 # Make the QSUB script executable
 chmod +x runctest.sh
