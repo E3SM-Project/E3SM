@@ -1,12 +1,17 @@
-# Example originally stolen from:
-# http://www.vtk.org/Wiki/CTest:Using_CTEST_and_CDASH_without_CMAKE
+#==============================================================================
+#
+#  This is the CTest script for Nightly builds and submission to the CTest
+#  Dashboard site: my.cdash.org.
+#
+#  Example originally stolen from:
+#    http://www.vtk.org/Wiki/CTest:Using_CTEST_and_CDASH_without_CMAKE
+#==============================================================================
 
-# -----------------------------------------------------------  
-# -- Get the machine environment
-# -----------------------------------------------------------  
+#---------------------------------------
+#-- Get the machine environment
+#---------------------------------------
 
 ## -- Set hostname
-## --------------------------
 
 find_program (HOSTNAME_CMD NAMES hostname)
 execute_process (COMMAND ${HOSTNAME_CMD}
@@ -15,7 +20,6 @@ execute_process (COMMAND ${HOSTNAME_CMD}
 set (CTEST_SITE "${HOSTNAME}")
 
 ## -- Set hostname ID (e.g., alcf, nwsc, nersc, ...)
-## --------------------------------------------------
 
 # UCAR/NWSC Machines
 if (CTEST_SITE MATCHES "^yslogin" OR
@@ -35,10 +39,9 @@ elseif (CTEST_SITE MATCHES "^edison" OR
     set (CTEST_SITE_ID "nersc")
 else ()
     set (CTEST_SITE_ID "unknown")
-endif ()    
+endif ()
 
 ## -- Set site / build name
-## --------------------------
 
 find_program (UNAME NAMES uname)
 function (getuname name flag)
@@ -55,22 +58,14 @@ getuname (cpu -m)
 set(CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}")
 
 ## -- Git command
-## ----------------
 find_program (CTEST_GIT_COMMAND NAMES git)
 
 ## -- make command
-## -----------------
 find_program (MAKE NAMES make)
 
-# -----------------------------------------------------------  
-# -- build specific
-# -----------------------------------------------------------  
-
-## -- Get the CTest Dashboard Model
-set (MODEL Experimental)
-if (${CTEST_SCRIPT_ARG} MATCHES Nightly)
-  set (MODEL Nightly)
-endif ()
+#-----------------------------------------------------------  
+#-- Get build-specific information
+#-----------------------------------------------------------  
 
 ## -- Dashboard Root Dir
 if (DEFINED ENV{PIO_DASHBOARD_ROOT})
@@ -88,15 +83,14 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ## -- Empty the binary directory
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
-# -----------------------------------------------------------  
-# -- CTest Step Commands
-# -----------------------------------------------------------  
+## -- Load the machine-specific environment
+list (APPEND CMAKE_MODULE_PATH ${CTEST_SOURCE_DIRECTORY}/ctest)
+include (CTestEnvironment-${CTEST_SITE_ID})
+message ("ENV{ABC} = $ENV{ABC}")
 
-## -- Checkout command
-
-# -----------------------------------------------------------  
-# -- CTest Step Commands
-# -----------------------------------------------------------  
+#-----------------------------------------------------------  
+#-- CTest Commands for each Step
+#-----------------------------------------------------------  
 
 ## -- Checkout command
 if(NOT EXISTS ${CTEST_SOURCE_DIRECTORY})
@@ -108,7 +102,7 @@ endif()
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
 ## -- Configure Command
-set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_BUILD_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
+set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
 
 ## -- Build Command
 set (CTEST_BUILD_COMMAND "${MAKE} all tests")
@@ -118,30 +112,27 @@ set (CTEST_BUILD_COMMAND "${MAKE} all tests")
 # -----------------------------------------------------------  
 
 ## -- Start
-message (" -- Start dashboard ${MODEL} - ${CTEST_BUILD_NAME} --")
-ctest_start("${MODEL}")
+message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
+ctest_start("Nightly")
 
 ## -- Update
-message (" -- Update ${MODEL} - ${CTEST_BUILD_NAME} --")
+message (" -- Update source - ${CTEST_BUILD_NAME} --")
 ctest_update ()
 
 ## -- Configure 
-message (" -- Configure ${MODEL} - ${CTEST_BUILD_NAME} --")
+message (" -- Configure build - ${CTEST_BUILD_NAME} --")
 ctest_configure ()
 
 ## -- BUILD
-message (" -- Build ${MODEL} - ${CTEST_BUILD_NAME} --")
+message (" -- Build - ${CTEST_BUILD_NAME} --")
 ctest_build ()
 
 ## -- TEST
-message (" -- Test ${MODEL} - ${CTEST_BUILD_NAME} --")
+message (" -- Test - ${CTEST_BUILD_NAME} --")
 #ctest_test ()
-execute_process (COMMAND which ctest
-                 OUTPUT_VARIABLE MY_CTEST_VAR)
-message (" ***** CTest is ${MY_CTEST_VAR} *****")
 
 ## -- SUBMIT
-#message (" -- Submit ${MODEL} - ${CTEST_BUILD_NAME} --")
+#message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
 #ctest_submit ()
 
-message (" -- Finished ${MODEL}  - ${CTEST_BUILD_NAME} --")
+message (" -- Finished - ${CTEST_BUILD_NAME} --")
