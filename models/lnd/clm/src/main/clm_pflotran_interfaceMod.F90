@@ -10,6 +10,7 @@ module clm_pflotran_interfaceMod
 !          2.Lawrence Berkley National Laboratory
 !
 ! date: 2012 - 2015
+! modified: 8/28/2015, Gangsheng Wang
 
 #include "shr_assert.h"
 
@@ -284,21 +285,6 @@ contains
 
   !--------------------------------------------------------------------------------------------
 
-!  subroutine clm_pf_run(clm_bgc_data,bounds,       &
-!          ! pflotran only works for 'soilc', i.e. (natural/cropped soil columns)
-!           ! at this coding stage
-!           num_soilc, filter_soilc,                               &
-!           num_soilp, filter_soilp,                               &
-!           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-!           atm2lnd_vars,                                          &
-!           waterstate_vars, waterflux_vars,                       &
-!           soilstate_vars,  temperature_vars, energyflux_vars,    &
-!           soilhydrology_vars, soil_water_retention_curve,        &
-!           ! soil bgc
-!           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-!           nitrogenflux_vars, nitrogenstate_vars,                 &
-!           ch4_vars                                               &
-!           )
     subroutine clm_pf_run(clm_bgc_data,bounds,       &
            num_soilc, filter_soilc)
 
@@ -332,19 +318,6 @@ contains
     character(len=256) :: subname = "clm_pf_run"
 
 #ifdef CLM_PFLOTRAN
-!    call pflotran_run_onestep(clm_bgc_data,bounds,                             &
-!           num_soilc, filter_soilc,                               &
-!           num_soilp, filter_soilp,                               &
-!           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-!           atm2lnd_vars,                                          &
-!           waterstate_vars, waterflux_vars,                       &
-!           soilstate_vars,  temperature_vars, energyflux_vars,    &
-!           soilhydrology_vars, soil_water_retention_curve,        &
-!           ! soil bgc
-!           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-!           nitrogenflux_vars, nitrogenstate_vars,                 &
-!           ch4_vars                                               &
-!           )
     call pflotran_run_onestep(clm_bgc_data,bounds,  &
            num_soilc, filter_soilc)
 #else
@@ -692,18 +665,7 @@ write(*,'(A40,10A10)')"DEBUG | decomp_pool_name=",clm_pf_idata%decomp_pool_name
   ! !SUBROUTINE: pflotran_run_onestep
   !
   ! !INTERFACE:
-!  subroutine pflotran_run_onestep(clm_bgc_data,bounds,                         &
-!           num_soilc, filter_soilc,                               &
-!           num_soilp, filter_soilp,                               &
-!           ! soil thermal-hydrology (TODO: will update when testing with th coupling)
-!           atm2lnd_vars,                                          &
-!           waterstate_vars, waterflux_vars,                       &
-!           soilstate_vars,  temperature_vars, energyflux_vars,    &
-!           soilhydrology_vars, soil_water_retention_curve,        &
-!           ! soil bgc
-!           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-!           nitrogenflux_vars, nitrogenstate_vars,                 &
-!           ch4_vars)
+
   subroutine pflotran_run_onestep(clm_bgc_data,bounds,            &
            num_soilc, filter_soilc)
   !
@@ -798,20 +760,13 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
        call pflotranModelUpdateFinalWaypoint(pflotran_m, total_clmstep*dtime, ispfprint)
 
        ! Set CLM soil properties onto PFLOTRAN grid
-!       call get_clm_soil_properties(bounds,  &
-!              num_soilc, filter_soilc,       &
-!              soilstate_vars)
+
        call get_clm_soil_properties(clm_bgc_data, &
                     bounds, num_soilc, filter_soilc)
        call pflotranModelSetSoilProp(pflotran_m)
 
        ! if initializing soil 'TH' states from CLM to pflotran
        if (.not.initth_pf2clm) then
-!          call get_clm_soil_th(initth_pf2clm, initth_pf2clm, &
-!                    bounds, num_soilc, filter_soilc,         &
-!                    atm2lnd_vars, soilstate_vars,            &
-!                    waterstate_vars, temperature_vars,       &
-!                    soil_water_retention_curve)
           call get_clm_soil_th(clm_bgc_data,initth_pf2clm, initth_pf2clm, &
                     bounds, num_soilc, filter_soilc)
 
@@ -826,10 +781,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
        ! if initializaing CLM's H states from pflotran (only H mode now)
        else
           call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
-!           call update_soil_moisture_pf2clm(                 &
-!                     bounds, num_soilc, filter_soilc,        &
-!                      soilstate_vars, waterstate_vars)
-            call update_soil_moisture_pf2clm(clm_bgc_data,                 &
+          call update_soil_moisture_pf2clm(clm_bgc_data,                 &
                     bounds, num_soilc, filter_soilc)
        end if
 
@@ -844,11 +796,6 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
     ! if PF T/H mode not available, have to pass those from CLM to global variable in PF to drive BGC/H
     if ((.not.pf_tmode .or. .not.pf_hmode) .and. (.not.isinitpf)) then
-!        call get_clm_soil_th(pf_tmode, pf_hmode,  &
-!           bounds, num_soilc, filter_soilc,         &
-!           atm2lnd_vars, soilstate_vars,            &
-!           waterstate_vars, temperature_vars,       &
-!           soil_water_retention_curve)
         call get_clm_soil_th(clm_bgc_data,pf_tmode, pf_hmode,  &
            bounds, num_soilc, filter_soilc)
 
@@ -857,23 +804,13 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
     ! ice-len adjusted porostiy
     if (.not.pf_frzmode) then
-!        call get_clm_iceadj_porosity(               &
-!           bounds, num_soilc, filter_soilc,         &
-!           soilstate_vars, waterstate_vars)
         call get_clm_iceadj_porosity(clm_bgc_data, &
                     bounds, num_soilc, filter_soilc)
         call pflotranModelResetSoilPorosityFromCLM(pflotran_m)
-!write(*,*)">>>DEBUG | pflotranModelResetSoilPorosityFromCLM"
     endif
 
     ! (2) pass CLM water fluxes to CLM-PFLOTRAN interface
     if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
-!        call get_clm_bcwflx(                        &
-!            bounds, num_soilc, filter_soilc,        &
-!            atm2lnd_vars, soilstate_vars,           &
-!            temperature_vars, energyflux_vars,      &
-!            waterstate_vars, waterflux_vars)
-
         call get_clm_bcwflx(clm_bgc_data,           &
             bounds, num_soilc, filter_soilc)
 
@@ -884,10 +821,6 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
     ! (3) CLM thermal BC to PFLOTRAN
     if (pf_tmode) then
-!        call get_clm_bceflx(                        &
-!            bounds, num_soilc, filter_soilc,        &
-!            atm2lnd_vars, waterstate_vars,          &
-!            temperature_vars, energyflux_vars)
         call get_clm_bceflx(clm_bgc_data,           &
             bounds, num_soilc, filter_soilc)
 
@@ -905,11 +838,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
 
       ! (4b) reset PFLOTRAN bgc state variables from CLM-CN, every CLM time-step
 !      if (isinitpf) then     ! NOTE: if only initialize ONCE, uncomment this 'if...endif' block
-!        call get_clm_bgc_conc(bounds,    &
-!           num_soilc, filter_soilc,      &
-!           carbonstate_vars,             &
-!           nitrogenstate_vars,           &
-!           ch4_vars)
+
         call get_clm_bgc_conc(clm_bgc_data,     &
                     bounds, num_soilc, filter_soilc)
 
@@ -931,12 +860,6 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
         endif
 
       ! (4c) bgc rate (source/sink) from CLM to PFLOTRAN
-!        call get_clm_bgc_rate(bounds,   &
-!            num_soilc, filter_soilc,    &
-!            cnstate_vars,               &
-!            carbonflux_vars,            &
-!            nitrogenflux_vars)
-
         call get_clm_bgc_rate(clm_bgc_data,  &
                     bounds, num_soilc, filter_soilc)
 
@@ -953,45 +876,43 @@ if(nstep>=48*210 .and. nstep<=48*211) then
 endif
 #endif
 
-write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: BEG"
+write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: BEG...PFLOTRAN"
     ! (5) the main callings of PFLOTRAN
     call pflotranModelStepperRunTillPauseTime( pflotran_m, (nstep+1.0d0)*dtime, dtime, .false. )
 
 write(*,*)">>>DEBUG | pflotranModelStepperRunTillPauseTime: END...CONTINUE..."
-write(*,*)'pf_cmode=',pf_cmode
-!#ifdef CLM_PF_DEBUG
-!if(nstep>=48*210 .and. nstep<=48*211) then
-!  call cpu_time(t2)
-!  if(pflotran_m%option%myrank .eq. pflotran_m%option%io_rank) then
-!      write(pflotran_m%option%myrank+200,*) 'CPU_time elapsed @check-point 2 - 1: ', t2-t1
-!  endif
-!endif
-!#endif
+
+#ifdef CLM_PF_DEBUG
+if(nstep>=48*210 .and. nstep<=48*211) then
+  call cpu_time(t2)
+  if(pflotran_m%option%myrank .eq. pflotran_m%option%io_rank) then
+      write(pflotran_m%option%myrank+200,*) 'CPU_time elapsed @check-point 2 - 1: ', t2-t1
+  endif
+endif
+#endif
 
     ! (6) update CLM variables from PFLOTRAN
-!    if (pf_hmode) then
-!        call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
-!
-!        call update_soil_moisture_pf2clm(clm_bgc_data,        &
-!                        bounds, num_soilc, filter_soilc)
-!    endif
-!
-!    if (pf_tmode) then
-!        call pflotranModelGetTemperatureFromPF(pflotran_m)  ! thermal states
-!
-!        call update_soil_temperature_pf2clm(clm_bgc_data,     &
-!                        bounds, num_soilc, filter_soilc)
-!    endif
+    if (pf_hmode) then
+        call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
+
+        call update_soil_moisture_pf2clm(clm_bgc_data,        &
+                        bounds, num_soilc, filter_soilc)
+    endif
+
+    if (pf_tmode) then
+        call pflotranModelGetTemperatureFromPF(pflotran_m)  ! thermal states
+
+        call update_soil_temperature_pf2clm(clm_bgc_data,     &
+                        bounds, num_soilc, filter_soilc)
+    endif
 
     ! bgc variables
-write(*,*)'pf_cmode=',pf_cmode
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF(pflotran_m)
-write(*,*)">>>DEBUG | pflotranModelGetBgcVariablesFromPF"
 
         call update_soil_bgc_pf2clm(clm_bgc_data,       &
                 bounds, num_soilc, filter_soilc)
-write(*,*)">>>DEBUG | update_soil_bgc_pf2clm"
+
         ! need to save the current time-step PF porosity/liq. saturation for bgc species mass conservation
         ! if CLM forced changing them into PF at NEXT timestep
         if (.not.pf_hmode .or. .not.pf_frzmode) then
@@ -1087,7 +1008,6 @@ endif
   ! !IROUTINE: get_clm_soil_properties
   !
   ! !INTERFACE:
-!  subroutine get_clm_soil_properties(bounds, num_soilc, filter_soilc, soilstate_vars)
   subroutine get_clm_soil_properties(clm_bgc_data, &
                     bounds, num_soilc, filter_soilc)
     !
@@ -1259,10 +1179,8 @@ endif
   !
   ! !INTERFACE:
   subroutine get_clm_soil_th(clm_bgc_data,pftmode, pfhmode,        &
-           bounds, num_soilc, filter_soilc) !!,           &
-!           atm2lnd_vars, soilstate_vars,              &
-!           waterstate_vars, temperature_vars,         &
-!           soil_water_retention_curve)
+           bounds, num_soilc, filter_soilc)
+
   !
   ! !DESCRIPTION:
   !  update soil temperature/saturation from CLM to PFLOTRAN for driving PF's BGC
@@ -1417,9 +1335,6 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !ROUTINE: get_clm_iceadj_porosity
   !
   ! !INTERFACE:
-!  subroutine get_clm_iceadj_porosity(bounds, &
-!           num_soilc, filter_soilc,          &
-!           soilstate_vars, waterstate_vars)
   subroutine get_clm_iceadj_porosity(clm_bgc_data, &
                     bounds, num_soilc, filter_soilc)
   !
@@ -1513,11 +1428,6 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !IROUTINE: get_clm_bcwflx
   !
   ! !INTERFACE:
-!  subroutine get_clm_bcwflx(bounds,          &
-!       num_soilc, filter_soilc,              &
-!       clm_a2l, soils_vars,                  &
-!       ces_vars, cef_vars, cws_vars, cwf_vars)
-
   subroutine get_clm_bcwflx(clm_bgc_data,           &
        bounds, num_soilc, filter_soilc)
   !
@@ -1898,9 +1808,6 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !IROUTINE: get_clm_bceflx
   !
   ! !INTERFACE:
-!   subroutine get_clm_bceflx(bounds,          &
-!        num_soilc, filter_soilc,              &
-!        clm_a2l, cws_vars, ces_vars, cef_vars)
   subroutine get_clm_bceflx(clm_bgc_data,           &
        bounds, num_soilc, filter_soilc)
   !
@@ -2038,8 +1945,7 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
   ! !INTERFACE:
 
   subroutine get_clm_bgc_conc(clm_bgc_data, &
-           bounds, num_soilc, filter_soilc  &
-           )
+           bounds, num_soilc, filter_soilc)
 
 #ifndef FLEXIBLE_POOLS
     use clm_varpar, only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
@@ -2379,9 +2285,6 @@ write(*,*)'---------------------------------------'
   ! !IROUTINE: get_clm_bgc_rate()
   !
   ! !INTERFACE:
-!  subroutine get_clm_bgc_rate(bounds, &
-!          num_soilc, filter_soilc,    &
-!          cnstate_vars, carbonflux_vars, nitrogenflux_vars)
   subroutine get_clm_bgc_rate(clm_bgc_data,  &
           bounds, num_soilc, filter_soilc)
 
@@ -2780,9 +2683,6 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   ! !IROUTINE: update_soil_moisture_pf2clm
   !
   ! !INTERFACE:
-!   subroutine update_soil_moisture_pf2clm(     &
-!            bounds, num_soilc, filter_soilc,   &
-!            soilstate_vars, waterstate_vars)
   subroutine update_soil_moisture_pf2clm(clm_bgc_data,     &
            bounds, num_soilc, filter_soilc)
 
@@ -2884,9 +2784,6 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   ! !IROUTINE: update_soil_temperature_pf2clm
   !
   ! !INTERFACE:
-!   subroutine update_soil_temperature_pf2clm(     &
-!            bounds, num_soilc, filter_soilc,   &
-!            soilstate_vars, temperature_vars)
   subroutine update_soil_temperature_pf2clm(clm_bgc_data,     &
            bounds, num_soilc, filter_soilc)
 
@@ -2965,14 +2862,6 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   !   NOTE: Don't update the organic C/N state variables, which will be updated in those 'update' subroutines
   !           and the 'CNSoilLittVertTranspMod.F90' after 'update1'.
   !
-!  subroutine update_soil_bgc_pf2clm(bounds,      &
-!           num_soilc, filter_soilc,              &
-!           clm_a2l, waterstate_vars,             &
-!           soilstate_vars, cnstate_vars,         &
-!           carbonstate_vars, carbonflux_vars,    &
-!           nitrogenstate_vars,nitrogenflux_vars, &
-!           ch4_vars                              &
-!           )
   subroutine update_soil_bgc_pf2clm(clm_bgc_data,   &
            bounds, num_soilc, filter_soilc)
 
@@ -3278,8 +3167,7 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
        enddo
      enddo ! do c = 1, numsoilc
 
-write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
-write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
+!write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
 
 #ifdef FLEXIBLE_POOLS
      call VecRestoreArrayReadF90(clm_pf_idata%decomp_cpools_vr_clms, decomp_cpools_vr_clm_loc, ierr)
@@ -3352,10 +3240,6 @@ write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
   ! from their aq. phase states
   ! (due to not yet available in pflotran bgc)
   !
-!  subroutine update_bgc_gaslosses_pf2clm(  &
-!     bounds, num_soilc, filter_soilc,      &
-!     clm_a2l, waterstate_vars,             &
-!     carbonflux_vars, nitrogenflux_vars)
   subroutine update_bgc_gaslosses_pf2clm(clm_bgc_data,  &
      bounds, num_soilc, filter_soilc)
 
@@ -3686,7 +3570,7 @@ write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
 
   !-----------------------------------------------------------------------------
   !BOP
-  ! comment out currently for bgc-only
+  ! comment out this subroutine currently for bgc-only
   ! !IROUTINE: update_bcflow_pf2clm
   !
   ! !INTERFACE:

@@ -2515,7 +2515,7 @@ contains
             smin_no3_vr(c,j)        = clm_bgc_data%smin_no3_vr_col(c,j)
             smin_nh4_vr(c,j)        = clm_bgc_data%smin_nh4_vr_col(c,j)
             smin_nh4sorb_vr(c,j)    = clm_bgc_data%smin_nh4sorb_vr_col(c,j)
-            sminn_vr                = clm_bgc_data%sminn_vr_col(c,j)
+            sminn_vr(c,j)           = clm_bgc_data%sminn_vr_col(c,j)
 
             solutionp_vr(c,j)       = clm_bgc_data%solutionp_vr_col(c,j)
             labilep_vr(c,j)         = clm_bgc_data%labilep_vr_col(c,j)
@@ -2525,8 +2525,8 @@ contains
             primp_vr(c,j)           = clm_bgc_data%primp_vr_col(c,j)
         end do
     end do
-write(*,'(A30,12E14.6)')"DEBUG | clm UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
-write(*,'(A30,12E14.6)')"DEBUG | clm UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
+!write(*,'(A30,12E14.6)')"DEBUG | clm UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
+
     end associate
   end subroutine update_bgc_state_smin
 
@@ -2718,13 +2718,13 @@ write(*,'(A30,12E14.6)')"DEBUG | clm UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
 !    type(carbonstate_type)   , intent(inout) :: carbonstate_vars
 !    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
 !    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
 !    type(ch4_type)           , intent(inout) :: ch4_vars
-    type(clm_bgc_interface_data_type), intent(in) :: clm_bgc_data
+    type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
+    type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
+    type(clm_bgc_interface_data_type)   , intent(in)    :: clm_bgc_data
 
     integer :: fc, c, j
-    character(len=256) :: subname = "update_soil_bgc_pf2clm"
+    character(len=256) :: subname = "update_bgc_flux_smin"
 
     associate ( &
 !     initial_cn_ratio             => decomp_cascade_con%initial_cn_ratio             , &
