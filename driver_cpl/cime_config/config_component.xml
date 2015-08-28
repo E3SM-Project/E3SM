@@ -2305,7 +2305,7 @@
 
   <entry id="PIO_STRIDE">
     <type>integer</type>
-    <default_value>4</default_value>
+    <default_value>-1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>mpi task stride between io tasks</desc>
@@ -2313,7 +2313,7 @@
 
   <entry id="PIO_ROOT">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>-1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio root processor</desc>
@@ -2513,7 +2513,7 @@
     <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
+    <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
   </entry>
 
   <entry id="ATM_PIO_TYPENAME">

@@ -219,53 +219,65 @@ sub _setPIOsettings
 
     my ($file_config, $primary_component, $config) = @_; 
 
-    my $mach		 = $config->get('MACH');
-    my $machines_file	 = $config->get('MACHINES_FILE');
-    my $cimeroot	 = $config->get('CIMEROOT');
-    my $grid_longname	 = $config->get('GRID');
-    my $compset_longname = $config->get('COMPSET');
-
-    # First read the machines file for any non-default machine specific pio settings
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-    my @nodes = $xml->findnodes(".//machine[\@MACH=\"$mach\"]/pio/*");
-    if ($#nodes > -1) {
-	foreach my $node (@nodes) {
-	    my $name  = $node->nodeName();
-	    my $value = $node->textContent();
-	    $config->set($name, $value);
-	}
-    }
-
-    # Second, read the PIO_SPEC_FILE file for grid and/or compset specific pio settings
+    my $model    = $config->get('MODEL');
+    my $cimeroot = $config->get('CIMEROOT');
+    my $compset  = $config->get('COMPSET');
+    my $grid	 = $config->get('GRID');
+    my $machine	 = $config->get('MACH');
+    my $compiler = $config->get('COMPILER');
+    my $mpilib   = $config->get('MPILIB');
+ 
+    # read the PIO_SPEC_FILE file for grid and/or compset specific pio settings
     my $file = $config->get('PIO_SPEC_FILE');
+    $file =~ s/\$MODEL/$model/;
+    $file =~ s/\$CIMEROOT/$cimeroot/;
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    foreach my $node ($xml->findnodes(".//entry")) {
-	foreach my $child ($node->findnodes("./values/value")) {
-	    my $compset_match = $child->getAttribute('compset');
-	    my $grid_match    = $child->getAttribute('grid');
-	    my $match = 'no'; 
-	    if ($compset_match && $grid_match) {
-		if  (($compset_longname =~ /$compset_match/) && ($grid_longname =~ /$grid_match/)) {
-		    $match = 'yes';
-		}
-	    } elsif ($compset_match) {
-		if  ($compset_longname =~ /$compset_match/) {
-		    $match = 'yes';
-		}
-	    } elsif ($grid_match) {
-		if  ($grid_longname =~ /$grid_match/) {
-		    $match = 'yes';
-		}
+
+    # TODO: add Jay's definition for !variable_name
+    my $num_matches = 0;
+    foreach my $node ($xml->findnodes(".//entry/values/value")) {
+	my $compset_match  = $child->getAttribute('compset');
+	my $grid_match     = $child->getAttribute('grid');
+	my $machine_match  = $child->getAttribute('machine');
+	my $compiler_match = $child->getAttribute('compiler');
+	my $mpilib_match   = $child->getAttribute('mpilib');
+	my $compset_match  = $child->getAttribute('compset');
+	my $grid_match     = $child->getAttribute('grid');
+
+	my @index;
+	my @attributes;
+	my $matches = 0;
+	if (defined $compset_match) {
+	    if ($compset =~ m/$compset_match/) {push (@attributes, $compset_match)};
+	    $matches++;
+	}
+	if (defined $grid_match)  {
+	    if ($grid =~ m/$grid_match/) {push (@attributes, $grid_match)};
+	    $matches++;
+	}
+	if (defined $machine_match) {
+	    if ($machine =~ m/$machine_match/) {push (@attributes, $machine_match)};
+	    $matches++;
+	}
+	if (defined $compiler_match) {
+	    if ($compiler =~ m/$compiler_match/) {push (@attributes, $compiler_match)};
+	    $matches++;
+	}
+	if (defined $mpilib_match) {
+	    if ($mpilib =~ m/$mpilib_match/) {push (@attributes, $mpilib_match)};
+	    $matches++;
+	}
+	if ($matches > $num_matches) {
+	    #TODO - fill this in
+	}
+
+	if ($match eq 'yes') {
+	    my $name = $node->getAttribute('id');
+	    if (! $config->is_valid_name($name)) {
+		die "ERROR ConfigCompsetGrid::setComponent: $name is not a valid name \n";
 	    }
-	    
-	    if ($match eq 'yes') {
-		my $name = $node->getAttribute('id');
-		if (! $config->is_valid_name($name)) {
-		    die "ERROR ConfigCompsetGrid::setComponent: $name is not a valid name \n";
-		}
-		my $new_val = $child->textContent();
-		$config->set($name, $new_val);
-	    }
+	    my $new_val = $child->textContent();
+#	    $config->set($name, $new_val);
 	}
     }
 }

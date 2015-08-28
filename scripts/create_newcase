@@ -452,7 +452,7 @@ ConfigCompsetGrid::setComponent($file, $config);
 #------------------------------------------------------------------------------------------
 # Determine <entry> settings in config_compsets.xml
 #------------------------------------------------------------------------------------------
-# This determines cime_config.xml settings that are compset specific
+# This determines driver_cpl/cime_config/config_component.xml settings that are compset specific
 # and also check that compset is supported for target grid
 # Note- this needs to come last since it will overwrite any values set above 
 

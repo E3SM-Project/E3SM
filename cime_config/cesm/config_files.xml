@@ -37,7 +37,16 @@
     <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_machines.xml</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
-    <desc>file containing specification of all compsets for primary component (for documentation only - DO NOT EDIT)</desc>
+    <desc>file containing machine specifications for target model primary component (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="PIO_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/cime_config/$MODEL/machines/config_pio.xml</default_value>
+    <default_value>unset</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of pio settings for target model possible machine, compiler, mpilib, compset and/or grid attributes (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
   <!-- ============================================================ -->
@@ -77,26 +86,6 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of all pe-layouts for primary component (for documentation only - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="PIO_SPEC_FILE">
-    <type>char</type>
-    <default_value>unset</default_value>
-    <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL//allactive/config_pio.xml</value>
-      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/config_pio.xml</value>
-      <value component="cam"      >$SRCROOT/components/cam/cime_config/config_pio.xml</value>
-      <value component="cism"     >$SRCROOT/components/cism/cime_config/config_pio.xml</value>
-      <value component="clm"      >$SRCROOT/components/clm/cime_config/config_pio.xml</value>
-      <value component="cice"     >$SRCROOT/components/cice/cime_config/config_pio.xml</value>
-      <value component="pop"      >$SRCROOT/components/pop/cime_config/config_pio.xml</value>
-    </values>
-    <group>case_last</group>
-    <file>env_case.xml</file>
-    <desc>file containing pio specification that are grid and/or compset sepcific. 
-    The definitions along with default settings are given in driver_cpl/cime_config/config_component.xml.
-    Any machine-specific non-default settings are then set in config_machines.xml.
-    Any grid and compset specific values are then specified in config_pio.xml (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="TESTS_SPEC_FILE">

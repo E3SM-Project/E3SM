@@ -42,10 +42,10 @@ sub main
         exit(-1);
     }
     
-    my $moduleloader = Module::ModuleLoader->new(machine  => $mach, 
+    my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
 						 compiler => $compiler, 
 						 mpilib   => $mpilib, 
-						 debug    => $dbug, 
+						 debug    => $debug, 
 						 caseroot => $caseroot, 
 						 cimeroot => $cimeroot,
 						 model    => $model);
