@@ -116,7 +116,7 @@ ctest_build ()
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
 execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_SCRIPT_ARG}
-                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
+                 WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY})
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")

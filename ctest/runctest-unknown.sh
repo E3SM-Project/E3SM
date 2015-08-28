@@ -8,7 +8,7 @@
 #
 #==============================================================================
 
-# Get the CTest Dashboard Model
+# Get the dashboard model name
 model=$1
 
 # Run the "ctest" command in another process
