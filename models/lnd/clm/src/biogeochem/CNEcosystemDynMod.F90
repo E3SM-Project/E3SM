@@ -141,6 +141,7 @@ contains
     ! only do if ed is off
     if( .not. use_ed ) then
      if(.not.(use_pflotran.and.pf_cmode)) then
+       !! Mineral P transformations will be implemented in pflotran
        call t_startf('PWeathering')
        call PWeathering(num_soilc, filter_soilc, &
        cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
@@ -174,7 +175,7 @@ contains
 
        call PLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-     end if !(.not. (pf_cmode .and. pf_hmode)) block  !! wgs
+     end if !(.not. (pf_cmode .and. pf_hmode))
      !-----------------------------------------------------------------------
        call t_startf('CNUpdate3')
 
@@ -367,7 +368,7 @@ contains
        call t_stopf('CNMResp')
 
 !!-------------------------------------------------------------------------------------------------
-!! moved to CNDecompAlloc1
+!! 'decomp_rate_constants' is moved to CNDecompAlloc1
 !       if (use_century_decomp) then
 !          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
 !               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
@@ -377,24 +378,22 @@ contains
 !       end if
 
 !!-------------------------------------------------------------------------------------------------
-!! moved from CNDecompAlloc (nfixation_prof)
-        call decomp_vertprofiles(bounds, &
+!! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
+!! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
+        call decomp_vertprofiles(bounds,                     &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
 !!-------------------------------------------------------------------------------------------------
-        !! CNAllocation1_AG will be always called (w/ or w/o use_bgc_interface)
-        ! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
-!       if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
-          call t_startf('CNAllocation - phase 1')
-          ! change 'CNAllocation1' to 'CNAllocation1_AG'
+        !! CNAllocation1_AG is always called (w/ or w/o use_bgc_interface)
+        !! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
+          call t_startf('CNAllocation - phase-1')
           call CNAllocation1_AG(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                 &
                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars,                    &
                c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars,                &
                phosphorusstate_vars, phosphorusflux_vars)
 
-          call t_stopf('CNAllocation - phase 1')
-!       endif !!if (use_bgc_interface.and.use_pflotran .and. pf_cmode)
+          call t_stopf('CNAllocation - phase-1')
 
     end if !end of if not use_ed block
 
@@ -492,9 +491,9 @@ contains
 
        call t_startf('CNDecompAlloc')
        !----------------------------------------------------------------
-       !! directly use_clm_bgc
        if(.not.use_bgc_interface) then
-            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc1 is called in clm_driver through clm_bgc_interface
+            !! directly run clm-bgc
+            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc1 is called in clm_driver
             call CNDecompAlloc1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
                 cnstate_vars, ch4_vars,                                                             &
@@ -503,8 +502,9 @@ contains
                 phosphorusstate_vars,phosphorusflux_vars)
        end if !!if(.not.use_bgc_interface)
        !----------------------------------------------------------------
-       !! CNDecompAlloc2 is called by both PFLOTRAN & ALM
-       !! for pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
+       !! CNDecompAlloc2 is called by both PFLOTRAN & clm-bgc
+       !! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
+       !! pflotran & clm-bgc : 'CNAllocation3_AG' and vertically integrate net and gross mineralization fluxes
        call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
                 waterstate_vars, cnstate_vars, ch4_vars,                                          &

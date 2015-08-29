@@ -4746,6 +4746,7 @@ contains
     if (use_bgc_interface) then
         call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     end if
+    !! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------
 
     do fc = 1,num_soilc

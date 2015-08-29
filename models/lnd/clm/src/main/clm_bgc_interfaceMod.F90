@@ -931,8 +931,8 @@ contains
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
     associate ( &
-     phr_vr                           =>    carbonflux_vars%phr_vr_col                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
-     fphr                             =>    carbonflux_vars%fphr_col                                , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+     phr_vr                           => carbonflux_vars%phr_vr_col                                 , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
+     fphr                             => carbonflux_vars%fphr_col                                   , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
 
      decomp_cascade_hr_vr_col         => carbonflux_vars%decomp_cascade_hr_vr_col                   , &
 

@@ -741,6 +741,7 @@ write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
                     !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc1
                     !! STEP-2: (ii) run CNDecompAlloc1
                     !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc1
+                    print*,"DEBUG | clm_bgc_run VIA clm_bgc_interface..."
                     call clm_bgc_run(clm_bgc_data, bounds_clump,                &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &

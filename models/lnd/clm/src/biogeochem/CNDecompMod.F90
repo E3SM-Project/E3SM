@@ -9,6 +9,7 @@ module CNDecompMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use decompMod              , only : bounds_type
+  use perf_mod               , only : t_startf, t_stopf
   use clm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
   use clm_varcon             , only : dzsoi_decomp
   use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
@@ -380,7 +381,9 @@ contains
 
 
 !!-------------------------------------------------------------------------------------------------
-!! moved to CNEcosystemDynNoLeaching1
+!! 'decomp_vertprofiles' is moved to CNEcosystemDynNoLeaching1
+!! 'decomp_vertprofiles' (calc nfixation_prof) is moved to CNEcosystemDynNoLeaching1
+!! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
 !      call decomp_vertprofiles(bounds, &
 !           num_soilc, filter_soilc, num_soilp, filter_soilp, &
 !           soilstate_vars, canopystate_vars, cnstate_vars)
@@ -397,19 +400,22 @@ contains
       ! to resolve the competition between plants and soil heterotrophs
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
-
+      call t_startf('CNAllocation - phase-2')
       call CNAllocation2_BG(bounds,                                                          &
            num_soilc, filter_soilc, num_soilp, filter_soilp,                              &
            photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                     &
            carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,   &
            nitrogenstate_vars, nitrogenflux_vars,                                         &
            phosphorusstate_vars,phosphorusflux_vars)
+      call t_stopf('CNAllocation - phase-2')
 
 
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
 
+!!-------------------------------------------------------------------------------------------------
 !! comment out c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
+!!-------------------------------------------------------------------------------------------------
       ! calculate c:n ratios of applicable pools
 !      do l = 1, ndecomp_pools
 !         if ( floating_cn_ratio_decomp_pools(l) ) then
@@ -743,12 +749,15 @@ contains
     end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
 !!------------------------------------------------------------------
       
-      ! conduct the phase-3 Allocation for plants
-      call CNAllocation3_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,        &
+
+      ! phase-3 Allocation for plants
+      call t_startf('CNAllocation - phase-3')
+      call CNAllocation3_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,     &
             cnstate_vars, carbonstate_vars, carbonflux_vars,                               &
             c13_carbonflux_vars, c14_carbonflux_vars,                                      &
             nitrogenstate_vars, nitrogenflux_vars,                                         &
             phosphorusstate_vars, phosphorusflux_vars)
+      call t_stopf('CNAllocation - phase-3')
 !!------------------------------------------------------------------
 
       ! vertically integrate net and gross mineralization fluxes for diagnostic output

@@ -1787,6 +1787,74 @@ contains
          avgflag='A', long_name='total allocated N flux', &
          ptr_patch=this%plant_nalloc_patch, default='inactive')
 
+    !!-----------------------------------------------------------
+    if (use_pflotran.and.pf_cmode) then
+          this%f_ngas_decomp_col(begc:endc) = spval
+          call hist_addfld1d (fname='F_NGAS_DECOMP', units='gN/m^2/s',  &
+                avgflag='A', long_name='N gas emission from excess mineral N pool due to mineralization', &
+                ptr_col=this%f_ngas_decomp_col, default='inactive')
+
+          this%f_ngas_nitri_col(begc:endc) = spval
+          call hist_addfld1d (fname='F_NGAS_NITRI', units='gN/m^2/s',  &
+                avgflag='A', long_name='N gas emission from nitrification', &
+                ptr_col=this%f_ngas_nitri_col, default='inactive')
+
+          this%f_ngas_denit_col(begc:endc) = spval
+          call hist_addfld1d (fname='F_NGAS_DENIT', units='gN/m^2/s',  &
+                avgflag='A', long_name='N gas emission from denitrification', &
+                ptr_col=this%f_ngas_denit_col, default='inactive')
+
+          this%f_n2o_soil_col(begc:endc) = spval
+          call hist_addfld1d (fname='F_N2O_SOIL', units='gN/m^2/s',  &
+                avgflag='A', long_name='soil n2o exchange flux', &
+                ptr_col=this%f_n2o_soil_col)
+
+          this%f_n2_soil_col(begc:endc) = spval
+          call hist_addfld1d (fname='F_N2_SOIL', units='gN/m^2/s',  &
+                avgflag='A', long_name='soil n2 exchange flux', &
+                ptr_col=this%f_n2_soil_col)
+
+          this%smin_nh4_to_plant_col(begc:endc) = spval
+          call hist_addfld1d (fname='SMIN_NH4_TO_PLANT', units='gN/m^2/s', &
+               avgflag='A', long_name='plant uptake of NH4', &
+               ptr_col=this%smin_nh4_to_plant_col, default='inactive')
+
+          this%smin_no3_to_plant_col(begc:endc) = spval
+          call hist_addfld1d (fname='SMIN_NO3_TO_PLANT', units='gN/m^2/s', &
+               avgflag='A', long_name='plant uptake of NO3', &
+               ptr_col=this%smin_no3_to_plant_col, default='inactive')
+          !!---------------------------------------------------------------
+          this%f_ngas_decomp_vr_col(begc:endc,:) = spval
+            call hist_addfld_decomp (fname='F_NGAS_DECOMP'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name='n gas emission from excess mineral N pool due to mineralization', &
+               ptr_col=this%f_ngas_decomp_vr_col, default='inactive')
+
+            this%f_ngas_nitri_vr_col(begc:endc,:) = spval
+            call hist_addfld_decomp (fname='F_NGAS_NITRI'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name='n gas emission in nitrification', &
+               ptr_col=this%f_ngas_nitri_vr_col, default='inactive')
+
+            this%f_ngas_denit_vr_col(begc:endc,:) = spval
+            call hist_addfld_decomp (fname='F_NGAS_DENIT'//trim(vr_suffix), units='gN/m^3/s',  type2d='levdcmp', &
+               avgflag='A', long_name='n gas emission in denitrification', &
+               ptr_col=this%f_ngas_denit_vr_col, default='inactive')
+
+            this%f_n2o_soil_vr_col(begc:endc,:) = spval
+            call hist_addfld_decomp (fname='F_N2O_SOIL'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='soil N2O exchange flux', &
+               ptr_col=this%f_n2o_soil_vr_col)
+
+            this%f_n2_soil_vr_col(begc:endc,:) = spval
+            call hist_addfld_decomp (fname='F_N2_SOIL'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='soil N2 exchange flux', &
+               ptr_col=this%f_n2_soil_vr_col)
+
+            this%plant_ndemand_vr_col(begc:endc,:) = spval
+            call hist_addfld_decomp (fname='PLANT_NDEMAND'//trim(vr_suffix), units='gN/m^3/s', type2d='levdcmp', &
+               avgflag='A', long_name='plant N demand distribution via roots', &
+               ptr_col=this%plant_ndemand_vr_col, default='inactive')
+    end if !! if (use_pflotran.and.pf_cmode)
+    !!-----------------------------------------------------------
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------

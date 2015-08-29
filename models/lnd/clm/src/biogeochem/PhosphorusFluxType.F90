@@ -1521,8 +1521,6 @@ contains
     use clm_varpar, only : crop_prog
     use restUtilMod
     use ncdio_pio
-    ! pflotran
-!    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
     !
     ! !ARGUMENTS:
     class (phosphorusflux_type) :: this
