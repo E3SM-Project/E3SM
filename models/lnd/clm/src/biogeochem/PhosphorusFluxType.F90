@@ -2242,11 +2242,7 @@ contains
 
   end subroutine Summary
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: PSummary_pflotran
-!
+!!-------------------------------------------------------------------------------------------------
 ! !INTERFACE:
 subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
@@ -2281,74 +2277,6 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
     if (use_pflotran .and. pf_cmode) then
         !! TODO
     end if
-! nitrification-denitrification rates (not yet passing out from PF, but will)
-!      do fc = 1,num_soilc
-!         c = filter_soilc(fc)
-!         this%f_nit_col(c)   = 0._r8
-!         this%f_denit_col(c) = 0._r8
-!         do j = 1, nlevdecomp
-!            this%f_nit_vr_col(c,j) = 0._r8
-!            this%f_nit_col(c)  = this%f_nit_col(c) + &
-!                                 this%f_nit_vr_col(c,j)*dzsoi_decomp(j)
-!
-!            this%f_denit_vr_col(c,j) = 0._r8
-!            this%f_denit_col(c) = this%f_denit_col(c) + &
-!                                 this%f_denit_vr_col(c,j)*dzsoi_decomp(j)
-!
-!         end do
-!         this%denit_col(c)      = this%f_denit_col(c)
-!
-!       end do
-!
-!       ! the following are from pflotran bgc
-!       do fc = 1,num_soilc
-!          c = filter_soilc(fc)
-!          this%f_n2_soil_col(c)    = 0._r8
-!          this%f_n2o_soil_col(c)   = 0._r8
-!          this%f_ngas_decomp_col(c)= 0._r8
-!          this%f_ngas_nitri_col(c) = 0._r8
-!          this%f_ngas_denit_col(c) = 0._r8
-!          this%smin_no3_leached_col(c) = 0._r8
-!          this%smin_no3_runoff_col(c)  = 0._r8
-!
-!          do j = 1, nlevdecomp
-!
-!            ! all N2/N2O gas exchange between atm. and soil (i.e., dissolving - degassing)
-!            this%f_n2_soil_col(c)  = this%f_n2_soil_col(c) + &
-!                                  this%f_n2_soil_vr_col(c,j)*dzsoi_decomp(j)
-!            this%f_n2o_soil_col(c) = this%f_n2o_soil_col(c) + &
-!                                  this%f_n2o_soil_vr_col(c,j)*dzsoi_decomp(j)
-!
-!            ! all N2/N2O production from soil bgc N processes (mineralization-nitrification-denitrification)
-!            ! note: those are directly dissolved into aq. gas species, which would be exchanging with atm.
-!            this%f_ngas_decomp_col(c) = this%f_ngas_decomp_col(c) + &
-!                                     this%f_ngas_decomp_vr_col(c,j)*dzsoi_decomp(j)
-!            this%f_ngas_nitri_col(c)  = this%f_ngas_nitri_col(c) + &
-!                                     this%f_ngas_nitri_vr_col(c,j)*dzsoi_decomp(j)
-!            this%f_ngas_denit_col(c)  = this%f_ngas_denit_col(c) + &
-!                                     this%f_ngas_denit_vr_col(c,j)*dzsoi_decomp(j)
-!
-!            ! leaching/runoff flux (if not hydroloy-coupled, from CLM-CN; otherwise from PF)
-!            this%smin_no3_leached_col(c) = this%smin_no3_leached_col(c) + &
-!                                        this%smin_no3_leached_vr_col(c,j) * dzsoi_decomp(j)
-!            this%smin_no3_runoff_col(c)  = this%smin_no3_runoff_col(c) + &
-!                                        this%smin_no3_runoff_vr_col(c,j) * dzsoi_decomp(j)
-!
-!            ! assign all no3-N leaching/runoff to all mineral-N
-!            this%sminn_leached_vr_col(c,j) = this%smin_no3_leached_vr_col(c,j) + &
-!                                               this%smin_no3_runoff_vr_col(c,j)
-!
-!          end do
-!
-!          ! for balance-checking
-!          this%denit_col(c)     = this%f_ngas_denit_col(c)
-!          this%f_n2o_nit_col(c) = this%f_ngas_decomp_col(c) + this%f_ngas_nitri_col(c)
-!
-!          ! assign all no3-N leaching/runoff to all mineral-N
-!          this%sminn_leached_col(c) = this%smin_no3_leached_col(c) + this%smin_no3_runoff_col(c)
-!
-!      end do
-
 
        ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
        ! first it needs to save the total column-level N rate btw plant pool and decomposible pools at previous time step
@@ -2427,8 +2355,8 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
 
              ! for som n
                 else
-                   this%externalp_to_decomp_ppools_col(c,j,l) =                 &
-                       this%externalp_to_decomp_ppools_col(c,j,l)               &
+                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+                       this%externalp_to_decomp_ppools_col(c,j,l)            &
                         - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
 
                 end if
@@ -2470,6 +2398,7 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
           this%sminp_net_transport_delta_col(c)     = -this%sminp_net_transport_delta_col(c)
        end do
 end subroutine PSummary_interface
+!!-------------------------------------------------------------------------------------------------
 
 end module PhosphorusFluxType
 

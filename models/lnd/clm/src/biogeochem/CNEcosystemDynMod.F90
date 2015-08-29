@@ -216,7 +216,7 @@ contains
   end subroutine CNEcosystemDynLeaching
 
 
-  !-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
   subroutine CNEcosystemDynNoLeaching1(bounds,                          &
        num_soilc, filter_soilc,                                         &
        num_soilp, filter_soilp,                                         &!!num_pcropp, filter_pcropp, doalb, &
@@ -366,6 +366,8 @@ contains
             carbonflux_vars, nitrogenstate_vars)
        call t_stopf('CNMResp')
 
+!!-------------------------------------------------------------------------------------------------
+!! moved to CNDecompAlloc1
 !       if (use_century_decomp) then
 !          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
 !               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
@@ -374,14 +376,16 @@ contains
 !               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
 !       end if
 
-        ! wgs: moved from CNDecompAlloc (nfixation_prof)
+!!-------------------------------------------------------------------------------------------------
+!! moved from CNDecompAlloc (nfixation_prof)
         call decomp_vertprofiles(bounds, &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
-       !----------------------------------------------------------------
-       ! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
+!!-------------------------------------------------------------------------------------------------
+        !! CNAllocation1_AG will be always called (w/ or w/o use_bgc_interface)
+        ! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
 !       if (use_bgc_interface.and.use_pflotran .and. pf_cmode) then
-          call t_startf('CNDecompAlloc - PF phase 1')
+          call t_startf('CNAllocation - phase 1')
           ! change 'CNAllocation1' to 'CNAllocation1_AG'
           call CNAllocation1_AG(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                 &
@@ -389,14 +393,14 @@ contains
                c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars,                &
                phosphorusstate_vars, phosphorusflux_vars)
 
-          call t_stopf('CNDecompAlloc - PF phase 1')
+          call t_stopf('CNAllocation - phase 1')
 !       endif !!if (use_bgc_interface.and.use_pflotran .and. pf_cmode)
 
     end if !end of if not use_ed block
 
   end subroutine CNEcosystemDynNoLeaching1
 
-  !-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
   subroutine CNEcosystemDynNoLeaching2(bounds,                                  &
        num_soilc, filter_soilc,                                                 &
        num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb,               &
@@ -483,7 +487,6 @@ contains
     !-----------------------------------------------------------------------
 
     ! Call the main CN routines
-!! see CNEcosystemDynNoLeaching1()
     ! only do if ed is off
     if( .not. use_ed ) then
 
@@ -491,16 +494,17 @@ contains
        !----------------------------------------------------------------
        !! directly use_clm_bgc
        if(.not.use_bgc_interface) then
-            ! CNDecomAlloc1 is called in clm_driver through clm_bgc_interface if (use_bgc_interface & use_clm_bgc)
-            call CNDecompAlloc1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,             &
+            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc1 is called in clm_driver through clm_bgc_interface
+            call CNDecompAlloc1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
                 cnstate_vars, ch4_vars,                                                             &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
                 nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
                 phosphorusstate_vars,phosphorusflux_vars)
        end if !!if(.not.use_bgc_interface)
-
+       !----------------------------------------------------------------
        !! CNDecompAlloc2 is called by both PFLOTRAN & ALM
+       !! for pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
        call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
                 waterstate_vars, cnstate_vars, ch4_vars,                                          &
@@ -509,27 +513,6 @@ contains
                 phosphorusstate_vars,phosphorusflux_vars)
 
        !----------------------------------------------------------------
-
-       ! call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
-       ! and also call CNAllocationMod - part 2.
-       ! if coupled with pflotran
-
-!       if (use_pflotran .and. pf_cmode) then
-!          call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
-!                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
-!                waterstate_vars, cnstate_vars, ch4_vars,                                          &
-!                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
-!                nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
-!                phosphorusstate_vars,phosphorusflux_vars)
-!
-!       else
-!           call CNDecompAlloc(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,             &
-!                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
-!                cnstate_vars, ch4_vars,                                                             &
-!                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
-!                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
-!                phosphorusstate_vars,phosphorusflux_vars)
-!       end if !if (use_pflotran .and. pf_cmode) block
        call t_stopf('CNDecompAlloc')
        !----------------------------------------------------------------
 
@@ -771,7 +754,7 @@ contains
 
   end subroutine CNEcosystemDynNoLeaching2
 
-  !-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
 !  subroutine CNEcosystemDynNoLeaching(bounds, &
 !       num_soilc, filter_soilc, &
 !       num_soilp, filter_soilp, num_pcropp, filter_pcropp, doalb, &

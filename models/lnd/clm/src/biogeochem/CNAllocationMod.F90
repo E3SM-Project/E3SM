@@ -223,13 +223,13 @@ contains
 
   end subroutine CNAllocationInit
 
- !-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
   subroutine CNAllocation1_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
-    !! 1st phase of CNAllocation: loop over patches to assess the total plant N demand and P demand
+    !! PHASE-1 of CNAllocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
@@ -1537,13 +1537,13 @@ contains
 
  end subroutine CNAllocation1_AG
 
- !-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
   subroutine CNAllocation2_BG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,  &
        nitrogenstate_vars, nitrogenflux_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
-    !! 2nd phase of CNAllocation:  resolving N/P limitation
+    !! PHASE-2 of CNAllocation:  resolving N/P limitation
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
@@ -2780,13 +2780,14 @@ contains
     end associate
 
  end subroutine CNAllocation2_BG
- !-----------------------------------------------------------------------
+
+!!-------------------------------------------------------------------------------------------------
   subroutine CNAllocation3_AG (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, carbonstate_vars, carbonflux_vars,                               &
        c13_carbonflux_vars, c14_carbonflux_vars,                                      &
        nitrogenstate_vars, nitrogenflux_vars,                                         &
        phosphorusstate_vars, phosphorusflux_vars)
-    !! 3rd phase of CNAllocation: start new pft loop to distribute the available N between the
+    !! PHASE-3 of CNAllocation: start new pft loop to distribute the available N between the
     ! competing patches on the basis of relative demand, and allocate C and N to new growth and storage
 
     ! !USES:
@@ -2799,7 +2800,7 @@ contains
     use clm_varpar       , only:  nlevdecomp !!nlevsoi,
 !    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
-!!wgs:    use clm_time_manager , only: get_step_size
+!    use clm_time_manager , only: get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -3367,16 +3368,15 @@ contains
            end do
       end do
       !----------------------------------------------------------------
-      !================================================================================================
 
     end associate
 
  end subroutine CNAllocation3_AG
 
-!-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
   subroutine calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
 !     use clm_varcon          , only : dzsoi_decomp  !! declared in module CNAllocationMod
-    ! nuptake_prof is used in CNAllocation1 & 2
+    ! nuptake_prof is used in CNAllocation1, 2, 3
     ! !USES:
     use clm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
@@ -3440,7 +3440,7 @@ contains
 
  end subroutine calc_nuptake_prof
 
-!-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
   subroutine calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 !     use clm_varcon          , only : dzsoi_decomp  !! declared in module CNAllocationMod
     !!wgs: puptake_prof is used in CNAllocation1 & 2
@@ -3499,7 +3499,8 @@ contains
     end associate
 
  end subroutine calc_puptake_prof
- !-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
+
 !-----------------------------------------------------------------------
 !  subroutine CNAllocation1 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
 !       photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &

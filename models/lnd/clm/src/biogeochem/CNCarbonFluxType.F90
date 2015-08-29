@@ -4924,11 +4924,7 @@ contains
   end associate
   end subroutine Summary
 
-!----------------------------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: CSummary_interface
-!
+!!-------------------------------------------------------------------------------------------------
 ! !INTERFACE:
 subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 !
@@ -4959,8 +4955,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
    real(r8) :: dtime                ! time-step (s)
    integer :: c,j,l                 ! indices
    integer :: fc                    ! column filter indices
-!   real(r8), dimension(bounds%begc:bounds%endc,1:ndecomp_pools) :: delta_extc_pools
-!   real(r8), dimension(bounds%begc:bounds%endc,1:ndecomp_pools) :: extc_pools
+
     associate(&
         is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
         is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
@@ -5131,5 +5126,5 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 
     end associate
 end subroutine CSummary_interface
-!-----------------------------------------------------------------------
+!!-------------------------------------------------------------------------------------------------
 end module CNCarbonFluxType

@@ -2763,11 +2763,7 @@ contains
     !----------------------------------------------------------------
   end subroutine Summary
 
-!-----------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: NSummary_pflotran
-!
+!!-------------------------------------------------------------------------------------------------
 ! !INTERFACE:
 subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
@@ -2798,8 +2794,6 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 ! !LOCAL VARIABLES:
    integer :: c,j, l      ! indices
    integer :: fc          ! column filter indices
-!   real(r8), dimension(bounds%begc:bounds%endc,1:ndecomp_pools) :: delta_extn_pools
-!   real(r8), dimension(bounds%begc:bounds%endc,1:ndecomp_pools) :: extn_pools
    real(r8):: dtime             ! radiation time step (seconds)
 
    ! set time steps
@@ -2953,8 +2947,8 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 
              ! for som n
                 else
-                   this%externaln_to_decomp_npools_col(c,j,l) =                 &
-                       this%externaln_to_decomp_npools_col(c,j,l)               &
+                   this%externaln_to_decomp_npools_col(c,j,l) =              &
+                       this%externaln_to_decomp_npools_col(c,j,l)            &
                         - this%m_decomp_npools_to_fire_vr_col(c,j,l)
 
                 end if
@@ -2997,6 +2991,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
           this%no3_net_transport_delta_col(c)   = -this%no3_net_transport_delta_col(c)
        end do
 end subroutine NSummary_interface
+!!-------------------------------------------------------------------------------------------------
 
 end module CNNitrogenFluxType
 

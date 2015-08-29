@@ -678,21 +678,7 @@ contains
              ! - CNDV defined: prognostic biogeography; else prescribed
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
-             ! pflotran: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2)
-
-!             call CNEcosystemDynNoLeaching(bounds_clump,                        &
-!                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
-!                  filter(nc)%num_soilp, filter(nc)%soilp,                       &
-!                  filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,              &
-!                  cnstate_vars, carbonflux_vars, carbonstate_vars,              &
-!                  c13_carbonflux_vars, c13_carbonstate_vars,                    &
-!                  c14_carbonflux_vars, c14_carbonstate_vars,                    &
-!                  nitrogenflux_vars, nitrogenstate_vars,                        &
-!                  atm2lnd_vars, waterstate_vars, waterflux_vars,                &
-!                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
-!                  dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,&
-!                  phosphorusflux_vars,phosphorusstate_vars)
-
+             ! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2)
 
              call CNEcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
@@ -732,7 +718,7 @@ write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
                     !! STEP-2: (i) pass data from clm_bgc_data to pflotran
                     !! STEP-2: (ii) run pflotran
                     !! STEP-2: (iii) update clm_bgc_data from pflotran
-                    call clm_pf_run(clm_bgc_data,bounds_clump,          &
+                    call clm_pf_run(clm_bgc_data,bounds_clump,                  &
                            filter(nc)%num_soilc, filter(nc)%soilc)
 
                     !! STEP-3: update CLM from clm_bgc_data
@@ -804,8 +790,8 @@ write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
              if (doalb) then
                 ! Prescribed biogeography - prescribed canopy structure, some prognostic carbon fluxes
 
-                call SatellitePhenology(bounds_clump, &
-                     filter(nc)%num_nolakep, filter(nc)%nolakep, &
+                call SatellitePhenology(bounds_clump,               &
+                     filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      waterstate_vars, canopystate_vars)
              end if
              call t_stopf('ecosysdyn')
