@@ -368,22 +368,22 @@ contains
 
  subroutine metdata_phys_init
    use infnan,      only : nan, assignment(=)
-   use cam_history, only : addfld,dyn_decomp,phys_decomp
+   use cam_history, only : addfld
 
-   call addfld ('MET_RLX ','     ',pver, 'A','Meteorology relax function',dyn_decomp)
-   call addfld ('MET_TAUX','        ',1, 'A','Meteorology taux',phys_decomp)
-   call addfld ('MET_TAUY','        ',1, 'A','Meteorology tauy',phys_decomp)
-   call addfld ('MET_SHFX','        ',1, 'A','Meteorology shflx',phys_decomp)
-   call addfld ('MET_QFLX','        ',1, 'A','Meteorology qflx',phys_decomp)
-   call addfld ('MET_PS','          ',1, 'A','Meteorology PS',dyn_decomp)
-   call addfld ('MET_T','        ',pver, 'A','Meteorology T',phys_decomp)
-   call addfld ('MET_U','        ',pver, 'A','Meteorology U',dyn_decomp)
-   call addfld ('MET_V','        ',pver, 'A','Meteorology V',dyn_decomp)
-   call addfld ('MET_SNOWH','    ',1,    'A','Meteorology snow height',phys_decomp)
+   call addfld ('MET_RLX',(/ 'lev' /), 'A','     ','Meteorology relax function',gridname='fv_centers')
+   call addfld ('MET_TAUX',horiz_only, 'A','        ','Meteorology taux', gridname='physgrid')
+   call addfld ('MET_TAUY',horiz_only, 'A','        ','Meteorology tauy', gridname='physgrid')
+   call addfld ('MET_SHFX',horiz_only, 'A','        ','Meteorology shflx', gridname='physgrid')
+   call addfld ('MET_QFLX',horiz_only, 'A','        ','Meteorology qflx', gridname='physgrid')
+   call addfld ('MET_PS',horiz_only, 'A','          ','Meteorology PS',gridname='fv_centers')
+   call addfld ('MET_T',(/ 'lev' /), 'A','        ','Meteorology T', gridname='physgrid')
+   call addfld ('MET_U',(/ 'lev' /), 'A','        ','Meteorology U',gridname='fv_centers')
+   call addfld ('MET_V',(/ 'lev' /), 'A','        ','Meteorology V',gridname='fv_centers')
+   call addfld ('MET_SNOWH',horiz_only,    'A','    ','Meteorology snow height', gridname='physgrid')
 
-   call addfld ('MET_TS','K',1, 'A','Meteorology TS',phys_decomp)
-   call addfld ('MET_OCNFRC','fraction',1, 'A','Ocean frac derived from met TS',phys_decomp)
-   call addfld ('MET_ICEFRC','fraction',1, 'A','Sea ice frac derived from met TS',phys_decomp)
+   call addfld ('MET_TS',horiz_only, 'A','K','Meteorology TS', gridname='physgrid')
+   call addfld ('MET_OCNFRC',horiz_only, 'A','fraction','Ocean frac derived from met TS', gridname='physgrid')
+   call addfld ('MET_ICEFRC',horiz_only, 'A','fraction','Sea ice frac derived from met TS', gridname='physgrid')
 
 ! allocate chunked arrays   
 
