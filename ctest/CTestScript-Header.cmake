@@ -56,15 +56,15 @@ getuname (cpu -m)
 
 ## -- Compiler ID from ENV (must be set prior to run)
 if (DEFINED ENV{PIO_COMPILER_ID})
-    set (comp "-$ENV{PIO_COMPILER_ID}")
+    set (comp "$ENV{PIO_COMPILER_ID}")
 else ()
-    set (comp "")
+    set (comp "?")
 endif ()
 
 ## -- Set the site name & build name
 
 set (CTEST_SITE "${HOSTNAME_ID}")
-set (CTEST_BUILD_NAME "${HOSTNAME}-${osname}-${osrel}-${cpu}${comp}")
+set (CTEST_BUILD_NAME "${HOSTNAME}-${osname}-${osrel}-${cpu}-${comp}")
 
 ## -- Git command
 find_program (CTEST_GIT_COMMAND NAMES git)
