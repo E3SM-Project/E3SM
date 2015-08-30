@@ -26,18 +26,18 @@ if (NOT LIBZ_FOUND)
 
     # Manually add the MPI include and library dirs to search paths
     if (MPI_C_FOUND)
-        set (LIBZ_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
-        set (LIBZ_LIBRARY_HINTS)
+        set (LIBZ_INCLUDE_PATHS ${MPI_C_INCLUDE_PATH})
+        set (LIBZ_LIBRARY_PATHS)
         foreach (lib IN LISTS MPI_C_LIBRARIES)
             get_filename_component (libdir ${lib} PATH)
-            list (APPEND LIBZ_LIBRARY_HINTS ${libdir})
+            list (APPEND LIBZ_LIBRARY_PATHS ${libdir})
             unset (libdir)
         endforeach ()
     endif ()
     
     # Search for the package
     find_package_component(LIBZ
-                           INCLUDE_HINTS ${LIBZ_INCLUDE_HINTS}
-                           LIBRARY_HINTS ${LIBZ_LIBRARY_HINTS})
+                           INCLUDE_PATHS ${LIBZ_INCLUDE_PATHS}
+                           LIBRARY_PATHS ${LIBZ_LIBRARY_PATHS})
 
 endif ()

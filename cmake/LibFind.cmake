@@ -139,7 +139,7 @@ function (find_package_component PKG)
     # Parse the input arguments
     set (options)
     set (oneValueArgs COMPONENT)
-    set (multiValueArgs INCLUDE_HINTS LIBRARY_HINTS)
+    set (multiValueArgs INCLUDE_HINTS INCLUDE_PATHS LIBRARY_HINTS LIBRARY_PATHS)
     cmake_parse_arguments (${PKG} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})    
     set (COMP ${${PKG}_COMPONENT})
     if (COMP)
@@ -160,33 +160,27 @@ function (find_package_component PKG)
     
     # Determine include dir search order
     set (INCLUDE_HINTS)
-    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (${PKG}_INCLUDE_HINTS)
         list (APPEND INCLUDE_HINTS ${${PKG}_INCLUDE_HINTS})
     endif ()
-    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (${PKGCOMP}_PATH)
         list (APPEND INCLUDE_HINTS ${${PKGCOMP}_PATH}/include)
     endif ()
-    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (${PKG}_PATH)
         list (APPEND INCLUDE_HINTS ${${PKG}_PATH}/include)
     endif ()
-    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (DEFINED ENV{${PKGCOMPUP}})
         list (APPEND INCLUDE_HINTS $ENV{${PKGCOMPUP}}/include)
     endif ()
-    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (DEFINED ENV{${PKGUP}})
         list (APPEND INCLUDE_HINTS $ENV{${PKGUP}}/include)
     endif ()
     
-    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
-    
     # Search for include file
     find_path (${PKGCOMP}_INCLUDE_DIR
                NAMES ${${PKGCOMP}_INCLUDE_NAMES}
-               HINTS ${INCLUDE_HINTS})
+               HINTS ${INCLUDE_HINTS}
+               PATHS ${${PKGCOMP}_INCLUDE_PATHS})
                
     # Unset include search variables
     unset (INCLUDE_HINTS)
@@ -212,7 +206,8 @@ function (find_package_component PKG)
     # Search for library file
     find_library (${PKGCOMP}_LIBRARY
                   NAMES ${${PKGCOMP}_LIBRARY_NAMES}
-                  HINTS ${LIBRARY_HINTS})
+                  HINTS ${LIBRARY_HINTS}
+                  PATHS ${${PKGCOMP}_LIBRARY_PATHS})
     if (${PKGCOMP}_LIBRARY)
         is_shared_library (${PKGCOMP}_IS_SHARED ${${PKGCOMP}_LIBRARY})
         

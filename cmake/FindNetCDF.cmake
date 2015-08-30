@@ -44,19 +44,19 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
         # Manually add the MPI include and library dirs to search paths
         if (MPI_${NCDFcomp}_FOUND)
-            set (NetCDF_${NCDFcomp}_INCLUDE_HINTS ${MPI_${NCDFcomp}_INCLUDE_PATH})
-            set (NetCDF_${NCDFcomp}_LIBRARY_HINTS)
+            set (NetCDF_${NCDFcomp}_INCLUDE_PATHS ${MPI_${NCDFcomp}_INCLUDE_PATH})
+            set (NetCDF_${NCDFcomp}_LIBRARY_PATHS)
             foreach (lib IN LISTS MPI_${NCDFcomp}_LIBRARIES)
                 get_filename_component (libdir ${lib} PATH)
-                list (APPEND NetCDF_${NCDFcomp}_LIBRARY_HINTS ${libdir})
+                list (APPEND NetCDF_${NCDFcomp}_LIBRARY_PATHS ${libdir})
                 unset (libdir)
             endforeach ()
         endif ()
         
         # Search for the package component    
         find_package_component(NetCDF COMPONENT ${NCDFcomp}
-                               INCLUDE_HINTS ${NetCDF_${NCDFcomp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${NetCDF_${NCDFcomp}_LIBRARY_HINTS})
+                               INCLUDE_PATHS ${NetCDF_${NCDFcomp}_INCLUDE_PATHS}
+                               LIBRARY_PATHS ${NetCDF_${NCDFcomp}_LIBRARY_PATHS})
 
         # Continue only if component found
         if (NetCDF_${NCDFcomp}_FOUND)

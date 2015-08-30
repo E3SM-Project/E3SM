@@ -48,23 +48,23 @@ foreach (GPTL_comp IN LISTS GPTL_FIND_VALID_COMPONENTS)
     if (NOT GPTL_${GPTL_comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (GPTL_comp STREQUAL C OR GPTL_comp STREQUAL HL)
+        if (GPTL_comp STREQUAL C)
             if (MPI_C_FOUND)
-                set (GPTL_${GPTL_comp}_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
-                set (GPTL_${GPTL_comp}_LIBRARY_HINTS)
+                set (GPTL_${GPTL_comp}_INCLUDE_PATHS ${MPI_C_INCLUDE_PATH})
+                set (GPTL_${GPTL_comp}_LIBRARY_PATHS)
                 foreach (lib IN LISTS MPI_C_LIBRARIES)
                     get_filename_component (libdir ${lib} PATH)
-                    list (APPEND GPTL_${GPTL_comp}_LIBRARY_HINTS ${libdir})
+                    list (APPEND GPTL_${GPTL_comp}_LIBRARY_PATHS ${libdir})
                     unset (libdir)
                 endforeach ()
             endif ()
         else ()
             if (MPI_Fortran_FOUND)
-                set (GPTL_${GPTL_comp}_INCLUDE_HINTS ${MPI_Fortran_INCLUDE_PATH})
-                set (GPTL_${GPTL_comp}_LIBRARY_HINTS)
+                set (GPTL_${GPTL_comp}_INCLUDE_PATHS ${MPI_Fortran_INCLUDE_PATH})
+                set (GPTL_${GPTL_comp}_LIBRARY_PATHS)
                 foreach (lib IN LISTS MPI_Fortran_LIBRARIES)
                     get_filename_component (libdir ${lib} PATH)
-                    list (APPEND GPTL_${GPTL_comp}_LIBRARY_HINTS ${libdir})
+                    list (APPEND GPTL_${GPTL_comp}_LIBRARY_PATHS ${libdir})
                     unset (libdir)
                 endforeach ()
             endif ()
@@ -72,8 +72,8 @@ foreach (GPTL_comp IN LISTS GPTL_FIND_VALID_COMPONENTS)
 
         # Search for the package component
         find_package_component(GPTL COMPONENT ${GPTL_comp}
-                               INCLUDE_HINTS ${GPTL_${GPTL_comp}_INCLUDE_HINTS}
-                               LIBRARY_HINTS ${GPTL_${GPTL_comp}_LIBRARY_HINTS})
+                               INCLUDE_PATHS ${GPTL_${GPTL_comp}_INCLUDE_PATHS}
+                               LIBRARY_PATHS ${GPTL_${GPTL_comp}_LIBRARY_PATHS})
 
     endif ()
     
