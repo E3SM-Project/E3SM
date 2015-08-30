@@ -407,8 +407,8 @@ contains
   subroutine sat_hist_write( tape , nflds, nfils)
 
     use ppgrid,   only : pcols, begchunk, endchunk
-    use dyn_grid, only : get_dyn_grid_parm
-    use cam_pio_utils, only: phys_decomp, dyn_decomp
+    use phys_grid, only: phys_decomp
+    use dyn_grid, only: dyn_decomp
     use cam_history_support, only : active_entry
     use pio, only : pio_file_is_open
     implicit none
@@ -502,9 +502,8 @@ contains
 
 !-------------------------------------------------------------------------------
   subroutine dump_columns( File, hitem, ncols, nfils, fdims, ldims, owners  )
-    use cam_history_support,  only: field_info, hentry, hist_coords
+    use cam_history_support,  only: field_info, hentry, hist_coords, fillvalue
     use pionfwrite_mod, only: write_nf
-    use cam_pio_utils, only : fillvalue
     use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_offset, pio_iam_iotask, pio_setdebuglevel
 
     type(File_desc_t),intent(inout)  :: File

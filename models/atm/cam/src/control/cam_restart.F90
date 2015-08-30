@@ -162,7 +162,6 @@ end subroutine restart_printopts
       use radiation,        only: radiation_do
       use time_manager,     only: timemgr_write_restart
       use filenames,        only: caseid, interpret_filename_spec
-      use dycore,           only: dycore_is
 
       use time_manager,     only: timemgr_write_restart, timemgr_init_restart
       use restart_dynamics, only: write_restart_dynamics, init_restart_dynamics
@@ -190,7 +189,6 @@ end subroutine restart_printopts
       integer :: aeres_int = 0
       integer :: ierr
       type(file_desc_t) :: File
-      integer, pointer :: hdimids(:)
 
 
       !-----------------------------------------------------------------------
@@ -215,8 +213,8 @@ end subroutine restart_printopts
 
       call cam_pio_createfile(File, trim(fname), 0)
       call timemgr_init_restart(File)
-      call init_restart_dynamics(File, hdimids, dyn_out)
-      call init_restart_physics(File, cam_out, pbuf2d, hdimids)
+      call init_restart_dynamics(File, dyn_out)
+      call init_restart_physics(File, cam_out, pbuf2d)
       call init_restart_history(File)
       deallocate(hdimids)
 
@@ -282,7 +280,6 @@ end subroutine restart_printopts
       use spmd_dyn,         only: spmdbuf
 #endif
       use cam_history,      only: read_restart_history
-      use dycore,           only: dycore_is
 
       use cam_pio_utils,    only: cam_pio_openfile, clean_iodesc_list
       use spmd_utils,       only: iam, mpicom
@@ -380,9 +377,9 @@ end subroutine restart_printopts
       ! Dynamics, physics, History
       !-----------------------------------------------------------------------
 
+   call initcom ()
    call read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)   
 
-   call initcom ()
    call phys_grid_init
    call atm2hub_alloc( cam_out )
 
