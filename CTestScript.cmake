@@ -54,11 +54,13 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
-execute_process (COMMAND "${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}"
+set (CTEST_CMD "${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}")
+message ("CTEST_CMD = ${CTEST_CMD}")
+execute_process (COMMAND "${CTEST_CMD}"
                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
-ctest_submit ()
+#ctest_submit ()
 
 message (" -- Finished - ${CTEST_BUILD_NAME} --")
