@@ -40,10 +40,6 @@ else ()
     set (HOSTNAME_ID "unknown")
 endif ()
 
-## -- Set the site name
-
-set (CTEST_SITE "${HOSTNAME_ID}")
-
 ## -- Set the build name
 
 find_program (UNAME NAMES uname)
@@ -58,7 +54,17 @@ getuname (osname -s)
 getuname (osrel -r)
 getuname (cpu -m)
 
-set(CTEST_BUILD_NAME "${HOSTNAME}-${osname}-${osrel}-${cpu}")
+## -- Compiler ID from ENV (must be set prior to run)
+if (DEFINED ENV{PIO_COMPILER_ID})
+    set (comp "-$ENV{PIO_COMPILER_ID}")
+else ()
+    set (comp "")
+endif ()
+
+## -- Set the site name & build name
+
+set (CTEST_SITE "${HOSTNAME_ID}")
+set (CTEST_BUILD_NAME "${HOSTNAME}-${osname}-${osrel}-${cpu}${comp}")
 
 ## -- Git command
 find_program (CTEST_GIT_COMMAND NAMES git)
