@@ -72,8 +72,6 @@ function (check_version PKG)
     if (NOT DEFINED ${PKG}_VERSION)
         
         message (STATUS "Checking ${PKG} version")
-        message ("${PKG}_NAME = ${${PKG}_NAME}") #DEUBG*****
-        message ("${PKG}_HINTS = ${${PKG}_HINTS}") #DEUBG*****
         find_file (${PKG}_VERSION_HEADER
                    NAMES ${${PKG}_NAME}
                    HINTS ${${PKG}_HINTS})
