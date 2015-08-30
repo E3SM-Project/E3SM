@@ -160,21 +160,28 @@ function (find_package_component PKG)
     
     # Determine include dir search order
     set (INCLUDE_HINTS)
+    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (${PKG}_INCLUDE_HINTS)
         list (APPEND INCLUDE_HINTS ${${PKG}_INCLUDE_HINTS})
     endif ()
+    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (${PKGCOMP}_PATH)
         list (APPEND INCLUDE_HINTS ${${PKGCOMP}_PATH}/include)
     endif ()
+    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (${PKG}_PATH)
         list (APPEND INCLUDE_HINTS ${${PKG}_PATH}/include)
     endif ()
+    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (DEFINED ENV{${PKGCOMPUP}})
         list (APPEND INCLUDE_HINTS $ENV{${PKGCOMPUP}}/include)
     endif ()
+    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     if (DEFINED ENV{${PKGUP}})
         list (APPEND INCLUDE_HINTS $ENV{${PKGUP}}/include)
     endif ()
+    
+    message ("INCLUDE_HINTS = ${INCLUDE_HINTS}") #DEBUG*****
     
     # Search for include file
     find_path (${PKGCOMP}_INCLUDE_DIR
