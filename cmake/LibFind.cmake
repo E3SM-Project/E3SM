@@ -180,7 +180,7 @@ function (find_package_component PKG)
     find_path (${PKGCOMP}_INCLUDE_DIR
                NAMES ${${PKGCOMP}_INCLUDE_NAMES}
                HINTS ${INCLUDE_HINTS}
-               PATHS ${${PKGCOMP}_INCLUDE_PATHS})
+               PATHS ${${PKG}_INCLUDE_PATHS})
                
     # Unset include search variables
     unset (INCLUDE_HINTS)
@@ -207,7 +207,7 @@ function (find_package_component PKG)
     find_library (${PKGCOMP}_LIBRARY
                   NAMES ${${PKGCOMP}_LIBRARY_NAMES}
                   HINTS ${LIBRARY_HINTS}
-                  PATHS ${${PKGCOMP}_LIBRARY_PATHS})
+                  PATHS ${${PKG}_LIBRARY_PATHS})
     if (${PKGCOMP}_LIBRARY)
         is_shared_library (${PKGCOMP}_IS_SHARED ${${PKGCOMP}_LIBRARY})
         
