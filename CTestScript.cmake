@@ -28,6 +28,9 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${HOSTNAME_ID}")
 set (CTEST_RUNCTEST_SCRIPT "${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh")
 
+message ("CTEST_EXTRA_SCRIPT_PATH = ${CTEST_EXTRA_SCRIPT_PATH}")
+message ("CTEST_SCRIPT_ARG = ${CTEST_SCRIPT_ARG}")
+
 # -----------------------------------------------------------  
 # -- Run CTest
 # -----------------------------------------------------------  
@@ -54,7 +57,7 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
-execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
+execute_process (COMMAND "${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}"
                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
