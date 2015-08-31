@@ -246,12 +246,26 @@ contains
          eff_porosity=> soilstate_vars%eff_porosity_col         , &
 
          initial_cn_ratio => decomp_cascade_con%initial_cn_ratio, &
-         initial_cp_ratio => decomp_cascade_con%initial_cp_ratio  &
+         initial_cp_ratio => decomp_cascade_con%initial_cp_ratio, &
+
+         decomp_pool_name => decomp_cascade_con%decomp_pool_name_history        , &
+         floating_cn_ratio=> decomp_cascade_con%floating_cn_ratio_decomp_pools  , &
+         floating_cp_ratio=> decomp_cascade_con%floating_cp_ratio_decomp_pools    &
+
          )
 
 !-------------------------------------------------------------------------------------
+    !! constants:
+    clm_bgc_data%ndecomp_pools          = ndecomp_pools
+    clm_bgc_data%decomp_pool_name(:)    = decomp_pool_name(:)
+    clm_bgc_data%floating_cn_ratio(:)   = floating_cn_ratio(:)
+    clm_bgc_data%floating_cp_ratio(:)   = floating_cp_ratio(:)
 
-!
+    clm_bgc_data%initial_cn_ratio(:)= initial_cn_ratio(:)
+    clm_bgc_data%initial_cp_ratio(:)= initial_cp_ratio(:)
+
+
+
     do fc = 1, num_soilc
         c = filter_soilc(fc)
         do j = 1,nlevsoi
@@ -270,9 +284,6 @@ contains
             clm_bgc_data%cellorg_col(c,j)       = cellorg(c,j)
         end do
     end do
-
-    clm_bgc_data%initial_cn_ratio(:)= initial_cn_ratio(:)
-    clm_bgc_data%initial_cp_ratio(:)= initial_cp_ratio(:)
 
     end associate
   end subroutine get_clm_soil_property

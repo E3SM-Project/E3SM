@@ -703,10 +703,14 @@ contains
       do fc=1,num_soilc
          c = filter_soilc(fc)
          do j = 1, nlevdecomp
-            fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
+            if (potential_immob_vr(c,j) > 0.0_r8) then
+                fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
+            else
+                fpi_vr(c,j) = 0.0_r8
+            end if
          end do
-      end do
 
+      end do
 
       if (use_lch4) then
          ! Add up potential hr for methane calculations

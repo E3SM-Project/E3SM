@@ -29,6 +29,7 @@ module clm_bgc_interface_data
      ! Soil BGC decomposing pools
      integer                    :: ndecomp_pools
      logical, pointer           :: floating_cn_ratio                (:)     ! TRUE => pool has fixed C:N ratio
+     logical, pointer           :: floating_cp_ratio                (:)     ! TRUE => pool has fixed C:P ratio
      character(len=8), pointer  :: decomp_pool_name                 (:)     ! name of pool
 
      ! (1) hydraulic properties
@@ -236,7 +237,7 @@ module clm_bgc_interface_data
   end type clm_bgc_interface_data_type
 !!-------------------------------------------------------------------------------------------------
 
-!  type(clm_bgc_interface_data_type) , public, target , save :: clm_bgc_data
+!!  type(clm_bgc_interface_data_type) , public, target , save :: clm_bgc_data
   
 contains
 
@@ -269,6 +270,7 @@ contains
     begg = bounds%begg; endg= bounds%endg
     begc = bounds%begc; endc= bounds%endc
     begp = bounds%begp; endp= bounds%endp
+    ! constants
 
     ! (1) hydraulic properties
     ! (1.1) col:
@@ -354,8 +356,12 @@ contains
     allocate(this%sminp_vr_col          (begc:endc,1:nlevdecomp_full))      ; this%sminp_vr_col             (:,:) = ival
 
     ! (3.4) decomp_cascade_type
-    allocate(this%initial_cn_ratio      (0:ndecomp_pools))                  ; this%initial_cn_ratio         (:) = nan
-    allocate(this%initial_cp_ratio      (0:ndecomp_pools))                  ; this%initial_cp_ratio         (:) = nan
+    allocate(this%decomp_pool_name      (1:ndecomp_pools))                  ; this%decomp_pool_name         (:)   = ''
+    allocate(this%floating_cn_ratio     (1:ndecomp_pools))                  ; this%floating_cn_ratio        (:)   = .false.
+    allocate(this%floating_cp_ratio     (1:ndecomp_pools))                  ; this%floating_cp_ratio        (:)   = .false.
+
+    allocate(this%initial_cn_ratio      (0:ndecomp_pools))                  ; this%initial_cn_ratio         (:)   = nan
+    allocate(this%initial_cp_ratio      (0:ndecomp_pools))                  ; this%initial_cp_ratio         (:)   = nan
 
     ! (4) bgc rates (fluxes), pass from clm to interface
     ! (4.1) to decomposition pools

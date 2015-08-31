@@ -692,8 +692,6 @@ contains
                        ch4_vars, photosyns_vars,                                        & !!dgvs_vars, soilhydrology_vars, energyflux_vars, &
                        phosphorusflux_vars,phosphorusstate_vars)
 
-write(*,'(10A20)')'use_bgc_interface','use_clm_bgc','use_pflotran','use_nitrif_denitrif'
-write(*,'(10L20)')use_bgc_interface,use_clm_bgc,use_pflotran,use_nitrif_denitrif
              !!--------------------------------------------------------------------------------
              if (use_bgc_interface) then
                  !! STEP-1: pass data from CLM to clm_bgc_data (INTERFACE DATA TYPE)
