@@ -23,8 +23,8 @@ module dlnd_comp_mod
   use seq_infodata_mod
   use seq_timemgr_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use seq_flds_mod     , only: seq_flds_l2x_fields, seq_flds_x2l_fields, &
-                               glc_nec=>seq_flds_glc_nec
+  use seq_flds_mod     , only: seq_flds_l2x_fields, seq_flds_x2l_fields
+  use glc_elevclass_mod, only: glc_get_num_elevation_classes, glc_elevclass_as_string
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -136,6 +136,7 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     integer(IN)   :: COMPID      ! comp id
     integer(IN)   :: gsize       ! global size
     integer(IN)   :: lsize_l     ! local size
+    integer(IN)   :: glc_nec     ! number of elevation classes
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
     integer(IN)   :: nunit          ! unit number
     logical       :: lnd_present    ! flag
@@ -154,7 +155,6 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     character(CS) ::  latName    ! domain file: lat  variable name
     character(CS) :: maskName    ! domain file: mask variable name
     character(CS) :: areaName    ! domain file: area variable name
-    character(CS) :: nec_format  ! format for nec_str
     character(nec_len):: nec_str ! elevation class, as character string
 
     integer(IN)   :: yearFirst   ! first year to use in data stream
@@ -304,6 +304,8 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     ! Build avofld & avifld
     !----------------------------------------------------------------------------
 
+    glc_nec = glc_get_num_elevation_classes()
+
     ! Start with non-snow fields
     allocate(avofld(nflds_nosnow + glc_nec*nflds_snow))
     allocate(avifld(nflds_nosnow + glc_nec*nflds_snow))
@@ -311,15 +313,11 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     avifld(1:nflds_nosnow) = avifld_nosnow
     field_num = nflds_nosnow
 
-    ! create a format string for nec_str; e.g., if nec_len=2, this will be '(i2.2)'
-    ! (without the quotes) 
-    write(nec_format,'(a2, i0, a1, i0, a1)') "(i", nec_len, ".", nec_len, ")"
-
     ! Append each snow field
     do k = 1, nflds_snow
        do n = 1, glc_nec
           ! nec_str will be something like '02' or '10'
-          write(nec_str,nec_format) n
+          nec_str = glc_elevclass_as_string(n)
 
           field_num = field_num + 1
           avofld(field_num) = trim(avofld_snow(k))//nec_str

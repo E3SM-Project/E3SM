@@ -56,13 +56,9 @@ if ( $COMPILER == "intel") then
 endif
 if ( $COMPILER == "pgi" ) then
   module load pgi/15.1
-  module load netcdf/4.3.0
-if ( $MPILIB != "mpi-serial") then
-  module load pnetcdf/1.4.1
-endif
 endif
 if ( $COMPILER == "gnu" ) then
-  module load gnu/5.1.0
+  module load gnu/4.9.2
 endif
 
 if ( $MPILIB == "mpi-serial") then
@@ -73,7 +69,7 @@ else
 endif
 
 module load ncarcompilers/1.0
-module load cmake/2.8.10.2
+module load cmake/3.0.2
 
 # -------------------------------------------------------------------------
 # Build and runtime environment variables - edit before the initial build 
