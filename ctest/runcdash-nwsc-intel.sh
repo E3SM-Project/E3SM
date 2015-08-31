@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# Get/Generate the Dashboard Model
+if [ $# -eq 0 ]; then
+	model=Experimental
+else
+	model=$1
+fi
+
 module reset
 module unload netcdf
 module swap intel intel/15.0.3
@@ -24,4 +31,4 @@ if [ ! -d src ]; then
 fi
 cd src
 
-ctest -S CTestScript.cmake,Experimental -VV
+ctest -S CTestScript.cmake,${model} -VV
