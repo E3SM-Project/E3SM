@@ -273,7 +273,8 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
-     ! pflotran
+     ! clm_bgc_interface & pflotran
+     !------------------------------------------------------------------------
      real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
      ! for PF-bgc mass-balance error checking
      real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col net N fluxes associated with litter/som-adding/removal to decomp pools (gP/m3/s)
@@ -281,7 +282,7 @@ module PhosphorusFluxType
      real(r8), pointer :: externalp_to_decomp_delta_col             (:)     ! col summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gP/m2)
      real(r8), pointer :: sminp_net_transport_vr_col                (:,:)   ! col net sminp transport associated with runoff/leaching (gP/m3/s)
      real(r8), pointer :: sminp_net_transport_delta_col             (:)     ! col summarized net change of column-level sminp leaching bwtn time-step (for balance checking) (gP/m2)
-
+     !------------------------------------------------------------------------
    contains
 
      procedure , public  :: Init   
@@ -590,13 +591,14 @@ contains
     allocate(this%avail_retransp_patch        (begp:endp)) ;    this%avail_retransp_patch        (:) = nan
     allocate(this%plant_palloc_patch          (begp:endp)) ;    this%plant_palloc_patch          (:) = nan
 
-    ! pflotran
+    ! clm_bgc_interface & pflotran
+    !------------------------------------------------------------------------
     allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
     allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externalp_to_decomp_ppools_col    (:,:,:) = spval
     allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    ; this%externalp_to_decomp_delta_col     (:)     = spval
     allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 ; this%sminp_net_transport_vr_col        (:,:)   = spval
     allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    ; this%sminp_net_transport_delta_col     (:)     = spval
-
+    !------------------------------------------------------------------------
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1607,7 +1609,8 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_palloc_patch) 
 
-    ! pflotran
+    ! clm_bgc_interface & pflotran
+    !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externalp_to_decomp_ppools_col
        do k = 1, ndecomp_pools
@@ -1655,7 +1658,7 @@ contains
        end if
 
     end if !! if (use_pflotran .and. pf_cmode)
-
+    !------------------------------------------------------------------------
   end subroutine Restart
 
   !-----------------------------------------------------------------------

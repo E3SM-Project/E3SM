@@ -10,7 +10,8 @@ module clm_pflotran_interfaceMod
 !          2.Lawrence Berkley National Laboratory
 !
 ! date: 2012 - 2015
-! modified: 8/28/2015, Gangsheng Wang
+! modified (based on clm_bgc_interface): 8/28/2015, Gangsheng Wang
+!----------------------------------------------------------------------------------------------
 
 #include "shr_assert.h"
 
@@ -695,25 +696,6 @@ write(*,'(A40,10A10)')"DEBUG | decomp_pool_name=",clm_pf_idata%decomp_pool_name
 !    integer, intent(in) :: num_soilp                  ! number of soil pfts in filter
 !    integer, intent(in) :: filter_soilp(:)            ! filter for soil pfts
 
-!    type(atm2lnd_type)      , intent(in) :: atm2lnd_vars
-!
-!    type(soilstate_type)    , intent(in) :: soilstate_vars
-!    type(soilhydrology_type), intent(in) :: soilhydrology_vars
-!    class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-!
-!    type(waterstate_type)   , intent(inout) :: waterstate_vars
-!    type(waterflux_type)    , intent(inout) :: waterflux_vars
-!    type(temperature_type)  , intent(inout) :: temperature_vars
-!    type(energyflux_type)   , intent(inout) :: energyflux_vars
-!
-!    type(cnstate_type)      , intent(inout) :: cnstate_vars
-!    type(carbonstate_type)  , intent(inout) :: carbonstate_vars
-!    type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-!    type(nitrogenstate_type), intent(inout) :: nitrogenstate_vars
-!    type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-!
-!    type(ch4_type)          , intent(inout) :: ch4_vars
-
     type(clm_bgc_interface_data_type), intent(inout) :: clm_bgc_data
 
     !LOCAL VARIABLES:
@@ -768,7 +750,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
        ! if initializing soil 'TH' states from CLM to pflotran
        if (.not.initth_pf2clm) then
           call get_clm_soil_th(clm_bgc_data,initth_pf2clm, initth_pf2clm, &
-                    bounds, num_soilc, filter_soilc)
+                                bounds, num_soilc, filter_soilc)
 
           if (pf_hmode) then
           ! directly pass TH to internal PF vec (field%, work%)
@@ -781,8 +763,8 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
        ! if initializaing CLM's H states from pflotran (only H mode now)
        else
           call pflotranModelGetSaturationFromPF(pflotran_m)   ! hydrological states
-          call update_soil_moisture_pf2clm(clm_bgc_data,                 &
-                    bounds, num_soilc, filter_soilc)
+          call update_soil_moisture_pf2clm(clm_bgc_data,         &
+                                bounds, num_soilc, filter_soilc)
        end if
 
        ! the following is for some specific PF's hydrological parameters useful to constrain H source/sink or BC
@@ -797,7 +779,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
     ! if PF T/H mode not available, have to pass those from CLM to global variable in PF to drive BGC/H
     if ((.not.pf_tmode .or. .not.pf_hmode) .and. (.not.isinitpf)) then
         call get_clm_soil_th(clm_bgc_data,pf_tmode, pf_hmode,  &
-           bounds, num_soilc, filter_soilc)
+                            bounds, num_soilc, filter_soilc)
 
         call pflotranModelUpdateTHfromCLM(pflotran_m, pf_hmode, pf_tmode)
     endif
@@ -812,7 +794,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
     ! (2) pass CLM water fluxes to CLM-PFLOTRAN interface
     if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
         call get_clm_bcwflx(clm_bgc_data,           &
-            bounds, num_soilc, filter_soilc)
+                    bounds, num_soilc, filter_soilc)
 
         ! pass flux 'vecs' from CLM to pflotran
         call pflotranModelUpdateHSourceSink(pflotran_m)    ! H SrcSink
@@ -822,7 +804,7 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
     ! (3) CLM thermal BC to PFLOTRAN
     if (pf_tmode) then
         call get_clm_bceflx(clm_bgc_data,           &
-            bounds, num_soilc, filter_soilc)
+                    bounds, num_soilc, filter_soilc)
 
         call pflotranModelUpdateSubsurfTCond(pflotran_m)   ! SrcSink and T bc
     end if
@@ -843,12 +825,11 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
                     bounds, num_soilc, filter_soilc)
 
         call pflotranModelSetBgcConcFromCLM(pflotran_m)
-!write(*,*)">>>DEBUG | pflotranModelSetBgcConcFromCLM"
+
         if ( (.not.pf_hmode .or. .not.pf_frzmode)) then
         ! this is needed, because at step 0, PF's interface data is empty
         !which causes Aq. conc. adjustment balance issue
            call pflotranModelGetSaturationFromPF(pflotran_m)
-!write(*,*)">>>DEBUG | pflotranModelGetSaturationFromPF"
         endif
 !      endif     ! NOTE: if only initialize ONCE, uncomment this 'if...endif' block
 
@@ -856,7 +837,6 @@ write(*,'(10L20)')pf_cmode,pf_tmode, pf_hmode, pf_frzmode,isinitpf, initth_pf2cl
       ! when NOT coupled with PF Hydrology or NOT in freezing-mode (porosity will be forced to vary from CLM)
         if (.not.pf_hmode .or. .not.pf_frzmode) then
            call pflotranModelUpdateAqConcFromCLM(pflotran_m)
-!write(*,*)">>>DEBUG | pflotranModelUpdateAqConcFromCLM"
         endif
 
       ! (4c) bgc rate (source/sink) from CLM to PFLOTRAN
@@ -911,7 +891,7 @@ endif
         call pflotranModelGetBgcVariablesFromPF(pflotran_m)
 
         call update_soil_bgc_pf2clm(clm_bgc_data,       &
-                bounds, num_soilc, filter_soilc)
+                        bounds, num_soilc, filter_soilc)
 
         ! need to save the current time-step PF porosity/liq. saturation for bgc species mass conservation
         ! if CLM forced changing them into PF at NEXT timestep
@@ -1946,7 +1926,7 @@ write(*,'(A30,12E14.6)')">>>DEBUG | soilt[oC]=", soilt_clmp_loc(1:10)
 
   subroutine get_clm_bgc_conc(clm_bgc_data, &
            bounds, num_soilc, filter_soilc)
-
+!! TODO: add phosphorus vars
 #ifndef FLEXIBLE_POOLS
     use clm_varpar, only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
 #endif
@@ -2287,7 +2267,7 @@ write(*,*)'---------------------------------------'
   ! !INTERFACE:
   subroutine get_clm_bgc_rate(clm_bgc_data,  &
           bounds, num_soilc, filter_soilc)
-
+!! TODO: add phosphorus vars
   !
   ! !DESCRIPTION:
   !
@@ -2864,7 +2844,7 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
   !
   subroutine update_soil_bgc_pf2clm(clm_bgc_data,   &
            bounds, num_soilc, filter_soilc)
-
+!! TODO: add phosphorus vars
     use CNDecompCascadeConType, only : decomp_cascade_con
     use clm_time_manager, only : get_step_size
 #ifndef FLEXIBLE_POOLS
@@ -3167,7 +3147,9 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
        enddo
      enddo ! do c = 1, numsoilc
 
-!write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
+write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE no3=",smin_no3_vr(1,1:nlevdecomp)
+write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE nh4=",smin_nh4_vr(1,1:nlevdecomp)
+write(*,'(A30,12E14.6)')"DEBUG | pf UPDATE nh4sorb=",smin_nh4sorb_vr(1,1:nlevdecomp)
 
 #ifdef FLEXIBLE_POOLS
      call VecRestoreArrayReadF90(clm_pf_idata%decomp_cpools_vr_clms, decomp_cpools_vr_clm_loc, ierr)
@@ -3220,10 +3202,6 @@ write(*,'(12E14.6)')col_net_to_decomp_npools_vr(1,1,1:ndecomp_pools),&
      CHKERRQ(ierr)
 
      ! update bgc gas losses
-!     call update_bgc_gaslosses_pf2clm(        &
-!        bounds, num_soilc, filter_soilc,      &
-!        clm_a2l, waterstate_vars,             &
-!        carbonflux_vars, nitrogenflux_vars)
      call update_bgc_gaslosses_pf2clm(clm_bgc_data, &
         bounds, num_soilc, filter_soilc)
 

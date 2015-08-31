@@ -330,6 +330,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: plant_nalloc_patch                        (:)     ! total allocated N flux (gN/m2/s)
 
      ! pflotran
+     !------------------------------------------------------------------------
      real(r8), pointer :: plant_ndemand_vr_col                      (:,:)   ! col vertically-resolved N flux required to support initial GPP (gN/m3/s)
      ! nitrification-denitrification fluxes
 !     real(r8), pointer :: r_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission ratio of mineralization (-)
@@ -353,7 +354,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: externaln_to_decomp_delta_col             (:)     ! col summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gN/m2)
      real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s)
      real(r8), pointer :: no3_net_transport_delta_col               (:)     ! col summarized net change of column-level N leaching to NO3 bwtn time-step (for balance checking) (gN/m2)
-
+    !------------------------------------------------------------------------
    contains
 
      procedure , public  :: Init   
@@ -692,6 +693,7 @@ contains
     allocate(this%plant_nalloc_patch          (begp:endp)) ;    this%plant_nalloc_patch          (:) = nan
 
     ! pflotran
+    !------------------------------------------------------------------------
     allocate(this%plant_ndemand_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%plant_ndemand_vr_col             (:,:)  = nan
 
     allocate(this%f_ngas_decomp_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_decomp_vr_col             (:,:)  = nan
@@ -710,6 +712,7 @@ contains
     allocate(this%externaln_to_decomp_delta_col     (begc:endc))                                    ; this%externaln_to_decomp_delta_col     (:)     = spval
     allocate(this%no3_net_transport_vr_col          (begc:endc, 1:nlevdecomp_full))                 ; this%no3_net_transport_vr_col          (:,:)   = spval
     allocate(this%no3_net_transport_delta_col       (begc:endc))                                    ; this%no3_net_transport_delta_col       (:)     = spval
+    !------------------------------------------------------------------------
 
   end subroutine InitAllocate
 
@@ -2080,6 +2083,7 @@ contains
          interpinic_flag='interp', readvar=readvar, data=this%plant_nalloc_patch) 
 
     ! pflotran
+    !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externaln_to_decomp_npools_col
        do k = 1, ndecomp_pools
@@ -2127,6 +2131,8 @@ contains
        end if
 
     end if !! if (use_pflotran .and. pf_cmode)
+    !------------------------------------------------------------------------
+
   end subroutine Restart
 
   !-----------------------------------------------------------------------
@@ -2480,6 +2486,7 @@ contains
     end do
 
     ! pflotran
+    !------------------------------------------------------------------------
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
@@ -2512,6 +2519,7 @@ contains
           this%no3_net_transport_delta_col(i)   = value_column
        end if
     end do
+    !------------------------------------------------------------------------
 
   end subroutine SetValues
 

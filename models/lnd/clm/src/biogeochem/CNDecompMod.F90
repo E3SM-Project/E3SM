@@ -44,9 +44,8 @@ module CNDecompMod
   ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: readCNDecompParams
-  ! pflotran: CNDecompAlloc is divided into 2 subroutines
-!  public :: CNDecompAlloc
-  public :: CNDecompAlloc1
+  public :: CNDecompAlloc
+  ! pflotran
   public :: CNDecompAlloc2
   !
   type, private :: CNDecompParamsType
@@ -89,7 +88,7 @@ contains
   end subroutine readCNDecompParams
 
 !!-------------------------------------------------------------------------------------------------
-  subroutine CNDecompAlloc1 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CNDecompAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars, &
        cnstate_vars, ch4_vars, &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
@@ -581,7 +580,7 @@ contains
 
     end associate
 
-  end subroutine CNDecompAlloc1
+  end subroutine CNDecompAlloc
 
 !!-------------------------------------------------------------------------------------------------
   ! Majorly for coupling with pflotran

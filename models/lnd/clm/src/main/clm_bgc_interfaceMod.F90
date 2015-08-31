@@ -113,7 +113,7 @@ module clm_bgc_interfaceMod
   !! if (use_bgc_interface .and. use_clm_bgc)
   public    :: clm_bgc_run              !! STEP-2:   clm_bgc_data  -> clm-bgc module -> clm_bgc_data    ; called in clm_driver
   private   :: clm_bgc_get_data         !! STEP-2.1: clm_bgc_data  -> clm-bgc module                    ; called in clm_bgc_run
-                                        !! STEP-2.2: run clm-bgc module                                 ; see CNDecompAlloc1 in CNDecompMod
+                                        !! STEP-2.2: run clm-bgc module                                 ; see CNDecompAlloc in CNDecompMod
   private   :: clm_bgc_update_data      !! STEP-2.3: clm-bgc module-> clm_bgc_data                      ; called in clm_bgc_run
   public    :: update_bgc_data_clm2clm  !! STEP-3:   clm_bgc_data  -> clm vars                          ; called in clm_driver
 
@@ -1293,7 +1293,7 @@ contains
             phosphorusstate_vars,phosphorusflux_vars)
 
     !! USES:
-    use CNDecompMod          , only: CNDecompAlloc1
+    use CNDecompMod          , only: CNDecompAlloc
 
     !! ARGUMENTS:
     type(bounds_type)                   , intent(in)    :: bounds
@@ -1320,8 +1320,8 @@ contains
 
     type(clm_bgc_interface_data_type)   , intent(inout) :: clm_bgc_data
 
-    !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc1
-    call clm_bgc_get_data(clm_bgc_data, bounds,                         &
+    !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc
+    call clm_bgc_get_data (clm_bgc_data, bounds,                        &
             num_soilc, filter_soilc, num_soilp, filter_soilp,           &
             photosyns_vars, canopystate_vars,                           &
             soilstate_vars, temperature_vars, waterstate_vars,          &
@@ -1331,8 +1331,8 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
             phosphorusstate_vars,phosphorusflux_vars)
 
-    !! STEP-2: (ii) run CNDecompAlloc1
-    call CNDecompAlloc1(bounds,                                         &
+    !! STEP-2: (ii) run CNDecompAlloc
+    call CNDecompAlloc (bounds,                                         &
             num_soilc, filter_soilc, num_soilp, filter_soilp,           &
             photosyns_vars, canopystate_vars,                           &
             soilstate_vars, temperature_vars, waterstate_vars,          &
@@ -1342,8 +1342,8 @@ contains
             nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
             phosphorusstate_vars,phosphorusflux_vars)
 
-    !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc1
-    call clm_bgc_update_data(clm_bgc_data, bounds,                      &
+    !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc
+    call clm_bgc_update_data (clm_bgc_data, bounds,                     &
             num_soilc, filter_soilc, num_soilp, filter_soilp,           &
             cnstate_vars, carbonflux_vars,                              &
             c13_carbonflux_vars, c14_carbonflux_vars,                   &
@@ -1353,7 +1353,7 @@ contains
 
 !!--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  !! pass data from clm_bgc_data to clm original data-types, used by CNDecompAlloc1
+  !! pass data from clm_bgc_data to clm original data-types that used by CNDecompAlloc
   subroutine clm_bgc_get_data(clm_bgc_data, bounds,                     &
             num_soilc, filter_soilc, num_soilp, filter_soilp,           &
             photosyns_vars, canopystate_vars,                           &
@@ -1365,7 +1365,7 @@ contains
             phosphorusstate_vars,phosphorusflux_vars)
 
     !! USES:
-    use CNDecompMod             , only: CNDecompAlloc1
+
 
     !! ARGUMENTS:
     type(bounds_type)           , intent(in)    :: bounds
@@ -1499,7 +1499,7 @@ contains
 
 !!--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  !! pass data from clm_bgc_data to clm original data-types, used by CNDecompAlloc1
+  !! pass data from clm_bgc to clm_bgc_data
   subroutine clm_bgc_update_data(clm_bgc_data, bounds,             &
             num_soilc, filter_soilc, num_soilp, filter_soilp,   &
             cnstate_vars, carbonflux_vars,                      &
@@ -1507,7 +1507,6 @@ contains
             nitrogenflux_vars, phosphorusflux_vars)
 
     !! USES:
-    use CNDecompMod                     , only: CNDecompAlloc1
 
     !! ARGUMENTS:
     type(bounds_type)                   , intent(in)    :: bounds

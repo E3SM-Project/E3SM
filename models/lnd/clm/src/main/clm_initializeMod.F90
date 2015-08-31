@@ -411,10 +411,10 @@ contains
     use lnd2atmMod            , only : lnd2atm_minimal
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
-    use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
+    use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     ! pflotran
-    use clm_varctl            , only : use_bgc_interface, use_pflotran
-    use clm_pflotran_interfaceMod  , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
+    use clm_varctl                          , only : use_bgc_interface, use_pflotran
+    use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     !
     ! !ARGUMENTS    
     implicit none
@@ -747,6 +747,7 @@ contains
 
        call phosphorusflux_vars%Init(bounds_proc) 
 
+       !! initialize clm_bgc_interface_data_type
        if (use_bgc_interface) then
             call clm_bgc_data%Init(bounds_proc)
        end if

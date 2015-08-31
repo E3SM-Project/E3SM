@@ -368,7 +368,7 @@ contains
        call t_stopf('CNMResp')
 
 !!-------------------------------------------------------------------------------------------------
-!! 'decomp_rate_constants' is moved to CNDecompAlloc1
+!! 'decomp_rate_constants' is moved to CNDecompAlloc
 !       if (use_century_decomp) then
 !          call decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
 !               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
@@ -445,8 +445,8 @@ contains
 !    use clm_varpar             , only: crop_prog
 
 !    use CNAllocationMod        , only: CNAllocation1 !!cnallocation  !!wgs
-!    use CNDecompMod            , only: CNDecompAlloc
-    use CNDecompMod            , only: CNDecompAlloc1, CNDecompAlloc2 !! CNDecompAlloc is divided into 2 subroutines
+    use CNDecompMod            , only: CNDecompAlloc
+    use CNDecompMod            , only: CNDecompAlloc2 !! CNDecompAlloc2 after CNDecompAlloc
 
     !
     ! !ARGUMENTS:
@@ -493,8 +493,8 @@ contains
        !----------------------------------------------------------------
        if(.not.use_bgc_interface) then
             !! directly run clm-bgc
-            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc1 is called in clm_driver
-            call CNDecompAlloc1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+            !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
+            call CNDecompAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
                 photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
                 cnstate_vars, ch4_vars,                                                             &
                 carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &

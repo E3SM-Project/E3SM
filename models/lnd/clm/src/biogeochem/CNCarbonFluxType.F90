@@ -383,12 +383,14 @@ module CNCarbonFluxType
      real(r8), pointer :: annsum_npp_col              (:) ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
      real(r8), pointer :: lag_npp_col                 (:) ! col lagged net primary production (gC/m2/s) 
 
-     ! new variables for PFLOTRAN-bgc
+     ! new variables for clm_bgc_interface & pflotran
+     !------------------------------------------------------------------------
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
                                                                             ! (sum of all external C additions and removals, excluding decomposition/hr).
      real(r8), pointer :: externalc_to_decomp_delta_col             (:)     ! col (gC/m2) summarized net change of whole column C i/o to decomposing pool bwtn time-step
      real(r8), pointer :: f_co2_soil_vr_col                         (:,:)   ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
      real(r8), pointer :: f_co2_soil_col                            (:)     ! total soil-atm. CO2 exchange (gC/m2/s)
+    !------------------------------------------------------------------------
 
    contains
 
@@ -757,12 +759,13 @@ contains
      allocate(this%annsum_npp_col        (begc:endc)) ; this%annsum_npp_col        (:) = nan
      allocate(this%lag_npp_col           (begc:endc)) ; this%lag_npp_col           (:) = spval
 
-     ! pflotran
+     ! clm_bgc_interface & pflotran
+     !------------------------------------------------------------------------
      allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%externalc_to_decomp_cpools_col(:,:,:) = spval
      allocate(this%externalc_to_decomp_delta_col (begc:endc));                                   this%externalc_to_decomp_delta_col (:)     = spval
      allocate(this%f_co2_soil_vr_col             (begc:endc,1:nlevdecomp_full));                 this%f_co2_soil_vr_col             (:,:)   = nan
      allocate(this%f_co2_soil_col                (begc:endc))                  ;                 this%f_co2_soil_col                (:)     = nan
-
+     !------------------------------------------------------------------------
    end subroutine InitAllocate; 
 
    !------------------------------------------------------------------------
@@ -3780,7 +3783,8 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%annsum_litfall_patch)
     end if
 
-    ! pflotran
+    ! clm_bgc_interface & pflotran
+    !------------------------------------------------------------------------
     if (use_pflotran .and. pf_cmode) then
        ! externalc_to_decomp_npools_col
        do k = 1, ndecomp_pools
@@ -3807,6 +3811,8 @@ contains
           end if
        end do
     end if
+    !------------------------------------------------------------------------
+
   end subroutine Restart
 
   !-----------------------------------------------------------------------
