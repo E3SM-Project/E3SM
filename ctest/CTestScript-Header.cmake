@@ -35,7 +35,8 @@ elseif (HOSTNAME MATCHES "^mira" OR
 # ALCF/Argonne Machines
 elseif (HOSTNAME MATCHES "^edison" OR
         HOSTNAME MATCHES "^carver" OR
-        HOSTNAME MATCHES "^hopper")
+        HOSTNAME MATCHES "^hopper" OR
+        HOSTNAME MATCHES "^nid")
     set (HOSTNAME_ID "nersc")
 else ()
     set (HOSTNAME_ID "unknown")
