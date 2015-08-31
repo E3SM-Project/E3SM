@@ -60,6 +60,6 @@ execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${C
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
-#ctest_submit ()
+ctest_submit ()
 
 message (" -- Finished - ${CTEST_BUILD_NAME} --")
