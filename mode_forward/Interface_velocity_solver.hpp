@@ -82,6 +82,8 @@ int velocity_solver_init_mpi(int* fComm);
 
 void velocity_solver_finalize();
 
+void velocity_solver_set_parameters(double const* rhoi_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce);
+
 void velocity_solver_init_l1l2(double const* levelsRatio);
 
 void velocity_solver_init_fo(double const* levelsRatio);

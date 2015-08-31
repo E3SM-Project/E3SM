@@ -36,10 +36,15 @@ double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, 
 std::vector<double> xCellProjected, yCellProjected, zCellProjected;
 const double unit_length = 1000;
 const double T0 = 273.15;
-const double secondsInAYear = 3.15569e7;
+const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, but this should be close enough for how this is used.
 const double minThick = 1e-3; //1m
 const double minBeta = 1e-5;
-const double rho_ice = 910.0;
+double rho_ice;
+//unsigned char dynamic_ice_bit_value;
+//unsigned char ice_present_bit_value;
+int dynamic_ice_bit_value;
+int ice_present_bit_value;
+
 //void *phgGrid = 0;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
     verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge;
@@ -70,12 +75,27 @@ extern "C" {
 // ===================================================
 //! Interface functions
 // ===================================================
+
 int velocity_solver_init_mpi(int* fComm) {
   // get MPI_Comm from Fortran
   comm = MPI_Comm_f2c(*fComm);
 
   return 0;
 }
+
+
+void velocity_solver_set_parameters(double const* rhoi_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
+  // This function sets parameter values used by MPAS on the C/C++ side
+  rho_ice = *rhoi_F;
+  //std::cout << "rhoi Fortran value:" << *rhoi_F << std::endl;
+  //std::cout << "rhoi C++ value:" << rho_ice << std::endl;
+  dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
+  ice_present_bit_value = *li_mask_ValueIce;
+  //std::cout << "mask dynamic Fortran value:" << *li_mask_ValueDynamicIce << std::endl;
+  //std::cout << "mask dynamic C++ value:" << dynamic_ice_bit_value << std::endl;
+  // Could add seconds in a year, but that can change from time step to time step on the MPAS side, so leaving it out for now.
+}
+
 
 
 void velocity_solver_export_2d_data(double const* lowerSurface_F,
@@ -488,7 +508,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
   std::vector<int> fVertexToTriangle(nVertices_F, NotAnId);
   bool changed = false;
   for (int i(0); i < nVerticesSolve_F; i++) {
-    if ((verticesMask_F[i] & 0x02) && !isGhostTriangle(i)) {
+    if ((verticesMask_F[i] & dynamic_ice_bit_value) && !isGhostTriangle(i)) {
       fVertexToTriangle[i] = triangleToFVertex.size();
       triangleToFVertex.push_back(i);
     }
@@ -756,7 +776,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
     bool isBoundary;
     do {
       int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + j++] - 1;
-      isBoundary = !(verticesMask_F[fVertex] & 0x02);
+      isBoundary = !(verticesMask_F[fVertex] & dynamic_ice_bit_value);
     } while ((j < nEdg) && (!isBoundary));
     isVertexBoundary[iV] = isBoundary;
   }
@@ -1289,8 +1309,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
       double elevTemp =1e10;
       for (int j = 0; j < nEdg; j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & 0x02)
-            && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & 0x02);
+        bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+            && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
         if (!keep)
           continue;
 
