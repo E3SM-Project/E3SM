@@ -176,7 +176,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
 
         baseline_action = "-g" if generate_baselines else "-c"
         test_id = "%s_%s" % (test_id_root, acme_util.get_utc_timestamp())
-        create_test_cmd = "scripts/acme/create_test %s --test-root %s -p %s -t %s %s -b %s" % \
+        create_test_cmd = "acme-scripts/create_test %s --test-root %s -p %s -t %s %s -b %s" % \
                           (test_suite, casearea, project, test_id, baseline_action, baseline_name)
 
         if (namelists_only):

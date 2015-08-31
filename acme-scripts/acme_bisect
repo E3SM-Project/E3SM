@@ -28,7 +28,7 @@ OR
     > git bisect start
     > git bisect good [LAST KNOWN WORKING COMMIT]
     > git bisect bad [CURRENT COMMIT]
-    > git bisect run scripts/acme/%s ERS.f45_g37.B1850C5.melvin_gnu /scratch/user/acme_scratch
+    > git bisect run acme-scripts/%s ERS.f45_g37.B1850C5.melvin_gnu /scratch/user/acme_scratch
 """ % ((os.path.basename(args[0]), ) * 4),
 
 description=description,
@@ -79,7 +79,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch):
 ###############################################################################
-    expect(os.path.exists("scripts/acme/create_test"), "Please run from root of repository")
+    expect(os.path.exists("acme-scripts/create_test"), "Please run from root of repository")
 
     current_sha = acme_util.get_current_commit(short=True)
 
@@ -91,7 +91,7 @@ def acme_bisect(testname, testroot, compiler, project, baseline_name, check_name
 
     extra_args = "--no-batch" if no_batch else ""
     compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
-    create_test_cmd = "scripts/acme/create_test %s --test-root %s --compiler %s -t %s -p %s %s %s" % \
+    create_test_cmd = "acme-scripts/create_test %s --test-root %s --compiler %s -t %s -p %s %s %s" % \
                       (testname, testroot, compiler, current_sha, project, compare_args, extra_args)
     run_cmd(create_test_cmd)
 

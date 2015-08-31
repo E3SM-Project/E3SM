@@ -211,7 +211,7 @@ def create_test(testargs, compiler, no_run=False, no_build=False, no_batch=False
         create_test_cmd = "%s -autosubmit off -nobatch on" % create_test_cmd
 
     stat = acme_util.run_cmd(create_test_cmd,
-                             from_dir=os.path.join(acme_util.get_source_repo(), "scripts"),
+                             from_dir=os.path.join(acme_util.get_source_repo(), "cime", "scripts"),
                              ok_to_fail=True,
                              verbose=True,
                              arg_stdout=None, arg_stderr=None)[0]

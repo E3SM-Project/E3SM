@@ -77,7 +77,7 @@ def find_all_supported_platforms():
 XML configuration file config_machines.xml in the ACME source tree. A platform
 is defined by a triple (machine name, compiler, mpi library)."""
     import xml.etree.ElementTree as ET
-    config_machines_xml = os.path.join(acme_util.get_source_repo(), 'scripts', 'ccsm_utils', 'Machines', 'config_machines.xml')
+    config_machines_xml = os.path.join(acme_util.get_source_repo(), 'cime', 'machines-acme', 'config_machines.xml')
     tree = ET.parse(config_machines_xml)
     root = tree.getroot()
     expect(root.tag == 'config_machines',
