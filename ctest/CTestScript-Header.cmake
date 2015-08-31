@@ -23,7 +23,8 @@ execute_process (COMMAND ${HOSTNAME_CMD}
 # UCAR/NWSC Machines
 if (HOSTNAME MATCHES "^yslogin" OR
     HOSTNAME MATCHES "^geyser" OR
-    HOSTNAME MATCHES "^caldera")
+    HOSTNAME MATCHES "^caldera" OR
+    HOSTNAME MATCHES "^pronghorn")
     set (HOSTNAME_ID "nwsc")
 # ALCF/Argonne Machines
 elseif (HOSTNAME MATCHES "^mira" OR
