@@ -56,8 +56,9 @@ ctest_build ()
 message (" -- Test - ${CTEST_BUILD_NAME} --")
 set (CTEST_CMD "${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}")
 message ("CTEST_CMD = ${CTEST_CMD}")
-execute_process (COMMAND "${CTEST_CMD}"
-                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
+execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
+                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY}
+                 OUTPUT_FILE runctest.out)
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
