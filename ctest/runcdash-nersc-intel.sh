@@ -9,6 +9,7 @@ fi
 
 module purge
 module load PrgEnv-intel
+module load cray-mpich
 module load git/2.4.6 
 module load cmake/3.0.0
 module load cray-hdf5-parallel/1.8.14
