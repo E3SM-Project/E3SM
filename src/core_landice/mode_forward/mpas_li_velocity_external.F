@@ -21,7 +21,7 @@ module li_velocity_external
    use mpas_dmpar
    use mpas_timer
    use li_setup
-   !use, intrinsic :: iso_c_binding
+   use, intrinsic :: iso_c_binding
 
    implicit none
    private
@@ -43,6 +43,17 @@ module li_velocity_external
              li_velocity_external_block_init, &
              li_velocity_external_solve, &
              li_velocity_external_finalize
+
+   interface
+      ! Note: Could add all interface routines to this interface...
+      ! For now, just trying it with this new routine.
+      subroutine velocity_solver_set_parameters(config_ice_density, li_mask_ValueDynamicIce, li_mask_ValueIce) bind(C, name="velocity_solver_set_parameters")
+         use iso_c_binding, only: C_INT, C_DOUBLE
+         INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
+         REAL(C_DOUBLE) :: config_ice_density
+      end subroutine velocity_solver_set_parameters
+
+   end interface
 
    !--------------------------------------------------------------------
    !
@@ -188,6 +199,8 @@ contains
 
    subroutine li_velocity_external_block_init(block, err)
 
+      use li_mask
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -223,6 +236,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, areaTriangle
       real (kind=RKIND), pointer :: radius
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
+      real (kind=RKIND), pointer :: config_ice_density
 
       ! halo exchange arrays
       integer, dimension(:), pointer :: sendCellsArray, &
@@ -305,6 +319,10 @@ contains
                  recvVerticesArray, &
                  sendEdgesArray, &
                  recvEdgesArray)
+
+      ! Set physical parameters needed on the other side
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call velocity_solver_set_parameters(config_ice_density, li_mask_ValueDynamicIce, li_mask_ValueIce)
 
       ! === error check
       if (err > 0) then
