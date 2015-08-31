@@ -70,10 +70,15 @@ module prescribed_aero
   ! Normal random number which persists from one tiemstep to the next
   real(r8) :: randn_persists
 
-  ! Following definitions are added to
-  ! allow randn_persists to persist during restart runs
-  type(var_desc_t) :: randn_persists_desc
-  character(len=16), parameter :: randn_persists_name = 'prescraero_randn'
+  !Seeds for kissvec random number generator
+  integer  :: s1,s2,s3,s4
+  !Seed which should be availabe for restart runs
+  integer :: seedrst(4), seed_dim
+
+  !For storing seeds for kissvec in restart files
+  type(var_desc_t) :: seedrst_desc
+  character(len=21), parameter :: seedrstarr_name = 'prescraero_randn_seed'
+  character(len=25), parameter :: seedrstarr_dim  = 'prescraero_randn_seed_dim'
 
 contains
 
@@ -108,8 +113,6 @@ contains
     use physics_buffer, only : physics_buffer_desc
 
     implicit none
-
-    ! local vars
     character(len=32)  :: spec_a
     integer :: ndx, istat, i, i_c, j
     
@@ -168,6 +171,11 @@ contains
        endif
     enddo fldloop
 
+    !Initialize seeds at first time step    
+    s1 = 1
+    s2 = 2
+    s3 = 3
+    s4 = 4       
   end subroutine prescribed_aero_init
 
 !-------------------------------------------------------------------
@@ -523,49 +531,57 @@ end subroutine spec_c_to_a
     !
     !Update log:
     
-    use time_manager,   only : is_end_curr_day, is_first_step, get_nstep
-    
-    integer, parameter :: rconst1_1 = 5000000
-    integer, parameter :: rconst1_2 = 50
-    integer, parameter :: rconst2_1 = 10000000
-    integer, parameter :: rconst2_2 = 10
-    
-    integer :: i, seed_size, nstep
-    integer, allocatable :: seed(:)
+    use time_manager,    only : is_end_curr_day, is_first_step
+    use cam_control_mod, only : nsrest
 
     real(r8) :: randn_prescribed_aero
-    real(r8) :: randu1, randu2
-    
+   
+    !If restart, then read seeds from restart file and generate a random number
+    if(nsrest /= 0) then
+       s1 = seedrst(1)
+       s2 = seedrst(2)
+       s3 = seedrst(3)
+       s4 = seedrst(4) 
+       !generate random number
+       randn_prescribed_aero = get_normal_rand()
+       randn_persists = randn_prescribed_aero
+    endif
+
     !Use same random number for the entire day and generate a new normally 
     !distributed random number at the start of the new day
     if(is_first_step() .or. is_end_curr_day()) then
-       !Generate two uniformly distributed random numbers (between 0 and 1)
-       call random_seed(size=seed_size)
-       allocate(seed(seed_size))
-
-       ! Using nstep as a seed to generate same sequence
-       nstep = get_nstep()
-       do i = 1, seed_size
-          seed(i) = rconst1_1*nstep + rconst1_2*(i-1)
-       end do
-       call random_seed(put=seed)
-       call random_number (randu1)
-
-       do i = 1, seed_size
-          seed(i) = rconst2_1*nstep + rconst2_2*(i-1)
-       end do
-       call random_seed(put=seed)
-       call random_number (randu2)
-       deallocate(seed)
-      
-       !Normal distribution (Mean = 0, standard dev = 1)
-       randn_prescribed_aero = boxMuller(randu1,randu2)
+       !Get normal random number using 4 seeds
+       randn_prescribed_aero = get_normal_rand()
        randn_persists = randn_prescribed_aero
     else
        !Use the previously generated random number
        randn_prescribed_aero = randn_persists
     endif
   end function randn_prescribed_aero
+!-------------------------------------------------------------------
+ function get_normal_rand() result(randn)
+   implicit none
+   !Local
+   real(r8) :: randn
+   real(r8) :: randu1, randu2
+
+   !First store these seeds in an array to be to stored in the restart file
+   seedrst(1) = s1
+   seedrst(2) = s2
+   seedrst(3) = s3
+   seedrst(4) = s4
+   
+   !Call kissvec to get two different uniformly distributed random numbers
+   !Note: seeds(s1,s2,s3 and s4) are inout for kissvec, therefore second 
+   !call to kissvec is called with *updated* seeds which are different from
+   !the first call
+   call kissvec (s1, s2, s3, s4, randu1)
+   call kissvec (s1, s2, s3, s4, randu2)
+   
+   !Normal distribution (Mean = 0, standard dev = 1)
+   randn = boxMuller(randu1, randu2)
+ end function get_normal_rand
+
 !-------------------------------------------------------------------
   function logvm_get_index(name,type) result(index)
     implicit none
@@ -619,14 +635,16 @@ end subroutine spec_c_to_a
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
   subroutine init_prescribed_aero_restart( piofile )
-    use pio, only : file_desc_t, pio_def_var, pio_double 
+    use pio, only : file_desc_t, pio_def_var, pio_int, pio_def_dim
     use tracer_data, only : init_trc_restart
     implicit none
     type(file_desc_t),intent(inout) :: pioFile     ! pio File pointer
     integer :: ierr
 
-    ! For allowing randn_persists to persist during reststarts
-    ierr = pio_def_var(piofile, randn_persists_name, pio_double, randn_persists_desc)
+
+    !For storing random seeds for kissvec random number generator
+    ierr = pio_def_dim( piofile, seedrstarr_dim, 4, seed_dim)
+    ierr = pio_def_var (piofile, seedrstarr_name,pio_int,(/seed_dim/),seedrst_desc)!BALLI
 
     call init_trc_restart( 'prescribed_aero', piofile, file )
 
@@ -640,8 +658,8 @@ end subroutine spec_c_to_a
     type(file_desc_t) :: piofile
     integer :: ierr
 
-    !  For allowing randn_persists to persist during reststarts
-    ierr = pio_put_var(piofile, randn_persists_desc, (/randn_persists/)) 
+    !For allowing seeds to be available at restarts
+    ierr = pio_put_var(piofile, seedrst_desc, seedrst) 
 
     call write_trc_restart( piofile, file )
 
@@ -657,12 +675,64 @@ end subroutine spec_c_to_a
     type(file_desc_t) :: piofile    
     integer :: ierr
 
-    ! For allowing randn_persists to persist during reststarts
-    ierr = pio_inq_varid(pioFile, randn_persists_name, randn_persists_desc)
-    ierr = pio_get_var(pioFile, randn_persists_desc, randn_persists)
+    ! Read seeds from the restart file
+    ierr = pio_inq_varid(pioFile, seedrstarr_name , seedrst_desc)
+    ierr = pio_get_var(pioFile, seedrst_desc, seedrst)
 
     call read_trc_restart( 'prescribed_aero', piofile, file )
 
+
   end subroutine read_prescribed_aero_restart
 
+!-------------------------------------------------------------------
+!-------------------------------------------------------------------
+  !BSINGH: The following kissvec routine is direct copy from mcica_subcol_gensw(lw).F90.
+  !        It is modified to take scalar inputs instead of a vector.
+  subroutine kissvec(seed1,seed2,seed3,seed4,ran_arr)
+    !-------------------------------------------------------------------------------------------------- 
+    
+    ! public domain code
+    ! made available from http://www.fortran.com/
+    ! downloaded by pjr on 03/16/04 for NCAR CAM
+    ! converted to vector form, functions inlined by pjr,mvr on 05/10/2004
+    
+    ! safeguard against integer overflow, statement function changed to
+    ! internal function by santos, Nov. 2012
+    
+    ! The  KISS (Keep It Simple Stupid) random number generator. Combines:
+    ! (1) The congruential generator x(n)=69069*x(n-1)+1327217885, period 2^32.
+    ! (2) A 3-shift shift-register generator, period 2^32-1,
+    ! (3) Two 16-bit multiply-with-carry generators, period 597273182964842497>2^59
+    !  Overall period>2^123; 
+    !
+    use shr_kind_mod, only: i8 => shr_kind_i8
+    
+    real(kind=r8), intent(inout)  :: ran_arr
+    integer, intent(inout) :: seed1,seed2,seed3,seed4
+    integer(i8) :: kiss
+    integer :: i
+    
+
+    kiss    = 69069_i8 * seed1 + 1327217885
+    seed1   = transfer(kiss,1)
+    seed2   = m (m (m (seed2, 13), - 17), 5)
+    seed3   = 18000 * iand (seed3, 65535) + ishft (seed3, - 16)
+    seed4   = 30903 * iand (seed4, 65535) + ishft (seed4, - 16)
+    kiss    = int(seed1, i8) + seed2 + ishft (seed3, 16) + seed4
+    ran_arr = transfer(kiss,1)*2.328306e-10_r8 + 0.5_r8
+    
+    
+  contains
+    
+    pure integer function m(k, n)
+      integer, intent(in) :: k
+      integer, intent(in) :: n
+      
+      m = ieor (k, ishft (k, n) )
+      
+    end function m
+
+  end subroutine kissvec
+  
+  
 end module prescribed_aero
