@@ -159,6 +159,7 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:,:,:), pointer :: minValueWithinOceanLayerRegion
       real (kind=RKIND), dimension(:,:,:), pointer :: maxValueWithinOceanLayerRegion
@@ -175,14 +176,14 @@ contains
       real (kind=RKIND), dimension(:,:),   pointer :: velocityZonal
       real (kind=RKIND), dimension(:,:),   pointer :: velocityMeridional
       real (kind=RKIND), dimension(:,:),   pointer :: vertVelocityTop
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       real (kind=RKIND), dimension(:,:),   pointer :: kineticEnergyCell
       real (kind=RKIND), dimension(:,:),   pointer :: relativeVorticityCell
       real (kind=RKIND), dimension(:,:),   pointer :: divergence
 
       ! pointers to data in mesh pool
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nLayerVolWeightedAvgFields, nOceanRegionsTmp
-      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: index_temperature, index_salinity
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer ::  areaCell, lonCell, latCell
 
@@ -269,6 +270,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
@@ -276,8 +278,8 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nLayerVolWeightedAvgFields', nLayerVolWeightedAvgFields)
          call mpas_pool_get_dimension(block % dimensions, 'nOceanRegionsTmp', nOceanRegionsTmp)
-         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -300,10 +302,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
          ! initialize buffers
          workBufferSum(:) = 0.0_RKIND
@@ -330,8 +332,8 @@ contains
             workArray( 7,:) = velocityZonal(iLevel,:)
             workArray( 8,:) = velocityMeridional(iLevel,:)
             workArray( 9,:) = vertVelocityTop(iLevel,:)
-            workArray(10,:) = tracers(indexTemperature,iLevel,:)
-            workArray(11,:) = tracers(indexSalinity,iLevel,:)
+            if ( associated(activeTracers) ) workArray(10,:) = activeTracers(index_temperature,iLevel,:)
+            if ( associated(activeTracers) ) workArray(11,:) = activeTracers(index_salinity,iLevel,:)
             workArray(12,:) = kineticEnergyCell(iLevel,:)
             workArray(13,:) = relativeVorticityCell(iLevel,:)
             workArray(14,:) = divergence(iLevel,:)
