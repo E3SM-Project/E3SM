@@ -15,6 +15,5 @@ scrdir=$1
 # Get the CTest model name
 model=$2
 
-echo "$scrdir/CTestScript-Test.cmake,${model}"
 # Run the "ctest" command through an interactive parallel session
 DAV_CORES=4 execca ctest -S ${scrdir}/CTestScript-Test.cmake,${model} -V
