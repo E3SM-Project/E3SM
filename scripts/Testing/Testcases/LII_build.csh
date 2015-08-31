@@ -13,7 +13,7 @@ if ( ! -e user_nl_nointerp ) then
     cp user_nl_clm* user_nl_nointerp
     foreach file (user_nl_nointerp/user_nl_clm*)
 	# False is the default, but set it explicitly to be sure
-    	echo "force_init_interp = .false." >> $file
+    	echo "use_init_interp = .false." >> $file
     end
 endif
 
@@ -21,7 +21,7 @@ if ( ! -e user_nl_interp ) then
     mkdir user_nl_interp
     cp user_nl_clm* user_nl_interp
     foreach file (user_nl_interp/user_nl_clm*)
-    	echo "force_init_interp = .true." >> $file
+    	echo "use_init_interp = .true." >> $file
     end
 endif
 

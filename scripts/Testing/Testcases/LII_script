@@ -13,12 +13,12 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 ./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
 
 #======================================================================
-# do a run with force_init_interp false
+# do a run with use_init_interp false
 #======================================================================
 
 cd $CASEROOT
 
-echo "doing an ${STOP_N} ${STOP_OPTION} test with force_init_interp false" >>& $TESTSTATUS_LOG 
+echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp false" >>& $TESTSTATUS_LOG 
 
 cp user_nl_nointerp/* .
 
@@ -53,12 +53,12 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 
 
 #======================================================================
-# do a run with force_init_interp true
+# do a run with use_init_interp true
 #======================================================================
 
 cd $CASEROOT
 
-echo "doing an ${STOP_N} ${STOP_OPTION} test with force_init_interp true" >>& $TESTSTATUS_LOG 
+echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp true" >>& $TESTSTATUS_LOG 
 
 cp user_nl_interp/* .
 
