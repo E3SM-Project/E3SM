@@ -37,7 +37,8 @@ module cice_column
        cice_column_postdynamics_time_integration, &
        cice_init_column_shortwave, &
        cice_column_aggregate, &
-       cice_column_initial_air_drag_coefficient
+       cice_column_initial_air_drag_coefficient, &
+       cice_column_reinitialize_fluxes
 
   ! constants
   real(kind=RKIND), parameter :: puny = 1e-11_RKIND
@@ -962,8 +963,8 @@ contains
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
-         oceanStressU, &
-         oceanStressV, &
+         oceanStressCellU, &
+         oceanStressCellV, &
          freezingMeltingPotential, &
          lateralIceMeltFraction, &
          snowfallRate, &
@@ -1129,8 +1130,8 @@ contains
        call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocity_solver, "airStressCellU", airStressCellU)
        call MPAS_pool_get_array(velocity_solver, "airStressCellV", airStressCellV)
-       call MPAS_pool_get_array(velocity_solver, "oceanStressU", oceanStressU)
-       call MPAS_pool_get_array(velocity_solver, "oceanStressV", oceanStressV)
+       call MPAS_pool_get_array(velocity_solver, "oceanStressCellU", oceanStressCellU)
+       call MPAS_pool_get_array(velocity_solver, "oceanStressCellV", oceanStressCellV)
 
        call MPAS_pool_get_array(atmos_coupling, "uAirVelocity", uAirVelocity)
        call MPAS_pool_get_array(atmos_coupling, "vAirVelocity", vAirVelocity)
@@ -1227,7 +1228,7 @@ contains
 
        call MPAS_pool_get_array(diagnostics, "meltOnset", meltOnset)
        call MPAS_pool_get_array(diagnostics, "freezeOnset", freezeOnset)
-       
+
        ! aerosols
        if (config_use_aerosols) then
 
@@ -1344,8 +1345,8 @@ contains
                seaSurfaceTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
                seaFreezingTemperature(iCell), &
-               oceanStressU(iCell), &
-               oceanStressV(iCell), &
+               oceanStressCellU(iCell), &
+               oceanStressCellV(iCell), &
                freezingMeltingPotential(iCell), &
                lateralIceMeltFraction(iCell), &
                snowfallRate(iCell), &
@@ -5774,6 +5775,151 @@ contains
                        * (vonkar/log(zref/iceruf)) ! atmo drag for RASM
 
   end function cice_column_initial_air_drag_coefficient
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_fluxes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31st August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_fluxes(domain)
+
+    type(domain_type) :: domain
+
+    ! atmospheric fluxes
+    call cice_column_reinitialize_atmospheric_fluxes(domain)
+
+    ! oceanic fluxes
+    call cice_column_reinitialize_oceanic_fluxes(domain)
+
+  end subroutine cice_column_reinitialize_fluxes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_atmospheric_fluxes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31st August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_atmospheric_fluxes(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         atmosFluxesPool, &
+         shortwavePool, &
+         atmosCouplingPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airStressCellU, &
+         airStressCellV, &
+         sensibleHeatFlux, &
+         latentHeatFlux, &
+         evaporativeHeatFlux, &
+         longwaveUp, &
+         absorbedShortwaveFlux, &
+         atmosReferenceTemperature2m, &
+         atmosReferenceHumidity2m, &
+         atmosReferenceSpeed10m
+    
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
+       call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
+       
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
+
+       call MPAS_pool_get_array(atmosFluxesPool, "sensibleHeatFlux", sensibleHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "latentHeatFlux", latentHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "evaporativeHeatFlux", evaporativeHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "longwaveUp", longwaveUp)
+
+       call MPAS_pool_get_array(shortwavePool, "absorbedShortwaveFlux", absorbedShortwaveFlux)
+
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceTemperature2m", atmosReferenceTemperature2m)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceHumidity2m", atmosReferenceHumidity2m)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceSpeed10m", atmosReferenceSpeed10m)
+
+       airStressCellU(:)              = 0.0_RKIND
+       airStressCellV(:)              = 0.0_RKIND
+       sensibleHeatFlux(:)            = 0.0_RKIND
+       latentHeatFlux(:)              = 0.0_RKIND
+       evaporativeHeatFlux(:)         = 0.0_RKIND
+       longwaveUp(:)                  = 0.0_RKIND
+       absorbedShortwaveFlux(:)       = 0.0_RKIND
+       atmosReferenceTemperature2m(:) = 0.0_RKIND
+       atmosReferenceHumidity2m(:)    = 0.0_RKIND
+       atmosReferenceSpeed10m(:)      = 0.0_RKIND
+
+       block => block % next
+    end do
+
+  end subroutine cice_column_reinitialize_atmospheric_fluxes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_oceanic_fluxes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31st August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_oceanic_fluxes(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         oceanFluxesPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         oceanFreshWaterFlux, &
+         oceanSaltFlux, &
+         oceanHeatFlux, &
+         oceanShortwaveFlux
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
+
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanFreshWaterFlux", oceanFreshWaterFlux)
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanSaltFlux", oceanSaltFlux)
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanHeatFlux", oceanHeatFlux)
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanShortwaveFlux", oceanShortwaveFlux)
+
+       oceanFreshWaterFlux(:) = 0.0_RKIND
+       oceanSaltFlux(:)       = 0.0_RKIND
+       oceanHeatFlux(:)       = 0.0_RKIND
+       oceanShortwaveFlux(:)  = 0.0_RKIND
+
+       block => block % next
+    end do
+
+  end subroutine cice_column_reinitialize_oceanic_fluxes
 
 !-----------------------------------------------------------------------
 

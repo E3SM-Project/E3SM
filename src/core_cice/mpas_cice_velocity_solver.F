@@ -313,6 +313,8 @@ contains
          airStressVertexV, &
          oceanStressU, &
          oceanStressV, &
+         stressDivergenceU, &
+         stressDivergenceV, &
          surfaceTiltForceU, &
          surfaceTiltForceV, &
          totalMassVertexfVertex, &
@@ -328,9 +330,6 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_use_column_vertical_thermodynamics
-
-    integer :: &
-         iCell
 
     call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
     call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
@@ -382,6 +381,8 @@ contains
     call MPAS_pool_get_array(velocity_solver, "oceanStressV", oceanStressV)
     call MPAS_pool_get_array(velocity_solver, "surfaceTiltForceU", surfaceTiltForceU)
     call MPAS_pool_get_array(velocity_solver, "surfaceTiltForceV", surfaceTiltForceV)
+    call MPAS_pool_get_array(velocity_solver, "stressDivergenceU", stressDivergenceU)
+    call MPAS_pool_get_array(velocity_solver, "stressDivergenceV", stressDivergenceV)
 
     call MPAS_pool_get_array(atmos_coupling, "uAirVelocity", uAirVelocity)
     call MPAS_pool_get_array(atmos_coupling, "vAirVelocity", vAirVelocity)
@@ -451,7 +452,11 @@ contains
          uVelocity, &
          vVelocity, &
          uVelocityInitial, &
-         vVelocityInitial)
+         vVelocityInitial, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         oceanStressU, &
+         oceanStressV)
 
     ! calculate the ice strength
     call cice_ice_strength(&
@@ -479,6 +484,7 @@ contains
             airDensity, &
             iceAreaCell)
     endif
+
     !airStressCellU = 0.0_RKIND
     !airStressCellV = 0.0_RKIND
 
@@ -544,6 +550,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
+         boundary, &
          configs, &
          icestate, &
          velocity_weak, &
@@ -568,11 +575,14 @@ contains
          oceanStressU, &
          oceanStressV, &
          oceanStressCoeff, &
+         oceanStressCellU, &
+         oceanStressCellV, &
          fVertex
 
     configs => block % configs
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
     call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
     call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
@@ -594,6 +604,8 @@ contains
     call MPAS_pool_get_array(velocity_solver, "oceanStressU", oceanStressU)
     call MPAS_pool_get_array(velocity_solver, "oceanStressV", oceanStressV)
     call MPAS_pool_get_array(velocity_solver, "oceanStressCoeff", oceanStressCoeff)
+    call MPAS_pool_get_array(velocity_solver, "oceanStressCellU", oceanStressCellU)
+    call MPAS_pool_get_array(velocity_solver, "oceanStressCellV", oceanStressCellV)
     call MPAS_pool_get_array(velocity_solver, "solveVelocity", solveVelocity)
 
     call final_divergence_shear(&
@@ -609,6 +621,8 @@ contains
          principalStress2)
 
     call cice_ocean_stress_final(&
+         mesh, &
+         boundary, &
          nVerticesSolve, &
          iceAreaVertex, &
          fVertex, &
@@ -619,6 +633,8 @@ contains
          oceanStressU, &
          oceanStressV, &
          oceanStressCoeff, &
+         oceanStressCellU, &
+         oceanStressCellV, &
          solveVelocity)
 
   end subroutine velocity_solver_post_subcycle
@@ -898,11 +914,6 @@ contains
          uVelocityField, &
          vvelocityField
 
-    integer :: &
-         iVertexOnCell, iVertex
-
-    integer, dimension(:,:), pointer :: verticesOnCell
-
     call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
     call MPAS_pool_get_config(domain % configs, "config_variational_basis", config_variational_basis)
     call MPAS_pool_get_config(domain % configs, "config_revised_evp", config_revised_evp)
@@ -980,7 +991,7 @@ contains
                solveVelocity)
 
        endif
-       
+
        !stressDivergenceU = 0.0_RKIND
        !stressDivergenceV = 0.0_RKIND
 
@@ -1298,7 +1309,11 @@ contains
        uVelocity, &
        vVelocity, &
        uVelocityInitial, &
-       vVelocityInitial)!{{{
+       vVelocityInitial, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       oceanStressU, &
+       oceanStressV)!{{{
 
     integer, intent(in) :: &
          nVertices
@@ -1317,17 +1332,34 @@ contains
          uVelocity, &
          vVelocity, &
          uVelocityInitial, &
-         vVelocityInitial
+         vVelocityInitial, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         oceanStressU, &
+         oceanStressV
          
     integer :: &
          iVertex
 
     do iVertex = 1, nVertices
 
-       if (solveVelocity(iVertex) == 1 .and. solveVelocityPrevious(iVertex) == 0) then
+       if (solveVelocity(iVertex) == 1) then
+
+          if (solveVelocityPrevious(iVertex) == 0) then
     
-          uVelocity(iVertex) = uOceanVelocityVertex(iVertex)
-          vVelocity(iVertex) = vOceanVelocityVertex(iVertex)
+             uVelocity(iVertex) = uOceanVelocityVertex(iVertex)
+             vVelocity(iVertex) = vOceanVelocityVertex(iVertex)
+
+          endif
+
+       else
+
+          uVelocity(iVertex) = 0.0_RKIND
+          vVelocity(iVertex) = 0.0_RKIND
+          stressDivergenceU(iVertex) = 0.0_RKIND
+          stressDivergenceV(iVertex) = 0.0_RKIND
+          oceanStressU(iVertex) = 0.0_RKIND
+          oceanStressV(iVertex) = 0.0_RKIND
 
        endif
        

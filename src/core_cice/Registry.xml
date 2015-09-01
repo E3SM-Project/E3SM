@@ -785,7 +785,9 @@
 		<var name="oceanStressU"                      type="real"     dimensions="nVertices Time"                name_in_code="oceanStressU"/>
 		<var name="oceanStressV"                      type="real"     dimensions="nVertices Time"                name_in_code="oceanStressV"/>
 		<var name="oceanStressCoeff"                  type="real"     dimensions="nVertices Time"                name_in_code="oceanStressCoeff"/>
-		<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceU"/>
+                <var name="oceanStressCellU"                  type="real"     dimensions="nCells Time"                   name_in_code="oceanStressCellU"/>
+                <var name="oceanStressCellV"                  type="real"     dimensions="nCells Time"                   name_in_code="oceanStressCellV"/>
+                <var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceU"/>
 		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceV"/>
 		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices Time"                name_in_code="totalMassVertexfVertex"/>
 		<var name="principalStress1"                  type="real"     dimensions="nCells"                   name_in_code="principalStress1"/>

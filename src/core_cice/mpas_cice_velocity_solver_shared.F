@@ -242,8 +242,11 @@ contains
 
        do iCell = 1, nCells
 
+          icePressure(iCell) = 0.0_RKIND
+
           if (solveStress(iCell) == 1) then
 
+             ! this routine doesnt reset icePressure
              call colpkg_ice_strength(&
                   nCategories, &
                   iceAreaCell(iCell), &
@@ -252,10 +255,6 @@ contains
                   iceAreaCategory(1,:,iCell), &
                   iceVolumeCategory(1,:,iCell), &
                   icePressure(iCell))
-
-          else
-
-             icePressure(iCell) = 0.0_RKIND
 
           endif ! solveStress
 
@@ -888,70 +887,100 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ocean_stress_final(&
-       nPoints, &
-       iceArea, &
+       mesh, &
+       boundary, &
+       nVerticesSolve, &
+       iceAreaVertex, &
        coriolisParameter, &
        uVelocity, &
        vVelocity, &
-       uOceanVelocity, &
-       vOceanVelocity, &
+       uOceanVelocityVertex, &
+       vOceanVelocityVertex, &
        oceanStressU, &
        oceanStressV, &
        oceanStressCoeff, &
-       solvePoints)
+       oceanStressCellU, &
+       oceanStressCellV, &
+       solveVelocity)
+
+    use cice_mesh, only: &
+         cice_interpolate_vertex_to_cell
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh, &
+         boundary
 
     integer, intent(in) :: &
-         nPoints
+         nVerticesSolve
 
     real(kind=RKIND), dimension(:), intent(in) :: &    
-         iceArea, &           !< Input:
-         coriolisParameter, & !< Input:
-         uVelocity, &         !< Input:
-         vVelocity, &         !< Input:
-         uOceanVelocity, &    !< Input:
-         vOceanVelocity       !< Input:
+         iceAreaVertex, &        !< Input:
+         coriolisParameter, &    !< Input:
+         uVelocity, &            !< Input:
+         vVelocity, &            !< Input:
+         uOceanVelocityVertex, & !< Input:
+         vOceanVelocityVertex    !< Input:
     
     real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressU, &  !< Output: 
-         oceanStressV, &  !< Output: 
-         oceanStressCoeff !< Output: 
+         oceanStressU, &     !< Output: 
+         oceanStressV, &     !< Output:
+         oceanStressCellU, & !< Output:
+         oceanStressCellV, & !< Output: 
+         oceanStressCoeff    !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+         solveVelocity !< Input:
 
     real(kind=RKIND) :: &
          oceanIceRelativeVelocity
 
+    real(kind=RKIND), dimension(:), allocatable :: &
+         oceanStressUVertexTmp, &
+         oceanStressVVertexTmp
+
     integer :: &
-         iPoint
+         iVertex
 
     call cice_ocean_stress_coefficient(&
-         nPoints, &
+         nVerticesSolve, &
          oceanStressCoeff, &
-         uOceanVelocity, &
-         vOceanVelocity, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
          uVelocity, &
          vVelocity, &
-         iceArea, &
-         solvePoints)
+         iceAreaVertex, &
+         solveVelocity)
 
-    do iPoint = 1, nPoints
+    allocate(oceanStressUVertexTmp(nVerticesSolve))
+    allocate(oceanStressVVertexTmp(nVerticesSolve))
 
-       if (solvePoints(iPoint) == 1) then
+    do iVertex = 1, nVerticesSolve
 
-          oceanStressU(iPoint) = oceanStressCoeff(iPoint) * ((uOceanVelocity(iPoint) - uVelocity(iPoint)) * cosOceanTurningAngle &
-                                                           - (vOceanVelocity(iPoint) - vVelocity(iPoint)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)))
-          oceanStressV(iPoint) = oceanStressCoeff(iPoint) * ((vOceanVelocity(iPoint) - vVelocity(iPoint)) * cosOceanTurningAngle &
-                                                           + (uOceanVelocity(iPoint) - uVelocity(iPoint)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)))
+       if (solveVelocity(iVertex) == 1) then
+
+          oceanStressU(iVertex) = oceanStressCoeff(iVertex) * ((uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * cosOceanTurningAngle &
+                                                             - (vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iVertex)))
+          oceanStressV(iVertex) = oceanStressCoeff(iVertex) * ((vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * cosOceanTurningAngle &
+                                                             + (uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iVertex)))
+
+          oceanStressUVertexTmp(iVertex) = oceanStressU(iVertex) / iceAreaVertex(iVertex)
+          oceanStressVVertexTmp(iVertex) = oceanStressV(iVertex) / iceAreaVertex(iVertex)
 
        else
 
-          oceanStressU(iPoint) = 0.0_RKIND
-          oceanStressV(iPoint) = 0.0_RKIND
+          oceanStressU(iVertex) = 0.0_RKIND
+          oceanStressV(iVertex) = 0.0_RKIND
 
-       endif ! solvePoints
+       endif ! solveVelocity
 
-    enddo ! iPoint
+    enddo ! iVertex
+
+    ! interpolate stress to cells
+    call cice_interpolate_vertex_to_cell(mesh, boundary, oceanStressCellU, oceanStressUVertexTmp)
+    call cice_interpolate_vertex_to_cell(mesh, boundary, oceanStressCellV, oceanStressVVertexTmp)
+
+    deallocate(oceanStressUVertexTmp)
+    deallocate(oceanStressVVertexTmp)
 
   end subroutine cice_ocean_stress_final
   

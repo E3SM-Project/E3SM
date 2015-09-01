@@ -70,7 +70,8 @@ contains
     use cice_column, only: &
          cice_column_predynamics_time_integration, &
          cice_column_dynamics_time_integration, &
-         cice_column_postdynamics_time_integration
+         cice_column_postdynamics_time_integration, &
+         cice_column_reinitialize_fluxes
 
     use cice_history, only: &
          cice_init_history_thermodynamics
@@ -184,6 +185,10 @@ contains
     call flush (stderrUnit)
 
     call cice_debug_write_out_fields(domain, "cice_timestep", 2)
+
+    ! reinitialize fluxes
+    call cice_column_reinitialize_fluxes(domain)
+
 
   end subroutine cice_timestep!}}}
 

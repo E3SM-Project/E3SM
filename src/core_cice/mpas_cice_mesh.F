@@ -32,6 +32,7 @@ module cice_mesh
        cice_latlon_vector_rotation_backward, &
        cice_latlon_from_xyz, &
        cice_interpolate_cell_to_vertex, &
+       cice_interpolate_vertex_to_cell, &
        cice_project_3D_vector_onto_local_2D
 
 contains
@@ -2561,6 +2562,89 @@ contains
 #endif
 
   end subroutine cice_interpolate_cell_to_vertex!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_interpolate_vertex_to_cell
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 29th August 2015
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_interpolate_vertex_to_cell(&
+       mesh, &
+       boundary, &
+       variableCell, &
+       variableVertex)!{{{
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh, & !< Input:
+         boundary !< Input:
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         variableCell !< Output:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         variableVertex !< Input:
+
+    real(kind=RKIND) :: &
+         totalArea
+
+    integer :: &
+         iCell, &
+         iVertexOnCell, &
+         iVertex
+
+    integer, pointer :: &
+         nCellsSolve
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle
+
+    integer, dimension(:), pointer :: &
+         interiorVertex
+
+    ! init variables
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+
+    do iCell = 1, nCellsSolve
+
+       variableCell(iCell) = 0.0_RKIND
+       totalArea = 0.0_RKIND
+
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+          iVertex = verticesOnCell(iVertexOnCell,iCell)
+
+          variableCell(iCell) = variableCell(iCell) + &
+               areaTriangle(iVertex) * variableVertex(iVertex) * real(interiorVertex(iVertex))
+          totalArea = totalArea + &
+               areaTriangle(iVertex) * real(interiorVertex(iVertex))
+
+       enddo ! iVertexOnCell
+
+       variableCell(iCell) = variableCell(iCell) / totalArea
+
+    enddo ! iCell
+
+  end subroutine cice_interpolate_vertex_to_cell
 
 !-----------------------------------------------------------------------
 ! Testing

@@ -2866,7 +2866,7 @@ contains
     ! parameters where we want to writeout output
     character(len=strKIND), parameter :: callingSubroutineDesired = "cice_timestep"
     integer, parameter :: locationDesired = 2
-    integer, parameter :: iStepDesired = 1
+    integer, parameter :: iStepDesired = 24
 
 ! cice_init_column_shortwave           1           0
 ! column_radiation           1           0
@@ -2882,6 +2882,8 @@ contains
 ! column_ridging           2           1
 ! column_radiation           1           1
 ! column_radiation           2           1
+! cice_timestep
+! cice_run_velocity_solver
 
     write(stderrUnit,*) trim(callingSubroutine), trim(callingSubroutineDesired), location, locationDesired, iStep, iStepDesired
 
@@ -3092,6 +3094,14 @@ contains
        !call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressV", "strocny")
        !call cice_debug_write_out_field(domain, "velocity_solver", "surfaceTiltForceU", "strtltx")
        !call cice_debug_write_out_field(domain, "velocity_solver", "surfaceTiltForceV", "strtlty")
+
+       call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressCellU", "strocnxT")
+       call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressCellV", "strocnyT")
+
+       call cice_debug_write_out_field(domain, "velocity_solver", "airStressCellU", "strairxT")
+       call cice_debug_write_out_field(domain, "velocity_solver", "airStressCellV", "strairyT")
+
+       call cice_debug_write_out_field(domain, "velocity_solver", "icePressure", "strength")
 
        call cice_debug_write_out_field(domain, "velocity_geographical", "uVelocityGeo", "uvel")
        call cice_debug_write_out_field(domain, "velocity_geographical", "vVelocityGeo", "vvel")
