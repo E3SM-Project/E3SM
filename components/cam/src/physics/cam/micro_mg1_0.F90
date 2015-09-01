@@ -298,8 +298,7 @@ dcs_tdep = micro_mg_dcs_tdep
 
 ! smallest mixing ratio considered in microphysics
 
-qsmall = 1.e-18_r8  
-
+qsmall = 1.e-8_r8   !1.e-18_r8  !BSINGH: Changed the threshold for pergrow [this mod is climate changing ]
 ! immersion freezing parameters, bigg 1953
 
 bimm = 100._r8

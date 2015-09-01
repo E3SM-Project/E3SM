@@ -1708,7 +1708,6 @@ if (l_vdiff) then
     else
 
        call t_startf('vertical_diffusion_tend')
-       if(icolprnt(lchnk) > 0)write(202,*)'physpkg3:',state%t(icolprnt(lchnk),kprnt)
        call vertical_diffusion_tend (ztodt ,state ,cam_in%wsx, cam_in%wsy,   &
             cam_in%shf     ,cam_in%cflx     ,surfric  ,obklen   ,ptend    ,ast    ,&
             cam_in%ocnfrac  , cam_in%landfrac ,        &
