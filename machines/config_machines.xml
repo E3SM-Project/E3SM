@@ -528,7 +528,7 @@
          <DOUT_S_ROOT>/scratch/cluster/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_64/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHREDIRECT></BATCHREDIRECT>
@@ -548,7 +548,7 @@
          <mpirun mpilib="default">
            <executable>mpiexec</executable>
            <arguments>
-             <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+	     <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
              <arg name="num_tasks"> -n {{ num_tasks }} </arg>
            </arguments>
          </mpirun>
@@ -1128,7 +1128,7 @@
         <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/launch </executable>
       </mpirun>
       <mpirun mpilib="default" threaded="true">
-        <executable>MP_PE_AFFINITY= MP_TASK_AFFINITY= MP_CPU_BIND_LIST= mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/hybrid_launch </executable>
+        <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/hybrid_launch </executable>
       </mpirun>
       <mpirun compiler="gnu">
         <executable>mpirun.lsf </executable>

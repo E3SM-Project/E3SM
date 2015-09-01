@@ -80,10 +80,8 @@ sub loadModules()
     $cshenv .= "DEBUG=". $self->{'debug'} . " " ;
     $cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
     $cshenv .= "PERL=TRUE ";
-	#my $cmd = $cshenv . " " . $envfile;
-	#my $cmd = $cshenv . " " . $envfile . " && printenv";
 	my $cmd = $cshenv . " " . $envfile ;
-	print "running command $cmd\n";
+	#print "running command $cmd\n";
 	my @output;
 	eval { @output = qx($cmd);};
 	#eval { $out = `$cmd`;};

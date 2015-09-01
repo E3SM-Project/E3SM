@@ -431,7 +431,7 @@ endif
 # ESMF_F90LINKRPATHS
 # ESMF_F90ESMFLINKLIBS
 ifeq ($(USE_ESMF_LIB), TRUE)
-  include $(CCSM_ESMFMKFILE)
+  -include $(CCSM_ESMFMKFILE)
   FFLAGS += $(ESMF_F90COMPILEPATHS)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
@@ -520,7 +520,8 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D USER_CMAKE_MODULE_DIR:STRING=$(CIMEROOT)/externals/CMake
+              -D GPTL_PATH:STRING=$(SHAREDPATH) \
+              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)" 
@@ -740,7 +741,7 @@ cleanatm:
 	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
 
 cleancpl:
-	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/cesm/obj;  $(RM) -f *.o *.mod
 
 cleanocn: 
 	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a
