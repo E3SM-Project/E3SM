@@ -15,11 +15,11 @@ module load cmake/3.0.2
 module load netcdf-mpi/4.3.3.1
 module load pnetcdf/1.6.0
 
-export PIO_DASHBOARD_ROOT=`pwd`/dashboard
-export PIO_COMPILER_ID=GNU-4.8.2
-
 export CC=mpicc
 export FC=mpif90
+
+export PIO_DASHBOARD_ROOT=`pwd`/dashboard
+export PIO_COMPILER_ID=GNU-`$CC --version | head -n 2 | tail -n 1 | cut -d' ' -f2`
 
 if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then
   mkdir "$PIO_DASHBOARD_ROOT"
