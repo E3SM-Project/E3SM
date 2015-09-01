@@ -889,8 +889,7 @@ contains
           if (use_cn) then
              nstep = get_nstep()
 
-write(*,'(/,A,50(1h+))'),">>>DEBUG | CNP_BALANCE_CHECK"
-print*,">>>DEBUG | nstep=",nstep,"; nstep_day=",nstep/48.0
+print*,">>>DEBUG | CNP Balance_Check | nstep=",nstep,"; nstep_day=",nstep/48.0
 
              if (nstep < 2 )then
                 if (masterproc) then

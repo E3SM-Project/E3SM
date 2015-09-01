@@ -598,8 +598,7 @@ contains
                   end if
                end if
             else
-!               this%t_soisno_col(c,1:nlevgrnd) = 274._r8
-               this%t_soisno_col(c,1:nlevgrnd) = 271._r8     ! pflotran: near-frozen so that water will keep in soil for cold regions
+               this%t_soisno_col(c,1:nlevgrnd) = 274._r8
             endif
          endif
       end do
