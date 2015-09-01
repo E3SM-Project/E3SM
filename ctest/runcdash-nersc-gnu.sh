@@ -19,11 +19,11 @@ module load cray-hdf5-parallel/1.8.14
 module load cray-netcdf-hdf5parallel/4.3.3.1
 module load cray-parallel-netcdf/1.6.0
 
-export PIO_DASHBOARD_ROOT=`pwd`/dashboard
-export PIO_COMPILER_ID=GNU-4.9.2
-
 export CC=cc
 export FC=ftn
+
+export PIO_DASHBOARD_ROOT=`pwd`/dashboard
+export PIO_COMPILER_ID=GNU-`$CC --version | head -n 2 | tail -n 1 | cut -d' ' -f2`
 
 if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then
   mkdir "$PIO_DASHBOARD_ROOT"
