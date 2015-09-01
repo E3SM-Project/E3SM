@@ -29,9 +29,9 @@
 	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="3600.0"/>
 		<nml_option name="config_calendar_type"              type="character"     default_value="gregorian_noleap"/>
-		<nml_option name="config_start_time"                 type="character"     default_value="1997-01-01_00:00:00"/>
+		<nml_option name="config_start_time"                 type="character"     default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_stop_time"                  type="character"     default_value="none"/>
-		<nml_option name="config_run_duration"               type="character"     default_value="0000_01:00:00"/>
+		<nml_option name="config_run_duration"               type="character"     default_value="0000_24:00:00"/>
 		<nml_option name="config_num_halos"                  type="integer"       default_value="2"/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
@@ -51,28 +51,28 @@
 		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
-		<nml_option name="config_initial_condition_type"     type="character"     default_value="uniform"    possible_values="'uniform', 'circle', 'square' or 'uniform_interior'"/>
-		<nml_option name="config_initial_ice_area"           type="real"          default_value="0.0"/>
-		<nml_option name="config_initial_ice_volume"         type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_condition_type"     type="character"     default_value="cice_default"    possible_values="'uniform', 'circle', 'square' or 'uniform_interior'"/>
+		<nml_option name="config_initial_ice_area"           type="real"          default_value="1.0"/>
+		<nml_option name="config_initial_ice_volume"         type="real"          default_value="1.0"/>
 		<nml_option name="config_initial_snow_volume"        type="real"          default_value="0.0"/>
-		<nml_option name="config_initial_latitude_north"     type="real"          default_value="0.0"/>
-		<nml_option name="config_initial_latitude_south"     type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_latitude_north"     type="real"          default_value="70.0"/>
+		<nml_option name="config_initial_latitude_south"     type="real"          default_value="-60.0"/>
 		<nml_option name="config_initial_velocity_type"      type="character"     default_value="uniform"/>
 		<nml_option name="config_initial_uvelocity"          type="real"          default_value="0.0"/>
 		<nml_option name="config_initial_vvelocity"          type="real"          default_value="0.0"/>
 	</nml_record>
 	<nml_record name="use_sections" in_defaults="true">
-		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="false"/>
+		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="true"/>
 		<nml_option name="config_use_advection"               type="logical"       default_value="false"/>
 		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
 		<nml_option name="config_use_vertical_thermodynamics" type="logical"       default_value="false"/>
-		<nml_option name="config_use_column_package"          type="logical"       default_value="false"/>
+		<nml_option name="config_use_column_package"          type="logical"       default_value="true"/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_atmospheric_forcing_type"    type="character"     default_value="CORE"/>
 		<nml_option name="config_forcing_start_time"          type="character"     default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_forcing_cycle_start"         type="character"     default_value="2000-01-01_00:00:00"/>
-		<nml_option name="config_forcing_cycle_duration"      type="character"     default_value="1-00-00_00:00:00"/>
+		<nml_option name="config_forcing_cycle_duration"      type="character"     default_value="2-00-00_00:00:00"/>
 		<nml_option name="config_forcing_restart_file"        type="character"     default_value="restart_forcing_timestamps"/>
 		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
@@ -85,13 +85,13 @@
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
-		<nml_option name="config_dynamics_subcycle_number"    type="integer"       default_value="1"          possible_values="any positive integer"/> 
-		<nml_option name="config_rotate_cartesian_grid"       type="logical"       default_value="true"       possible_values="true or false"/>	
-		<nml_option name="config_include_metric_terms"        type="logical"       default_value="true"       possible_values="true or false"/>	
-		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"        possible_values="any positive integer"/> 
-		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="weak"       possible_values="'weak' or 'variational'"/>
-		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress" possible_values="'wachspress' or 'pwl'"/>
-		<nml_option name="config_revised_evp"	type="logical"	     default_value="true" possible_values="true or false"/>		
+		<nml_option name="config_dynamics_subcycle_number"    type="integer"       default_value="1"           possible_values="any positive integer"/> 
+		<nml_option name="config_rotate_cartesian_grid"       type="logical"       default_value="true"        possible_values="true or false"/>	
+		<nml_option name="config_include_metric_terms"        type="logical"       default_value="true"        possible_values="true or false"/>	
+		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"         possible_values="any positive integer"/> 
+		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="variational" possible_values="'weak' or 'variational'"/>
+		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress"  possible_values="'wachspress' or 'pwl'"/>
+		<nml_option name="config_revised_evp"                 type="logical"	   default_value="false"       possible_values="true or false"/>		
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
@@ -131,12 +131,12 @@
 	</nml_record>
 
 	<nml_record name="column_tracers" in_defaults="true">
-        	<nml_option name="config_use_ice_age"                            type="logical"       default_value="false"/>
-        	<nml_option name="config_use_first_year_ice"                     type="logical"       default_value="false"/>
-       		<nml_option name="config_use_level_ice"                          type="logical"       default_value="false"/>
-       		<nml_option name="config_use_meltponds"                          type="logical"       default_value="false"/>
+        	<nml_option name="config_use_ice_age"                            type="logical"       default_value="true"/>
+        	<nml_option name="config_use_first_year_ice"                     type="logical"       default_value="true"/>
+       		<nml_option name="config_use_level_ice"                          type="logical"       default_value="true"/>
+       		<nml_option name="config_use_meltponds"                          type="logical"       default_value="true"/>
         	<nml_option name="config_use_cesm_meltponds"                     type="logical"       default_value="false"/>
-        	<nml_option name="config_use_level_meltponds"                    type="logical"       default_value="false"/>
+        	<nml_option name="config_use_level_meltponds"                    type="logical"       default_value="true"/>
         	<nml_option name="config_use_topo_meltponds"                     type="logical"       default_value="false"/>
         	<nml_option name="config_use_aerosols"                           type="logical"       default_value="false"/>
         	<nml_option name="config_use_brine"                              type="logical"       default_value="false"/>
@@ -144,7 +144,7 @@
 
 	<nml_record name="shortwave" in_defaults="true">
 		<nml_option name="config_shortwave_type"                         type="character"     default_value="dEdd"/>
-		<nml_option name="config_albedo_type"                            type="character"     default_value="default"/>
+		<nml_option name="config_albedo_type"                            type="character"     default_value="ccsm3"/>
 		<nml_option name="config_visible_ice_albedo"                     type="real"          default_value="0.78"/>
 		<nml_option name="config_infrared_ice_albedo"                    type="real"          default_value="0.36"/>
 		<nml_option name="config_visible_snow_albedo"                    type="real"          default_value="0.98"/>
@@ -182,11 +182,11 @@
 
 	<nml_record name="itd" in_defaults="true">
 		<nml_option name="config_itd_conversion_type"                     type="character"     default_value="linear remap"/>
-		<nml_option name="config_category_bounds_type"                    type="character"     default_value="old"/>
+		<nml_option name="config_category_bounds_type"                    type="character"     default_value="original"/>
 	</nml_record>
 
 	<nml_record name="ridging" in_defaults="true">
-		<nml_option name="config_ice_strength_formulation"                type="character"     default_value="rothrock75"/>
+		<nml_option name="config_ice_strength_formulation"                type="character"     default_value="Rothrock75"/>
 		<nml_option name="config_ridging_participation_function"          type="character"     default_value="exponential"/>
 		<nml_option name="config_ridging_redistribution_function"         type="character"     default_value="exponential"/>
     		<nml_option name="config_ridiging_efolding_scale"                 type="real"          default_value="3.0"/>
@@ -194,7 +194,7 @@
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
-    		<nml_option name="config_atmos_boundary_method"                   type="character"     default_value="default"/>
+    		<nml_option name="config_atmos_boundary_method"                   type="character"     default_value="ccsm3"/>
     		<nml_option name="config_calc_surface_stresses"                   type="logical"       default_value="true"/>
     		<nml_option name="config_calc_surface_temperature"                type="logical"       default_value="true"/>
     		<nml_option name="config_use_form_drag"                           type="logical"       default_value="false"/>
