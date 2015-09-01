@@ -25,6 +25,9 @@ else ()
     set (compid "?")
 endif ()
 
+## -- CTest Dashboard Build Group
+set (CTEST_BUILD_GROUP "${CTEST_SCRIPT_ARG}")
+
 #---------------------------------------
 #-- Get the machine environment
 #---------------------------------------
@@ -96,7 +99,7 @@ set (CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}-${compid}")
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
 
 ## -- BIN Dir 
-set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}")
+set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}-${CTEST_BUILD_GROUP}")
 
 ## -- Add the CTest script directory to the module path
 set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
