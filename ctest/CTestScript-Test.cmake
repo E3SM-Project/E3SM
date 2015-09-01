@@ -8,18 +8,13 @@
 #==============================================================================
 
 #-------------------------------------------
-#-- Get the common header information
+#-- Get the common build information
 #-------------------------------------------
 
-list (APPEND CMAKE_MODULE_PATH ${CTEST_SCRIPT_DIRECTORY})
-include (CTestScript-Header)
-
-#-----------------------------------------------------------  
-#-- Get build-specific information
-#-----------------------------------------------------------  
-
-## -- SRC Dir (where this script exists)
-set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}/..")
+set (CTEST_SITE              $ENV{PIO_DASHBOARD_SITE})
+set (CTEST_BUILD_NAME        $ENV{PIO_DASHBOARD_BUILD_NAME})
+set (CTEST_SOURCE_DIRECTORY  $ENV{PIO_DASHBOARD_SOURCE_DIR})
+set (CTEST_BINARY_DIRECTORY  $ENV{PIO_DASHBOARD_BINARY_DIR})
 
 # -----------------------------------------------------------  
 # -- Run CTest- TESTING ONLY (Appended to existing TAG)
@@ -30,3 +25,5 @@ ctest_start("${CTEST_SCRIPT_ARG}" APPEND)
 
 ## -- TEST
 ctest_test()
+
+## Don't submit!  Submission handled by main CTestScript

@@ -20,10 +20,10 @@ echo "#!/bin/sh" > runctest.pbs
 echo "#PBS -q debug" >> runctest.pbs
 echo "#PBS -l mppwidth=24" >> runctest.pbs
 echo "#PBS -l walltime=00:20:00" >> runctest.pbs
-echo "#PBS -V" >> runctest.pbs
+echo "#PBS -v PIO_DASHBOARD_SITE,PIO_DASHBOARD_BUILD_NAME,PIO_DASHBOARD_SOURCE_DIR,PIO_DASHBOARD_BINARY_DIR" >> runctest.pbs
 echo "cd \$PBS_O_WORKDIR" >> runctest.pbs
-echo "CTESTCMD=`which ctest`" >> runctest.pbs
-echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.pbs
+echo "CTEST_CMD=`which ctest`" >> runctest.pbs
+echo "\$CTEST_CMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.pbs
 
 # Submit the job to the queue
 jobid=`qsub runctest.pbs`

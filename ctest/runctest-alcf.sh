@@ -24,7 +24,12 @@ echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.sh
 chmod +x runctest.sh
 
 # Submit the job to the queue
-jobid=`qsub -t 20 -n 4 --proccount 4 --env PIO_DASHBOARD_ROOT=$PIO_DASHBOARD_ROOT:PIO_COMPILER_ID=$PIO_COMPILER_ID --mode script runctest.sh`
+jobid=`qsub -t 20 -n 4 --proccount 4 \
+	--env PIO_DASHBOARD_SITE=$PIO_DASHBOARD_SITE \
+	--env PIO_DASHBOARD_BUILD_NAME=$PIO_DASHBOARD_BUILD_NAME \
+	--env PIO_DASHBOARD_SOURCE_DIR=$PIO_DASHBOARD_SOURCE_DIR \
+	--env PIO_DASHBOARD_BINARY_DIR=$PIO_DASHBOARD_BINARY_DIR \
+	--mode script runctest.sh`
 
 # Wait for the job to complete before exiting
 while true; do
