@@ -28,8 +28,9 @@ module spmd_utils
 !-----------------------------------------------------------------------
 !- use statements ------------------------------------------------------
 !-----------------------------------------------------------------------
-   use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_kind_mod,     only: r8 => shr_kind_r8
    use cam_abortutils,   only: endrun
+
 #if ( defined SPMD )
    use mpishorthand, only: mpiint, mpii8, mpichar, mpilog, mpipk,      &
                            mpic16, mpir8, mpir4, mpicom, mpimax
@@ -47,9 +48,8 @@ module spmd_utils
 ! Forward from mpishorthand.F with the idea of phasing out use of and removing that file
 !
 #ifndef SPMD
-
-   integer :: mpir8
    integer :: mpi_status_ignore     ! Needs to be defined in mpi-serial
+   integer :: mpir8
 #endif
 !
 !  Forward these from mpif.h (or mpi.mod), the idea being that this should
@@ -59,7 +59,7 @@ module spmd_utils
              mpi_integer, mpi_integer8, mpi_character,   &
              mpi_logical, mpi_real8, mpi_real4,          &
              mpi_complex16,                              &
-             mpi_packed, mpi_max,                        &
+             mpi_packed, mpi_max, mpi_min,               &
              mpi_comm_null, mpi_group_null,              &
              mpi_undefined, mpi_status_size, mpi_success,&
              mpi_status_ignore, mpi_double_precision, mpi_sum, mpir8
@@ -794,10 +794,11 @@ contains
 !
 ! Collects different messages from each process on masterproc
 !
-   use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_kind_mod,   only: r8 => shr_kind_r8
    use mpishorthand
    use cam_abortutils, only: endrun
-   use cam_logfile,  only: iulog
+   use cam_logfile,    only: iulog
+
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
 #endif
@@ -931,10 +932,11 @@ contains
 !
 ! Collects different messages from each process on masterproc
 !
-   use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8
+   use shr_kind_mod,   only: r4 => shr_kind_r4, r8 => shr_kind_r8
    use mpishorthand
    use cam_abortutils, only: endrun
-   use cam_logfile,  only: iulog
+   use cam_logfile,    only: iulog
+
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
 #endif
@@ -1068,10 +1070,11 @@ contains
 !
 ! Collects different messages from each process on masterproc
 !
-   use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_kind_mod,   only: r8 => shr_kind_r8
    use mpishorthand
    use cam_abortutils, only: endrun
-   use cam_logfile,  only: iulog
+   use cam_logfile,    only: iulog
+
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
 #endif
@@ -1205,10 +1208,11 @@ contains
 !
 ! Collects different messages from each process on masterproc
 !
-   use shr_kind_mod, only: r8 => shr_kind_r8
+   use shr_kind_mod,   only: r8 => shr_kind_r8
    use mpishorthand
    use cam_abortutils, only: endrun
-   use cam_logfile,  only: iulog
+   use cam_logfile,    only: iulog
+
 #if defined( WRAP_MPI_TIMING )
    use perf_mod
 #endif
