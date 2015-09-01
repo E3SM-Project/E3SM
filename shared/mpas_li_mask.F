@@ -251,7 +251,8 @@ contains
       logical :: isMargin
       logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, aCellOnVertexIsFloating
       logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, aCellOnEdgeIsFloating 
-
+      integer :: numCellsOnVertex
+      logical :: validVertex
 
       err = 0
 
@@ -350,6 +351,10 @@ contains
       ! Bit: Floating vertices have at least one neighboring cell floating
       ! Bit: Vertices on margin are vertices with at least one neighboring cell with ice and at least one neighboring cell without ice
       ! Bit: Vertices on dynamic margin are vertices with at least one neighboring cell with dynamic ice and at least one neighboring cell without dynamic ice
+      ! NOTE: Vertices are only considered 'valid' if they have three valid neighboring 
+      !       cells (i.e., the cells exist in the mesh).  This allows external dycores to use the 
+      !       vertexMask to get information about triangles in the Delaunay triangulation.
+      !       (This is done in a way which does not assume vertexMask==3.)
       vertexMask = 0
       do i = 1,nVertices
           aCellOnVertexHasIce = .false.
@@ -357,27 +362,35 @@ contains
           aCellOnVertexHasDynamicIce = .false.
           aCellOnVertexHasNoDynamicIce = .false.
           aCellOnVertexIsFloating = .false.
+          numCellsOnVertex = 0
+          validVertex = .false.
           do j = 1, vertexDegree  ! vertexDegree is usually 3 (e.g. CVT mesh) but could be something else (e.g. 4 for quad mesh)
               iCell = cellsOnVertex(j,i)
+              if (iCell < nCells+1) then
+                 numCellsOnVertex = numCellsOnVertex + 1
+              endif
               aCellOnVertexHasIce = (aCellOnVertexHasIce .or. li_mask_is_ice(cellMask(iCell)))
               aCellOnVertexHasNoIce = (aCellOnVertexHasNoIce .or. (.not. li_mask_is_ice(cellMask(iCell))))
               aCellOnVertexHasDynamicIce = (aCellOnVertexHasDynamicIce .or. li_mask_is_dynamic_ice(cellMask(iCell)))
               aCellOnVertexHasNoDynamicIce = (aCellOnVertexHasNoDynamicIce .or. (.not. (li_mask_is_dynamic_ice(cellMask(iCell)))))
               aCellOnVertexIsFloating = (aCellOnVertexIsFloating .or. li_mask_is_floating_ice(cellMask(iCell)))
-          end do 
-          if (aCellOnVertexHasIce) then
+          end do
+          if (numCellsOnVertex == vertexDegree) then
+             validVertex = .true.
+          endif
+          if (aCellOnVertexHasIce .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueIce)
           endif
-          if (aCellOnVertexHasDynamicIce) then
+          if (aCellOnVertexHasDynamicIce .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicIce)
           endif
-          if (aCellOnVertexIsFloating) then
+          if (aCellOnVertexIsFloating .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueFloating)
           endif
-          if (aCellOnVertexHasIce .and. aCellOnVertexHasNoIce) then
+          if (aCellOnVertexHasIce .and. aCellOnVertexHasNoIce .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueMargin)     ! vertex with both 1+ ice cell and 1+ non-ice cell as neighbors
           endif
-          if (aCellOnVertexHasDynamicIce .and. aCellOnVertexHasNoDynamicIce) then
+          if (aCellOnVertexHasDynamicIce .and. aCellOnVertexHasNoDynamicIce .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicMargin)     ! vertex with both 1+ dynamic ice cell(s) and 1+ non-dynamic cell(s) as neighbors
           endif
       end do       
