@@ -55,9 +55,6 @@ contains
       dt = real( get_step_size(), r8 )
 
       !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
       ! column level carbon fluxes from fire
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -72,6 +69,7 @@ contains
          end do
       end do
 
+
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools
          do j = 1, nlevdecomp
@@ -81,8 +79,7 @@ contains
             end do
          end do
       end do
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
-      !------------------------------------------------------------------
+
 
       ! patch loop
       do fp = 1,num_soilp

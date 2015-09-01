@@ -72,11 +72,6 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-!      if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
-
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       !! - X.YANG
       do j = 1, nlevdecomp
@@ -176,8 +171,7 @@ contains
             end do
          end do
       end do
-!      endif ! if (.not.(use_pflotran .and. pf_cmode))
-      !------------------------------------------------------------------
+
 
       ! patch-level phosphorus fluxes 
 

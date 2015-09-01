@@ -2320,9 +2320,9 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%phenology_p_to_litr_met_p_col(c,j)            &
                         + this%dwt_frootp_to_litr_met_p_col(c,j)             &
                         + this%gap_mortality_p_to_litr_met_p_col(c,j)        &
-                        + this%harvest_p_to_litr_met_p_col(c,j)              &
-                        + this%m_p_to_litr_met_fire_col(c,j)                 &
-                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_litr_met_p_col(c,j)              !!&
+!                        + this%m_p_to_litr_met_fire_col(c,j)                 &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
 
                 elseif (l==i_cel_lit) then
                    this%externalp_to_decomp_ppools_col(c,j,l) =              &
@@ -2330,9 +2330,9 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%phenology_p_to_litr_cel_p_col(c,j)            &
                         + this%dwt_frootp_to_litr_cel_p_col(c,j)             &
                         + this%gap_mortality_p_to_litr_cel_p_col(c,j)        &
-                        + this%harvest_p_to_litr_cel_p_col(c,j)              &
-                        + this%m_p_to_litr_cel_fire_col(c,j)                 &
-                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_litr_cel_p_col(c,j)              !!&
+!                        + this%m_p_to_litr_cel_fire_col(c,j)                 &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
 
                 elseif (l==i_lig_lit) then
                    this%externalp_to_decomp_ppools_col(c,j,l) =              &
@@ -2340,9 +2340,9 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%phenology_p_to_litr_lig_p_col(c,j)            &
                         + this%dwt_frootp_to_litr_lig_p_col(c,j)             &
                         + this%gap_mortality_p_to_litr_lig_p_col(c,j)        &
-                        + this%harvest_p_to_litr_lig_p_col(c,j)              &
-                        + this%m_p_to_litr_lig_fire_col(c,j)                 &
-                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+                        + this%harvest_p_to_litr_lig_p_col(c,j)              !!&
+!                        + this%m_p_to_litr_lig_fire_col(c,j)                 &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
 
                 ! for cwd
                 elseif (l==i_cwd) then
@@ -2351,14 +2351,14 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
                         + this%dwt_livecrootp_to_cwdp_col(c,j)               &
                         + this%dwt_deadcrootp_to_cwdp_col(c,j)               &
                         + this%gap_mortality_p_to_cwdp_col(c,j)              &
-                        + this%harvest_p_to_cwdp_col(c,j)                    &
-                        + this%fire_mortality_p_to_cwdp_col(c,j)
-
+                        + this%harvest_p_to_cwdp_col(c,j)                    !!&
+!                        + this%fire_mortality_p_to_cwdp_col(c,j)
+!
              ! for som n
-                else
-                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
-                       this%externalp_to_decomp_ppools_col(c,j,l)            &
-                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+!                else
+!                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+!                       this%externalp_to_decomp_ppools_col(c,j,l)            &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
 
                 end if
 
@@ -2383,8 +2383,8 @@ subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
           do j = 1, nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-
-                this%sminp_net_transport_vr_col(c,j) = this%sminp_leached_vr_col(c,j)
+                this%sminp_net_transport_vr_col(c,j) = 0._r8
+!                this%sminp_net_transport_vr_col(c,j) = this%sminp_leached_vr_col(c,j)
                 this%sminp_net_transport_delta_col(c) = &
                             this%sminp_net_transport_delta_col(c) - &
                             this%sminp_net_transport_vr_col(c,j)*dzsoi_decomp(j)
