@@ -21,6 +21,9 @@
 ! !USES:
 !  uses mpi if available
 #ifndef NO_MPIMOD
+#ifndef MPI_OFFSET
+#define MPI_OFFSET  MPI_INTEGER8
+#endif
    use mpi, only : MPI_OFFSET_KIND, MPI_OFFSET ! _EXTERNAL
 #endif
 
