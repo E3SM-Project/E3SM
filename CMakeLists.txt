@@ -64,6 +64,31 @@ set (USER_CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH}
 list (APPEND CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH})
 
 #==============================================================================
+#  HELPFUL GLOBAL VARIABLES
+#==============================================================================
+
+# System Name
+string (TOUPPER "${CMAKE_SYSTEM_NAME}" CMAKE_SYSTEM_NAME_CAPS)
+set (CMAKE_SYSTEM_NAME_CAPS "${CMAKE_SYSTEM_NAME_CAPS}"
+     CACHE STRING "System name preprocessor directive")
+
+# C Compiler Name
+string (TOUPPER "${CMAKE_C_COMPILER_ID}" CMAKE_C_COMPILER_NAME)
+if (CMAKE_C_COMPILER_NAME STREQUAL "XL")
+    set (CMAKE_C_COMPILER_NAME "IBM")
+endif ()
+set (CMAKE_C_COMPILER_NAME "CPR${CMAKE_C_COMPILER_NAME}"
+     CACHE STRING "C compiler name preprocessor directive")
+
+# Fortran Compiler Name
+string (TOUPPER "${CMAKE_Fortran_COMPILER_ID}" CMAKE_Fortran_COMPILER_NAME)
+if (CMAKE_Fortran_COMPILER_NAME STREQUAL "XL")
+    set (CMAKE_Fortran_COMPILER_NAME "IBM")
+endif ()
+set (CMAKE_Fortran_COMPILER_NAME "CPR${CMAKE_Fortran_COMPILER_NAME}"
+     CACHE STRING "Fortran compiler name preprocessor directive")
+
+#==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
 #==============================================================================
 
