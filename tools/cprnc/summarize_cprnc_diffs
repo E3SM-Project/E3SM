@@ -19,7 +19,6 @@ my %opts;
 GetOptions(
            "basedir=s"       => \$opts{'basedir'},
            "testid=s"        => \$opts{'testid'},
-           "in_rundir"       => \$opts{'in_rundir'},
            "narrow"          => \$opts{'narrow'},
            "h|help"          => \$opts{'help'},
 )  or usage();
@@ -40,13 +39,6 @@ if (!$opts{'testid'}) {
    usage();
 }
 
-if ($opts{'in_rundir'}) {
-   $opts{'in_rundir'} = 'true';
-}
-else {
-   $opts{'in_rundir'} = 'false';
-}
-
 #----------------------------------------------------------------------
 # Main script
 #----------------------------------------------------------------------
@@ -60,12 +52,9 @@ else {
 #    RMS       => normalized rms value [may or may not be present]
 #    FILLDIFF  => ' '                  [may or may not be present]
 my ($summary_hash) =
-   process_cprnc_output($opts{'basedir'}, $opts{'testid'}, $opts{'in_rundir'});
+   process_cprnc_output($opts{'basedir'}, $opts{'testid'});
 
 my $outbase="cprnc.summary.$opts{'testid'}";
-if ($opts{'in_rundir'} eq 'true') {
-   $outbase = "$outbase.in_rundir";
-}
 
 # set widths of output strings
 my $widths_hash;
@@ -92,31 +81,29 @@ sub usage {
 SYNOPSIS
     summarize_cprnc_diffs -basedir <basedir> -testid <testid> [OPTIONS]
 
-    <basedir> is the base directory in which test results can be found
-              (specifically, the location of the cprnc output files)
+    <basedir> is the base directory in which test directories can be found
 
     <testid> is the testid of the tests to summarize
+             (can contain shell wildcards)
 
-    The script looks for cprnc output in all directories in basedir whose
-    name ends with the given testid. Summaries of cprnc differences
-    (normalized RMS differences and FILLDIFFs) are placed in three output
-    files beginning with the name 'cprnc.summary', in the current directory.
-    These files contain the same information, but one is sorted by test
-    name, one is sorted by variable name, and is one sorted from largest to
-    smallest normalized RMS differences.
+    This script can be used to post-process and summarize baseline comparison
+    output from one or more CESM test suites.
 
-    This is intended to be used to post-process baseline comparison output
-    from a CESM test suite -- either from the main tests (which compare
-    cpl hist files) or from component_gen_comp.
+    The script finds all directories in basedir whose name ends with the given
+    testid; these are the test directories of interest. It then examines the
+    'run' subdirectory of each test directory of interest, looking for files of
+    the form *.base.cprnc.out. (Thus, note that it only looks at output for
+    baseline comparisons - NOT output from the test itself, such as cprnc output
+    files from the exact restart test.)
+
+    Summaries of cprnc differences (normalized RMS differences and FILLDIFFs)
+    are placed in three output files beginning with the name 'cprnc.summary', in
+    the current directory.  These files contain the same information, but one is
+    sorted by test name, one is sorted by variable name, and is one sorted from
+    largest to smallest normalized RMS differences.
 
 
 OPTIONS
-    -in_rundir           If specified, look for cprnc output files in the run subdirectory
-                         of each test directory. If not specified (default), look for
-                         cprnc output files directly in the test directories. This should
-                         generally be specified when looking at output from component_gen_comp,
-                         which puts its output in the run subdirectory.
-
     -narrow              Use generally-narrower output field widths to aid readability,
                          at the expense of truncated strings
 
@@ -131,13 +118,10 @@ EOF
 # Inputs:
 #  - basedir
 #  - testid
-#  - in_rundir (true/false)
 # Output: hash reference
 # Dies with an error if no cprnc output files are found
 sub process_cprnc_output {
-   my ($basedir, $testid, $in_rundir) = @_;
-
-   die if ($in_rundir ne "true" && $in_rundir ne "false");
+   my ($basedir, $testid) = @_;
 
    my %diffs;
    my $num_files = 0;
@@ -147,13 +131,7 @@ sub process_cprnc_output {
    foreach my $test_dir (@test_dirs) {
       my $test_dir_base = basename($test_dir);
 
-      my @cprnc_files;
-      if ($in_rundir eq "true") {
-         @cprnc_files = glob "${test_dir}/run/*cprnc.out";
-      }
-      else {
-         @cprnc_files = glob "${test_dir}/*cprnc.out";
-      }
+      my @cprnc_files = glob "${test_dir}/run/*.base.cprnc.out";
 
       foreach my $cprnc_file (@cprnc_files) {
          my $cprnc_file_base = basename($cprnc_file);
@@ -173,7 +151,7 @@ sub process_cprnc_output {
    }  # foreach test_dir
 
    if ($num_files == 0) {
-      die "ERROR: no cprnc.out files found (consider whether or not -in_rundir should be specified)\n";
+      die "ERROR: no base.cprnc.out files found\n";
    }
 
    return \%diffs;
@@ -533,5 +511,3 @@ sub format_line {
 # - multiple RMS errors to test RMS sorting, split across 2 directories
 #   (this can be done by comparing the control file with four of the
 #   vals_differ_by_* files)
-#
-# - same as above, but with -in_rundir

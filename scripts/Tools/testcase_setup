@@ -100,6 +100,7 @@ my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
 my $casetools           =  `./xmlquery CASETOOLS            -value`;
 my $compiler            =  `./xmlquery COMPILER             -value`;
 my $mpilib              =  `./xmlquery MPILIB               -value`;
+my $build_threaded      =  `./xmlquery BUILD_THREADED       -value`;
 
 # generate baseline test flag
 my $basegen_dir;
@@ -137,10 +138,15 @@ require Task::TaskMaker;
 require ConfigCase; 
 # ------------------ testcase_begin ------------------------------------------
 # -- Make batch script using the BatchMaker module --- 
-my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, ccsmroot => $cimeroot,
-                                                     case     => $case,     mpilib => $mpilib,
-                                                     scriptsroot => $scriptsroot, machroot => $ccsm_machdir,
-                                                     machine     => $mach,        compiler => $compiler);
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, 
+                                                     ccsmroot => $cimeroot,
+                                                     case     => $case,
+                                                     mpilib => $mpilib,
+                                                     scriptsroot => $scriptsroot, 
+                                                     machroot => $ccsm_machdir,
+                                                     machine     => $mach,        
+                                                     compiler => $compiler, 
+                                                     threaded => $build_threaded);
 
 my $batchdirectives = $batchmaker->getBatchDirectives();
                                                      
@@ -367,7 +373,7 @@ my $testcase_end = <<'END_TEST';
 
        if ("$continue_compare" == 'yes') then
           # compare component history fiels with baseline
-          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase $CASE -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
 
 	  if (-e $BASECMP_DIR/${TESTSTATUS_LOG:t}) then
 	     set bbb1 = `grep perf $BASECMP_DIR/${TESTSTATUS_LOG:t} | grep CHECK | grep -v baseline`
@@ -440,7 +446,7 @@ my $testcase_end = <<'END_TEST';
        endif
 
        if ("$continue_generate" == 'yes') then
-          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase $CASE -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
 
 	  # save last coupler log file to baseline directory
 	  cp $CplLogFile $BASEGEN_DIR/cpl.log || echo "WARNING: could not copy $CplLogFile to $BASEGEN_DIR " >>& $TESTSTATUS_LOG

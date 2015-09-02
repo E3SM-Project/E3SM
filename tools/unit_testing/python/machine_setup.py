@@ -37,8 +37,11 @@ def get_machine_name():
         name = "mira"
     elif re.match("^cetuslac[0-9]+", name):
         name = "mira"
-    elif re.match("^caldera.*", name):
-        name = "caldera"
+    elif re.match("^caldera.*", name) or re.match("^pronghorn.*", name):
+        # Use yellowstone settings for caldera/pronghorn, since the mahcines
+        # files aren't set up explicitly for those machines, and they have the
+        # same configuration as yellowstone.
+        name = "yellowstone"
     return name
 
 def load_machine_env(compiler):
@@ -56,7 +59,7 @@ def load_machine_env(compiler):
         mod.load("ncarenv/1.0")
         mod.load("ncarbinlibs/1.0")
         if compiler == "intel":
-            mod.load("intel/15.0.0")
+            mod.load("intel/15.0.1")
             mod.load("mkl/11.1.2")
         elif compiler == "pgi":
             mod.load("pgi/13.9")

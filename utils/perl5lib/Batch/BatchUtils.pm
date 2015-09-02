@@ -208,10 +208,10 @@ sub submitSingleJob()
 		#$ENV{'sta_ok'} = 'FALSE';
 		delete $ENV{'sta_ok'};
 	}
-	print "Submitting CESM job script $scriptname\n";
+	print "Submitting CESM job script: $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
-    
+	print ": $runcmd\n";    
 	my $output;
 
 	eval {
@@ -229,6 +229,7 @@ sub submitSingleJob()
 	chomp $output;	
 	
 	my $jobid = $self->getJobID($output);
+	print "Job ID: $jobid\n";
 	return $jobid;
 }
 
@@ -598,6 +599,7 @@ sub submitSingleJob()
     
     print "Submitting CESM job script $scriptname\n";
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
+    print "Runcmd: $runcmd\n";
     
     my $output;
     

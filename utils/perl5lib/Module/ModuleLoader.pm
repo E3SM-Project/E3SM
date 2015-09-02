@@ -69,6 +69,9 @@ sub loadModules()
 	#	caseroot => $params{'caseroot'} || undef,
 	#};
 	#eval qx($self->{cmdpath} $cmd);
+
+	if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
+
 	my %oldenv = %ENV;
 	my $envfile = $self->{'caseroot'} . "/env_mach_specific";
 	my $cshenv = "env ";
@@ -77,8 +80,6 @@ sub loadModules()
     $cshenv .= "DEBUG=". $self->{'debug'} . " " ;
     $cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
     $cshenv .= "PERL=TRUE ";
-	#my $cmd = $cshenv . " " . $envfile;
-	#my $cmd = $cshenv . " " . $envfile . " && printenv";
 	my $cmd = $cshenv . " " . $envfile ;
 	#print "running command $cmd\n";
 	my @output;
@@ -134,7 +135,7 @@ sub loadModules()
 			$ENV{$k} = $newenv{$k};
 		}
 	}
-	
+	$ENV{CIME_MODULES_LOADED} = 1;
 	return %newbuildenv;
 
 }
