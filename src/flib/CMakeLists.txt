@@ -179,7 +179,7 @@ if (MPI_Fortran_FOUND)
         if (mpilib MATCHES "libmpi-serial")
             target_compile_definitions (piof
                 PUBLIC _MPISERIAL)
-            message (STATUS "MPI is mpi-serial.  Disabling PnetCDF in Fortran PIO.")
+            message (STATUS "MPI is mpi-serial, disabling PnetCDF in Fortran PIO.")
             set (WITH_PNETCDF FALSE)
 
             # Only add includes/libraries for mpi-serial
