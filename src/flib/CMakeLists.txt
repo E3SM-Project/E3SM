@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.8.12)
 project (PIOF Fortran)
+include (CheckFunctionExists)
 include (ExternalProject)
 include (LibCheck)
 
@@ -195,7 +196,6 @@ if (PnetCDF_Fortran_FOUND)
         PUBLIC ${PnetCDF_Fortran_LIBRARIES})
 
     # Check library for varn functions
-    include(CheckFunctionExists)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_Fortran_LIBRARY})
     check_function_exists (ncmpi_get_varn PnetCDF_VARN)
     if (PnetCDF_VARN)
