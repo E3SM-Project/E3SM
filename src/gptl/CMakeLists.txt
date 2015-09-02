@@ -4,6 +4,7 @@ include (CheckFunctionExists)
 include (FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE "FCI_")
+include (LibCheck)
 
 #==============================================================================
 #  DEFINE THE TARGET
@@ -89,6 +90,12 @@ find_package (MPI REQUIRED)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
     target_compile_definitions (gptl
         PUBLIC HAVE_MPI)
+    target_include_directories (gptl
+        PUBLIC ${MPI_C_INCLUDE_PATH}
+        PUBLIC ${MPI_Fortran_INCLUDE_PATH})
+    target_link_libraries (gptl
+        PUBLIC ${MPI_C_LIBRARIES}
+        PUBLIC ${MPI_Fortran_LIBRARIES})
         
     # Check library for varn functions
     set (CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
@@ -97,6 +104,30 @@ if (MPI_C_FOUND AND MPI_Fortran_FOUND)
         target_compile_definitions(gptl
             PUBLIC NO_COMM_F2C)
     endif()
+
+    # Check for MPI Fortran module
+    find_path(MPIMOD_PATH
+              NAMES mpi.mod
+              HINTS ${MPI_Fortran_INCLUDE_PATH})
+    if (MPIMOD_PATH)
+        check_macro (MPIMOD_WORKS
+                     NAME TryMPIMod.f90
+                     HINTS ${CMAKE_MODULE_PATH}
+                     DEFINITIONS -I${MPIMOD_PATH}
+                     COMMENT "whether MPI Fortran module is supported")
+        if (${MPIMOD_WORKS})
+            message (STATUS "Working MPI Fortran module detected and enabled.")
+        else ()
+            message (STATUS "Working MPI Fortran module not detected and therefore disabled.")
+            target_compile_definitions (gptl
+                PUBLIC NO_MPIMOD)
+        endif ()
+    else ()
+        message (STATUS "MPI Fortran module not detected and therefore disabled.")
+        target_compile_definitions (gptl
+            PUBLIC NO_MPIMOD)
+    endif ()
+
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
 endif ()

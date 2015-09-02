@@ -54,7 +54,23 @@ install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
     
 #===== MPI =====
 find_package (MPI REQUIRED)
-    
+if (MPI_C_FOUND)
+    target_include_directories (pioc
+        PUBLIC ${MPI_C_INCLUDE_PATH})
+    target_link_libraries (pioc
+        PUBLIC ${MPI_C_LIBRARIES})
+
+    # Check if the library is MPI-SERIAL
+    foreach (mpilib IN LISTS MPI_C_LIBRARIES)
+        if (mpilib MATCHES "libmpi-serial")
+            target_compile_definitions (pioc
+                PUBLIC MPI_SERIAL)
+            message (STATUS "MPI is mpi-serial.  Disabling PnetCDF in C PIO.")
+            set (WITH_PNETCDF FALSE)
+        endif ()
+    endforeach ()
+endif ()
+
 #===== GPTL =====
 if (PIO_ENABLE_TIMING)
     find_package (GPTL COMPONENTS C QUIET)

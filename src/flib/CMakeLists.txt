@@ -117,36 +117,72 @@ endforeach ()
 
 #===== MPI =====
 find_package (MPI REQUIRED)
-
-# Check MPI I/O capabilities
-if (PIO_USE_MPIIO)
-    check_macro (MPIIO_DETECTED
-                 NAME TryMPIIO.f90
-                 HINTS ${CMAKE_MODULE_PATH}
-                 COMMENT "whether MPIIO is supported")
-    if (${MPIIO_DETECTED})
-        message (STATUS "MPIIO detected and enabled.")
-    else ()
-        message (STATUS "MPIIO not detected and therefore disabled.")
-        set (PIO_USE_MPIIO FALSE)
+if (MPI_Fortran_FOUND)
+    target_include_directories (piof
+        PUBLIC ${MPI_Fortran_INCLUDE_PATH})
+    target_link_libraries (piof
+        PUBLIC ${MPI_Fortran_LIBRARIES})
+    
+    # Check MPI I/O capabilities
+    if (PIO_USE_MPIIO)
+        find_path(MPIF_H_PATH
+                  NAMES mpif.h
+                  HINTS ${MPI_Fortran_INCLUDE_PATH})
+        if (MPIF_H_PATH)
+            check_macro (MPIIO_DETECTED
+                         NAME TryMPIIO.f90
+                         HINTS ${CMAKE_MODULE_PATH}
+                         DEFINITIONS -I{MPIF_H_PATH}
+                         COMMENT "whether MPIIO is supported")
+            if (${MPIIO_DETECTED})
+                message (STATUS "MPIIO detected and enabled.")
+            else ()
+                message (STATUS "MPIIO not detected and therefore disabled.")
+                set (PIO_USE_MPIIO FALSE)
+            endif ()
+        else ()
+            message (STATUS "MPIIO not detected and therefore disabled.")
+            set (PIO_USE_MPIIO FALSE)
+        endif ()
     endif ()
-endif ()
-if (${PIO_USE_MPIIO}) 
-    target_compile_definitions (piof
-        PUBLIC USEMPIIO)
-endif ()
+    if (${PIO_USE_MPIIO}) 
+        target_compile_definitions (piof
+            PUBLIC USEMPIIO)
+    endif ()
 
-# Check for MPI Fortran module
-check_macro (MPIMOD_DETECTED
-             NAME TryMPIMod.f90
-             HINTS ${CMAKE_MODULE_PATH}
-             COMMENT "whether MPI Fortran module is supported")
-if (${MPIMOD_DETECTED})
-    message (STATUS "MPI Fortran module detected and enabled.")
-else ()
-    message (STATUS "MPI Fortran module not detected and therefore disabled.")
-    target_compile_definitions (piof
-        PUBLIC NO_MPIMOD)
+    # Check for MPI Fortran module
+    find_path(MPIMOD_PATH
+              NAMES mpi.mod
+              HINTS ${MPI_Fortran_INCLUDE_PATH})
+    if (MPIMOD_PATH)
+        check_macro (MPIMOD_WORKS
+                     NAME TryMPIMod.f90
+                     HINTS ${CMAKE_MODULE_PATH}
+                     DEFINITIONS -I${MPIMOD_PATH}
+                     COMMENT "whether MPI Fortran module is supported")
+        if (${MPIMOD_WORKS})
+            message (STATUS "Working MPI Fortran module detected and enabled.")
+        else ()
+            message (STATUS "Working MPI Fortran module not detected and therefore disabled.")
+            target_compile_definitions (piof
+                PUBLIC NO_MPIMOD)
+        endif ()
+    else ()
+        message (STATUS "MPI Fortran module not detected and therefore disabled.")
+        target_compile_definitions (piof
+            PUBLIC NO_MPIMOD)
+    endif ()
+    
+    # Check if the library is MPI-SERIAL
+    foreach (mpilib IN LISTS MPI_Fortran_LIBRARIES)
+        if (mpilib MATCHES "libmpi-serial")
+            target_compile_definitions (piof
+                PUBLIC _MPISERIAL)
+            message (STATUS "MPI is mpi-serial.  Disabling PnetCDF in Fortran PIO.")
+            set (WITH_PNETCDF FALSE)
+        endif ()
+    endforeach ()
+    
 endif ()
 
 #===== GPTL =====
