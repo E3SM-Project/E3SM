@@ -14,6 +14,7 @@ soft add +cmake-2.8.12
 if ( $COMPILER == "intel" ) then
   soft add +intel-13.1
   soft add +netcdf-4.3.1-serial-intel
+  soft add +mkl
   setenv NETCDFROOT /soft/netcdf/4.3.1-serial/intel-13.1
   if ( $MPILIB == "openmpi") then
    soft add +openmpi-1.8.2-intel-13.1-psm

@@ -112,7 +112,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>16</PES_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="10:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
            </queues>
@@ -153,7 +153,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>192</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>60</PES_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="04:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
            </queues>
@@ -230,7 +230,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>1</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
@@ -276,7 +276,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-         <batch_system name="slurm" version="x.y">
+         <batch_system type="slurm" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
