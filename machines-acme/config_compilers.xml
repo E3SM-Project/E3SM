@@ -274,9 +274,11 @@ for mct, etc.
        system-level. (Note: I could not add this in the yellowstone-specific section,
        beacuse apparently that overrides rather than adds to this ADD_FFLAGS list.) -->
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <FFLAGS>  -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2  -no-opt-dynamic-align -fp-model precise </CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
+  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
+  <CFLAGS> -O2 -fp-model precise </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
@@ -290,6 +292,16 @@ for mct, etc.
   <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+
+  <ADD_FFLAGS MPILIB="mpi-serial"> -mcmodel medium </ADD_FFLAGS>
+  <ADD_FFLAGS OS="Linux"> -mcmodel medium -shared-intel </ADD_FFLAGS>
+
 </compiler>
 
 <compiler COMPILER="intelmic">
@@ -333,9 +345,13 @@ for mct, etc.
   <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
   <FREEFLAGS> -ffree-form </FREEFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -g -Wall </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
   <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-  <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+  <FFLAGS> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+  <CFLAGS> -mcmodel=medium </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
   <SFC> gfortran </SFC>
