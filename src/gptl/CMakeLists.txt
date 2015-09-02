@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.8.12)
 project (GPTL C Fortran)
+include (CheckFunctionExists)
 include (FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE "FCI_")
@@ -30,7 +31,16 @@ target_include_directories (gptl
 
 target_compile_definitions (gptl
     PUBLIC INCLUDE_CMAKE_FCI)
-    
+
+#===== System Checks =====
+if (CMAKE_SYSTEM_NAME MATCHES "AIX")
+    target_compile_definitions (gptl
+        PUBLIC _AIX)
+else ()
+    target_compile_definitions (gptl
+        PUBLIC ${CMAKE_SYSTEM_NAME_CAPS})
+endif ()
+
 #==============================================================================
 #  DEFINE THE INSTALL
 #==============================================================================
@@ -48,11 +58,54 @@ install (FILES ${GPTL_Fortran_MODS} DESTINATION include)
 #  DEFINE THE DEPENDENCIES
 #==============================================================================
 
+#===== PAPI =====
+if (ENABLE_PAPI)
+    find_package (PAPI)
+    if (PAPI_FOUND)
+        target_compile_definitions (gptl
+            PUBLIC HAVE_PAPI)
+        target_include_directories (gptl
+            PUBLIC ${PAPI_INCLUDE_DIRECTORIES})
+        target_link_libraries (gptl
+            PUBLIC ${PAPI_LIBRARIES})
+    endif ()
+endif ()
+
+#===== LIBRT =====
+if (ENABLE_LIBRT)
+    find_package (LIBRT)
+    if (LIBRT_FOUND)
+        target_compile_definitions (gptl
+            PUBLIC HAVE_LIBRT)
+        target_include_directories (gptl
+            PUBLIC ${LIBRT_INCLUDE_DIRECTORIES})
+        target_link_libraries (gptl
+            PUBLIC ${LIBRT_LIBRARIES})
+    endif () 
+endif ()
+
 #===== MPI =====
 find_package (MPI REQUIRED)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
     target_compile_definitions (gptl
         PUBLIC HAVE_MPI)
+        
+    # Check library for varn functions
+    set (CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
+    check_function_exists (MPI_Comm_f2c MPI_COMM_F2C)
+    if (NOT MPI_COMM_F2C)
+        target_compile_definitions(gptl
+            PUBLIC NO_COMM_F2C)
+    endif()
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
+endif ()
+
+#===== GetTimeOfDay =====
+get_target_property (GPTL_LINK_LIBRARIES gptl LINK_LIBRARIES)
+set (CMAKE_REQUIRED_LIBRARIES ${GPTL_LINK_LIBRARIES})
+check_function_exists (gettimeofday GETTIMEOFDAY)
+if (NOT GETTIMEOFDAY)
+    target_compile_definitions(gptl
+        PUBLIC NO_GETTIMEOFDAY)
 endif ()

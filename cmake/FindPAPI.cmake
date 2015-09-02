@@ -25,8 +25,6 @@ define_package_component (PAPI
 if (NOT PAPI_FOUND)
 
     # Search for the package
-    find_package_component(PAPI
-                           INCLUDE_PATHS ${PAPI_INCLUDE_PATHS}
-                           LIBRARY_PATHS ${PAPI_LIBRARY_PATHS})
+    find_package_component(PAPI)
 
 endif ()
