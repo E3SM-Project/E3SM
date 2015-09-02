@@ -240,9 +240,6 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 	  iodesc->num_aiotasks = CalcStartandCount(basetype, ndims, dims, 
 						   ios->num_iotasks, ios->io_rank,
 						   iodesc->firstregion->start, iodesc->firstregion->count);
-	  if(ios->iomaster){
-	    printf("%s %d aiotasks=%d\n",__FILE__,__LINE__,iodesc->num_aiotasks);
-	  }
       }
       compute_maxIObuffersize(ios->io_comm, iodesc);
 
