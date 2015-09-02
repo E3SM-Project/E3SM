@@ -45,6 +45,11 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
         PRIVATE -ffree-line-length-none)
 endif()
 
+target_compile_definitions (piof
+    PRIVATE ${CMAKE_SYSTEM_DIRECTIVE})
+target_compile_definitions (piof
+    PRIVATE ${CMAKE_Fortran_COMPILER_DIRECTIVE})
+    
 # Look for c_sizeof capability
 check_macro (Fortran_CSIZEOF
              NAME TryCSizeOf.f90

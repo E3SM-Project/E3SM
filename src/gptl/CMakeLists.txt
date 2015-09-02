@@ -33,14 +33,16 @@ target_include_directories (gptl
 target_compile_definitions (gptl
     PUBLIC INCLUDE_CMAKE_FCI)
 
-#===== System Checks =====
 if (CMAKE_SYSTEM_NAME MATCHES "AIX")
     target_compile_definitions (gptl
-        PUBLIC _AIX)
+        PRIVATE _AIX)
 else ()
     target_compile_definitions (gptl
-        PUBLIC ${CMAKE_SYSTEM_NAME_CAPS})
+        PRIVATE ${CMAKE_SYSTEM_DIRECTIVE})
 endif ()
+
+target_compile_definitions (gptl
+    PRIVATE ${CMAKE_Fortran_COMPILER_DIRECTIVE})
 
 #==============================================================================
 #  DEFINE THE INSTALL

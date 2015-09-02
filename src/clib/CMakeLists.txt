@@ -24,6 +24,11 @@ add_library (pioc ${PIO_C_SRCS})
 target_include_directories (pioc
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+target_compile_definitions (pioc
+    PRIVATE ${CMAKE_SYSTEM_DIRECTIVE})
+target_compile_definitions (pioc
+    PRIVATE ${CMAKE_C_COMPILER_DIRECTIVE})
+
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pioc
         PRIVATE -std=c99)
