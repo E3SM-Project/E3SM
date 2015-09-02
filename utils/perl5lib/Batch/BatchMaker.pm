@@ -367,6 +367,7 @@ sub setTaskInfo()
 	if(defined $self->{'overridenodecount'})
 	{
 		$self->{'sumpes'} = $self->{'overridenodecount'};
+		$self->{'totaltasks'} = $self->{'overridenodecount'};
 		$self->{'fullsum'} = $self->{'overridenodecount'};
 		$self->{'sumtasks'} = $self->{'overridenodecount'};
 		$self->{'task_count'} = $self->{'overridenodecount'};
