@@ -102,7 +102,7 @@ if (MPI_C_FOUND AND MPI_Fortran_FOUND)
     check_function_exists (MPI_Comm_f2c MPI_COMM_F2C)
     if (NOT MPI_COMM_F2C)
         target_compile_definitions(gptl
-            PUBLIC NO_COMM_F2C)
+            PRIVATE NO_COMM_F2C)
     endif()
 
     # Check for MPI Fortran module
