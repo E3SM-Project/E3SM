@@ -90,12 +90,6 @@ find_package (MPI REQUIRED)
 if (MPI_C_FOUND AND MPI_Fortran_FOUND)
     target_compile_definitions (gptl
         PUBLIC HAVE_MPI)
-    target_include_directories (gptl
-        PUBLIC ${MPI_C_INCLUDE_PATH}
-        PUBLIC ${MPI_Fortran_INCLUDE_PATH})
-    target_link_libraries (gptl
-        PUBLIC ${MPI_C_LIBRARIES}
-        PUBLIC ${MPI_Fortran_LIBRARIES})
         
     # Check library for varn functions
     set (CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
@@ -127,7 +121,27 @@ if (MPI_C_FOUND AND MPI_Fortran_FOUND)
         target_compile_definitions (gptl
             PUBLIC NO_MPIMOD)
     endif ()
-
+    
+    # Check if the library is MPI-SERIAL
+    foreach (mpilib IN LISTS MPI_C_LIBRARIES)
+        if (mpilib MATCHES "libmpi-serial")
+            # Only add includes/libraries for mpi-serial
+            target_include_directories (gptl
+                PUBLIC ${MPI_C_INCLUDE_PATH})
+            target_link_libraries (gptl
+                PUBLIC ${MPI_C_LIBRARIES})
+        endif ()
+    endforeach ()
+    foreach (mpilib IN LISTS MPI_Fortran_LIBRARIES)
+        if (mpilib MATCHES "libmpi-serial")
+            # Only add includes/libraries for mpi-serial
+            target_include_directories (gptl
+                PUBLIC ${MPI_Fortran_INCLUDE_PATH})
+            target_link_libraries (gptl
+                PUBLIC ${MPI_Fortran_LIBRARIES})
+        endif ()
+    endforeach ()
+    
 else ()
     message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
 endif ()

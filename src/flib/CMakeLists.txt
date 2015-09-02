@@ -118,10 +118,6 @@ endforeach ()
 #===== MPI =====
 find_package (MPI REQUIRED)
 if (MPI_Fortran_FOUND)
-    target_include_directories (piof
-        PUBLIC ${MPI_Fortran_INCLUDE_PATH})
-    target_link_libraries (piof
-        PUBLIC ${MPI_Fortran_LIBRARIES})
     
     # Check MPI I/O capabilities
     if (PIO_USE_MPIIO)
@@ -180,6 +176,12 @@ if (MPI_Fortran_FOUND)
                 PUBLIC _MPISERIAL)
             message (STATUS "MPI is mpi-serial.  Disabling PnetCDF in Fortran PIO.")
             set (WITH_PNETCDF FALSE)
+
+            # Only add includes/libraries for mpi-serial
+            target_include_directories (piof
+                PUBLIC ${MPI_Fortran_INCLUDE_PATH})
+            target_link_libraries (piof
+                PUBLIC ${MPI_Fortran_LIBRARIES})
         endif ()
     endforeach ()
     
