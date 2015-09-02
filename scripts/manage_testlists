@@ -1177,9 +1177,9 @@ sub setTestlist{
     if ($comp =~ /^allactive/) {
 	$list = "$cimeroot/scripts/cimeconfig/allactive/testlist_allactive.xml"; 
     } elsif ($comp =~ /^drv/) {
-	$list = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml"; 
+	$list = "$cimeroot/driver_cpl/cime_config/testdefs/testlist_drv.xml"; 
     } else {
-	$list = "$cimeroot/../components/$component/cimetest/testlist_$component.xml"; 
+	$list = "$cimeroot/../components/$component/cime_config/testdefs/testlist_$component.xml"; 
     }
     if (-f $list) {
 	print "# testlist is $list \n";

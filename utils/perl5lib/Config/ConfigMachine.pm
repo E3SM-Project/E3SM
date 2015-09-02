@@ -221,11 +221,6 @@ sub _setPIOsettings
 
     my $model    = $config->get('MODEL');
     my $cimeroot = $config->get('CIMEROOT');
-    my $compset  = $config->get('COMPSET');
-    my $grid	 = $config->get('GRID');
-    my $machine	 = $config->get('MACH');
-    my $compiler = $config->get('COMPILER');
-    my $mpilib   = $config->get('MPILIB');
  
     # read the PIO_SPEC_FILE file for grid and/or compset specific pio settings
     my $file = $config->get('PIO_SPEC_FILE');
@@ -233,51 +228,32 @@ sub _setPIOsettings
     $file =~ s/\$CIMEROOT/$cimeroot/;
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 
-    # TODO: add Jay's definition for !variable_name
-    my $num_matches = 0;
-    foreach my $node ($xml->findnodes(".//entry/values/value")) {
-	my $compset_match  = $child->getAttribute('compset');
-	my $grid_match     = $child->getAttribute('grid');
-	my $machine_match  = $child->getAttribute('machine');
-	my $compiler_match = $child->getAttribute('compiler');
-	my $mpilib_match   = $child->getAttribute('mpilib');
-	my $compset_match  = $child->getAttribute('compset');
-	my $grid_match     = $child->getAttribute('grid');
-
-	my @index;
-	my @attributes;
-	my $matches = 0;
-	if (defined $compset_match) {
-	    if ($compset =~ m/$compset_match/) {push (@attributes, $compset_match)};
-	    $matches++;
-	}
-	if (defined $grid_match)  {
-	    if ($grid =~ m/$grid_match/) {push (@attributes, $grid_match)};
-	    $matches++;
-	}
-	if (defined $machine_match) {
-	    if ($machine =~ m/$machine_match/) {push (@attributes, $machine_match)};
-	    $matches++;
-	}
-	if (defined $compiler_match) {
-	    if ($compiler =~ m/$compiler_match/) {push (@attributes, $compiler_match)};
-	    $matches++;
-	}
-	if (defined $mpilib_match) {
-	    if ($mpilib =~ m/$mpilib_match/) {push (@attributes, $mpilib_match)};
-	    $matches++;
-	}
-	if ($matches > $num_matches) {
-	    #TODO - fill this in
-	}
-
-	if ($match eq 'yes') {
-	    my $name = $node->getAttribute('id');
-	    if (! $config->is_valid_name($name)) {
-		die "ERROR ConfigCompsetGrid::setComponent: $name is not a valid name \n";
+    my $max_matches = 0;
+    my @attributes;
+    my $value;
+    my $attr_value, my $attr_name;
+    foreach my $entry ($xml->findnodes(".//entry")) {
+	my $id = $entry->getAttribute('id');
+	foreach my $value ($entry->findnodes("./values/value")) {
+	    my $matches = 0;
+	    foreach my $qualifier ('COMPSET', 'GRID', 'MACH', 'COMPILER', 'MPILIB') {
+		my $debug = $value->hasAttribute(lc $qualifier);
+		if ($value->hasAttribute(lc $qualifier)) {
+		    my $target = $config->get($qualifier);
+		    $attr_name  = lc $qualifier;
+		    $attr_value = $value->getAttribute($attr_name);
+		    if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
+			$matches++;
+		    } elsif ($target =~ m/$attr_value/) {
+			$matches++;
+		    }
+		    if ($matches > $max_matches) {
+			$max_matches = $matches;
+			my $newval = $value->textContent();
+			$config->set($id, $newval);
+		    }
+		}
 	    }
-	    my $new_val = $child->textContent();
-#	    $config->set($name, $new_val);
 	}
     }
 }

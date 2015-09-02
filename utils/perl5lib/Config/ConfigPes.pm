@@ -124,10 +124,10 @@ sub _setPESsettings
     # Read xml file and obtain NTASKS, NTHRDS, ROOTPE and NINST for each component
     my ($pesize_opts, $config) = @_; 
 
-    my $mach		= $config->get('MACH');
-    my $grid_longname   = $config->get('GRID');
-    my $compset_name	= $config->get('COMPSET');
-    my $pes_file	= $config->get('PES_SPEC_FILE');
+    my $mach		 = $config->get('MACH');
+    my $grid_longname    = $config->get('GRID');
+    my $compset_longname = $config->get('COMPSET');
+    my $pes_file	 = $config->get('PES_SPEC_FILE');
 
     # temporary hash
     my %decomp;
@@ -196,125 +196,115 @@ sub _setPESsettings
     my $mach_set;
     my $grid_set;
 
-    # Determine if grid and machine node names that match
-    my @pes = $xml->findnodes(".//grid/mach[not(\@name =\"any\")]");
-    if (@pes) {
-	foreach my $node (@pes) {
-	    my $grid_match = $node->parentNode()->getAttribute('name');
-	    my $mach_match = $node->getAttribute('name');
-	    if ($grid_longname =~ m/$grid_match/ && $mach_match =~ m/$mach/) {
-		$grid_set = $grid_match;
-		$mach_set = $mach_match;
+    # Determine setting for grid="any" AND mach="any"
+    # If value is < 0 then it refers to pes per node
+
+    my $pe_select;
+    my $grid_match = 'any';
+    my $mach_match = 'any';
+    my $compset_match;
+    my $pesize_match;
+
+    foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[\@name =\"any\"]")) {
+	my $grid_attr = $node->parentNode()->getAttribute('name');
+	if ($grid_longname =~ m/$grid_match/) {
+	    $grid_match = $grid_attr;
+	    $mach_match = 'any';
+	    last;
+	}
+    }
+    foreach my $node ($xml->findnodes(".//grid[\@name =\"any\"]/mach[not(\@name =\"any\")]")) {
+	my $mach_attr = $node->getAttribute('name');
+	if ($mach =~ m/$mach_attr/) {
+	    $grid_match = 'any';
+	    $mach_match = $mach_attr;
+	    last;
+	}
+    }
+    foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[not(\@name =\"any\")]")) {
+	my $grid_attr = $node->parentNode()->getAttribute('name');
+	my $mach_attr = $node->getAttribute('name');
+	if ($grid_longname =~ m/$grid_attr/ && $mach =~ m/$mach_attr/) {
+	    $grid_match = $grid_attr;
+	    $mach_match = $mach_attr;
+	    last;
+	}
+    }
+
+    # Now search the pes
+    my @nodes = $xml->findnodes(".//grid[\@name=\"$grid_match\"]/mach[\@name=\"$mach_match\"]/*");
+    if ((! defined $compset_match) && (! defined $pesize_match)) {
+	foreach my $node (@nodes) {
+	    my $compset_attr = $node->getAttribute('compset');
+	    my $pesize_attr  = $node->getAttribute('pesize');
+	    if (($compset_longname =~ m/$compset_attr/) && ($pesize_opts =~ m/$pesize_attr/)) {
+		$pe_select = $node;
+		$compset_match = $compset_attr;
+		$pesize_match  = $pesize_attr;
+		last;
+	    } 
+	}
+    }
+    if ((! defined $compset_match) && (! defined $pesize_match)) {
+	foreach my $node (@nodes) {
+	    my $compset_attr = $node->getAttribute('compset');
+	    my $pesize_attr  = $node->getAttribute('pesize');
+	    if (($compset_longname =~ m/$compset_attr/) && ($pesize_attr eq 'any')) {
+		$pe_select = $node;
+		$compset_match = $compset_attr;
+		$pesize_match  = $pesize_attr;
+		last;
+	    }
+	}
+    } 
+    if ((! defined $compset_match) && (! defined $pesize_match)) {
+	foreach my $node (@nodes) {
+	    my $compset_attr = $node->getAttribute('compset');
+	    my $pesize_attr  = $node->getAttribute('pesize');
+	    if (($compset_attr eq 'any' ) && ($pesize_opts =~ m/$pesize_attr/)) {
+		$pe_select = $node;
+		$compset_match = $compset_attr;
+		$pesize_match  = $pesize_attr;
 		last;
 	    }
 	}
     }
-    if (! defined $grid_set && ! defined $mach_set) {
-	$mach_set = 'any';
-	@pes = $xml->findnodes(".//grid/mach[\@name=\"any\"]");
-	if (@pes) {
-	    foreach my $node (@pes) {
-		my $grid_match = $node->parentNode()->getAttribute('name');
-		if ($grid_longname =~ m/$grid_match/) {
-		    $grid_set = $grid_match;
-		    $mach_set = 'any';
-		    last;
-		}
+    if ((! defined $compset_match) && (! defined $pesize_match)) {
+	foreach my $node (@nodes) {
+	    my $compset_attr = $node->getAttribute('compset');
+	    my $pesize_attr  = $node->getAttribute('pesize');
+	    if (($compset_attr eq 'any' ) && ($pesize_attr eq 'any')) {
+		$pe_select = $node;
+		$compset_match = $compset_attr;
+		$pesize_match  = $pesize_attr;
+		last;
 	    }
 	}
     }
-    if (! defined $grid_set) {
-	$grid_set = 'any';
-    }
+    if (! defined $pe_select) {
+	die "ERROR: no pes match found in $pes_file \n";
+    } 
+    print "ConfigPES: grid          is $grid_longname \n";
+    print "ConfigPES: compset       is $compset_longname \n";
+    print "ConfigPES: grid match    is $grid_match \n";
+    print "ConfigPES: machine match is $mach_match\n";
+    print "ConfigPES: compset_match is $compset_match\n"; 
+    print "ConfigPES: pesize match  is $pesize_match \n"; 
+    
+    my $pes_per_node = $config->get('PES_PER_NODE');
+    my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
+    my @pes_nthrds = $pe_select->findnodes("./nthrds"); 
+    my @pes_rootpe = $pe_select->findnodes("./rootpe"); 
 
-    print "ConfigPes: grid longname is $grid_longname \n";
-    print "ConfigPES: grid match    is $grid_set \n";
-    print "ConfigPES: machine match is $mach_set\n";
-
-    if ($mach_set eq 'any' && $grid_set eq 'any') {
-	# set the pes for the MAX_TASKS_PER_NODE in config_machines.xml
-	my $max_tasks_per_node = $config->get('MAX_TASKS_PER_NODE');
-	foreach my $name ('NTASKS_ATM','NTASKS_LND','NTASKS_ROF','NTASKS_ICE','NTASKS_OCN','NTASKS_GLC','NTASKS_GLC','NTASKS_WAV','NTASKS_CPL') {
-	    $decomp{$name} = $max_tasks_per_node;
-	}
-	foreach my $name ('NTHRDS_ATM','NTHRDS_LND','NTHRDS_ROF','NTHRDS_ICE','NTHRDS_OCN','NTHRDS_GLC','NTHRDS_GLC','NTHRDS_WAV','NTHRDS_CPL') {
-	    $decomp{$name} = 1;
-	}
-	foreach my $name ('ROOTPE_ATM','ROOTPE_LND','ROOTPE_ROF','ROOTPE_ICE','ROOTPE_OCN','ROOTPE_GLC','ROOTPE_GLC','ROOTPE_WAV','ROOTPE_CPL') {
-	    $decomp{$name} = 0;
-	}
-    } else {
-	# Now search the pes
-	my $pe_select;
-	my $compset_match;
-	my $pesize_match;
-	my @nodes = $xml->findnodes(".//grid[\@name=\"$grid_set\"]/mach[\@name=\"$mach_set\"]/*");
-	if ((! defined $compset_match) && (! defined $pesize_match)) {
-	    foreach my $node (@nodes) {
-		my $compset_attr = $node->getAttribute('compset');
-		my $pesize_attr  = $node->getAttribute('pesize');
-		if (($compset_name =~ m/$compset_attr/) && ($pesize_opts =~ m/$pesize_attr/)) {
-		    $pe_select = $node;
-		    $compset_match = $compset_attr;
-		    $pesize_match  = $pesize_attr;
-		    last;
-		} 
+    foreach my $pes (@pes_ntasks, @pes_nthrds, @pes_rootpe) {
+	my @children = $pes ->childNodes();
+	foreach my $child (@children) {
+	    my $name  = uc $child->nodeName(); 
+	    my $value =    $child->textContent();
+	    if ($value < 0) {
+		$value = -($value * $pes_per_node);
 	    }
-	}
-	if ((! defined $compset_match) && (! defined $pesize_match)) {
-	    foreach my $node (@nodes) {
-		my $compset_attr = $node->getAttribute('compset');
-		my $pesize_attr  = $node->getAttribute('pesize');
-		if (($compset_name =~ m/$compset_attr/) && ($pesize_attr eq 'any')) {
-		    $pe_select = $node;
-		    $compset_match = $compset_attr;
-		    $pesize_match  = $pesize_attr;
-		    last;
-		}
-	    }
-	} 
-	if ((! defined $compset_match) && (! defined $pesize_match)) {
-	    foreach my $node (@nodes) {
-		my $compset_attr = $node->getAttribute('compset');
-		my $pesize_attr  = $node->getAttribute('pesize');
-		if (($compset_name eq 'any' ) && ($pesize_opts =~ m/$pesize_attr/)) {
-		    $pe_select = $node;
-		    $compset_match = $compset_attr;
-		    $pesize_match  = $pesize_attr;
-		    last;
-		}
-	    }
-	}
-	if ((! defined $compset_match) && (! defined $pesize_match)) {
-	    foreach my $node (@nodes) {
-		my $compset_attr = $node->getAttribute('compset');
-		my $pesize_attr  = $node->getAttribute('pesize');
-		if (($compset_attr eq 'any' ) && ($pesize_attr eq 'any')) {
-		    $pe_select = $node;
-		    $compset_match = $compset_attr;
-		    $pesize_match  = $pesize_attr;
-		    last;
-		}
-	    }
-	}
-	if (! defined $pe_select) {
-	    die "ERROR: no pes match found in $pes_file \n";
-	} else {
-	    print "ConfigPES: compset_match is $compset_match\n"; 
-	    print "ConfigPES: pesize match  is $pesize_match \n"; 
-	}
-
-	my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
-	my @pes_nthrds = $pe_select->findnodes("./nthrds"); 
-	my @pes_rootpe = $pe_select->findnodes("./rootpe"); 
-
-	foreach my $pes (@pes_ntasks, @pes_nthrds, @pes_rootpe) {
-	    my @children = $pes ->childNodes();
-	    foreach my $child (@children) {
-		my $name  = uc $child->nodeName(); 
-		my $value =    $child->textContent();
-		$decomp{$name}  = $value;
-	    }
+	    $decomp{$name}  = $value;
 	}
     }
 

@@ -421,6 +421,7 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 #------------------------------------------------------------------------------------------
 my $file = $config->get('CONFIG_DRV_FILE');
 ConfigMachine::setMachineValues($file, $pes_setby, $machine, $compiler, $print, $config);
+
 # now potentially override with unsupported user config_pes.xml file.
 # TODO - put this change in for the new create_newcase changes - these were there in the old code
 # Set the parameters for the specified machine.  Try looking for
