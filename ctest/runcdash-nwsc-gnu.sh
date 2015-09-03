@@ -19,7 +19,7 @@ export CC=mpicc
 export FC=mpif90
 
 export PIO_DASHBOARD_ROOT=`pwd`/dashboard
-export PIO_COMPILER_ID=GNU-`$CC --version | head -n 2 | tail -n 1 | cut -d' ' -f2`
+export PIO_COMPILER_ID=GNU-`$CC --version | head -n 1 | tail -n 1 | cut -d' ' -f3`
 
 if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then
   mkdir "$PIO_DASHBOARD_ROOT"
