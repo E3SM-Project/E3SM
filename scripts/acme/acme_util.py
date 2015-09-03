@@ -81,7 +81,7 @@ MACHINE_INFO = {
     ),
     "titan"    : (
         "pgi",
-        "acme_integration",
+        "acme_developer",
         True,
         "cli115",
         "/lustre/atlas/scratch/<USER>/<PROJECT>",
