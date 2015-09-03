@@ -29,7 +29,7 @@ int nVertices, nEdges, nTriangles, nGlobalVertices, nGlobalEdges,
 int maxNEdgesOnCell_F;
 int const *cellsOnEdge_F, *cellsOnVertex_F, *verticesOnCell_F,
     *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *nEdgesOnCells_F,
-    *dirichletCellsMask_F, *floatingEdgesMask_F;
+    *dirichletCellsMask_F, *floatingEdgesMask_F, *verticesMask_F;
 std::vector<double> layersRatio, levelsNormalizedThickness;
 int nLayers;
 double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, *areaTriangle_F;
@@ -47,7 +47,8 @@ int ice_present_bit_value;
 
 //void *phgGrid = 0;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
-    verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge;
+    verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge,
+    trianglesProcIds,  reduced_ranks;
 std::vector<int> indexToVertexID, vertexToFCell, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, velocityOnVertices, velocityOnCells,
@@ -159,6 +160,9 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
       unpackMpiArray(sendVerticesArray_F));
   recvVerticesList_F = new exchangeList_Type(
       unpackMpiArray(recvVerticesArray_F));
+
+  trianglesProcIds.resize(nVertices_F);
+  getProcIds(trianglesProcIds, recvVerticesList_F);
 
   if (radius > 10) {
     xCellProjected.resize(nCells_F);
@@ -491,9 +495,10 @@ void velocity_solver_finalize() {
  *
  */
 
-void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
+void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
   int numProcs, me;
 
+  verticesMask_F = _verticesMask_F;
   dirichletCellsMask_F = _dirichletCellsMask_F;
   floatingEdgesMask_F = _floatingEdgesMask_F;
 
@@ -1379,9 +1384,12 @@ void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   int nonEmpty = int(nLocalEntities > 0);
   MPI_Allgather(&nonEmpty, 1, MPI_INT, &haveElements[0], 1, MPI_INT, comm);
   std::vector<int> ranks;
+  reduced_ranks.resize(numProcs,0);
   for (int i = 0; i < numProcs; i++) {
-    if (haveElements[i])
+    if (haveElements[i]) {
+      reduced_ranks[i] = ranks.size();
       ranks.push_back(i);
+    }
   }
 
   MPI_Comm_group(comm, &world_group_id);
@@ -1779,6 +1787,23 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
           k += found;
           break;
         }
+      }
+    }
+  }
+
+  void procsSharingVertex(const int vertex, std::vector<int>& procIds) {
+    int fCell = vertexToFCell[vertex];
+    procIds.clear();
+    int nEdg = nEdgesOnCells_F[fCell];
+    int me;
+    MPI_Comm_rank(comm, &me);
+    procIds.reserve(nEdg);
+    for(int i=0; i<nEdg; ++i) {
+      int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + i]-1;
+      if (verticesMask_F[fVertex] & dynamic_ice_bit_value) {
+        int proc = trianglesProcIds[fVertex];
+        if(proc != me)
+          procIds.push_back(reduced_ranks[proc]);
       }
     }
   }
