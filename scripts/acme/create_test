@@ -116,7 +116,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     expect(not (args.generate and args.compare),
            "Cannot generate and compare baselines at the same time")
-    expect(not (args.baseline_name is not None and (not args.compare and not args.generate)),
+    expect(not (args.baseline_name != default_baseline_name and (not args.compare and not args.generate)),
            "Provided baseline name but did not specify compare or generate")
 
     if (args.no_build):
