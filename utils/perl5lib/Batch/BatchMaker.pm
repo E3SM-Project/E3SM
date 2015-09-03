@@ -432,7 +432,7 @@ sub getEstCost()
 {
         my $self = shift;
         chdir $self->{'caseroot'};
-        $self->{'CCSM_ESTCOST'} = `xmlquery CCSM_ESTCOST -value`;
+        $self->{'CCSM_ESTCOST'} = `./xmlquery CCSM_ESTCOST -value`;
         chdir $self->{'cwd'};
 }
 
