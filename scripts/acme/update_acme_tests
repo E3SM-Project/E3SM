@@ -25,11 +25,13 @@ OR
 %s --test
 
 \033[1mEXAMPLES:\033[0m
+    \033[1;32m# Update all acme test suites for all platforms \033[0m
+    > %s testlist.xml
     \033[1;32m# Update acme_developer tests for all platforms \033[0m
-    > %s acme_developer testlist.xml
+    > %s testlist.xml acme_developer
     \033[1;32m# Add acme_developer tests for a new platform \033[0m
-    > %s acme_developer testlist.xml -p machine,compiler
-""" % ((os.path.basename(args[0]), ) * 5),
+    > %s testlist.xml acme_developer -p machine,compiler
+""" % ((os.path.basename(args[0]), ) * 6),
 
 description=description,
 
