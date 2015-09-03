@@ -12,8 +12,6 @@
 #   NetCDF_<lang>_INCLUDE_DIRS (LIST) - the NetCDF include directories
 #   NetCDF_<lang>_LIBRARY      (FILE) - Path to the C library file
 #   NetCDF_<lang>_LIBRARIES    (LIST) - link these to use NetCDF
-#   NetCDF_<lang>_DEFINITIONS  (LIST) - preprocessor macros to use with NetCDF
-#   NetCDF_<lang>_OPTIONS      (LIST) - compiler options to use NetCDF
 #
 # The available COMPONENTS are: C Fortran
 # If no components are specified, it assumes only C
@@ -44,19 +42,17 @@ foreach (NCDFcomp IN LISTS NetCDF_FIND_VALID_COMPONENTS)
 
         # Manually add the MPI include and library dirs to search paths
         if (MPI_${NCDFcomp}_FOUND)
-            set (NetCDF_${NCDFcomp}_INCLUDE_PATHS ${MPI_${NCDFcomp}_INCLUDE_PATH})
-            set (NetCDF_${NCDFcomp}_LIBRARY_PATHS)
+            set (NetCDF_${NCDFcomp}_PATHS ${MPI_${NCDFcomp}_INCLUDE_PATH})
             foreach (lib IN LISTS MPI_${NCDFcomp}_LIBRARIES)
                 get_filename_component (libdir ${lib} PATH)
-                list (APPEND NetCDF_${NCDFcomp}_LIBRARY_PATHS ${libdir})
+                list (APPEND NetCDF_${NCDFcomp}_PATHS ${libdir})
                 unset (libdir)
             endforeach ()
         endif ()
         
         # Search for the package component    
         find_package_component(NetCDF COMPONENT ${NCDFcomp}
-                               INCLUDE_PATHS ${NetCDF_${NCDFcomp}_INCLUDE_PATHS}
-                               LIBRARY_PATHS ${NetCDF_${NCDFcomp}_LIBRARY_PATHS})
+                               PATHS ${NetCDF_${NCDFcomp}_PATHS})
 
         # Continue only if component found
         if (NetCDF_${NCDFcomp}_FOUND)

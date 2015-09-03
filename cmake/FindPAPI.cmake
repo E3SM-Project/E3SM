@@ -11,8 +11,6 @@
 #   PAPI_INCLUDE_DIRS (LIST) - the PAPI include directories
 #   PAPI_LIBRARY      (FILE) - Path to the C library file
 #   PAPI_LIBRARIES    (LIST) - link these to use PAPI
-#   PAPI_DEFINITIONS  (LIST) - preprocessor macros to use with PAPI
-#   PAPI_OPTIONS      (LIST) - compiler options to use PAPI
 #
 include (LibFind)
 

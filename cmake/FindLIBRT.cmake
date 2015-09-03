@@ -11,8 +11,6 @@
 #   LIBRT_INCLUDE_DIRS (LIST) - the LIBRT include directories
 #   LIBRT_LIBRARY      (FILE) - Path to the C library file
 #   LIBRT_LIBRARIES    (LIST) - link these to use LIBRT
-#   LIBRT_DEFINITIONS  (LIST) - preprocessor macros to use with LIBRT
-#   LIBRT_OPTIONS      (LIST) - compiler options to use LIBRT
 #
 include (LibFind)
 

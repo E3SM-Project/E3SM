@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 2.8.12)
+include (CheckFunctionExists)
 project (PIOC C)
 
 #==============================================================================
@@ -21,14 +22,17 @@ set (PIO_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/topology.c
 
 add_library (pioc ${PIO_C_SRCS})
 
+# Include the clib source directory
 target_include_directories (pioc
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+# System and compiler CPP directives
 target_compile_definitions (pioc
-    PRIVATE ${CMAKE_SYSTEM_DIRECTIVE})
+    PUBLIC ${CMAKE_SYSTEM_DIRECTIVE})
 target_compile_definitions (pioc
-    PRIVATE ${CMAKE_C_COMPILER_DIRECTIVE})
+    PUBLIC ${CMAKE_C_COMPILER_DIRECTIVE})
 
+# Compiler-specific compiler options
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pioc
         PRIVATE -std=c99)
@@ -58,23 +62,20 @@ install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
 #==============================================================================
     
 #===== MPI =====
-find_package (MPI REQUIRED)
-if (MPI_C_FOUND)
-    # Check if the library is MPI-SERIAL
-    foreach (mpilib IN LISTS MPI_C_LIBRARIES)
-        if (mpilib MATCHES "libmpi-serial")
-            target_compile_definitions (pioc
-                PUBLIC MPI_SERIAL)
-            message (STATUS "MPI is mpi-serial, disabling PnetCDF in C PIO.")
-            set (WITH_PNETCDF FALSE)
-            
-            # Only add includes/libraries for mpi-serial
-            target_include_directories (pioc
-                PUBLIC ${MPI_C_INCLUDE_PATH})
-            target_link_libraries (pioc
-                PUBLIC ${MPI_C_LIBRARIES})
-        endif ()
-    endforeach ()
+if (PIO_USE_MPISERIAL)
+    find_package (MPISERIAL COMPONENTS C REQUIRED)
+    if (MPISERIAL_C_FOUND)
+        target_compile_definitions (pioc
+            PRIVATE MPI_SERIAL)
+        target_include_directories (pioc
+            PUBLIC ${MPISERIAL_C_INCLUDE_DIRS})
+        target_link_libraries (pioc
+            PUBLIC ${MPISERIAL_C_LIBRARIES})
+
+        set (WITH_PNETCDF FALSE)
+    endif ()
+else ()
+    find_package (MPI REQUIRED)
 endif ()
 
 #===== GPTL =====
@@ -126,10 +127,9 @@ if (PnetCDF_C_FOUND)
         PUBLIC ${PnetCDF_C_LIBRARIES})
 
     # Check library for varn functions
-    include(CheckFunctionExists)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_C_LIBRARY})
-    check_function_exists (ncmpi_get_varn PnetCDF_VARN)
-    if (PnetCDF_VARN)
+    check_function_exists (ncmpi_get_varn PnetCDF_C_HAS_VARN)
+    if (PnetCDF_C_HAS_VARN)
         target_compile_definitions(pioc
             PUBLIC USE_PNETCDF_VARN
             PUBLIC USE_PNETCDF_VARN_ON_READ)

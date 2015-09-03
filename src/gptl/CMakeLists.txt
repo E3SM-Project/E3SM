@@ -35,14 +35,14 @@ target_compile_definitions (gptl
 
 if (CMAKE_SYSTEM_NAME MATCHES "AIX")
     target_compile_definitions (gptl
-        PRIVATE _AIX)
+        PUBLIC _AIX)
 else ()
     target_compile_definitions (gptl
-        PRIVATE ${CMAKE_SYSTEM_DIRECTIVE})
+        PUBLIC ${CMAKE_SYSTEM_DIRECTIVE})
 endif ()
 
 target_compile_definitions (gptl
-    PRIVATE ${CMAKE_Fortran_COMPILER_DIRECTIVE})
+    PUBLIC ${CMAKE_Fortran_COMPILER_DIRECTIVE})
 
 #==============================================================================
 #  DEFINE THE INSTALL
@@ -88,71 +88,69 @@ if (ENABLE_LIBRT)
 endif ()
 
 #===== MPI =====
-find_package (MPI REQUIRED)
-if (MPI_C_FOUND AND MPI_Fortran_FOUND)
-    target_compile_definitions (gptl
-        PUBLIC HAVE_MPI)
-        
-    # Check library for varn functions
-    set (CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
-    check_function_exists (MPI_Comm_f2c MPI_COMM_F2C)
-    if (NOT MPI_COMM_F2C)
-        target_compile_definitions(gptl
-            PRIVATE NO_COMM_F2C)
-    endif()
+if (PIO_USE_MPISERIAL)
+    find_package (MPISERIAL COMPONENTS C Fortran REQUIRED)
+    if (MPISERIAL_C_FOUND AND MPISERIAL_Fortran_FOUND)
+        target_compile_definitions (gptl
+            PRIVATE HAVE_MPI)
+        target_include_directories (gptl
+            PUBLIC ${MPISERIAL_C_INCLUDE_DIRS}
+            PUBLIC ${MPISERIAL_Fortran_INCLUDE_DIRS})
+        target_link_libraries (gptl
+            PUBLIC ${MPISERIAL_C_LIBRARIES}
+            PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
 
-    # Check for MPI Fortran module
-    find_path(MPIMOD_PATH
-              NAMES mpi.mod
-              HINTS ${MPI_Fortran_INCLUDE_PATH})
-    if (MPIMOD_PATH)
-        check_macro (MPIMOD_WORKS
-                     NAME TryMPIMod.f90
-                     HINTS ${CMAKE_MODULE_PATH}
-                     DEFINITIONS -I${MPIMOD_PATH}
-                     COMMENT "whether MPI Fortran module is supported")
-        if (${MPIMOD_WORKS})
-            message (STATUS "Working MPI Fortran module detected and enabled.")
-        else ()
-            message (STATUS "Working MPI Fortran module not detected and therefore disabled.")
-            target_compile_definitions (gptl
-                PUBLIC NO_MPIMOD)
-        endif ()
+        set (MPI_C_LIBRARIES ${MPISERIAL_C_LIBRARIES})
+        set (MPI_Fortran_INCLUDE_DIRS ${MPISERIAL_Fortran_INCLUDE_DIRS})
+    endif ()
+else ()
+    find_package (MPI REQUIRED)
+    if (MPI_C_FOUND AND MPI_Fortran_FOUND)
+        target_compile_definitions (gptl
+            PUBLIC HAVE_MPI)
+    endif ()
+endif ()
+            
+# Check MPI library for Comm_f2c function
+set (CMAKE_REQUIRED_LIBRARIES ${MPI_C_LIBRARIES})
+check_function_exists (MPI_Comm_f2c MPI_HAS_COMM_F2C)
+if (NOT MPI_HAS_COMM_F2C)
+    target_compile_definitions(gptl
+        PRIVATE NO_COMM_F2C)
+endif ()
+
+# Check for MPI Fortran module
+find_path(MPIMOD_PATH
+          NAMES mpi.mod
+          HINTS ${MPI_Fortran_INCLUDE_DIRS})
+if (MPIMOD_PATH)
+    check_macro (MPI_HAS_Fortran_MOD
+                 NAME TryMPIMod.f90
+                 HINTS ${CMAKE_MODULE_PATH}
+                 DEFINITIONS -I${MPIMOD_PATH}
+                 COMMENT "whether MPI Fortran module is supported")
+    if (${MPI_HAS_Fortran_MOD})
+        message (STATUS "MPI Fortran module verified and enabled.")
     else ()
-        message (STATUS "MPI Fortran module not detected and therefore disabled.")
+        message (STATUS "MPI Fortran module failed verification and therefore disabled.")
         target_compile_definitions (gptl
             PUBLIC NO_MPIMOD)
     endif ()
-    
-    # Check if the library is MPI-SERIAL
-    foreach (mpilib IN LISTS MPI_C_LIBRARIES)
-        if (mpilib MATCHES "libmpi-serial")
-            # Only add includes/libraries for mpi-serial
-            target_include_directories (gptl
-                PUBLIC ${MPI_C_INCLUDE_PATH})
-            target_link_libraries (gptl
-                PUBLIC ${MPI_C_LIBRARIES})
-        endif ()
-    endforeach ()
-    foreach (mpilib IN LISTS MPI_Fortran_LIBRARIES)
-        if (mpilib MATCHES "libmpi-serial")
-            # Only add includes/libraries for mpi-serial
-            target_include_directories (gptl
-                PUBLIC ${MPI_Fortran_INCLUDE_PATH})
-            target_link_libraries (gptl
-                PUBLIC ${MPI_Fortran_LIBRARIES})
-        endif ()
-    endforeach ()
-    
 else ()
-    message (FATAL_ERROR "GPTL needs the C and Fortran MPI libraries")
+    message (STATUS "MPI Fortran module not detected and therefore disabled.")
+    target_compile_definitions (gptl
+        PUBLIC NO_MPIMOD)
 endif ()
-
+        
 #===== GetTimeOfDay =====
-get_target_property (GPTL_LINK_LIBRARIES gptl LINK_LIBRARIES)
-set (CMAKE_REQUIRED_LIBRARIES ${GPTL_LINK_LIBRARIES})
-check_function_exists (gettimeofday GETTIMEOFDAY)
-if (NOT GETTIMEOFDAY)
-    target_compile_definitions(gptl
-        PUBLIC NO_GETTIMEOFDAY)
+if (NOT DEFINED SYSTEM_HAS_GETTIMEOFDAY)
+    get_target_property (GPTL_LINK_LIBRARIES gptl LINK_LIBRARIES)
+    set (CMAKE_REQUIRED_LIBRARIES ${GPTL_LINK_LIBRARIES})
+    check_function_exists (gettimeofday GETTIMEOFDAY)
+    if (NOT GETTIMEOFDAY)
+        target_compile_definitions(gptl
+            PUBLIC NO_GETTIMEOFDAY)
+    endif ()
+    set (SYSTEM_HAS_GETTIMEOFDAY ${GETTIMEOFDAY}
+         CACHE INTERNAL "Whether the gettimeofday function could be found")
 endif ()
