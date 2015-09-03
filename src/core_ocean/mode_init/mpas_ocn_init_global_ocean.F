@@ -967,7 +967,7 @@ contains
        integer, pointer :: idxSalinity, idxTemperature, nCells, nCellsSolve, idxTracer1
 
        type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField
-       type (field3DReal), pointer :: tracersField
+       type (field3DReal), pointer :: activeTracersField
 
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
@@ -1266,9 +1266,10 @@ contains
              end do
 
              call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-             call mpas_pool_get_field(statePool, 'tracers', tracersField, 1)
+             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+             call mpas_pool_get_field(tracersPool, 'activeTracers', activeTracersField,1)
 
-             call mpas_dmpar_exch_halo_field(tracersField)
+             call mpas_dmpar_exch_halo_field(activeTracersField)
 
           end do ! iSmooth
 
@@ -1677,7 +1678,7 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
       call mpas_pool_get_config(configPool, 'config_global_ocean_depth_file', config_global_ocean_depth_file)
-      call mpas_pool_get_config(configPool, 'config_globa_ocean__depth_dimname', config_global_ocean_depth_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_temperature_file', config_global_ocean_temperature_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_salinity_file', config_global_ocean_salinity_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_tracer_nlat_dimname', config_global_ocean_tracer_nlat_dimname)

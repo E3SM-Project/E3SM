@@ -1,5 +1,5 @@
 	<nml_record name="tracer_forcing_debugTracers">
-		<nml_option name="config_use_debugTracers" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_debugTracers" type="logical" default_value=".false." units="unitless"
 					description="if true, the 'debugTracers' category is enabled for the run"
 					possible_values=".true. or .false."
 		/>
