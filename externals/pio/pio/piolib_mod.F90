@@ -383,11 +383,12 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingf(file, method)
+  subroutine seterrorhandlingf(file, method, oldmethod)
     type(file_desc_t), intent(inout) :: file
     integer, intent(in) :: method
+    integer, optional, intent(out) :: oldmethod
 
-    call seterrorhandlingi(file%iosystem, method)
+    call seterrorhandlingi(file%iosystem, method, oldmethod)
   end subroutine seterrorhandlingf
 
 !>
@@ -398,11 +399,12 @@ contains
 !! @param method :
 !! @copydoc PIO_error_method
 !<
-  subroutine seterrorhandlingi(ios, method)
+  subroutine seterrorhandlingi(ios, method, oldmethod)
     use pio_types, only : pio_internal_error, pio_return_error
     use pio_msg_mod, only : pio_msg_seterrorhandling
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: method
+    integer, intent(out), optional :: oldmethod
     integer :: msg, ierr
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
@@ -411,6 +413,7 @@ contains
        call MPI_BCAST(method,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , ierr)
     end if
     if(Debugasync) print *,__PIO_FILE__,__LINE__,method
+    if(present(oldmethod)) oldmethod = ios%error_handling
     ios%error_handling=method
 
     if(method > PIO_internal_error .or. method < PIO_return_error) then
