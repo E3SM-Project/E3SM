@@ -41,4 +41,4 @@ foreach (MPISERIAL_comp IN LISTS MPISERIAL_FIND_VALID_COMPONENTS)
         
     endif ()
 
-endif ()
+endforeach ()
