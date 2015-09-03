@@ -42,21 +42,38 @@ add_executable (pio_init_finalize EXCLUDE_FROM_ALL
 target_link_libraries (pio_init_finalize piof)
 add_dependencies (tests pio_init_finalize)
 
-add_mpi_test(init_finialize_1_proc
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
-    NUMPROCS 1
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-             
-add_mpi_test(init_finialize_2_proc 
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize 
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-             
-add_mpi_test(init_finalize_2_proc_with_args
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
-    ARGUMENTS --pio-tf-stride=2 --pio-tf-num-aggregators=2
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME init_finialize_1_proc
+        COMMAND pio_init_finalize)
+    set_tests_properties(init_finialize_1_proc
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    
+    add_test(NAME init_finialize_2_proc
+        COMMAND pio_init_finalize)
+    set_tests_properties(init_finialize_2_proc
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+
+    add_test(NAME init_finalize_2_proc_with_args
+        COMMAND pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
+    set_tests_properties(init_finalize_2_proc_with_args
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(init_finialize_1_proc
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
+        NUMPROCS 1
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+                 
+    add_mpi_test(init_finialize_2_proc 
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize 
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+                 
+    add_mpi_test(init_finalize_2_proc_with_args
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_init_finalize
+        ARGUMENTS --pio-tf-stride=2 --pio-tf-num-aggregators=2
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
 
 #===== pio_file_simple_tests =====
 add_executable (pio_file_simple_tests EXCLUDE_FROM_ALL
@@ -65,10 +82,17 @@ add_executable (pio_file_simple_tests EXCLUDE_FROM_ALL
 target_link_libraries (pio_file_simple_tests piof)
 add_dependencies (tests pio_file_simple_tests)
 
-add_mpi_test(pio_file_simple_tests
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME pio_file_simple_tests
+        COMMAND pio_file_simple_tests)
+    set_tests_properties(pio_file_simple_tests
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(pio_file_simple_tests
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_simple_tests
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
              
 #===== pio_file_fail =====
 add_executable (pio_file_fail EXCLUDE_FROM_ALL
@@ -81,10 +105,17 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
 endif()
 add_dependencies (tests pio_file_fail)
 
-add_mpi_test(pio_file_fail
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME pio_file_fail
+        COMMAND pio_file_fail)
+    set_tests_properties(pio_file_fail
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(pio_file_fail
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_file_fail
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
 
 #===== ncdf_simple_tests =====
 add_executable (ncdf_simple_tests EXCLUDE_FROM_ALL
@@ -93,10 +124,17 @@ add_executable (ncdf_simple_tests EXCLUDE_FROM_ALL
 target_link_libraries (ncdf_simple_tests piof)
 add_dependencies (tests ncdf_simple_tests)
 
-add_mpi_test(ncdf_simple_tests
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME ncdf_simple_tests
+        COMMAND ncdf_simple_tests)
+    set_tests_properties(ncdf_simple_tests
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(ncdf_simple_tests
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
 
 #===== ncdf_get_put =====
 add_executable (ncdf_get_put EXCLUDE_FROM_ALL
@@ -105,14 +143,25 @@ add_executable (ncdf_get_put EXCLUDE_FROM_ALL
 target_link_libraries (ncdf_get_put piof)
 add_dependencies (tests ncdf_get_put)
 
-add_mpi_test(ncdf_get_put_1proc
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
-    NUMPROCS 1 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(ncdf_get_put_2proc
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_simple_tests
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME ncdf_get_put_1proc
+        COMMAND ncdf_get_put)
+    set_tests_properties(ncdf_get_put_1proc
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME ncdf_get_put_2proc
+        COMMAND ncdf_get_put)
+    set_tests_properties(ncdf_get_put_2proc
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(ncdf_get_put_1proc
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_get_put
+        NUMPROCS 1 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(ncdf_get_put_2proc
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_get_put
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
 
 #===== ncdf_fail =====
 add_executable (ncdf_fail EXCLUDE_FROM_ALL
@@ -121,10 +170,17 @@ add_executable (ncdf_fail EXCLUDE_FROM_ALL
 target_link_libraries (ncdf_fail piof)
 add_dependencies (tests ncdf_fail)
 
-add_mpi_test(ncdf_fail
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME ncdf_fail
+        COMMAND ncdf_fail)
+    set_tests_properties(ncdf_fail
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(ncdf_fail
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/ncdf_fail
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
     
 #===== pio_decomp_tests =====
 add_executable (pio_decomp_tests EXCLUDE_FROM_ALL
@@ -133,61 +189,111 @@ add_executable (pio_decomp_tests EXCLUDE_FROM_ALL
 target_link_libraries (pio_decomp_tests piof)
 add_dependencies (tests pio_decomp_tests)
 
-add_mpi_test(pio_decomp_tests_1p
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
-    NUMPROCS 1
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_2p
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
-    NUMPROCS 2 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_3p
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
-    NUMPROCS 3 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME pio_decomp_tests_1p
+        COMMAND pio_decomp_tests)
+    set_tests_properties(pio_decomp_tests_1p
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_2p
+        COMMAND pio_decomp_tests)
+    set_tests_properties(pio_decomp_tests_2p
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_3p
+        COMMAND pio_decomp_tests)
+    set_tests_properties(pio_decomp_tests_3p
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
-add_mpi_test(pio_decomp_tests_4p_1agg
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-aggregators=1
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_4p_2agg
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-aggregators=2
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_4p_3agg
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
-    ARGUMENTS --pio-tf-num-aggregators=3
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_1agg
+        COMMAND pio_decomp_tests --pio-tf-num-aggregators=1)
+    set_tests_properties(pio_decomp_tests_4p_1agg
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_2agg
+        COMMAND pio_decomp_tests --pio-tf-num-aggregators=2)
+    set_tests_properties(pio_decomp_tests_4p_2agg
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_3agg
+        COMMAND pio_decomp_tests --pio-tf-num-aggregators=3)
+    set_tests_properties(pio_decomp_tests_4p_3agg
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
-add_mpi_test(pio_decomp_tests_4p_1iop
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-io-tasks=1
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_4p_2iop
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-io-tasks=2
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_4p_3iop
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-io-tasks=3
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_1iop
+        COMMAND pio_decomp_tests --pio-tf-num-io-tasks=1)
+    set_tests_properties(pio_decomp_tests_4p_1iop
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_2iop
+        COMMAND pio_decomp_tests --pio-tf-num-io-tasks=2)
+    set_tests_properties(pio_decomp_tests_4p_2iop
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_3iop
+        COMMAND pio_decomp_tests --pio-tf-num-io-tasks=3)
+    set_tests_properties(pio_decomp_tests_4p_3iop
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 
-add_mpi_test(pio_decomp_tests_4p_2iop_2str
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-io-tasks=2 --pio-tf-stride=2
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-add_mpi_test(pio_decomp_tests_4p_2iop_1agg
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
-    ARGUMENTS --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1
-    NUMPROCS 4 
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_2iop_2str
+        COMMAND pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-stride=2)
+    set_tests_properties(pio_decomp_tests_4p_2iop_2str
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_test(NAME pio_decomp_tests_4p_2iop_1agg
+        COMMAND pio_decomp_tests --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1)
+    set_tests_properties(pio_decomp_tests_4p_2iop_1agg
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(pio_decomp_tests_1p
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+        NUMPROCS 1
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_2p
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+        NUMPROCS 2 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_3p
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+        NUMPROCS 3 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    
+    add_mpi_test(pio_decomp_tests_4p_1agg
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-aggregators=1
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_4p_2agg
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-aggregators=2
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_4p_3agg
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests
+        ARGUMENTS --pio-tf-num-aggregators=3
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    
+    add_mpi_test(pio_decomp_tests_4p_1iop
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-io-tasks=1
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_4p_2iop
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-io-tasks=2
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_4p_3iop
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-io-tasks=3
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    
+    add_mpi_test(pio_decomp_tests_4p_2iop_2str
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-io-tasks=2 --pio-tf-stride=2
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+    add_mpi_test(pio_decomp_tests_4p_2iop_1agg
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_tests 
+        ARGUMENTS --pio-tf-num-io-tasks=2 --pio-tf-num-aggregators=1
+        NUMPROCS 4 
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
 
 #===== pio_decomp_fillval =====
 add_executable (pio_decomp_fillval EXCLUDE_FROM_ALL
@@ -196,7 +302,14 @@ add_executable (pio_decomp_fillval EXCLUDE_FROM_ALL
 target_link_libraries (pio_decomp_fillval piof)
 add_dependencies (tests pio_decomp_fillval)
 
-add_mpi_test(pio_decomp_fillval
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
-    NUMPROCS 4
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME pio_decomp_fillval
+        COMMAND pio_decomp_fillval)
+    set_tests_properties(pio_decomp_fillval
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(pio_decomp_fillval
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
+        NUMPROCS 4
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()

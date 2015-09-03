@@ -30,10 +30,17 @@ add_dependencies (tests pio_unit_test)
 # Test Timeout (4 min = 240 sec)
 set (DEFAULT_TEST_TIMEOUT 240)
 
-add_mpi_test(pio_unit_test
-    EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_unit_test
-    NUMPROCS 4
-    TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+if (PIO_USE_MPISERIAL)
+    add_test(NAME pio_unit_test
+        COMMAND pio_unit_test)
+    set_tests_properties(pio_unit_test
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(pio_unit_test
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_unit_test
+        NUMPROCS 4
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
 
 if (PIO_HDF5_LOGGING) 
     target_compile_definitions (pio_unit_test 
