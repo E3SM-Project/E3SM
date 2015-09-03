@@ -863,13 +863,21 @@ sub setTaskInfo()
     $self->{'mppsum'} = $taskmaker->sumPES();
     
     if($self->{maxthreads} == 1){
-	$self->{mppwidth} = $self->{mppsum};
+	    $self->{mppwidth} = $self->{mppsum};
     }else{
-	$self->{mppwidth} = $self->{mppsum} * $pes_per_node/ $maxTasksPerNode;
+	    $self->{mppwidth} = $self->{mppsum} * $pes_per_node/ $maxTasksPerNode;
     }
 
     if($self->{mppwidth} < $pes_per_node){
-	$self->{mppwidth} = $pes_per_node;
+	    $self->{mppwidth} = $pes_per_node;
+    }
+    
+    if(defined $self->{'overridenodecount'})
+    {
+        $self->{mppwidth} = 24;
+        $self->{num_tasks} = 1;
+        $self->{tasks_per_numa} = 1;
+        $self->{tasks_per_node} = 1;
     }
 
 }
