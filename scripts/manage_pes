@@ -509,7 +509,7 @@ sub formattedOutput {
        my $line_rootpe =  sprintf("         %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s",
 				  'rootpe: ', $rootpe_atm, $rootpe_lnd, $rootpe_ice, $rootpe_ocn, $rootpe_rof, $rootpe_glc, $rootpe_wav, $rootpe_cpl);
 
-       my $line_header = " grid:$grid  machine:$machine  compset:$compset   pesize:$pesize \n";
+       my $line_header = " grid: $grid  machine: $machine  compset: $compset   pesize: $pesize \n\n";
        push(@output_header, $line_header);
        push(@output_ntasks, $line_ntasks);
        push(@output_nthrds, $line_nthrds);

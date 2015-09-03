@@ -77,7 +77,7 @@
     </mach>
   </grid>
   <grid name="a%T31_l%T31_oi%gx3">
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -114,7 +114,7 @@
     </mach>
   </grid>
   <grid name="a%ne16.+oi%gx3_r%r05.+g%null_w%null" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="2000_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"> 
 	<comment>js 16 sep 2014 ne16_g37 bc5 yellowstone-specific pe layout used for low res ensemble</comment>
 	<ntasks>
@@ -299,7 +299,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -447,7 +447,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4.+oi%tx0.1v2">
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -484,7 +484,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4.+oi%tx0.1v2">
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -848,7 +848,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5.+oi%gx1">
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -922,7 +922,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5.+oi%gx1">
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="CAM.+CLM.+CICE.+DOCN%SOM.+">
 	<comment>none</comment>
 	<ntasks>
@@ -1033,7 +1033,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="CAM.+CLM.+CICE.+DOCN%SOM.+">
 	<comment>none</comment>
 	<ntasks>
@@ -1144,7 +1144,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
@@ -1181,7 +1181,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="CAM5.+CLM.+CICE.+POP.+">
 	<comment>none</comment>
 	<ntasks>
@@ -1218,7 +1218,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="L" compset="CAM5">
 	<comment>none</comment>
 	<ntasks>
@@ -1255,7 +1255,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="BGC">
 	<comment>none</comment>
 	<ntasks>
@@ -1292,7 +1292,7 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25_l%0.9x1.25_oi%gx1" >
-    <mach name="yellowstone|pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="POP2%ECO.+BGC%BPRP">
 	<comment>none</comment>
 	<ntasks>
@@ -1403,7 +1403,7 @@
     </mach>
   </grid>
   <grid name="a%ne120.+oi%gx1" >
-    <mach name="yellowstone/pronghorn">
+    <mach name="yellowstone">
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>

@@ -17,10 +17,11 @@ my %opts;
 my $scriptdir = dirname(abs_path(__FILE__));
 my $cimeroot  = abs_path("$scriptdir/../");
 my $srcroot   = abs_path("$cimeroot/../");
-my $config_file = "$cimeroot/scripts/cimeconfig/config_files.xml";
-
+my $config_file;
+my $model; 
 my $testlist;
 my $component;
+my $model_components;
 my $banner = "==========================================================================";
 
 {
@@ -46,6 +47,7 @@ my $banner = "==================================================================
 	    testname => $params{'testname'} || undef, 	
 	    machine  => $params{'machine'}  || undef, 	
 	    compiler => $params{'compiler'} || undef, 	
+	    model    => $params{'model'}    || undef, 	
 	    
 	    # The following are optional for each test
 	    testmods => $params{'testmods'} || undef, 	
@@ -72,8 +74,9 @@ SYNOPSIS
     manage_testlists -list [compsets|grids|tests|machines|compilers|components]
                      -component [allactive | cam | cice | cism | clm | drv | pop]
 
-    manage_testlists -query [-compset|-grid|-test|-machine|-compiler|-testmods]
-                     -component [allactive | cam | cice | cism | clm | drv | pop]
+    manage_testlists -query -model <model_name> -component [allactive | cam | cice | cism | clm | drv | pop]
+                        [-compset <compset_name>] [-grid <grid_name>] [-test <test_name>]
+			[-machine <machine_name>] [-compiler <compiler_name>] [-testmods <testmods_name>]
 
     manage_testlists -addlist -file new_test_list -category test_category 
                      -component [allactive | cam | cice | cism | clm | drv | pop]
@@ -216,6 +219,7 @@ sub getOptions
 	    "compset=s"		=> \$opts{'compset'},
 	    "grid=s"		=> \$opts{'grid'},
 	    "test=s"		=> \$opts{'test'},
+	    "model=s"           => \$opts{'model'},
 	    "machine=s"		=> \$opts{'machine'},
 	    "compiler=s"	=> \$opts{'compiler'},
 	    "category=s"	=> \$opts{'category'},
@@ -223,17 +227,27 @@ sub getOptions
 	    "testmods=s"	=> \$opts{'testmods'},
 	);
 	usage() if $opts{'help'};
+	if (defined $opts{'model'} ) {
+	    $model = $opts{'model'};
+	} else {
+	    $model = 'cesm';
+	}
+	my @model_components = ('allactive', 'drv');
+	if ($model eq 'cesm') {
+	    push @model_components, ('cam', 'clm', 'cice', 'cism', 'pop');
+	}
+
 	if ( ! defined $opts{'component'} )
 	{
 	    if (defined $opts{'query'} ) {
-		foreach my $comp ('allactive', 'cam ', 'clm', 'cice', 'drv', 'cism', 'pop') {
+		foreach my $comp (@model_components) {
 		    $testlist = setTestlist($comp);
 		    query(); 
 		}
 		exit(0);
 	    } else {
 		print "Must supply a component argument via the -component option \n";
-		print " values must be [allactive | cam | clm | cice | cism| drv | pop] \n";
+		print " values must be @model_components \n";
 		exit(1);
 	    }
 	} else {
@@ -313,7 +327,7 @@ sub writeXML
 
 	my $newfilename; 
 	if ($component eq 'allactive') {
-	    $newfilename = "$cimeroot/scripts/cimeconfig/allactive/testlist_allactive-$dtformat.xml";
+	    $newfilename = "$cimeroot/cime_config/${model}/allactive/testlist_allactive-$dtformat.xml";
 	}
 	elsif ($component eq 'drv') {
 	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
@@ -761,7 +775,6 @@ sub removeXMLTests
 sub list
 {
 	my $listopt = $opts{'list'};
-
 	my $testxml = readXML();
 	
 	my @list;
@@ -870,60 +883,61 @@ EOF
 sub queryXMLTests
 {
     my ($testxml, $compset, $grid, $test, $machine, $compiler, $testtype, $testmods) = @_;
+
     # drill down into the machine nodes.  Move onto the next element
     # if anything doesn't match the compset, grid, testname...
-	my $root = $testxml->getDocumentElement();
+    my $root = $testxml->getDocumentElement();
 	
     foreach my $compsetnode($testxml->findnodes('/testlist/compset'))	{
 	my $xcompsetname = $compsetnode->getAttribute('name');
-	if(defined $$compset && $$compset ne $xcompsetname)		{
+	if(defined $$compset && $$compset ne $xcompsetname) {
 	    $root->removeChild($compsetnode);
 	    next;
 	}
-	foreach my $gridnode($compsetnode->findnodes('./grid'))		{
+	foreach my $gridnode($compsetnode->findnodes('./grid'))	{
 	    my $xgridname = $gridnode->getAttribute('name');
-	    if(defined $$grid && $$grid ne $xgridname)			{
+	    if(defined $$grid && $$grid ne $xgridname) {
 		$compsetnode->removeChild($gridnode);
 		next;
 	    }
-	    foreach my $testnode($gridnode->findnodes('./test'))			{
+	    foreach my $testnode($gridnode->findnodes('./test')) {
 		my $xtestname = $testnode->getAttribute('name');
-		if(defined $$test && $$test ne $xtestname)				{
+		if(defined $$test && $$test ne $xtestname) {
 		    $gridnode->removeChild($testnode);
 		    next;	
 		}
-		foreach my $machnode($testnode->findnodes('./machine'))				{
+		foreach my $machnode($testnode->findnodes('./machine'))	{
 		    my $xmachinename = $machnode->textContent();
 		    my $xcompilername = $machnode->getAttribute('compiler');
 		    my $xtesttypename = $machnode->getAttribute('testtype');
 		    my $xtestmodsname = $machnode->getAttribute('testmods');
 		    
-		    if(defined $$machine && $$machine ne $xmachinename)					{
+		    if(defined $$machine && $$machine ne $xmachinename)	{
 			$testnode->removeChild($machnode);
 			next;
 		    }
-		    if(defined $$compiler && $$compiler ne $xcompilername)				{
+		    if(defined $$compiler && $$compiler ne $xcompilername) {
 			$testnode->removeChild($machnode);
 			next;
 		    }
-		    if(defined $$testtype && $$testtype ne $xtesttypename)					{
+		    if(defined $$testtype && $$testtype ne $xtesttypename) {
 			$testnode->removeChild($machnode);
 			next;
 		    }
-		    if(defined $$testmods && $$testmods ne $xtestmodsname)					{
+		    if(defined $$testmods && $$testmods ne $xtestmodsname) {
 			$testnode->removeChild($machnode);
 			next;
 		    }
 		}
-		if(! $testnode->nonBlankChildNodes())				{
+		if(! $testnode->nonBlankChildNodes()) {
 		    $gridnode->removeChild($testnode);
 		}
 	    }
-	    if(! $gridnode->nonBlankChildNodes())			{
+	    if(! $gridnode->nonBlankChildNodes()) {
 		$compsetnode->removeChild($gridnode);
 	    }
 	}
-	if(! $compsetnode->nonBlankChildNodes())		{
+	if(! $compsetnode->nonBlankChildNodes()) {
 	    $root->removeChild($compsetnode);
 	}
 	
@@ -1063,12 +1077,13 @@ sub formattedOutput {
                          "Compset", "TestName", "Grid", "Machine_compiler", "Test Category", "TestMods (optional)", "Comment(Optional)");
 
    my %configcompsets;
-   my $xml = XML::LibXML->new()->parse_file($config_file);
+   my $xml = XML::LibXML->new()->parse_file("$cimeroot/cime_config/${model}/config_files.xml");
    my @nodes= $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/*");
    foreach my $node (@nodes) {
        my $file = $node->textContent();
        $file =~ s/\$CIMEROOT/$cimeroot/;
        $file =~ s/\$SRCROOT/$srcroot/;
+       $file =~ s/\$MODEL/$model/;
        my $compset_xml = XML::LibXML->new()->parse_file($file);
        my @compset_nodes = $compset_xml->findnodes(".//COMPSET");
        foreach my $compset_node (@compset_nodes) {
@@ -1171,15 +1186,15 @@ sub cleanTestlistXMLFile
 # Determine testlist for target component
 #==========================================================================
 sub setTestlist{
-    my $comp = shift;
+    my $component = shift;
     my $list;
 
-    if ($comp =~ /^allactive/) {
-	$list = "$cimeroot/scripts/cimeconfig/allactive/testlist_allactive.xml"; 
-    } elsif ($comp =~ /^drv/) {
+    if ($component =~ /^allactive/) {
+	$list = "$cimeroot/cime_config/${model}/allactive/testlist_allactive.xml";
+    } elsif ($component =~ /^drv/) {
 	$list = "$cimeroot/driver_cpl/cime_config/testdefs/testlist_drv.xml"; 
     } else {
-	$list = "$cimeroot/../components/$component/cime_config/testdefs/testlist_$component.xml"; 
+	$list = "$srcroot/components/$component/cime_config/testdefs/testlist_$component.xml"; 
     }
     if (-f $list) {
 	print "# testlist is $list \n";

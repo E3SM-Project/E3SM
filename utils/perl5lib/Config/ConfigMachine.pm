@@ -234,25 +234,28 @@ sub _setPIOsettings
     my $attr_value, my $attr_name;
     foreach my $entry ($xml->findnodes(".//entry")) {
 	my $id = $entry->getAttribute('id');
-	foreach my $value ($entry->findnodes("./values/value")) {
+      foreach my $value ($entry->findnodes("./values/value")) {
 	    my $matches = 0;
-	    foreach my $qualifier ('COMPSET', 'GRID', 'MACH', 'COMPILER', 'MPILIB') {
+  	    MATCH: foreach my $qualifier ('COMPSET', 'GRID', 'MACH', 'COMPILER', 'MPILIB') {
 		my $debug = $value->hasAttribute(lc $qualifier);
 		if ($value->hasAttribute(lc $qualifier)) {
 		    my $target = $config->get($qualifier);
 		    $attr_name  = lc $qualifier;
-		    $attr_value = $value->getAttribute($attr_name);
+		    $attr_value = $value->getAttribute(lc $qualifier);
 		    if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
 			$matches++;
 		    } elsif ($target =~ m/$attr_value/) {
 			$matches++;
-		    }
-		    if ($matches > $max_matches) {
-			$max_matches = $matches;
-			my $newval = $value->textContent();
-			$config->set($id, $newval);
+		    } else {
+			$matches = 0;
+			last MATCH;
 		    }
 		}
+	    }
+	    if ($matches > $max_matches) {
+		$max_matches = $matches;
+		my $newval = $value->textContent();
+		$config->set($id, $newval);
 	    }
 	}
     }
