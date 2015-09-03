@@ -101,7 +101,7 @@ if (PIO_USE_MPISERIAL)
             PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
 
         set (MPI_C_LIBRARIES ${MPISERIAL_C_LIBRARIES})
-        set (MPI_Fortran_INCLUDE_DIRS ${MPISERIAL_Fortran_INCLUDE_DIRS})
+        set (MPI_Fortran_INCLUDE_PATH ${MPISERIAL_Fortran_INCLUDE_DIRS})
     endif ()
 else ()
     find_package (MPI REQUIRED)
@@ -122,7 +122,7 @@ endif ()
 # Check for MPI Fortran module
 find_path(MPIMOD_PATH
           NAMES mpi.mod
-          HINTS ${MPI_Fortran_INCLUDE_DIRS})
+          HINTS ${MPI_Fortran_INCLUDE_PATH})
 if (MPIMOD_PATH)
     check_macro (MPI_HAS_Fortran_MOD
                  NAME TryMPIMod.f90

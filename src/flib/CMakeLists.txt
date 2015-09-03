@@ -135,19 +135,16 @@ if (PIO_USE_MPISERIAL)
             PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
 
         set (WITH_PNETCDF FALSE)
-        set (MPI_Fortran_INCLUDE_DIRS ${MPISERIAL_Fortran_INCLUDE_DIRS})
+        set (MPI_Fortran_INCLUDE_PATH ${MPISERIAL_Fortran_INCLUDE_DIRS})
     endif ()
 else ()
     find_package (MPI REQUIRED)
-    if (MPI_Fortran_FOUND)
-        set (MPI_Fortran_INCLUDE_DIRS ${MPI_Fortran_INCLUDE_PATH})
-    endif ()
 endif ()
 
 # Check MPI I/O capabilities
 find_path(MPIF_H_PATH
           NAMES mpif.h
-          PATHS ${MPI_Fortran_INCLUDE_DIRS}
+          PATHS ${MPI_Fortran_INCLUDE_PATH}
           NO_DEFAULT_PATH)
 if (MPIF_H_PATH)
     check_macro (MPI_HAS_MPIIO
@@ -169,7 +166,7 @@ endif ()
 # Check for MPI Fortran module
 find_path(MPIMOD_PATH
           NAMES mpi.mod
-          HINTS ${MPI_Fortran_INCLUDE_DIRS})
+          HINTS ${MPI_Fortran_INCLUDE_PATH})
 if (MPIMOD_PATH)
     check_macro (MPI_HAS_Fortran_MOD
                  NAME TryMPIMod.f90
