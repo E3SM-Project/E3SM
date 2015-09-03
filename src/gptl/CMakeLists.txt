@@ -93,9 +93,13 @@ if (PIO_USE_MPISERIAL)
     if (MPISERIAL_C_FOUND AND MPISERIAL_Fortran_FOUND)
         target_compile_definitions (gptl
             PRIVATE HAVE_MPI)
+        message ("MPISERIAL_C_INCLUDE_DIRS = ${MPISERIAL_C_INCLUDE_DIRS}")
+        message ("MPISERIAL_Fortran_INCLUDE_DIRS = ${MPISERIAL_Fortran_INCLUDE_DIRS}")
         target_include_directories (gptl
             PUBLIC ${MPISERIAL_C_INCLUDE_DIRS}
             PUBLIC ${MPISERIAL_Fortran_INCLUDE_DIRS})
+        message ("MPISERIAL_C_LIBRARIES = ${MPISERIAL_C_LIBRARIES}")
+        message ("MPISERIAL_Fortran_LIBRARIES = ${MPISERIAL_Fortran_LIBRARIES}")
         target_link_libraries (gptl
             PUBLIC ${MPISERIAL_C_LIBRARIES}
             PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
