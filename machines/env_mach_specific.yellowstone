@@ -107,6 +107,11 @@ if ( $DEBUG == "TRUE" ) then
 else
   setenv MP_EUIDEVELOP min
 endif
+# We want MP_EAGER_LIMIT to ALWAYS be set to 
+# 0.  The reason is that there is a memory leak in 
+# Yellowstone's POE that causes a memory leak if 
+# this variable is set to anything other than 0. 
+setenv MP_EAGER_LIMIT 0
 
 #
 #  We need to turn off system level job monitor if
