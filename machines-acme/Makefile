@@ -693,6 +693,11 @@ ULIBDEP += $(CSMSHARELIB)
 ifeq ($(MPILIB),mpi-serial)
   MPISERIAL = $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a
   MLIBS += $(MPISERIAL)
+  CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(SHAREDPATH)/include \
+      -DMPI_Fortran_INCLUDE_PATH=$(SHAREDPATH)/include \
+      -DMPI_C_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a \
+      -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a 
+
 endif
 
 $(MCTLIBS)  : $(MPISERIAL)
