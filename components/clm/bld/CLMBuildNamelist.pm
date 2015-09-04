@@ -138,7 +138,7 @@ OPTIONS
                               (default=do the default type for this configuration)
                               (cold=always start with arbitrary initial conditions)
                               (arb_ic=start with arbitrary initial conditions if
-                               initial conditions don't exist)
+                               initial conditions do not exist)
                               (startup=ensure that initial conditions are being used)
      -clm_usr_name     "name" Dataset resolution/descriptor for personal datasets.
                               Default: not used
@@ -154,16 +154,15 @@ OPTIONS
      -drydep                  Produce a drydep_inparm namelist that will go into the
                               "drv_flds_in" file for the driver to pass dry-deposition to the atm.
                               Default: -no-drydep
-                              (Note: buildnml.csh copies the file for use by the driver)
+                              (Note: buildnml copies the file for use by the driver)
      -dynamic_vegetation      Toggle for dynamic vegetation model. (default is off)
                               (can ONLY be turned on when BGC type is 'cn' or 'bgc')
                               This turns on the namelist variable: use_cndv
      -ed_mode                 Turn ED (Ecosystem Demography) : [on | off] (default is off)
                               Sets the namelist variable use_ed and use_spit_fire.
-     -glc_grid "grid"         Glacier model grid and resolution when glacier model,
-                              Only used if glc_nec > 0 for determining fglcmask
-                              Default:  gland5UM
-                              (i.e. gland20, gland10 etcetera)
+     -glc_present             Set to true if the glc model is present (not sglc).
+                              This is used for error-checking, to make sure other options are
+                              set appropriately.
      -glc_nec <name>          Glacier number of elevation classes [0 | 3 | 5 | 10 | 36]
                               (default is 0) (standard option with land-ice model is 10)
      -glc_smb <value>         Only used if glc_nec > 0
@@ -202,7 +201,7 @@ OPTIONS
      -no-megan                DO NOT PRODUCE a megan_emis_nl namelist that will go into the
                               "drv_flds_in" file for the driver to pass VOCs to the atm.
                               MEGAN (Model of Emissions of Gases and Aerosols from Nature)
-                              (Note: buildnml.csh copies the file for use by the driver)
+                              (Note: buildnml copies the file for use by the driver)
      -[no-]note               Add note to output namelist  [do NOT add note] about the
                               arguments to build-namelist.
      -rcp "value"             Representative concentration pathway (rcp) to use for
@@ -253,7 +252,7 @@ sub process_commandline {
                clm_demand            => "null",
                help                  => 0,
                glc_nec               => "default",
-               glc_grid              => "default",
+               glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
                lnd_frac              => undef,
@@ -292,7 +291,7 @@ sub process_commandline {
              "note!"                     => \$opts{'note'},
              "megan!"                    => \$opts{'megan'},
              "glc_nec=i"                 => \$opts{'glc_nec'},
-             "glc_grid=s"                => \$opts{'glc_grid'},
+             "glc_present!"              => \$opts{'glc_present'},
              "glc_smb=s"                 => \$opts{'glc_smb'},
              "irrig=s"                   => \$opts{'irrig'},
              "d:s"                       => \$opts{'dir'},
@@ -349,47 +348,51 @@ sub set_print_level {
 #-------------------------------------------------------------------------------
 
 sub check_for_perl_utils {
+
   my $cfgdir = shift;
-  # Make sure we can find required perl modules, definition, and defaults files.
-  # Look for them under the directory that contains the configure script.
 
-  # The root directory for the input data files must be specified.
+  # Determine CESM root directory and perl5lib root directory
+  my $cesmroot = abs_path( "$cfgdir/../../../");
+  my $perl5lib_dir = "$cesmroot/cime/utils/perl5lib";
 
-  #The root directory to cesm utils Tools
-  my $cesm_tools = abs_path( "$cfgdir/../../../../scripts/ccsm_utils/Tools" );
+  # The root diretory for the perl SetupTools.pm module
+  my $SetupTools_dir = "$cesmroot/cime/scripts/Tools";
+  (-f "$SetupTools_dir/SetupTools.pm")  or
+      fatal_error("Cannot find perl module \"SetupTools.pm\" in directory\n" .
+		  "\"$SetupTools_dir\" \n");
 
   # The XML::Lite module is required to parse the XML files.
-  (-f "$cesm_tools/perl5lib/XML/Lite.pm")  or
-    fatal_error("Cannot find perl module \"XML/Lite.pm\" in directory\n" .
-                "\"$cesm_tools/perl5lib\"");
+  (-f "$perl5lib_dir/XML/Lite.pm")  or
+      fatal_error("Cannot find perl module \"XML/Lite.pm\" in directory\n" .
+                "\"$perl5lib_dir\"");
 
   # The Build::Config module provides utilities to access the configuration information
   # in the config_cache.xml file
-  (-f "$cesm_tools/perl5lib/Build/Config.pm")  or
-    fatal_error("Cannot find perl module \"Build/Config.pm\" in directory\n" .
-                "\"$cesm_tools/perl5lib\"");
+  (-f "$perl5lib_dir/Build/Config.pm")  or
+      fatal_error("Cannot find perl module \"Build/Config.pm\" in directory\n" .
+                "\"$perl5lib_dir\"");
 
   # The Build::NamelistDefinition module provides utilities to validate that the output
   # namelists are consistent with the namelist definition file
-  (-f "$cesm_tools/perl5lib/Build/NamelistDefinition.pm")  or
-    fatal_error("Cannot find perl module \"Build/NamelistDefinition.pm\" in directory\n" .
-                "\"$cesm_tools/perl5lib\"");
+  (-f "$perl5lib_dir/Build/NamelistDefinition.pm")  or
+      fatal_error("Cannot find perl module \"Build/NamelistDefinition.pm\" in directory\n" .
+		  "\"$perl5lib_dir\"");
 
   # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
   # variables based on finding a best fit with the attributes specified in the defaults file.
-  (-f "$cesm_tools/perl5lib/Build/NamelistDefaults.pm")  or
-    fatal_error("Cannot find perl module \"Build/NamelistDefaults.pm\" in directory\n" .
-                "\"$cesm_tools//perl5lib\"");
+  (-f "$perl5lib_dir/Build/NamelistDefaults.pm")  or
+      fatal_error("Cannot find perl module \"Build/NamelistDefaults.pm\" in directory\n" .
+		  "\"$perl5lib_dir\"");
 
   # The Build::Namelist module provides utilities to parse input namelists, to query and modify
   # namelists, and to write output namelists.
-  (-f "$cesm_tools/perl5lib/Build/Namelist.pm")  or
-    fatal_error("Cannot find perl module \"Build/Namelist.pm\" in directory\n" .
-                "\"$cesm_tools/perl5lib\"");
+  (-f "$perl5lib_dir/Build/Namelist.pm")  or
+      fatal_error("Cannot find perl module \"Build/Namelist.pm\" in directory\n" .
+		  "\"$perl5lib_dir\"");
 
   #-----------------------------------------------------------------------------
-  # Add $cesm_tools/perl5lib to the list of paths that Perl searches for modules
-  my @dirs = ( $ProgDir, $cfgdir, "$cesm_tools/perl5lib");
+  # Add $perl5lib_dir to the list of paths that Perl searches for modules
+  my @dirs = ( $ProgDir, $cfgdir, "$perl5lib_dir", "$SetupTools_dir");
   unshift @INC, @dirs;
 
   # required cesm perl modules
@@ -398,9 +401,8 @@ sub check_for_perl_utils {
   require Build::NamelistDefinition;
   require Build::NamelistDefaults;
   require Build::Namelist;
-  require Streams::TemplateGeneric;
   require config_files::clm_phys_vers;
-
+  require SetupTools;
 }
 
 #-------------------------------------------------------------------------------
@@ -481,7 +483,7 @@ sub read_envxml_case_files {
       }
       foreach my $attr (keys %envxml) {
           if ( $envxml{$attr} =~ m/\$/ ) {
-             $envxml{$attr} = &Streams::TemplateGeneric::expandXMLVar( $envxml{$attr}, \%envxml );
+             $envxml{$attr} = SetupTools::expand_xml_var( $envxml{$attr}, \%envxml );
           }
       }
   } else {
@@ -813,7 +815,7 @@ sub setup_cmdl_bgc {
           $nl_flags->{$var} = $nl->get_value($var);
        }
        if ($var eq "use_vertsoilc") {
-	  $nl_flags->{$var} = ".true.";
+          $nl_flags->{$var} = ".true.";
        }
        $val = $nl_flags->{$var};
        my $group = $definition->get_group_name($var);
@@ -896,7 +898,7 @@ sub setup_cmdl_maxpft {
     # NOTE: maxpatchpft sizes already checked for clm4_0 by configure.
   } else {
     my %maxpatchpft;
-    $maxpatchpft{'.true.'}   = 25;
+    $maxpatchpft{'.true.'}   = 79;
     $maxpatchpft{'.false.'} = 17;
     if ( $opts->{$var} ne "default") {
       $val = $opts->{$var};
@@ -991,7 +993,7 @@ sub setup_cmdl_irrigation {
                   "Irrigation is only applied to generic crop currently,\n" .
                   "which negates it's practical usage.\n." .
                   "We also have a known problem when both are on " .
-                  "(see bug 1326 in the models/lnd/clm/doc/KnownBugs file)\n" .
+                  "(see bug 1326 in the components/clm/doc/KnownBugs file)\n" .
                   "both irrigation and crop can NOT be on.\n");
     }
   } else {
@@ -999,7 +1001,8 @@ sub setup_cmdl_irrigation {
       fatal_error("The -irrig=.true. option requires -crop");
     }
     if ( defined($nl->get_value("irrigate")) && $nl->get_value("irrigate") ne $nl_flags->{'irrig'} ) {
-      fatal_error("The namelist value irrigate contradicts the command line option -irrig");
+      my $irrigate = $nl->get_value("irrigate");
+      fatal_error("The namelist value 'irrigate=$irrigate' contradicts the command line option '-irrig=$val'");
     }
   }
 }
@@ -1237,7 +1240,7 @@ sub process_namelist_commandline_namelist {
       fatal_error("Invalid namelist variable in commandline arg '-namelist'.\n $@");
     }
     # Go through all variables and expand any XML env settings in them
-    expand_env_variables_in_namelist( $nl_arg_valid, $envxml_ref );
+    expand_xml_variables_in_namelist( $nl_arg_valid, $envxml_ref );
 
     # Merge input values into namelist.  Previously specified values have higher precedence
     # and are not overwritten.
@@ -1270,7 +1273,7 @@ sub process_namelist_commandline_infile {
         fatal_error("Invalid namelist variable in '-infile' $infile.\n $@");
       }
       # Go through all variables and expand any XML env settings in them
-      expand_env_variables_in_namelist( $nl_infile_valid, $envxml_ref );
+      expand_xml_variables_in_namelist( $nl_infile_valid, $envxml_ref );
 
       # Merge input values into namelist.  Previously specified values have higher precedence
       # and are not overwritten.
@@ -1324,7 +1327,7 @@ sub process_namelist_commandline_clm_usr_name {
       warning("setting clm_usr_name -- but did NOT find any user datasets: $opts->{'clm_usr_name'}\n");
     }
     # Go through all variables and expand any XML env settings in them
-    expand_env_variables_in_namelist( $nl_usrfile, $envxml_ref );
+    expand_xml_variables_in_namelist( $nl_usrfile, $envxml_ref );
     # Merge input values into namelist.  Previously specified values have higher precedence
     # and are not overwritten.
     $nl->merge_nl($nl_usrfile);
@@ -1369,7 +1372,7 @@ sub process_namelist_commandline_use_case {
       }
     }
     # Go through all variables and expand any XML env settings in them
-    expand_env_variables_in_namelist( $nl_usecase, $envxml_ref );
+    expand_xml_variables_in_namelist( $nl_usecase, $envxml_ref );
 
     # Merge input values into namelist.  Previously specified values have higher precedence
     # and are not overwritten.
@@ -1412,18 +1415,33 @@ sub process_namelist_inline_logic {
   setup_logic_start_type($nl_flags, $nl);
   setup_logic_delta_time($opts, $nl_flags, $definition, $defaults, $nl);
   setup_logic_decomp_performance($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
-  setup_logic_snow($opts->{'test_files'}, $nl_flags, $definition, $defaults, $nl);
+  setup_logic_snow($opts->{'test_files'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_glacier($opts, $nl_flags, $definition, $defaults, $nl,  $envxml_ref, $physv);
   setup_logic_params_file($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_create_crop_landunit($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_logic_urban($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
-  setup_logic_more_vertlayers($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_soilstate($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_demand($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_surface_dataset($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_initial_conditions($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_dynamic_subgrid($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+#  setup_logic_snowpack($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+
+  #########################################
+  # namelist group: clm_humanindex_inparm #
+  #########################################
+#  setup_logic_humanindex($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+
+  #######################################################################
+  # namelist groups: clm_hydrology1_inparm and clm_soilhydrology_inparm #
+  #######################################################################
   setup_logic_hydrology_switches($nl);
+
+  ###############################
+  # namelist group: clmu_inparm #
+  ###############################
+  setup_logic_urban($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
   ###############################
   # namelist group: ch4par_in   #
@@ -1515,7 +1533,7 @@ sub setup_logic_lnd_frac {
       fatal_error("Can NOT set both -lnd_frac option (set via LND_DOMAIN_PATH/LND_DOMAIN_FILE " .
                   "env variables) AND fatmlndfrac on namelist\n");
     }
-    my $lnd_frac = &Streams::TemplateGeneric::expandXMLVar( $opts->{$var}, $envxml_ref);
+    my $lnd_frac = SetupTools::expand_xml_var( $opts->{$var}, $envxml_ref);
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fatmlndfrc','val'=>$lnd_frac );
   }
 
@@ -1640,7 +1658,7 @@ sub setup_logic_decomp_performance {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_snow {
-  my ($test_files, $nl_flags, $definition, $defaults, $nl) = @_;
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowoptics' );
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowaging' );
@@ -1683,7 +1701,11 @@ sub setup_logic_glacier {
     fatal_error("$var set to $val does NOT agree with -glc_nec argument of $nl_flags->{'glc_nec'} (set with GLC_NEC env variable)\n");
   }
   if ( $nl_flags->{'glc_nec'} > 0 ) {
-    foreach my $var ( "glc_grid", "glc_smb" ) {
+    if (! $opts->{'glc_present'}) {
+      fatal_error("glc_nec is non-zero, but glc_present is not set (probably due to trying to use a stub glc model)");
+    }
+
+    foreach my $var ( "glc_smb" ) {
       if ( $opts->{$var} ne "default" ) {
         add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'val'=>$opts->{$var} );
         $val = $nl->get_value($var);
@@ -1702,10 +1724,8 @@ sub setup_logic_glacier {
         fatal_error("$var is NOT set, but glc_nec is positive");
       }
     }
-    my $glc_grid = $nl->get_value('glc_grid');
-    $glc_grid =~ s/['"]//g;
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flndtopo'  , 'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'} );
-    add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fglcmask'  , 'hgrid'=>$nl_flags->{'res'}, 'glc_grid'=>$glc_grid );
+    add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fglcmask'  , 'hgrid'=>$nl_flags->{'res'});
 
     if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'glcmec_downscale_rain_snow_convert');
@@ -1714,13 +1734,10 @@ sub setup_logic_glacier {
     }
 
   } else {
-    if (defined($nl->get_value('glc_grid'))) {
-      my $glc_grid = $nl->get_value('glc_grid');
-      $glc_grid =~ s/['"]//g;
-      if ( defined($glc_grid) ) {
-        fatal_error("glc_grid is set, but glc_nec is zero");
-      }
+    if ($opts->{'glc_present'}) {
+      fatal_error("glc_present is set (e.g., due to use of CISM), but glc_nec is zero");
     }
+
     # Error checking for glacier multiple elevation class options when glc_mec off
     # Make sure various glc_mec-specific logicals are not true, and fglcmask is not set
     my $create_glcmec = $nl->get_value('create_glacier_mec_landunit');
@@ -1766,9 +1783,9 @@ sub setup_logic_params_file {
 
   if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'paramfile', 
-                'use_ed'=>$nl_flags->{'use_ed'} , 'use_crop'=>$nl_flags->{'use_crop'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon', 
-                );
+                'use_ed'=>$nl_flags->{'use_ed'}, 'use_crop'=>$nl_flags->{'use_crop'} );
+   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon', 
+                );   
   } else {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fpftcon');
   }
@@ -1792,8 +1809,22 @@ sub setup_logic_create_crop_landunit {
 
 #-------------------------------------------------------------------------------
 
+sub setup_logic_humanindex {
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'calc_human_stress_indices');
+  } else {
+     if ( defined($nl->get_value('calc_human_stress_indices')) ) {
+        fatal_error( "calc_human_stress_indices can NOT be set, for physics versions less than clm4_5" );
+     }
+  }
+}
+
+#-------------------------------------------------------------------------------
+
 sub setup_logic_urban {
-  my ($test_files, $nl_flags, $definition, $defaults, $nl) = @_;
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'urban_hac');
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'urban_traffic');
@@ -1801,7 +1832,7 @@ sub setup_logic_urban {
 
 #-------------------------------------------------------------------------------
 
-sub setup_logic_more_vertlayers {
+sub setup_logic_soilstate {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
@@ -2005,6 +2036,199 @@ sub setup_logic_initial_conditions {
     }
   }
 } # end initial conditions
+
+#-------------------------------------------------------------------------------
+
+sub setup_logic_dynamic_subgrid {
+   #
+   # Options controlling which parts of flanduse_timeseries to use
+   #
+   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+   setup_logic_do_transient_pfts($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
+   setup_logic_do_transient_crops($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
+   setup_logic_do_harvest($test_files, $nl_flags, $definition, $defaults, $nl, $physv);
+   
+}
+
+sub setup_logic_do_transient_pfts {
+   #
+   # Set do_transient_pfts default value, and perform error checking on do_transient_pfts
+   #
+   # Assumes the following are already set in the namelist (although it's okay
+   # for them to be unset if that will be their final state):
+   # - flanduse_timeseries
+   # - use_cndv
+   # - use_ed
+   # 
+   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+   my $var = 'do_transient_pfts';
+   
+   if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+      # Start by assuming a default value of '.true.'. Then check a number of
+      # conditions under which do_transient_pfts cannot be true. Under these
+      # conditions: (1) set default value to '.false.'; (2) make sure that the
+      # value is indeed false (e.g., that the user didn't try to set it to true).
+
+      my $default_val = ".true.";
+
+      # cannot_be_true will be set to a non-empty string in any case where
+      # do_transient_pfts should not be true; if it turns out that
+      # do_transient_pfts IS true in any of these cases, a fatal error will be
+      # generated
+      my $cannot_be_true = "";
+
+      if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
+         $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
+      }
+      elsif (value_is_true($nl->get_value('use_cndv'))) {
+         $cannot_be_true = "$var cannot be combined with use_cndv";
+      }
+      elsif (value_is_true($nl->get_value('use_ed'))) {
+         $cannot_be_true = "$var cannot be combined with use_ed";
+      }
+      
+      if ($cannot_be_true) {
+         $default_val = ".false.";
+      }
+
+      if (!$cannot_be_true) {
+         # Note that, if the variable cannot be true, we don't call add_default
+         # - so that we don't clutter up the namelist with variables that don't
+         # matter for this case
+         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, val=>$default_val);
+      }
+
+      # Make sure the value is false when it needs to be false - i.e., that the
+      # user hasn't tried to set a true value at an inappropriate time.
+
+      if (value_is_true($nl->get_value($var)) && $cannot_be_true) {
+         fatal_error($cannot_be_true);
+      }
+
+   }
+}
+
+sub setup_logic_do_transient_crops {
+   #
+   # Set do_transient_crops default value, and perform error checking on do_transient_crops
+   #
+   # Assumes the following are already set in the namelist (although it's okay
+   # for them to be unset if that will be their final state):
+   # - flanduse_timeseries
+   # - use_crop
+   # - use_ed
+   # 
+   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+   my $var = 'do_transient_crops';
+
+   if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+      # Start by assuming a default value of '.true.'. Then check a number of
+      # conditions under which do_transient_crops cannot be true. Under these
+      # conditions: (1) set default value to '.false.'; (2) make sure that the
+      # value is indeed false (e.g., that the user didn't try to set it to true).
+
+      my $default_val = ".true.";
+
+      # cannot_be_true will be set to a non-empty string in any case where
+      # do_transient_crops should not be true; if it turns out that
+      # do_transient_crops IS true in any of these cases, a fatal error will be
+      # generated
+      my $cannot_be_true = "";
+
+      if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
+         $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
+      }
+      elsif (!value_is_true($nl->get_value('use_crop'))) {
+         $cannot_be_true = "$var can only be set to true when running with use_crop = true";
+      }
+      elsif (value_is_true($nl->get_value('use_ed'))) {
+         # In principle, use_ed should be compatible with
+         # do_transient_crops. However, this hasn't been tested, so to be safe,
+         # we are not allowing this combination for now.
+         $cannot_be_true = "$var has not been tested with ED, so for now these two options cannot be combined";
+      }
+
+      if ($cannot_be_true) {
+         $default_val = ".false.";
+      }
+
+      if (!$cannot_be_true) {
+         # Note that, if the variable cannot be true, we don't call add_default
+         # - so that we don't clutter up the namelist with variables that don't
+         # matter for this case
+         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, val=>$default_val);
+      }
+
+      # Make sure the value is false when it needs to be false - i.e., that the
+      # user hasn't tried to set a true value at an inappropriate time.
+
+      if (value_is_true($nl->get_value($var)) && $cannot_be_true) {
+         fatal_error($cannot_be_true);
+      }
+
+   }
+}
+
+sub setup_logic_do_harvest {
+   #
+   # Set do_harvest default value, and perform error checking on do_harvest
+   #
+   # Assumes the following are already set in the namelist (although it's okay
+   # for them to be unset if that will be their final state):
+   # - flanduse_timeseries
+   # - use_cn
+   # - use_ed
+   #
+   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+   
+   my $var = 'do_harvest';
+
+   if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+      # Start by assuming a default value of '.true.'. Then check a number of
+      # conditions under which do_harvest cannot be true. Under these
+      # conditions: (1) set default value to '.false.'; (2) make sure that the
+      # value is indeed false (e.g., that the user didn't try to set it to true).
+
+      my $default_val = ".true.";
+
+      # cannot_be_true will be set to a non-empty string in any case where
+      # do_harvest should not be true; if it turns out that do_harvest IS true
+      # in any of these cases, a fatal error will be generated
+      my $cannot_be_true = "";
+
+      if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
+         $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
+      }
+      elsif (!value_is_true($nl->get_value('use_cn'))) {
+         $cannot_be_true = "$var can only be set to true when running with CN (use_cn = true)";
+      }
+      elsif (value_is_true($nl->get_value('use_ed'))) {
+         $cannot_be_true = "$var currently doesn't work with ED";
+      }
+
+      if ($cannot_be_true) {
+         $default_val = ".false.";
+      }
+
+      if (!$cannot_be_true) {
+         # Note that, if the variable cannot be true, we don't call add_default
+         # - so that we don't clutter up the namelist with variables that don't
+         # matter for this case
+         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, val=>$default_val);
+      }
+
+      # Make sure the value is false when it needs to be false - i.e., that the
+      # user hasn't tried to set a true value at an inappropriate time.
+
+      if (value_is_true($nl->get_value($var)) && $cannot_be_true) {
+         fatal_error($cannot_be_true);
+      }
+      
+   }
+}
 
 #-------------------------------------------------------------------------------
 
@@ -2353,6 +2577,10 @@ sub setup_logic_megan {
   my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
 
   if ($opts->{'megan'} ) {
+    if ( value_is_true( $nl_flags->{'use_ed'} ) ) {
+       fatal_error("MEGAN can NOT be on when ED is also on.\n" . 
+                   "   Use the '-no-megan' option when '-ed_mode' is activated");
+    }
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'megan_specifier');
     check_megan_spec( $nl, $definition );
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'megan_factors_file');
@@ -2410,6 +2638,20 @@ sub setup_logic_lai_streams {
 
 #-------------------------------------------------------------------------------
 
+sub setup_logic_snowpack {
+  #
+  # Snowpack related options
+  #
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'nlevsno');
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'h2osno_max');
+  }
+}
+
+#-------------------------------------------------------------------------------
+
 sub write_output_files {
   my ($opts, $nl_flags, $defaults, $nl, $physv) = @_;
 
@@ -2435,7 +2677,8 @@ sub write_output_files {
     #}
   } else {
     @groups = qw(clm_inparm ndepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
-                 clm_soilhydrology_inparm finidat_consistency_checks dynpft_consistency_checks);
+                 clm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
+                 clmu_inparm clm_soilstate_inparm );
     #@groups = qw(clm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on
@@ -2444,6 +2687,9 @@ sub write_output_files {
     #}
     if ( $nl_flags->{'use_lch4'}  eq ".true." ) {
       push @groups, "ch4par_in";
+    }
+    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+      push @groups, "clm_humanindex_inparm";
     }
   }
 
@@ -2592,13 +2838,14 @@ sub add_default {
 
 #-------------------------------------------------------------------------------
 
-sub expand_env_variables_in_namelist {
+sub expand_xml_variables_in_namelist {
    # Go through all variables in the namelist and expand any XML env settings in them
-   my ($nl, $envxml_ref) = @_;
+   my ($nl, $xmlvar_ref) = @_;
+
    foreach my $group ( $nl->get_group_names() ) {
        foreach my $var ( $nl->get_variable_names($group) ) {
           my $val    = $nl->get_variable_value($group, $var);
-          my $newval = &Streams::TemplateGeneric::expandXMLVar( $val, $envxml_ref );
+          my $newval = SetupTools::expand_xml_var( $val, $xmlvar_ref );
           if ( $newval ne $val ) {
              $nl->set_variable_value($group, $var, $newval);
           }
@@ -2692,17 +2939,11 @@ sub set_abs_filepath {
 
     my ($filepath, $rootdir) = @_;
 
-    # strip any leading/trailing whitespace
-    $filepath =~ s/^\s+//;
-    $filepath =~ s/\s+$//;
-    $rootdir  =~ s/^\s+//;
-    $rootdir  =~ s/\s+$//;
-
-    # strip any leading/trailing quotes
-    $filepath =~ s/^['"]+//;
-    $filepath =~ s/["']+$//;
-    $rootdir =~ s/^['"]+//;
-    $rootdir =~ s/["']+$//;
+    # strip any leading/trailing whitespace and quotes
+    $filepath = trim($filepath);
+    $filepath = remove_leading_and_trailing_quotes($filepath);
+    $rootdir  = trim($rootdir);
+    $rootdir = remove_leading_and_trailing_quotes($rootdir);
 
     my $out = $filepath;
     unless ( $filepath =~ /^\// ) {  # unless $filepath starts with a /
@@ -2719,8 +2960,8 @@ sub valid_option {
 
     my $expect;
 
-    $val =~ s/^\s+//;
-    $val =~ s/\s+$//;
+    $val = trim($val);
+
     foreach $expect (@expect) {
         if ($val =~ /^$expect$/i) { return $expect; }
     }
@@ -2930,15 +3171,42 @@ sub check_megan_spec {
 
 #-------------------------------------------------------------------------------
 
+sub trim {
+   # remove leading and trailing whitespace from a string.
+   my ($str) = @_;
+   $str =~ s/^\s+//;
+   $str =~ s/\s+$//;
+   return $str;
+}
+
+#-------------------------------------------------------------------------------
+
 sub quote_string {
-    # Add quotes around a string, unless they are already there
-    my ($str) = @_;
-    $str =~ s/^\s+//;
-    $str =~ s/\s+$//;
-    unless ($str =~ /^['"]/) {        #"'
-        $str = "\'$str\'";
-    }
-    return $str;
+   # Add quotes around a string, unless they are already there
+   my ($str) = @_;
+   $str = trim($str);
+   unless ($str =~ /^['"]/) {        #"'
+      $str = "\'$str\'";
+   }
+   return $str;
+ }
+
+#-------------------------------------------------------------------------------
+
+sub remove_leading_and_trailing_quotes {
+   # Remove leading and trailing single and double quotes from a string. Also
+   # removes leading spaces before the leading quotes, and trailing spaces after
+   # the trailing quotes.
+
+   my ($str) = @_;
+
+   $str = trim($str);
+
+   # strip any leading/trailing quotes
+   $str =~ s/^['"]+//;
+   $str =~ s/["']+$//;
+
+   return $str;
 }
 
 #-------------------------------------------------------------------------------
@@ -2960,6 +3228,42 @@ sub logical_to_fortran {
    }
 
    return $result;
+}
+
+#-------------------------------------------------------------------------------
+
+sub string_is_undef_or_empty {
+   # Return true if the given string is undefined or only spaces, false otherwise.
+   # A quoted empty string (' ' or " ") is treated as being empty.
+   my ($str) = @_;
+   if (!defined($str)) {
+      return 1;
+   }
+   else {
+      $str = remove_leading_and_trailing_quotes($str);
+      if ($str =~ /^\s*$/) {
+         return 1;
+      }
+      else {
+         return 0;
+      }
+   }
+}
+
+#-------------------------------------------------------------------------------
+
+sub value_is_true {
+   # Return true if the given namelist value is .true.
+   # An undefined value is treated as false (with the assumption that false is the default in the code)
+   my ($val) = @_;
+   my $is_true = 0;
+   if (defined($val)) {
+      if ($val =~ /$TRUE/i) {
+         $is_true = 1;
+      }
+   }
+
+   return $is_true;
 }
 
 #-------------------------------------------------------------------------------
@@ -3037,8 +3341,8 @@ sub main {
   my $cfg = read_configure_definition($nl_flags{'cfgdir'}, \%opts);
 
   my $physv = config_files::clm_phys_vers->new( $cfg->get('phys') );
-
-  my $drvblddir  = abs_path( "$nl_flags{'cfgdir'}/../../../../models/drv/bld" );
+  my $cesmroot   = abs_path( "$nl_flags{'cfgdir'}/../../../");
+  my $drvblddir  = "$cesmroot/cime/driver_cpl/bld";
   my $definition = read_namelist_definition($drvblddir, \%opts, \%nl_flags, $physv);
   my $defaults   = read_namelist_defaults($drvblddir, \%opts, \%nl_flags, $cfg, $physv);
 

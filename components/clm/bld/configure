@@ -26,8 +26,7 @@
 use strict;
 #use warnings;
 #use diagnostics;
-
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -107,7 +106,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -177,23 +176,20 @@ my %cfg = ();           # build configuration
 # Make sure we can find required perl modules and configuration files.
 # Look for them in the directory that contains the configure script.
 
-# The XML::Lite module is required to parse the XML configuration files.
-(-f "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib\" **
-EOF
+my $cesmroot   = abs_path( "$cfgdir/../../../");
+my $casecfgdir = "$cesmroot/cime/scripts/Tools";
+my $perl5lib   = "$cesmroot/cime/utils/perl5lib/";
 
 # The Build::Config module provides utilities to store and manipulate the configuration.
-(-f "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib/Build/Config.pm")  or  die <<"EOF";
-** Cannot find perl module \"Build/Config.pm\" in directory 
-    \"$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib\" **
+my $file = "$perl5lib/Build/Config.pm";
+(-f "$file")  or  die <<"EOF";
+** Cannot find perl module \"Build/Config.pm\" in path
+    \"$file\" **
 EOF
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my $casecfgdir = "$cfgdir/../../../../scripts/ccsm_utils/Case.template";
-my @dirs = (  $cfgdir, "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib", $casecfgdir);
+my @dirs = (  $cfgdir, "$perl5lib", $casecfgdir);
 unshift @INC, @dirs;
-require XML::Lite;
 require Build::Config;
 require config_files::clm_phys_vers;
 
@@ -241,12 +237,12 @@ my $cfg_ref = Build::Config->new("$cfgdir/config_files/$config_def_file",
 my $clm_root;
 
 if ( ! defined($opts{'clm_root'} ) ) {
-  $clm_root = absolute_path("$cfgdir/..");
+  $clm_root = abs_path("$cfgdir/..");
 } else {
   $clm_root = $opts{'clm_root'};
 }
 
-if ( &is_valid_directory( "$clm_root/src", allowEnv=>1 ) ) {
+if ( &is_valid_directory( "$clm_root/src", allowEnv=>0 ) ) {
     $cfg_ref->set('clm_root', $clm_root);
 } else {
     die <<"EOF";
@@ -281,7 +277,7 @@ if (defined $opts{'usr_src'}) {
     my @dirs = split ',', $opts{'usr_src'};
     my @adirs;
     while ( my $dir = shift @dirs ) {
-	if (&is_valid_directory( "$dir", allowEnv=>1 ) ) {
+	if (&is_valid_directory( "$dir", allowEnv=>0 ) ) {
 	    push @adirs, $dir;
 	} else {
 	    die "** User source directory does not exist: $dir\n";
@@ -298,13 +294,13 @@ if ($print>=2) { print "Setting user source directories to $usr_src$eol"; }
 my $config_cache_dir;
 my $config_cache_file;
 if (defined $opts{'cachedir'}) {
-    $config_cache_dir = absolute_path($opts{'cachedir'});
+    $config_cache_dir = abs_path($opts{'cachedir'});
 }
 else {
     $config_cache_dir = $clm_bld;
 }
 
-if (&is_valid_directory( $config_cache_dir, allowEnv=>1 ) or mkdirp($config_cache_dir)) {
+if (&is_valid_directory( $config_cache_dir, allowEnv=>0 ) or mkdirp($config_cache_dir)) {
     $config_cache_file = "$config_cache_dir/$opts{'cache'}";
 } else {
     die <<"EOF";
@@ -548,7 +544,7 @@ if ($phys->as_long() == $phys->as_long("clm4_0") ) {
   if ( $snicar_frc eq 'on' ) {
     $cfg_cppdefs .= " -DSNICAR_FRC";
   }
-} elsif ($phys->as_long() == $phys->as_long("clm4_5") ) {
+} elsif ($phys->as_long() >= $phys->as_long("clm4_5") ) {
   # clm4_5 cppdefs -- SHOULD NOT BE ANY!
   if ( $cfg_cppdefs ne '' ) {
     die <<"EOF";
@@ -581,7 +577,7 @@ my $fp_filename      = 'Filepath';             # name of output filepath file
 my $cpp_filename     = 'CESM_cppdefs';         # name of output file for clm's cppdefs in cesm
 
 # Write the filepath file for cesm.
-write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>1 );
+write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>0 );
 if ($print>=2) { print "creating $clm_bld/$fp_filename\n"; }
 
 # Write the file for clm's cppdefs needed in cesm.
@@ -615,9 +611,8 @@ sub write_filepath_cesmbld
     $fh->open(">$file") or die "** can't open filepath file: $file\n";
 
     # configuration parameters used to determine paths
-    my $usr_src       = $cfg_ref->get('usr_src');
-    my $clm_root      = $cfg_ref->get('clm_root');
-    my $phys_name     = $phys->as_filename();
+    my $usr_src  = $cfg_ref->get('usr_src');
+    my $clm_root = $cfg_ref->get('clm_root');
 
     # User specified source directories.
     if ($usr_src  =~ /\S+/) {
@@ -635,7 +630,7 @@ sub write_filepath_cesmbld
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
 	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem");
+	my @dirs = ( "main", "biogeophys", "biogeochem" );
 	foreach my $dir ( @dirs ) {
 	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
 		print $fh "$srcdir/$dir\n";
@@ -649,7 +644,18 @@ sub write_filepath_cesmbld
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
 	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem", "ED/fire", "utils", "cpl" );
+	my @dirs = ( "main", 
+		     "biogeophys", 
+		     "biogeochem", 
+		     "dyn_subgrid",
+		     "ED", 
+		     "ED/main", 
+		     "ED/biogeophys", 
+		     "ED/biogeochem", 
+		     "ED/fire", 
+		     "utils", 
+		     "cpl" );
+
 	foreach my $dir ( @dirs ) {
 	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
 		print $fh "$srcdir/$dir\n";
@@ -673,107 +679,6 @@ sub write_cppdefs
 
     print $fh "$make_cppdefs\n";
     $fh->close;
-}
-
-#-------------------------------------------------------------------------------
-
-
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /^\.\.$/ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
-#-------------------------------------------------------------------------------
-
-sub subst_env_path {
-#
-# Substitute for any environment variables contained in a pathname.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $newpath;         # resulting pathname
-  my $nm = "subst_env_path";
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  foreach $dir (@dirs) {
-    if ( $dir =~ m/(^[^\$]*)\$(.*$)/ ) {
-        my $startvar = $1;
-        my $envvarnm = $2;
-        if ( ! defined($ENV{$envvarnm}) ) {
-           die "${nm}:: ENV variable $envvarnm is in pathname ($path) -- but NOT defined\n";
-        }
-        push @dirs2, "$startvar$ENV{$envvarnm}";
-    } elsif ( $dir =~ m/\$/) {
-        die "${nm}:: malformed ENV variable is in pathname ($path)\n";
-    } else {
-        push @dirs2, $dir;
-    }
-  }
-  $newpath = join '/', @dirs2;
-  return( $newpath );
 }
 
 #-------------------------------------------------------------------------------
@@ -821,16 +726,11 @@ sub version {
 sub is_valid_directory {
 #
 # Validate that the input is a valid existing directory.
-# If allowEnv=>1 expand environment variables.
 #
   my ($dir, %opts) = @_;
   my $nm = "is_valid_directory";
 
   my $valid = 0;
-  # Expand environment variables
-  if ( $opts{'allowEnv'} ) {
-     $dir = subst_env_path( $dir );
-  }
   if ( -d $dir ) { $valid = 1; }
   return( $valid );
   
