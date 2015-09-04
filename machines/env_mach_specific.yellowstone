@@ -58,7 +58,7 @@ if ( $COMPILER == "pgi" ) then
   module load pgi/15.1
 endif
 if ( $COMPILER == "gnu" ) then
-  module load gnu/4.9.2
+  module load gnu/5.2.0
 endif
 
 if ( $MPILIB == "mpi-serial") then
