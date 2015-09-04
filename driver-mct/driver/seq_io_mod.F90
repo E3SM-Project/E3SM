@@ -507,8 +507,9 @@ end function seq_io_sec2hms
     if (lwdata) then
        call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
        call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+       ns = size(dof)
        deallocate(dof)
-       allocate(tmpdata(lnx*lny))
+       allocate(tmpdata(ns))
        do k = 1,nf
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
