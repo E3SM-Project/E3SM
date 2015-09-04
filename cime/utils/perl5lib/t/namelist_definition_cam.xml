@@ -1,0 +1,2691 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="http://www.cgd.ucar.edu/~cam/namelist/namelist_definition_CAM.xsl"?>
+
+<namelist_definition>
+
+<!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other aspects of the variable's definition are expressed as
+     attributes of the <entry> element.  Note that it is an XML requirement
+     that the attribute values are enclosed in quotes.  The attributes are:
+
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+
+     type
+          An abbreviation of the fortran declaration for the variable.
+	  Valid declarations are:
+
+          char*n  
+	  integer
+	  logical
+	  real
+
+	  Any of these types may be followed by a comma separated list of
+	  integers enclosed in parenthesis to indicate an array.
+
+	  The current namelist validation code only distinquishes between
+	  string and non-string types.
+
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset.  The recognized values
+          are "abs" to indicate that an absolute pathname is required, or
+	  "rel:var_name" to indicate that the pathname is relative and that
+          the namelist variable "var_name" contains the absolute root
+          directory.
+
+     catagory
+          A catagory assigned for organizing the documentation.
+
+     group
+          The namelist group that the variable is declared in.
+
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+                                                                        -->
+
+<!-- Aerosols: Prognostic (CAM version) -->
+
+<entry id="aero_carbon" type="logical"  catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+If true, turn on the CAM version of prognostic carbon aerosols.
+Default: FALSE
+</entry>
+
+<entry id="complex1" type="complex"  catagory="cam"
+       group="cam_inparm" valid_values="" >
+Test setting a complex variable
+</entry>
+
+<entry id="aero_dust" type="logical"  catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+If true, turn on dust prognostic aerosols.  This variable will be set to
+TRUE by build-namelist if CAM has been configured to run with prognostic
+dust by any of the following methods.  To run CAM's version of the
+prognostic dust then the configure commandline argument '-prog_aero' should
+contain the value 'dust'.  Alternatively, to have prognostic dust via the
+MOZART package, the '-chem' argument to configure can be set to either
+'trop_mozart' which turns on full MOZART chemistry including prognostic
+aerosols, or set to 'trop_mozart_aero' which turns on just the prognostic
+aerosols.
+Default: FALSE (build-namelist will set this variable to TRUE if CAM has
+been configured to run with prognostic dust).
+</entry>
+
+<entry id="aero_progsslt" type="logical"  catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+If true, turn on prognostic sea salt aerosols.
+Default: FALSE
+</entry>
+
+<entry id="aero_sea_salt" type="logical"  catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+If true, turn on diagnostic sea salt aerosols.
+Default: FALSE
+</entry>
+
+<entry id="bndtvdms" type="char*256" input_pathname="abs" catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for DMS surface emissions.
+This is used as an input for prognostic sulfate computations.
+Default: set by build-namelist.
+</entry>
+
+<entry id="bndtvoxid" type="char*256" input_pathname="abs" catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for oxidants.
+Default: set by build-namelist.
+</entry>
+
+<entry id="bndtvsox" type="char*256" input_pathname="abs" catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for SOx surface
+emissions.
+Default: set by build-namelist.
+</entry>
+
+<entry id="caer_emis" type="char*256" input_pathname="abs" catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant emission dataset for carbon aerosols.
+Default: set by build-namelist.
+</entry>
+
+<entry id="rampyear_prognostic_sulfur" type="integer"  catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+Set to YYYY in order to cycle that year of SOx emissions.  Only used by
+the CAM version of prognostic sulfur.
+Default: 2147483648 (largest signed 32-bit integer).
+</entry>
+
+<entry id="scenario_prognostic_sulfur" type="char*16"  catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="RAMPED" >
+Sets SO2 and SO4 surface fluxes.  May only be set to 'RAMPED'.  'RAMPED'
+means use the boundary data set bndtvsox. Only used
+if <varname>prognostic_sulfur</varname> is set to 'PASSIVE' or 'DIRECT'.
+Default: 'RAMPED'
+</entry>
+
+<entry id="soil_erod" type="char*256" input_pathname="abs" catagory="aero_prog_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for soil erodibility factors.
+Default: set by build-namelist.
+</entry>
+
+<!-- Aerosols: Data (CAM version) -->
+
+<entry id="bndtvaer" type="char*256" input_pathname="abs" catagory="aero_data_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for aerosol masses.
+Default: set by build-namelist.
+</entry>
+
+<entry id="bndtvvolc" type="char*256" input_pathname="abs" catagory="aero_data_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for stratospheric volcanic
+aerosol mass mixing ratios.
+Default: set by build-namelist.
+</entry>
+
+<entry id="rampyear_prescribed_sulfur" type="integer"  catagory="aero_data_cam"
+       group="cam_inparm" valid_values="" >
+Set to YYYY in order to cycle that year of SOx emissions.  Only used by
+the CAM version of prescribed sulfur which doesn't support changing this
+value from its default since there is only one year available in the
+climatology.
+Default: 2147483648 (largest signed 32-bit integer).
+</entry>
+
+<entry id="scenario_prescribed_sulfur" type="char*16"  catagory="aero_data_cam"
+       group="cam_inparm" valid_values="FIXED" >
+Controls prescribed sulfur
+amounts. Can only be set to 'FIXED'.  'FIXED' means use climatology.
+Default: 'FIXED'
+</entry>
+
+<entry id="strat_volcanic" type="logical" catagory="aero_data_cam"
+       group="cam_inparm" valid_values="" >
+Use prescribed stratospheric volcanic aerosols.
+Default: FALSE
+</entry>
+
+<entry id="tauback" type="real" catagory="aero_data_cam"
+       group="cam_inparm" valid_values="" >
+Optical depth of background aerosol.
+Default: 0.0
+</entry>
+
+<!-- Coupler between Physics and Dynamics -->
+
+<entry id="phys_alltoall" type="integer"  catagory="perf_dp_coup"
+       group="cam_inparm" valid_values="0,1,2,11,12,13">
+Dynamics/physics transpose method for nonlocal load-balance.  0: use
+mpi_alltoallv. 1: use point-to-point MPI-1 two-sided implementation. 2: use
+point-to-point MPI-2 one-sided implementation if supported, otherwise use
+MPI-1 implementation. 3: use Co-Array Fortran implementation if supported,
+otherwise use MPI-1 implementation. 11-13: use mod_comm, choosing any of
+several methods internal to mod_comm.  The method within mod_comm (denoted
+mod_method) has possible values 0,1,2 and is set according to mod_method =
+phys_alltoall - modmin_alltoall, where modmin_alltoall is 11.
+Default: 0
+</entry>
+
+<entry id="phys_chnk_per_thd" type="integer"  catagory="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+Select target number of chunks per thread.  Must be positive.
+Default: 1
+</entry>
+
+<entry id="phys_loadbalance" type="integer"  catagory="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+Physics grid decomposition options.
+-1: each chunk is a dynamics block.
+ 0: chunk definitions and assignments do not require interprocess comm.
+ 1: chunk definitions and assignments do not require internode comm.
+ 2: optimal diurnal, seasonal, and latitude load-balanced chunk definition and assignments.
+ 3: chunk definitions and assignments only require communication with one other process.
+ 4: concatenated blocks, no load balancing, no interprocess communication.
+Default: 0
+</entry>
+
+<!-- Diagnostics -->
+
+<entry id="diag_cnst_conv_tend" type="char*8"  catagory="diagnostics"
+       group="cam_inparm" valid_values="none,q_only,all" >
+Output constituent tendencies due to convection.  Set to
+'none', 'q_only' or 'all'.
+Default: 'q_only', but 'none' for WACCM configurations.
+</entry>
+
+<entry id="print_energy_errors" type="logical"  catagory="diagnostics"
+       group="cam_inparm" valid_values="" >
+Turn on verbose output identifying columns that fail energy/water 
+conservation checks.
+Default: FALSE
+</entry>
+
+<!-- Dry Convective Adjustment -->
+
+<entry id="nlvdry" type="integer"  catagory="dry_conv_adj"
+       group="cam_inparm" valid_values="" >
+Number of layers from the top of the model over which to do dry convective
+adjustment. Must be less than plev (the number of vertical levels).
+Default: 3
+</entry>
+
+<!-- Dynamics: Finite Volume -->
+
+<entry id="filtcw" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="0,1" >
+Enables optional filter for intermediate c-grid winds, (courtesy of Bill Putman).
+Default: 0
+</entry>
+
+<entry id="ct_overlap" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Overlapping of trac2d and cd_core subcycles.
+Default: 0
+</entry>
+
+<entry id="trac_decomp" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Size of tracer domain decomposition for trac2d.
+Default: 1
+</entry>
+
+<entry id="force_2d" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Set to 1 to force the 2D transpose computation when a 1D decomposition is
+used.  This is intended for debugging purposes only.
+Default: 0
+</entry>
+
+<entry id="geopktrans" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="0,1" >
+Geopotential method (routine geopk).
+0 for transpose method, 1 for method using semi-global z communication with optional
+16-byte arithmetic; the transpose and semi-global z communication (with 16-byte
+arithmetic) methods are both bit-for-bit across decompositions; the former scales
+better with npr_z, and the latter is superior for small npr_z; optimum speed is
+attained using the semi-global z communication method with 8-byte arithmetic (standard
+for geopk16); see geopk16 within geopk.F90.
+Default: 0
+</entry>
+
+<entry id="iord" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Order (mode) of X interpolation (1,..,6).
+Default: 4
+</entry>
+
+<entry id="jord" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Order (mode) of Y interpolation (1,..,6).
+Default: 4
+</entry>
+
+<entry id="kord" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Vertical mapping.
+Default: 4
+</entry>
+
+<entry id="modcomm_gatscat" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="0,1,2" >
+With standard mpi: 0 for temporary contiguous buffers; 1 for mpi derived types.
+With mpi2: 0 for temporary contiguous buffers; 1 for direct mpi_put's of
+contiguous segments into temporary contiguous window, with threading over the segments;
+2 for mpi derived types into temporary contiguous window, with threading over the target.
+Default: 0
+</entry>
+
+<entry id="modcomm_geopk" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="0,1,2" >
+With standard mpi: 0 for temporary contiguous buffers; 1 for mpi derived types.
+With mpi2: 0 for temporary contiguous buffers; 1 for direct mpi_put's of
+contiguous segments into temporary contiguous window, with threading over the segments;
+2 for mpi derived types into temporary contiguous window, with threading over the target.
+Default: 0
+</entry>
+
+<entry id="modcomm_transpose" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="0,1,2" >
+With standard mpi: 0 for temporary contiguous buffers; 1 for mpi derived types.
+With mpi2: 0 for temporary contiguous buffers; 1 for direct mpi_put's of
+contiguous segments into temporary contiguous window, with threading over the segments;
+2 for mpi derived types into temporary contiguous window, with threading over the target.
+Default: 0
+</entry>
+
+<entry id="npr_yz" type="integer(4)"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+A four element array which specifies the YZ and XY decompositions.  The
+first two elements are the number of Y subdomains and number of Z
+subdomains in the YZ decomposition.  The second two elements are the number
+of X subdomains and the number of Y subdomains in the XY decomposition.
+Note that each of the X, Y, and Z subdomains must contain at least 3 grid
+points.  For example, a grid with 96 latitudes can contain no more than 32
+Y subdomains.
+Default: ntask,1,1,ntask where ntask is the number of MPI tasks.  This is a
+1D decomposition in latitude.
+</entry>
+
+<entry id="nsplit" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Number of dynamics timesteps per physics timestep. If zero, a best-estimate
+will be automatically calculated.
+Default: 0
+</entry>
+
+<entry id="nspltrac" type="integer"  catagory="dyn_fv"
+       group="cam_inparm" valid_values="" >
+Number of tracer advection timesteps per physics timestep.
+Nsplit is partitioned into nspltrac and nsplit/nspltrac,
+with the latter being the number of dynamics timesteps per
+tracer timestep, possibly rounded upward; after initialization,
+the code quantity nsplit is redefined to be the number of
+dynamics timesteps per tracer timestep.
+Default: 0
+</entry>
+
+
+<!-- Dynamics: Finite Volume: Offline -->
+
+<entry id="met_cell_wall_winds" type="logical"  catagory="dyn_fv_off"
+       group="cam_inparm" valid_values="" >
+TRUE => the offline meteorology winds are defined on the model grid cell walls.
+Default: FALSE
+</entry>
+
+<entry id="met_data_file" type="char*256" input_pathname="abs" catagory="dyn_fv_off"
+       group="cam_inparm" valid_values="" >
+Name of file that contains the offline meteorology data.
+Default: none
+</entry>
+
+<entry id="met_filenames_list" type="char*256" input_pathname="abs" catagory="dyn_fv_off"
+       group="cam_inparm" valid_values="" >
+Name of file that contains names of the offline meteorology data files.
+Default: none
+</entry>
+
+<entry id="met_remove_file" type="logical"  catagory="dyn_fv_off"
+       group="cam_inparm" valid_values="" >
+TRUE => the offline meteorology file will be removed when no longer needed.
+Default: FALSE
+</entry>
+
+
+
+<!-- Dynamics: Spectral -->
+
+<entry id="dif2" type="real"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="" >
+del^2 horizontal diffusion coefficient. Default: resolution dependent,
+e.g. 2.5e5 for T42 EUL.
+</entry>
+
+<entry id="dif4" type="real"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+del^4 horizontal diffusion coefficient. Default: resolution dependent,
+e.g. 1.0e16 for T42 EUL.
+</entry>
+
+<entry id="divdampn" type="real"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Number of days (from timestep 0) to run divergence damper. Use only if spectral
+model becomes dynamicallly unstable during initialization. Suggested value:
+2. (Value must be &gt;= 0.)  Default: 0.
+</entry>
+
+<entry id="dyn_allgather" type="integer"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Spectral dynamics gather option.
+Default: 0
+</entry>
+
+<entry id="dyn_alltoall" type="integer"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Spectral dynamics transpose option.
+Default: 0
+</entry>
+
+<entry id="dyn_equi_by_col" type="logical"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Flag indicating whether to assign latitudes to equidistribute columns or
+latitudes. This only matters when using a reduced grid.
+Default: TRUE
+</entry>
+
+<entry id="dyn_npes" type="integer"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Number of processes assigned to dynamics (EUL and SLD dycores).
+Default: Total number of processes assigned to job.
+</entry>
+
+<entry id="dyn_npes_stride" type="integer"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Stride for dynamics processes (EUL and SLD dycores).
+E.g., if stride=2, assign every second process to the dynamics.
+Default: 1
+</entry>
+
+<entry id="eps" type="real"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Time filter coefficient.  Default: 0.06
+</entry>
+
+<entry id="kmxhdc" type="integer"  catagory="dyn_spectral"
+       group="cam_inparm" valid_values="">
+Number of levels over which to apply Courant limiter, starting at top of
+model.
+Default: 5
+</entry>
+
+<!-- Global Mean Calculation -->
+
+<entry id="phys_fixed_repro_gmean" type="logical"  catagory="gmean"
+       group="cam_inparm" valid_values="">
+Calculate global mean for field on physics decomposition using fixed
+point-based (scalable) reproducible algorithm. 
+Default: TRUE
+</entry>
+
+<entry id="phys_float_repro_gmean" type="logical"  catagory="gmean"
+       group="cam_inparm" valid_values="">
+Calculate global mean for field on physics decomposition using floating
+point-based (but nonscalable) reproducible algorithm.
+Default: FALSE
+</entry>
+
+<entry id="phys_nonrepro_gmean" type="logical"  catagory="gmean"
+       group="cam_inparm" valid_values="">
+Calculate global mean for field on physics decomposition using floating
+point-based scalable, but non-reproducible (with respect to different
+decompositions) algorithm.
+Default: TRUE
+</entry>
+
+<entry id="phys_rdiff_warning_gmean" type="real"  catagory="gmean"
+       group="cam_inparm" valid_values="">
+Difference between either scalable and nonscalable algorithms or between
+repro and nonrepro algorithms that will generate warning.
+Default: 1.e-13
+</entry>
+
+<!-- Greenhouse Gases: CO2, CH4, N2O, CFC11, CFC12 (original CAM versions) -->
+
+<entry id="bndtvghg" type="char*256" input_pathname="abs" catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for greenhouse gas surface
+values.
+Default: set by build-namelist.
+</entry>
+
+<entry id="ch4vmr" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+CH4 volume mixing ratio.  This is used as the time invariant surface value
+of CH4 if no time varying values are specified.
+Default: 1.714e-6
+</entry>
+
+<entry id="co2vmr" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+CO2 volume mixing ratio.  This is used as the time invariant surface value
+of CO2 if no time varying values are specified.
+Default: 3.550e-4
+</entry>
+
+<entry id="co2vmr_rad" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+CO2 volume mixing ratio used for radiation calculation.  This value
+overrides the value set
+using <varname>co2vmr</varname>.  <varname>co2vmr</varname> is the surface
+value passed to the surface models.  Setting <varname>co2vmr_rad</varname>
+allows a different value to be the radiatively active one.
+Default: -1.0
+</entry>
+
+<entry id="f11vmr" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+CFC11 volume mixing ratio.  This is used as the time invariant surface value
+of CFC11 if no time varying values are specified.
+Default: 0.280e-9
+</entry>
+
+<entry id="f12vmr" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+CFC12 volume mixing ratio.  This is used as the time invariant surface value
+of CFC12 if no time varying values are specified.
+Default: 0.503e-9
+</entry>
+
+<entry id="n2ovmr" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+N2O volume mixing ratio.  This is used as the time invariant surface value
+of N2O if no time varying values are specified.
+Default: 0.311e-6
+</entry>
+
+<entry id="ghg_yearstart_data" type="integer"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+Data start year.  Use in conjunction
+with <varname>ghg_yearstart_model</varname>.
+Default: 0
+</entry>
+
+<entry id="ghg_yearstart_model" type="integer"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+Model start year.  Use in conjunction
+with <varname>ghg_yearstart_data</varname>.
+Default: 0
+</entry>
+
+<entry id="ramp_co2_annual_rate" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+Amount of co2 ramping per year (percent).  Only used
+if <varname>scenario_ghg</varname> = 'RAMP_CO2_ONLY'
+Default: 1.0
+</entry>
+
+<entry id="ramp_co2_cap" type="real"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+CO2 cap if &gt; 0, floor otherwise.  Specified as multiple or fraction of
+inital value; e.g., setting to 4.0 will cap at 4x initial CO2 setting.
+Only used if <varname>scenario_ghg</varname> = 'RAMP_CO2_ONLY'
+Default: boundless if <varname>ramp_co2_annual_rate</varname> &gt; 0, zero otherwise.
+</entry>
+
+<entry id="ramp_co2_start_ymd" type="integer"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+Date on which ramping of co2
+begins.  The date is encoded as an integer in the form YYYYMMDD.
+Only used if <varname>scenario_ghg</varname> = 'RAMP_CO2_ONLY'
+Default: 0
+</entry>
+
+<entry id="rampyear_ghg" type="integer"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="" >
+If <varname>scenario_ghg</varname> is set to "RAMPED" then the greenhouse
+gas surface values are interpolated between the annual average values 
+read from the file specified by <varname>bndtvghg</varname>.
+In that case,
+the value of this variable (&gt; 0) fixes the year of the
+lower bounding value (i.e., the value for calendar day 1.0) used in the
+interpolation.  For example, if rampyear_ghg = 1950, then the GHG surface
+values will be the result of interpolating between the values for 1950 and 1951
+from the dataset.  N.B. This variable is used by both the default
+diagnostic GHG code, and the prognostic GHG code which is enabled by
+setting <varname>trace_gas</varname> = .true.
+Default: 0
+</entry>
+
+<entry id="scenario_ghg" type="char*16"  catagory="ghg_cam"
+       group="cam_inparm" valid_values="FIXED,RAMPED,RAMP_CO2_ONLY" >
+Controls treatment of specified co2,ch4,n2o,cfcf11,cfc12 volume mixing
+ratios.  May be set to 'FIXED' or 'RAMPED' or 'RAMP_CO2_ONLY'.  FIXED =>
+volume mixing ratios are fixed and have either default or namelist input
+values.  RAMPED => volume mixing ratios are time interpolated from the
+dataset specified by <varname>bndtvghg</varname>.  RAMP_CO2_ONLY => only
+co2 mixing ratios are ramped at a rate determined by the variables
+<varname>ramp_co2_annual_rate</varname>, <varname>ramp_co2_cap</varname>,
+and <varname>ramp_co2_start_ymd</varname>.
+Default: FIXED
+</entry>
+
+<!-- Greenhouse Gases: prognostic CH4, N2O, CFC11, CFC12 (original CAM versions) -->
+
+<entry id="bndtvg" type="char*256" input_pathname="abs" catagory="ghg_prog_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for greenhouse gas production/loss
+rates. Required if <varname>trace_gas</varname> is set to true.
+Default: set by build-namelist.
+</entry>
+
+<entry id="trace_gas" type="logical"  catagory="ghg_prog_cam"
+       group="cam_inparm" valid_values="" >
+If true, turn on prognostic greenhouse gas calculations for CH4, N2O, CFC11
+and CFC12. This requires setting the variable <varname>bndtvg</varname>
+which provides production/loss rates for the simple chemistry scheme.
+Default: FALSE
+</entry>
+
+
+<!-- CO2 cycle active -->
+
+<entry id="co2_flag" type="logical"  catagory="co2_cycle"
+       group="cam_inparm" valid_values="" >
+If TRUE turn on CO2 code.
+Default: FALSE
+</entry>
+
+<entry id="co2_readflux_fuel" type="logical"  catagory="co2_cycle"
+       group="cam_inparm" valid_values="" >
+If TRUE read co2 flux from fuel.
+Default: FALSE
+</entry>
+
+<entry id="co2_readflux_ocn" type="logical"  catagory="co2_cycle"
+       group="cam_inparm" valid_values="" >
+If TRUE read co2 flux from ocn.
+Default: FALSE
+</entry>
+
+<entry id="co2flux_ocn_file" type="char*256" input_pathname="abs" catagory="co2_cycle"
+       group="cam_inparm" valid_values="" >
+Filepath for dataset containing CO2 flux from ocn.
+Default: none
+</entry>
+
+<entry id="co2flux_fuel_file" type="char*256" input_pathname="abs" catagory="co2_cycle"
+       group="cam_inparm" valid_values="" >
+Filepath for dataset containing CO2 flux from fossil fuel.
+Default: none
+</entry>
+
+<!-- History and Initial Conditions Output -->
+
+<entry id="avgflag_pertape" type="char*1(6)"  catagory="history"
+       group="cam_inparm" valid_values="A,I,X,M" >
+Sets the averaging flag for all variables on a particular history file
+series. Valid
+values are 'A', 'I', 'X', and 'M' indicating Average (A), Instantaneous
+(I), Maximum (X), and Minimum (M).  Default is to use the averaging
+flags for each variable that are set in the code via calls to subroutine
+addfld. 
+Defaults: set in code via the addfld and add_default calls.
+</entry>
+
+<entry id="empty_htapes" type="logical"  catagory="history"
+       group="cam_inparm" valid_values="" >
+If true don't put any of the variables on the history tapes by
+default. Only output the variables that the user explicitly lists in
+the <varname>fincl#</varname> namelist items.  Default: FALSE
+</entry>
+
+<entry id="fexcl1" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to exclude from history file 1.  Default: none
+</entry>
+<entry id="fexcl2" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to exclude from history file 2.  Default: none
+</entry>
+<entry id="fexcl3" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to exclude from history file 3.  Default: none
+</entry>
+<entry id="fexcl4" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to exclude from history file 4.  Default: none
+</entry>
+<entry id="fexcl5" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to exclude from history file 5.  Default: none
+</entry>
+<entry id="fexcl6" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to exclude from history file 6.  Default: none
+</entry>
+
+<entry id="fhstpr1" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields for which to use the non-default history buffer precision
+on history file 1.  Default: none
+</entry>
+<entry id="fhstpr2" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields for which to use the non-default history buffer precision
+on history file 2.  Default: none
+</entry>
+<entry id="fhstpr3" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields for which to use the non-default history buffer precision
+on history file 3.  Default: none
+</entry>
+<entry id="fhstpr4" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields for which to use the non-default history buffer precision
+on history file 4.  Default: none
+</entry>
+<entry id="fhstpr5" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields for which to use the non-default history buffer precision
+on history file 5.  Default: none
+</entry>
+<entry id="fhstpr6" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields for which to use the non-default history buffer precision
+on history file 6.  Default: none
+</entry>
+
+
+<entry id="fincl1" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of fields to include on history file 1.  The added fields must be in
+Master Field List.  The averaging flag for the output field can be
+specified by appending a ":" and a valid averaging flag to the field name.
+Valid flags are: I for instantaneous, A for average, M for minimum, and X
+for maximum.  Default: none.
+</entry>
+<entry id="fincl2" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1</varname>, but for history file 2.
+</entry>
+<entry id="fincl3" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1</varname>, but for history file 3.
+</entry>
+<entry id="fincl4" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1</varname>, but for history file 4.
+</entry>
+<entry id="fincl5" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1</varname>, but for history file 5.
+</entry>
+<entry id="fincl6" type="char*16(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1</varname>, but for history file 6.
+</entry>
+
+<entry id="fincl1lonlat" type="char*128(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+List of columns or contiguous columns at which the fincl1 fields will be
+output. Individual columns are specified as a string using a longitude
+degree (greater or equal to 0.) followed by a single character
+(e)ast/(w)est identifer, an underscore '_' , and a latitude degree followed
+by a single character (n)orth/(s)outh identifier.  For example, '10e_20n'
+would pick the model column closest to 10 degrees east longitude by 20
+degrees north latitude.  A group of contiguous columns can be specified
+using bounding latitudes and longitudes separated by a colon.  For example,
+'10e:20e_15n:20n' would select the model columns which fall with in the
+longitude range from 10 east to 20 east and the latitude range from 15
+north to 20 north.  Default: none
+</entry>
+<entry id="fincl2lonlat" type="char*128(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1lonlat</varname>, but for history file 2.
+</entry>
+<entry id="fincl3lonlat" type="char*128(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1lonlat</varname>, but for history file 3.
+</entry>
+<entry id="fincl4lonlat" type="char*128(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1lonlat</varname>, but for history file 4.
+</entry>
+<entry id="fincl5lonlat" type="char*128(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1lonlat</varname>, but for history file 5.
+</entry>
+<entry id="fincl6lonlat" type="char*128(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Same as <varname>fincl1lonlat</varname>, but for history file 6.
+</entry>
+
+
+<entry id="fwrtpr1" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields which will be written using the non-default precision on
+history file 1.  Default: none
+</entry>
+<entry id="fwrtpr2" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields which will be written using the non-default precision on
+history file 2.  Default: none
+</entry>
+<entry id="fwrtpr3" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields which will be written using the non-default precision on
+history file 3.  Default: none
+</entry>
+<entry id="fwrtpr4" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields which will be written using the non-default precision on
+history file 4.  Default: none
+</entry>
+<entry id="fwrtpr5" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields which will be written using the non-default precision on
+history file 5.  Default: none
+</entry>
+<entry id="fwrtpr6" type="char*18(10000)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Specific fields which will be written using the non-default precision on
+history file 6.  Default: none
+</entry>
+
+<entry id="hfilename_spec" type="char*256(6)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Array of history filename specifiers.  Filename specifiers give generic
+formats for the filenames with the specific dates, file-series number, and
+caseid, filled in when the files are created. The following strings are
+expanded when the filename is created: %c=caseid; %t=tape series number
+(0-5); %y=year (normally 4 digits, more digits if needed); %m=month;
+%d=day; %s=seconds into current day; %%=% symbol.
+
+For example, for a simulation with caseid="test" and current date of
+0000/12/31 0:00UT, the monthly average files with a filename specifier of
+"%c.cam2.h%t.%y-%m.nc" expand into "test.cam2.h0.0000-12.nc", daily files
+with a filename specifier of "%c.cam2.h%t.%y-%m-%d-%s.nc" expand to
+"test.cam2.h0.0000-12-31-00000.nc". Spaces are not allowed in filename
+specifiers. Although the character "/" is allowed in the specifier, it will
+be interpreted as a directory name and the corresponding directories will
+have to be created in the model execution directory (directory given to
+configure with -cam_exedir option) before model execution.  The first
+element is for the primary history file which is output by default as a
+monthly history file.  Entries 2 through 6 are user specified auxilliary
+output files.
+Defaults: "%c.cam2.h0.%y-%m", "%c.cam2.h1.%y-%m-%d-%s", ...,
+"%c.cam2.h6.%y-%m-%d-%s"
+</entry>
+
+<entry id="inithist" type="char*8"  catagory="history"
+       group="cam_inparm" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
+Frequency that initial files will be output: 6-hourly, daily, monthly,
+yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
+'YEARLY', 'CAMIOP', 'ENDOFRUN'.
+Default: 'YEARLY'
+</entry>
+
+<entry id="inithist_all" type="logical"  catagory="history"
+       group="cam_inparm" valid_values="" >
+If false then include only REQUIRED fields on IC file.  If true then
+include required AND optional fields on IC file.  
+Default: TRUE
+</entry>
+
+<entry id="mfilt" type="integer(6)"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Array containing the maximum number of time samples written to a history
+file.  The first value applies to the primary history file, the second
+through sixth to the auxillary history files.
+Default: 1,30,30,30,30,30
+</entry>
+
+<entry id="ndens" type="integer(6)"  catagory="history"
+       group="cam_inparm" valid_values="1,2" > 
+Array specifying output format for each history file series. Valid values
+are 1 or 2. '1' implies output real values are 8-byte and '2' implies
+output real values are 4-byte.
+Default: 2,2,2,2,2,2
+</entry>
+
+<entry id="nhstpr" type="integer(6)"  catagory="history"
+       group="cam_inparm" valid_values="4,8" > 
+Array specifying default history buffer precision for each history file
+series. Valid values are 4 or 8. '4' implies history buffers use 4-byte
+reals and and '8' implies history buffers use 8-byte reals.  These default
+settings are overridden for particular fields via the <varname>fhstpr1</varname>,
+... <varname>fhstpr6</varname> variables.
+Default: 8,8,8,8,8,8
+</entry>
+
+<entry id="nhtfrq" type="integer(6)"  catagory="history"
+       group="cam_inparm" valid_values="" > 
+Array of write frequencies for each history files series.
+If <varname>nhtfrq(1)</varname> = 0, the file will be a monthly average.
+Only the first file series may be a monthly average.  If
+<varname>nhtfrq(i)</varname> &gt; 0, frequency is specified as number of
+timesteps.  If <varname>nhtfrq(i)</varname> &lt; 0, frequency is specified
+as number of hours.
+Default: 0,-24,-24,-24,-24,-24
+</entry>
+
+<!-- Initial Conditions -->
+
+<entry id="ncdata" type="char*256" input_pathname="abs" catagory="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Full pathname of initial atmospheric state dataset (NetCDF format).
+Default: set by build-namelist.
+</entry>
+
+<entry id="pertlim" type="real"  catagory="initial_conditions"
+       group="cam_inparm" valid_values="" >
+Perturb the initial conditions for temperature randomly by up to the given
+amount. Only applied for initial simulations.
+Default: 0.0
+</entry>
+
+<entry id="readtrace" type="logical"  catagory="initial_conditions"
+       group="cam_inparm" valid_values="" >
+If TRUE, try to initialize data for all consituents by reading from the
+initial conditions dataset. If variable not found then data will be
+initialized using internally-specified default values.  If FALSE then don't
+try reading constituent data from the IC file; just use the
+internally-specified defaults.
+Default: TRUE
+</entry>
+
+<entry id="use_64bit_nc" type="logical"  catagory="history"
+       group="cam_inparm" valid_values="" >
+Use new 64-bit netCDF format for cam history files.
+Default: FALSE
+</entry>
+
+<!-- ISCPP Cloud Simulator -->
+
+<entry id="doisccp" type="logical"  catagory="iscpp"
+       group="cam_inparm" valid_values="">
+If true, the ISCCP cloud simulator will be run, and output added to the
+monthly history files.
+Default: FALSE
+</entry>
+
+<entry id="isccpdata" type="char*256" input_pathname="abs" catagory="iscpp"
+       group="cam_inparm" valid_values="">
+Full pathname of time-invariant dataset used by the ISCCP cloud simulator.
+Default: set by build-namelist.
+</entry>
+
+
+<!-- Moist Convection and Microphysics -->
+
+<entry id="deep_scheme" type="char*16" catagory="conv"
+       group="cam_inparm" valid_values="ZM,KE,off" >
+Type of deep convection scheme employed.  'ZM' for Zhang-McFarlane; 'KE'
+for Kerry Emanuel's scheme; 'off' for none.
+Default: 'ZM'
+</entry>
+
+<entry id="freeze_dry" type="logical" catagory="conv"
+       group="cam_inparm" valid_values="" >
+Switch for Vavrus "freeze dry" adjustment in cloud fraction.  Set to FALSE to
+turn the adjustment off.
+Default: TRUE
+</entry>
+
+<entry id="microp_scheme" type="char*16" catagory="conv"
+       group="cam_inparm" valid_values="RK,MG" >
+Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
+(1998); 'MG' for Morrison and Gettelman two moment scheme.
+Default: 'RK'
+</entry>
+
+<entry id="rhminl_31" type="logical" catagory="conv"
+       group="cam_inparm" valid_values="" >
+Switch to use rhminl value for 31 layer model.  If FALSE then don't use
+special value.
+Default: FALSE
+</entry>
+
+<entry id="shallow_scheme" type="char*16" catagory="conv"
+       group="cam_inparm" valid_values="Hack,UW,off" >
+Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
+'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'off' for none.
+Default: 'Hack'
+</entry>
+
+<!-- Ozone: Data (original CAM version) -->
+
+<entry id="bndtvo" type="char*256" input_pathname="abs" catagory="o3_data_cam"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant ozone mixing ratio boundary dataset.
+Default: set by build-namelist.
+</entry>
+
+<entry id="ozncyc" type="logical"  catagory="o3_data_cam"
+       group="cam_inparm" valid_values="" >
+Flag for yearly cycling of ozone data. If set to FALSE, a multi-year
+dataset is assumed, otherwise a single-year dataset is assumed, and ozone
+will be cycled over the 12 monthly averages in the file.
+Default: TRUE
+</entry>
+
+<!-- Performance Tuning and Profiling -->
+
+<entry id="print_step_cost" type="logical"  catagory="performance"
+       group="cam_inparm" valid_values="">
+If TRUE, print CPU timing per model timestep. 
+Default: FALSE
+</entry>
+
+<entry id="profile_barrier" type="logical"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Flag indicating whether the mpi_barrier in t_barrierf should be called.
+Default: FALSE
+</entry>
+
+<entry id="profile_ovhd_measurement" type="logical"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Flag indicating whether to measure overhead of profiling directly.
+Default: FALSE
+</entry>
+
+<entry id="profile_depth_limit" type="integer"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Maximum number of levels of timer nesting .
+Default: 99999
+</entry>
+
+<entry id="profile_detail_limit" type="integer"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Maximum detail level to profile.
+Default: 0
+</entry>
+
+<entry id="profile_disable" type="logical"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Flag indicating whether timers are disabled.
+Default: FALSE
+</entry>
+
+<entry id="profile_single_file" type="logical"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Flag indicating whether the performance timer output should be written to a
+single file (per component communicator) or to a separate file for each
+process.
+Default: TRUE
+</entry>
+
+<entry id="profile_timer" type="integer"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Initialization of GPTL timing library.
+Default: GPTLmpiwtime
+</entry>
+
+<entry id="swap_comm_maxreq" type="integer"  catagory="performance"
+       group="cam_inparm" valid_values="">
+Swap communication maximum request count:
+ <=0: do not limit number of outstanding send/receive requests
+  >0: do not allow more than swap_comm_maxreq outstanding
+      nonblocking send requests or nonblocking receive requests
+Default: -1
+</entry>
+
+<entry id="swap_comm_order" type="integer"  catagory="performance"
+       group="cam_inparm" valid_values="">
+Swap communication order option:
+  0: simple swap: send/recv
+  1: ordered swap: [send/recv]|[recv/send]
+  2: delayed-recv swap: send ... recv
+Default: 0
+</entry>
+
+<entry id="swap_comm_protocol" type="integer"  catagory="performance"
+       group="cam_inparm" valid_values="">
+Swap communication protocol option:
+ 1, 3, 5, 7, 9:                  nonblocking send
+ 2, 3, 4, 5, 8, 9:               nonblocking receive
+ 4, 5:                           ready send
+ 6 .and. swap_comm_order .eq. 0: sendrecv
+ 6 .and. swap_comm_order .eq. 1: explicitly synchronous  
+ 7, 8, 9, .or. 10:               synchronous send          
+Default: 6
+</entry>
+
+
+<!-- Physics Buffer -->
+
+<entry id="pbuf_global_allocate" type="logical" catagory="pbuf"
+       group="cam_inparm" valid_values="" >
+Allocate all buffers as global.  This is a performance optimization on
+machines for which allocation/deallocation of physpkg scope buffers on
+every timestep was slow (Cray-X1).
+Default: TRUE
+</entry>
+
+<!-- Physics Debugging -->
+
+<entry id="phys_debug_lat" type="real"  catagory="phys_debug"
+       group="phys_debug_nl" valid_values="">
+Use this variable to specify the latitude (in degrees) of a column to
+debug.  The closest column in the physics grid will be used.
+Default: none
+</entry>
+
+<entry id="phys_debug_lon" type="real"  catagory="phys_debug"
+       group="phys_debug_nl" valid_values="">
+Use this variable to specify the longitude (in degrees) of a column to
+debug.  The closest column in the physics grid will be used.
+Default: none
+</entry>
+
+
+<!-- Planetary Boundary Layer and Vertical Diffusion -->
+
+<entry id="srf_flux_avg" type="integer" catagory="pbl"
+       group="cam_inparm" valid_values="0,1" >
+Switch to turn on adjustment of the surface fluxes to reduce instabilities
+in the surface layer.  Set to 1 to turn on the adjustments.
+Default: 0 if <varname>eddy_scheme</varname> is 'HB', 1 otherwise.
+</entry>
+
+<entry id="eddy_scheme" type="char*16" catagory="pbl"
+       group="cam_inparm" valid_values="HB,diag_TKE,HBR" >
+Type of eddy scheme employed.  'HB' for Holtslag and Boville; 'diag_TKE'
+for diagnostic tke version of Grenier and Bretherton; 'HBR' for Rasch
+modified version of 'HB'.
+Default: 'HB'
+</entry>
+
+<!-- Radiation -->
+
+<entry id="absems_data" type="char*256" input_pathname="abs" catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Full pathname of absorption/emission dataset.
+It consists of terms used for determining the absorptivity and
+emissivity of water vapor in the longwave parameterization of radiation.
+Default: set by build-namelist.
+</entry>
+
+<entry id="aeroptics" type="char*256" input_pathname="abs" catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for time-invariant aerosol optical
+properties.
+Default: set by build-namelist.
+</entry>
+
+<entry id="aero_feedback_carbon" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If true, turn on feedback of prognostic carbon aerosols.  May only be true
+if <varname>aero_carbon</varname> is also true.
+Default: FALSE
+</entry>
+
+<entry id="aero_feedback_dust" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If true, turn on feedback of dust prognostic aerosols.  May only be true
+if <varname>aero_dust</varname> is true.
+Default: FALSE
+</entry>
+
+<entry id="aero_feedback_progsslt" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If true, turn on feedback of prognostic sea salt aerosols.  May only be
+true if <varname>aero_progsslt</varname> is also true.
+Default: FALSE
+</entry>
+
+<entry id="aero_feedback_sea_salt" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If true, turn on feedback of diagnostic sea salt aerosols.  May only be
+true if <varname>aero_sea_salt</varname> is also true.
+Default: FALSE
+</entry>
+
+<entry id="bgscl_rf" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Set background aerosol scaling factor for radiative forcing calculation.
+This does not affect mass mixing ratios used for the climate integration, and is
+used when <varname>radforce</varname> is true.
+Default: 0.
+</entry>
+
+<entry id="bndtvcarbonscale" type="char*256" input_pathname="abs" catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for carbon scaling.
+Default: set by build-namelist.
+</entry>
+
+<entry id="carscl" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Set carbon aerosol scaling factor for radiative transfer calculations.
+This may be used to scale the prescribed or prognostic aerosol mass mixing
+ratios.  Note that the scale factor is only applied to the masses that are
+used in the optical depth calculation.
+Default: 1.
+</entry>
+
+<entry id="carscl_rf" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Set carbon aerosol scaling factor for radiative forcing calculation.  This
+does not affect mass mixing ratios used for the climate integration, and is
+only used when <varname>radforce</varname> is true.  Default: 0.
+</entry>
+
+<entry id="dustscl" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Set dust aerosol scaling factor for radiative transfer calculations.  This
+may be used to scale the specified or prognostic aerosol mass mixing
+ratios.
+Default: 1.
+</entry>
+
+<entry id="dustscl_rf" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Set dust aerosol scaling factor for radiative forcing calculation.  This
+does not affect the mass mixing ratios used for the climate integration,
+and is only used when <varname>radforce</varname> is true.   Default: 0.
+</entry>
+
+<entry id="indforce" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If TRUE perform diagnostic calculation of the indirect forcing from aerosols.
+This option only available when <varname>microp_scheme</varname> is set to 'MG'.
+Default: FALSE
+</entry>
+
+<entry id="iradae" type="integer"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Interval between absorptivity/emissivity calculations in time steps (if
+positive) or model hours (if negative).  To avoid having the abs/ems values
+saved on the restart output, make sure that the interval of the abs/ems
+calculation evenly divides the restart interval.
+Default: -12
+</entry>
+
+<entry id="iradlw" type="integer"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Interval of long-wave radiation calculation in timesteps (if positive) or
+model hours (if negative).
+Default: -1
+</entry>
+
+<entry id="iradsw" type="integer"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Interval of short-wave radiation calculation in timesteps (if positive) or
+model hours (if negative).
+Default: -1
+</entry>
+
+<entry id="irad_always" type="integer"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Specifies length of time in timesteps (positive) or hours (negative) SW/LW
+radiation will be run for every timestep from the start of an initial run.
+Default: 0
+</entry>
+
+<entry id="prescribed_sulfur" type="char*16"  catagory="radiation"
+       group="cam_inparm" valid_values="direct,passive" >
+Control radiative interaction of prescribed sulfur.  May be set to 'passive' or
+'direct'.   'passive' implies prescribed sulfur has no radiative interaction.
+'direct' implies prescribed sulfur is used in the radiative calculations that
+force the simulation.
+Default: 'direct'
+</entry>
+
+<entry id="prognostic_sulfur" type="char*16"  catagory="radiation"
+       group="cam_inparm" valid_values="off,direct,passive" >
+Control radiative interaction of prognostic sulfur, and implicitly turns
+CAM's prognostic sulfur calculations on.  May be set to 'off', 'passive',
+or 'direct'.  'off' implies no prognostic sulfur.  'passive' implies
+prognostic sulfur computed with no radiative interaction. 'direct' implies
+prognostic sulfur is used in the radiative calculations that force the
+simulation.  
+<br/>
+If there is no MOZART chemistry active, then setting this
+variable to 'passive' or 'direct' turns on the CAM prognostic sulfur.  If
+MOZART chemistry is providing the prognostic sulfur calculation, this
+variable is still used to determine whether the prognostic sulfur is
+radiatively active.
+Default: 'off'
+</entry>
+
+<entry id="radforce" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If TRUE perform diagnostic calculation of forcing from aerosols.  The
+aerosol forcing is scaled by the values of <varname>bgscl_rf</varname>,
+<varname>carscl_rf</varname>, <varname>dustscl_rf</varname>.
+Default: FALSE
+</entry>
+
+<entry id="scenario_carbon_scale" type="char*16" catagory="radiation"
+       group="cam_inparm" valid_values="FIXED,RAMPED" >
+Controls carbon scaling.  May
+be set to 'FIXED' or 'RAMPED'. FIXED means use the value specified by
+<varname>carscl</varname>. RAMPED means use data from file specified by
+<varname>bndtvcarbonscale</varname>.
+
+Default: 'FIXED'
+</entry>
+
+<entry id="ssltscl" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Set sea salt aerosol scaling factor for radiative transfer calculations.  This
+may be used to scale the specified or prognostic aerosol mass mixing
+ratios.
+Default: 1.0
+</entry>
+
+<entry id="ssltscl_rf" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Set sea salt aerosol scaling factor for radiative forcing calculation.  This
+does not affect the mass mixing ratios used for the climate integration,
+and is only used when <varname>radforce</varname> is true.
+Default: 0.0
+</entry>
+
+<entry id="sulscl" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Set sulfur aerosol scaling factor for radiative transfer calculations.  This
+may be used to scale the specified or prognostic aerosol mass mixing
+ratios.
+Default: 1.0
+</entry>
+
+<entry id="sulscl_rf" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="">
+Set sulfur aerosol scaling factor for radiative forcing calculation.  This
+does not affect the mass mixing ratios used for the climate integration,
+and is only used when <varname>radforce</varname> is true.
+Default: 0.0
+</entry>
+
+<entry id="use_cam_ghg_data" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If TRUE use CAM prescribed greenhouse gases for radiation rather than trop_moz
+prescribed data.  This option is only available if one of the trop_mozart_*
+packages is active
+Default: FALSE
+</entry>
+
+<entry id="use_cam_ozone_data" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If TRUE use CAM prescribed ozone for radiation rather than trop_moz
+prescribed data.  This option is only available if one of the trop_mozart_*
+packages is active
+Default: FALSE
+</entry>
+
+<entry id="use_data_co2" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If TRUE use use CO2 data for active radiation calc even if CO2 is available
+as a prognostic constituent.
+Default: TRUE
+</entry>
+
+<entry id="use_data_o3" type="logical"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+If TRUE use use O3 data for active radiation calc even if O3 is available
+as a prognostic constituent.
+Default: FALSE
+</entry>
+
+<entry id="volcscl" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Set volcanic aerosol scaling factor for radiative transfer calculations.
+This may be used to scale the prescribed or prognostic aerosol mass mixing
+ratios.  Note that the scale factor is only applied to the masses that are
+used in the optical depth calculation.
+Default: 1.0
+</entry>
+
+<entry id="volcscl_rf" type="real"  catagory="radiation"
+       group="cam_inparm" valid_values="" >
+Set volcanic aerosol scaling factor for radiative forcing calculation.  This
+does not affect mass mixing ratios used for the climate integration, and is
+only used when <varname>radforce</varname> is true.
+Default: 0.0
+</entry>
+
+<!-- Rayleigh Friction Parameterization -->
+
+<entry id="rayk0" type="integer" catagory="rayleigh_friction"
+       group="cam_inparm" valid_values="">
+Variable to specify the vertical index at which the
+Rayleigh friction term is centered (the peak value).
+Default: 2
+</entry>
+
+<entry id="raykrange" type="real" catagory="rayleigh_friction"
+       group="cam_inparm" valid_values="">
+Rayleigh friction parameter to determine the width of the profile.  If set
+to 0 then a width is chosen by the algorithm (see rayleigh_friction.F90).
+Default: 0.
+</entry>
+
+<entry id="raytau0" type="real" catagory="rayleigh_friction"
+       group="cam_inparm" valid_values="">
+Rayleigh friction parameter to determine the approximate value of the decay
+time (days) at model top.  If 0.0 then no Rayleigh friction is applied.
+Default: 0.
+</entry>
+
+
+<!-- Restart (Continuation and Branch) Runs -->
+
+<entry id="cam_branch_file" type="char*256" input_pathname="abs" catagory="restart"
+       group="cam_inparm" valid_values="">
+Full pathname of master restart file from which to branch. Setting is
+Required for branch run.
+Default: none
+</entry>
+
+
+<!-- Single column mode -->
+
+<entry id="iopfile" type="char*128" input_pathname="abs" catagory="scam"
+       group="cam_inparm" valid_values="" >
+Full pathname of IOP dataset.
+Default: set by build-namelist.
+</entry>
+
+<entry id="scm_crm_mode" type="logical" catagory="scam"
+       group="cam_inparm" valid_values="">
+Column radiation mode.
+Default: FALSE
+</entry>
+
+<entry id="scm_diurnal_avg" type="logical" catagory="scam"
+       group="cam_inparm" valid_values="">
+If using diurnal averaging or not.
+Default: FALSE
+</entry>
+
+<entry id="scm_iop_srf_prop" type="logical" catagory="scam"
+       group="cam_inparm" valid_values="">
+Use the specified surface properties.
+Default: FALSE
+</entry>
+
+<entry id="scm_relaxation" type="logical" catagory="scam"
+       group="cam_inparm" valid_values="">
+Use relaxation.
+Default: FALSE
+</entry>
+
+<!-- Solar Parameters -->
+
+<entry id="bndtvscon" type="char*256" input_pathname="abs" catagory="solar"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for solar constant. 
+Default: set by build-namelist.
+</entry>
+
+<entry id="rampyear_scon" type="integer"  catagory="solar"
+       group="cam_inparm" valid_values="" >
+Ramped scon fixed at this year if set to a value greater than zero. Only
+used if <varname>scenario_scon</varname> is set to "RAMPED".
+Default: 0
+</entry>
+
+<entry id="scenario_scon" type="char*16"  catagory="solar"
+       group="cam_inparm" valid_values="RAMPED,FIXED" >
+Controls the solar constant. Can be set to 'FIXED' or 'RAMPED'.  FIXED means
+scon is fixed and can have either the default or namelist value.  RAMPED means
+scon values are time varying and are read from the datafile specified by
+<varname>bndtvscon</varname>.
+Default: FIXED
+</entry>
+
+<entry id="scon" type="real" catagory="solar"
+       group="cam_inparm" valid_values="">
+Solar constant.
+Default: 1.367e6
+</entry>
+
+
+<!-- Test Tracers -->
+
+<entry id="bndtvsf6" type="char*256" input_pathname="abs" catagory="test_tracers"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for test tracer surface emissions.
+Required if <varname>tracers_flag</varname> is set to true.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracers_flag" type="logical" catagory="test_tracers"
+       group="cam_inparm" valid_values="" >
+If true, implement tracer test code. Number of tracers is chosen
+dynamically to fill the available slots in the constituents array.  This
+number is PCNST minus the number of tracers that have already been
+requested at the time the test tracer initialization subroutine is called.
+Default: FALSE
+</entry>
+
+<!-- Time step -->
+
+<entry id="dtime" type="real"  catagory="time_mgr"
+       group="cam_inparm" valid_values="">
+The length (in seconds) of the coupling interval between the dynamics and
+physics.  Changing this variable directly impacts the physical
+parameterizations in the model and may impact the climate.  Changing
+resolution usually requires a change in <varname>dtime</varname>.  
+Default: is resolution and dycore dependent and is set by build-namelist.
+</entry>
+
+<!-- Topography -->
+
+<entry id="bnd_topo" type="char*256" input_pathname="abs" catagory="topo"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-invariant boundary dataset for topography fields.
+Default: set by build-namelist.
+</entry>
+
+<!-- Water tracers -->
+
+<entry id="trace_water" type="logical" catagory="wtrc"
+       group="cam_inparm" valid_values="" >
+Set TRUE to activate water tracer code.
+Default: FALSE
+</entry>
+
+<entry id="wisotope" type="logical" catagory="wtrc"
+       group="cam_inparm" valid_values="" >
+Set TRUE to activate water isotopes.
+Default: FALSE
+</entry>
+
+<!-- CAM-CHEM -->
+
+<entry id="aer_wetdep_list" type="char*16(1000)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of aerosol species that undergo wet deposition.
+Default: set by build-namelist.
+</entry>
+
+<entry id="airpl_emis_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of boundary dataset for airplane emissions.
+Default: set by build-namelist.
+</entry>
+
+<entry id="ch2o_emis_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="clim_soilw_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="co_emis_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for CO
+surface emissions.
+Default: set by build-namelist.
+</entry>
+
+<entry id="depvel_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="depvel_lnd_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="drydep_list" type="char*16(1000)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of species that undergo dry deposition.
+Default: set by build-namelist.
+</entry>
+
+<entry id="efield_hflux_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="efield_lflux_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="efield_wei96_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="electron_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="emis_date" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+yyyymmdd for SERIAL(yyyy) or FIXED
+Default: 19970101
+</entry>
+
+<entry id="emis_type" type="char*8" catagory="cam_chem"
+       group="cam_inparm" valid_values="CYCLICAL,SERIAL,FIXED" >
+Type of time interpolation for fixed lower boundary data.
+Default: 'CYCLICAL'
+</entry>
+
+<entry id="emis_yr_offset" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+yrs added to current model year for CYCLICAL
+Default: 0
+</entry>
+
+<entry id="euvac_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="euvacdat_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="ext_frc_date" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+yyyymmdd for SERIAL(yyyy) or FIXED
+Default: 19970101
+</entry>
+
+<entry id="ext_frc_specifier" type="char*256(1000)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of full pathnames of
+Default: set by build-namelist.
+</entry>
+
+<entry id="ext_frc_type" type="char*8" catagory="cam_chem"
+       group="cam_inparm" valid_values="CYCLICAL,SERIAL,FIXED" >
+Type of time interpolation for fixed lower boundary data.
+Default: 'CYCLICAL'
+</entry>
+
+<entry id="ext_frc_yr_offset" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+yrs added to current model year for CYCLICAL
+Default: 0
+</entry>
+
+<entry id="flbc_date" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+yyyymmdd for SERIAL(yyyy) or FIXED
+Default: 19970101
+</entry>
+
+<entry id="flbc_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for fixed lower boundary conditions.
+Default: set by build-namelist.
+</entry>
+
+<entry id="flbc_list" type="char*16(1000)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of species that are fixed at the lower boundary.
+Default: set by build-namelist.
+</entry>
+
+<entry id="flbc_type" type="char*8" catagory="cam_chem"
+       group="cam_inparm" valid_values="CYCLICAL,SERIAL,FIXED" >
+Type of time interpolation for fixed lower boundary data.
+Default: 'CYCLICAL'
+</entry>
+
+<entry id="flbc_yr_offset" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+yrs added to current model year for CYCLICAL
+Default: 0
+</entry>
+
+<entry id="fstrat_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="fstrat_list" type="char*16(1000)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of species that are constrained in the stratosphere.
+Default: set by build-namelist.
+</entry>
+
+<entry id="lbc_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for fixed lower boundary conditions.
+Default: set by build-namelist.
+</entry>
+
+<entry id="lght_landmask_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="lght_no_prd_factor" type="real" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: 1.0.
+</entry>
+
+<entry id="neckel_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="nox_emis_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="no_xfac_ubc" type="real" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: 1.0
+</entry>
+
+<entry id="photon_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="photopath" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="prescribed_ozone_datapath" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>prescribed_ozone_filelist</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="prescribed_ozone_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Filename of dataset for prescribed ozone. (Temporarily set to "abs" pathname, but
+should be "rel".)
+Default: set by build-namelist.
+</entry>
+
+<entry id="prescribed_ozone_filelist" type="char*256" input_pathname="rel:prescribed_ozone_datapath" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Filename of file that contains a sequence of filenames for prescribed
+ozone.  The filenames in this file are relative to the directory specied
+by <varname>prescribed_ozone_datapath</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="prescribed_ozone_name" type="char*16" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Name of variable containing ozone data in the prescribed ozone datasets.
+Default: 'ozone'
+</entry>
+
+<entry id="prescribed_ozone_rmfile" type="logical" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: FALSE
+</entry>
+
+<entry id="prescribed_ozone_tod" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: 0
+</entry>
+
+<entry id="prescribed_ozone_type" type="char*8" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Type of time interpolation for data in prescribed_ozone files.
+Default: 'SERIAL'
+</entry>
+
+<entry id="prescribed_ozone_ymd" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: -1
+</entry>
+
+<entry id="rsf_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="sad_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="sad_fixed_date" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+
+Default: 0
+</entry>
+
+<entry id="sad_scenario" type="char*16" catagory="cam_chem"
+       group="cam_inparm" valid_values="FIXED,RAMPED" >
+
+Default: 'RAMPED'
+</entry>
+
+<entry id="season_wes_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="snoe_ubc_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="solar_parms_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="srf_emis_specifier" type="char*256(1000)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of full pathnames of surface emission datasets.
+Default: set by build-namelist.
+</entry>
+
+<entry id="sulf_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="tgcm_ubc_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="t_pert_ubc" type="real" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+
+Default: 0.0
+</entry>
+
+<entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>tracer_cnst_filelist</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_cnst_file" type="char*256" input_pathname="rel:tracer_cnst_datapath" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Filename of dataset for fixed species.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_cnst_filelist" type="char*256" input_pathname="rel:tracer_cnst_datapath" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Filename of file that contains a sequence of filenames for fixed
+species.  The filenames in this file are relative to the directory specied
+by <varname>tracer_cnst_datapath</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_cnst_rmfile" type="logical" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: FALSE
+</entry>
+
+<entry id="tracer_cnst_specifier" type="char*64(100)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of fixed species.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_cnst_tod" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: 0
+</entry>
+
+<entry id="tracer_cnst_type" type="char*8" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Type of time interpolation for data in tracer_cnst files.
+Default: 'SERIAL'
+</entry>
+
+<entry id="tracer_cnst_ymd" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: -1
+</entry>
+
+<entry id="tracer_srcs_datapath" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>tracer_srcs_filelist</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_srcs_file" type="char*256" input_pathname="rel:tracer_srcs_datapath" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Filename of dataset for
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_srcs_filelist" type="char*256" input_pathname="rel:tracer_srcs_datapath" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Filename of file that contains a sequence of datasets for 
+.  The filenames in this file are relative to the directory specied
+by <varname>tracer_srcs_datapath</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_srcs_rmfile" type="logical" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: FALSE
+</entry>
+
+<entry id="tracer_srcs_specifier" type="char*64(100)" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+List of 
+Default: set by build-namelist.
+</entry>
+
+<entry id="tracer_srcs_tod" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: 0
+</entry>
+
+<entry id="tracer_srcs_type" type="char*8" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Type of time interpolation for data in tracer_srcs files.
+Default: 'SERIAL'
+</entry>
+
+<entry id="tracer_srcs_ymd" type="integer" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: -1
+</entry>
+
+<entry id="trop_pause_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_cam_sulfchem" type="logical"  catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+If TRUE use CAM sulfur chemistry driver rather than mo_setsox.
+Default: FALSE
+</entry>
+
+<entry id="woods_etf_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="xactive_drydep" type="logical" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: FALSE
+</entry>
+
+<entry id="xactive_prates" type="logical" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Default: TRUE
+</entry>
+
+<entry id="xs_coef_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="xs_long_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<entry id="xs_short_file" type="char*256" input_pathname="abs" catagory="cam_chem"
+       group="cam_inparm" valid_values="" >
+Full pathname of dataset for 
+Default: set by build-namelist.
+</entry>
+
+<!-- WACCM_GHG Chemistry -->
+
+<entry id="cftgcm" type="char*256" input_pathname="abs" catagory="waccm_ghg"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for O2,O1,N2, CO2
+Constituents for non-LTE calculations and heating rates below 200 nm.
+Default: set by build-namelist.
+</entry>
+
+<entry id="h2orates" type="char*256" input_pathname="abs" catagory="waccm_ghg"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for H2O production/loss rates.
+Default: set by build-namelist.
+</entry>
+
+<entry id="solar_parms_file" type="char*256" input_pathname="abs" catagory="waccm_ghg"
+       group="cam_inparm" valid_values="" >
+Full pathname of time-variant boundary dataset for solar variability parameters.
+Default: set by build-namelist.
+</entry>
+
+<!-- WACCM -->
+
+<entry id="cftgcm" type="char*256" input_pathname="abs" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Pathname of time-variant TIME/GCM output.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="itgcmcyc" type="integer" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Flag for cycling time-variant TIME/GCM input dataset.
+0 implies use one time sample only;
+1 implies use full annual cycle;
+2 implies use two time samples.
+Default: 1
+</entry>
+
+<entry id="lbc_file" type="char*256" input_pathname="abs" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Filepath for time-variant boundary dataset for chemistry surface values.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="lbc_fixed_date" type="integer" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Time varying values interpolated to this fixed date (if &gt; 0) when
+<varname>lbc_scenario</varname> equals 'FIXED'.
+Default: 0
+</entry>
+
+<entry id="lbc_scenario" type="char*16" catagory="waccm"
+       group="cam_inparm" valid_values="FIXED,RAMPED" >
+How to treat lower BC.
+Default: 'FIXED'
+</entry>
+
+<entry id="nlte_use_mo" type="logical" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Determines which constituents are used from NLTE calculations.
+TRUE implies use prognostic constituents.
+FALSE implies use constituents from dataset specified by <varname>cftgcm</varname>.
+Default: TRUE for full WACCM code; FALSE for WACCM_GHG.
+</entry>
+
+<entry id="qbo_cyclic" type="logical" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+TRUE implies assume cyclic qbo data.
+Default: FALSE
+</entry>
+
+<entry id="qbo_forcing_file" type="char*256" input_pathname="abs" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Filepath for qbo forcing dataset.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="qbo_use_forcing" type="logical" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+TRUE implies qbo package is active.
+Default: FALSE
+</entry>
+
+<entry id="spe_data_file" type="char*256" input_pathname="abs" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Filepath for
+Default: Set by build-namelist.
+</entry>
+
+<entry id="spe_filenames_list" type="char*256" input_pathname="abs" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Filepath for
+Default: Set by build-namelist.
+</entry>
+
+<entry id="spe_remove_file" type="logical" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+Delete data file when finished with it.
+Default: FALSE
+</entry>
+
+<entry id="spe_restart" type="logical" catagory="waccm"
+       group="cam_inparm" valid_values="" >
+
+Default: TRUE
+</entry>
+
+
+
+<!-- SE dycore -->
+
+<entry id="accumfreq" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Frequency in steps of accumulation.
+Default: none
+</entry>
+
+<entry id="accumstart" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Model day to start accumulating state variables.
+Default: none
+</entry>
+
+<entry id="accumstop" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Model day to stop accumulating state variables.
+Default: none
+</entry>
+
+<entry id="filter_freq" type="integer" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="filter_mu" type="real" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="filter_type" type="char*8" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="se_nsplit" type="integer" catagory="se"
+       group="camexp" valid_values="" >
+Number of dynamics steps per physics timestep.
+Default: none
+</entry>
+
+<entry id="integration" type="char*80" catagory="se"
+       group="ctl_nl" valid_values="" >
+Time integration (explicit or semi_implicit).
+Default: "explicit"
+</entry>
+
+<entry id="kcut_fm" type="integer" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="ne" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="nthreads" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Default: 1
+</entry>
+
+<entry id="nu" type="real" catagory="se"
+       group="ctl_nl" valid_values="" >
+Viscosity [m^2/s].
+Default: 7.0e5
+</entry>
+
+<entry id="p_bv" type="real" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="partmethod" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Default: 0
+</entry>
+
+<entry id="s_bv" type="real" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="smooth" type="real" catagory="se"
+       group="ctl_nl" valid_values="" >
+Timestep filter.
+Default: 0.05
+</entry>
+
+<entry id="statefreq" type="integer" catagory="se"
+       group="ctl_nl" valid_values="" >
+Default: 1
+</entry>
+
+<entry id="topology" type="char*80" catagory="se"
+       group="ctl_nl" valid_values="" >
+Default: "cube"
+</entry>
+
+<entry id="transfer_type" type="char*8" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+<entry id="wght_fm" type="real" catagory="se"
+       group="filter_nl" valid_values="" >
+Default: none
+</entry>
+
+
+
+
+<!-- Backwards compatibility options: support for old DOM, SOM, CSIM4 -->
+<!-- SST Data -->
+
+<entry id="bndtvs" type="char*256" input_pathname="abs" catagory="ocn"
+       group="camexp" valid_values="" >
+Full pathname of time-variant sea-surface temperature and sea-ice
+concentration boundary dataset.
+Default: set by build-namelist.
+</entry>
+
+<entry id="focndomain" type="char*256" input_pathname="abs" catagory="ocn"
+       group="camexp" valid_values="" >
+Full pathname of 
+Default: set by build-namelist.
+</entry>
+
+<entry id="sstcyc" type="logical" catagory="ocn"
+       group="camexp" valid_values="" >
+Flag for yearly cycling of SST data. If set to FALSE, a multi-year dataset
+is assumed, otherwise a single-year dataset is assumed, and SSTs will be
+cycled over the first 12 values in the file.  Not used if running with
+CCSM.
+Default: TRUE
+</entry>
+
+<!-- DOM (CAM version) -->
+
+<entry id="dom_branch_file" type="char*256" input_pathname="abs" catagory="restart"
+       group="dom_inparm" valid_values="">
+Full pathname of master restart file from which to branch. Setting is
+Required for branch run.
+Default: none
+</entry>
+
+<!-- SOM (CAM version) -->
+
+<entry id="som_branch_file" type="char*256" input_pathname="abs" catagory="restart"
+       group="som_inparm" valid_values="">
+Full pathname of master restart file from which to branch. Setting is
+Required for branch run.
+Default: none
+</entry>
+
+<entry id="som_conschk_frq" type="integer" catagory="som"
+       group="som_inparm" valid_values="">
+Energy conservation check frequency in SOM code.
+Default: 0
+</entry>
+
+<!-- CSIM (CAM version) -->
+
+<entry id="ice_conschk_frq" type="integer" catagory="csim"
+       group="csim_inparm" valid_values="" >
+This is only used when running as part of CCSM. If n &gt; 0 then sea
+ice global energy checking will be done every n timesteps. If n &lt; 0 then
+sea ice global energy checking will be done every n days.
+</entry>
+
+<entry id="csim_branch_file" type="char*256" input_pathname="abs" catagory="restart"
+       group="csim_inparm" valid_values="">
+Full pathname of master restart file from which to branch. Setting is
+Required for branch run.
+Default: none
+</entry>
+
+<entry id="prognostic_icesnow" type="logical" catagory="csim"
+       group="csim_inparm" valid_values="">
+Prognostic snow over ice, currently limited to 0.5m.
+If this is false then a snow climatology is used.
+Default: TRUE
+</entry>
+
+<entry id="reset_csim_iceprops" type="logical" catagory="csim"
+       group="csim_inparm" valid_values="">
+If true => resets the csim ice properties to base state, i.e.,
+no snow cover, TSICE and TS[1-4] are all set to
+freezing.
+The csim is sensitive to imbalances between the
+surface temperature and ice temperatures. When
+using an initial conditions dataset interpolated
+from a different resolution you may have to set this
+to true to get csim to run.  If set to true you will
+have to allow time for the ice to spin up.
+Default: FALSE
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- CPL7 Driver -->
+
+<!-- Control info -->
+
+<entry id="aqua_planet" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+If true, run model in "aqua planet" mode. Only one of
+<varname>atm_adiabatic</varname>, <varname>atm_ideal_phys</varname>, or
+<varname>aqua_planet</varname> can be true.
+Default: FALSE
+</entry>
+
+<entry id="atm_adiabatic" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+If true, do not run model physics, only run the dynamical core.
+Only one of
+<varname>atm_adiabatic</varname>, <varname>atm_ideal_phys</varname>, or
+<varname>aqua_planet</varname> can be true.
+Default: FALSE
+</entry>
+
+<entry id="atm_cdf64" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Use netcdf 64 bit offset, large file support.
+Default: FALSE
+</entry>
+
+<entry id="atm_ideal_phys" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+If true run the idealized Held&amp;Suarez physics package.
+Only one of
+<varname>atm_adiabatic</varname>, <varname>atm_ideal_phys</varname>, or
+<varname>aqua_planet</varname> can be true.
+Default: FALSE
+</entry>
+
+<entry id="bfbflag" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+bit for bit flag
+Default: FALSE
+</entry>
+
+<entry id="brnch_retain_casename" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+If true, use the pre-existing case name for a branch run.
+Default: FALSE
+</entry>
+
+<entry id="case_desc" type="char*256"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Case title.
+Default: none.
+</entry>
+
+<entry id="case_name" type="char*80"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Case identifier.  Normally used as part of the archive path name.  By
+default also used in output filenames (see
+the <varname>hfilename_spec</varname> namelist option).
+Default: set by build-namelist. 
+</entry>
+
+<entry id="cpl_cdf64" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Use netcdf 64 bit offset, large file support.
+Default: FALSE
+</entry>
+
+<entry id="flux_albav" type="logical" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+T => no diurnal cycle in ocn albedos.
+Default: FALSE
+</entry>
+
+<entry id="flux_epbal" type="char*256" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Selects E,P,R adjustment technique.
+Default: 'off'
+</entry>
+
+<entry id="ice_cdf64" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Use netcdf 64 bit offset, large file support.
+Default: FALSE
+</entry>
+
+<entry id="info_debug" type="integer" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Debug flag.
+Default: 1
+</entry>
+
+<entry id="lnd_cdf64" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Use netcdf 64 bit offset, large file support.
+Default: FALSE
+</entry>
+
+<entry id="logfilepostfix" type="char*80" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Postfix for output log files.
+Default: '.log'
+</entry>
+
+<entry id="ocean_tight_coupling" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Couple ocean on atm timestep.
+Default: TRUE
+</entry>
+
+<entry id="ocn_cdf64" type="logical"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Use netcdf 64 bit offset, large file support.
+Default: FALSE
+</entry>
+
+<entry id="orb_eccen" type="real"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Earth's eccentricity of orbit. (unitless: typically 0. to 0.1). Setting is
+Required if <varname>orb_iyear_ad</varname> not set.  Not used when running
+as part of CCSM.
+Default: none
+</entry>
+
+<entry id="orb_iyear_ad" type="integer"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Year (AD) used to compute earth's orbital parameters. If not set, then use
+the values from
+the <varname>orb_eccen</varname>, <varname>orb_mvelp</varname>,
+and <varname>orb_obliq</varname> namelist parameters.  If only
+<varname>orb_iyear_ad</varname> is set, orbital parameters will be computed
+automatically (based on Berger, 1977).  If one
+of <varname>orb_eccen</varname>, <varname>orb_mvelp</varname>, or
+<varname>orb_obliq</varname> is set, all three must be set.  If all four of
+the above are set by the user, <varname>orb_iyear_ad</varname> takes
+precedence.  Setting is Required
+unless <varname>orb_eccen</varname>, <varname>orb_mvelp</varname>,
+and <varname>orb_obliq</varname> are set.  Not used when running as part of
+CCSM.
+Default: 1990.
+</entry>
+
+<entry id="orb_mvelp" type="real"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Earth's moving vernal equinox at perihelion (degrees: 0. to 360.0).
+Setting is Required if <varname>orb_iyear_ad</varname> not set.  Not used
+when running as part of CCSM.
+Default: none
+</entry>
+
+<entry id="orb_obliq" type="real"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Earth's orbital  angle of obliquity  (degrees: -90. to +90., typically 22. to 26.).
+Setting is Required if <varname>orb_iyear_ad</varname> not set.  Not used
+when running as part of CCSM.
+Default: none
+</entry>
+
+<entry id="outpathroot" type="char*256" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Root output files
+Default: './'
+</entry>
+
+<entry id="perpetual" type="logical"  catagory="time_mgr"
+       group="seq_infodata_inparm" valid_values="" >
+Set to TRUE to specify that the run will use a perpetual calendar, i.e., a
+diurnal cycle will be present for the fixed calendar day specified
+by <varname>perpetual_ymd</varname>.
+Default: FALSE
+</entry>
+
+<entry id="perpetual_ymd" type="integer"  catagory="time_mgr"
+       group="seq_infodata_inparm" valid_values="" >
+Perpetual date encoded in an integer as (year*1000 + month*100 + day).
+If <varname>aqua_planet</varname> = .true. then perpetual_ymd is ignored
+and the perpetual date is set to 321.
+Default: none.
+</entry>
+
+<entry id="restart_file" type="char*256" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Restart filename.
+Default: none
+</entry>
+
+<entry id="restart_file_override" type="char*256" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+List of namelist variables that may be overridden on a restart run.
+Default: none
+</entry>
+
+<entry id="restart_pfile" type="char*256" catagory="driver"
+       group="seq_infodata_inparm" valid_values="" >
+Restart pointer filename.
+Default: 'rpointer.drv'
+</entry>
+
+<entry id="samegrid" type="logical" catagory="driver"
+       group="seq_infodata_inparm" valid_values="">
+are ocean and ice grids same lat/lon/size
+Default: TRUE
+</entry>
+
+<entry id="scmlat" type="real" catagory="scam"
+       group="seq_infodata_inparm" valid_values="">
+Latitude value of single column.
+Default: none.
+</entry>
+
+<entry id="scmlon" type="real" catagory="scam"
+       group="seq_infodata_inparm" valid_values="">
+Longitude value of single column.
+Default: none.
+</entry>
+
+<entry id="single_column" type="logical" catagory="scam"
+       group="seq_infodata_inparm" valid_values="">
+Set to TRUE to turn on single column mode.
+Default: FALSE
+</entry>
+
+<entry id="start_type" type="char*8"  catagory="driver"
+       group="seq_infodata_inparm" valid_values="startup,continue,branch" >
+Run type.  'startup' is an initial run.  'continue' is a restart run.
+'branch' is a restart run in which properties of the output history files
+may be changed.
+Default: 'startup'
+</entry>
+
+<!-- Time Manager -->
+
+<entry id="atm_cpl_dt" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Coupling interval between the atmosphere and other system components.  This
+is how frequently information can be communicated between the atmosphere
+and the surface models.
+Default: set by build-namelist.
+</entry>
+
+<entry id="atm_cpl_offset" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: 
+</entry>
+
+<entry id="calendar" type="char*80"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="NO_LEAP,GREGORIAN" >
+Calendar type "NO_LEAP" for consistent 365-days per year or "GREGORIAN" to
+include leap-years. Note that if "GREGORIAN" is selected
+leap-years will be used in the time manager, but the calculation of the
+earth's orbit still assumes 365 day years.  Valid values are "NO_LEAP" or
+"GREGORIAN".
+Default: "NO_LEAP"
+</entry>
+
+<entry id="end_restart" type="logical"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Write restart at end of run.
+Default: TRUE
+</entry>
+
+<entry id="ice_cpl_dt" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: set by build-namelist.
+</entry>
+
+<entry id="ice_cpl_offset" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: 
+</entry>
+
+<entry id="lnd_cpl_dt" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: set by build-namelist.
+</entry>
+
+<entry id="lnd_cpl_offset" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: 
+</entry>
+
+<entry id="ocn_cpl_dt" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: set by build-namelist.
+</entry>
+
+<entry id="ocn_cpl_offset" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Default: 
+</entry>
+
+<entry id="ref_tod" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Reference time-of-day expressed as seconds past midnight.  Used in
+conjuction with <varname>ref_ymd</varname> to set the reference time.
+Default: set to <varname>start_tod</varname>.
+</entry>
+
+<entry id="ref_ymd" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Reference date encoded in an integer as (year*1000 + month*100 + day).
+Used in
+conjuction with <varname>ref_tod</varname> to set the reference time which
+is used to define a time coordinate for the output history files.  The
+convention for the unit string of a time coordinate is of the form
+"time-unit since reference-time", for example, "days since 1990-01-01
+00:00:00".  The reference-time part of this string is specified by the
+<varname>ref_ymd</varname> and <varname>ref_tod</varname> variables.
+
+Default: set to <varname>start_ymd</varname>.
+</entry>
+
+<entry id="restart_n" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Set the restart interval as a number of elapsed time units which are specified
+by <varname>restart_option</varname>.
+Default: 1
+</entry>
+
+<entry id="restart_option" type="char*8"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="none,nsteps,ndays,nmonths,nyears,monthly,yearly,end" >
+Set the interval between writing restart files
+using one of the options 'nsteps',
+'ndays', 'nmonths', or 'nyears', in conjuction
+with <varname>stop_n</varname> to set the number of time units.
+A convenience option allows specifying that restart files be written at the
+end of each month or at the end of each year by using the options
+'monthly' or 'yearly' respectively.  It is also possible to request that no
+restart files be written via the option 'none', or that restart files be
+written only at the end of the run via the option 'end'.
+Default: 'monthly'
+</entry>
+
+<entry id="start_tod" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Start time-of-day expressed as seconds past midnight.  Used in
+conjuction with <varname>start_ymd</varname> to set the start time.
+Default: 0.
+</entry>
+
+<entry id="start_ymd" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Start date encoded in an integer as (year*1000 + month*100 + day).
+Used in
+conjuction with <varname>start_tod</varname> to set the start date of
+the simulation.
+Default: set by build-namelist.
+</entry>
+
+<entry id="stop_n" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Set the length of run as a number of elapsed time units which are specified
+by <varname>stop_option</varname>.
+Default: 1
+</entry>
+
+<entry id="stop_option" type="char*8"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="nsteps,ndays,nmonths,nyears,date" >
+Set the length of run as an elapsed time using one of the options 'nsteps',
+'ndays', 'nmonths', or 'nyears', in conjuction
+with <varname>stop_n</varname> to set the number of elapsed time units.
+Alternatively, set the final simulation time in absolute terms by using the
+option 'date' in conjuction with <varname>stop_ymd</varname>,
+and <varname>stop_tod</varname> to specify a date and time of day at which
+the simulation should stop.
+Default: 'ndays'
+</entry>
+
+<entry id="stop_tod" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Stop time-of-day expressed as seconds past midnight.  Used in
+conjuction with <varname>stop_ymd</varname> to set the stop time.
+Default: 0.
+</entry>
+
+<entry id="stop_ymd" type="integer"  catagory="time_mgr"
+       group="seq_timemgr_inparm" valid_values="" >
+Stop date encoded in an integer as (year*1000 + month*100 + day).
+Used in
+conjuction with <varname>stop_tod</varname> to set the stop date of
+the simulation.
+Default: none.
+</entry>
+
+</namelist_definition>

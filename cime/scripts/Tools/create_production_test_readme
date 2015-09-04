@@ -1,0 +1,29 @@
+
+NAME
+
+   create_production_test  
+                                               
+SYNOPSIS
+
+   create_production_test 
+
+   create_production_test -help
+
+************************************************************************
+Purpose
+************************************************************************
+ 
+   Running this command will create a production restart test for the 
+   current case. The testcase will be created in a parallel directory  
+   (see output when executing command for details).  
+
+   Clone the current case and generate a testcase based on it.
+   The testcase will be created in a parallel directory.
+   Users will then submit that test manually and check the file
+   TestStatus when complete
+ 
+************************************************************************
+EXAMPLES
+
+  create_production_test 
+ 
