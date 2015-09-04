@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.8.12)
 project (PIOF Fortran)
+include (CheckFunctionExists)
 include (ExternalProject)
 include (LibCheck)
 
@@ -35,10 +36,18 @@ if (NOT PIO_ENABLE_FORTRAN)
     set_target_properties(piof PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif ()
 
+# Include flib source and binary directories (for Fortran modules)
 target_include_directories (piof
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
+# System and compiler CPP directives
+target_compile_definitions (piof
+    PUBLIC ${CMAKE_SYSTEM_DIRECTIVE})
+target_compile_definitions (piof
+    PUBLIC ${CMAKE_Fortran_COMPILER_DIRECTIVE})
+    
+# Compiler-specific compile options
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
         PRIVATE -ffree-line-length-none)
@@ -115,36 +124,65 @@ foreach (SRC_FILE IN LISTS PIO_GenF90_SRCS)
 endforeach ()
 
 #===== MPI =====
-find_package (MPI REQUIRED)
+if (PIO_USE_MPISERIAL)
+    find_package (MPISERIAL COMPONENTS Fortran REQUIRED)
+    if (MPISERIAL_Fortran_FOUND)
+        target_compile_definitions (piof
+            PRIVATE _MPISERIAL)
+        target_include_directories (piof
+            PUBLIC ${MPISERIAL_Fortran_INCLUDE_DIRS})
+        target_link_libraries (piof
+            PUBLIC ${MPISERIAL_Fortran_LIBRARIES})
+
+        set (WITH_PNETCDF FALSE)
+        set (MPI_Fortran_INCLUDE_PATH ${MPISERIAL_Fortran_INCLUDE_DIRS})
+    endif ()
+else ()
+    find_package (MPI REQUIRED)
+endif ()
 
 # Check MPI I/O capabilities
-if (PIO_USE_MPIIO)
-    check_macro (MPIIO_DETECTED
+find_path(MPIF_H_PATH
+          NAMES mpif.h
+          PATHS ${MPI_Fortran_INCLUDE_PATH}
+          NO_DEFAULT_PATH)
+if (MPIF_H_PATH)
+    check_macro (MPI_HAS_MPIIO
                  NAME TryMPIIO.f90
                  HINTS ${CMAKE_MODULE_PATH}
+                 DEFINITIONS -I{MPIF_H_PATH}
                  COMMENT "whether MPIIO is supported")
-    if (${MPIIO_DETECTED})
-        message (STATUS "MPIIO detected and enabled.")
+    if (${MPI_HAS_MPIIO})
+        message (STATUS "MPIIO verified and enabled.")
+        target_compile_definitions (piof
+            PUBLIC USEMPIIO)
     else ()
-        message (STATUS "MPIIO not detected and therefore disabled.")
-        set (PIO_USE_MPIIO FALSE)
+        message (STATUS "MPIIO failed verification and therefore disabled.")
     endif ()
-endif ()
-if (${PIO_USE_MPIIO}) 
-    target_compile_definitions (piof
-        PUBLIC USEMPIIO)
+else ()
+    message (STATUS "MPIIO not detected and therefore disabled.")
 endif ()
 
 # Check for MPI Fortran module
-check_macro (MPIMOD_DETECTED
-             NAME TryMPIMod.f90
-             HINTS ${CMAKE_MODULE_PATH}
-             COMMENT "whether MPI Fortran module is supported")
-if (${MPIMOD_DETECTED})
-    message (STATUS "MPI Fortran module detected and enabled.")
+find_path(MPIMOD_PATH
+          NAMES mpi.mod
+          HINTS ${MPI_Fortran_INCLUDE_PATH})
+if (MPIMOD_PATH)
+    check_macro (MPI_HAS_Fortran_MOD
+                 NAME TryMPIMod.f90
+                 HINTS ${CMAKE_MODULE_PATH}
+                 DEFINITIONS -I${MPIMOD_PATH}
+                 COMMENT "whether MPI Fortran module is supported")
+    if (${MPI_HAS_Fortran_MOD})
+        message (STATUS "MPI Fortran module verified and enabled.")
+    else ()
+        message (STATUS "MPI Fortran module failed verification and therefore disabled.")
+        target_compile_definitions (gptl
+            PUBLIC NO_MPIMOD)
+    endif ()
 else ()
     message (STATUS "MPI Fortran module not detected and therefore disabled.")
-    target_compile_definitions (piof
+    target_compile_definitions (gptl
         PUBLIC NO_MPIMOD)
 endif ()
 
@@ -195,10 +233,9 @@ if (PnetCDF_Fortran_FOUND)
         PUBLIC ${PnetCDF_Fortran_LIBRARIES})
 
     # Check library for varn functions
-    include(CheckFunctionExists)
     set (CMAKE_REQUIRED_LIBRARIES ${PnetCDF_Fortran_LIBRARY})
-    check_function_exists (ncmpi_get_varn PnetCDF_VARN)
-    if (PnetCDF_VARN)
+    check_function_exists (ncmpi_get_varn PnetCDF_Fortran_HAS_VARN)
+    if (PnetCDF_Fortran_HAS_VARN)
         target_compile_definitions(piof
             PUBLIC USE_PNETCDF_VARN
             PUBLIC USE_PNETCDF_VARN_ON_READ)

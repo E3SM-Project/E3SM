@@ -528,8 +528,13 @@ contains
 !  if an error occured in a MPI subroutine.
 !=============================================
   subroutine CheckMPIreturn(line,errcode)
-    use MPI
+#ifndef NO_MPIMOD
+    use mpi
+#endif
     implicit none
+#ifdef NO_MPIMOD
+#include <mpif.h>
+#endif  
     integer, intent(in) :: errcode
     integer, intent(in) :: line
     character(len=MPI_MAX_ERROR_STRING) :: errorstring

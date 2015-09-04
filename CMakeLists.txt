@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8.12)
-project (PIO C)
+project (PIO C Fortran)
 
 #==============================================================================
 #  USER-DEFINED OPTIONS (set with "-DOPT=VAL" from command line)
@@ -10,6 +10,7 @@ option (PIO_ENABLE_FORTRAN   "Enable the Fortran library builds"            ON)
 option (PIO_ENABLE_TIMING    "Enable the use of the GPTL timing library"    ON)
 option (PIO_TEST_BIG_ENDIAN  "Enable test to see if machine is big endian"  ON)
 option (PIO_USE_MPIIO        "Enable support for MPI-IO auto detect"        ON)
+option (PIO_USE_MPISERIAL    "Enable mpi-serial support (instead of MPI)"   OFF)
 option (WITH_PNETCDF         "Require the use of PnetCDF"                   ON)
 
 #===== Library Variables =====
@@ -62,6 +63,31 @@ endif ()
 set (USER_CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH}
      CACHE STRING "Location of the CMake_Fortran_utils")
 list (APPEND CMAKE_MODULE_PATH ${USER_CMAKE_MODULE_PATH})
+
+#==============================================================================
+#  HELPFUL GLOBAL VARIABLES
+#==============================================================================
+
+# System Name
+string (TOUPPER "${CMAKE_SYSTEM_NAME}" CMAKE_SYSTEM_NAME_CAPS)
+set (CMAKE_SYSTEM_DIRECTIVE "${CMAKE_SYSTEM_NAME_CAPS}"
+     CACHE STRING "System name preprocessor directive")
+
+# C Compiler Name
+string (TOUPPER "${CMAKE_C_COMPILER_ID}" CMAKE_C_COMPILER_NAME)
+if (CMAKE_C_COMPILER_NAME STREQUAL "XL")
+    set (CMAKE_C_COMPILER_NAME "IBM")
+endif ()
+set (CMAKE_C_COMPILER_DIRECTIVE "CPR${CMAKE_C_COMPILER_NAME}"
+     CACHE STRING "C compiler name preprocessor directive")
+
+# Fortran Compiler Name
+string (TOUPPER "${CMAKE_Fortran_COMPILER_ID}" CMAKE_Fortran_COMPILER_NAME)
+if (CMAKE_Fortran_COMPILER_NAME STREQUAL "XL")
+    set (CMAKE_Fortran_COMPILER_NAME "IBM")
+endif ()
+set (CMAKE_Fortran_COMPILER_DIRECTIVE "CPR${CMAKE_Fortran_COMPILER_NAME}"
+     CACHE STRING "Fortran compiler name preprocessor directive")
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES

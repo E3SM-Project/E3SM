@@ -7,31 +7,119 @@
 #    http://www.vtk.org/Wiki/CTest:Using_CTEST_and_CDASH_without_CMAKE
 #==============================================================================
 
-#-------------------------------------------
-#-- Get the common header information
-#-------------------------------------------
+#---------------------------------------
+#-- User-defined setup from environment
+#---------------------------------------
 
-list (APPEND CMAKE_MODULE_PATH "${CTEST_SCRIPT_DIRECTORY}/ctest")
-include (CTestScript-Header)
+## -- CTest Dashboard Root Directory
+if (DEFINED ENV{PIO_DASHBOARD_ROOT})
+    set (CTEST_DASHBOARD_ROOT "$ENV{PIO_DASHBOARD_ROOT}")
+else ()
+    set (CTEST_DASHBOARD_ROOT "$ENV{HOME}/pio-dashboard")
+endif ()
+
+## -- Compiler ID 
+if (DEFINED ENV{PIO_COMPILER_ID})
+    set (compid "$ENV{PIO_COMPILER_ID}")
+else ()
+    set (compid "?")
+endif ()
+
+## -- CTest Dashboard Build Group
+set (CTEST_BUILD_GROUP "${CTEST_SCRIPT_ARG}")
+
+#---------------------------------------
+#-- Get the machine environment
+#---------------------------------------
+
+## -- Set hostname
+
+find_program (HOSTNAME_CMD NAMES hostname)
+execute_process (COMMAND ${HOSTNAME_CMD}
+                 OUTPUT_VARIABLE HOSTNAME
+                 OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+## -- Set hostname ID (e.g., alcf, nwsc, nersc, ...)
+
+# UCAR/NWSC Machines
+if (HOSTNAME MATCHES "^yslogin" OR
+    HOSTNAME MATCHES "^geyser" OR
+    HOSTNAME MATCHES "^caldera" OR
+    HOSTNAME MATCHES "^pronghorn")
+    set (HOSTNAME_ID "nwsc")
+# ALCF/Argonne Machines
+elseif (HOSTNAME MATCHES "^mira" OR
+        HOSTNAME MATCHES "^cetus" OR
+        HOSTNAME MATCHES "^vesta" OR
+        HOSTNAME MATCHES "^cooley")
+    set (HOSTNAME_ID "alcf")
+# ALCF/Argonne Machines
+elseif (HOSTNAME MATCHES "^edison" OR
+        HOSTNAME MATCHES "^carver" OR
+        HOSTNAME MATCHES "^hopper" OR
+        HOSTNAME MATCHES "^nid")
+    set (HOSTNAME_ID "nersc")
+else ()
+    set (HOSTNAME_ID "unknown")
+endif ()
+
+## -- Get system info
+
+find_program (UNAME NAMES uname)
+function (getuname name flag)
+    execute_process (COMMAND ${UNAME} ${flag}
+                     OUTPUT_VARIABLE res
+                     OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set (${name} ${res} PARENT_SCOPE)
+endfunction ()
+
+getuname (osname -s)
+getuname (osrel -r)
+getuname (cpu -m)
+
+## -- Git command
+find_program (CTEST_GIT_COMMAND NAMES git)
+
+## -- make command
+find_program (MAKE NAMES make)
 
 #-----------------------------------------------------------  
-#-- Get build-specific information
+#-- Generate build-specific information
 #-----------------------------------------------------------  
+
+## -- CTest Site Name
+
+set (CTEST_SITE "${HOSTNAME_ID}-${HOSTNAME}")
+
+## -- CTest Build Name
+
+set (CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}-${compid}")
 
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
 
-## -- Empty the binary directory
-ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
+## -- BIN Dir 
+set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}-${CTEST_BUILD_GROUP}")
 
 ## -- Add the CTest script directory to the module path
-set (CTEST_ENVIRONMENT_SCRIPT "CTestEnvironment-${HOSTNAME_ID}")
-set (CTEST_RUNCTEST_SCRIPT "${CTEST_SCRIPT_DIRECTORY}/ctest/runctest-${HOSTNAME_ID}.sh")
+set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
+
+# -----------------------------------------------------------  
+# -- Store Build-Specific Info (environment variables)
+# -----------------------------------------------------------  
+
+set (ENV{PIO_DASHBOARD_SITE}        ${CTEST_SITE})
+set (ENV{PIO_DASHBOARD_BUILD_NAME}  ${CTEST_BUILD_NAME})
+set (ENV{PIO_DASHBOARD_SOURCE_DIR}  ${CTEST_SOURCE_DIRECTORY})
+set (ENV{PIO_DASHBOARD_BINARY_DIR}  ${CTEST_BINARY_DIRECTORY})
 
 # -----------------------------------------------------------  
 # -- Run CTest
 # -----------------------------------------------------------  
+
+## -- Empty the binary directory
+ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ## -- Start
 message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
@@ -44,7 +132,7 @@ ctest_update ()
 
 ## -- Configure 
 message (" -- Configure build - ${CTEST_BUILD_NAME} --")
-include (${CTEST_ENVIRONMENT_SCRIPT})
+include (CTestEnvironment-${HOSTNAME_ID})
 set (CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_CONFIGURE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
 ctest_configure ()
 
@@ -55,11 +143,21 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
-execute_process (COMMAND ${CTEST_RUNCTEST_SCRIPT} ${CTEST_SCRIPT_ARG}
-                 WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY})
+execute_process (COMMAND ${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh
+                         ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
+                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
 ctest_submit ()
+
+# -----------------------------------------------------------  
+# -- Clear environment
+# -----------------------------------------------------------  
+
+unset (ENV{PIO_DASHBOARD_SITE})
+unset (ENV{PIO_DASHBOARD_BUILD_NAME})
+unset (ENV{PIO_DASHBOARD_SOURCE_DIR})
+unset (ENV{PIO_DASHBOARD_BINARY_DIR})
 
 message (" -- Finished - ${CTEST_BUILD_NAME} --")

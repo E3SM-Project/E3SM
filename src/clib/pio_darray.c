@@ -802,11 +802,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 if(wmb->next!=NULL)
 	   wmb = wmb->next;
        }
+#ifdef _PNETCDF
        /* flush the previous record before starting a new one. this is collective */
        if((vdesc->request[0] != NC_REQ_NULL) ||
 	  (wmb->frame != NULL && vdesc->record != wmb->frame[0])){
 	 needsflush = 2;  // flush to disk
        }
+#endif
      }else{
        while(wmb->next != NULL && wmb->ioid!= -(ioid)){
 	 if(wmb->next!=NULL)
@@ -1347,6 +1349,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 	vdesc->request[reqcnt] = NC_REQ_NULL;
 	reqcnt++;
       }
+
       vdesc->nreqs=0;
       //      if(file->iosystem->io_rank < 2) printf("%s %d varid=%d\n",__FILE__,__LINE__,i);
 #ifdef FLUSH_EVERY_VAR

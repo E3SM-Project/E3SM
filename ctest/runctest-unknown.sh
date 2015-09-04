@@ -8,8 +8,11 @@
 #
 #==============================================================================
 
+# Get the CTest script directory
+scrdir=$1
+
 # Get the dashboard model name
-model=$1
+model=$2
 
 # Run the "ctest" command in another process
-ctest -S ctest/CTestScript-Test.cmake,${model} -V
+ctest -S ${scrdir}/CTestScript-Test.cmake,${model} -V

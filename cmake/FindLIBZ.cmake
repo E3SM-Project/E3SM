@@ -11,8 +11,6 @@
 #   LIBZ_INCLUDE_DIRS (LIST) - the LIBZ include directories
 #   LIBZ_LIBRARY      (FILE) - Path to the C library file
 #   LIBZ_LIBRARIES    (LIST) - link these to use LIBZ
-#   LIBZ_DEFINITIONS  (LIST) - preprocessor macros to use with LIBZ
-#   LIBZ_OPTIONS      (LIST) - compiler options to use LIBZ
 #
 include (LibFind)
 
@@ -26,18 +24,16 @@ if (NOT LIBZ_FOUND)
 
     # Manually add the MPI include and library dirs to search paths
     if (MPI_C_FOUND)
-        set (LIBZ_INCLUDE_HINTS ${MPI_C_INCLUDE_PATH})
-        set (LIBZ_LIBRARY_HINTS)
+        set (LIBZ_PATHS ${MPI_C_INCLUDE_PATH})
         foreach (lib IN LISTS MPI_C_LIBRARIES)
             get_filename_component (libdir ${lib} PATH)
-            list (APPEND LIBZ_LIBRARY_HINTS ${libdir})
+            list (APPEND LIBZ_PATHS ${libdir})
             unset (libdir)
         endforeach ()
     endif ()
     
     # Search for the package
     find_package_component(LIBZ
-                           INCLUDE_HINTS ${LIBZ_INCLUDE_HINTS}
-                           LIBRARY_HINTS ${LIBZ_LIBRARY_HINTS})
+                           PATHS ${LIBZ_PATHS})
 
 endif ()
