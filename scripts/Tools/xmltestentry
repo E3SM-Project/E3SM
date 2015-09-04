@@ -1,0 +1,92 @@
+#!/usr/bin/env perl
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+
+my %opts = ();
+GetOptions(
+	   "file=s"    => \$opts{'file'},
+	   "filetab=s" => \$opts{'filetab'},
+	   "filechk=s" => \$opts{'filechk'}
+	   );
+my $file    = $opts{'file'}; 
+my $filetab = $opts{'filetab'}; 
+my $filechk = $opts{'filechk'}; 
+
+my $name = ' ';
+my $status = ' ';
+my $compare_hist = "---";
+my $compare = "---";
+
+open(FILE, $file) || die("Could not open file!");
+my @data=<FILE>;
+my $line_num = 0;
+my $check_num = 0;
+my @check_status;
+foreach my $line (@data)
+{
+    chomp($line);
+    my @entry = split(' ',$line);
+    $line_num++; 
+    if ( $line_num == 1 ) {
+	$name = $entry[1];
+	$status = $entry[0]
+    }
+    if ( $line_num > 1 ) {
+	if ($entry[1] =~ /\.compare_hist\./) {
+	    $compare_hist = $entry[0];
+	} elsif ($entry[1] =~ /\.compare\./) {
+	    $compare = $entry[0];
+	}
+    }
+}
+
+foreach my $line (@data)
+{
+    chomp($line);
+    my @entry = split(' ',$line);
+    if ($entry[0] =~ /CHE/) {
+	$check_status[$check_num] = $line;
+	$check_num++; 
+    }
+}
+close (FILE);
+
+open (FILE, ">>$filetab");
+print FILE "  \n";
+print FILE "<row>\n";
+print FILE "<entry>$name </entry>\n";
+
+
+if ($status =~ "FAIL") {
+  print FILE "<entry><b>$status</b> </entry>\n";
+  } else {
+  print FILE "<entry>$status </entry>\n";
+}
+if ($compare_hist =~ "FAIL") {
+  print FILE "<entry><b>$compare_hist</b> </entry>\n";
+  } else {
+  print FILE "<entry>$compare_hist </entry>\n";
+}
+if ($compare =~ "FAIL") {
+  print FILE "<entry><b>$compare</b> </entry>\n";
+  } else {
+  print FILE "<entry>$compare </entry>\n";
+}
+
+
+print FILE "<entry></entry>\n";
+print FILE "</row>\n";
+print FILE "  \n";
+close (FILE);
+
+if ($check_num > 0) {
+    open (FILE, ">>$filechk");
+    print FILE "$check_status[0] \n";
+    print FILE "$check_status[1] \n";
+    print FILE "  \n";
+    close (FILE);
+}
+
