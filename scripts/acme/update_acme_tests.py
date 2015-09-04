@@ -37,6 +37,7 @@ __TEST_SUITES = {
                            "ERS.ne30_g16.B1850C5",
                            "ERS.f19_f19.FAMIPC5",
                            "ERS.ne16_g37.B1850C5",
+                           "ERS.f09_g16.ICLM45VIC",
                            "ERS_D.f45_g37.B1850C5",
                            "ERS_IOP_Ld3.f19_f19.FAMIPC5",
                            "ERS_Ld3.ne16_g37.FC5",
@@ -47,6 +48,7 @@ __TEST_SUITES = {
                            "PFS.ne30_ne30.FC5",
                            "SEQ_IOP_PFC.f19_g16.X",
                            "SEQ_PFC.f45_g37.B1850C5",
+                           "SMS.f09_g16.ICRUCLM45",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D.f19_g16.B20TRC5",
                            "SMS_D_Ld3.ne16_ne16.FC5"]
