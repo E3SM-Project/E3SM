@@ -1,119 +1,69 @@
 #!/usr/bin/env perl
+
 #=======================================================================
-#
 #  This is a script to return the decomposition information for CICE
 #
 # Usage:
-#
-# generate_cice_decomp [options]
-#
+#      generate_cice_decomp [options]
 # To get help on options and usage:
-#
-# generate_cice_decomp -help
+#      generate_cice_decomp -help
 #
 #=======================================================================
 
-use Cwd;
 use strict;
-#use diagnostics;
 use Getopt::Long;
 use English;
 
 #-----------------------------------------------------------------------------------------------
-
-#Figure out where configure directory is and where can use the XML/Lite module from
 my $ProgName;
 ($ProgName = $PROGRAM_NAME) =~ s!(.*)/!!; # name of program
-my $ProgDir = $1;                         # name of directory where program lives
-
-my $cwd = getcwd();  # current working directory
-my $cfgdir;
-my $utilroot = $ENV{'UTILROOT'};
-
-if ($ProgDir) { 
-    $cfgdir = $ProgDir; 
-} else { 
-    $cfgdir = $cwd; 
-}
-
-# The XML::Lite module is required to parse the XML configuration files.
-my $xmldir;
-if (-f "../Tools/XML/Lite.pm") {
-    $xmldir = "../Tools";
-} elsif (-f "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib/XML/Lite.pm") {
-    $xmldir = "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib";
-} else {
-    die <<"EOF";
-** (generate_cice_decomp): Cannot find perl module \"XML/Lite.pm\" 
-EOF
-}
-	  
-#-----------------------------------------------------------------------------------------------
-# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( $cfgdir, "$cfgdir/perl5lib", "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib", "$utilroot/Tools/perl5lib" );
-unshift @INC, @dirs;
-require XML::Lite;
-
-my $result = eval "require Decomp::Config";
-if ( ! defined($result) ) {
-   die <<"EOF";
-** (generate_cice_decomp): Cannot find perl module \"Decomp::Config\" from directories: @INC
-EOF
-}
-require Decomp::Config;
 
 #-----------------------------------------------------------------------------------------------
-my $output = "all";
-my $res = "gx1v6";
-my $nx  = 320;
-my $ny  = 384;
-
 sub usage {
     die <<EOF;
 SYNOPSIS
      $ProgName [options]
 OPTIONS
+     -ccsmroot <path>               Full pathname for ccsmroot
+                                    (required)
      -nproc <number>      (or -n)   Number of mpi tasks used.	
                                     (required)
-     -res <resolution>    (or -r)   Horizontal resolution (gx1v6 etc.). 
-                                    (default $res))
      -nx <number>                   number of lons 
-                                    (required)
+                                    (optional, default is 320)
      -ny <number>                   number of lats
-                                    (required)
+                                    (optional, default is 384)
+     -res <resolution>    (or -r)   Horizontal resolution 
+                                    (optional, default gx1v6)
      -thrds <number>      (or -t)   Number of threads per mpi task
-                                    (default 1)
+                                    (optional, default 1)
      -output <type>	  (or -o)   Either output: all, maxblocks, bsize-x, bsize-y, or decomptype
-			            (default: $output)
+			            (optional, default all)
 
 EXAMPLES
 
    $ProgName -res gx1v6 -nx 320 -ny 384  -nproc 80 -output maxblocks
 
-   will return a single value -- the optimum max number of blocks to use.
+   will return a single value -- the optimum max number of blocks to utilize
 
 EOF
 }
 
 #------------------------------------------------------------------------------------------------
-
-  my %opts = (
-                res        => $res,
-                nx         => $nx, 
-                ny         => $ny, 
+my %opts = (
+                ccsmroot   => undef,
+                res        => 'gx1v6',
+                nx         => 320,
+                ny         => 384,
                 nproc      => undef,
                 thrds      => 1,
-                output     => $output,
+                output     => 'all',
                 printing   => 1,
                 help       => 0,
-                file       => "$cfgdir/cice_decomp.xml",
                 spacecurve => 0,
-                model      => "cice",
-                platform   => "unset",
            );
 
-  my $cmdline = @ARGV;
-  GetOptions( 
+GetOptions( 
+              "ccsmroot=s"   => \$opts{'ccsmroot'},
               "r|res=s"      => \$opts{'res'},
               "nx=i"         => \$opts{'nx'},
               "ny=i"         => \$opts{'ny'},
@@ -121,31 +71,34 @@ EOF
               "t|thrds=i"    => \$opts{'thrds'},
               "o|output=s"   => \$opts{'output'},
               "h|elp"        => \$opts{'help'},
-              "m|model=s"    => \$opts{'model'},     #no longer needed
               "s|spacecurve" => \$opts{'spacecurve'},#no longer needed
-              "p|platform=s" => \$opts{'platform'},  #no longer needed
           ) or usage();
 
-  # Check for unparsed arguments
-  if (@ARGV) {
-      print "ERROR: unrecognized arguments: @ARGV\n";
-      usage();
-  }
-  if ( $opts{'help'} ) {
-      usage();
-  }
 
-  foreach my $key ( keys( %opts ) ) {
-     if ( $key ne "help" && ! defined($opts{$key}) ) {
-        print "ERROR: required input $key was not set\n";
-        usage();
-     }
-  }
+# Check for unparsed arguments
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+if ( $opts{'help'} ) {
+    usage();
+}
 
-$opts{'ProgName'} = $ProgName;
-$opts{'ProgDir'}  = $cfgdir;
-$opts{'cmdline'}  = $cmdline;
+foreach my $key ( keys( %opts ) ) {
+    if ( $key ne "help" && ! defined($opts{$key}) ) {
+	print "ERROR: required input $key was not set\n";
+	usage();
+    }
+}
 
+#------------------------------------------------------------------------------------------------
+# Add perl5lib to the list of paths that Perl searches for modules
+my $cesmroot = $opts{'ccsmroot'};
+my @dirs = ("$cesmroot/cime/utils/perl5lib");
+unshift @INC, @dirs;
+require Decomp::Config;
+
+#------------------------------------------------------------------------------------------------
 # Redefine nproc to be total procs, nproc*thrds
 $opts{'nproc'} = $opts{'nproc'} * $opts{'thrds'};
 
@@ -156,7 +109,8 @@ my $nlon = $opts{'nx'};
 # Try to read from the xml file
 my $dcmp = Decomp::Config->new( \%opts );
 my %decomp = ( maxblocks=>0, bsize_x=>0, bsize_y=>0, decomptype=>"", decompset=>"" );
-my $matches = $dcmp->ReadXML( $opts{'file'}, \%decomp );
+my $file = "$cesmroot/components/cice/bld/cice_decomp.xml";
+my $matches = $dcmp->ReadXML( $file, \%decomp );
 
 # If no xml entry, try to generate something
 if ( $decomp{'maxblocks'} == 0) {
@@ -164,32 +118,34 @@ if ( $decomp{'maxblocks'} == 0) {
 }
 
 # adjust maxblocks to take into account threading
-  $decomp{'maxblocks'} = $decomp{'maxblocks'} * $opts{'thrds'};
+$decomp{'maxblocks'} = $decomp{'maxblocks'} * $opts{'thrds'};
 
-  if ( $decomp{'maxblocks'} == 0 ) {
-     printf "%d %s",-1, "ERROR:($ProgName) No Decomp Created \n";
-  } else {
-     if (      $opts{'output'} eq "all"       ) {
-	 printf "%d %d %d %d %d %s %s", 
-	 $nlon, $nlat,
-	 $decomp{'bsize_x'}, $decomp{'bsize_y'}, 
-	 $decomp{'maxblocks'}, $decomp{'decomptype'}, $decomp{'decompset'};
-      } elsif ( $opts{'output'} eq "maxblocks" ) {
-        print $decomp{'maxblocks'};
-      } elsif ( $opts{'output'} eq "bsize_x"   ) {
-        print $decomp{'bsize_x'};
-      } elsif ( $opts{'output'} eq "bsize_y"   ) {
-        print $decomp{'bsize_y'};
-      } elsif ( $opts{'output'} eq "decomptype") {
-        print $decomp{'decomptype'};
-      } elsif ( $opts{'output'} eq "decompset") {
+if ( $decomp{'maxblocks'} == 0 ) {
+    printf "%d %s",-1, "ERROR:($ProgName) No Decomp Created \n";
+} else {
+    if (      $opts{'output'} eq "all"       ) {
+	printf "%d %d %d %d %d %s %s", $nlon, $nlat,
+	$decomp{'bsize_x'}, $decomp{'bsize_y'}, 
+	$decomp{'maxblocks'}, $decomp{'decomptype'}, $decomp{'decompset'};
+    } elsif ( $opts{'output'} eq "maxblocks" ) {
+	print $decomp{'maxblocks'};
+    } elsif ( $opts{'output'} eq "bsize_x"   ) {
+	print $decomp{'bsize_x'};
+    } elsif ( $opts{'output'} eq "bsize_y"   ) {
+	print $decomp{'bsize_y'};
+    } elsif ( $opts{'output'} eq "decomptype") {
+	print $decomp{'decomptype'};
+    } elsif ( $opts{'output'} eq "decompset") {
         print $decomp{'decompset'};
-      } else {
-        print "ERROR:($ProgName) bad argument to output option $opts{'output'}\n";
-        usage();
-      }
-      print "\n";
-  }
+    } else {
+	print "ERROR:($ProgName) bad argument to output option $opts{'output'}\n";
+	usage();
+    }
+    print "\n";
+}
+
+# Finished successfully
+exit 0;
 
 #-----------------------------------------------------------------------------------------------
 sub CalcDecompInfo {
@@ -236,7 +192,7 @@ sub CalcDecompInfo {
       $dtypet = "roundrobin";
       $dtype  = "roundrobin";
   } elsif ($nprocs * $nprocs > $nlons * $nlats * 6) {
-#tcraig for testing  } elsif ($nprocs * $nprocs > 0) {
+      #tcraig for testing  } elsif ($nprocs * $nprocs > 0) {
       $dtypet = "spacecurve";
       $dtype  = "blkrobin";
   } else {

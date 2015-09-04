@@ -34,7 +34,7 @@ use strict;
 #use warnings;
 #use diagnostics;
 
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -166,6 +166,20 @@ my $eol = "\n";
 my %cfg = ();           # build configuration
 
 #-----------------------------------------------------------------------------------------------
+# CESM root directory and perl5lib root directories  
+my $cesmroot = abs_path("$cfgdir/../../../");
+my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+
+if (! -e $cesmroot) {
+    die "** Invalid CESM root directory: $cesmroot ** ";
+}
+if (! -e "$perl5lib") {
+    die "** Invalid perl5lib root directory: $perl5lib ** ";
+}
+
+if ($print>=2) { print "Setting CESM root directory to $cesmroot$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules and configuration files.
 # Look for them in the directory that contains the configure script.
 
@@ -175,47 +189,21 @@ my $config_def_file = "config_files/definition.xml";
 ** Cannot find configuration definition file \"$config_def_file\" in directory \"$cfgdir\" **
 EOF
 
-# The XML::Lite module is required to parse the XML configuration files.
-(-f "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib/XML/Lite.pm") or  die <<"EOF";
-** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib\" **
-EOF
-
 # The Build::Config module provides utilities to store and manipulate the configuration.
-(-f "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib/Build/Config.pm") or  die <<"EOF";
-** Cannot find perl module \"Build/Config.pm\" in directory \"$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib\" **
+(-f "$perl5lib/Build/Config.pm") or  die <<"EOF";
+** Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib\" **
 EOF
 
 if ($print>=2) { print "Setting CICE configuration script directory to $cfgdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-unshift @INC, "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib";
-unshift @INC, "$cfgdir";
-require XML::Lite;
+# Add perl5lib to the list of paths that Perl searches for modules
+unshift @INC, "$perl5lib";
 require Build::Config;
 
 # Initialize the configuration.  The $config_def_file provides the definition of a CICE
 # configuration. $cfg_ref is a reference to the new configuration object.
 my $cfg_ref = Build::Config->new("$cfgdir/$config_def_file");
-
-#-----------------------------------------------------------------------------------------------
-# CICE root directory.  
-my $cice_root = absolute_path("$cfgdir/../../../..");
-
-if (-d "$cice_root/models/ice/cice/src") {
-    $cfg_ref->set('cice_root', $cice_root);
-} else {
-    die <<"EOF";
-** Invalid CICE root directory: $cice_root
-** 
-** The CICE root directory must contain the subdirectory models/ice/cice/src/.
-** It is derived from "config_dir/../../../.." where config_dir is the
-** directory in the CICE distribution that contains the configuration
-** scripts.
-EOF
-}
-
-if ($print>=2) { print "Setting CICE root directory to $cice_root$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # CICE build directory.
@@ -454,7 +442,9 @@ EOF
 	} else {
 	    
 	    # If not serial, use the script provided by CICE to generate the default decomposition
-	    my $cice_decomp_gen = "$cice_root/models/ice/cice/bld/generate_cice_decomp.pl -res $hgrid -nproc $cice_ntasks -thrds $cice_nthreads -output all";
+	    my $cice_decomp_gen = "$cesmroot/components/cice/bld/generate_cice_decomp.pl";
+	    $cice_decomp_gen .=  "-ccsmroot $cesmroot -res $hgrid ";
+	    $cice_decomp_gen .=  "-nproc $cice_ntasks -thrds $cice_nthreads -output all";
 	    $cice_decomp_gen .= " -nx $nlon -ny $nlat" if (defined ($nlon) && defined ($nlat));
 	    my $cice_decomp = `$cice_decomp_gen `;
 	    
@@ -508,13 +498,13 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CICE_cppdefs';         # name of output file for cice's cppdefs in ccsm
+my $cpp_filename     = 'CICE_cppdefs';         # name of output file for cice's cppdefs 
 
-# Write the filepath file for ccsm.
-write_filepath("$cice_bld/$fp_filename", $cfg_ref);
+# Write the filepath file 
+write_filepath("$cice_bld/$fp_filename", $cesmroot);
 if ($print>=2) { print "creating $cice_bld/$fp_filename\n"; }
 
-# Write the file for cice's cppdefs needed in ccsm.
+# Write the file for cice's cppdefs 
 write_cppdefs("$cice_bld/$cpp_filename", $make_cppdefs);
 if ($print>=2) { print "creating $cice_bld/$cpp_filename\n"; }
 
@@ -540,18 +530,17 @@ exit;
 
 sub write_filepath
 {
-    my ($file, $cfg_ref) = @_;
+    my ($file, $cesmroot) = @_;
     my  $fh = new IO::File;
 
     my $CASEROOT = "$ENV{'CASEROOT'}";
-    my $CODEROOT = "$ENV{'CODEROOT'}";
 
     $fh->open(">$file") or die "** can't open filepath file: $file\n";
 
     print $fh "$CASEROOT/SourceMods/src.cice\n";
-    print $fh "$CODEROOT/ice/cice/src/drivers/cpl\n";
-    print $fh "$CODEROOT/ice/cice/src/mpi\n";
-    print $fh "$CODEROOT/ice/cice/src/source\n";
+    print $fh "$cesmroot/components/cice/src/drivers/cpl\n";
+    print $fh "$cesmroot/components/cice/src/mpi\n";
+    print $fh "$cesmroot/components/cice/src/source\n";
 
     $fh->close;
 }

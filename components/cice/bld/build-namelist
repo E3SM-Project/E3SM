@@ -29,8 +29,7 @@
 use strict;
 #use warnings;
 #use diagnostics;
-
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -59,6 +58,7 @@ OPTIONS
      -verbose              Turn on verbose echoing of informational messages.
      -version [or -v]      Echo the SVN tag name used to check out this CICE distribution.
      -caseroot             CASEROOT directory variable
+     -rundir               RUNDIR directory variable
      -scriptsroot          SCRIPTSROOT directory variable
      -inst_string          INST_STRING variable
 
@@ -83,9 +83,9 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
-    $cfgdir = $cwd;
+   $cfgdir = $cwd;
 }
 
 my $cfg_cache = "config_cache.xml";       # Default name of configuration cache file
@@ -100,6 +100,7 @@ my %opts = ( config      => $cfg_cache,
 	     dir         => $outdirname,
 	     silent      => 0,
 	     caseroot    => undef,
+	     rundir      => undef,
 	     scriptsroot => undef,
 	     inst_string => undef,
 	    );
@@ -116,6 +117,7 @@ GetOptions(
     "v|verbose"     => \$opts{'verbose'},
     "version"       => \$opts{'version'},
     "caseroot=s"    => \$opts{'caseroot'},
+    "rundir=s"      => \$opts{'rundir'},
     "scriptsroot=s" => \$opts{'scriptsroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
 )  or usage();
@@ -151,13 +153,22 @@ EOF
 if ($print>=2) { print "Using CICE configuration cache file $opts{'config'}$eol"; }
 
 my $CASEROOT;
-my $SCRIPTSROOT;      
-my $INST_STRING;
+my $RUNDIR;
 if ( defined $opts{'caseroot'} ) {
     $CASEROOT    = $opts{'caseroot'}; 
-    $SCRIPTSROOT = $opts{'scriptsroot'};       
-    $INST_STRING = $opts{'inst_string'}; 
 }
+
+my $SCRIPTSROOT;     
+if ( defined $opts{'scriptsroot'} ) {
+    $SCRIPTSROOT = $opts{'scriptsroot'};     
+}
+
+my $INST_STRING;
+if ( defined $opts{'inst_string'} ) {
+    $INST_STRING = $opts{'inst_string'}; 
+    $RUNDIR      = $opts{'rundir'};
+}
+
 
 # Validate some of the commandline option values.
 validate_options("commandline", \%opts);
@@ -169,35 +180,38 @@ validate_options("commandline", \%opts);
 
 # The root directory for the input data files must be specified.
 
-my $perl5lib_dir = "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib";
+my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+if (! -d "$cesmroot") {
+    die "** Invalid CESM root directory: $cesmroot ** ";
+}
 
-# The XML::Lite module is required to parse the XML files.
-(-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory \"$perl5lib_dir\" **
-EOF
+my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+if (! -d "$perl5lib") {
+    die "** Invalid perl5lib root directory: $perl5lib ** ";
+}
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file
-(-f "$perl5lib_dir/Build/Config.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/Config.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
-(-f "$perl5lib_dir/Build/NamelistDefinition.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
 # variables based on finding a best fit with the attributes specified in the defaults file.
-(-f "$perl5lib_dir/Build/NamelistDefaults.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::Namelist module provides utilities to parse input namelists, to query and modify
 # namelists, and to write output namelists.
-(-f "$perl5lib_dir/Build/Namelist.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/Namelist.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The namelist definition file contains entries for all namelist variables that
@@ -218,12 +232,12 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib_dir";
-require XML::Lite;
+unshift @INC, "$perl5lib", "$CASEROOT/Tools", "$cesmroot/cime/scripts/Tools";
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the CICE config_cache.xml file. 
@@ -305,10 +319,13 @@ if ($cice_mode ne 'prognostic' && $cice_mode ne 'thermo_only') {
 # Determine xml variables
 
 my $inputdata_rootdir = undef;
+my $CASE;
 my $ICE_GRID;
 my $ICE_DOMAIN_PATH; 
 my $ICE_DOMAIN_FILE;
 my $RUN_TYPE;
+my $CONTINUE_RUN;
+my $ICE_NCPL;
 my $RUN_REFCASE;
 my $RUN_REFDATE;
 my $RUN_REFTOD;
@@ -318,25 +335,21 @@ my $SSTICE_YEAR_ALIGN;
 my $SSTICE_YEAR_START;   
 my $SSTICE_YEAR_END;     
 my $SSTICE_STREAM;       
+
 my %xmlvars = ();
 if ( defined $opts{'caseroot'} ) {
-    my @files = <${CASEROOT}/*xml>;
-    foreach my $file (@files) {
-	my $xml  = XML::Lite->new( "$file" );
-	my @e = $xml->elements_by_name('entry');
-	while ( my $e = shift @e ) {
-	    my %a = $e->get_attributes();
-	    $xmlvars{$a{'id'}} = $a{'value'};
-	}
-    }
+
+    SetupTools::getxmlvars($CASEROOT, \%xmlvars);
     foreach my $attr (keys %xmlvars) {
-	if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
-	if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
+	$xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
     }
     
     $ICE_GRID        = $xmlvars{'ICE_GRID'};
     $ICE_DOMAIN_PATH = $xmlvars{'ICE_DOMAIN_PATH'};
+    $CASE            = $xmlvars{'CASE'};
     $ICE_DOMAIN_FILE = $xmlvars{'ICE_DOMAIN_FILE'};
+    $ICE_NCPL        = $xmlvars{'ICE_NCPL'};
+    $CONTINUE_RUN    = $xmlvars{'CONTINUE_RUN'};
     $RUN_TYPE        = $xmlvars{'RUN_TYPE'};
     $RUN_REFCASE     = $xmlvars{'RUN_REFCASE'};
     $RUN_REFDATE     = $xmlvars{'RUN_REFDATE'};
@@ -350,7 +363,7 @@ if ( defined $opts{'caseroot'} ) {
 	$SSTICE_STREAM        = $xmlvars{'SSTICE_STREAM'};
     }
 
-    # Check that the CCSM inputdata root directory has been specified.  This must be
+    # Check that the CESM inputdata root directory has been specified.  This must be
     # a local or nfs mounted directory.
     if (defined($opts{'csmdata'})) {
 	$inputdata_rootdir = $opts{'csmdata'};
@@ -358,7 +371,7 @@ if ( defined $opts{'caseroot'} ) {
 	$inputdata_rootdir = $xmlvars{'DIN_LOC_ROOT'};
     }
 }
-if ($print>=2) { print "CCSM inputdata root directory: $inputdata_rootdir$eol"; }
+if ($print>=2) { print "CESM inputdata root directory: $inputdata_rootdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add default values for required namelist variables that have not been previously set.
@@ -370,20 +383,20 @@ if ($print>=2) { print "CCSM inputdata root directory: $inputdata_rootdir$eol"; 
 
 if ( defined $opts{'caseroot'} ) {
     if ( $RUN_TYPE eq 'startup' && $cice_mode ne 'prescribed') {
-	add_default($nl, 'ice_ic');
+        add_default($nl, 'ice_ic');
     }
     if ( $RUN_TYPE eq 'startup' && $cice_mode eq 'prescribed') {	
 	add_default($nl, 'ice_ic', 'val'=>"default", 'noprepend'=>"1");
     }
     if ($RUN_TYPE eq 'branch' || $RUN_TYPE eq 'hybrid') {
-	my $ice_ic;
-	if (-e "${RUN_REFCASE}.cice${INST_STRING}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc") {
-	    $ice_ic = "${RUN_REFCASE}.cice${INST_STRING}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc";
-	} else {
-	    $ice_ic = "${RUN_REFCASE}.cice.r.${RUN_REFDATE}-${RUN_REFTOD}.nc";
-	}
-	add_default($nl, 'ice_ic', 'val'=>"$ice_ic", 'noprepend'=>"1");
-    }
+       my $ice_ic;
+       if (-e "${RUN_REFCASE}.cice${INST_STRING}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc") {
+           $ice_ic = "${RUN_REFCASE}.cice${INST_STRING}.r.${RUN_REFDATE}-${RUN_REFTOD}.nc";
+       } else {
+           $ice_ic = "${RUN_REFCASE}.cice.r.${RUN_REFDATE}-${RUN_REFTOD}.nc";
+       }
+       add_default($nl, 'ice_ic', 'val'=>"$ice_ic", 'noprepend'=>"1");
+   }
 } else {
     # This is used for cam mode only
     add_default($nl, 'ice_ic', 'val'=>'default', 'noprepend'=>"1");
@@ -664,7 +677,7 @@ sub add_default {
 #
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
-#  $inputdata_rootdir -- CCSM inputdata root directory
+#  $inputdata_rootdir -- CESM inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -717,7 +730,7 @@ sub add_default {
 
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
-    # the CCSM inputdata root directory.
+    # the CESM inputdata root directory.
     # TODO: unless ignore_abs is passed as argument - and filename is not equal to 'default'  
     if ($is_input_pathname eq 'abs') {
 	unless ($opts{'noprepend'}){
@@ -866,69 +879,6 @@ sub set_abs_filepath {
 
 #-----------------------------------------------------------------------------------------------
 
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /\.\./ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
-#-------------------------------------------------------------------------------
-
 sub valid_option {
 
     my ($val, @expect) = @_;
@@ -942,7 +892,7 @@ sub valid_option {
     return undef;
 }
 
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
 
 sub validate_options {
 
@@ -953,7 +903,7 @@ sub validate_options {
 
 }
 
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------
 
 sub quote_string {
     my $str = shift;
@@ -965,18 +915,6 @@ sub quote_string {
     return $str;
 }
 
-#-------------------------------------------------------------------------------
-
-sub expand_env_xml {
-
-    my $value = shift;
-
-    if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
-	$value =~ s/\$${1}/$subst/g;
-    }
-    return $value; 
-}	 
 
 
 
