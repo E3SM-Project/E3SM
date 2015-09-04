@@ -24,12 +24,12 @@ if ($ProgDir) {
 
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
 # and then get XML::Lite;
-unshift @INC, "$cfgdir/perl5lib";
+unshift @INC, "$cfgdir/../../../cime/utils/perl5lib";
 require XML::Lite;
 
 # Find and open grid file
-my $scriptsroot = "$cfgdir/../../../../scripts";
-my $grid_file = "$scriptsroot/ccsm_utils/Case.template/config_grid.xml";
+my $scriptsroot = "$cfgdir/../../../cime/scripts";
+my $grid_file = "$scriptsroot/Tools/config_grid.xml";
 my $xml_grid = XML::Lite->new( $grid_file );
 
 my @e = $xml_grid->elements_by_name( "gridhorz" );

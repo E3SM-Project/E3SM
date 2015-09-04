@@ -46,7 +46,7 @@ limit stacksize unlimited
 
 ## ROOT OF CAM DISTRIBUTION - probably needs to be customized.
 ## Contains the source code for the CAM distribution.
-## (the root directory contains the subdirectory "models")
+## (the root directory contains the subdirectory "components/")
 set camroot      = /tmp/work/$LOGNAME/...
 
 ## ROOT OF CAM DATA DISTRIBUTION
@@ -69,7 +69,7 @@ set stop_n       = 1
 set wrkdir       = /lustre/widow1/scratch/$LOGNAME
 set blddir       = $wrkdir/$case/bld
 set rundir       = $wrkdir/$case
-set cfgdir       = $camroot/models/atm/cam/bld
+set cfgdir       = $camroot/components/cam/bld
 
 ## Ensure that run and build directories exist
 mkdir -p $rundir                || echo "cannot create $rundir" && exit 1

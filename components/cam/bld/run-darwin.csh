@@ -16,7 +16,7 @@ setenv LIB_NETCDF /usr/local/lib
 
 ## ROOT OF CAM DISTRIBUTION - probably needs to be customized.
 ## Contains the source code for the CAM distribution.
-## (the root directory contains the subdirectory "models")
+## (the root directory contains the subdirectory "components")
 set camroot      = $HOME/cam_trunk
 
 ## ROOT OF CAM DATA DISTRIBUTION - needs to be customized unless running at NCAR.
@@ -43,7 +43,7 @@ set stop_n      = 10
 set wrkdir       = ~/runs/
 set blddir       = $wrkdir/$case/bld
 set rundir       = $wrkdir/$case
-set cfgdir       = $camroot/models/atm/cam/bld
+set cfgdir       = $camroot/components/cam/bld
 set res          = "8x16"
 if ( $dyn == "fv" ) set res = "10x15"
 

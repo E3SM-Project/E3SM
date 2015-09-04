@@ -1,0 +1,39 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR cam.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+
+chdir "${OBJROOT}/atm/obj";
+
+if (-f "$CASEBUILD/camconf/Filepath") {
+    my $sysmod = "cp ${CASEBUILD}/camconf/Filepath ./tmp_filepath"; 
+    system($sysmod) == 0 or die "ERROR cam.buildexe: $sysmod failed: $?\n";
+} else {
+    die "ERROR cam.buildexe  - missing $CASEBUILD/camconf/Filepath";
+}
+
+if (-f "Filepath") {
+    my $sysmod = "cmp -s tmp_filepath Filepath || mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR cam.buildexe: $sysmod failed: $?\n";
+} else {
+    my $sysmod = "mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR cam.buildexe: $sysmod failed: $?\n";
+}
+
+my $camdefs = `cat $CASEBUILD/camconf/CCSM_cppdefs`;
+chomp($camdefs);
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cam COMPLIB=${LIBROOT}/libatm.a USER_CPPDEFS=\"${camdefs}\" -f ${CASETOOLS}/Makefile";
+system($sysmod) == 0 or die "ERROR: cam.buildexe $sysmod failed: $?\n";
+
+exit(0);

@@ -21,7 +21,7 @@ use File::Copy;
 use File::Compare;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(chem_preprocess get_species_list);
+our @EXPORT = qw(chem_preprocess chem_number_adv get_species_list);
 our $VERSION = 1.00;
 
 my $print ;
@@ -49,9 +49,8 @@ sub chem_preprocess
     }
 
     my $chem_proc_bld = "$cam_bld/chem_proc";
-    my $chem_src_dir  = "$chem_proc_bld/source";
 
-    my $chem_preprocessor = "$cam_root/models/atm/cam/chem_proc";
+    my $chem_preprocessor = "$cam_root/components/cam/chem_proc";
 
     my $chem_mech_infile;
 
@@ -88,7 +87,7 @@ sub chem_preprocess
 	    $usr_mech_infile = "$chem_proc_bld/chem_mech.in";
 	    write_chem_preproc($usr_mech_infile, $cfg_ref, $chem_preprocessor , $chem_proc_bld);
 	} else {
-	    $usr_mech_infile = "$cam_root/models/atm/cam/src/chemistry/pp_${chem_pkg}/chem_mech.in";
+	    $usr_mech_infile = "$cam_root/components/cam/src/chemistry/pp_${chem_pkg}/chem_mech.in";
 	}
     }
 
@@ -131,6 +130,14 @@ sub chem_preprocess
 	copy( "$chem_proc_bld/chem_mech.doc" ,$cam_bld) or die "copy failed $! \n";
     }
 
+    return (chem_number_adv($chem_proc_src));
+}
+sub chem_number_adv
+{  
+
+    my ($chem_proc_src) = @_;
+
+    my $chem_nadv = 0;
     # determine the number of transported chemical tracers
     open INPUT, "$chem_proc_src/chem_mods.F90";
     while ( my $line = <INPUT> ) {
@@ -156,7 +163,7 @@ sub chem_preprocess
 
     my $chem_nwat = 0;
 
-    my @species = get_species_list($chem_src_dir);
+    my @species = get_species_list($chem_proc_src);
     foreach my $tracer (@species) {
 	if ( $tracer eq 'H2O' ) {
 	    $chem_nwat = 1;
@@ -316,11 +323,11 @@ sub build_chem_preproc
 	    print " ****************************************** \n";
 	    print " ****************************************** \n";
 	}
-	$ENV{'COMPILER'} = $cmplr ;
+	$ENV{'USER_FC'} = $cmplr ;
     } else {
         my $cmplr = find_preproc_compiler();
         if ($cmplr) {
-	    $ENV{'COMPILER'} = $cmplr ;
+	    $ENV{'USER_FC'} = $cmplr ;
 	} else {
 	    die "** Not able to find fortran compiler for chemistry preprocessor ** \n";
 	}
@@ -328,8 +335,8 @@ sub build_chem_preproc
     if ($print) {
 	print " **************************************************** \n";
 	print " compile preprocessor with this fortran compiler:\n";
-	my $prnt_cmplr = $ENV{'COMPILER'};
-	print " env var COMPILER = $prnt_cmplr \n";
+	my $prnt_cmplr = $ENV{'USER_FC'};
+	print " env var USER_FC = $prnt_cmplr \n";
 	print " **************************************************** \n";
     }
     my $log_file = "$chem_proc_bld/MAKE.out";

@@ -125,7 +125,7 @@ if ($ProgDir) {
 }
 
 # CAM root directory.  
-my $cam_root = absolute_path("$cfgdir/../../../..");
+my $cam_root = absolute_path("$cfgdir/../../..");
 
 my $cfg_cache = "config_cache.xml";           # Default name of configuration cache file
 my $outdirname = ".";                         # Default name of output directory name
@@ -3349,7 +3349,7 @@ my $ice_comp = $cfg->get('ice');
 if ($ice_comp eq 'cice' and $cam_build and $ice_active) {
 
     # The CICE component has its own build-namelist utility.
-    my $cice_bldnl = "$cam_root/models/ice/cice/bld/build-namelist";
+    my $cice_bldnl = "$cam_root/components/cice/bld/build-namelist";
 
     # Set up the commandline args
 

@@ -85,7 +85,7 @@ rm -rf $SCAM_MODS/*
 set BLDDIR    = $WRKDIR/$CASE/{$CASE}_bld_L${levarr}_${aero_mode}  && if (! -e  $BLDDIR) mkdir -p $BLDDIR
 cd $BLDDIR
 
-set IOPDESC = `grep IOP\: $CAM_ROOT/models/atm/cam/bld/namelist_files/use_cases/scam_${iopname}.xml`
+set IOPDESC = `grep IOP\: $CAM_ROOT/components/cam/bld/namelist_files/use_cases/scam_${iopname}.xml`
 
 echo ""
 echo "***** $IOPDESC *****"
@@ -95,7 +95,7 @@ echo ""
 ## Configure for building
 ##------------------------------------------------
    
-$CAM_ROOT/models/atm/cam/bld/configure -s -chem $aero_mode -nlev $levarr -dyn eul -res 64x128 -nospmd -nosmp -cppdefs -DDISABLE_TIMERS -scam -usr_src $SCAM_MODS -fc $USER_FC $DBUG -ldflags "-llapack -lblas -Mnobounds" -cice_nx 1 -cice_ny 1 #-microphys mg1.5
+$CAM_ROOT/components/cam/bld/configure -s -chem $aero_mode -nlev $levarr -dyn eul -res 64x128 -nospmd -nosmp -cppdefs -DDISABLE_TIMERS -scam -usr_src $SCAM_MODS -fc $USER_FC $DBUG -ldflags "-llapack -lblas -Mnobounds" -cice_nx 1 -cice_ny 1 #-microphys mg1.5
 
 ##--------------------------
 ## compile
@@ -128,7 +128,7 @@ cat <<EOF >! tmp_namelistfile
 EOF
 
 
-$CAM_ROOT/models/atm/cam/bld/build-namelist -s -runtype startup -infile tmp_namelistfile -use_case scam_${iopname} -csmdata $CSMDATA \
+$CAM_ROOT/components/cam/bld/build-namelist -s -runtype startup -infile tmp_namelistfile -use_case scam_${iopname} -csmdata $CSMDATA \
     || echo "build-namelist failed" && exit 1
 
 set RUNDIR    = $WRKDIR/$CASE/$EXPNAME                  && if (! -e  $RUNDIR) mkdir -p $RUNDIR

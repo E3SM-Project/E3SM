@@ -42,9 +42,10 @@
 #               Use this to replace default Fortran compiler optimization.
 # COSP_LIBDIR   Directory where COSP library will be built.
 # MCT_LIBDIR    Directory where MCT library will be built.
+# GPTL_SRCDIR   Source directory for GPTL timing library
 #
 # Note: An internal implementation of the ESMF time-manager interface is provided
-#       with the sequential CCSM distribution in models/utils/esmf_wrf_timemgr.
+#       with the sequential CCSM distribution in $ROOTDIR/cime/share/esmf_wrf_timemgr.
 #
 #------------------------------------------------------------------------
 
@@ -67,6 +68,9 @@ endif
 # Load dependency search path.
 dirs := . $(shell cat Filepath)
 
+# Add paths for GPTL and timing
+dirs += $(GPTL_SRCDIR) $(TIMING_SRCDIR)
+
 # Set cpp search path, include netcdf
 cpp_dirs := $(dirs) $(INC_NETCDF) $(INC_MPI) $(INC_PNETCDF)
 cpp_path := $(foreach dir,$(cpp_dirs),-I$(dir)) # format for command line
@@ -87,23 +91,35 @@ touch_filepath:
 # Get list of files and build dependency file for all .o files
 #   using perl scripts mkSrcfiles and mkDepends
 
-SOURCES   := $(shell cat Srcfiles)
+SOURCES := $(shell cat Srcfiles)
+
+# Append GPTL source files
+#  - only the ones ACME has
+#SOURCES += gptl.c util.c get_memusage.c print_memusage.c
+SOURCES += gptl.c gptl_papi.c f_wrappers.c perf_mod.F90 perf_utils.F90
+SOURCES += GPTLget_memusage.c GPTLprint_memusage.c GPTLutil.c
+#SOURCES += pr_summary.c gptlf.F90 print_rusage.c memstats.c
+#SOURCES += getoverhead.c hashstats.c
+
+# if a source is of form .F90.in strip the .in before creating the list of objects
+SOURCES := $(SOURCES:%.F90.in=%.F90)
 
 # Newer makes set the CURDIR variable.
 CURDIR := $(shell pwd)
 
 # Make dependencies; also, make every source file depend on MCT so it will be built first.
 $(CURDIR)/Depends: $(CURDIR)/Srcfiles $(CURDIR)/Filepath
-	$(ROOTDIR)/models/atm/cam/bld/mkDepends Filepath Srcfiles > $@
+	$(ROOTDIR)/components/cam/bld/mkDepends Filepath Srcfiles > $@
 
 $(CURDIR)/Srcfiles: $(CURDIR)/Filepath
-	$(ROOTDIR)/models/atm/cam/bld/mkSrcfiles > $@
+	$(ROOTDIR)/components/cam/bld/mkSrcfiles > $@
 
 OBJS      := $(addsuffix .o, $(basename $(SOURCES)))
 
-CPPDEF    := -DNO_SHR_VMATH -DSEQ_MCT -DNO_C_SIZEOF $(USER_CPPDEFS)
+CPPDEF    := -DSEQ_MCT -DNO_C_SIZEOF $(USER_CPPDEFS)
 ifeq ($(SPMD),TRUE)
-   CPPDEF += -DSPMD
+   # HAVE_MPI is used in the timing lib code
+   CPPDEF += -DSPMD -DHAVE_MPI
 endif
 
 ifneq ($(strip $(LIB_PNETCDF)),)
@@ -111,6 +127,9 @@ ifneq ($(strip $(LIB_PNETCDF)),)
   #dont use LDFLAGS here, it will be overwritten below
   USER_LDFLAGS += -L$(LIB_PNETCDF) -lpnetcdf 
 endif
+
+CONTIGUOUS_FLAG    := -DUSE_CONTIGUOUS=contiguous,
+NO_CONTIGUOUS_FLAG := -DUSE_CONTIGUOUS=
 
 $(MODEL_EXEDIR)/$(EXENAME): $(OBJS)
 	$(LINKER) -o $@ $(OBJS) $(NC_LDFLAGS) $(LDFLAGS)
@@ -125,8 +144,9 @@ cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
 endif
 
 # Rules to build MCT in its own library. 
+# SRCDIR is passed via the commandline because of a bug in the MCT configure.
 $(MCT_LIBDIR)/mct/libmct.a: 
-	$(MAKE) -C $(MCT_LIBDIR)
+	$(MAKE) -C $(MCT_LIBDIR) SRCDIR=$(ROOTDIR)/cime/externals/mct
 shr_kind_mod.o: $(MCT_LIBDIR)/mct/libmct.a
 perf_utils.o: $(MCT_LIBDIR)/mct/libmct.a
 pio_kinds.o: $(MCT_LIBDIR)/mct/libmct.a
@@ -151,6 +171,9 @@ RtmSpmd.o: $(MCT_LIBDIR)/mct/libmct.a
 .s.o:
 	$(AS) -m  $<
 
+%.F90: %.F90.in
+	 $(ROOTDIR)/cime/externals/genf90/genf90.pl $< > $@
+
 # Rules used for the tests run by "configure -test"
 test_fc: test_fc.o
 	$(LINKER) -o $@ $(FFLAGS) test_fc.o
@@ -166,7 +189,7 @@ endif
 test_mpi: test_mpi.o
 	$(LINKER) -o $@ $(FFLAGS) test_mpi.o $(MPI_LINK_TEST)
 
-ESMF_LINK_TEST :=
+ESMF_LINK_TEST =
 ifneq ($(strip $(ESMF_LIBDIR)),)
   ESMF_LINK_TEST += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
@@ -191,14 +214,15 @@ clean:
 
 ifeq ($(UNAMES),AIX)
 
-CPPDEF     += -DAIX -DCPRIBM
+CPPDEF     += -DAIX -DCPRIBM $(NO_CONTIGUOUS_FLAG)
 ifeq ($(SMP),TRUE)
   # THREADED_OMP is used by the timing library
   CPPDEF   += -DTHREADED_OMP
 endif
 
 cpre = $(null)-WF,-D$(null)
-FPPFLAGS   := $(patsubst -D%,$(cpre)%,$(CPPDEF))
+FPPFLAGS   := $(subst $(comma),\\$(comma),$(CPPDEF))
+FPPFLAGS   := $(patsubst -D%,$(cpre)%,$(FPPFLAGS))
 
 CFLAGS         := -q64 -g $(cpp_path) $(CPPDEF)
 
@@ -308,7 +332,7 @@ endif
 
 ifeq ($(FC_TYPE),pgi)
 
-  CPPDEF        += -DNO_R16 -DCPRPGI
+  CPPDEF        += -DNO_R16 -DCPRPGI $(NO_CONTIGUOUS_FLAG)
   CFLAGS        += -gopt -O2
   FC_FLAGS      := -i4 -Mdalign -Mextend -byteswapio
   FC_FLAGS_NOOPT:= $(FC_FLAGS)
@@ -317,7 +341,7 @@ ifeq ($(FC_TYPE),pgi)
   LDFLAGS       := -Bdynamic
 
   ifeq ($(DEBUG),TRUE)
-    FC_FLAGS       += -g -Ktrap=fp -Mbounds -Kieee
+    FC_FLAGS       += -g -Ktrap=fp -Mbounds -Kieee -traceback
   else
     # Check for override of default Fortran compiler optimizations
     ifeq ($(F_OPTIMIZATION_OVERRIDE),$(null))
@@ -351,7 +375,14 @@ endif
 
 ifeq ($(FC_TYPE),intel)
 
-  CPPDEF        += -DCPRINTEL
+  # NO_SHR_VMATH used both to avoid depending on mkl, and because CESM has
+  # had to add it to get ecosys working and we want BFB with CESM on
+  # yellowstone.
+  # CPPDEF        += -DCPRINTEL -DNO_SHR_VMATH $(CONTIGUOUS_FLAG)
+
+  # CESM deleted NO_SHR_VMATH in Dec 2014
+  CPPDEF        += -DCPRINTEL $(CONTIGUOUS_FLAG)
+
   FC_FLAGS      := -ftz -convert big_endian -fp-model precise -assume realloc_lhs
   FC_FLAGS_O3OPT:= $(FC_FLAGS)
   FC_FLAGS_NOOPT:= -ftz -convert big_endian -O0
@@ -410,8 +441,6 @@ prim_advance_mod.o: prim_advance_mod.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
 uwshcu.o: uwshcu.F90
 	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
-wetdep.o: wetdep.F90
-	$(FC) -c $(FREEFLAGS) $(FFLAGS_O3OPT) $<
 
 endif
 
@@ -419,7 +448,7 @@ endif
 
 ifeq ($(FC_TYPE),pathscale)
 
-  CPPDEF        += -DNO_R16 -DCPRPATHSCALE
+  CPPDEF        += -DNO_R16 -DCPRPATHSCALE $(NO_CONTIGUOUS_FLAG)
   FC_FLAGS      := -extend_source -ftpp -fno-second-underscore
   FC_FLAGS_NOOPT:= $(FC_FLAGS) -O0
   FREEFLAGS     :=
@@ -461,7 +490,7 @@ endif
 
 ifeq ($(FC_TYPE),gnu)
 
-  CPPDEF        += -DNO_R16 -DCPRGNU
+  CPPDEF        += -DNO_R16 -DCPRGNU $(NO_CONTIGUOUS_FLAG)
   FC_FLAGS      := -fno-range-check -fcray-pointer
   FC_FLAGS_NOOPT:= $(FC_FLAGS) -O0
   FREEFLAGS     := -ffree-form -ffree-line-length-none
@@ -476,7 +505,7 @@ ifeq ($(FC_TYPE),gnu)
   endif
 
   ifeq ($(DEBUG),TRUE)
-    FC_FLAGS += -g -ggdb
+    FC_FLAGS += -g -ggdb -ffpe-trap='invalid,zero,overflow'
     CFLAGS   += -g -ggdb
   else
     # Check for override of default Fortran compiler optimizations
@@ -504,7 +533,7 @@ endif
 
 ifeq ($(FC_TYPE),cray)
 
-  CPPDEF        += -DNO_R16 -DCPRCRAY
+  CPPDEF        += -DNO_R16 -DCPRCRAY $(CONTIGUOUS_FLAG)
   CFLAGS        += -O1,vector0
   FC_FLAGS      := -e m -N 255
   FC_FLAGS_NOOPT:= $(FC_FLAGS)
@@ -548,7 +577,7 @@ endif
 ifeq ($(FC_TYPE), nag)
 
   # NAG doesn't do Cray pointers.
-  CPPDEF        += -DCPRNAG -DNO_CRAY_POINTERS
+  CPPDEF        += -DCPRNAG -DNO_CRAY_POINTERS $(NO_CONTIGUOUS_FLAG)
 
   # Bit of a pain: MPI functions are overloaded, so must specify
   # not to check them. -mismatch_all is alternative, but less
@@ -843,6 +872,91 @@ setupgkern.o: setupgkern.F90
 
 endif
 
+#------------------------------------------------------------------------
+# BGQ
+#------------------------------------------------------------------------
+
+ifeq ($(UNAMES),BGQ)
+
+CPPDEF     += -DLINUX -DBGQ -DCPRIBM -DnoI8 -DPIO_GPFS_HINTS $(CONTIGUOUS_FLAG)
+ifeq ($(SMP),TRUE)
+  # THREADED_OMP is used by the timing library
+  CPPDEF   += -DTHREADED_OMP
+endif
+
+cpre = $(null)-WF,-D$(null)
+FPPFLAGS     := $(subst $(comma),\\$(comma),$(CPPDEF))
+FPPFLAGS     := $(patsubst -D%,$(cpre)%,$(FPPFLAGS))
+
+CFLAGS       := $(cpp_path) $(CPPDEF) -g -qfullpath -qmaxmem=-1 -O2
+
+mod_path     := -I$(MCT_LIBDIR)/mct -I$(MCT_LIBDIR)/mpeu
+ifeq ($(SPMD),FALSE)
+  mod_path   += -I$(MCT_LIBDIR)/mpi-serial
+endif
+ifneq ($(strip $(MOD_NETCDF)),)
+  mod_path   += -I$(MOD_NETCDF) 
+endif
+
+FC_FLAGS       := -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush
+FC_FLAGS_NOOPT := $(FC_FLAGS)
+FREEFLAGS      := -qsuffix=f=f90:cpp=F90
+FIXEDFLAGS     := -qfixed=132
+LDFLAGS        := -Wl,--relax -L/bgsys/drivers/ppcfloor/comm/sys/lib
+
+ifeq ($(SMP),TRUE)
+  FC_FLAGS_NOOPT += -qsmp=omp:noopt
+
+  # -qsmp implicitly turns on -O2.  Explicitly disable this for debugging.
+  ifeq ($(DEBUG),TRUE)
+    FC_FLAGS += -qsmp=omp:noopt
+    CFLAGS   += -qsmp=omp:noopt
+    LDFLAGS  += -qsmp=omp:noopt
+  else
+    FC_FLAGS += -qsmp=omp
+    CFLAGS   += -qsmp=omp
+    LDFLAGS  += -qsmp=omp
+  endif
+endif
+
+ifeq ($(DEBUG),TRUE)
+  FC_FLAGS       += -O0 -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en
+  FC_FLAGS_NOOPT += -O0 -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en
+else
+  # Check for override of default Fortran compiler optimizations
+  ifeq ($(F_OPTIMIZATION_OVERRIDE),$(null))
+    # Inline when not debugging
+    FORTRAN_OPTIMIZATION := -O3 -qstrict -Q
+  endif
+  FC_FLAGS += $(FORTRAN_OPTIMIZATION)
+endif
+
+ifneq ($(strip $(LAPACK_LIBDIR)),)
+  LDFLAGS += -L$(LAPACK_LIBDIR) -llapack -lblas
+endif
+
+FFLAGS       := $(cpp_path) $(mod_path) $(FPPFLAGS) $(FC_FLAGS)
+FFLAGS_NOOPT := $(cpp_path) $(mod_path) $(FPPFLAGS) $(FC_FLAGS_NOOPT)
+FC_AUTO_R8   := -qrealsize=8
+
+# These RRTMG files take an extraordinarily long time to compile with optimization.
+# Until mods are made to read the data from files, just remove optimization from
+# their compilation.
+rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+
+# 1 May 2014.  These rules (from the CESM scripts) are apparently needed to
+#              get around compiler bugs
+shr_reprosum_mod.o: shr_reprosum_mod.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+mo_sethet.o: mo_sethet.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+mo_drydep.o: mo_drydep.F90
+	$(FC) -c $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+
+endif
 
 #------------------------------------------------------------------------
 # BGL
@@ -850,10 +964,11 @@ endif
 
 ifeq ($(UNAMES),BGL)
 
-CPPDEF     += -DAIX -DBGL
+CPPDEF     += -DAIX -DBGL $(NO_CONTIGUOUS_FLAG)
 BGLPATH=/bgl/BlueLight/ppcfloor/bglsys
 cpre = $(null)-WF,-D$(null)
-FPPFLAGS   := $(patsubst -D%,$(cpre)%,$(CPPDEF))
+FPPFLAGS   := $(subst $(comma),\\$(comma),$(CPPDEF))
+FPPFLAGS   := $(patsubst -D%,$(cpre)%,$(FPPFLAGS))
 
 CFLAGS     := $(cpp_path) $(CPPDEF) -O2 \
               -I$(BGLPATH)/include
@@ -897,7 +1012,7 @@ endif
 
 ifeq ($(UNAMES),BGP)
 
-CPPDEF     += -DAIX -DBGP
+CPPDEF     += -DAIX -DBGP $(NO_CONTIGUOUS_FLAG)
 ifeq ($(SMP),TRUE)
   # THREADED_OMP is used by the timing library
   CPPDEF   += -DTHREADED_OMP
@@ -906,7 +1021,8 @@ endif
 cpp_path += -I/bgsys/drivers/ppcfloor/arch/include
 
 cpre = $(null)-WF,-D$(null)
-FPPFLAGS     := $(patsubst -D%,$(cpre)%,$(CPPDEF))
+FPPFLAGS     := $(subst $(comma),\\$(comma),$(CPPDEF))
+FPPFLAGS     := $(patsubst -D%,$(cpre)%,$(FPPFLAGS))
 
 CFLAGS       := $(cpp_path) $(CPPDEF) -O2
 
@@ -1002,3 +1118,17 @@ export FREEFLAGS
 export FIXEDFLAGS
 
 include $(CURDIR)/Depends
+
+
+# Dependencies on GPTL
+t_driver_timers_mod.o: perf_mod.o
+domain_mod.o: perf_mod.o
+
+# GPTL dependencies
+perf_mod.o: perf_utils.o gptl.o
+f_wrappers.o: gptl.h private.h
+#f_wrappers_pmpi.o: gptl.h private.h
+gptl.o: gptl.h private.h gptlf.o
+#util.o: gptl.h private.h
+gptl_papi.o: gptl.h private.h
+#pmpi.o: gptl.h private.h

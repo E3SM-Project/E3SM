@@ -120,7 +120,7 @@ my %module_files = ();
 # Attempt to parse each file for /^\s*module/ and extract module names 
 # for each file.  
 my ($f, $name, $path, $suffix, $mod);
-my @suffixes = ('\.[fF]90', '\.[fF]' );
+my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
 foreach $f (@src) {
     ($name, $path, $suffix) = fileparse($f, @suffixes);
     # find the file in the list of directorys (in @file_paths)
@@ -279,9 +279,20 @@ foreach $f (keys %file_includes) {
 print "# Declare all module files used to build each object.\n";
 
 foreach $f (sort keys %file_modules) {
-    $f =~ /(.+)\./;
-    $target = $obj_dir."$1.o";
-    print "$target : @{$file_modules{$f}} @{$file_includes{$f}} $additional_file \n";
+    my $file;
+    my $addf90=0;
+    if($f =~ /\.F90\.in$/){
+	$f =~ /(.+)\.F90\.in/;
+	$file = $1;
+	$addf90=1;
+    }else{
+	$f =~ /(.+)\./;
+	$file = $1;
+    }
+    $target = $obj_dir."$file.o";
+    print "$target : @{$file_modules{$f}} @{$file_includes{$f}} $additional_file ";
+    print "$file.F90" if($addf90==1);
+    print "\n";
 }
 
 print "# The following section relates each module to the corresponding file.\n";
@@ -316,7 +327,7 @@ sub find_dependencies {
     # Construct the makefile target associated with this file.  This is used to
     # check for circular dependencies.
     my ($name, $path, $suffix, $target);
-    my @suffixes = ('\.[fF]90', '\.[fF]' );
+    my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
     ($name, $path, $suffix) = fileparse($file, @suffixes);
     $target = "$name.o";
 
