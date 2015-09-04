@@ -1,0 +1,17 @@
+<streamstemplate>
+<stream datasource="generic">
+<comment> Generic Stream description file</comment>
+<dataSource>GENERIC</dataSource>
+<domainInfo>
+  <variableNames> </variableNames> 
+  <filePath> </filePath> 
+  <fileNames> </fileNames>
+</domainInfo>
+<fieldInfo>
+  <variableNames> </variableNames>
+  <filePath> </filePath>
+  <fileNames> </fileNames>
+  <offset> </offset>
+</fieldInfo>
+</stream>
+</streamstemplate>

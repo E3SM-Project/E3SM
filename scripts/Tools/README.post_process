@@ -1,0 +1,29 @@
+
+README file for pointing to various postprocessing documentation
+
+Place holder to point to docs for:
+
+- Short term archiving documentation
+  - env_run.xml DOUT_S_* variables
+  - env_archive.xml documentation
+  - st_archive script
+
+- history time-slice to variable time-series conversion
+  - cesm_tseries_generator.py wrapper script 
+  - env_run.xml DOUT_S_* variables
+  - env_archive.xml documentation
+  - pyReshaper documentation 
+  - tseries_generate run and submit scripts
+  - integration into cesm run script
+  - tseriesStatus diagnostics output
+
+- Long term archiving documentation
+  - env_run.xml DOUT_L_* variables
+  - lt_archive script
+
+- Archive metadata documentation
+  - experiment database
+  - data management 
+
+- Diagnostics packages
+  - using diagnostic packages with files in the short term archive
