@@ -84,7 +84,7 @@ use cam_map_utils, only: goldy_debug
   contains
     procedure :: cam_grid_attr_init_0d_int
     procedure :: write_attr => write_cam_grid_attr_0d_int
-    procedure :: write_val => write_cam_grid_val_0d_int
+    procedure :: write_val  => write_cam_grid_val_0d_int
     procedure :: print_attr => print_attr_0d_int
   end type cam_grid_attribute_0d_int_t
 
@@ -98,7 +98,7 @@ use cam_map_utils, only: goldy_debug
   contains
     procedure :: cam_grid_attr_init_0d_char
     procedure :: write_attr => write_cam_grid_attr_0d_char
-    procedure :: write_val => write_cam_grid_val_0d_char
+    procedure :: write_val  => write_cam_grid_val_0d_char
     procedure :: print_attr => print_attr_0d_char
   end type cam_grid_attribute_0d_char_t
 
@@ -296,6 +296,7 @@ use cam_map_utils, only: goldy_debug
 
   ! Setup and I/O functions for grids rely on the grid's ID, not its index.
   public     :: cam_grid_register, cam_grid_attribute_register
+  public     :: cam_grid_attribute_copy
   public     :: cam_grid_write_attr, cam_grid_write_var
   public     :: cam_grid_read_dist_array, cam_grid_write_dist_array
   ! Access functions for grids rely on the grid's ID, not its index.
@@ -1972,31 +1973,27 @@ contains
     integer                             :: attrlen
     integer                             :: ierr
 
-    if (associated(attr%vardesc)) then
-      write(errormsg, *) 'write_cam_grid_attr_0d_int: vardesc allocated'
-      call endrun(errormsg)
-    end if
-
-    if (len_trim(attr%long_name) > 0) then
-      ! This 0d attribute is a scalar variable with a long_name attribute
-      ! First, define the variable
-      allocate(attr%vardesc)
-      call cam_pio_def_var(File, trim(attr%name), pio_int, attr%vardesc,      &
-           existOK=.false.)
-      ierr=pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
-      call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_0d_int')
-    else
-      ! This 0d attribute is a global attribute
-      ! Check to see if the attribute already exists in the file
-      ierr = pio_inq_att(File, PIO_GLOBAL, attr%name, attrtype, attrlen)
-      if (ierr == PIO_NOERR) then
-        write(errormsg, *) 'write_cam_grid_attr_0d_int: grid attribute, ',    &
-             trim(attr%name), ', already exists'
-        call endrun(errormsg)
+    ! Since more than one grid can share an attribute, assume that if the
+    ! vardesc is associated, that grid defined the attribute
+    if (.not. associated(attr%vardesc)) then
+      if (len_trim(attr%long_name) > 0) then
+        ! This 0d attribute is a scalar variable with a long_name attribute
+        ! First, define the variable
+        allocate(attr%vardesc)
+        call cam_pio_def_var(File, trim(attr%name), pio_int, attr%vardesc,    &
+             existOK=.false.)
+        ierr=pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
+        call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_0d_int')
+      else
+        ! This 0d attribute is a global attribute
+        ! Check to see if the attribute already exists in the file
+        ierr = pio_inq_att(File, PIO_GLOBAL, attr%name, attrtype, attrlen)
+        if (ierr /= PIO_NOERR) then
+          ! Time to define the attribute
+          ierr = pio_put_att(File, PIO_GLOBAL, trim(attr%name), attr%ival)
+          call cam_pio_handle_error(ierr, 'Unable to define attribute in write_cam_grid_attr_0d_int')
+        end if
       end if
-      ! Time to define the attribute
-      ierr = pio_put_att(File, PIO_GLOBAL, trim(attr%name), attr%ival)
-      call cam_pio_handle_error(ierr, 'Unable to define attribute in write_cam_grid_attr_0d_int')
     end if
 
   end subroutine write_cam_grid_attr_0d_int
@@ -2023,22 +2020,18 @@ contains
     integer                             :: attrlen
     integer                             :: ierr
 
-    if (associated(attr%vardesc)) then
-      write(errormsg, *) 'write_cam_grid_attr_0d_char: vardesc allocated'
-      call endrun(errormsg)
+    ! Since more than one grid can share an attribute, assume that if the
+    ! vardesc is associated, that grid defined the attribute
+    if (.not. associated(attr%vardesc)) then
+      ! The 0d char attributes are global attribues
+      ! Check to see if the attribute already exists in the file
+      ierr = pio_inq_att(File, PIO_GLOBAL, attr%name, attrtype, attrlen)
+      if (ierr /= PIO_NOERR) then
+        ! Time to define the variable
+        ierr = pio_put_att(File, PIO_GLOBAL, trim(attr%name), attr%val)
+        call cam_pio_handle_error(ierr, 'Unable to define attribute in write_cam_grid_attr_0d_char')
+      end if
     end if
-
-    ! The 0d char attributes are global attribues
-    ! Check to see if the attribute already exists in the file
-    ierr = pio_inq_att(File, PIO_GLOBAL, attr%name, attrtype, attrlen)
-    if (ierr == PIO_NOERR) then
-      write(errormsg, *) 'write_cam_grid_attr_0d_char: grid attribute, ',     &
-           trim(attr%name), ', already exists'
-      call endrun(errormsg)
-    end if
-    ! Time to define the variable
-    ierr = pio_put_att(File, PIO_GLOBAL, trim(attr%name), attr%val)
-    call cam_pio_handle_error(ierr, 'Unable to define attribute in write_cam_grid_attr_0d_char')
 
   end subroutine write_cam_grid_attr_0d_char
 
@@ -2064,26 +2057,25 @@ contains
     character(len=120)                  :: errormsg
     integer                             :: ierr
 
-    if (associated(attr%vardesc)) then
-      write(errormsg, *) 'write_cam_grid_attr_1d_int: vardesc allocated'
-      call endrun(errormsg)
+    ! Since more than one grid can share an attribute, assume that if the
+    ! vardesc is associated, that grid defined the attribute
+    if (.not. associated(attr%vardesc)) then
+      ! Check to see if the dimension already exists in the file
+      ierr = pio_inq_dimid(File, trim(attr%dimname), dimid)
+      if (ierr /= PIO_NOERR) then
+        ! The dimension has not yet been defined. This is an error
+        ! NB: It should have been defined as part of a coordinate
+        write(errormsg, *) 'write_cam_grid_attr_1d_int: dimension, ',         &
+             trim(attr%dimname), ', does not exist'
+        call endrun(errormsg)
+      end if
+      ! Time to define the variable
+      allocate(attr%vardesc)
+      call cam_pio_def_var(File, trim(attr%name), pio_int, (/dimid/),         &
+           attr%vardesc, existOK=.false.)
+      ierr = pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
+      call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_1d_int')
     end if
-
-    ! Check to see if the dimension already exists in the file
-    ierr = pio_inq_dimid(File, trim(attr%dimname), dimid)
-    if (ierr /= PIO_NOERR) then
-      ! The dimension has not yet been defined. This is an error
-      ! NB: It should have been defined as part of a coordinate
-      write(errormsg, *) 'write_cam_grid_attr_1d_int: dimension, ',           &
-           trim(attr%dimname), ', does not exist'
-      call endrun(errormsg)
-    end if
-    ! Time to define the variable
-    allocate(attr%vardesc)
-    call cam_pio_def_var(File, trim(attr%name), pio_int, (/dimid/),           &
-         attr%vardesc, existOK=.false.)
-    ierr = pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
-    call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_1d_int')
 
   end subroutine write_cam_grid_attr_1d_int
 
@@ -2109,29 +2101,70 @@ contains
     character(len=120)                  :: errormsg
     integer                             :: ierr
 
-    if (associated(attr%vardesc)) then
-      write(errormsg, *) 'write_cam_grid_attr_1d_r8: vardesc allocated'
-      call endrun(errormsg)
+    ! Since more than one grid can share an attribute, assume that if the
+    ! vardesc is associated, that grid defined the attribute
+    if (.not. associated(attr%vardesc)) then
+      ! Check to see if the dimension already exists in the file
+      ierr = pio_inq_dimid(File, trim(attr%dimname), dimid)
+      if (ierr /= PIO_NOERR) then
+        ! The dimension has not yet been defined. This is an error
+        ! NB: It should have been defined as part of a coordinate
+        write(errormsg, *) 'write_cam_grid_attr_1d_r8: dimension, ',          &
+             trim(attr%dimname), ', does not exist'
+        call endrun(errormsg)
+      end if
+      ! Time to define the variable
+      allocate(attr%vardesc)
+      call cam_pio_def_var(File, trim(attr%name), pio_double, (/dimid/),      &
+           attr%vardesc, existOK=.false.)
+      ! long_name
+      ierr = pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
+      call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_1d_r8')
     end if
-
-    ! Check to see if the dimension already exists in the file
-    ierr = pio_inq_dimid(File, trim(attr%dimname), dimid)
-    if (ierr /= PIO_NOERR) then
-      ! The dimension has not yet been defined. This is an error
-      ! NB: It should have been defined as part of a coordinate
-      write(errormsg, *) 'write_cam_grid_attr_1d_r8: dimension, ',            &
-           trim(attr%dimname), ', does not exist'
-      call endrun(errormsg)
-    end if
-    ! Time to define the variable
-    allocate(attr%vardesc)
-    call cam_pio_def_var(File, trim(attr%name), pio_double, (/dimid/),        &
-         attr%vardesc, existOK=.false.)
-    ! long_name
-    ierr = pio_put_att(File, attr%vardesc, 'long_name', trim(attr%long_name))
-    call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_cam_grid_attr_1d_r8')
 
   end subroutine write_cam_grid_attr_1d_r8
+
+  !---------------------------------------------------------------------------
+  !
+  !  cam_grid_attribute_copy
+  !
+  !  Copy an attribute from a source grid to a destination grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine cam_grid_attribute_copy(src_grid, dest_grid, attribute_name)
+    ! Dummy arguments
+    character(len=*),         intent(in) :: src_grid
+    character(len=*),         intent(in) :: dest_grid
+    character(len=*),         intent(in) :: attribute_name
+
+    ! Local variables
+    character(len=120)                   :: errormsg
+    integer                              :: src_ind, dest_ind
+    class(cam_grid_attribute_t), pointer :: attr
+
+    ! Find the source and destination grid indices
+    src_ind = get_cam_grid_index(trim(src_grid))
+    dest_ind = get_cam_grid_index(trim(dest_grid))
+
+    call find_cam_grid_attr(dest_ind, trim(attribute_name), attr)
+    if (associated(attr)) then
+      ! Attribute found, can't add it again!
+      write(errormsg, '(4a)') 'CAM_GRID_ATTRIBUTE_COPY: attribute ',          &
+           trim(attribute_name),' already exists for ',cam_grids(dest_ind)%name
+      call endrun(errormsg)
+    else
+      call find_cam_grid_attr(src_ind, trim(attribute_name), attr)
+      if (associated(attr)) then
+        ! Copy the attribute
+        call insert_grid_attribute(dest_ind, attr)
+      else
+        write(errormsg, '(4a)') ": Did not find attribute, '",                &
+             trim(attribute_name), "' in ", cam_grids(src_ind)%name
+        call endrun("CAM_GRID_ATTRIBUTE_COPY"//errormsg)
+      end if
+    end if
+
+  end subroutine cam_grid_attribute_copy
 
   !---------------------------------------------------------------------------
   !
@@ -2270,27 +2303,26 @@ contains
     integer                          :: ierr
     type(io_desc_t), pointer         :: iodesc => NULL()
 
-    if (.not. associated(attr%vardesc)) then
-      write(errormsg, *) 'write_cam_grid_attr_1d_int: vardesc not allocated'
-      call endrun(errormsg)
+    ! Since more than one grid can share an attribute, assume that if the
+    ! vardesc is not associated, another grid write the values
+    if (associated(attr%vardesc)) then
+      ! Write out the values for this dimension variable
+      if (associated(attr%map)) then
+        ! This is a distributed variable, use pio_write_darray
+        allocate(iodesc)
+        call cam_pio_newdecomp(iodesc, (/attr%dimsize/), attr%map, pio_int)
+        call pio_write_darray(File, attr%vardesc, iodesc, attr%values, ierr, -900)
+        call pio_freedecomp(File, iodesc)
+        deallocate(iodesc)
+        nullify(iodesc)
+      else
+        ! This is a local variable, pio_put_var should work fine
+        ierr = pio_put_var(File, attr%vardesc, attr%values)
+      end if
+      call cam_pio_handle_error(ierr, 'Error writing variable values in write_cam_grid_val_1d_int')
+      deallocate(attr%vardesc)
+      nullify(attr%vardesc)
     end if
-
-    ! Write out the values for this dimension variable
-    if (associated(attr%map)) then
-      ! This is a distributed variable, use pio_write_darray
-      allocate(iodesc)
-      call cam_pio_newdecomp(iodesc, (/attr%dimsize/), attr%map, pio_int)
-      call pio_write_darray(File, attr%vardesc, iodesc, attr%values, ierr, -900)
-      call pio_freedecomp(File, iodesc)
-      deallocate(iodesc)
-      nullify(iodesc)
-    else
-      ! This is a local variable, pio_put_var should work fine
-      ierr = pio_put_var(File, attr%vardesc, attr%values)
-    end if
-    call cam_pio_handle_error(ierr, 'Error writing variable values in write_cam_grid_val_1d_int')
-    deallocate(attr%vardesc)
-    nullify(attr%vardesc)
 
   end subroutine write_cam_grid_val_1d_int
 
@@ -2308,27 +2340,26 @@ contains
     integer                          :: ierr
     type(io_desc_t), pointer         :: iodesc => NULL()
 
-    if (.not. associated(attr%vardesc)) then
-      write(errormsg, *) 'write_cam_grid_attr_1d_r8: vardesc not allocated'
-      call endrun(errormsg)
+    ! Since more than one grid can share an attribute, assume that if the
+    ! vardesc is not associated, another grid write the values
+    if (associated(attr%vardesc)) then
+      ! Write out the values for this dimension variable
+      if (associated(attr%map)) then
+        ! This is a distributed variable, use pio_write_darray
+        allocate(iodesc)
+        call cam_pio_newdecomp(iodesc, (/attr%dimsize/), attr%map, pio_double)
+        call pio_write_darray(File, attr%vardesc, iodesc, attr%values, ierr, -900._r8)
+        call pio_freedecomp(File, iodesc)
+        deallocate(iodesc)
+        nullify(iodesc)
+      else
+        ! This is a local variable, pio_put_var should work fine
+        ierr = pio_put_var(File, attr%vardesc, attr%values)
+      end if
+      call cam_pio_handle_error(ierr, 'Error writing variable values in write_cam_grid_val_1d_r8')
+      deallocate(attr%vardesc)
+      nullify(attr%vardesc)
     end if
-
-    ! Write out the values for this dimension variable
-    if (associated(attr%map)) then
-      ! This is a distributed variable, use pio_write_darray
-      allocate(iodesc)
-      call cam_pio_newdecomp(iodesc, (/attr%dimsize/), attr%map, pio_double)
-      call pio_write_darray(File, attr%vardesc, iodesc, attr%values, ierr, -900._r8)
-      call pio_freedecomp(File, iodesc)
-      deallocate(iodesc)
-      nullify(iodesc)
-    else
-      ! This is a local variable, pio_put_var should work fine
-      ierr = pio_put_var(File, attr%vardesc, attr%values)
-    end if
-    call cam_pio_handle_error(ierr, 'Error writing variable values in write_cam_grid_val_1d_r8')
-    deallocate(attr%vardesc)
-    nullify(attr%vardesc)
 
   end subroutine write_cam_grid_val_1d_r8
 
