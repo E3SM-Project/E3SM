@@ -5,7 +5,6 @@
 		<dim name="nEdges"/>
 		<dim name="maxEdges"/>
 		<dim name="maxEdges2"/>
-		<dim name="nAdvectionCells" definition="maxEdges2+0"/>
 		<dim name="nVertices"/>
 		<dim name="ONE"                definition="1"/>
 		<dim name="TWO"                definition="2"/>
@@ -22,9 +21,6 @@
 		<dim name="nAerosols"          definition="1"/>
 		<dim name="nSpectralIntervals" definition="3"/>
 		<dim name="nZBGCTracers"       definition="0"/>
-		<dim name="nVertLevels"/>
-	  	<dim name="POP_nx"/>
-		<dim name="POP_ny"/>
 	</dims>
 	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="3600.0"/>
@@ -236,16 +232,13 @@
 	    <var name="yVertex"/>
 	    <var name="zVertex"/>
 	    <var name="indexToVertexID"/>
-	    <var name="meshDensity"/>
 	    <var name="cellsOnEdge"/>
 	    <var name="nEdgesOnCell"/>
 	    <var name="nEdgesOnEdge"/>
 	    <var name="edgesOnCell"/>
 	    <var name="edgesOnEdge"/>
-	    <var name="weightsOnEdge"/>
 	    <var name="dvEdge"/>
 	    <var name="dcEdge"/>
-	    <var name="angleEdge"/>
 	    <var name="areaCell"/>
 	    <var name="areaTriangle"/>
 	    <var name="cellsOnCell"/>
@@ -254,14 +247,6 @@
 	    <var name="edgesOnVertex"/>
 	    <var name="cellsOnVertex"/>
 	    <var name="kiteAreasOnVertex"/>
-	    <var name="fEdge"/>
-	    <var name="fVertex"/>
-	    <var name="fCell"/>
-	    <var name="boundaryEdge"/>
-	    <var name="boundaryVertex"/>
-	    <var name="boundaryCell"/>
-	    <var name="POPindxi"/>
-	    <var name="POPindxj"/>
 	  </stream>
 	  <stream name="restart" 
 		  type="input;output"
@@ -289,16 +274,13 @@
 	    <var name="yVertex"/>
 	    <var name="zVertex"/>
 	    <var name="indexToVertexID"/>
-	    <var name="meshDensity"/>
 	    <var name="cellsOnEdge"/>
 	    <var name="nEdgesOnCell"/>
 	    <var name="nEdgesOnEdge"/>
 	    <var name="edgesOnCell"/>
 	    <var name="edgesOnEdge"/>
-	    <var name="weightsOnEdge"/>
 	    <var name="dvEdge"/>
 	    <var name="dcEdge"/>
-	    <var name="angleEdge"/>
 	    <var name="areaCell"/>
 	    <var name="areaTriangle"/>
 	    <var name="cellsOnCell"/>
@@ -307,14 +289,6 @@
 	    <var name="edgesOnVertex"/>
 	    <var name="cellsOnVertex"/>
 	    <var name="kiteAreasOnVertex"/>
-	    <var name="fEdge"/>
-	    <var name="fVertex"/>
-	    <var name="fCell"/>
-	    <var name="boundaryEdge"/>
-	    <var name="boundaryVertex"/>
-	    <var name="boundaryCell"/>
-	    <var name="POPindxi"/>
-	    <var name="POPindxj"/>
 	    <var name="iceAreaCategory"/>
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
@@ -342,7 +316,7 @@
 		  type="output"
 		  filename_template="output.nc"
 		  filename_interval="none"
-		  output_interval="6:00:00"
+		  output_interval="1:00:00"
 		  clobber_mode="replace_files"
 		  runtime_format="single_file">
 	    <var name="latCell"/>
@@ -350,45 +324,27 @@
 	    <var name="xCell"/>
 	    <var name="yCell"/>
 	    <var name="zCell"/>
-	    <var name="indexToCellID"/>
 	    <var name="latEdge"/>
 	    <var name="lonEdge"/>
 	    <var name="xEdge"/>
 	    <var name="yEdge"/>
 	    <var name="zEdge"/>
-	    <var name="indexToEdgeID"/>
 	    <var name="latVertex"/>
 	    <var name="lonVertex"/>
 	    <var name="xVertex"/>
 	    <var name="yVertex"/>
 	    <var name="zVertex"/>
-	    <var name="indexToVertexID"/>
-	    <var name="meshDensity"/>
 	    <var name="cellsOnEdge"/>
 	    <var name="nEdgesOnCell"/>
 	    <var name="nEdgesOnEdge"/>
 	    <var name="edgesOnCell"/>
 	    <var name="edgesOnEdge"/>
-	    <var name="weightsOnEdge"/>
-	    <var name="dvEdge"/>
-	    <var name="dcEdge"/>
-	    <var name="angleEdge"/>
-	    <var name="areaCell"/>
-	    <var name="areaTriangle"/>
 	    <var name="cellsOnCell"/>
 	    <var name="verticesOnCell"/>
 	    <var name="verticesOnEdge"/>
 	    <var name="edgesOnVertex"/>
 	    <var name="cellsOnVertex"/>
 	    <var name="kiteAreasOnVertex"/>
-	    <var name="fEdge"/>
-	    <var name="fVertex"/>
-	    <var name="fCell"/>
-	    <var name="POPindxi"/>
-	    <var name="POPindxj"/>
-	    <var name="boundaryEdge"/>
-	    <var name="boundaryVertex"/>
-	    <var name="boundaryCell"/>
 	    <var name="uVelocity"/>
 	    <var name="vVelocity"/>
 	    <var name="stressDivergenceU"/>
@@ -404,10 +360,6 @@
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
 	    <var name="surfaceTemperature"/>
-	    <var name="iceAreaCategoryPlot"/>
-	    <var name="iceVolumeCategoryPlot"/>
-	    <var name="snowVolumeCategoryPlot"/>
-	    <var name="surfaceTemperaturePlot"/>
 	    <var name="iceThickness"/>
 	    <var name="snowThickness"/>
 	    <var name="iceAreaCell"/>
@@ -421,8 +373,6 @@
 	    <var name="airStressVertexV"/>
 	    <var name="airTemperature"/>
 	    <var name="airPotentialTemperature"/>
-	    <var name="uAirVelocityPOP"/>
-	    <var name="vAirVelocityPOP"/>
 	    <var name="windSpeed"/>
 	    <var name="uAirStress"/>
 	    <var name="vAirStress"/>
@@ -435,32 +385,6 @@
 	    <var name="snowfallRate"/>
 	    <var name="sensibleTransferCoefficient"/>
 	    <var name="latentTransferCoefficient"/>
-	    <var name="uPOPAlongGridVector"/>
-	    <var name="vPOPAlongGridVector"/>
-	    <var name="iceAreaCategoryMin"/>
-	    <var name="iceAreaCategoryMax"/>
-	    <var name="iceVolumeCategoryMin"/>
-	    <var name="iceVolumeCategoryMax"/>
-	    <var name="snowVolumeCategoryMin"/>
-	    <var name="snowVolumeCategoryMax"/>
-	    <var name="surfaceTemperatureMin"/>
-	    <var name="surfaceTemperatureMax"/>
-	    <var name="iceThicknessCategoryMin"/>
-	    <var name="iceThicknessCategoryMax"/>
-	    <var name="snowThicknessCategoryMin"/>
-	    <var name="snowThicknessCategoryMax"/>
-	    <var name="snowThicknessCategoryLocMax"/>
-	    <var name="globalIceArea"/>
-	    <var name="globalIceExtent"/>
-	    <var name="globalIceVolume"/>
-	    <var name="globalIceThickness"/>
-	    <var name="globalSnowVolume"/>
-	    <var name="globalSnowThickness"/>
-	    <var name="basisIntegralsU"/>
-	    <var name="basisIntegralsV"/>
-	    <var name="basisIntegralsMetric"/>
-	    <var name="basisGradientU"/>
-	    <var name="basisGradientV"/>
 	  </stream>
 
         <!-- forcing streams -->
@@ -528,9 +452,6 @@
 		<var name="yVertex"                           type="real"     dimensions="nVertices"/>
 		<var name="zVertex"                           type="real"     dimensions="nVertices"/>
 		<var name="indexToVertexID"                   type="integer"  dimensions="nVertices"/>
-		<var name="meshDensity"                       type="real"     dimensions="nCells"/>
-		<var name="meshScalingDel2"                   type="real"     dimensions="nEdges"/>
-		<var name="meshScalingDel4"                   type="real"     dimensions="nEdges"/>
 		<var name="cellsOnEdge"                       type="integer"  dimensions="TWO nEdges"/>
 		<var name="nEdgesOnCell"                      type="integer"  dimensions="nCells"/>
 		<var name="nEdgesOnEdge"                      type="integer"  dimensions="nEdges"/>
@@ -539,42 +460,15 @@
 		<var name="weightsOnEdge"                     type="real"     dimensions="maxEdges2 nEdges"/>
 		<var name="dvEdge"                            type="real"     dimensions="nEdges"/>
 		<var name="dcEdge"                            type="real"     dimensions="nEdges"/>
-		<var name="angleEdge"                         type="real"     dimensions="nEdges"/>
 		<var name="areaCell"                          type="real"     dimensions="nCells"/>
 		<var name="areaTriangle"                      type="real"     dimensions="nVertices"/>
-		<var name="edgeNormalVectors"                 type="real"     dimensions="R3 nEdges"/>
-		<var name="localVerticalUnitVectors"          type="real"     dimensions="R3 nCells"/>
-		<var name="cellTangentPlane"                  type="real"     dimensions="R3 TWO nCells"/>
 		<var name="cellsOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
 		<var name="verticesOnCell"                    type="integer"  dimensions="maxEdges nCells"/>
 		<var name="verticesOnEdge"                    type="integer"  dimensions="TWO nEdges"/>
 		<var name="edgesOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
 		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
 		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
-		<var name="fEdge"                             type="real"     dimensions="nEdges"/>
-		<var name="fVertex"                           type="real"     dimensions="nVertices Time"/>
-		<var name="fCell"                             type="real"     dimensions="nCells"/>
-		<var name="h_s"                               type="real"     dimensions="nCells"/>
-		<var name="derivTwo"                          type="real"     dimensions="maxEdges2 TWO nEdges"/>
-		<var name="advCells"                          type="integer"  dimensions="TWENTYONE nCells"/>
-		<var name="defc_a"                            type="real"     dimensions="maxEdges nCells"/>
-		<var name="defc_b"                            type="real"     dimensions="maxEdges nCells"/>
-		<var name="kdiff"                             type="real"     dimensions="nVertLevels nCells Time"/>
-		<var name="coeffs_reconstruct"                type="real"     dimensions="R3 maxEdges nCells"/>
-		<var name="boundaryEdge"                      type="integer"  dimensions="nVertLevels nEdges"/>
-		<var name="boundaryVertex"                    type="integer"  dimensions="nVertLevels nVertices"/>
-		<var name="boundaryCell"                      type="integer"  dimensions="nVertLevels nCells"/>
-		<var name="u_src"                             type="real"     dimensions="nVertLevels nEdges"/>
-		<var name="POPindxi"                          type="integer"  dimensions="nCells"/>
-		<var name="POPindxj"                          type="integer"  dimensions="nCells"/>
-		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"/>
-		<var name="POPindxjv"                         type="integer"  dimensions="nVertices"/>
-		<var name="advCoefs"                          type="real"     dimensions="nAdvectionCells nEdges"/>
-		<var name="advCoefs3rd"                       type="real"     dimensions="nAdvectionCells nEdges"/>
-		<var name="advCellsForEdge"                   type="integer"  dimensions="nAdvectionCells nEdges"/>
-		<var name="nAdvCellsForEdge"                  type="integer"  dimensions="nEdges"/>
-		<var name="highOrderAdvectionMask"            type="integer"  dimensions="nVertLevels nEdges"/>
-		<var name="maxLevelCell"                      type="integer"  dimensions="nCells"/>
+		<var name="fVertex"                           type="real"     dimensions="nVertices"/>
 		<var name="itimestep"                         type="integer"  dimensions="ONE"/>
 	</var_struct>
 

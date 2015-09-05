@@ -388,10 +388,18 @@ contains
 
     if (trim(config_shortwave_type) == "dEdd") then
 
+       abortFlag = .false.
+
        call colpkg_init_orbit(&
             stdoutUnit, &
             abortFlag, &
             abortMessage)
+
+       if (abortFlag) then
+          COLUMN_ERROR_WRITE("colpkg_init_orbit")
+          COLUMN_ERROR_WRITE(trim(abortMessage))
+          call MPAS_dmpar_global_abort(trim(abortMessage)) 
+      endif
 
     endif
 
@@ -1280,6 +1288,8 @@ contains
              northernHemisphereMask = .false.
           endif
 
+          abortFlag = .false.
+
           call colpkg_step_therm1(&
                config_dt, &
                nCategories, &
@@ -1408,7 +1418,7 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_vertical_thermodynamics")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             stop
+             call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
           ! aerosol
@@ -1631,6 +1641,8 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
 
+          abortFlag = .false.
+
           call colpkg_step_therm2(&
                config_dt, &
                nCategories, &
@@ -1680,7 +1692,7 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_itd_thermodynamics")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             stop
+             call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
        enddo ! iCell
@@ -2263,7 +2275,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
-       
+
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
 
@@ -2276,6 +2288,8 @@ contains
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
+
+          abortFlag = .false.
 
           call colpkg_step_ridge(&
                config_dt, &        
@@ -2328,7 +2342,7 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_ridging")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             stop
+             call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
        enddo ! iCell

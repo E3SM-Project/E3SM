@@ -22,7 +22,7 @@ module cice_mesh
   save
 
   public :: &
-       cice_init_boundary, &
+       cice_init_mesh, &
        cice_cell_vertices_at_vertex, &
        cice_normal_vectors, &
        cice_normal_vectors_polygon, &
@@ -39,7 +39,36 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_init_boundary
+!  cice_init_mesh
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_mesh(&
+       domain)!{{{
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output: 
+
+    ! rescale mesh quantities
+    call rescale_mesh(domain)
+
+    ! calculate coriolois parameter
+    call coriolis_parameter(domain)
+
+    ! boundary variables
+    call init_boundary(domain)
+
+  end subroutine cice_init_mesh!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_boundary
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -49,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
   
-  subroutine cice_init_boundary(&
+  subroutine init_boundary(&
        domain)!{{{
 
     type (domain_type), intent(inout) :: &
@@ -104,7 +133,7 @@ contains
     !call cice_test_rotation(domain)
     !call cice_test_mesh_conversions(domain)
 
-  end subroutine cice_init_boundary!}}}
+  end subroutine init_boundary!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2640,7 +2669,8 @@ contains
 
        enddo ! iVertexOnCell
 
-       variableCell(iCell) = variableCell(iCell) / totalArea
+       if (totalArea > 0.0_RKIND) &
+            variableCell(iCell) = variableCell(iCell) / totalArea
 
     enddo ! iCell
 
@@ -3465,6 +3495,245 @@ contains
     !stop
 
   end subroutine cice_test_mesh_conversions
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  coriolis_parameter
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 7th August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine coriolis_parameter(&
+       domain)!{{{
+
+    use mpas_constants, only: &
+         omega
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output: 
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latVertex, &
+         fVertex
+
+    integer, pointer :: &
+         nVertices
+
+    integer :: &
+         iVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+
+       call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
+       call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+       do iVertex = 1, nVertices
+       
+          fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
+
+       enddo ! iVertex
+
+       block => block % next
+    enddo
+
+  end subroutine coriolis_parameter!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  rescale_mesh
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 7th August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine rescale_mesh(&
+       domain)!{{{
+
+    use mpas_constants, only: &
+         a ! This is the excellently named Earth Radius - couldn't you tell?
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output: 
+
+    logical, pointer :: &
+         on_a_sphere
+
+    real(kind=RKIND), pointer :: &
+         oldRadius
+
+    real(kind=RKIND) :: &
+         newRadius
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool
+
+    integer, pointer :: &
+         nCells, &
+         nEdges, &
+         nVertices, &
+         vertexDegree
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         zCell, &
+         areaCell, &
+         xEdge, &
+         yEdge, &
+         zEdge, &
+         dvEdge, &
+         dcEdge, &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         areaTriangle
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         kiteAreasOnVertex
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+  
+    real(kind=RKIND) :: &
+         oldX, &
+         oldY, &
+         oldZ, &
+         norm
+
+    integer :: &
+         iCell, &
+         iVertex, &
+         iEdge, &
+         iVertexDegree
+    
+    block => domain % blocklist
+    do while(associated(block))
+
+       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+
+       if (on_a_sphere) then
+
+          ! get the old radius
+          call mpas_pool_get_config(meshPool, 'sphere_radius', oldRadius)
+
+          ! get the new radius
+          newRadius = a
+
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+          call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+          call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+
+          call mpas_pool_get_array(meshPool, 'xCell', xCell)
+          call mpas_pool_get_array(meshPool, 'yCell', yCell)
+          call mpas_pool_get_array(meshPool, 'zCell', zCell)
+          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+          call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+          call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+          call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+          call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+          call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+          call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+          call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+          call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+          call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+
+          ! rescale cell quantities
+          do iCell = 1, nCells
+
+             oldX = xCell(iCell)
+             oldY = yCell(iCell)
+             oldZ = zCell(iCell)
+
+             norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
+
+             xCell(iCell) = (oldX / norm) * newRadius
+             yCell(iCell) = (oldY / norm) * newRadius
+             zCell(iCell) = (oldZ / norm) * newRadius
+             areaCell(iCell) = (areaCell(iCell) / (oldRadius**2) )* newRadius**2
+
+          end do
+
+          ! rescale vertex quantities
+          do iVertex = 1, nVertices
+
+             oldX = xVertex(iVertex)
+             oldY = yVertex(iVertex)
+             oldZ = zVertex(iVertex)
+
+             norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
+
+             xVertex(iVertex) = (oldX / norm) * newRadius
+             yVertex(iVertex) = (oldY / norm) * newRadius
+             zVertex(iVertex) = (oldZ / norm) * newRadius
+             areaTriangle(iVertex) = 0.0_RKIND
+
+             do iVertexDegree = 1, vertexDegree
+                if (cellsOnVertex(iVertexDegree, iVertex) < nCells+1) then
+                   kiteAreasOnVertex(iVertexDegree, iVertex) = ( kiteAreasOnVertex(iVertexDegree, iVertex) / oldRadius**2) * newRadius**2
+                else
+                   kiteAreasOnVertex(iVertexDegree, iVertex) = 0.0_RKIND
+                end if
+                areaTriangle(iVertex) = areaTriangle(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex)
+             end do
+
+          end do
+
+          ! Expand edge quantities
+          do iEdge = 1, nEdges
+
+             oldX = xEdge(iEdge)
+             oldY = yEdge(iEdge)
+             oldZ = zEdge(iEdge)
+
+             norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
+
+             xEdge(iEdge) = (oldX / norm) * newRadius
+             yEdge(iEdge) = (oldY / norm) * newRadius
+             zEdge(iEdge) = (oldZ / norm) * newRadius
+             dvEdge(iEdge) = (dvEdge(iEdge) / oldRadius) * newRadius
+             dcEdge(iEdge) = (dcEdge(iEdge) / oldRadius) * newRadius
+
+          end do
+
+          ! reset sphere_radius
+          oldRadius = a
+
+       endif
+
+       block => block % next
+    end do
+
+  end subroutine rescale_mesh!}}}
 
 !-----------------------------------------------------------------------
 
