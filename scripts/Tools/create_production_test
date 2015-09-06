@@ -3,8 +3,7 @@
 #
 # create_production_test
 #
-# This utility allows the users to specify configuration
-# cesm tests from an existing case directory
+# This utility allows the users to specify configuration tests from an existing case directory
 #
 #-----------------------------------------------------------------------------------------------
 

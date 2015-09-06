@@ -42,8 +42,8 @@ if ( $NTASKS_GLC == 1 ) then
   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val 2
 endif
 
-./cesm_setup -clean
-./cesm_setup
+./case_setup -clean
+./case_setup
 
 ./$CASE.build
 if ($status != 0) then

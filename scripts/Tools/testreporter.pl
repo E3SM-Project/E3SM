@@ -8,7 +8,7 @@ use XML::LibXML;
 use Cwd qw(abs_path);
 #-------------------------------------------------------------------------------
 # testreporter.pl
-# Perl script that watches the CESM tests as they progress, and sends the reports to 
+# Perl script that watches the CIME tests as they progress, and sends the reports to 
 # the testdb application at csegweb.cgd.ucar.edu
 
 #-------------------------------------------------------------------------------
@@ -125,7 +125,7 @@ sub help
 {
     
     print <<'END';
-    This is the CESM test reporter script, intended to be used to simplify the reporting of CESM test sets.  
+    This is the CIME test reporter script, intended to be used to simplify the reporting of CIME test sets.  
 	Usage is as follows:
 	./testreporter --testroot /glade/scratch/$user/tests/cesm1_1_alphaXX 
 	--tagname cesm1_1_alpha15c --testid testid --testtype prealpha
@@ -141,7 +141,7 @@ sub help
 	tag used.  
 	--testid   The testid you specified to create_test_suite.  
 	--testtype The type of test you are running: prealpha, prebeta, or prerelease. 
-    --expectedfails The path to the expected fails file, ususally in the CESMROOT
+    --expectedfails The path to the expected fails file, ususally in the $SRCROOT
 	
 END
 }

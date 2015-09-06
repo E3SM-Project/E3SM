@@ -15,45 +15,16 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use Data::Dumper;
+
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
-
 *STDOUT->autoflush();                  
-
-#-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CCSM configuration scripts.  If the create_newcase command was
-# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
-# command was issued from the current working directory.
-
-(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
-my $ProgDir = $1;                      # name of directory containing this script -- may be a
-                                       # relative or absolute path, or null if the script is in
-                                       # the user's PATH
-my $cwd = getcwd();                    # current working directory
-my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
-    $cfgdir = abs_path($ProgDir);
-} else {
-    $cfgdir = $cwd;
-}
-
-my $cimeroot = abs_path("$cfgdir/../");
-(-d "$cimeroot")  or  die <<"EOF";
-** Cannot find cimeroot directory \"$cimeroot\" **
-EOF
-
-#-----------------------------------------------------------------------------------------------
-# Save commandline
-my $commandline = "$cfgdir/create_clone @ARGV";
-
-#-----------------------------------------------------------------------------------------------
 
 if ($#ARGV == -1) {
     print "Invoke create_clone -help [or -h] for usage\n";
     exit;
 }
-
 #-----------------------------------------------------------------------------------------------
 
 sub usage {
@@ -103,7 +74,6 @@ if (@ARGV) {
 }
 
 # Check for manditory case input if not just listing valid values
-
 my $case;
 my $clone;
 my $caseroot;
@@ -152,22 +122,24 @@ if ($opts{'silent'})  { $print = 0; }
 if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
-if ($print>=2) { print "Setting configuration directory to $cfgdir$eol"; }
-
 #-----------------------------------------------------------------------------------------------
-# Add $caseroot Tools to the list of paths that Perl searches for modules
-my @dirs = ("$cloneroot/Tools", "$cfgdir/Tools");
+# Obtain necessary variables from $cloneroot
+chdir ("$cloneroot");
+my $cimeroot  = `./xmlquery CIMEROOT -value`;
+my $machdir   = `./xmlquery MACHDIR  -value`;
+my $mach      = `./xmlquery MACH     -value`;
+
+# Update paths that Perl searches for modules
+my @dirs = ("$cimeroot/utils/perl5lib");
 unshift @INC, @dirs;
-require ProjectTools;
-require SetupTools;
+require Project::ProjectTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create the case directory tree utilizing the clone tree 
 my $sysmod;
 
-# Note - script files are named using the first 12-15 chars of $clone and
-# we want to remove those as well
-
+# Note - script files are named using the first 12-15 chars of $clone and we want to remove those as well
 $sysmod = "mkdir -p $caseroot"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
@@ -185,21 +157,17 @@ system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 chdir $caseroot;
 
 # Obtain variables needed below
-my $cimeroot  = `./xmlquery CIMEROOT -value`;
-my $machdir   = `./xmlquery MACHDIR  -value`;
-my $mach      = `./xmlquery MACH     -value`;
-my $username  = "$ENV{'USER'}"; #TODO - change ccsmuser to username
-
-$sysmod = "./xmlchange CCSMUSER=$username"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "./xmlchange USER=$username"      ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "./xmlchange CASEROOT=$caseroot"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "./xmlchange CASE=$case"          ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "./xmlchange BUILD_COMPLETE=FALSE"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "./xmlchange CONTINUE_RUN=FALSE"  ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "./xmlchange RESUBMIT=0"          ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
+my $username  = "$ENV{'USER'}"; 
+$sysmod = "./xmlchange USER=$username"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CASE=$case"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CASEROOT=$caseroot"		; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CASEBUILD=$caseroot/Buildconf"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CASETOOLS=$caseroot/Tools"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange BUILD_COMPLETE=FALSE"		; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange CONTINUE_RUN=FALSE"		; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+$sysmod = "./xmlchange RESUBMIT=0"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 if ($opts{'mach_dir'}) {
-    $sysmod = "./xmlchange MACHIDR=$opts{'mach_dir'}"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange MACHIDR=$opts{'mach_dir'}"   ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # --- Set project id 
@@ -217,8 +185,7 @@ if ($opts{'project'}) {
 }
 my $set_project = ProjectTools::set_project($project);
 if ($set_project) {
-    $sysmod = "xmlchange PROJECT=$project";
-     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "xmlchange PROJECT=$project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 } 
 
 # Set Testname parameters
@@ -239,10 +206,10 @@ if (defined $opts{'testname'}) {
 }
 
 # Delete files
-$sysmod = "rm -f $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/logs/*"      ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/timing/*"    ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/TestStatus*" ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/logs/*"       ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/timing/*"     ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/TestStatus*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Copy env_case.xml in locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked";
@@ -312,8 +279,5 @@ print "Cloning compset $compset \n";
 print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";
 exit;
 
-#-----------------------------------------------------------------------------------------------
-# FINISHED ####################################################################################
-#-----------------------------------------------------------------------------------------------
 
 

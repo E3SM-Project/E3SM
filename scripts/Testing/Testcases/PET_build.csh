@@ -59,10 +59,10 @@ endif
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 
-# Since possibly changed the PE layout as above - must run cesm_setup -clean WITHOUT the -testmode flag
+# Since possibly changed the PE layout as above - must run case_setup -clean WITHOUT the -testmode flag
 # in order for the $CASE.test script to be regenerated with the correct batch processor settings
-./cesm_setup -clean 
-./cesm_setup 
+./case_setup -clean 
+./case_setup 
 
 ./$CASE.build
 if ($status != 0) then

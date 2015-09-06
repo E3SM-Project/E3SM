@@ -1413,7 +1413,7 @@ sub testcaseSetup
     }
 
     print "Setting up test case \n";
-    $sysmod = "./cesm_setup";
+    $sysmod = "./case_setup";
     &Debug("sysmod is $sysmod");
     system($sysmod) == 0 or warn "$sysmod failed: $?\n";
 

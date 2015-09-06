@@ -57,6 +57,7 @@ sub main
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case, 
 							      caseconfig   => \%config, 
 							      caseroot	   => $caseroot, 
+							      cimeroot	   => $cimeroot, 
 							      compiler	   => $compiler, 
 							      machine	   => $machine, 
 							      machroot	   => $machroot, 

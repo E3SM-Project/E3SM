@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# cesm_setup - create the $caseroot/$case.run script and user_nl_xxx component namelist mod files
+# case_setup - create the $caseroot/$case.run script and user_nl_xxx component namelist mod files
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -23,14 +23,14 @@ SYNOPSIS
      Creates batch run script (case.run) for target machine
 
 USAGE
-     cesm_setup [options]
+     case_setup [options]
 OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -clean               Removes the batch run script for target machine	
                           Removes the Macros file for the target machine and target MPI library
                           If the testmode argument is present then keep the test 
 			  test script if it is present - otherwise remove it
-                          The user_nl_xxx files are never removed by cesm_setup - 
+                          The user_nl_xxx files are never removed by case_setup - 
                           you must remove them manually
      -testmode            Keeps the test script when the -clean argument is used
 EOF
@@ -93,7 +93,7 @@ if (! -d $din_loc_root) {
     if ($testcase eq 'SBN') {    
      	# do nothing 
     } else {
-	die "ERROR cesm_setup: inputdata root is not a directory: \"$din_loc_root\" \n";
+	die "ERROR case_setup: inputdata root is not a directory: \"$din_loc_root\" \n";
     }
 }
 
@@ -121,7 +121,7 @@ if ($fail_setup) {
     print "$strmacros" if(defined($strmacros));
     print "$strbuild" if(defined($strbuild));
     print "$strrun" if(defined($strrun));
-    die "Correct above and issue cesm_setup again \n";
+    die "Correct above and issue case_setup again \n";
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -132,11 +132,11 @@ if (! $clean ) {
 
     my $mach = $xmlvars{'MACH'};
     if (! defined $mach ) {
-	die "ERROR cesm_setup: xml variable MACH is not set \n";
+	die "ERROR case_setup: xml variable MACH is not set \n";
     }
     my $case = $xmlvars{'CASE'};
     if (! defined $case ) {
-	die "ERROR cesm_setup: xml variable CASE is not set \n";
+	die "ERROR case_setup: xml variable CASE is not set \n";
     }
 
     #--------------------------------------------------------------------------
@@ -158,7 +158,7 @@ if (! $clean ) {
 	    if($attr =~ /NTASKS_/){
 		$xmlvars{$attr}=1;
 		my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id $attr -val 1";
-		system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+		system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 		
 	    }
 	}
@@ -173,7 +173,7 @@ if (! $clean ) {
 		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
 		$xmlvars{$ntasks}=$xmlvars{$ninst};
 	    }else{
-		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
+		die "ERROR case_setup: $comp NINST value greater than $comp NTASKS";
 	    }
 	}
     }
@@ -184,11 +184,11 @@ if (! $clean ) {
     } else {
 
 	my $sysmod = "./Tools/check_lockedfiles";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	
         # Compute cost based on PE count
 	my $pval = 1;
@@ -224,13 +224,13 @@ if (! $clean ) {
 	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $dcost + $lcost;
 	
 	my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_PCOST -val $pcost";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_ESTCOST -val $estcost";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	
 	#--------------------------------------------------------------
 	# create batch file
@@ -260,10 +260,10 @@ if (! $clean ) {
 	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
 	
 	# Make a copy of env_mach_pes.xml in order to be able 
-	# to check that it does not change once cesm_setup is invoked
+	# to check that it does not change once case_setup is invoked
 	if (! -e "LockedFiles/env_mach_pes.xml.locked") {
 	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml.locked";
-	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	    print "Locking file env_mach_pes.xml $eol";
 	}
     }
@@ -282,7 +282,7 @@ if (! $clean ) {
 	_build_usernl_files($caseroot, $cimeroot, $model, $comp);
 	if ($comp eq "cism")  {
 	    my $sysmod = "$caseroot/Buildconf/cism.template $caseroot";
-	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	}
     }
     _build_usernl_files($caseroot, $cimeroot, "drv", "cpl");
@@ -329,38 +329,38 @@ if ($clean) {
     my $backupdir = "PESetupHist/b.${id}";
     if (!-d ${backupdir}) {
 	$sysmod = "mkdir -p ${backupdir}";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
     }
     # back up relevant files
     $sysmod = "cp ${case}.run env_build.xml env_mach_pes.xml Macros ${backupdir}";
-    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
     # remove relevant files from $caseroot
     $sysmod = "rm ./${case}.run";
-    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
     $sysmod = "rm Macros";
-    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
     # remove relevant files from $caseroot/LockedFiels
     my @files = <${caseroot}/LockedFiles/*build* ${caseroot}/LockedFiles/*mach_pes*>;
     foreach my $file (@files) {
 	$sysmod = "rm $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
     }
 
     # only do the following if are NOT in testmode
     if (! $testmode)  {
 	# rebuild the models (even on restart)
 	$sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
     
 	# backup and then clean test script
 	if( -e "$caseroot/$case.test") {
 	    $sysmod = "cp ${case}.test ${backupdir}";
-	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
 	    $sysmod = "rm ./${case}.test";
-	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	    print "Successfully cleaned test script $case.test $eol";
 	}
     }
@@ -371,7 +371,7 @@ if ($clean) {
     my $fh = new IO::File;
     $fh->open(">>CaseStatus") or die "can't open file: CaseStatus\n";
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
-    print $fh "cesm_setup -clean $sdate $eol";
+    print $fh "case_setup -clean $sdate $eol";
     $fh->close();
 
 }

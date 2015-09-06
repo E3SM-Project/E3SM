@@ -205,14 +205,18 @@ sub _setPESsettings
     my $compset_match;
     my $pesize_match;
 
+    # Find nodes with grid= not 'any' and mach='any' - this override the default for $grid_match and $mach_match
     foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[\@name =\"any\"]")) {
 	my $grid_attr = $node->parentNode()->getAttribute('name');
-	if ($grid_longname =~ m/$grid_match/) {
+	if ($grid_longname =~ m/$grid_attr/) {
 	    $grid_match = $grid_attr;
 	    $mach_match = 'any';
 	    last;
 	}
     }
+
+    # Find nodes with grid = 'any' and mach = not 'any'
+    # The first match found will overwrite the above grid_match and mach_match default
     foreach my $node ($xml->findnodes(".//grid[\@name =\"any\"]/mach[not(\@name =\"any\")]")) {
 	my $mach_attr = $node->getAttribute('name');
 	if ($mach =~ m/$mach_attr/) {
@@ -221,6 +225,9 @@ sub _setPESsettings
 	    last;
 	}
     }
+
+    # Find nodes with grid = not 'any' and mach = not 'any'
+    # The first match found will overwrite the above grid_match and mach_match default
     foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[not(\@name =\"any\")]")) {
 	my $grid_attr = $node->parentNode()->getAttribute('name');
 	my $mach_attr = $node->getAttribute('name');
@@ -231,7 +238,8 @@ sub _setPESsettings
 	}
     }
 
-    # Now search the pes
+    # Now $grid_match and $mach_match are set
+    # Determine the values of $compset_match and $pe_size_match
     my @nodes = $xml->findnodes(".//grid[\@name=\"$grid_match\"]/mach[\@name=\"$mach_match\"]/*");
     if ((! defined $compset_match) && (! defined $pesize_match)) {
 	foreach my $node (@nodes) {

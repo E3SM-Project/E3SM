@@ -74,7 +74,7 @@ sub main {
 
     $CASE = `./xmlquery  CASE -value `;
     if (! -f "$CASE.run") {
-	die "ERROR: must invoke cesm_setup script before calling build script ";
+	die "ERROR: must invoke case_setup script before calling build script ";
     }
 
     $sysmod = "./Tools/check_lockedfiles";
@@ -102,13 +102,6 @@ sub main {
     $DEBUG		= `./xmlquery  DEBUG		-value `;
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
-    $CONFIG_ATM_DIR	= `./xmlquery  CONFIG_ATM_DIR	-value `;
-    $CONFIG_LND_DIR	= `./xmlquery  CONFIG_LND_DIR	-value `;
-    $CONFIG_ICE_DIR	= `./xmlquery  CONFIG_ICE_DIR	-value `;
-    $CONFIG_OCN_DIR	= `./xmlquery  CONFIG_OCN_DIR	-value `;
-    $CONFIG_GLC_DIR	= `./xmlquery  CONFIG_GLC_DIR	-value `;
-    $CONFIG_WAV_DIR	= `./xmlquery  CONFIG_WAV_DIR	-value `;
-    $CONFIG_ROF_DIR	= `./xmlquery  CONFIG_ROF_DIR	-value `;
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
     my $OS	        = `./xmlquery  OS		-value `;
@@ -116,6 +109,21 @@ sub main {
     my $MODEL           = `./xmlquery  MODEL            -value `;
     my $machines_file   = `./xmlquery  MACHINES_SPEC_FILE -value `;
     $machines_dir       = dirname($machines_file);
+
+    my $CONFIG_ATM_FILE	= `./xmlquery  CONFIG_ATM_FILE	-value `;
+    my $CONFIG_LND_FILE	= `./xmlquery  CONFIG_LND_FILE	-value `;
+    my $CONFIG_ICE_FILE	= `./xmlquery  CONFIG_ICE_FILE	-value `;
+    my $CONFIG_OCN_FILE	= `./xmlquery  CONFIG_OCN_FILE	-value `;
+    my $CONFIG_GLC_FILE	= `./xmlquery  CONFIG_GLC_FILE	-value `;
+    my $CONFIG_WAV_FILE	= `./xmlquery  CONFIG_WAV_FILE	-value `;
+    my $CONFIG_ROF_FILE	= `./xmlquery  CONFIG_ROF_FILE	-value `;
+    $CONFIG_ATM_DIR	= dirname($CONFIG_ATM_FILE);
+    $CONFIG_LND_DIR	= dirname($CONFIG_LND_FILE);
+    $CONFIG_ICE_DIR	= dirname($CONFIG_ICE_FILE);
+    $CONFIG_OCN_DIR	= dirname($CONFIG_OCN_FILE);
+    $CONFIG_GLC_DIR	= dirname($CONFIG_GLC_FILE);
+    $CONFIG_WAV_DIR	= dirname($CONFIG_WAV_FILE);
+    $CONFIG_ROF_DIR	= dirname($CONFIG_ROF_FILE);
 
     $ENV{CIMEROOT}		= $CIMEROOT		;
     $ENV{CASETOOLS}		= $CASETOOLS		;

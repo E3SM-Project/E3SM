@@ -823,7 +823,7 @@ sub _create_caseroot_tools
     $sysmod;
 
     my @files = (
-	"$cimeroot/scripts/Tools/cesm_setup", 
+	"$cimeroot/scripts/Tools/case_setup", 
 	"$cimeroot/scripts/Tools/testcase_setup", 
 	"$cimeroot/scripts/Tools/check_input_data", 
 	"$cimeroot/scripts/Tools/archive_metadata.sh", 
@@ -859,7 +859,6 @@ sub _create_caseroot_tools
 	      "$cimeroot/scripts/Tools/st_archive", 
 	      "$cimeroot/scripts/Tools/getTiming", 
 	      "$cimeroot/scripts/Tools/compare_namelists.pl",
-	      "$machines_dir/ccsm_getenv", 
 	      "$machines_dir/taskmaker.pl", 
 	      "$machines_dir/Makefile",
 	      "$machines_dir/mkSrcfiles", 
