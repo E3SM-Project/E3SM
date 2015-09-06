@@ -2,7 +2,7 @@
 
 OBJS = mpas_cice_analysis_driver.o
 
-MEMBERS = mpas_cice_high_frequency_output.o
+MEMBERS = mpas_cice_high_frequency_output.o mpas_cice_temperatures.o
 
 all: $(OBJS)
 

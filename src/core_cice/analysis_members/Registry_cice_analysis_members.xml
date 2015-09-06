@@ -1,1 +1,2 @@
 #include "Registry_cice_high_frequency_output.xml"
+#include "Registry_cice_temperatures.xml"
