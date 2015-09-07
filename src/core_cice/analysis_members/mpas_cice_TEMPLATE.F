@@ -7,28 +7,28 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_TEM_PLATE
+!  cice_TEM_PLATE
 !
-!> \brief MPAS ocean analysis mode member: TEM_PLATE
+!> \brief MPAS sea ice analysis mode member: TEM_PLATE
 !> \author FILL_IN_AUTHOR
 !> \date   FILL_IN_DATE
 !> \details
-!>  MPAS ocean analysis mode member: TEM_PLATE
+!>  MPAS sea ice analysis mode member: TEM_PLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
-!>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
-!>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
+!>     cp mpas_cice_TEMPLATE.F mpas_cice_your_new_name.F
+!>     cp Registry_cice_TEMPLATE.xml Registry_cice_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
 !>     tempLate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
 !>     Typically tempLate uses camel case (variable names), like yourNewName,
 !>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
-!>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
+!>     note: do not replace 'filename_template' in Registry_cice_yourNewName.xml
 !>  
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>
-!>  4. In mpas_ocn_analysis_driver.F, add a use statement for your new analysis member.
+!>  4. In mpas_cice_analysis_driver.F, add a use statement for your new analysis member.
 !>     In addition, add lines for your analysis member, and replace TEM_PLATE
 !>     and temPlate as described in step 2. There should be 5 places that need additions:
 !>      - Adding the analysis member name to the analysis member list
@@ -37,7 +37,7 @@
 !>      - Adding a restart if test can subroutine call
 !>      - Adding a finalize if test can subroutine call
 !>  
-!>  5. In src/core_ocean/analysis_members/Makefile, add your
+!>  5. In src/core_cice/analysis_members/Makefile, add your
 !>     new analysis member to the list of members. See another analysis member
 !>     in that file for an example. 
 !>     NOTE: If your analysis member depends on other files, add a dependency
@@ -45,16 +45,13 @@
 !>
 !-----------------------------------------------------------------------
 
-module ocn_TEM_PLATE
+module cice_TEM_PLATE
 
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
-
-   use ocn_constants
-   use ocn_diagnostics_routines
 
    implicit none
    private
@@ -72,10 +69,10 @@ module ocn_TEM_PLATE
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_init_TEM_PLATE, &
-             ocn_compute_TEM_PLATE, &
-             ocn_restart_TEM_PLATE, &
-             ocn_finalize_TEM_PLATE
+   public :: cice_init_TEM_PLATE, &
+             cice_compute_TEM_PLATE, &
+             cice_restart_TEM_PLATE, &
+             cice_finalize_TEM_PLATE
 
    !--------------------------------------------------------------------
    !
@@ -89,18 +86,18 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_TEM_PLATE
+!  routine cice_init_TEM_PLATE
 !
-!> \brief   Initialize MPAS-Ocean analysis member
+!> \brief   Initialize MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all initializations required for the
-!>  MPAS-Ocean analysis member.
+!>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_TEM_PLATE(domain, err)!{{{
+   subroutine cice_init_TEM_PLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -132,22 +129,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_init_TEM_PLATE!}}}
+   end subroutine cice_init_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_TEM_PLATE
+!  routine cice_compute_TEM_PLATE
 !
-!> \brief   Compute MPAS-Ocean analysis member
+!> \brief   Compute MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-Ocean analysis member.
+!>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_TEM_PLATE(domain, timeLevel, err)!{{{
+   subroutine cice_compute_TEM_PLATE(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -254,22 +251,22 @@ contains
          block => block % next
       end do
 
-   end subroutine ocn_compute_TEM_PLATE!}}}
+   end subroutine cice_compute_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_TEM_PLATE
+!  routine cice_restart_TEM_PLATE
 !
-!> \brief   Save restart for MPAS-Ocean analysis member
+!> \brief   Save restart for MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts computation required to save a restart state
-!>  for the MPAS-Ocean analysis member.
+!>  for the MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_TEM_PLATE(domain, err)!{{{
+   subroutine cice_restart_TEM_PLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -301,22 +298,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_TEM_PLATE!}}}
+   end subroutine cice_restart_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_TEM_PLATE
+!  routine cice_finalize_TEM_PLATE
 !
-!> \brief   Finalize MPAS-Ocean analysis member
+!> \brief   Finalize MPAS-CICE analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
 !> \details
 !>  This routine conducts all finalizations required for this
-!>  MPAS-Ocean analysis member.
+!>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_TEM_PLATE(domain, err)!{{{
+   subroutine cice_finalize_TEM_PLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -348,8 +345,10 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_TEM_PLATE!}}}
+   end subroutine cice_finalize_TEM_PLATE!}}}
 
-end module ocn_TEM_PLATE
+!-----------------------------------------------------------------------
+
+end module cice_TEM_PLATE
 
 ! vim: foldmethod=marker
