@@ -22,6 +22,7 @@
 		<dim name="nAerosols"          definition="1"/>
 		<dim name="nSpectralIntervals" definition="3"/>
 		<dim name="nZBGCTracers"       definition="0"/>
+		<dim name="nRegions"       definition="3"/>
 		<dim name="nVertLevels"/>
 	  	<dim name="POP_nx"/>
 		<dim name="POP_ny"/>
@@ -892,6 +893,11 @@
 		<var name="surfaceTemperaturePlot"            type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperaturePlot"/>
 		<var name="iceThickness"                      type="real"     dimensions="nCells Time"          name_in_code="iceThickness"/>
 		<var name="snowThickness"                     type="real"     dimensions="nCells Time"          name_in_code="snowThickness"/>
+	</var_struct>
+
+	<!-- Regions -->
+	<var_struct name="regions" time_levs="1">
+		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
 	</var_struct>
 
 	<!-- Diagnostics -->
