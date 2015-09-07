@@ -263,6 +263,9 @@ END_BEGIN
 
 print $testfh $testcase_begin;
 
+my $file = "${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script";
+(-f $file) or die "ERROR testcase_setup: $file does not exist \n"; 
+
 $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 

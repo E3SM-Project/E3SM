@@ -31,6 +31,7 @@ my $COMPILER;
 my $CASE; 
 my $EXEROOT;
 my $BUILD_THREADED;
+my $MODEL;
 my $COMP_ATM;
 my $COMP_LND;
 my $COMP_ICE;
@@ -102,11 +103,11 @@ sub main {
     $DEBUG		= `./xmlquery  DEBUG		-value `;
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
+    $MODEL              = `./xmlquery  MODEL            -value `;
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
     my $OS	        = `./xmlquery  OS		-value `;
     my $COMP_CPL	= `./xmlquery  COMP_CPL		-value `;
-    my $MODEL           = `./xmlquery  MODEL            -value `;
     my $machines_file   = `./xmlquery  MACHINES_SPEC_FILE -value `;
     $machines_dir       = dirname($machines_file);
 
@@ -588,38 +589,38 @@ sub buildModel()
 	}
     }
 
-    my $file_build = "$EXEROOT/cesm.bldlog.$LID";
+    my $file_build = "${EXEROOT}/${MODEL}.bldlog.$LID";
     my $now = localtime;
     print "      $now $file_build\n";
 
-    mkpath "$EXEROOT/cesm/obj" if (! -d "$EXEROOT/cesm/obj");
-    mkpath "$EXEROOT/cesm"     if (! -d "$EXEROOT/cesm");
+    mkpath "${EXEROOT}/${MODEL}/obj" if (! -d "${EXEROOT}/${MODEL}/obj");
+    mkpath "${EXEROOT}/${MODEL}"     if (! -d "${EXEROOT}/${MODEL}");
 
     # create the model executable 
-    chdir "$EXEROOT/cesm" or die "Could not cd to $EXEROOT/cesm: $!\n";
-    eval{ system("$CIMEROOT/driver_cpl/bld/model.buildexe $CASEROOT >> $file_build 2>&1") };
-    if ($?) {die "ERROR: model.buildexe failed, see $file_build\n";}
+    chdir "${EXEROOT}/${MODEL}" or die "Could not cd to ${EXEROOT}/${MODEL}: $!\n";
+    eval{ system("$CIMEROOT/driver_cpl/cime_config/buildexe $CASEROOT >> $file_build 2>&1") };
+    if ($?) {die "ERROR: buildexe failed, see $file_build\n";}
 
     push(@bldlogs, $file_build);
 	
-    #--- Copy the just-built cesm.exe to cesm.exe.$LID
-    copy("$EXEROOT/cesm.exe", "$EXEROOT/cesm.exe.$LID");
-    chmod 0755, "$EXEROOT/cesm.exe.$LID" or warn "could not change perms on $EXEROOT/cesm.exe.$LID, $?";
+    #--- Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
+    copy("${EXEROOT}/${MODEL}.exe", "${EXEROOT}/${MODEL}.exe.$LID");
+    chmod 0755, "${EXEROOT}/${MODEL}.exe.$LID" or warn "could not change perms on ${EXEROOT}/${MODEL}.exe.$LID, $?";
 	
     #copy build logs to CASEROOT/logs
     if(length($LOGDIR) > 0) {
 	if(! -d "$LOGDIR/bld") {
 	    mkpath "$LOGDIR/bld";
 	}
-	chdir "$EXEROOT" or die "Could not cd to $EXEROOT: $!\n";
-	#system("gzip $EXEROOT/*.bldlog.$LID*");	
-	#my @gzlogs = glob("$EXEROOT/*bldlog.$LID.*");
+	chdir "${EXEROOT}" or die "Could not cd to ${EXEROOT}: $!\n";
+	#system("gzip ${EXEROOT}/*.bldlog.$LID*");	
+	#my @gzlogs = glob("${EXEROOT}/*bldlog.$LID.*");
 	
 	#foreach my $gzlog(@gzlogs)
 	foreach my $log(@bldlogs) {
 	    system("gzip $log");
 	}	
-	my @gzlogs = glob("$EXEROOT/*bldlog.$LID.*");
+	my @gzlogs = glob("${EXEROOT}/*bldlog.$LID.*");
 	foreach my $gzlog(@gzlogs) {
 	    copy($gzlog, "$LOGDIR/bld");
 	}

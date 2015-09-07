@@ -33,13 +33,13 @@
 
   <file name="env_mach_pes.xml">
     <header>
-    These variables CANNOT be modified once cesm_setup has been           
-    invoked without first invoking cesm_setup -clean.                     
+    These variables CANNOT be modified once case_setup has been           
+    invoked without first invoking case_setup -clean.                     
       
     component task/thread settings                                             
-    if the user wants to change the values below after ./cesm_setup, run       
-    ./cesm_setup -clean                                                     
-    ./cesm_setup                                                            
+    if the user wants to change the values below after ./case_setup, run       
+    ./case_setup -clean                                                     
+    ./case_setup                                                            
     to reset the pes for the run                                              
     
     NTASKS are the total number of MPI tasks                                  
@@ -79,8 +79,8 @@
     
     The user can copy env_mach_pes.xml from another run, but they'll need to
     do the following
-    ./cesm_setup -clean
-    ./cesm_setup
+    ./case_setup -clean
+    ./case_setup
     ./CASE.build
     </header>
   </file>

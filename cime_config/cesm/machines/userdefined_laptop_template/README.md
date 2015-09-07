@@ -120,7 +120,7 @@ First Use
             -compset ICLM45CN \
             -res 1x1_brazil
     
-  - run `cesm_setup`, `$CASE_NAME.build`, `$CASE_NAME.run` as normal.
+  - run `case_setup`, `$CASE_NAME.build`, `$CASE_NAME.run` as normal.
 
   - Test a global simulation, use:
         -res f45_f45

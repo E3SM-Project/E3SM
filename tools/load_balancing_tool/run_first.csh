@@ -72,7 +72,7 @@ foreach NA (${NATM})
     ./create_newcase -case ${casedir}/${case} -res ${res} -compset {$compset} -mach ${mach}
 
     cd ${casedir}/${case}
-    ./cesm_setup -clean
+    ./case_setup -clean
 
     #generic stuff
     ./xmlchange -file env_run.xml -id STOP_N -val $run_len
@@ -114,7 +114,7 @@ foreach NA (${NATM})
     ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val $NT
     ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC -val ${ROOTPE_GLC}
 
-    ./cesm_setup
+    ./case_setup
 
     if ($bldrun == "1") then
        ./${case}*.build

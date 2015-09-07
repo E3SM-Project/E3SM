@@ -60,7 +60,6 @@ GetOptions(
     "mach_dir=s"                => \$opts{'mach_dir'},
     "project=s"                 => \$opts{'project'},
     "s|silent"                  => \$opts{'silent'},
-    "testname=s"                => \$opts{'testname'},
     "v|verbose"                 => \$opts{'verbose'},
 )  or usage();
 
@@ -78,7 +77,6 @@ my $case;
 my $clone;
 my $caseroot;
 my $cloneroot;
-my $testname;
 my $project;
 
 # Check for manditory case input
@@ -109,10 +107,6 @@ my @dirs = split "/", $cloneroot, -1;
 my $num = scalar @dirs;
 $clone = @dirs[$num-1];
 
-# Check for optional testname input
-if ($opts{'testname'}) {
-    $testname = $opts{'testname'};
-}
 # Define 3 print levels:
 # 0 - only issue fatal error messages
 # 1 - only informs what files are created (default)
@@ -134,22 +128,29 @@ my @dirs = ("$cimeroot/utils/perl5lib");
 unshift @INC, @dirs;
 require Project::ProjectTools;
 require Config::SetupTools;
+require Batch::BatchMaker;
 
 #-----------------------------------------------------------------------------------------------
 # Create the case directory tree utilizing the clone tree 
 my $sysmod;
 
-# Note - script files are named using the first 12-15 chars of $clone and we want to remove those as well
+# Create $caseroot directories 
 $sysmod = "mkdir -p $caseroot"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
-$sysmod = "cp -pr $cloneroot/* $caseroot/"; 
+$sysmod = "cp -rp $cloneroot/* $caseroot"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
+# Remove unwanted files from $cloneroot
+# Note - script files are named using the first 12-15 chars of $clone and we want to remove those as well
+$sysmod = "rm -rf $caseroot/Buildconf/*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/CaseDocs/*"   ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/logs/*"       ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/timing/*"     ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/TestStatus*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 my $clonesubname = substr($clone,0,12);
 $sysmod = "rm -f $caseroot/$clonesubname*"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
 $sysmod = "rm -f $caseroot/*~";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
@@ -188,96 +189,20 @@ if ($set_project) {
     $sysmod = "xmlchange PROJECT=$project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 } 
 
-# Set Testname parameters
-# First determine if debug option is to be set for test, then determine
-# all of the other test settings by evaluating config_tests.xml for the testname
-if (defined $opts{'testname'}) {
-    $testname = $opts{'testname'};
-    if ($testname =~ "_D") {
-	# remove _D from testname
-	chop($testname);
-	chop($testname);
-	$sysmod = "xmlchage DEBUG=TRUE";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    }
-    #??TODO - is the following needed???
-#    ConfigTests:setTests("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $cfg_ref);
-#    print "Test specifier $testname will overwrite env variable definitions.$eol"; 
-}
-
-# Delete files
-$sysmod = "rm -rf $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/logs/*"       ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/timing/*"     ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "rm -rf $caseroot/TestStatus*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-
 # Copy env_case.xml in locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 print "Locking file $caseroot/env_case.xml \n";
 
 #-----------------------------------------------------------------------------------------------
-# Read $caseroot xml files - put results in %xmlvars hash
-my %xmlvars = ();
-
-SetupTools::getxmlvars($caseroot, \%xmlvars);
-
-foreach my $attr (keys %xmlvars) {
-    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr},\%xmlvars);
-}	
-
-my $compset     = $xmlvars{COMPSET};
-my $cimeroot    = $xmlvars{CIMEROOT};
-my $machdir     = $xmlvars{MACHDIR};
-my $mach        = $xmlvars{MACH};
-$project        = $xmlvars{PROJECT};
-my $perl5lib    = "$cimeroot/utils/perl5lib";
-push(@INC, $perl5lib);
-require Batch::BatchMaker;
-
-# --- Create $case.build
-$sysmod = "cp $cimeroot/scripts/Tools/build.csh  $caseroot/$case.build";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "chmod 755 $caseroot/$case.build";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-# --- Create $case.clean_build
-$sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-# --- Create $case.submit
-$sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-# --- Create $case.l_archive
-my $batchmaker = Batch::BatchFactory::getBatchMaker( cimeroot    => $cimeroot,
-						     caseroot    => $xmlvars{'CASEROOT'},
-						     case        => $xmlvars{'CASE'},
-						     mpilib      => $xmlvars{'MPILIB'},
-						     cimeroot    => $xmlvars{'CIMEROOT'},
-						     machroot    => $xmlvars{'MACHDIR'},
-						     machine     => $xmlvars{'MACH'},
-						     compiler    => $xmlvars{'COMPILER'});
-
- my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.ltarchive";
- my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.lt_archive";
- $batchmaker->overrideNodeCount(1);
- $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
-
-# --- Create preview_namelist file
-$sysmod = "cp  ${cimeroot}/scripts/Tools/preview_namelists ${caseroot}/preview_namelists"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-$sysmod = "chmod 755 ${caseroot}/preview_namelists";
+# Create batch script
+$sysmod = "./case_setup"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # --- Print output ---
 my $compset = `./xmlquery COMPSET -value`;
-my $compset = `./xmlquery COMPSET -value`;
-print "Cloning compset $compset \n";
 print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";
-exit;
+exit(0);
 
 
 

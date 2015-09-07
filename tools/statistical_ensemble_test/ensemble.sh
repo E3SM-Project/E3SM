@@ -235,7 +235,7 @@ create_cases ()
     fi
     ./xmlchange -file env_build.xml -id EXEROOT -val $EXEROOT
     ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-    ./cesm_setup
+    ./case_setup
 
     # For validations, subsequent cloned cases will have the pertlim from the
     # parent case. We neet to remove the original case's pertlim before we set

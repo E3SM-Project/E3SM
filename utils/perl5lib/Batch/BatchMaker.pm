@@ -425,7 +425,7 @@ sub setProject()
 }
 
 #==============================================================================
-# Get the estimated cost for this run.  This value is currently calculated as part of cesm_setup. 
+# Get the estimated cost for this run.  This value is currently calculated as part of case_setup. 
 # TODO: modularize the cost calculation??? 
 #==============================================================================
 sub getEstCost()

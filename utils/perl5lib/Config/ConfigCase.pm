@@ -126,9 +126,11 @@ sub add_config_variables
 	    my $node_value = $define_node->textContent();
 
 	    if (defined $node_value) {
-		$node_value =~ s/\$CIMEROOT/$cimeroot/;
-		$node_value =~ s/\$SRCROOT/$srcroot/;
 		$node_value =~ s/\$MODEL/$model/;
+		$node_value =~ s/\$CIMEROOT/$cimeroot/;
+		if (-d $srcroot) {
+		    $node_value =~ s/\$SRCROOT/$srcroot/;
+		}
 
 		# now set the initial value to the default value - this can get overwritten
 		if ($node_name eq 'default_value') {

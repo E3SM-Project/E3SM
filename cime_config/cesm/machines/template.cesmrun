@@ -22,7 +22,7 @@ chdir $caseroot;
 my $toolsdir = "$caseroot/Tools";
 push(@INC, $toolsdir);
 my $perl5lib = "$cimeroot/utils/perl5lib";
-push(@INC, $perl5lib);
+push(@INC, $perl5lib, "$perl5lib/Config");
 
 require SetupTools;
 require Run::RunChecks;
@@ -119,6 +119,7 @@ sub doPreRunChecks()
 						mpilib   => $config{'MPILIB'}, 
 						debug    => $config{'DEBUG'}, 
 						caseroot => $config{'CASEROOT'},
+						cimeroot => $config{'CIMEROOT'},
 	                                        model    => $config{'MODEL'});
     
     $moduleloader->moduleInit();
@@ -338,7 +339,7 @@ sub postRun()
     chdir $config{'RUNDIR'};
     my $workingdir = getcwd;
 
-    # find the last cesm.log and cpl.log
+    # find the last $model.log and cpl.log
     my @logs = glob q(cesm.log.*);
     my $logfile = $logs[$#logs];
     my @cpllogs = glob q(cpl.log.*);
@@ -351,7 +352,7 @@ sub postRun()
 
     if(! defined $cpllogfile)
     {
-        my $msg = "Model did not complete - no cpl.log file corresponding to most recent CESM log: $config{'RUNDIR'}/$cesmlogfile";
+        my $msg = "Model did not complete - no cpl.log file corresponding to most recent model log: $config{'RUNDIR'}/$logfile";
         print("$msg\n");
         appendCaseStatus($msg);
         exit(-1);
@@ -385,7 +386,7 @@ sub postRun()
         }
         else
         {
-            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent cesm.log: $config{'RUNDIR'}/$logfile");
+            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent model log: $config{'RUNDIR'}/$logfile");
             exit(-1);
         }
     }

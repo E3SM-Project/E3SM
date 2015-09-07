@@ -268,7 +268,7 @@
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/projects/sciteam/jng/cesm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/sciteam/jng/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/scratch/sciteam/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/scratch/sciteam/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/projects/sciteam/jng/cesm/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/projects/sciteam/jng/cesm/tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
@@ -348,13 +348,13 @@
     <COMPILERS>pgi,intel</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/cluster/work/uwis/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/cluster/work/uwis/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/cluster/work/uwis/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/cluster/work/uwis/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/cluster/work/uwis/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/cluster/work/uwis/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/cluster/work/uwis/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/cluster/work/uwis/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_S_ROOT>/cluster/work/uwis/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>/`echo $USER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/cluster/work/uwis/ccsm/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/cluster/work/uwis/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <BATCHQUERY>bjobs -w</BATCHQUERY>
@@ -422,12 +422,12 @@
     <OS>LINUX</OS>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <RUNDIR>/lustre/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/lustre/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/lustre/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/lustre/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/lustre/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/lustre/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <CCSM_BASELINE>/lustre/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/lustre/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -606,12 +606,12 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,pathscale</COMPILERS>
     <MPILIBS>ibm,mpi-serial</MPILIBS>
-    <RUNDIR>/ampstmp/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/ampstmp/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/ampstmp/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/ampstmp/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/ampstmp/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{CESMDATAROOT}/tss</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/ampstmp/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/ampstmp/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -770,15 +770,15 @@
     <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
     <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
-    <RUNDIR>/scratch/cluster/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/scratch/cluster/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/scratch/cluster/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
     <OBJROOT>$EXEROOT</OBJROOT>
     <INCROOT>$EXEROOT/lib/include</INCROOT>
     <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/scratch/cluster/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>/`echo $USER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
     <OS>LINUX</OS>
@@ -933,15 +933,15 @@
     <DESC>LLNL Linux Cluster, Linux (pgi), 16 pes/node, batch system is Moab</DESC>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/p/lscratchd/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lscratchd/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/p/lscratchd/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/p/lscratchd/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/p/lscratchd/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/p/lscratchd/mirin/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/p/lscratchd/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/p/lscratchd/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+    <CCSM_BASELINE>/p/lscratchd/$USER/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/p/lscratchd/mirin/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>LINUX</OS>
     <BATCHQUERY>mshow</BATCHQUERY>
@@ -989,8 +989,8 @@
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/projects/$PROJECT/usr/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
+    <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
     <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
     <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>BGQ</OS>
@@ -1052,12 +1052,12 @@
     <OS>LINUX</OS>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <RUNDIR>/pic/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/pic/scratch/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/pic/scratch/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/pic/scratch/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
@@ -1109,12 +1109,12 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -1171,12 +1171,12 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -1233,12 +1233,12 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -1295,12 +1295,12 @@
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
     <OS>LINUX</OS>
-    <RUNDIR>/nobackup/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/nobackup/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/nobackup/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/nobackup/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/nobackup/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/nobackup/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
@@ -1356,15 +1356,15 @@
     <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/p/lscratchd/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lscratchd/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/p/lscratchd/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/p/lscratchd/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/p/lscratchd/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/p/lscratchd/mirin/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/mirin/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/p/lscratchd/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/p/lscratchd/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+    <CCSM_BASELINE>/p/lscratchd/$USER/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/p/lscratchd/mirin/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
     <OS>LINUX</OS>
     <BATCHQUERY>mshow</BATCHQUERY>
@@ -1524,12 +1524,12 @@
     <DESC>CSCS Cray XE6, os is CNL, 32 pes/node, batch system is SLURM</DESC>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
-    <RUNDIR>/scratch/rosa/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/scratch/rosa/$CCSMUSER/$CASE/bld</EXEROOT>
+    <RUNDIR>/scratch/rosa/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/scratch/rosa/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/scratch/rosa/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/project/s433/cesm_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/s433/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/project/s433/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/project/s433/$USER/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/project/s433/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/project/s433/cesm_tools/ccsm_cprnc/cprnc</CCSM_CPRNC>
