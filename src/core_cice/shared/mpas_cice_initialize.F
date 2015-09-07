@@ -969,7 +969,13 @@ contains
     integer :: &
          iCell
     
-    !WHL - debug - Assume that surface of the sphere is defined by xCell^2 + yCell^2 = zCell^2 = 1
+    !WHL - debug - Assume that the surface of the sphere is defined by xCell^2 + yCell^2 = zCell^2 = 1
+    ! NOTE: This may require setting the Earth's radius to 1.0 in ../../framework/mpas_constants.F:
+    !       Instead of this:
+    !          real (kind=RKIND), parameter :: a       = 6371229.0           !< Constant: Spherical Earth radius [m]
+    !       Use this:
+    !          real (kind=RKIND), parameter :: a       = 1.0d0           !< Constant: Spherical Earth radius [m]
+
     real(kind=RKIND), parameter :: &
 !!!         circle_radius = 1.0e6_RKIND
          circle_radius = 0.1_RKIND

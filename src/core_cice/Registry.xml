@@ -17,7 +17,7 @@
 		<dim name="nSnowLayers"        definition="1"/>
 		<dim name="nHemispheres"       definition="3"/>
 		<dim name="nQuadPoints"        definition="6"/>
-		<dim name="nTriPerEdge"        definition="5"/>
+		<dim name="nTriPerEdgeRemap"   definition="6"/>
 		<dim name="maxCellsPerEdgeRemap"    definition="6"/>
 		<dim name="maxEdgesPerEdgeRemap"    definition="6"/>
 		<dim name="maxVerticesPerEdgeRemap" definition="8"/>
@@ -602,13 +602,13 @@
 		<var name="snowEnthalpyProduct"               type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpyProduct"/>
 	</var_struct>
 	<var_struct name="tracer_triangles" time_levs="1">
-		<var name="iceAreaCategoryTriangle"           type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="iceAreaCategoryTriangle"/>
-		<var name="iceVolumeCategoryTriangle"         type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="iceVolumeCategoryTriangle"/>
-		<var name="snowVolumeCategoryTriangle"        type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="snowVolumeCategoryTriangle"/>
-		<var name="surfaceTemperatureTriangle"        type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdge nEdges"          name_in_code="surfaceTemperatureTriangle"/>
-		<var name="iceEnthalpyTriangle"               type="real"     dimensions="nIceLayers nCategories nQuadPoints nTriPerEdge nEdges"   name_in_code="iceEnthalpyTriangle"/>
-		<var name="iceSalinityTriangle"               type="real"     dimensions="nIceLayers nCategories nQuadPoints nTriPerEdge nEdges"   name_in_code="iceSalinityTriangle"/>
-		<var name="snowEnthalpyTriangle"              type="real"     dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdge nEdges"  name_in_code="snowEnthalpyTriangle"/>
+		<var name="iceAreaCategoryTriangle"           type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"          name_in_code="iceAreaCategoryTriangle"/>
+		<var name="iceVolumeCategoryTriangle"         type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"          name_in_code="iceVolumeCategoryTriangle"/>
+		<var name="snowVolumeCategoryTriangle"        type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"          name_in_code="snowVolumeCategoryTriangle"/>
+		<var name="surfaceTemperatureTriangle"        type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"          name_in_code="surfaceTemperatureTriangle"/>
+		<var name="iceEnthalpyTriangle"               type="real"     dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="iceEnthalpyTriangle"/>
+		<var name="iceSalinityTriangle"               type="real"     dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="iceSalinityTriangle"/>
+		<var name="snowEnthalpyTriangle"              type="real"     dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="snowEnthalpyTriangle"/>
 	</var_struct>
 	<var_struct name="tracer_barycenter" time_levs="1">
 		<var name="iceAreaCategoryBarycenterx"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryBarycenterx"/>
@@ -689,10 +689,10 @@
 
 	<!-- incremental remapping -->
 	<var_struct name="incremental_remap" time_levs="1">
-		<var name="xTriangle"                         type="real"     dimensions="nQuadPoints nTriPerEdge nEdges"  name_in_code="xTriangle"/>
-		<var name="yTriangle"                         type="real"     dimensions="nQuadPoints nTriPerEdge nEdges"  name_in_code="yTriangle"/>
-		<var name="iCellTriangle"                     type="integer"  dimensions="nTriPerEdge nEdges"              name_in_code="iCellTriangle"/>
-		<var name="triangleArea"                      type="real"     dimensions="nTriPerEdge nEdges"              name_in_code="triangleArea"/>
+		<var name="xTriangle"                         type="real"     dimensions="nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="xTriangle"/>
+		<var name="yTriangle"                         type="real"     dimensions="nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="yTriangle"/>
+		<var name="iCellTriangle"                     type="integer"  dimensions="nTriPerEdgeRemap nEdges"              name_in_code="iCellTriangle"/>
+		<var name="triangleArea"                      type="real"     dimensions="nTriPerEdgeRemap nEdges"              name_in_code="triangleArea"/>
 		<var name="departurePoint"                    type="real"     dimensions="TWO nVertices"                   name_in_code="departurePoint"/>	
 		<var name="remapEdge"                         type="integer"  dimensions="nEdges"                          name_in_code="remapEdge"/>
 		<var name="cellsOnEdgeRemap"                  type="integer"  dimensions="maxCellsPerEdgeRemap nEdges"     name_in_code="cellsOnEdgeRemap"/>
@@ -701,14 +701,13 @@
 		<var name="yVertexOnCell"                     type="real"     dimensions="maxEdges nCells"                 name_in_code="yVertexOnCell"/>
 		<var name="xVertexOnEdge"                     type="real"     dimensions="maxVerticesPerEdgeRemap nEdges"  name_in_code="xVertexOnEdge"/>
 		<var name="yVertexOnEdge"                     type="real"     dimensions="maxVerticesPerEdgeRemap nEdges"  name_in_code="yVertexOnEdge"/>
-		<var name="xCellOnEdge"                       type="real"     dimensions="maxCellsPerEdgeRemap nEdges"     name_in_code="xCellOnEdge"/>
-		<var name="yCellOnEdge"                       type="real"     dimensions="maxCellsPerEdgeRemap nEdges"     name_in_code="yCellOnEdge"/>
 		<var name="transCellToGlobal"                 type="real"     dimensions="R3 R3 nCells"             name_in_code="transCellToGlobal"/>
 		<var name="transGlobalToCell"                 type="real"     dimensions="R3 R3 nCells"             name_in_code="transGlobalToCell"/>
 		<var name="transVertexToGlobal"               type="real"     dimensions="R3 R3 nVertices"          name_in_code="transVertexToGlobal"/>
 		<var name="transGlobalToVertex"               type="real"     dimensions="R3 R3 nVertices"          name_in_code="transGlobalToVertex"/>
 		<var name="transEdgeToGlobal"                 type="real"     dimensions="R3 R3 nEdges"             name_in_code="transEdgeToGlobal"/>
 		<var name="transGlobalToEdge"                 type="real"     dimensions="R3 R3 nEdges"             name_in_code="transGlobalToEdge"/>
+                <var name="minLengthEdgesOnVertex"            type="real"     dimensions="nVertices"                name_in_code="minLengthEdgesOnVertex"/>
                 <var name="xAvgCell"                          type="real"     dimensions="nCells"                   name_in_code="xAvgCell"/>
                 <var name="yAvgCell"                          type="real"     dimensions="nCells"                   name_in_code="yAvgCell"/>
                 <var name="xxAvgCell"                         type="real"     dimensions="nCells"                   name_in_code="xxAvgCell"/>

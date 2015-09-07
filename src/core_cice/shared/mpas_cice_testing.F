@@ -692,7 +692,7 @@ contains
 !    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
 !    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
 
-    write(stderrUnit,*) 'Initial cells with ice (local ID, global ID):'
+!!    write(stderrUnit,*) 'Initial cells with ice (localID, globalID):'
 
     do iCell = 1, nCellsSolve
        if (indexToCellID(iCell) >= iCellPoint .and. indexToCellID(iCell) <= iCellPoint+9) then
@@ -700,10 +700,10 @@ contains
           surfaceTemperature(:,:,iCell) = 1.0_RKIND
           iceVolumeCategory(:,:,iCell) = 1.0_RKIND
           snowVolumeCategory(:,:,iCell) = 1.0_RKIND
-          write(stderrUnit,*) iCell, indexToCellID(iCell)
+!!          write(stderrUnit,*) iCell, indexToCellID(iCell)
        endif
     enddo
-    write(stderrUnit,*) ' '
+!!    write(stderrUnit,*) ' '
 
   end subroutine cice_init_square_point_test_case_hex
 
