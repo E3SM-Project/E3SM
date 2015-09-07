@@ -121,89 +121,46 @@ my $srcroot  = abs_path("$cimeroot/../");
 ** Cannot find srcroot directory \"$srcroot\" **
 EOF
 
-
-my $model_option = $opts{'model'};
-if (! $opts{'model'}) {
-    die "ERROR: must specify model argument \n";
+my $model = $opts{'model'};
+if (! defined $model) {
+    die "ERROR: must specify -model argument \n";
 }
 
 my $query_option = $opts{'query'};
-if (! $opts{'model'}) {
-    die "ERROR: must specify query argument \n";
+if (! defined $query_option) {
+    die "Must specify query option as an argument  \n";
+} else {
+    my $found;
+    foreach my $value ('compsets', 'component', 'grids', 'machines') {
+	if ($query_option eq $value) {
+	    $found = $value;
+	    last;
+	}
+    }
+    if (! defined $found) {
+	die "ERROR: Query argument must be one of 'compsets','compenent', 'grids', or machines' \n";
+    }
 }
 
-my $file_config = "$cimeroot/cime_config/${model_option}/config_files.xml";
+my $file_config = "$cimeroot/cime_config/${model}/config_files.xml";
 (-f "$file_config")  or  die "*** Cannot find model specification file $file_config ***\n\n";
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file_config");
 
 if ($query_option eq "compsets") 
 {
-    if (! $opts{'setby'}) {
-	print "ERROR: The $model_option components and associated files that specify model compsets are \n";
-	my @components = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value");
-	foreach my $component (@components) {
-	    my $attr = $component->getAttribute('component'); 
-	    my $file = $component->textContent();
-	    $file =~ s/\$CIMEROOT/$cimeroot/;
-	    $file =~ s/\$SRCROOT/$srcroot/;
-	    printf("   %-10s %-50s \n",$attr, $file );
-	}
-	print "Must use one of the above components in the -setby <component> argument \n";
-	die; 
-    }
-    my @files = $xml->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$opts{'setby'}\"]");
-    if (! @files) {
-	die " ERROR: no compsets specification file found for  $opts{'setby'} \n";
-    }
-    my $file = $files[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    $file =~ s/\$SRCROOT/$srcroot/;
-    (-f "$file")  or  die "*** Cannot find compsets specification file $file ***\n\n";
-    _queryCompsets($file);
+    _queryCompsets($model, $cimeroot, $srcroot, $xml, $opts{'setby'}); 
 } 
 elsif ($query_option eq "component") 
 {
-    if (! $opts{'name'}) {
-	die "ERROR: must also specify an input argument,  -name <component name>\n";
-    }
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);
-    my @files = $xml->findnodes(".//entry[\@id[contains(.,\"CONFIG\")]]/values/value[\@component=\"$opts{'name'}\"]");
-    if (! @files) {
-	die " ERROR: no component config_component.xml files found for component $opts{'setby'} \n";
-    }
-    my $file = $files[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    $file =~ s/\$SRCROOT/$srcroot/;
-    (-f $file) or die "ERROR: component definition file $file is not present"; 
-    _queryComponent($file);
+    _queryComponent($model, $cimeroot, $xml, $opts{'name'}); 
 } 
 elsif ($query_option eq "grids") 
 {
-    my @dirs = $xml->findnodes(".//entry[\@id=\"GRIDS_DIR\"]/value");
-    if (! @dirs) {
-	die " ERROR: in parsing $file_config for the GRID_DIR node \n";
-    }
-    my $grids_dir = $dirs[0]->textContent();
-    $grids_dir =~ s/\$CIMEROOT/$cimeroot/;
-    $grids_dir =~ s/\$SRCROOT/$srcroot/;
-    (-d "$grids_dir")  or  die "** Cannot find grids dir $grids_dir ***\n";
-    my $file = "$grids_dir" . '/' . "config_grids.xml";
-    _queryGrids($file);
-} 
+    _queryGrids($model, $cimeroot, $xml)
+}
 elsif ($query_option eq "machines") 
 {
-    my @files = $xml->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/value");
-    if (! @files) {
-	die " ERROR: in parsing $file_config for the MACHINES_SPEC_FILE node \n";
-    }
-    my $file = $files[0]->textContent();
-    $file =~ s/\$CIMEROOT/$cimeroot/;
-    $file =~ s/\$SRCROOT/$srcroot/;
-    (-f $file) or die "ERROR: machines specification file $file is not present"; 
-
-    unshift @INC, "$cimeroot/utils/perl5lib";
-    require Config::ConfigMachine;
-    ConfigMachine::queryMachines($file);
+    _queryMachines($model, $cimeroot, $xml)
 } 
 else 
 {
@@ -211,7 +168,6 @@ else
     print "** Valid options: compsets, component, grids or machines ** \n";
     die;
 }
-print "finished querying valid values, now exiting \n";
 exit 0;
 
 
@@ -221,9 +177,25 @@ exit 0;
 sub _queryCompsets
 {
     # Query the supported compsets for the primary component
-    my ($file) = @_;
+    my ($model, $cimeroot, $srcroot, $xml_config, $setby) = @_;
 
-    my $xml = XML::LibXML->new(no_blanks => 1)->parse_file($file);
+    my @choices;
+    foreach my $component ($xml_config->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value")) {
+	push (@choices, $component->getAttribute('component'));
+    }
+    if (! defined $setby) {
+	die "ERROR: Must also specify a -setby argument, possible choices for $model are: \n  @choices \n";
+    } 
+    my @files = $xml_config->findnodes(".//entry[\@id=\"COMPSETS_SPEC_FILE\"]/values/value[\@component=\"$opts{'setby'}\"]");
+    if ($#files == -1) {
+	die " ERROR: no compsets specification file found for $setby \n";
+    } 
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$SRCROOT/$srcroot/;
+    $file =~ s/\$MODEL/$model/;
+    (-f "$file")  or  die "*** Cannot find compsets specification file $file ***\n\n";
+    my $xml_compsets = XML::LibXML->new(no_blanks => 1)->parse_file($file);
 
     print " =============================================================\n";
     print " The following are the supported components sets in the file \n";
@@ -231,12 +203,12 @@ sub _queryCompsets
     print " =============================================================\n";
 
     print " \n";
-    foreach my $node ($xml->findnodes(".//help")) {
+    foreach my $node ($xml_compsets->findnodes(".//help")) {
 	my $help = $node->textContent();
 	print "$help \n\n";
     }
 
-    foreach my $node ($xml->findnodes(".//compset")) {
+    foreach my $node ($xml_compsets->findnodes(".//compset")) {
 	my $grid     = $node->getAttribute('grid');
 	my @lnames   = $node->findnodes("./lname");
 	my @aliases  = $node->findnodes("./alias");
@@ -262,31 +234,58 @@ sub _queryCompsets
 #-----------------------------------------------------------------------------------------------
 sub _queryComponent
 {
-    my ($file) = @_;
+    my ($model, $cimeroot, $xml_config, $component_name) = @_;
  
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-    foreach my $node ($xml->findnodes("//help")) {
-	my $value = $node->textContent();
-	print"     $value \n"; 
+    my @choices;
+    foreach my $name ('DRV', 'ATM', 'LND', 'ROF', 'OCN', 'GLC', 'WAV') {
+	foreach my $node ($xml->findnodes(".//entry[\@id=\"CONFIG_${name}_FILE\"]/values/value")) {
+	    push (@choices, $node->getAttribute('component'));
+	}
     }
-    foreach my $node ($xml->findnodes("//description/*")) {
-	my $attr  = $node->getAttribute('compset');
-	my $value = $node->textContent();
-	printf("    %-25s => %-96s \n",$attr,$value);
+    if (! defined $component_name) {
+	die "ERROR: must also specify a -name argument, possible choices for $model are \n   @choices \n";
+    } else {
+	my @files = $xml_config->findnodes(".//entry[\@id[contains(.,\"CONFIG\")]]/values/value[\@component=\"$opts{'name'}\"]");
+	if ($#files == -1) {
+	    die " ERROR: no component config_component.xml files found for component $component_name \n";
+	} 
+	my $file = $files[0]->textContent();
+	$file =~ s/\$CIMEROOT/$cimeroot/;
+	$file =~ s/\$SRCROOT/$srcroot/;
+	(-f $file) or die "ERROR: component definition file $file is not present"; 
+
+	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+	foreach my $node ($xml->findnodes("//help")) {
+	    my $value = $node->textContent();
+	    print"     $value \n"; 
+	}
+	foreach my $node ($xml->findnodes("//description/*")) {
+	    my $attr  = $node->getAttribute('compset');
+	    my $value = $node->textContent();
+	    printf("    %-25s => %-96s \n",$attr,$value);
+	}
+	print "\n";
     }
-    print "\n";
 }
 
 #-------------------------------------------------------------------------------
 sub _queryGrids
 {
     # Print all currently supported valid grids
-    my ($file) = @_;
+    my ($model, $cimeroot, $xml_config) = @_;
 
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+    my @files = $xml_config->findnodes(".//entry[\@id=\"GRIDS_SPEC_FILE\"]/default_value");
+    if ($#files == -1) {
+	die " ERROR: in parsing $file_config for the GRIDS_SPEC_FILE node \n";
+    } 
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$MODEL/$model/;
+    (-f "$file")  or  die "** Cannot find grids specification file $file ***\n";
+    my $xml_grid = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 
     print " \n";
-    foreach my $node ($xml->findnodes(".//help")) {
+    foreach my $node ($xml_grid->findnodes(".//help")) {
 	my $help = $node->textContent();
 	print "$help \n\n";
     }
@@ -296,7 +295,7 @@ sub _queryGrids
     print "                Component Grids:                       \n";
     print " ======================================================\n";
     print "\n";
-    foreach my $node ($xml->findnodes(".//domains/domain")) {
+    foreach my $node ($xml_grid->findnodes(".//domains/domain")) {
 	my $name  = $node->getAttribute('name');
 	my $alias = $node->getAttribute('alias');
 	if ($alias) { 
@@ -324,7 +323,7 @@ sub _queryGrids
     print "                Model Grids:                           \n";
     print " ======================================================\n";
     print "\n";
-    foreach my $node ($xml->findnodes(".//grids/grid")) {
+    foreach my $node ($xml_grid->findnodes(".//grids/grid")) {
 	my $alias     = $node->getAttribute('alias');
 	my $compset   = $node->getAttribute('compset');
 	my $support   = $node->getAttribute('support');
@@ -336,4 +335,35 @@ sub _queryGrids
 	print " \n";
     }    
     print " \n";
+}
+#-------------------------------------------------------------------------------
+sub _queryMachines
+{
+    # Print all currently supported valid grids
+    my ($model, $cimeroot, $xml_config) = @_;
+
+    my @files = $xml_config->findnodes(".//entry[\@id=\"MACHINES_SPEC_FILE\"]/default_value");
+    if ($#files == -1) {
+	die " ERROR: in parsing $file_config for the MACHIENS_SPEC_FILE node \n";
+    } 
+    my $file = $files[0]->textContent();
+    $file =~ s/\$CIMEROOT/$cimeroot/;
+    $file =~ s/\$MODEL/$model/;
+    (-f "$file")  or  die "** Cannot find machines specification file $file ***\n";
+
+    my $model = uc $model;
+    print "\n";
+    print " ======================================================\n";
+    print "            $model Machines:                          \n";
+    print " ======================================================\n";
+    print "\n";
+
+    my $xml_machine = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+    foreach my $machine ($xml_machine->findnodes(".//machine")) {
+	my $name = $machine->getAttribute('MACH');
+	foreach my $node ($machine->findnodes("./DESC")) {
+	    my $desc = $node->textContent();
+	    print " $name :  \n      $desc \n";
+	}
+    }
 }
