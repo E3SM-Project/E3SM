@@ -736,6 +736,8 @@ contains
     use clm_varcon           , only : watmin
     use LandunitType         , only : lun
     use landunit_varcon      , only : istsoil, istcrop
+    use clm_varctl           , only : iulog
+    use shr_log_mod          , only : errMsg => shr_log_errMsg
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_BC_SS_CONDITION
@@ -797,6 +799,14 @@ contains
     PetscReal             :: qflx_drain_layer                ! Drainage flux from a soil layer (mm H2O/s)
     PetscReal             :: qflx_drain_tot                  ! Cummulative drainage flux from soil layers within a column (mm H2O/s)
     PetscErrorCode        :: ierr                            ! PETSc return error code
+    PetscBool             :: converged
+    PetscReal             :: atol_default
+    PetscReal             :: rtol_default
+    PetscReal             :: stol_default
+    PetscInt              :: max_it_default
+    PetscInt              :: max_f_default
+    PetscReal             :: stol
+    PetscReal,parameter   :: stol_alternate = 1.d-10
 #if VSFM_DEBUG
     PetscReal             :: mass_beg
     PetscReal             :: mass_end
@@ -1127,7 +1137,48 @@ contains
       !
       ! Solve the VSFM.
       !
-      call vsfm_mpp%sysofeqns%StepDT(dtime, ierr); CHKERRQ(ierr)
+      call SNESGetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
+                             max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+      call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+
+      if (.not. converged) then
+         ! Solve VSFM with loose solution tolerance
+         stol    = stol_alternate
+         call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
+                                max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+         call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+
+         if (.not. converged) then
+
+            ! Set frac_liq
+            vsfm_fliq_col_1d(:) = 1.d0
+            soe_auxvar_id = 1;
+            call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL, VAR_FRAC_LIQ_SAT, &
+                                                   soe_auxvar_id, vsfm_fliq_col_1d)
+
+            ! Solve VSFM with tight solution tolerance + no reduction in kr
+            stol    = stol_default
+            call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
+                                   max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+            call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+
+               if (.not. converged) then
+                  ! Solve VSFM with loose solution tolerance + no reduction in kr
+                  stol    = stol_alternate
+                  call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
+                                         max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+                  call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+
+                  if (.not. converged) then
+                     write(iulog,*)'In soilwater_vsfm: VSFM failed to converge after multiple attempts.'
+                     call endrun(msg=errMsg(__FILE__, __LINE__))
+                  end if
+              end if
+         end if
+      end if
+
+      call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
+                             max_it_default, max_f_default, ierr); CHKERRQ(ierr)
 
       ! Get Liquid saturation
       soe_auxvar_id = 1;
