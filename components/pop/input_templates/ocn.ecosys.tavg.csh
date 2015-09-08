@@ -1,6 +1,6 @@
 #!/bin/csh -f
 
-cat >! $CASEBUILD/pop2conf/ecosys.tavg.nml << EOF
+cat >! $CASEBUILD/popconf/ecosys.tavg.nml << EOF
 tavg_freq_opt             = 'nday'   'nyear'
 tavg_freq                 =  1       1
 tavg_file_freq_opt        = 'nmonth' 'nyear'
@@ -35,7 +35,7 @@ endif
 @ s2 = $my_stream    # use an ecosystem-defined stream
 @ s3 = $s2 + 1       # use an ecosystem-defined stream
 
-cat >! $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+cat >! $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  ECOSYS_ATM_PRESS
 $s1  ECOSYS_IFRAC
 $s1  ECOSYS_XKW
@@ -198,7 +198,7 @@ EOF
 # generic autotroph fields
 # skip N_lim for diaz
 foreach autotroph ( sp diat diaz )
-   cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+   cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  ${autotroph}Chl
 $s1  ${autotroph}C
 $s1  ${autotroph}Fe
@@ -221,7 +221,7 @@ $s2  ${autotroph}C_zint_100m
 $s2  ${autotroph}Chl_SURF
 EOF
    if !($autotroph == diaz) then
-      cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+      cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  ${autotroph}_N_lim
 EOF
    endif
@@ -229,14 +229,14 @@ end
 
 # Nfix terms from N fixers 
 foreach autotroph ( diaz )
-   cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+   cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  ${autotroph}_Nfix
 EOF
 end
 
 # CaCO3 terms from calcifiers 
 foreach autotroph ( sp )
-   cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+   cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  ${autotroph}CaCO3
 $s2  ${autotroph}CaCO3_zint_100m
 EOF
@@ -244,7 +244,7 @@ end
 
 # Si terms from silicifiers
 foreach autotroph ( diat )
-   cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+   cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  ${autotroph}Si
 $s1  ${autotroph}_SiO3_lim
 EOF
@@ -253,7 +253,7 @@ end
 setenv OCN_TAVG_DIC_ALT_CO2 FALSE
 
 if ($OCN_TAVG_DIC_ALT_CO2 == TRUE) then
-cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  PH_ALT_CO2
 $s1  DCO2STAR_ALT_CO2
 $s1  DpCO2_ALT_CO2
@@ -276,7 +276,7 @@ endif
 
 # include these budget check fields when doing development
 if ( 1 ) then
-cat >> $CASEROOT/Buildconf/pop2conf/ecosys_tavg_contents << EOF
+cat >> $CASEROOT/Buildconf/popconf/ecosys_tavg_contents << EOF
 $s1  Jint_Ctot
 $s1  Jint_100m_Ctot
 $s1  Jint_Ntot

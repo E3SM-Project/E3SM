@@ -5,16 +5,16 @@
 ! *** EXCEPT FOR ***
 ! 1. DO NOT CHANGE iyear0, imonth0, iday0, ihour0 
 ! 2. DO NOT CHANGE any tavg_nml namelist variables below - copy any of the files
-!      $CODEROOT/ocn/pop2/input_templates/ocn.base.tavg.csh  
-!      $CODEROOT/ocn/pop2/input_templates/ocn.ecosys.tavg.csh  
-!      $CODEROOT/ocn/pop2/input_templates/ocn.iage.tavg.csh  
-!      $CODEROOT/ocn/pop2/input_templates/ocn.cfc.tavg.csh  
-!    into $CASEROOT/SourceMods/src.pop2 and edit them there. Invoke preview-namelist
-!    to see the changes in CaseDocs/pop2_in
+!      $SRCROOT/components/pop/input_templates/ocn.base.tavg.csh  
+!      $SRCROOT/components/pop/input_templates/ocn.ecosys.tavg.csh  
+!      $SRCROOT/components/pop/input_templates/ocn.iage.tavg.csh  
+!      $SRCROOT/components/pop/input_templates/ocn.cfc.tavg.csh  
+!    into $CASEROOT/SourceMods/src.pop and edit them there. Invoke preview-namelist
+!    to see the changes in CaseDocs/pop_in
 ! Also
 ! 3. WARNING: The present code makes assumptions about the region boundaries -- 
 !    do not change transport_reg2_names unless you know exactly what you are doing
-! 4. NOTE: a handful of pop2 namelist variabes have the same names in multiple pop2 
+! 4. NOTE: a handful of pop namelist variabes have the same names in multiple pop
 !    namelists - these are the following
 !      ah              (hmix_del4t_nml, hmix_del2t_nml, hmix_gm_nml)
 !      am              (hmix_del4u_nml, hmix_del2u_nml)
@@ -47,6 +47,6 @@
 !      tracer_init_ext(5)%scale_factor&ecosys_nml = 1.1
 !      gas_flux_ap%default_val&cfc_nml = 0
 ! 4. To preview the namelists, invoke $CASEROOT preview-namelists and look at 
-!    $CASEROOT/CaseDocs/pop2_in
+!    $CASEROOT/CaseDocs/pop_in
 !----------------------------------------------------------------------------------
 

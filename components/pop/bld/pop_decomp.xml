@@ -1,17 +1,11 @@
 <?xml version="1.0"?>
 
-<!--
+<!-- File with optimized decomposition information for POP -->
 
-       ConfigInfo.xml					    Nov./15/2007
-
-       File with optimized decomposition information for POP.
-
--->
 <configInfo>
 
-<!-- -------------------------------------------------------------------------------- -->
-  
   <!-- sizes for different resolutions (number latitude and number of longitudes)  -->
+
   <size res="gx3v5">
      <nlons>100</nlons>
      <nlats>116</nlats>
@@ -49,8 +43,8 @@
      <nlats>240</nlats>
   </size>
 
-<!-- -------------------------------------------------------------------------------- -->
   <!-- tx0.1v2 resolution -->
+
   <decomp nproc="480" res="tx0.1v2" >
     <maxblocks >1</maxblocks>
     <bsize_x   >180</bsize_x>
@@ -226,8 +220,8 @@
     <decomptype>spacecurve</decomptype>
   </decomp>
 
-<!-- -------------------------------------------------------------------------------- -->
   <!-- gx1v[3456] resolution -->
+
   <decomp nproc="1" res="gx1v[3456]" >
     <maxblocks >1</maxblocks>
     <bsize_x   >320</bsize_x>
@@ -426,6 +420,24 @@
     <decomptype>cartesian</decomptype>
   </decomp>
 
+  <decomp nproc="300" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >16</bsize_x>
+    <bsize_y   >26</bsize_y>
+    <nx_blocks >20</nx_blocks>
+    <ny_blocks >15</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
+  <decomp nproc="360" res="gx1v[3456]" >
+    <maxblocks >1</maxblocks>
+    <bsize_x   >16</bsize_x>
+    <bsize_y   >22</bsize_y>
+    <nx_blocks >20</nx_blocks>
+    <ny_blocks >18</ny_blocks>
+    <decomptype>cartesian</decomptype>
+  </decomp>
+
   <decomp nproc="384" res="gx1v[3456]" >
     <maxblocks >1</maxblocks>
     <bsize_x   >20</bsize_x>
@@ -563,9 +575,5 @@
     <ny_blocks >10</ny_blocks>
     <decomptype>cartesian</decomptype>
   </decomp>
-
-
-<!-- -------------------------------------------------------------------------------- -->
-<!-- -------------------------------------------------------------------------------- -->
 
 </configInfo>

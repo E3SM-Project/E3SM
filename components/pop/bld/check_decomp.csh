@@ -10,11 +10,11 @@ echo "" >>& $file
 
 while ($n < $nmax)
 
- @ n++
- set config = `./generate_pop_decomp.pl -res $res -nproc $n`
+  @ n++
+  set config = `./generate_pop_decomp.pl -ccsmroot ../../../ -res $res -nproc $n` 
 
- if ($config[1] >= 0) then
-    echo gx1v5 $n : $config  >>& $res.$nmax
- endif
+  if ($config[1] >= 0) then
+     echo gx1v5 $n : $config  >>& $res.$nmax
+  endif
 
 end

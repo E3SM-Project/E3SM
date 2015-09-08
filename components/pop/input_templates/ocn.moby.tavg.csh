@@ -1,6 +1,6 @@
 #!/bin/csh -f
 
-cat >! $CASEROOT/Buildconf/pop2conf/moby.tavg.nml << EOF
+cat >! $CASEROOT/Buildconf/popconf/moby.tavg.nml << EOF
 tavg_freq_opt             = 'nday'          'nyear'
 tavg_freq                 =  1              1
 tavg_stream_filestrings   = 'darwin.nday1'  'darwin.nyear1'
@@ -34,7 +34,7 @@ EOF
     @ s2 = $my_stream    # use a moby-defined stream
     @ s3 = $s2 + 1       # use a moby-defined stream
 
-cat >! $CASEROOT/Buildconf/pop2conf/moby_tavg_contents << EOF
+cat >! $CASEROOT/Buildconf/popconf/moby_tavg_contents << EOF
 $s1  PO4
 $s1  NO3
 $s1  FeT

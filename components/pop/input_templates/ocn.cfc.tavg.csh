@@ -16,7 +16,7 @@ endif
 
 @ s1 = 1   # use base-model stream 1
 
-cat >! $CASEROOT/Buildconf/pop2conf/cfc_tavg_contents << EOF
+cat >! $CASEROOT/Buildconf/popconf/cfc_tavg_contents << EOF
 $s1  CFC_IFRAC
 $s1  CFC_XKW
 $s1  CFC_ATM_PRESS
@@ -27,7 +27,7 @@ $s1  CFC12
 EOF
 
 if ($OCN_TAVG_TRACER_BUDGET == TRUE) then
-cat >> $CASEROOT/Buildconf/pop2conf/cfc_tavg_contents << EOF
+cat >> $CASEROOT/Buildconf/popconf/cfc_tavg_contents << EOF
 $s1  KPP_SRC_CFC11
 $s1  KPP_SRC_CFC12
 $s1  DIA_IMPVF_CFC11

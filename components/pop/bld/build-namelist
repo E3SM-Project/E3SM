@@ -3,11 +3,11 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the POP2 configuration of CESM1.
+# This script builds the namelists for the POP configuration of CESM1.
 #
 # build-namelist uses a config_cache.xml file that current contains the ocean grid information.
 # build-namelist reads this file to obtain information it needs to provide
-# default values that are consistent with the POP2 library.  For example, the grid resolution
+# default values that are consistent with the POP library.  For example, the grid resolution
 # is obtained from the cache file and used to determine appropriate defaults for namelist input
 # that is resolution dependent.
 #
@@ -22,7 +22,7 @@
 # 2012-01-30  Vertenstein      Original version
 #--------------------------------------------------------------------------------------------
 use strict;
-use Cwd;
+use Cwd qw( getcwd abs_path chdir );
 use English;
 use Getopt::Long;
 use IO::File;
@@ -37,7 +37,7 @@ OPTIONS
      -infile "filepath"    Specify a file containing namelists to read values from.
      -namelist "namelist"  Specify namelist settings directly on the commandline by supplying 
                            a string containing FORTRAN namelist syntax, e.g.,
-                              -namelist "&pop2_nml dt=1800 /"
+                              -namelist "&pop_nml dt=1800 /"
      -help [or -h]         Print usage to STDOUT.
      -test                 Enable checking that input datasets exist on local filesystem.
      -verbose              Turn on verbose echoing of informational messages.
@@ -45,7 +45,7 @@ OPTIONS
      -casebuild            CASEBUILD directory variable          
      -scriptsroot          SCRIPTSROOT directory variable
      -ocn_grid             OCN_GRID variable
-     -cfg_grid             Directory containing POP2 configuration scripts.
+     -cfg_grid             Directory containing POP configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
@@ -60,7 +60,7 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the POP2 configuration scripts.  If the command was
+# Set the directory that contains the POP configuration scripts.  If the command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -71,7 +71,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -125,7 +125,7 @@ if ($opts{'verbose'}) { $print = 2; }
 if ($opts{'preview'}) { $preview = 1; }
 my $eol = "\n";
 
-if ($print>=2) { print "Setting POP2 configuration script directory to $cfgdir$eol"; }
+if ($print>=2) { print "Setting POP configuration script directory to $cfgdir$eol"; }
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
@@ -137,70 +137,51 @@ $cfgdir         = $opts{'cfg_dir'};
 # Validate some of the commandline option values.
 validate_options("commandline", \%opts);
 
-# build config_cache.xml file (needed below)
-my $config_cache = "${CASEBUILD}/pop2conf/config_cache.xml";
-my  $fh = new IO::File;
-$fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
-print $fh  <<"EOF";
-<?xml version="1.0"?>
-<config_definition>
-<entry id="ocn_grid" value="$OCN_GRID">
-</config_definition>
-EOF
-$fh->close;
-if ($print>=2) { print "Wrote file $config_cache $eol"; }
-(-f "config_cache.xml")  or  die <<"EOF";
-** $ProgName - Cannot find configuration cache file: config_cache.xml\" **
-EOF
-
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
 
-# The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/ccsm_utils/Tools/perl5lib";
+my $cesmroot = "${SCRIPTSROOT}/../../";
 
-# The XML::Lite module is required to parse the XML files.
-(-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory \"$perl5lib_dir\" **
-EOF
+# The root directory for the perl5 required utilities 
+my $perl5lib = "$cesmroot/cime/utils/perl5lib";
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file (see below)
-(-f "$perl5lib_dir/Build/Config.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/Config.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
-(-f "$perl5lib_dir/Build/NamelistDefinition.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
 # variables based on finding a best fit with the attributes specified in the defaults file.
-(-f "$perl5lib_dir/Build/NamelistDefaults.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::Namelist module provides utilities to parse input namelists, to query and modify
 # namelists, and to write output namelists.
-(-f "$perl5lib_dir/Build/Namelist.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/Namelist.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
-# fixed POP2 tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
-# who make use of the SourceMods/src.pop2 directory - we allow the definition file 
+# fixed POP tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
+# who make use of the SourceMods/src.pop directory - we allow the definition file 
 # to come from that directory
 my $nl_definition_file;
-if (-f "${CASEROOT}/SourceMods/src.pop2/namelist_definition_pop2.xml") {
-    $nl_definition_file = "${CASEROOT}/SourceMods/src.pop2/namelist_definition_pop2.xml";
+if (-f "${CASEROOT}/SourceMods/src.pop/namelist_definition_pop.xml") {
+    $nl_definition_file = "${CASEROOT}/SourceMods/src.pop/namelist_definition_pop.xml";
 }
 if (! defined $nl_definition_file) {
     # default location of namelist definition file
-    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_pop2.xml";
+    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_pop.xml";
     (-f "$nl_definition_file")  or  die <<"EOF";
     ** $ProgName - ERROR: Cannot find namelist definition file \"$nl_definition_file\" **
 EOF
@@ -209,11 +190,11 @@ if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol";
 
 # The namelist defaults file contains default values for all required namelist variables.
 my $nl_defaults_file;
-if (-f "${CASEROOT}/SourceMods/src.pop2/namelist_defaults_pop2.xml") {
-    $nl_defaults_file = "${CASEROOT}/SourceMods/src.pop2/namelist_defaults_pop2.xml";
+if (-f "${CASEROOT}/SourceMods/src.pop/namelist_defaults_pop.xml") {
+    $nl_defaults_file = "${CASEROOT}/SourceMods/src.pop/namelist_defaults_pop.xml";
 }
 if (! defined $nl_defaults_file) {
-    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_pop2.xml";
+    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_pop.xml";
     (-f "$nl_defaults_file")  or  die <<"EOF";
     ** $ProgName - Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
@@ -222,16 +203,15 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib_dir";
-require XML::Lite;
+unshift @INC, "$perl5lib";
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the POP2 config_cache.xml file-  created by 
-# pop2.cpl7.template in $CASEBUILD/pop2conf
+
+# Create a configuration object from the POP config_cache.xml file in $CASEBUILD/popconf
 my $cfg = Build::Config->new('config_cache.xml');
 
 # Create a namelist definition object.  This object provides a method for verifying that the
@@ -241,7 +221,7 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
-# values that are relevent for the POP2 library for which the namelist is being produced.
+# values that are relevent for the POP library for which the namelist is being produced.
 my $defaults = Build::NamelistDefaults->new($nl_defaults_file, $cfg);
 
 # Create an empty namelist object.  Add values to it in order of precedence.
@@ -286,7 +266,7 @@ if (defined $opts{'infile'}) {
         my $val = $nl_infile->get_variable_value($group, $var);
         my @broken = split(/&/,$var);
         my $check_grp = 0; # If 1, make sure group found in definitions file
-                           # matches that specified in user_nl_pop2
+                           # matches that specified in user_nl_pop
 
         # if variable has ampersand, truncate it unless it is type derived
         if ($broken[1]) {
@@ -305,18 +285,18 @@ if (defined $opts{'infile'}) {
           $var_local = $var;
         }
 
-        # Make sure variable is defined in namelist_definition_pop2.xml
+        # Make sure variable is defined in namelist_definition_pop.xml
         $nl_check_var->set_variable_value($group, $var_local,$val);
         eval { $nl_check_valid = $definition->validate($nl_check_var); };
         (not $@) or die <<"EOF";
-** ERROR: either $var_local is not a valid POP2 namelist variable or $var_local = $val is not a valid value; please fix user_nl_pop2. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_pop2 using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the pop2_in namelist containing $var_local.**
+** ERROR: either $var_local is not a valid POP namelist variable or $var_local = $val is not a valid value; please fix user_nl_pop. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_pop using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the pop_in namelist containing $var_local.**
 EOF
 
-        # If group was specified in user_nl_pop2, make sure it matches
+        # If group was specified in user_nl_pop, make sure it matches
         # the group in the definitions file.
         my @group_valid = $nl_check_valid->get_group_names();
         ((not $check_grp) or ($broken[1] eq $group_valid[0])) or die <<"EOF";
-** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_pop2. **
+** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_pop. **
 EOF
 
         # Add variable to validated namelist
@@ -327,7 +307,7 @@ EOF
     # If preview is desired and something has been changed in $nl_infile_valid,
     # output everything in $nl_infile_valid
     if (($preview == 1) && ($nl_infile_valid->get_group_names)) {
-      print " - The following values have been set in user_nl_pop2:\n";
+      print " - The following values have been set in user_nl_pop:\n";
       print_nl_to_screen($nl_infile_valid);
     }
     # Merge input values into namelist.  Previously specified values have higher
@@ -338,17 +318,16 @@ EOF
 #-----------------------------------------------------------------------------------------------
 # Determine xml variables
 unshift @INC, "$CASEROOT/Tools";
-require XML::Lite;
 require SetupTools;
 
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-  $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
+  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $RUNDIR                 = "$xmlvars{'RUNDIR'}";
-my $CODEROOT               = "$xmlvars{'CODEROOT'}";
+my $SRCROOT                = "$xmlvars{'SRCROOT'}";
 my $DIN_LOC_ROOT           = "$xmlvars{'DIN_LOC_ROOT'}";
 my $CASE                   = "$xmlvars{'CASE'}";
 my $CALENDAR               = "$xmlvars{'CALENDAR'}";
@@ -365,6 +344,7 @@ my @OCN_TRACER_MODULES     = split(" ", "$xmlvars{'OCN_TRACER_MODULES'}");
 my $OCN_TRACER_MODULES_OPT = "$xmlvars{'OCN_TRACER_MODULES_OPT'}";
 my $OCN_TAVG_TRACER_BUDGET = "$xmlvars{'OCN_TAVG_TRACER_BUDGET'}";
 my $OCN_TAVG_HIFREQ        = "$xmlvars{'OCN_TAVG_HIFREQ'}";
+my $OCN_ONEDIM             = "$xmlvars{'OCN_ONEDIM'}";
 my $NTASKS_OCN             = "$xmlvars{'NTASKS_OCN'}";
 my $NINST_OCN              = "$xmlvars{'NINST_OCN'}";
 my $POP_DECOMPTYPE         = "$xmlvars{'POP_DECOMPTYPE'}";
@@ -375,6 +355,8 @@ my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 my $OCN_CO2_FLUX_OCMIP_BUG_FIX = "$xmlvars{'OCN_CO2_FLUX_OCMIP_BUG_FIX'}";
 
+expand_xml_variables_in_namelist($nl, \%xmlvars);
+
 my $output_r = "./${CASE}.pop.r";
 my $output_h = "./${CASE}.pop.h";
 my $output_d = "./${CASE}.pop.d";
@@ -384,7 +366,7 @@ if ($inst_string) {
     $output_d = "./${CASE}.pop${inst_string}.d";
 } 
 
-# Environment variables set in pop2.buildnml.csh that are not xml variables
+# Environment variables set in pop.buildnml.csh that are not xml variables
 my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}"; 
 my $LID = $ENV{'LID'};
 
@@ -490,10 +472,12 @@ if ($tmp > 0) {
   while (not valid_date(\$iday0, \$imonth0, \$iyear0, $CALENDAR)) {}
 }
 
-print "POP2 build-namelist: ocn_grid is $OCN_GRID \n";
-print "POP2 build-namelist: ocn_tracer_modules are @OCN_TRACER_MODULES \n";
+print "POP build-namelist: ocn_grid is $OCN_GRID \n";
+print "POP build-namelist: ocn_tracer_modules are @OCN_TRACER_MODULES \n";
 
-(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
+(-d $DIN_LOC_ROOT)  or  die <<"EOF";
+** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+EOF
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------
@@ -552,8 +536,11 @@ add_default($nl, 'fit_freq', 'val'=>"$OCN_NCPL");
 
 # Note: topography_opt = bathymetry is a nonstandard option that 
 # requires the user to provide nonstandard files in the users' 
-# $CASEROOT/SourceMods/src.pop2 directory 
+# $CASEROOT/SourceMods/src.pop directory 
 # Currently this is hard-wired to 'file'
+
+# Also, flat_bottom is not set until after pop1d_nml because its
+# default value depends on lidentical_columns
 
 my $topography_opt = 'file';               # hard-wired for now
 my $bathymetry_file= 'unknown_bathymetry'; #hard-wired for now
@@ -733,7 +720,7 @@ add_default($nl, 'tidal_energy_file_fmt');
 add_default($nl, 'rich_mix&vmix_kpp_nml');
 
 # grid dependent value of lhoriz_varying_background set in 
-# namelist_defaults_pop2.xml and value of ltidal-mixing is 
+# namelist_defaults_pop.xml and value of ltidal-mixing is 
 # obtained from default value already set
 
 my $ltidal_mixing = $nl->get_value('ltidal_mixing');
@@ -1183,11 +1170,11 @@ if (any(\@OCN_TRACER_MODULES, "cfc")) {
           $init_cfc_option = "zero";
         } else {
           if ($RUN_TYPE eq "startup") {
-            # Check to see if init_cfc_option was set in user_nl_pop2
+            # Check to see if init_cfc_option was set in user_nl_pop
             $init_cfc_option = $nl->get_variable_value("cfc_nml", "init_cfc_option");
             if ($init_cfc_option eq "") {
               # If not, error out with message saying value must be specified 
-              print "ERROR: CFCs cannot be automatically initializd post 1930 in a startup run! Set init_cfc_option in user_nl_pop2 before building pop2_in.\n";
+              print "ERROR: CFCs cannot be automatically initializd post 1930 in a startup run! Set init_cfc_option in user_nl_pop before building pop_in.\n";
               die;
             }
           }
@@ -1203,7 +1190,6 @@ if (any(\@OCN_TRACER_MODULES, "cfc")) {
     add_default($nl, 'pcfc_file');
     add_default($nl, 'init_cfc_init_file', 'noprepend'=>1);
 }
-
 
 ##########################################
 # namelist group: ecosys_nml             #
@@ -1263,9 +1249,7 @@ if (any(\@OCN_TRACER_MODULES, "ecosys")) {
     add_default($nl, 'atm_co2_const', 'val'=>"$CCSM_CO2_PPMV");
     add_default($nl, 'atm_alt_co2_opt', 'val'=>"const");
     add_default($nl, 'atm_alt_co2_const', 'val'=>"$CCSM_CO2_PPMV");
-    add_default($nl, 'ecosys_tadvect_ctype');
     add_default($nl, 'gas_flux_forcing_opt');
-    add_default($nl, 'lmarginal_seas');
 
     add_default($nl, 'lsource_sink');
     add_default($nl, 'comp_surf_avg_freq_opt');
@@ -1342,8 +1326,6 @@ if (any(\@OCN_TRACER_MODULES, "ecosys")) {
     add_default($nl, 'parm_o2_min_delta');
     add_default($nl, 'parm_kappa_nitrif');
     add_default($nl, 'parm_nitrif_par_lim');
-    add_default($nl, 'parm_z_mort_0');
-    add_default($nl, 'parm_z_mort2_0');
     add_default($nl, 'parm_labile_ratio');
     add_default($nl, 'parm_POMbury');
     add_default($nl, 'parm_BSIbury');
@@ -1451,10 +1433,10 @@ if (any(\@OCN_TRACER_MODULES, "moby")) {
                        "${OCN_GRID}_data.pkg" ) 
     {
   my $datafile;
-  if (-e "$CASEROOT/SourceMods/src.pop2/src.moby/$file") {
-      $datafile = "${CASEROOT}/SourceMods/src.pop2/src.moby/$file";
-  } elsif ( -e "$CODEROOT/ocn/pop2/aux/moby/${OCN_TRACER_MODULES_OPT}/input/$file") {
-      $datafile = "$CODEROOT/ocn/pop2/aux/moby/${OCN_TRACER_MODULES_OPT}/input/$file";
+  if (-e "$CASEROOT/SourceMods/src.pop/src.moby/$file") {
+      $datafile = "${CASEROOT}/SourceMods/src.pop/src.moby/$file";
+  } elsif ( -e "$SRCROOT/components/pop/aux/moby/${OCN_TRACER_MODULES_OPT}/input/$file") {
+      $datafile = "$SRCROOT/components/pop/aux/moby/${OCN_TRACER_MODULES_OPT}/input/$file";
   } else {
       die "MOBY error for input file $file \n";
   }
@@ -1513,7 +1495,7 @@ if ($OCN_GRID =~ /^gx*/) {
 # copy files to $RUNDIR                  #
 ##########################################
 
-my $my_path = "${CASEROOT}/SourceMods/src.pop2";
+my $my_path = "${CASEROOT}/SourceMods/src.pop";
 
 my @copy_files_to_input = ();
 push @copy_files_to_input,"${OCN_GRID}_vert_grid";
@@ -1529,7 +1511,7 @@ foreach my $file (@copy_files_to_input ) {
     my $sysmod = "cp -fp ${my_path}/$file ${RUNDIR}/$file";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   } else {
-    my $sysmod = "cp -fp ${CODEROOT}/ocn/pop2/input_templates/$file ${RUNDIR}/$file";
+    my $sysmod = "cp -fp ${SRCROOT}/components/pop/input_templates/$file ${RUNDIR}/$file";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   }
 }
@@ -1540,7 +1522,7 @@ foreach my $file (@copy_files_to_input ) {
 
 # Create tavg contents file
 
-my $pop2_tavg_file  = "${CASEBUILD}/pop2conf/${OCN_GRID}_tavg_contents";
+my $pop_tavg_file  = "${CASEBUILD}/popconf/${OCN_GRID}_tavg_contents";
 my $sysmod;
 my $file;
 
@@ -1548,19 +1530,22 @@ my $file;
 # 1. base tavg contents
 #-------------------------
 
-# 1.a. create $CASEBUILD/pop2conf/base.tavg.nml file 
+# 1.a. create $CASEBUILD/popconf/base.tavg.nml file 
 $sysmod;
 $file = "ocn.base.tavg.csh";
+my $env = "env CASEBUILD=$CASEBUILD OCN_GRID=$OCN_GRID ";
 if (-f "${my_path}/$file"){
-    $sysmod = "${my_path}/${file}";
+    $sysmod = "$env ${my_path}/${file}";
+    system($sysmod) == 0 or die "ERROR ocn.base.tavg.csh: $sysmod failed: $?\n";
 } else {
-    $sysmod = "${CODEROOT}/ocn/pop2/input_templates/${file}";
+    $sysmod = "$env ${SRCROOT}/components/pop/input_templates/${file}";
+    system($sysmod) == 0 or die "ERROR ocn.base.tavg.csh: $sysmod failed: $?\n";
 }
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-# 1.b. read in pop2conf/base.tavg.nml file and fill in %tavg_nml entries
+# 1.b. read in popconf/base.tavg.nml file and fill in %tavg_nml entries
+my $file = "${CASEBUILD}/popconf/base.tavg.nml";
 my $fh_in = new IO::File;
-$fh_in->open("<$CASEBUILD/pop2conf/base.tavg.nml") or die "** can't open filepath file: $\n";
+$fh_in->open("<$file") or die "** can't open file $file \n";
 my $line;
 my $numcols;
 while ($line = <$fh_in> )  {
@@ -1579,22 +1564,27 @@ while ($line = <$fh_in> )  {
 }
 $fh_in->close();
 
-# 1.d create base tavg contents file - in pop2conf/
+# 1.d create base tavg contents file - in popconf/
 #     either from $my_path (first) or from 
-my $base_tavg_file  = "${CASEBUILD}/pop2conf/${OCN_GRID}_tavg_contents";
+my $base_tavg_file  = "${CASEBUILD}/popconf/${OCN_GRID}_tavg_contents";
 if ($OCN_TAVG_HIFREQ eq "TRUE") {
     # High-frequency tavg contents
     $file = "${OCN_GRID}_tavg_contents_high_freq";
 } else {
-    # Default resolution dependent tavg contents
-    $file = "${OCN_GRID}_tavg_contents";
+    if ($OCN_ONEDIM eq "TRUE") {
+      # 1D resolution dependent tavg contents
+      $file = "${OCN_GRID}_1D_tavg_contents";
+    } else {
+      # Default resolution dependent tavg contents
+      $file = "${OCN_GRID}_tavg_contents";
+    }
 }
 if (-f "$my_path/$file") {
   $sysmod = "cp -fp ${my_path}/$file $base_tavg_file";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 } else {
-  if (-f "${CODEROOT}/ocn/pop2/input_templates/$file") {
-    $sysmod = "cp -fp ${CODEROOT}/ocn/pop2/input_templates/$file $base_tavg_file";
+  if (-f "${SRCROOT}/components/pop/input_templates/$file") {
+    $sysmod = "cp -fp ${SRCROOT}/components/pop/input_templates/$file $base_tavg_file";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   }
 }
@@ -1603,18 +1593,18 @@ if (-f "$my_path/$file") {
 my $lniw_mixing = $nl->get_value('lniw_mixing');
 if ($lniw_mixing =~ /true/) {
   $file = "niw_tavg_contents";
-  my $niw_tavg_file = "${CASEBUILD}/pop2conf/$file";
+  my $niw_tavg_file = "${CASEBUILD}/popconf/$file";
   if (-f "$my_path/${OCN_GRID}_$file") {
     $sysmod = "cp -fp ${my_path}/${OCN_GRID}_$file $niw_tavg_file";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   } else {
-    if (-f "${CODEROOT}/ocn/pop2/input_templates/${OCN_GRID}_$file") {
-      $sysmod = "cp -fp ${CODEROOT}/ocn/pop2/input_templates/${OCN_GRID}_$file $niw_tavg_file";
+    if (-f "${SRCROOT}/components/pop/input_templates/${OCN_GRID}_$file") {
+      $sysmod = "cp -fp ${SRCROOT}/components/pop/input_templates/${OCN_GRID}_$file $niw_tavg_file";
       system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
     }
   }
   if (-f "$niw_tavg_file") {
-  $sysmod = "cat $niw_tavg_file >> $pop2_tavg_file";
+  $sysmod = "cat $niw_tavg_file >> $pop_tavg_file";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   }
 }
@@ -1622,7 +1612,7 @@ if ($lniw_mixing =~ /true/) {
 #-------------------------
 # 2. budget tavg contents
 #-------------------------
-my $budget_tavg_file = "${CASEBUILD}/pop2conf/budget_tavg_contents";
+my $budget_tavg_file = "${CASEBUILD}/popconf/budget_tavg_contents";
 $file = "tavg_contents_tracer_budget_terms";
 if ($OCN_TAVG_TRACER_BUDGET eq "TRUE") {
   # tracer budget tavg contents 
@@ -1630,10 +1620,10 @@ if ($OCN_TAVG_TRACER_BUDGET eq "TRUE") {
     $sysmod = "cp -fp ${my_path}/$file $budget_tavg_file";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   } else {
-    $sysmod = "cp -fp ${CODEROOT}/ocn/pop2/input_templates/$file $budget_tavg_file";
+    $sysmod = "cp -fp ${SRCROOT}/components/pop/input_templates/$file $budget_tavg_file";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   }
-  $sysmod = "cat $budget_tavg_file >> $pop2_tavg_file";
+  $sysmod = "cat $budget_tavg_file >> $pop_tavg_file";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
@@ -1643,18 +1633,19 @@ if ($OCN_TAVG_TRACER_BUDGET eq "TRUE") {
 for my $module (@OCN_TRACER_MODULES) {
   my $file = "ocn.${module}.tavg.csh";
   my $my_stream = $numcols+1;
+  my $env = "env CASEROOT=$CASEROOT CASEBUILD=$CASEBUILD OCN_GRID=$OCN_GRID OCN_TAVG_TRACER_BUDGET=$OCN_TAVG_TRACER_BUDGET"; 
   if (-f "${my_path}/$file"){
-    $sysmod = "${my_path}/${file} $my_stream";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+      $sysmod = "$env ${my_path}/${file} $my_stream";
+      system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   } else {
-    $sysmod = "${CODEROOT}/ocn/pop2/input_templates/${file} $my_stream";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+      $sysmod = "$env ${SRCROOT}/components/pop/input_templates/${file} $my_stream";
+      system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
   }
 
   # Create new tracer stream namelists - if appropriate
-  if (-f "${CASEBUILD}/pop2conf/${module}.tavg.nml") {
+  if (-f "${CASEBUILD}/popconf/${module}.tavg.nml") {
     my $fh_in = new IO::File;
-    $fh_in->open("<${CASEBUILD}/pop2conf/$module.tavg.nml") or die "** can't open filepath file: $\n";
+    $fh_in->open("<${CASEBUILD}/popconf/$module.tavg.nml") or die "** can't open file ${CASEBUILD}/popconf/$module.tavg.nml \n";
     my $line;
     while ($line = <$fh_in> )  {
       chomp($line);
@@ -1672,7 +1663,7 @@ for my $module (@OCN_TRACER_MODULES) {
     }
     $fh_in->close();
   }
-  $sysmod = "cat ${CASEBUILD}/pop2conf/${module}_tavg_contents >> $pop2_tavg_file";
+  $sysmod = "cat ${CASEBUILD}/popconf/${module}_tavg_contents >> $pop_tavg_file";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
@@ -1699,7 +1690,7 @@ add_default($nl, 'tavg_outfile',                'val'=>"$output_h");
 add_default($nl, 'ltavg_ignore_extra_streams',  'val'=>".false.");
 
 #-----------------------------------------------------------------------------------------------
-# *** Write output namelist file (pop2_in) and input dataset list (pop2.input_data_list) ***
+# *** Write output namelist file (pop_in) and input dataset list (pop.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
 
@@ -1769,13 +1760,16 @@ for my $var ($nl->get_variable_names('derived')) {
   $nl->set_variable_value($broken[1], $broken[0], $val);
 }
 
-# Write out all groups  to pop2_in
-my $outfile = "./pop2_in";
+# Consistency checks
+if (pop_consistency_check($nl, $OCN_ONEDIM)) { exit 1; }
+
+# Write out all groups  to pop_in
+my $outfile = "./pop_in";
 $nl->write($outfile, 'groups'=>\@groups);
-if ($print>=2) { print "Writing pop2 ocean component namelist to $outfile $eol"; }
+if ($print>=2) { print "Writing pop ocean component namelist to $outfile $eol"; }
 
 # Write  input dataset list.
-check_input_files($nl, $DIN_LOC_ROOT, "../pop2.input_data_list");
+check_input_files($nl, $DIN_LOC_ROOT, "../pop.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT
@@ -1970,6 +1964,17 @@ sub check_input_files {
           ($pathname eq 'same_as_TS')) {
         $is_a_file = 0;
       }
+       # init_abio_dic_dic14_init_file could be 'same_as_TS'
+      if (($var eq 'init_abio_dic_dic14_init_file') and 
+          ($pathname eq 'same_as_TS')) {
+        $is_a_file = 0;
+      }
+      # ciso_init_ecosys_init_file could be 'same_as_TS'
+      if (($var eq 'ciso_init_ecosys_init_file') and 
+          ($pathname eq 'same_as_TS')) {
+        $is_a_file = 0;
+      }
+
     }
 
     # If it is, check whether it exists locally and print status
@@ -2019,7 +2024,6 @@ sub check_input_files {
 }
 
 #-----------------------------------------------------------------------------------------------
-
 sub set_abs_filepath {
 
 # check whether the input filepath is an absolute path, and if it isn't then
@@ -2046,72 +2050,7 @@ sub set_abs_filepath {
     return $out;
 }
 
-#-----------------------------------------------------------------------------------------------
-
-
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-        push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-        push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /\.\./ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
 #-------------------------------------------------------------------------------
-
 sub valid_option {
 
     my ($val, @expect) = @_;
@@ -2126,7 +2065,6 @@ sub valid_option {
 }
 
 #-------------------------------------------------------------------------------
-
 sub validate_options {
 
     my $source = shift;   # text string declaring the source of the options being validated
@@ -2137,7 +2075,6 @@ sub validate_options {
 }
 
 #-------------------------------------------------------------------------------
-
 sub quote_string {
     my $str = shift;
     $str =~ s/^\s+//;
@@ -2149,20 +2086,22 @@ sub quote_string {
 }
 
 #-------------------------------------------------------------------------------
+sub expand_xml_variables_in_namelist {
+    # Go through all variables in the namelist and expand any XML env settings in them
+    my ($nl, $xmlvar_ref) = @_;
 
-sub expand_env_xml {
-
-    my $value = shift;
-
-    if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
-	$value =~ s/\$${1}/$subst/g;
-    }
-    return $value; 
-}	 
+   foreach my $group ( $nl->get_group_names() ) {
+       foreach my $var ( $nl->get_variable_names($group) ) {
+          my $val    = $nl->get_variable_value($group, $var);
+          my $newval = SetupTools::expand_xml_var( $val, $xmlvar_ref );
+          if ( $newval ne $val ) {
+             $nl->set_variable_value($group, $var, $newval);
+          }
+       }
+   }
+}
 
 #-------------------------------------------------------------------------------
-
 sub print_nl_to_screen {
 
   my $namelist = $_[0];
@@ -2184,14 +2123,13 @@ sub print_nl_to_screen {
 }
 
 #-------------------------------------------------------------------------------
-
 sub valid_date {
 # return 1 if given date ($$month/$$day/$$year) exists in calendar $cal
 # otherwise subtract number of days in $$month from $$day, and increment
 # $$month by 1 (also incrementing $$year if going from Dec to Jan) and 
 # then return 0.
 
-  use Switch;
+  use feature "switch";
 
   my $day = shift;
   my $month = shift;
@@ -2199,25 +2137,25 @@ sub valid_date {
   my $cal = shift;
 
   my $maxday = -1;
-  switch ($$month) {
-    case 1 { $maxday = 31; }
-    case 2 {
+  given ($$month) {
+    when (1) { $maxday = 31; }
+    when (2) {
       if (($cal eq 'NO_LEAP') || (not leap($$year))) {
         $maxday = 28;
       } else {
         $maxday = 29;
       }
     }
-    case 3 { $maxday = 31; }
-    case 4 { $maxday = 30; }
-    case 5 { $maxday = 31; }
-    case 6 { $maxday = 30; }
-    case 7 { $maxday = 31; }
-    case 8 { $maxday = 31; }
-    case 9 { $maxday = 30; }
-    case 10 { $maxday = 31; }
-    case 11 { $maxday = 30; }
-    case 12 { $maxday = 31; }
+    when (3) { $maxday = 31; }
+    when (4) { $maxday = 30; }
+    when (5) { $maxday = 31; }
+    when (6) { $maxday = 30; }
+    when (7) { $maxday = 31; }
+    when (8) { $maxday = 31; }
+    when (9) { $maxday = 30; }
+    when (0) { $maxday = 31; }
+    when (1) { $maxday = 30; }
+    when (2) { $maxday = 31; }
   }
   if ($maxday == -1) {
     die "ERROR: can not figure out what month $$month is";
@@ -2235,7 +2173,6 @@ sub valid_date {
 }
 
 #-------------------------------------------------------------------------------
-
 sub leap() {
 # return 1 if given year is a leap year, 0 otherwise
 
@@ -2249,19 +2186,52 @@ sub leap() {
 
 
 #-------------------------------------------------------------------------------
+sub pop_consistency_check() {
 
-sub any() {
-# return 1 if array (arg 0) contains val (arg 1). Note that this uses "eq"
-# instead of "==" because it's meant for strings
+  my $nl = shift;
+  my $OCN_ONEDIM = shift;
+  my $l1Ddyn = $nl->get_value('l1Ddyn');
+  my $lconst_Coriolis = $nl->get_value('lconst_Coriolis');
+  my $lmin_Coriolis = $nl->get_value('lmin_Coriolis');
 
-  my $array_ref = shift;
-  my @array = @$array_ref;
-  my $val = shift;
-
-  foreach (@array) {
-    if ($_ eq $val) {
-      return 1;
-    }
+  # 1) l1Ddyn and $OCN_ONEDIM must match
+  if (($l1Ddyn eq '.true.'  && $OCN_ONEDIM eq 'FALSE') or
+      ($l1Ddyn eq '.false.' && $OCN_ONEDIM eq 'TRUE')) {
+    print "POP namelist error: Do not set l1Ddyn in user_nl_pop, use ";
+    print "OCN_ONEDIM in env_run.xml to make sure namelist is set properly.\n";
+    return 1;
   }
+
+  # 2) lconst_Coriolis = .true. => l1Ddyn = .true.
+  if ($l1Ddyn eq '.false.' && $lconst_Coriolis eq '.true.') {
+    print "POP namelist error: you can not run with ";
+    print "lconst_Coriolis = .true. if l1Ddyn = .false.\n";
+    return 1;
+  }
+
+  # 3) lmin_Coriolis = .true. => l1Ddyn = .true.
+  if ($l1Ddyn eq '.false.' && $lmin_Coriolis eq '.true.') {
+    print "POP namelist error: you can not run with ";
+    print "lmin_Coriolis = .true. if l1Ddyn = .false.\n";
+    return 1;
+  }
+
   return 0;
+}
+
+#-------------------------------------------------------------------------------
+sub any() {
+    # return 1 if array (arg 0) contains val (arg 1). Note that this uses "eq"
+    # instead of "==" because it's meant for strings
+
+    my $array_ref = shift;
+    my @array = @$array_ref;
+    my $val = shift;
+    
+    foreach (@array) {
+	if ($_ eq $val) {
+	    return 1;
+	}
+    }
+    return 0;
 }

@@ -161,7 +161,7 @@
       rec_type_dbl  = -3       !
 
    character (12), public :: &
-      nml_filename = 'pop2_in'  ! namelist input file name
+      nml_filename = 'pop_in'  ! namelist input file name
 
    integer (i4), public :: &
       num_iotasks   ! num of procs to use for parallel io
@@ -3322,7 +3322,7 @@ contains
 
    if (my_task == master_task) then
 #ifdef CCSMCOUPLED
-      nml_filename = 'pop2_in' // trim(inst_suffix)
+      nml_filename = 'pop_in' // trim(inst_suffix)
       call get_unit(nml_in)
 #endif
       open (nml_in, file=nml_filename, status='old',iostat=nml_error)

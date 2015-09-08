@@ -16,7 +16,7 @@ endif
 
 @ s1 = 1   # use base-model stream 1
 
-cat >! $CASEROOT/Buildconf/pop2conf/iage_tavg_contents << EOF
+cat >! $CASEROOT/Buildconf/popconf/iage_tavg_contents << EOF
 $s1  IAGE
 EOF
 
@@ -24,7 +24,7 @@ EOF
 # Add optional tracer budget terms
 #-------------------------------------------------------------------------------------
 if ($OCN_TAVG_TRACER_BUDGET == TRUE) then
-cat >> $CASEROOT/Buildconf/pop2conf/iage_tavg_contents << EOF
+cat >> $CASEROOT/Buildconf/popconf/iage_tavg_contents << EOF
 $s1  IAGE_RESET_TEND
 $s1  DIA_IMPVF_IAGE
 $s1  HDIFE_IAGE
