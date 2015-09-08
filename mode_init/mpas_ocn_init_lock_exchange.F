@@ -178,8 +178,8 @@ contains
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-         call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
          call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
          call mpas_pool_get_array(meshPool, 'yCell', yCell)
