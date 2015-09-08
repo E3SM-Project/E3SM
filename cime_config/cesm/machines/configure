@@ -134,29 +134,12 @@ if (!$opts{'list'}) {
     # Check for manditory machine input
     if ($opts{'mach'}) {
 	$mach = $opts{'mach'};
-        if ($mach =~ "generic") {
-           if (!$opts{'scratchroot'}) {
-              die "ERROR: configure must include the argument -scratchroot for a generic machines \n";
-           }
-           if (!$opts{'din_loc_root'}) {
-	       die "ERROR: configure must include the argument -din_loc_root for a generic machines \n";
-	   }
-           if (!$opts{'max_tasks_per_node'}) {
-              die "ERROR: configure must include the argument -max_tasks_per_node for a generic machines \n";
-           }
-	   my $din_loc_root = $opts{'din_loc_root'};
-	   (-d "$din_loc_root")  or  die "Cannot find din_loc_root directory $din_loc_root";
-       }
     } else {
 	die "ERROR: configure must include the input argument, -mach \n";
     }
-
-    # Check if machine compiler option is given
     if ($opts{'compiler'}) {
 	$compiler = $opts{'compiler'};
     }
-
-    # Check if machine mpilib option is given
     if ($opts{'mpilib'}) {
 	$mpilib = $opts{'mpilib'};
     }
@@ -165,7 +148,10 @@ if (!$opts{'list'}) {
     }
     if($opts{'mach_dir'}){
 	$machdir = $opts{'mach_dir'};
+    } else {
+	$machdir  = "$cimeroot/cime_config/cesm/machines" unless defined($machdir);
     }
+    (-d "$machdir")  or  die " Cannot find machines directory \"$machdir\"  \n"; 
 }
 
 if($opts{'cimeroot'}) {
@@ -173,11 +159,6 @@ if($opts{'cimeroot'}) {
 }
 $cimeroot = abs_path($ENV{CIMEROOT}) unless defined($cimeroot);
 (-d "$cimeroot")  or  die "Cannot find cimeroot directory \"$cimeroot\" \n" ;
-
-my $scriptdir = "$cimeroot/scripts";
-
-$machdir  = "$cimeroot/cime_config/cesm/machines" unless defined($machdir);
-(-d "$machdir")  or  die " Cannot find machines directory \"$machdir\"  \n"; 
 
 my $output_dir = ".";
 $output_dir = $opts{output_dir} if defined( $opts{output_dir} );
@@ -217,7 +198,7 @@ my $compiler_file = 'config_compilers.xml';
     \"$machdir\" **
 EOF
 
-if ($print>=2) { print "Setting configuration directory to $scriptdir$eol"; }
+if ($print>=2) { print "Setting configuration directory to $cimeroot/scripts$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 my @dirs = ("$cimeroot/utils/perl5lib" );
@@ -295,7 +276,7 @@ SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler
 
 my $sysmod;
 # Create machine specific environment file (env_mach_specific)
-if(-e "$machdir/env_mach_specific.$mach" ) {
+if (-e "$machdir/env_mach_specific.$mach" ) {
   $sysmod = "cp $machdir/env_mach_specific.$mach $output_dir/env_mach_specific";
 }else{
   $sysmod = "touch $output_dir/env_mach_specific";

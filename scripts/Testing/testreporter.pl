@@ -254,7 +254,7 @@ sub getTestSuiteInfo
 	    die "cannot find cimeroot!" if(! @cimeroots);
 	    my $cimeroot = $cimeroots[0]->textContent();
 	    &Debug("cimeroot: $cimeroot\n");
-	    $expectedFailsFile = "$cimeroot/scripts/Testing/Testlistxml/ExpectedTestFails.xml";
+	    $expectedFailsFile = "$cimeroot/cime_config/cesm/ExpectedTestFails.xml";
 	}
 
     

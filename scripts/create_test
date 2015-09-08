@@ -1614,7 +1614,7 @@ sub testBuildSubmit
     my $testspecfile = shift;
     my $cssubmit = "cs.submit";
     my $csstatus = "cs.status";
-    copy("$scriptsroot/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
+    copy("$scriptsroot/Testing/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
     chmod 0755, "$opts{'testroot'}/testreporter.pl";
     copy("$scriptsroot/Tools/cs.submit", "$opts{'testroot'}/$cssubmit");
     chmod 0755, "$opts{'testroot'}/$cssubmit";

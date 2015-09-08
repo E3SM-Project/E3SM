@@ -281,7 +281,7 @@ if (! $clean ) {
 	my $comp = $xmlvars{"COMP_${model}"};
 	_build_usernl_files($caseroot, $cimeroot, $model, $comp);
 	if ($comp eq "cism")  {
-	    my $sysmod = "$caseroot/Buildconf/cism.template $caseroot";
+	    my $sysmod = "$cimeroot/../components/cism/cime_config/cism.template $caseroot";
 	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 	}
     }
