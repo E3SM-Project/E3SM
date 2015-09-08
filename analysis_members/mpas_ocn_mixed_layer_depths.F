@@ -172,8 +172,8 @@ contains
       logical,pointer :: tThresholdFlag, dThresholdFlag
       logical,pointer :: tGradientFlag, dGradientFlag
 !      real (kind=RKIND), dimension(:), pointer ::  areaCell 
-      real (kind=RKIND), dimension(:,:), pointer :: tThresholdMLD, tGradientMLD
-      real (kind=RKIND), dimension(:,:), pointer :: dThresholdMLD, dGradientMLD
+      real (kind=RKIND), dimension(:), pointer :: tThresholdMLD, tGradientMLD
+      real (kind=RKIND), dimension(:), pointer :: dThresholdMLD, dGradientMLD
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:), pointer :: zTop, zMid, pressure
       real (kind=RKIND), dimension(:,:), pointer :: potentialDensity
@@ -237,7 +237,6 @@ contains
 
          if(tThresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThresholdMLD)
- 
             do iCell = 1,nCellsSolve
 
                found_temp_mld = .false.
@@ -250,11 +249,11 @@ contains
                      call interp_bw_levels(localVals(2),localVals(3), &
                                    localVals(5),localVals(6),refPress,interp_local,                &
                                    temp_ref_lev)
+                     refIndex=k
                      exit
                    endif
                enddo
 
-               
                do k=refIndex,maxLevelCell(iCell)
   
                     if(.not. found_temp_mld .and. abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. tempThresh) then
@@ -265,20 +264,19 @@ contains
                         call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, tempThresh,     &
                                    interp_local, mldTemp)!,dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
-                        tThresholdMLD(1,iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
+                        tThresholdMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
                         found_temp_mld = .true.
                         exit
                      endif
-				enddo
-			
+                enddo
+
 ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
-     			if(.not. found_temp_mld) tThresholdMLD(i,iCell) = abs(zMid(maxLevelCell(iCell),iCell))
-			enddo !iCell
-				
-     	endif !end tThresh MLD search
-	
+                   if(.not. found_temp_mld) tThresholdMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
+               enddo !iCell
+          endif !end tThresh MLD search
+
          if(dThresholdFlag) then
-            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',dThresholdMLD)
+            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThresholdMLD)
  
             do iCell = 1,nCellsSolve
 
@@ -292,10 +290,10 @@ contains
                      call interp_bw_levels(localVals(2),localVals(3), &
                                    localVals(5),localVals(6),refPress,interp_local,                &
                                    den_ref_lev)
-                     exit
+                     refIndex=k
+                    exit
                    endif
                enddo
-
                
                do k=refIndex,maxLevelCell(iCell)
   
@@ -305,29 +303,32 @@ contains
                         dVm1 = abs(potentialDensity(k-1,iCell) - den_ref_lev)
                         localVals(1:3)=zMid(k-1:k+1,iCell)
                         call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, denThresh,     &
-                                   interp_local, mldTemp, dVm1, localVals(1))
+                                   interp_local, mldTemp)!, dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
-                        dThresholdMLD(1,iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
+                        dThresholdMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
                         found_den_mld = .true.
                         exit
                      endif
-				enddo
+               enddo
 
 ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
-				
-				if(.not. found_den_mld) dthresholdMLD(1,iCell) = abs(zMid(maxLevelCell(iCell),iCell))
-				
-			enddo !iCell
-				
-     	endif !end dThresh MLD search
+
+                    if(.not. found_den_mld) dThresholdMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
+
+             enddo !iCell
+
+        endif !end dThresh MLD search
      
 
 ! Compute the mixed layer depth based on a gradient threshold in temperature and density
 		if(tGradientFlag) then
-			call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tGradientMLD',tGradientMLD)
-    	  
-            temperatureGradient(2,:) = 0.0_RKIND
-            temperatureGradient(2,1) = 1
+			call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tGradMLD',tGradientMLD)
+
+   
+                   allocate(temperatureGradient(nVertLevels,2))
+ 
+            temperatureGradient(:,1) = 0.0_RKIND
+            temperatureGradient(1,2) = 1
 
             do iCell = 1,nCellsSolve
 
@@ -346,12 +347,13 @@ contains
                enddo
          
 
-               do k=2, maxLevelCell(iCell)
+               do k=2, maxLevelCell(iCell)-1
                   if(.not. found_temp_mld .and. temperatureGradient(k+1,1) .ge. tempGrad) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),temperatureGradient(k,1),temperatureGradient(k+1,1),          &
                            tempGrad, interp_local,mldTemp,temperatureGradient(k-1,1),zTop(k-1,iCell))
+
                         mldTemp=max(mldTemp,zTop(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)                           
-                        tGradientMLD(1,iCell)=min(mldTemp,zTop(k,iCell)) !MLD should be deeper than zMid(k)  
+                        tGradientMLD(iCell)=abs(min(mldTemp,zTop(k,iCell))) !MLD should be deeper than zMid(k)  
 
                     found_temp_mld=.true.
                     exit
@@ -361,18 +363,20 @@ contains
                                  
                 if(.not. found_temp_mld) then
                     refLevel=maxloc(temperatureGradient(:,1))
-                    tGradientMLD(1,iCell) = zTop(refLevel(1),iCell)
+                    tGradientMLD(iCell) = abs(zTop(refLevel(1),iCell))
                 endif
 
          enddo !icell
 
        endif !if(temperaturegradientflag)
 
-		if(dGradientFlag) then
-			call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dGradientMLD',dGradientMLD)
+           if(dGradientFlag) then
+                 call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dGradMLD',dGradientMLD)
 
-            densityGradient(2,:)=0.0_RKIND
-            densityGradient(2,1) = 1
+             allocate(densityGradient(nVertLevels,2))
+
+            densityGradient(:,1)=0.0_RKIND
+            densityGradient(1,2) = 1
 
             do iCell = 1,nCellsSolve
 
@@ -391,12 +395,12 @@ contains
                enddo
          
 
-               do k=2, maxLevelCell(iCell)
-                  if(.not. found_den_mld .and. densityGradient(1,k+1) .ge. denGrad) then
+               do k=2, maxLevelCell(iCell)-1
+                  if(.not. found_den_mld .and. densityGradient(k+1,1) .ge. denGrad) then
                     call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),densityGradient(k,1),densityGradient(k+1,1),           &
                            denGrad, interp_local,mldTemp,densityGradient(k-1,1),zTop(k-1,iCell))                   
                         mldTemp=max(mldTemp,zTop(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
-                        dGradientMLD(1,iCell)=abs(min(mldTemp,zTop(k,iCell))) !MLD should be deeper than zMid(k)                    
+                        dGradientMLD(iCell)=abs(min(mldTemp,zTop(k,iCell))) !MLD should be deeper than zMid(k)                    
                     found_den_mld=.true.
                     exit
                   endif
@@ -406,7 +410,7 @@ contains
 
                 if(.not. found_den_mld) then
                     refLevel=maxloc(densityGradient(:,2))
-                    dGradientMLD(1,iCell) = abs(zTop(refLevel(1),iCell))
+                    dGradientMLD(iCell) = abs(zTop(refLevel(1),iCell))
                 endif  
 
          enddo !icell
