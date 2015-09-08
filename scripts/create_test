@@ -728,7 +728,13 @@ sub checkOptions
 
     if(! defined $opts{'scratchroot'})
     {
-	$opts{'scratchroot'} = 'UNSET';
+	my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/CESMSCRATCHROOT");
+	my $value = $nodes[0]->textContent();
+	if(defined $value){
+	    $opts{'scratchroot'} = $value;
+	}else{
+	    $opts{'scratchroot'} = 'UNSET';
+	}	    
 	Debug("scratchroot: $opts{'scratchroot'}\n");
     }    
     if(! defined $opts{'sharedlibroot'} && $suitemode)
