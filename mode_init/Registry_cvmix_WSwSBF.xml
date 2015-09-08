@@ -19,11 +19,11 @@
                                         description="Salinity to restore towards when surface restoring is turned on."
                                         possible_values="Any real number"
                 />
-                <nml_option name="config_cvmix_WSwSBF_surface_temperature_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
+                <nml_option name="config_cvmix_WSwSBF_temperature_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
                                         description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_temperature."
                                         possible_values="Any non-negative real number"
                 />
-                <nml_option name="config_cvmix_WSwSBF_surface_salinity_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
+                <nml_option name="config_cvmix_WSwSBF_salinity_piston_velocity" type="real" default_value="4.0e-6" units="m s^{-1}"
                                         description="Piston velocity to control rate of restoring toward config_cvmix_WSwSBF_surface_restoring_salinity."
                                         possible_values="Any non-negative real number"
                 />

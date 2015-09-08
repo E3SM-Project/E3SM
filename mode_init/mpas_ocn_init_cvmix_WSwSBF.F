@@ -117,8 +117,8 @@ contains
                                           config_cvmix_WSwSBF_surface_salinity, &
                                           config_cvmix_WSwSBF_surface_restoring_temperature, &
                                           config_cvmix_WSwSBF_surface_restoring_salinity, &
-                                          config_cvmix_WSwSBF_surface_temperature_piston_velocity, &
-                                          config_cvmix_WSwSBF_surface_salinity_piston_velocity, &
+                                          config_cvmix_WSwSBF_temperature_piston_velocity, &
+                                          config_cvmix_WSwSBF_salinity_piston_velocity, &
                                           config_cvmix_WSwSBF_sensible_heat_flux, &
                                           config_cvmix_WSwSBF_latent_heat_flux, &
                                           config_cvmix_WSwSBF_shortwave_heat_flux, &
@@ -150,8 +150,8 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_salinity', config_cvmix_WSwSBF_surface_salinity)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_temperature', config_cvmix_WSwSBF_surface_restoring_temperature)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_salinity', config_cvmix_WSwSBF_surface_restoring_salinity)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_temperature_piston_velocity', config_cvmix_WSwSBF_surface_temperature_piston_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_salinity_piston_velocity', config_cvmix_WSwSBF_surface_salinity_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_piston_velocity', config_cvmix_WSwSBF_temperature_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_piston_velocity', config_cvmix_WSwSBF_salinity_piston_velocity)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_sensible_heat_flux', config_cvmix_WSwSBF_sensible_heat_flux)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_latent_heat_flux', config_cvmix_WSwSBF_latent_heat_flux)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_shortwave_heat_flux', config_cvmix_WSwSBF_shortwave_heat_flux)
@@ -252,7 +252,7 @@ contains
               activeTracersSurfaceRestoringValue(index_temperature, iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
            end if
            if ( associated(activeTracersPistonVelocity) ) then
-              activeTracersPistonVelocity(index_temperature, iCell) = config_cvmix_WSwSBF_surface_temperature_piston_velocity
+              activeTracersPistonVelocity(index_temperature, iCell) = config_cvmix_WSwSBF_temperature_piston_velocity
            end if
 
            ! Set surface salinity restoring value and rate
@@ -261,7 +261,7 @@ contains
               activeTracersSurfaceRestoringValue(index_salinity, iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
            end if
            if ( associated(activeTracersPistonVelocity) ) then
-              activeTracersPistonVelocity(index_salinity, iCell) = config_cvmix_WSwSBF_surface_salinity_piston_velocity
+              activeTracersPistonVelocity(index_salinity, iCell) = config_cvmix_WSwSBF_salinity_piston_velocity
            end if
 
            ! Set sensible heat flux
