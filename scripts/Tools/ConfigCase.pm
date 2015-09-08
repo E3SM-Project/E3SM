@@ -342,10 +342,6 @@ sub write_file
        @groups = qw(case_test);
     } elsif ($filename =~ "env_archive") {
        @groups = qw(case_archive);
-    } elsif ($filename =~ "env_postprocess") {
-       @groups = qw(postprocess);
-    } elsif ($filename =~ "env_diags_ocn") {
-       @groups = qw(diags_ocn);
     }
 
     my $fh;
