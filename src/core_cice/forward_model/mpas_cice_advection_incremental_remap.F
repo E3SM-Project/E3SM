@@ -93,9 +93,9 @@ module cice_advection_incremental_remap
    ! For parallel runs, the local indices will in general be different
 
    ! default values that should work on any mesh
-!   integer, parameter :: ctestGlobal = 1
-!   integer, parameter :: etestGlobal = 1
-!   integer, parameter :: vtestGlobal = 1
+   integer, parameter :: ctestGlobal = 1
+   integer, parameter :: etestGlobal = 1
+   integer, parameter :: vtestGlobal = 1
 
 !   integer, parameter :: ctestGlobal = 3244    ! test cell for planar quad ('square') test case
 !   integer, parameter :: etestGlobal = 6529    ! test edge for planar quad test case
@@ -105,9 +105,9 @@ module cice_advection_incremental_remap
 !   integer, parameter :: etestGlobal = 9801     ! test edge for planer hex test case
 !   integer, parameter :: vtestGlobal = 6720     ! test vertex for planar hex test case
 
-   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
-   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
-   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
+!   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
+!   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
+!   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
 
 !   integer, parameter :: ctestGlobal = 2354       ! test cell for spherical hex test case
 !   integer, parameter :: etestGlobal = 3473      ! test edge for spherical hex test case
@@ -133,10 +133,6 @@ module cice_advection_incremental_remap
    logical, parameter :: verboseFluxes = .false.
    logical, parameter :: verboseGeomAvg = .false.
    logical, parameter :: verboseMasks = .false.
-
-   logical, parameter :: polygonIntersection = .false.  ! if true, use polygon intersection algorithm
-   logical, parameter :: polygonCpp = .false.          ! if true, use C++ polygon routine
-   logical, parameter :: polygonFortran = .true.       ! if true, use Fortran polygon routine
 
    !WHL - debug
    logical :: first_call = .true.  ! set to false after the first call
@@ -4944,11 +4940,6 @@ contains
     ! 
     !-------------------------------------------------------------------------------------------
 
-    !TODO - Probably can remove these calls later.  Keeping them for now to vertify that the
-    !       custom IR logic gives the same result.
-    use cice_polygon_intersection, only: &
-         cice_polygon_intersection_cpp, cice_polygon_intersection_fortran
-
     integer, intent(in) :: &
          nEdges,         &  !< Input: number of edges
          nCells,         &  !< Input: number of cells
@@ -5019,32 +5010,11 @@ contains
     ! local variables
     
     integer :: &
-         nCellsOnEdgeRemap, &! number of cell neighbors for each edge, including cells that share a vertex with the edge
-                             ! = 4 for hex mesh, = 6 for quad mesh
-         nVertCell,         &! number of vertices of a given cell
-         nVertPolyInt        ! number of vertices of an intersection polygon
-
-    logical :: &
-         edgeIntersect,     &! true if the line segment joining the departure points intersects a side edge
-         edgeIntersectMain   ! true if the line segment joining the departure points intersects the main edge
-
-    !TODO - 4 should be enough in theory, but C++ routine sometimes returns redundant vertices.
-    integer, parameter ::   &
-!!         maxPolyVerts = 4       ! max number of vertices of intersection polygon
-         maxPolyVerts = 7       ! max number of vertices of intersection polygon
-
-    integer :: &
          triangleCount          ! running total of the number of departure triangles for an edge
     
-    ! Note: The x/y coordinates of the following are relative to the edge midpoint
-
-    real(kind=RKIND), dimension(2,4) ::  &
-         departureQuad          ! x and y coordinates of 4 vertices of departure quadrilateral
-                                ! These coordinates are relative to the edge midpoint
-
-    real(kind=RKIND), dimension(2,3) ::  &
-         departureTriangle1,  & ! x and y coordinates of 3 vertices of departure triangle 1
-         departureTriangle2     ! x and y coordinates of 3 vertices of departure triangle 2
+    logical :: &
+         edgeIntersect,        &! true if the line segment joining the departure points intersects a side edge
+         edgeIntersectMain      ! true if the line segment joining the departure points intersects the main edge
 
     real(kind=RKIND), dimension(2) ::  &
          intersectionPoint,   & ! x and y coordinates of the intersection of two lines
@@ -5055,24 +5025,10 @@ contains
     integer, dimension(nTriPerEdgeRemap) ::  &
          triangleVertexOnEdge, &! vertexOnEdge index for a given triangle, relative to iEdge
          triangleVertexOnCell, &! vertexOnCell index for a given triangle, relative to iCell
-         fluxSign               ! sign convenion for the flux across a given edge
+         fluxSign               ! sign of the flux across a given edge
                                 ! (positive if going from cell 1 to cell 2, negative if in the other direction)
 
-    !TODO - Some of the following arrays can be removed when I take out the polygon intersection calculation
-    real(kind=RKIND), dimension(2,maxEdges) :: &
-         cellPolygon            ! vertices of a cell neighboring the edge 
-
-    real(kind=RKIND), dimension(2,maxPolyVerts) :: &
-         intersectionPolygon    ! vertices of the intersection polygon (intersection of a cell with the departure region)
-
-    real(kind=RKIND), dimension(2) :: workVector2
-    real(kind=RKIND), dimension(3) :: workVector
-
-    integer :: &
-         fluxSignQuad, &      ! = 1 or -1, depending on which side of the edge the departure region lies
-                              ! positive when the flux across the edge is from cell 1 to cell 2
-         fluxSignTriangle1,  &! same as fluxSignQuad, but for departure triangles
-         fluxSignTriangle2
+    real(kind=RKIND), dimension(2) :: workVector
 
     real(kind=RKIND), dimension(2,2) ::  &
          edgeVertex,         & ! x/y coordinates of 2 vertices of edge
@@ -5086,12 +5042,7 @@ contains
          departurePoint        ! x/y coordinates of 2 departure points relative to an edge midpoint
                                ! Note: The input vector, departurePointIn, points from a vertex to the DP.
 
-    real(kind=RKIND), dimension(2) :: departureMidpoint  ! x/y coordinates of departure midpoint
-
     real(kind=RKIND) :: quadArea
-
-    logical ::  &
-         twoDepartureTriangles ! true if there are two departure triangles instead of one departure quadrilateral
 
     logical, dimension(2) ::  &
          dpInHalfPlane         ! true if a departure point lies in the left half-plane of the edge
@@ -5099,8 +5050,6 @@ contains
     integer :: iEdge, iCell, iVertex, iVertexOnCell, iEdgeOnCell, iVertexOnEdge, iTri, iEdgeNeighbor
     integer :: iCellOnEdgeRemap, iEdgeOnEdgeRemap, iVertexOnEdgeRemap
     integer :: iVertex1, iVertex2, iSideIndex, iOtherEdge, iOtherVertex
-
-    !WHL - debug
     integer :: n
 
     if (verboseGeometry) then
@@ -5198,9 +5147,9 @@ contains
           edgeVertex(1,2) = xVertexOnEdge(1,iEdge)
           edgeVertex(2,2) = yVertexOnEdge(1,iEdge)
 
-          workVector2(:)      = departurePoint(:,1)
+          workVector(:)      = departurePoint(:,1)
           departurePoint(:,1) = departurePoint(:,2)
-          departurePoint(:,2) = workVector2(:)          
+          departurePoint(:,2) = workVector(:)          
 
        endif
 
@@ -5221,9 +5170,6 @@ contains
        !         a flux of the same sign.  The flux is positive if the midpoint between D1 and D2 
        !         lies in the left half-plane, else the flux is negative.
        !     Note: In case 3b the departure region is a quadrilateral, but it not convex.
-       !           If using the polygon intersection routine (which works only for convex polygons),
-       !            it must be divided into 2 triangles.
-       !
 
        do iVertexOnEdge = 1,2 
           dpInHalfPlane(iVertexOnEdge) = point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), departurePoint(:,iVertexOnEdge))
@@ -5244,418 +5190,8 @@ contains
        endif
 
        ! Compute the vertices and area of the departure triangles across this edge
-       ! Two methods for now:
-       ! (1) Use a polygon intersection algorithm (either C++ or native Fortran)
-       !     May be removed if (2) works faster
-       ! (2) Use custom logic for IR geometry
-
-     if (polygonIntersection) then  ! use polygon intersection algorithm
-
-        !WHL - debug
-        if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-           if (iEdge == etest) then
-              write(stderrUnit,*) 'Start polygon intersections: D1 in HP, D2 in HP:', dpInHalfPlane(1), dpInHalfPlane(2)
-           endif
-        endif
-
-       if (dpInHalfPlane(1) .and. dpInHalfPlane(2)) then   ! case 1
-
-          twoDepartureTriangles = .false.
-          fluxSignQuad = 1   ! flux across edge from cell 1 to cell 2
-
-          ! vertices of departure Quad
-          ! Note: Order is from D2 to D1 to V1 to V2
-          departureQuad(:,1) = departurePoint(:,2)
-          departureQuad(:,2) = departurePoint(:,1)
-          departureQuad(:,3) = edgeVertex(:,1)
-          departureQuad(:,4) = edgeVertex(:,2)
-
-          if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-             if (iEdge == etest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Departure quad vertices:'
-                do n = 1, 4
-                   write(stderrUnit,*) n, departureQuad(:,n)
-                enddo
-             endif
-          endif
-
-       elseif (.not.dpInHalfPlane(1) .and. .not.dpInHalfPlane(2)) then  ! case 2
-
-          twoDepartureTriangles = .false.
-          fluxSignQuad = -1
-
-          ! vertices of departure Quad
-          ! Note: Order is from D1 to D2 to V2 to V1
-          departureQuad(:,1) = departurePoint(:,1)
-          departureQuad(:,2) = departurePoint(:,2)
-          departureQuad(:,3) = edgeVertex(:,2)
-          departureQuad(:,4) = edgeVertex(:,1)
-
-          if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-             if (iEdge == etest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Departure quad vertices:'
-                do n = 1, 4
-                   write(stderrUnit,*) n, departureQuad(:,n)
-                enddo
-             endif
-          endif
-
-       else   ! case 3; departure region consists of 2 triangles 
-
-          twoDepartureTriangles = .true.
-          
-          ! Determine where the line connecting the departure points intersects the line defined by the edge.
-          ! Note: edgeIntersect is true iff the line segment connecting the departure points intersects
-          !       the edge itself (i.e., the segment joining the two vertices)
-
-          call find_line_intersection(&
-               departurePoint(:,1), departurePoint(:,2),  &
-               edgeVertex(:,1),     edgeVertex(:,2),      &
-               edgeIntersect,                             &
-               intersectionPoint)
-
-          ! Determine the sign associated with the flux from each triangle
-
-          if (edgeIntersect) then   ! case 3a; the segment from D1 to D2 intersects the edge
-
-             if (dpInHalfPlane(1)) then
-                fluxSignTriangle1 =  1
-                fluxSignTriangle2 = -1
-             else  ! dp2 in half-plane
-                fluxSignTriangle1 = -1
-                fluxSignTriangle2 =  1
-             endif
-
-          else   ! case 3b; the segment from D1 to D2 does not intersect the edge
-                 ! (but intersects the line extending from the edge)
-
-             departureMidpoint(:) = 0.5_RKIND * (departurePoint(:,1) + departurePoint(:,2))
-             if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), departureMidpoint(:))) then
-                fluxSignTriangle1 =  1
-                fluxSignTriangle2 =  1
-             else
-                fluxSignTriangle1 = -1
-                fluxSignTriangle2 = -1
-             endif
-
-          endif    ! edgeIntersect
-
-          ! vertices of first triangle
-          departureTriangle1(:,1) = departurePoint(:,1)
-          departureTriangle1(:,2) = edgeVertex(:,1)
-          departureTriangle1(:,3) = intersectionPoint(:)
-
-          ! vertices of second triangle
-          departureTriangle2(:,1) = departurePoint(:,2)
-          departureTriangle2(:,2) = edgeVertex(:,2)
-          departureTriangle2(:,3) = intersectionPoint(:)
-
-          if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-             if (iEdge == etest) then
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'edgeIntersect =', edgeIntersect
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Triangle 1 vertex, x, y:'
-                do n = 1, 3
-                   write(stderrUnit,*) n, departureTriangle1(1,n), departureTriangle1(2,n)
-                enddo
-                write(stderrUnit,*) ' '
-                write(stderrUnit,*) 'Triangle 2 vertex, x, y:'
-                do n = 1, 3
-                   write(stderrUnit,*) n, departureTriangle2(1,n), departureTriangle2(2,n)
-                enddo
-             endif
-          endif
-
-       endif  ! dpInHalfPlane conditions
-
-       if (vertexDegree == 3) then
-          nCellsOnEdgeRemap = 4
-       elseif (vertexDegree == 4) then
-          nCellsOnEdgeRemap = 6
-       endif
-
-       if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-          if (iEdge == etest) then
-             write(stderrUnit,*) 'cellsOnEdgeRemap, edge =', iEdge
-             do n = 1, nCellsOnEdgeRemap
-                write(stderrUnit,*) cellsOnEdgeRemap(n,iEdge)
-             enddo
-             write(stderrUnit,*) 'Loop over cell neighbors:'
-          endif
-       endif
-
-       ! initialize the number of flux triangles for this edge
-       triangleCount = 0
-
-       ! Loop through the cells that neighbor the edge 
-       !  (i.e., they share the edge, or they share a vertex with the edge) 
-       ! For each neighbor cell, find the intersection of the departure region with the cell
-        
-       do iCellOnEdgeRemap = 1, nCellsOnEdgeRemap
-
-          iCell = cellsOnEdgeRemap(iCellOnEdgeRemap,iEdge)
-
-          if (iCell >=1 .and. iCell <= nCells) then   ! the neighbor cell lies within the global domain
-
-             cellPolygon(:,:) = 0.0_RKIND
-             nVertCell = nEdgesOnCell(iCell)
-
-             ! find the x and y coordinates of each cell vertex relative to this edge
-             if (on_a_sphere) then
-
-                do iVertexOnCell = 1, nVertCell
-
-                   iVertex = verticesOnCell(iVertexOnCell,iCell)
-
-                   ! Compute global vector pointing from the edge to this vertex
-                   workVector(1) = xVertex(iVertex) - xEdge(iEdge)
-                   workVector(2) = yVertex(iVertex) - yEdge(iEdge)
-                   workVector(3) = zVertex(iVertex) - zEdge(iEdge)
-
-                   ! Transform this global vector to the edge-based coordinate system
-                   cellPolygon(1,iVertexOnCell) = transGlobalToEdge(1,1,iEdge) * workVector(1)  &
-                                                + transGlobalToEdge(1,2,iEdge) * workVector(2)  &
-                                                + transGlobalToEdge(1,3,iEdge) * workVector(3)
-
-                   cellPolygon(2,iVertexOnCell) = transGlobalToEdge(2,1,iEdge) * workVector(1)  &
-                                                + transGlobalToEdge(2,2,iEdge) * workVector(2)  &
-                                                + transGlobalToEdge(2,3,iEdge) * workVector(3)
-
-                   !TODO - Make sure the z component of this vector is small
-!                   workVector(3) = transGlobalToEdge(3,1,iEdge) * workVector(1)  &
-!                                 + transGlobalToEdge(3,2,iEdge) * workVector(2)  &
-!                                 + transGlobalToEdge(3,3,iEdge) * workVector(3)
-
-                enddo   ! iVertexOnCell
-
-             else  ! on a plane
-
-                do iVertexOnCell = 1, nVertCell
-
-                   iVertex = verticesOnCell(iVertexOnCell,iCell)
-
-                   cellPolygon(1,iVertexOnCell) = xVertex(iVertex) - xEdge(iEdge)
-                   cellPolygon(2,iVertexOnCell) = yVertex(iVertex) - yEdge(iEdge)
-
-                enddo   ! iVertexOnCell
-                
-             endif      ! on a sphere
-
-             if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-                if (iEdge == etest) then
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'polygon vertices, iCell =', iCell
-                   do n = 1, nEdgesOnCell(iCell)
-                      write(stderrUnit,*) n, cellPolygon(1,n), cellPolygon(2,n)
-                   enddo
-                endif
-             endif
-
-             ! Call the C++ polygon intersection code to find the vertices of the intersection polygon, relative to the edge
-             ! If the intersection has nonzero area:
-             ! (1) If the intersection region is a quad, then divide it into two triangles.
-             ! (2) Determine the cell where each triangle is located.
-             ! (3) Transform the triangle vertices from edge-based to center-based (in the cell where the triangle lies).
-             ! (4) Compute the triangle area.
-             ! (5) Multiply the area by +1 or -1, depending on whether the triangle is moving across the edge from cell 1 to cell 2
-             !     or from cell 2 to cell 1.
-
-             if (twoDepartureTriangles) then
-
-                ! Find intersection of the first departure triangle with this cell
-
-                !WHL - debug - Choose between Fortran and C++ versions
-
-                if (polygonCpp) then
-
-                   call cice_polygon_intersection_cpp(&
-                        3,                          &
-                        departureTriangle1(:,:),    &
-                        nVertCell,                  &
-                        cellPolygon(:,1:nVertCell), &                          
-                        maxPolyVerts,               &
-                        nVertPolyInt,               &
-                        intersectionPolygon(:,:))
-                   
-                else   ! Fortran version
-
-                   call cice_polygon_intersection_fortran(&
-                        3,                          &
-                        departureTriangle1(:,:),    &
-                        nVertCell,                  &
-                        cellPolygon(:,1:nVertCell), &                          
-                        maxPolyVerts,               &
-                        nVertPolyInt,               &
-!!                        intersectionPolygon(:,:))
-                        intersectionPolygon(:,:), iEdge, etest)   ! WHL - debug
-
-                endif
-
-                if (nVertPolyInt == 3) then
-                   triangleCount = triangleCount + 1
-                   iCellTriangle(triangleCount,iEdge) = iCell
-                   xTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(1,1:3)
-                   yTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(2,1:3)
-                   fluxSign(triangleCount) = fluxSignTriangle1
-                endif
-
-                ! Find intersection of the second departure triangle with this cell
-
-                !WHL - debug - Choose between Fortran and C++ versions
-
-                if (polygonCpp) then
-
-                   call cice_polygon_intersection_cpp(&
-                        3,                          &
-                        departureTriangle2(:,:),    &
-                        nVertCell,                  &
-                        cellPolygon(:,1:nVertCell), &                          
-                        maxPolyVerts,               &
-                        nVertPolyInt,               &
-                        intersectionPolygon(:,:))
-                   
-                else   ! Fortran version
-
-                   call cice_polygon_intersection_fortran(&
-                        3,                          &
-                        departureTriangle2(:,:),    &
-                        nVertCell,                  &
-                        cellPolygon(:,1:nVertCell), &
-                        maxPolyVerts,               &
-                        nVertPolyInt,               &
-!!                        intersectionPolygon(:,:))
-                        intersectionPolygon(:,:), iEdge, etest)   ! WHL - debug
-
-                endif
-
-                if (nVertPolyInt == 3) then
-                   triangleCount = triangleCount + 1
-                   iCellTriangle(triangleCount,iEdge) = iCell
-                   xTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(1,1:3)
-                   yTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(2,1:3)
-                   fluxSign(triangleCount) = fluxSignTriangle2
-                else
-
-                   !TODO - Can nVertPolyInt have values other than 3?
-
-                endif
-
-             else   ! twoDepartureTriangles = F; departure region is a quad
-                
-                !WHL - debug - Choose between Fortran and C++ versions
-
-                if (polygonCpp) then
-
-                   call cice_polygon_intersection_cpp(&
-                        4,                          &
-                        departureQuad(:,:),         &
-                        nVertCell,                  &
-                        cellPolygon(:,1:nVertCell), &                          
-                        maxPolyVerts,               &
-                        nVertPolyInt,               &
-                        intersectionPolygon(:,:))
-                   
-                else  ! use Fortran version
-
-                   call cice_polygon_intersection_fortran(&
-                        4,                          &
-                        departureQuad(:,:),         &
-                        nVertCell,                  &
-                        cellPolygon(:,1:nVertCell), &                          
-                        maxPolyVerts,               &
-                        nVertPolyInt,               &
-!!                        intersectionPolygon(:,:))
-                        intersectionPolygon(:,:), iEdge, etest)  !WHL - debug
-                endif
-
-                if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-                   if (iEdge == etest) then
-                      if (nVertPolyInt > 0) then
-                         write(stderrUnit,*) ' '
-                         write(stderrUnit,*) 'output polygon, iEdge =', iEdge
-                         do n = 1, nVertPolyInt
-                            write(stderrUnit,*) n, intersectionPolygon(:,n)
-                         enddo
-                      endif
-                   endif
-                endif
-
-                if (nVertPolyInt == 4) then
-
-                   ! first triangle, vertices 1-2-3
-                   triangleCount = triangleCount + 1
-                   iCellTriangle(triangleCount,iEdge) = iCell
-                   xTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(1,1:3)
-                   yTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(2,1:3)
-                   fluxSign(triangleCount) = fluxSignQuad
-
-                   ! second triangle, vertices 1-3-4
-                   ! Note: This assumes that indices 1, 2, 3 and 4 are in order going around the quad
-                   triangleCount = triangleCount + 1
-                   iCellTriangle(triangleCount,iEdge) = iCell
-                   xTriangle(1,triangleCount,iEdge) = intersectionPolygon(1,1)
-                   yTriangle(1,triangleCount,iEdge) = intersectionPolygon(2,1)
-                   xTriangle(2:3,triangleCount,iEdge) = intersectionPolygon(1,3:4)
-                   yTriangle(2:3,triangleCount,iEdge) = intersectionPolygon(2,3:4)
-                   fluxSign(triangleCount) = fluxSignQuad
-
-                elseif (nVertPolyInt == 3) then
-
-                   triangleCount = triangleCount + 1
-                   iCellTriangle(triangleCount,iEdge) = iCell
-                   xTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(1,1:3)
-                   yTriangle(1:3,triangleCount,iEdge) = intersectionPolygon(2,1:3)
-                   fluxSign(triangleCount) = fluxSignQuad
-
-                elseif (nVertPolyInt < 3) then
-
-                   ! the intersection 'polygon' has zero area; do nothing
-                   
-                else  ! nVertPolyInt > 4; something is wrong
-
-                   write(stderrUnit,*) 'Polygon intersection error: too many intersection vertices:  &
-                        iEdge, iCellOnEdgeRemap, nVertPolyInt:', iEdge, iCellOnEdgeRemap, nVertPolyInt
-                                                                    
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Base polygon vertices:'
-                   do n = 1, nVertCell
-                      write(stderrUnit,*) n, cellPolygon(1,n), cellPolygon(2,n)
-                   enddo
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Departure polygon vertices:'
-                   do n = 1, 4
-                      write(stderrUnit,*) n, departureQuad(1,n), departureQuad(2,n)
-                   enddo
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Intersection polygon vertices:'
-                   do n = 1, nVertPolyInt
-                      write(stderrUnit,*) n, intersectionPolygon(1,n), intersectionPolygon(2,n)
-                   enddo
-
-                   call mpas_dmpar_global_abort('Aborting with IR error')
-                   
-                endif ! nVertPolyInt
-
-                !WHL - debug
-                if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-                   if (iEdge == etest .and. nVertPolyInt > 0) then
-                      write(stderrUnit,*) 'vertices of intersection polygon:'
-                      do n = 1, nVertPolyInt
-                         write(stderrUnit,*) n, intersectionPolygon(1,n), intersectionPolygon(2,n)
-                      enddo
-                   endif
-                endif
-
-             endif   ! twoDepartureTriangles
-
-          endif      ! iCell /= 0
-
-       enddo         ! iCellOnEdgeRemap
-
-     else    ! custom IR algorithm
+       ! Note: I began with a polygon intersection algorithm using C++ code, but removed it after 
+       !       developing a faster approach in native Fortran 
 
        ! initialize the number of flux triangles for this edge
        triangleCount = 0
@@ -6171,10 +5707,8 @@ contains
 
        endif   ! edgeIntersectMain
 
-     endif   ! polygonIntersection or custom algorithm
-
        ! Above, we have found the vertices of each departure triangle relative to the edge.
-       ! Now find the vertices of each triangle relative to the cell where the triangle is located
+       ! Now find the vertices of each triangle relative to the cell where the triangle is located.
        ! Also find the triangle area (positive if the flux is from cell 1 to cell 2, else negative).
 
        do iTri = 1, triangleCount
