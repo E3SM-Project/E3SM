@@ -101,7 +101,8 @@ program pioperformance
         if(varsize(vs) > 0 ) then
            do nv=1,max_nvars
               if(nvars(nv)>0) then
-                 call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, niotasks, nframes, nvars(nv), varsize(vs))
+                 call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, & 
+                                         niotasks, nframes, nvars(nv), varsize(vs))
               endif
            enddo
         endif
