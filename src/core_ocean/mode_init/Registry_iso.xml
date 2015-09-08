@@ -219,7 +219,7 @@
 				description="Radius of heat flux localized region 2."
 				possible_values="Any real number."
 	/>
-        <nml_option name="config_iso_surface_temp_piston_vel" type="real" default_value="5.0e-5" units="m/s"
+        <nml_option name="config_iso_surface_temperature_piston_velocity" type="real" default_value="5.0e-5" units="m/s"
 				description="Surface temperature restoring piston velocity."
 				possible_values="Any real number."
 	/>

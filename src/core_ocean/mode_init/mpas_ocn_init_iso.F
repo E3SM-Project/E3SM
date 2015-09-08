@@ -143,7 +143,7 @@ contains
       real (kind=RKIND), pointer :: config_iso_heat_flux_lat_ss
       real (kind=RKIND), pointer :: config_iso_heat_flux_lat_sm
       real (kind=RKIND), pointer :: config_iso_heat_flux_lat_mn
-      real (kind=RKIND), pointer :: config_iso_surface_temp_piston_vel
+      real (kind=RKIND), pointer :: config_iso_surface_temperature_piston_velocity
       real (kind=RKIND), pointer :: config_iso_initial_temp_t1
       real (kind=RKIND), pointer :: config_iso_initial_temp_t2
       real (kind=RKIND), pointer :: config_iso_initial_temp_h0
@@ -288,7 +288,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_ss', config_iso_heat_flux_lat_ss)
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_sm', config_iso_heat_flux_lat_sm)
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_mn', config_iso_heat_flux_lat_mn)
-      call mpas_pool_get_config(domain % configs, 'config_iso_surface_temp_piston_vel', config_iso_surface_temp_piston_vel)
+      call mpas_pool_get_config(domain % configs, 'config_iso_surface_temperature_piston_velocity', config_iso_surface_temperature_piston_velocity)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t1', config_iso_initial_temp_t1)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t2', config_iso_initial_temp_t2)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_h0', config_iso_initial_temp_h0)
@@ -394,7 +394,7 @@ contains
       transSS = config_iso_heat_flux_lat_ss * pii/180.0
       transSM = config_iso_heat_flux_lat_sm * pii/180.0
       transMN = config_iso_heat_flux_lat_mn * pii/180.0
-      tempPistonVel = config_iso_surface_temp_piston_vel
+      tempPistonVel = config_iso_surface_temperature_piston_velocity
       tempT1 = config_iso_initial_temp_t1
       tempT2 = config_iso_initial_temp_t2
       temph0 = config_iso_initial_temp_h0
