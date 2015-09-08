@@ -520,7 +520,8 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_CXX_FLAGS:STRING="$(CXXFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
-              -D USER_CMAKE_MODULE_DIR:STRING=$(CIMEROOT)/externals/CMake
+              -D GPTL_PATH:STRING=$(SHAREDPATH) \
+              -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
 	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)" 
@@ -699,6 +700,10 @@ ULIBDEP += $(CSMSHARELIB)
 ifeq ($(MPILIB),mpi-serial)
   MPISERIAL = $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a
   MLIBS += $(MPISERIAL)
+  CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(SHAREDPATH)/include \
+      -DMPI_Fortran_INCLUDE_PATH=$(SHAREDPATH)/include \
+      -DMPI_C_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a \
+      -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a 
 endif
 
 $(MCTLIBS)  : $(MPISERIAL)
@@ -740,7 +745,7 @@ cleanatm:
 	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
 
 cleancpl:
-	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/cesm/obj;  $(RM) -f *.o *.mod
 
 cleanocn: 
 	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a

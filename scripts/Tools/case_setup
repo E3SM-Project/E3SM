@@ -165,9 +165,11 @@ if (! $clean ) {
     }
 
     my $ninst_fail = 0;    
+    my $build_threaded = $xmlvars{BUILD_THREADED};
     foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
-	my $ninst = "NINST_".$comp;
+	my $ninst  = "NINST_".$comp;
 	my $ntasks = "NTASKS_".$comp;
+	my $nthrds = "NTHRDS_".$comp;
 	if ($xmlvars{$ninst} > $xmlvars{$ntasks}) {
 	    if($xmlvars{$ntasks}==1){
 		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
@@ -176,7 +178,17 @@ if (! $clean ) {
 		die "ERROR case_setup: $comp NINST value greater than $comp NTASKS";
 	    }
 	}
+	if($xmlvars{$nthrds} > 1){
+	    $build_threaded = "TRUE";
+	}
     }
+
+    if ($build_threaded eq "TRUE" and $xmlvars{"COMPILER"} eq "nag") {
+        die "ERROR cesm_setup: it is not possible to run with OpenMP if using the NAG Fortran compiler\n";
+    }
+
+    my $sysmod = "./xmlchange BUILD_THREADED=$build_threaded";
+    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 
     if (-f "$caseroot/$case.run") {
 	print "Machine/Decomp/Pes configuration has already been done ...skipping$eol ";
@@ -189,6 +201,7 @@ if (! $clean ) {
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	wait;
 	
         # Compute cost based on PE count
 	my $pval = 1;
@@ -238,13 +251,14 @@ if (! $clean ) {
 	print "Creating batch script $case.run $eol";
 	# Use BatchFactory to get the appropriate instance of a BatchMaker,
 	# use it to create our batch scripts
-	my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot    => $xmlvars{'CASEROOT'},
-							     cimeroot    => $cimeroot,
-							     case        => $xmlvars{'CASE'},
-							     mpilib      => $xmlvars{'MPILIB'},
-							     machroot    => $xmlvars{'MACHDIR'},
-							     machine     => $xmlvars{'MACH'},
-							     compiler    => $xmlvars{'COMPILER'});
+	my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $xmlvars{'CASEROOT'},
+							     cimeroot => $cimeroot,
+							     case     => $xmlvars{'CASE'},
+							     mpilib   => $xmlvars{'MPILIB'},
+							     machroot => $xmlvars{'MACHDIR'},
+							     machine  => $xmlvars{'MACH'},
+							     compiler => $xmlvars{'COMPILER'},
+							     threaded => $build_threaded);
 	
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.cesmrun";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";

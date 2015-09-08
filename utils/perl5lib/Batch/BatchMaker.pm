@@ -48,6 +48,7 @@ sub new
 	    cimeroot	=> $params{'cimeroot'}	|| undef,
 	    machroot    => $params{'machroot'}  || ".",
 	    mpilib      => $params{'mpilib'}    || undef,
+            threaded    => $params{'threaded'}  || undef,
 	};
 	$self->{'srcroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 
@@ -363,6 +364,7 @@ sub setTaskInfo()
 	if(defined $self->{'overridenodecount'})
 	{
 		$self->{'sumpes'} = $self->{'overridenodecount'};
+		$self->{'totaltasks'} = $self->{'overridenodecount'};
 		$self->{'fullsum'} = $self->{'overridenodecount'};
 		$self->{'sumtasks'} = $self->{'overridenodecount'};
 		$self->{'task_count'} = $self->{'overridenodecount'};
@@ -416,11 +418,30 @@ sub setWallTime()
 sub setProject()
 {
 	my $self = shift;
-	my $project = ProjectTools::find_project();
-	if(defined $project && length($project) > 0)
+    my $envrunfile = "$self->{'caseroot'}/env_case.xml";
+ 	my $envrunparser = XML::LibXML->new(no_blanks => 1);
+    my $envrunxml = $envrunparser->parse_file($envrunfile);
+	my @projelems = $envrunxml->findnodes("//entry[\@id=\'PROJECT\']");
+	my $project; 
+	
+	foreach my $projelem(@projelems)
 	{
-		$self->{'account'} = $project;
+		$project = $projelem->getAttribute('value');
+	}
+	if(defined $project)
+	{
 		$self->{'project'} = $project;
+		$self->{'account'} = $project;
+	}
+	if($project =~ /UNSET/)
+	{
+		$self->{'project'} = undef;
+		$self->{'account'} = undef;
+	}
+	elsif(! defined $project)
+	{
+		$self->{'project'} = undef;
+		$self->{'account'} = undef;
 	}
 }
 
@@ -521,23 +542,29 @@ sub setCESMRun()
 		# if any of the attributes match any of our instance variables, 
 		# we have a match, break out of the attribute loop, and use that as our 
 		# chosen mpi run element. 
-		my $match = 0;
-		my @mpiattrs = $mpielem->getAttributes();
-		foreach my $attr(@mpiattrs)
-		{
-			my $attrName = $attr->getName();
-			my $attrValue = $attr->getValue();
-			#print "attr Name: $attrName \n";
-			#print "attr Value: $attrValue \n";
-			if(defined $self->{$attrName} && (lc $self->{$attrName} eq $attrValue))
-			{
-				$match = 1;
-				last;
-			}
-		}
-		if($match)
+		if(! $mpielem->hasAttributes())
 		{
 			$chosenmpielem = $mpielem;
+		}
+		else
+		{
+		    my $attrMatch = 1;
+		    
+		    my @mpiattrs = $mpielem->getAttributes();
+		    foreach my $attr(@mpiattrs)
+		    {
+		    	my $attrName = $attr->getName();
+		    	my $attrValue = $attr->getValue();
+		    	if(defined $self->{$attrName} && (lc $self->{$attrName} ne $attrValue))
+		    	{
+		    		$attrMatch = 0;
+		    		last;
+		    	}
+		    }
+		    if($attrMatch)
+		    {
+		    	$chosenmpielem = $mpielem;
+		    }
 		}
 	}
 	
@@ -545,7 +572,37 @@ sub setCESMRun()
 	if(! defined $chosenmpielem)
 	{
 		my @defaultmpielems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/mpirun[\@mpilib=\'default\']");
-		$chosenmpielem = $defaultmpielems[0];
+		foreach my $defelem(@defaultmpielems)
+		{
+			if(! $defelem->hasAttributes() )
+			{
+				$chosenmpielem = $defelem;
+			}	
+			else
+			{
+				my $attrMatch = 1;
+				my @attrs = $defelem->getAttributes();
+				foreach my $attr(@attrs)
+				{
+					my $attrName = $attr->getName();
+					my $attrValue = $attr->getValue();
+					next if($attrValue eq 'default');
+					my $lcAttrName = lc $attrName;
+					if(defined $self->{$lcAttrName} && (lc $self->{$attrName} ne lc $attrValue))
+					{
+						$attrMatch = 0;
+						last;	
+					}
+				}
+				if($attrMatch)
+				{
+					$chosenmpielem = $defelem;
+					last;
+				}
+			
+			}
+		}
+		#$chosenmpielem = $defaultmpielems[0];
 	}
 		
 	# die if we haven't found an mpirun for this machine by now..
@@ -780,27 +837,43 @@ sub _test()
 }
 sub setTaskInfo()
 {
-	my $self = shift;
+    my $self = shift;
     $self->SUPER::setTaskInfo();
-	my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
+    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
+    my $pes_per_node = ${$taskmaker->{'config'}}{'PES_PER_NODE'};
 
-	$self->{'mppsize'}  = $taskmaker->sumTasks();
-    if($self->{'mppsize'} % $maxTasksPerNode > 0)
-    {
-        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
-        $mppnodes += 1;
-        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
-    }
-	$self->{'mppsum'} = $taskmaker->sumPES();
+    # Handle the case where
 
-    if($self->{'mppsum'} > 1)
+    $self->{'mppsize'}  = $taskmaker->sumTasks();
+
+    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $maxTasksPerNode > 0)
     {
-        $self->{'mppwidth'} = $self->{'mppsum'} / 2;
+	die("odd number of tasks to handle");
+#        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
+#        $mppnodes += 1;
+#        $self->{'mppsize'} = $mppnodes * $maxTasksPerNode;
     }
-    else
+
+    $self->{'mppsum'} = $taskmaker->sumPES();
+    
+    if($self->{maxthreads} == 1){
+	    $self->{mppwidth} = $self->{mppsum};
+    }else{
+	    $self->{mppwidth} = $self->{mppsum} * $pes_per_node/ $maxTasksPerNode;
+    }
+
+    if($self->{mppwidth} < $pes_per_node){
+	    $self->{mppwidth} = $pes_per_node;
+    }
+    
+    if(defined $self->{'overridenodecount'})
     {
-        $self->{'mppwidth'} = 1;
+        $self->{mppwidth} = 24;
+        $self->{num_tasks} = 1;
+        $self->{tasks_per_numa} = 1;
+        $self->{tasks_per_node} = 1;
     }
 
 }

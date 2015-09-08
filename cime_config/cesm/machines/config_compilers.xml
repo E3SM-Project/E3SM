@@ -509,7 +509,7 @@ for mct, etc.
 
 
 <compiler MACH="yellowstone" COMPILER="intel">
-  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
+  <PFUNIT_PATH>$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="pgi">
