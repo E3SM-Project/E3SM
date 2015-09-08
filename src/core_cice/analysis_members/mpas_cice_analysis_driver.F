@@ -28,6 +28,7 @@ module cice_analysis_driver
    use cice_high_frequency_output
    use cice_temperatures
    use cice_regional_statistics
+   use cice_ridging_diagnostics
 !   use cice_TEMP_LATE
 
    implicit none
@@ -132,6 +133,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
       call mpas_pool_add_config(analysisMemberList, 'temperatures', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStatistics', 1)
+      call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
       write(6,*) ' debug:  mpas_pool_add_config'
    !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
    !  call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
@@ -719,6 +721,8 @@ contains
          call cice_init_temperatures(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call cice_init_regional_statistics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_init_ridging_diagnostics(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -758,6 +762,8 @@ contains
          call cice_compute_temperatures(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call cice_compute_regional_statistics(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_compute_ridging_diagnostics(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -796,6 +802,8 @@ contains
          call cice_restart_temperatures(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call cice_restart_regional_statistics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_restart_ridging_diagnostics(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -834,6 +842,8 @@ contains
          call cice_finalize_temperatures(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call cice_finalize_regional_statistics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_finalize_ridging_diagnostics(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then

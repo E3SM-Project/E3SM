@@ -7,19 +7,17 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_temperatures
+!  cice_ridging_diagnostics
 !
-!> \brief MPAS cice analysis mode member: temperatures
+!> \brief MPAS sea ice analysis mode member: ridging_diagnostics
 !> \author Adrian K. Turner
-!> \date   6th September 2015
+!> \date   7th September 2015
 !> \details
-!>  MPAS cice analysis mode member: temperatures
-!>  Calculates ice and snow temperatures using the CICE column
-!>  package routines.
+!>  MPAS sea ice analysis mode member: ridging_diagnostics
 !>
 !-----------------------------------------------------------------------
 
-module cice_temperatures
+module cice_ridging_diagnostics
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -43,10 +41,10 @@ module cice_temperatures
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_temperatures, &
-             cice_compute_temperatures, &
-             cice_restart_temperatures, &
-             cice_finalize_temperatures
+   public :: cice_init_ridging_diagnostics, &
+             cice_compute_ridging_diagnostics, &
+             cice_restart_ridging_diagnostics, &
+             cice_finalize_ridging_diagnostics
 
    !--------------------------------------------------------------------
    !
@@ -60,18 +58,18 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_init_temperatures
+!  routine cice_init_ridging_diagnostics
 !
 !> \brief   Initialize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
-!> \date    6th September 2015
+!> \date    7th September 2015
 !> \details
 !>  This routine conducts all initializations required for the
 !>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_temperatures(domain, err)!{{{
+   subroutine cice_init_ridging_diagnostics(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -103,28 +101,22 @@ contains
 
       err = 0
 
-   end subroutine cice_init_temperatures!}}}
+   end subroutine cice_init_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_temperatures
+!  routine cice_compute_ridging_diagnostics
 !
 !> \brief   Compute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
-!> \date    6th September 2015
+!> \date    7th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member. It computes ice and snow layer 
-!>  temperatures from enthalpies and salinities using CICE column
-!>  package routines.
+!>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_temperatures(domain, timeLevel, err)!{{{
-
-      use ice_colpkg, only: &
-           colpkg_ice_temperature, &
-           colpkg_snow_temperature
+   subroutine cice_compute_ridging_diagnostics(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -156,108 +148,95 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (dm_info) :: &
+           dminfo
+
       type (block_type), pointer :: &
            block
 
-      type (mpas_pool_type), pointer :: &
-           tracersPool, &
-           temperaturesAMPool
+      type (MPAS_pool_type), pointer :: &
+           ridgingDiagnosticsAMPool, &
+           tracersPool
+
+      real(kind=RKIND), dimension(:), pointer :: &
+           levelIceAreaAverage, &
+           ridgedIceAreaAverage, &
+           levelIceVolumeAverage, &
+           ridgedIceVolumeAverage
 
       real(kind=RKIND), dimension(:,:,:), pointer :: &
            iceAreaCategory, &
-           snowVolumeCategory, &
-           iceTemperature, &
-           snowTemperature, &
-           iceEnthalpy, &
-           snowEnthalpy, &
-           iceSalinity
+           iceVolumeCategory, &
+           levelIceArea
 
       integer, pointer :: &
            nCellsSolve, &
-           nCategories, &
-           nIceLayers, &
-           nSnowLayers
+           nCategories
 
       integer :: &
            iCell, &
-           iCategory, &
-           iIceLayer, &
-           iSnowLayer
+           iCategory
 
       err = 0
+
+      dminfo = domain % dminfo
 
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, 'temperaturesAM', temperaturesAMPool)
+         call MPAS_pool_get_subpool(block % structs, 'ridgingDiagnosticsAM', ridgingDiagnosticsAMPool)
          call MPAS_pool_get_subpool(block % structs, 'tracers', tracersPool)
 
          call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call MPAS_pool_get_dimension(block % dimensions, 'nCategories', nCategories)
-         call MPAS_pool_get_dimension(block % dimensions, 'nIceLayers', nIceLayers)
-         call MPAS_pool_get_dimension(block % dimensions, 'nSnowLayers', nSnowLayers)
 
-         call MPAS_pool_get_array(temperaturesAMPool, 'iceTemperature', iceTemperature)
-         call MPAS_pool_get_array(temperaturesAMPool, 'snowTemperature', snowTemperature)
+         call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "levelIceAreaAverage", levelIceAreaAverage)
+         call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "ridgedIceAreaAverage", ridgedIceAreaAverage)
+         call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "levelIceVolumeAverage", levelIceVolumeAverage)
+         call MPAS_pool_get_array(ridgingDiagnosticsAMPool, "ridgedIceVolumeAverage", ridgedIceVolumeAverage)
 
-         call MPAS_pool_get_array(tracersPool, 'iceAreaCategory', iceAreaCategory, 1)
-         call MPAS_pool_get_array(tracersPool, 'snowVolumeCategory', snowVolumeCategory, 1)
-         call MPAS_pool_get_array(tracersPool, 'iceEnthalpy', iceEnthalpy, 1)
-         call MPAS_pool_get_array(tracersPool, 'snowEnthalpy', snowEnthalpy, 1)
-         call MPAS_pool_get_array(tracersPool, 'iceSalinity', iceSalinity, 1)
+         call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
+         call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
+         call MPAS_pool_get_array(tracersPool, "levelIceArea", levelIceArea, 1)
 
-         ! initialize
-         iceTemperature = 0.0_RKIND
-         snowTemperature = 0.0_RKIND
-                  
-         ! compute temperatures
          do iCell = 1, nCellsSolve
+
+            levelIceAreaAverage(iCell)    = 0.0_RKIND
+            ridgedIceAreaAverage(iCell)   = 0.0_RKIND
+            
+            levelIceVolumeAverage(iCell)  = 0.0_RKIND
+            ridgedIceVolumeAverage(iCell) = 0.0_RKIND
+
             do iCategory = 1, nCategories
 
-               ! check if ice present
-               if (iceAreaCategory(1,iCategory,iCell) > 1e-11_RKIND) then
+               levelIceAreaAverage(iCell)    = levelIceAreaAverage(iCell)    + iceAreaCategory(1,iCategory,iCell)   *              levelIceArea(1,iCategory,iCell)
+               ridgedIceAreaAverage(iCell)   = ridgedIceAreaAverage(iCell)   + iceAreaCategory(1,iCategory,iCell)   * (1.0_RKIND - levelIceArea(1,iCategory,iCell))
+
+               levelIceVolumeAverage(iCell)  = levelIceVolumeAverage(iCell)  + iceVolumeCategory(1,iCategory,iCell) *              levelIceArea(1,iCategory,iCell)
+               ridgedIceVolumeAverage(iCell) = ridgedIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * (1.0_RKIND - levelIceArea(1,iCategory,iCell))
                
-                  ! ice layers
-                  do iIceLayer = 1, nIceLayers
-                     iceTemperature(iIceLayer, iCategory, iCell) = &
-                          colpkg_ice_temperature(iceEnthalpy(iIceLayer,iCategory,iCell), &
-                                                 iceSalinity(iIceLayer,iCategory,iCell))
-                  enddo ! iIceLayer
-               
-                  ! snow layers
-                  if (snowVolumeCategory(1,iCategory,iCell) > 1e-11_RKIND) then
-
-                     do iSnowLayer = 1, nSnowLayers
-                        snowTemperature(iSnowLayer, iCategory, iCell) = &
-                             colpkg_snow_temperature(snowEnthalpy(iSnowLayer,iCategory,iCell))
-                     enddo ! iIceLayer
-
-                  endif ! snowVolumeCategory
-
-               endif ! iceAreaCategory
-
             enddo ! iCategory
          enddo ! iCell
 
          block => block % next
       enddo
 
-   end subroutine cice_compute_temperatures!}}}
+   end subroutine cice_compute_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_temperatures
+!  routine cice_restart_ridging_diagnostics
 !
 !> \brief   Save restart for MPAS-CICE analysis member
 !> \author  Adrian K. Turner
-!> \date    6th September 2015
+!> \date    7th September 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_temperatures(domain, err)!{{{
+   subroutine cice_restart_ridging_diagnostics(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -289,22 +268,22 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_temperatures!}}}
+   end subroutine cice_restart_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_temperatures
+!  routine cice_finalize_ridging_diagnostics
 !
 !> \brief   Finalize MPAS-CICE analysis member
 !> \author  Adrian K. Turner
-!> \date    6th September 2015
+!> \date    7th September 2015
 !> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_temperatures(domain, err)!{{{
+   subroutine cice_finalize_ridging_diagnostics(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -336,10 +315,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_temperatures!}}}
+   end subroutine cice_finalize_ridging_diagnostics!}}}
 
 !-----------------------------------------------------------------------
 
-end module cice_temperatures
+end module cice_ridging_diagnostics
 
 ! vim: foldmethod=marker

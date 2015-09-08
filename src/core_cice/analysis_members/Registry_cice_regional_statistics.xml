@@ -11,11 +11,11 @@
 			description="Name of the stream that the regionalStatistics analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_regionalStatistics_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_regionalStatistics_compute_on_startup" type="logical" default_value=".false." units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_regionalStatistics_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_regionalStatistics_write_on_startup" type="logical" default_value=".false." units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>

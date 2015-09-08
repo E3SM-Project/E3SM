@@ -1,3 +1,4 @@
 #include "Registry_cice_high_frequency_output.xml"
 #include "Registry_cice_temperatures.xml"
 #include "Registry_cice_regional_statistics.xml"
+#include "Registry_cice_ridging_diagnostics.xml"
