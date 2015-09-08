@@ -288,10 +288,10 @@ module mpas_geometry_utils
       b_out(1:n,1:m) = b(1:n,1:m)
 
 !     do i=1,n
-!        write(stdoutUnit,*) ' i, indx ',i,indx(i)
+!        write(stderrUnit,*) ' i, indx ',i,indx(i)
 !     end do
 !
-!     write(stdoutUnit,*) ' '
+!     write(stderrUnit,*) ' '
 
    end subroutine mpas_poly_fit_2!}}}
 
@@ -657,7 +657,7 @@ module mpas_geometry_utils
       ab = mpas_arc_length(a(1), a(2), a(3), b(1), b(2), b(3))
       bc = mpas_arc_length(b(1), b(2), b(3), c(1), c(2), c(3))
       ca = mpas_arc_length(c(1), c(2), c(3), a(1), a(2), a(3))
-      semiperim = 0.5 * (ab + bc + ca)
+      semiperim = 0.5_RKIND * (ab + bc + ca)
 
       tanqe = sqrt(max(0.0_RKIND,tan(0.5_RKIND * semiperim) * tan(0.5_RKIND * (semiperim - ab)) &
                    * tan(0.5_RKIND * (semiperim - bc)) * tan(0.5_RKIND * (semiperim - ca))))
@@ -840,17 +840,18 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point1 calculated to be outside of triangle.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_in_triangle: point1 test - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_in_triangle: point1 test - SUCCESS'
       endif
 
       if (mpas_point_in_polygon(point2, trianglePoints, .false.)) then
          write(stderrUnit,*) 'Error in mpas_unit_test_in_triangle: point2 calculated to be inside of triangle.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_in_triangle: point2 test - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_in_triangle: point2 test - SUCCESS'
       endif
 
    end subroutine mpas_unit_test_in_triangle !}}}
+
 
 
 !***********************************************************************
@@ -900,7 +901,7 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_bary_weights: point1 test - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_bary_weights: point1 test - SUCCESS'
       endif
 
       call mpas_calculate_barycentric_weights(point2, trianglePoints(1,:), trianglePoints(2,:), trianglePoints(3,:), meshPool,     &
@@ -909,7 +910,7 @@ module mpas_geometry_utils
          write(stderrUnit,*) 'Error in mpas_unit_test_bary_weights: point1 weights have error greater than tolerance.'
          ierr = 1
       else
-         write(stdoutUnit,*) 'mpas_unit_test_bary_weights: point2 test - SUCCESS'
+         write(stderrUnit,*) 'mpas_unit_test_bary_weights: point2 test - SUCCESS'
       endif
 
    end subroutine mpas_unit_test_bary_weights !}}}
@@ -1152,8 +1153,8 @@ module mpas_geometry_utils
       real (kind=RKIND), dimension(nVertices) :: areaB
 
       logical, pointer :: on_a_sphere
-      integer, pointer :: sphere_radius
-      integer :: radiusLocal
+      real(kind=RKIND), pointer :: sphere_radius
+      real(kind=RKIND) :: radiusLocal
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
@@ -1176,7 +1177,6 @@ module mpas_geometry_utils
            ! always the same because B_i independent of xp,yp,zp
            ! (COULD CACHE AND USE RESULT FROM ARRAY FOR FURTHER OPTIMIZATION)
            areaB(i) = mpas_triangle_signed_area(vertCoords(:, im1), vertCoords(:, i0), vertCoords(:, ip1), meshPool)
-           areaB(i) = areaB(i) * radiusLocal * radiusLocal
         end do
       else
         ! assign areas
@@ -1195,24 +1195,11 @@ module mpas_geometry_utils
 
          ! compute A_ij areas
          ! must be computed each time
-#if MPAS_DEBUG
-         write(stderrUnit,*) 'i=', i,' i0=', i0,' ip1=', ip1
-         write(stderrUnit,*) 'a=', pointInterp
-         write(stderrUnit,*) 'b=', vertCoords(i0,:)
-         write(stderrUnit,*) 'c=', vertCoords(ip1,:)
-#endif
-         areaA(i0) = mpas_triangle_signed_area( pointInterp, vertCoords(:, i0), vertCoords(:, ip1), meshPool)
-         areaA(i0) = areaA(i0) * radiusLocal * radiusLocal
+         areaA(i0) = mpas_triangle_signed_area(pointInterp, vertCoords(:, i0), vertCoords(:, ip1), meshPool)
 
          ! precomputed B_i areas, cached
       end do
 
-#if MPAS_DEBUG
-      write(stderrUnit,*) 'pointInterp=', pointInterp
-      write(stderrUnit,*) 'vertCoords=', vertCoords
-      write(stderrUnit,*) 'areaA=', areaA
-      write(stderrUnit,*) 'areaB=', areaB
-#endif
 
       ! for each vertex compute wachpress coordinate
       do i = 1, nVertices
@@ -1309,7 +1296,7 @@ module mpas_geometry_utils
       ! set on a plane
       call mpas_pool_create_pool(meshPool)
       call mpas_pool_add_config(meshPool,'on_a_sphere', .False.)
-      call mpas_pool_add_config(meshPool, 'sphere_radius', 1)
+      call mpas_pool_add_config(meshPool, 'sphere_radius', 1.0_RKIND)
       ! hexagon geometry values
       do j = 1,nVertices
         theta = 2*pii/nVertices * (j-1)
@@ -1396,7 +1383,7 @@ module mpas_geometry_utils
       ! set on a plane
       call mpas_pool_create_pool(meshPool)
       call mpas_pool_add_config(meshPool,'on_a_sphere', .False.)
-      call mpas_pool_add_config(meshPool, 'sphere_radius', 1)
+      call mpas_pool_add_config(meshPool, 'sphere_radius', 1.0_RKIND)
       ! hexagon geometry values
       vertCoords(:,1) = (/ 1.0_RKIND, 0.0_RKIND, 0.0_RKIND /)
       vertCoords(:,2) = (/ 0.0_RKIND, 1.0_RKIND, 0.0_RKIND /)
@@ -1628,6 +1615,5 @@ module mpas_geometry_utils
              + sin(alpha * omega) / sin(omega) * p1
 
    end subroutine mpas_spherical_linear_interp !}}}
-
 
 end module mpas_geometry_utils
