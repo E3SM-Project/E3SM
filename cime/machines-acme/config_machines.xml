@@ -726,14 +726,14 @@
     <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/home/jgfouca/acme/baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/home/jgfouca/acme/cprnc/build/cprnc</CCSM_CPRNC>
     <BATCHQUERY></BATCHQUERY>
     <BATCHSUBMIT></BATCHSUBMIT>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>32</GMAKE_J>
-    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>2</PES_PER_NODE>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>1</PES_PER_NODE>
     <batch_system type="none" version="x.y">
       <queues>
       </queues>
@@ -744,8 +744,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np {{ num_tasks }}</arg>
-        <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
-           </arguments>
+      </arguments>
     </mpirun>
 </machine>
 
