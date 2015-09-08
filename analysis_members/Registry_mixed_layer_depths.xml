@@ -1,14 +1,3 @@
-        <dims>
-                <dim name="nThresholdBins" definition="1" units="unitless"
-                         description="The number of threshold bins for temperature and density computing MLD via thresh method"
-                />
-                <dim name="nGradientBins" definition="1" units="unitless"
-                         description="The number of gradient bins for temperature and density in computing MLD"
-                />
-                <dim name="nFields" definition="2" units="unitless"
-                         description="The number of fields to compute the mixed layer on (temperature pot. density)"
-                />
-        </dims>
 	<nml_record name="AM_mixedLayerDepths" mode="forward;analysis">
 		<nml_option name="config_AM_mixedLayerDepths_enable" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member mixedLayerDepth is called."
@@ -30,52 +19,46 @@
                         description="Logical flag determining if an analysis member computation occurs on start-up"
                         possible_values=".true. or .false."
                 />
-		<nml_option name="config_AM_mixedLayerDepths_threshold_method" type="logical" default_value=".true." units="unitless"
-			description="Logical flag that determines if MLDs are calculated using a critical threshold"
+		<nml_option name="config_AM_mixedLayerDepths_Tthreshold" type="logical" default_value=".true." units="unitless"
+			description="Logical flag that determines if MLDs are calculated using a critical temperature threshold"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_temp_minthreshold" type="real" default_value="0.2" units="degC"
-			description="min temperature change relative to surface for threshold method"
+                <nml_option name="config_AM_mixedLayerDepths_Dthreshold" type="logical" default_value=".true." units="unitless"
+	                description="Logical flag that determines if MLDs are calculated using a critical density threshold"
+	                possible_values=".true. or .false."
+	        />
+
+		<nml_option name="config_AM_mixedLayerDepths_crit_temp_threshold" type="real" default_value="0.2" units="degC"
+			description="temperature change relative to surface for threshold method"
 			possible_values="all real positive values, suggested range 0.2 <= thresh <= 1"
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_temp_maxthreshold" type="real" default_value="0.2" units="degC"
-		        description="max temperature change relative to surface for threshold method"
-		        possible_values="suggested range 0.2 <= thresh <= 1, NOTE max must be > min"
-		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_dens_minthreshold" type="real" default_value="0.03" units="kgm^-3"
-			description="min potential density change relative to surface for threshold method"
+		<nml_option name="config_AM_mixedLayerDepths_crit_dens_threshold" type="real" default_value="0.03" units="kgm^-3"
+			description="potential density change relative to surface for threshold method"
 			possible_values="suggested range 0.01 <= thresh <= 0.5"
-		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_dens_maxthreshold" type="real" default_value="0.03" units="kgm^-3"
-		        description="max potential density change relative to surface for threshold method"
-		        possible_values="suggested range 0.01 <= thresh <= 0.5, max must be > min"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_reference_pressure" type="real" default_value="1.0E5" units="N m^-2"
 			description="reference pressure for threshold computation"
 			possible_values="any positive real, suggested range .25E5 <= value <= 2E5"
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_gradient_method" type="logical" default_value=".true." units="unitless"
-			description="Logical flag controlling whether or not to compute MLDs via the gradient method"
+		<nml_option name="config_AM_mixedLayerDepths_Tgradient" type="logical" default_value=".true." units="unitless"
+			description="Logical flag controlling whether or not to compute MLDs via the temperature gradient"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_temp_gradient_minthreshold" type="real" default_value="5E-7" units="degC/Pa"
-			description="minimum temp gradient crit value, if not exceeded max gradient used"
+                <nml_option name="config_AM_mixedLayerDepths_Dgradient" type="logical" default_value=".true." units="unitless"
+	                description="Logical flag controlling whether or not to compute MLDs via the density gradient"
+	                possible_values=".true. or .false."
+	        />
+
+		<nml_option name="config_AM_mixedLayerDepths_temp_gradient_threshold" type="real" default_value="5E-7" units="degC/Pa"
+			description="temp gradient crit value, if not exceeded max gradient used"
 			possible_values="all positive reals"
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_temp_gradient_maxthreshold" type="real" default_value="5E-7" units="degC/Pa"
-		        description="maximum temp gradient crit value, if not exceeded max gradient used"
-		        possible_values="all positive reals"
-		/>
-		<nml_option name="config_AM_mixedLayerDepths_den_gradient_minthreshold" type="real" default_value="5E-8" units="degC/Pa"
-			description="minimum potential density gradient crit value.  If not exceeded max gradient used"
+		<nml_option name="config_AM_mixedLayerDepths_den_gradient_threshold" type="real" default_value="5E-8" units="degC/Pa"
+			description="potential density gradient crit value.  If not exceeded max gradient used"
 			possible_values="all positive reals"
 		/>
-                <nml_option name="config_AM_mixedLayerDepths_den_gradient_maxthreshold" type="real" default_value="5E-8" units="degC/Pa"
-                        description="minimum potential density gradient crit value.  If not exceeded max gradient used"
-                        possible_values="all positive reals"
-                />
 		<nml_option name="config_AM_mixedLayerDepths_interp_method" type="integer" default_value="1" units="unitless"
-			description="string specifying which interpolation method to use in computations"
+			description="flag specifying which interpolation method to use in computations"
 			possible_values="1=linear or 2=quadratic or 3=cubic"
 		/>
 	</nml_record>
@@ -83,11 +66,18 @@
 		<package name="mixedLayerDepthsAMPKG" description="This package includes variables required for the mixedLayerDepths analysis member."/>
 	</packages>
 	<var_struct name="mixedLayerDepthsAM" time_levs="1" packages="mixedLayerDepthsAMPKG">
-		<var name="thresholdMLD" type="real" dimensions="nFields nThresholdBins nCells Time" units="m"
-			description="mixed layer depth based on thresholds for (1=temperature, 2=potentialdensity)"
+		<var name="tThreshMLD" type="real" dimensions="nVertLevels nCells" units="m"
+			description="mixed layer depth based on temperature threshold"
 		/>
-		<var name="gradientMLD" type="real" dimensions="nFields nGradientBins nCells Time" units="m"
-			description="mixed layer depth based on gradients for (1=temperature, 2=potentialdensity)"
+		<var name="dThreshMLD" type="real" dimensions="nVertLevels nCells" units="m"
+	                description="mixed layer depth based on temperature threshold"
+	        />
+
+		<var name="tGradMLD" type="real" dimensions="nVertLevels nCells" units="m"
+			description="mixed layer depth based on gradient of temperature"
+		/>
+                <var name="dGradMLD" type="real" dimensions="nVertLevels nCells" units="m"
+		        description="mixed layer depth based on gradient of density"
 		/>
 	</var_struct>
 	<streams>
@@ -100,10 +90,12 @@
 				packages="mixedLayerDepthsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
+
+			<stream name="mesh"/>	
 			<var name="xtime"/> 
-	                <var name="latCell"/>
-                        <var name="lonCell"/>
-          		<var name="thresholdMLD"/> 
-			<var name="gradientMLD"/> 
+			<var name="tThreshMLD"/> 
+			<var name="dThreshMLD"/>
+			<var name="tGradMLD"/> 
+			<var name="dGradMLD"/>
 		</stream>
 	</streams>
