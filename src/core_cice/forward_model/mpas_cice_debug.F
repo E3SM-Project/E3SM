@@ -2641,7 +2641,7 @@ contains
 
     integer :: recl
 
-    recl = size(array) * 2
+    recl = size(array) * 8
 
     if (present(fileout)) then
        open(60,file=trim(fileout),form="unformatted",access="direct",recl=recl)
@@ -2710,12 +2710,16 @@ contains
     type(mpas_pool_type), pointer :: &
          pool
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
+    !real(kind=RKIND), dimension(:,:,:), pointer :: &
+    real(kind=RKIND), dimension(:), pointer :: &  
          array
 
+    !character(len=200), parameter :: &
+    !     poolName  = "tracers", &
+    !     fieldName = "iceVolumeCategory"
     character(len=200), parameter :: &
-         poolName  = "", &
-         fieldName = "absorbedShortwaveIceLayer"
+         poolName  = "atmos_coupling", &
+         fieldName = "airPotentialTemperature"
 
     write(stderrUnit,*) trim(poolName), " ", trim(fieldName)
 
@@ -2726,7 +2730,8 @@ contains
 
        call MPAS_pool_get_array(pool, trim(fieldName), array, 1)
 
-       call cice_debug_output_array(array(1,1,:))
+       !call cice_debug_output_array(array(1,1,:))
+       call cice_debug_output_array(array(:))      
 
        block => block % next
     end do
@@ -2788,8 +2793,7 @@ contains
        call MPAS_pool_get_field(pool, trim(fieldname), array1D)
 
        if (trim(fieldname) == "lonCell") where(array1D % array > pii) array1D % array = array1D % array - 2.0_RKIND * pii
-
-
+       
        if (array1D % isActive) then
           fileout = "comparison/pop_mpas_array_comparison_"//trim(cicename)//".dat"
           call cice_debug_output_array(array1D % array, trim(fileout))
@@ -2858,11 +2862,11 @@ contains
     character(len=*), intent(in) :: callingSubroutine
 
     integer, intent(in) :: location
-
+#if 0
     ! parameters where we want to writeout output
     character(len=strKIND), parameter :: callingSubroutineDesired = "cice_timestep"
-    integer, parameter :: locationDesired = 3
-    integer, parameter :: iStepDesired = 8760
+    integer, parameter :: locationDesired = 2
+    integer, parameter :: iStepDesired = 24
 
 ! cice_init_column_shortwave           1           0
 ! column_radiation           1           0
@@ -2878,14 +2882,16 @@ contains
 ! column_ridging           2           1
 ! column_radiation           1           1
 ! column_radiation           2           1
+! cice_timestep
+! cice_run_velocity_solver
 
-    write(stderrUnit,*) trim(callingSubroutine), location, iStep
+    write(stderrUnit,*) trim(callingSubroutine), trim(callingSubroutineDesired), location, locationDesired, iStep, iStepDesired
 
     if (trim(callingSubroutine) == trim(callingSubroutineDesired) .and. &
         location == locationDesired .and. &
         iStep == iStepDesired) then
 
-       !write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
+       write(stderrUnit,*) "cice_debug_write_out_fields: ", trim(callingSubroutine), location, iStep
        
        ! tracer
        call cice_debug_write_out_field(domain, "tracers", "iceAreaCategory", "aicen")
@@ -2950,8 +2956,13 @@ contains
        call cice_debug_write_out_field(domain, "ocean_coupling", "seaSurfaceSalinity", "sss")
        call cice_debug_write_out_field(domain, "ocean_coupling", "seaFreezingTemperature", "Tf")
        call cice_debug_write_out_field(domain, "ocean_coupling", "freezingMeltingPotential", "frzmlt")
-       call cice_debug_write_out_field(domain, "ocean_coupling", "uOceanVelocity", "uocn")
-       call cice_debug_write_out_field(domain, "ocean_coupling", "vOceanVelocity", "vocn")
+       !call cice_debug_write_out_field(domain, "ocean_coupling", "uOceanVelocity", "uocn")
+       !call cice_debug_write_out_field(domain, "ocean_coupling", "vOceanVelocity", "vocn")
+
+       !call cice_debug_write_out_field(domain, "velocity_solver", "uOceanVelocityVertex", "uocn")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "vOceanVelocityVertex", "vocn")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "uOceanVelocityVertexGeo", "uocn")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "vOceanVelocityVertexGeo", "vocn")
 
        call cice_debug_write_out_field(domain, "ridging", "ridgeConvergence", "rdg_conv")
        call cice_debug_write_out_field(domain, "ridging", "ridgeShear", "rdg_shear")
@@ -3069,10 +3080,74 @@ contains
        call cice_debug_write_out_field(domain, "mesh", "lonCell", "TLON")
        call cice_debug_write_out_field(domain, "mesh", "latCell", "TLAT")
 
+       ! velocity related stuff
+       call cice_debug_write_out_field(domain, "mesh", "lonVertex", "ULON")
+       call cice_debug_write_out_field(domain, "mesh", "latVertex", "ULAT")
+
+       !call cice_debug_write_out_field(domain, "velocity_solver", "uVelocity", "uvel")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "vVelocity", "vvel")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "stressDivergenceU", "strintx")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "stressDivergenceV", "strinty")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "airStressVertexU", "strairx")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "airStressVertexV", "strairy")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressU", "strocnx")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressV", "strocny")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "surfaceTiltForceU", "strtltx")
+       !call cice_debug_write_out_field(domain, "velocity_solver", "surfaceTiltForceV", "strtlty")
+
+       call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressCellU", "strocnxT")
+       call cice_debug_write_out_field(domain, "velocity_solver", "oceanStressCellV", "strocnyT")
+
+       call cice_debug_write_out_field(domain, "velocity_solver", "airStressCellU", "strairxT")
+       call cice_debug_write_out_field(domain, "velocity_solver", "airStressCellV", "strairyT")
+
+       call cice_debug_write_out_field(domain, "velocity_solver", "icePressure", "strength")
+
+       call cice_debug_write_out_field(domain, "velocity_geographical", "uVelocityGeo", "uvel")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "vVelocityGeo", "vvel")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "stressDivergenceUGeo", "strintx")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "stressDivergenceVGeo", "strinty")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "airStressVertexUGeo", "strairx")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "airStressVertexVGeo", "strairy")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "oceanStressUGeo", "strocnx")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "oceanStressVGeo", "strocny")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "surfaceTiltForceUGeo", "strtltx")
+       call cice_debug_write_out_field(domain, "velocity_geographical", "surfaceTiltForceVGeo", "strtlty")
+
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellU", "vectorCellU")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellV", "vectorCellV")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexU", "vectorVertexU")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexV", "vectorVertexV")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellURotate", "vectorCellURotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellVRotate", "vectorCellVRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotate", "vectorVertexURotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotate", "vectorVertexVRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexUInterpolate", "vectorVertexUInterpolate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVInterpolate", "vectorVertexVInterpolate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotateInterpolate", "vectorVertexURotateInterpolate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotateInterpolate", "vectorVertexVRotateInterpolate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellURotateRotate", "vectorCellURotateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellVRotateRotate", "vectorCellVRotateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotateRotate", "vectorVertexURotateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotateRotate", "vectorVertexVRotateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexURotateInterpolateRotate", "vectorVertexURotateInterpolateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVRotateInterpolateRotate", "vectorVertexVRotateInterpolateRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellUDiff", "vectorCellUDiff")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorCellVDiff", "vectorCellVDiff")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexUDiff", "vectorVertexUDiff")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVDiff", "vectorVertexVDiff")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexUInterpolateDiff", "vectorVertexUInterpolateDiff")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVInterpolateDiff", "vectorVertexVInterpolateDiff")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexUDiffRotate", "vectorVertexUDiffRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVDiffRotate", "vectorVertexVDiffRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexUDiffNoRotate", "vectorVertexUDiffNoRotate")
+       !call cice_debug_write_out_field(domain, "mesh_test", "vectorVertexVDiffNoRotate", "vectorVertexVDiffNoRotate")
+
+
        stop
 
     endif
-
+#endif
   end subroutine cice_debug_write_out_fields
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

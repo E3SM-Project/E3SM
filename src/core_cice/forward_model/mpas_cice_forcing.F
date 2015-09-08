@@ -629,18 +629,18 @@ contains
        windSpeed(iCell) = sqrt(uAirVelocity(iCell)**2 + vAirVelocity(iCell)**2)
 
        ! rotate velocities from geographical to local
-       !call cice_latlon_vector_rotation_forward(&
-       !     uAirVelocity(iCell), &
-       !     vAirVelocity(iCell), &
-       !     uAirVelocity(iCell), &
-       !     vAirVelocity(iCell), &
-       !     latCell(iCell), &
-       !     lonCell(iCell), &
-       !     xCell(iCell), &
-       !     yCell(iCell), &
-       !     zCell(iCell), &
-       !     sphere_radius, &
-       !     config_rotate_cartesian_grid)
+       call cice_latlon_vector_rotation_forward(&
+            uAirVelocity(iCell), &
+            vAirVelocity(iCell), &
+            uAirVelocity(iCell), &
+            vAirVelocity(iCell), &
+            latCell(iCell), &
+            lonCell(iCell), &
+            xCell(iCell), &
+            yCell(iCell), &
+            zCell(iCell), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
 
        ! shortwave - comment out for bit for bit tests
        !shortwaveDown(iCell) = &
@@ -1386,6 +1386,9 @@ contains
     use ice_colpkg, only: &
          colpkg_sea_freezing_temperature
 
+    use cice_mesh, only: &
+         cice_latlon_vector_rotation_forward
+
     type (block_type), pointer :: block
 
     logical, intent(in) :: &
@@ -1401,11 +1404,28 @@ contains
          oceanMixedLayerDepth, &
          seaFreezingTemperature
 
+    real(kind=RKIND), dimension(:), pointer :: &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         seaSurfaceTiltU, &
+         seaSurfaceTiltV
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         lonCell, &
+         xCell, &
+         yCell, &
+         zCell
+
     character(len=strKIND), pointer :: &
          config_sea_freezing_temperature_type
 
     logical, pointer :: &
-         config_do_restart
+         config_do_restart, &
+         config_rotate_cartesian_grid
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
 
     integer, pointer :: &
          nCells
@@ -1415,6 +1435,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(block % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
+    call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
@@ -1448,6 +1469,50 @@ contains
        enddo ! iCell
 
     endif
+
+    ! rotate currents from geographical
+    call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTiltU", seaSurfaceTiltU)
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTiltV", seaSurfaceTiltV)
+
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+
+    do iCell = 1, nCells
+
+       call cice_latlon_vector_rotation_forward(&
+            uOceanVelocity(iCell), &
+            vOceanVelocity(iCell), &
+            uOceanVelocity(iCell), &
+            vOceanVelocity(iCell), &
+            latCell(iCell), &
+            lonCell(iCell), &
+            xCell(iCell), &
+            yCell(iCell), &
+            zCell(iCell), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+
+       call cice_latlon_vector_rotation_forward(&
+            seaSurfaceTiltU(iCell), &
+            seaSurfaceTiltV(iCell), &
+            seaSurfaceTiltU(iCell), &
+            seaSurfaceTiltV(iCell), &
+            latCell(iCell), &
+            lonCell(iCell), &
+            xCell(iCell), &
+            yCell(iCell), &
+            zCell(iCell), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+
+    enddo ! iCell
 
   end subroutine prepare_oceanic_coupling_variables_ncar
 

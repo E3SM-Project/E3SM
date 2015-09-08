@@ -24,12 +24,13 @@ module cice_velocity_solver_shared
        cice_init_evp, &
        cice_ice_strength, &
        cice_evp_constitutive_relation, &
-       cice_linear_constitutive_relation, &
+       cice_evp_constitutive_relation_revised, &       
        cice_air_stress, &
        cice_ocean_stress, &
        cice_ocean_stress_coefficient, &
        cice_ocean_stress_final, &
        cice_solve_velocity, &
+       cice_solve_velocity_revised, &       
        cice_surface_tilt, &
        cice_coriolis_force_coefficient, &
        cice_principal_stresses
@@ -38,18 +39,28 @@ module cice_velocity_solver_shared
        ciceAreaMinimum = 0.001_RKIND, &
        ciceMassMinimum = 0.01_RKIND
   
-  ! local 
+  ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
        cosOceanTurningAngle = 1.0_RKIND, & ! northern hemisphere
        eccentricity = 2.0_RKIND, &
-       eccentricitySquared = eccentricity**2, &
        dampingTimescaleParameter = 0.36_RKIND, &
        puny = 1.0e-11_RKIND
+  
+  real(kind=RKIND), parameter, public :: &
+       eccentricitySquared = eccentricity**2
 
   real(kind=RKIND), private :: &
        dampingTimescale, &
        evpDampingCriterion
+
+  ! Bouillon et al. 2013 parameters
+  real(kind=RKIND), parameter, private :: &
+       dampingRatioDenominator = 0.86_RKIND, & ! Se > 0.5
+       dampingRatio = 5.5e-3_RKIND  ! xi = Sv/Sc < 1
+
+  real(kind=RKIND), private :: &
+       numericalInertiaCoefficient ! brlx
 
 contains
 
@@ -78,15 +89,28 @@ contains
          config_dt
 
     type(MPAS_pool_type), pointer :: &
-         velocitySolver
+         velocitySolver, &
+         mesh
 
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep, &
          elasticTimeStep
 
+    real(kind=RKIND), dimension(:), pointer :: &
+         dvEdge
+
+    integer, pointer :: &
+         nEdgesSolve
+        
+    real(kind=RKIND) :: &
+         gamma, &
+         dvEdgeMin, &
+         dvEdgeMinGlobal
+
     call MPAS_pool_get_config(domain % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
+    ! general EVP
     block => domain % blocklist
     do while (associated(block))
 
@@ -105,6 +129,38 @@ contains
        block => block % next
     enddo
 
+    ! find the minimum edge length in the grid
+    dvEdgeMin = 1.0e30_RKIND
+    
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       
+       call MPAS_pool_get_dimension(mesh, "nEdgesSolve", nEdgesSolve)
+       
+       call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+
+       dvEdgeMin = min(dvEdgeMin, minval(dvEdge(1:nEdgesSolve)))
+
+       block => block % next
+    enddo
+
+    call mpas_dmpar_min_real(domain % dminfo, dvEdgeMin, dvEdgeMinGlobal)
+
+    !!!! Testing!
+    !dvEdgeMinGlobal = 8558.2317072059941_RKIND
+    
+    ! Bouillon et al. 2013
+    block => domain % blocklist
+    do while (associated(block))
+       
+       gamma = 0.25_RKIND * 1.0e11_RKIND * config_dt
+       numericalInertiaCoefficient = (2.0_RKIND * dampingRatioDenominator * dampingRatio * gamma) / dvEdgeMinGlobal**2
+       
+       block => block % next
+    enddo
+
   end subroutine cice_init_evp
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -120,45 +176,91 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ice_strength(&
-       nPoints, &
+       nCells, &
+       nCategories, &
        icePressure, &
-       iceArea, &
-       iceVolume, &
-       solveStress)
+       iceAreaCell, &
+       iceVolumeCell, &
+       openWaterArea, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       solveStress, &
+       config_use_column_package, &
+       config_use_column_vertical_thermodynamics)
+
+    use ice_colpkg, only: &
+         colpkg_ice_strength
 
     integer, intent(in) :: &
-         nPoints !< Input:
+         nCells, &  !< Input:
+         nCategories !< Input:
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          icePressure !< Output: 
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         iceArea, & !< Input:
-         iceVolume  !< Input:
+         iceAreaCell, &   !< Input:
+         iceVolumeCell, & !< Input:
+         openWaterArea    !< Input:
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         iceAreaCategory, & !< Input:
+         iceVolumeCategory  !< Input:
 
     integer, dimension(:), intent(in) :: &
          solveStress !< Input:
 
+    logical, intent(in) :: &
+         config_use_column_package, &              !< Input:
+         config_use_column_vertical_thermodynamics !< Input:
+
     integer :: &
-         iPoint
+         iCell
 
     real(kind=RKIND), parameter :: &
          Pstar = 2.75e4_RKIND, & ! constant in Hibler strength formula 
          Cstar = 20.0_RKIND      ! constant in Hibler strength formula 
 
-    do iPoint = 1, nPoints
+    if (.not. config_use_column_package .or. &
+       (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
 
-       if (solveStress(iPoint) == 1) then
+       do iCell = 1, nCells
 
-          icePressure(iPoint) = Pstar * iceVolume(iPoint) * exp(-Cstar*(1.0_RKIND-iceArea(iPoint)))
+          if (solveStress(iCell) == 1) then
 
-       else
+             icePressure(iCell) = Pstar * iceVolumeCell(iCell) * exp(-Cstar*(1.0_RKIND-iceAreaCell(iCell)))
 
-          icePressure(iPoint) = 0.0_RKIND
+          else
 
-       endif ! solveStress
+             icePressure(iCell) = 0.0_RKIND
 
-    enddo ! iPoint
+          endif ! solveStress
+
+       enddo ! iCell
+
+    else
+
+       do iCell = 1, nCells
+
+          icePressure(iCell) = 0.0_RKIND
+
+          if (solveStress(iCell) == 1) then
+
+             ! this routine doesnt reset icePressure
+             call colpkg_ice_strength(&
+                  nCategories, &
+                  iceAreaCell(iCell), &
+                  iceVolumeCell(iCell), &
+                  openWaterArea(iCell), &
+                  iceAreaCategory(1,:,iCell), &
+                  iceVolumeCategory(1,:,iCell), &
+                  icePressure(iCell))
+
+          endif ! solveStress
+
+       enddo ! iCell
+
+    endif
 
   end subroutine cice_ice_strength
 
@@ -184,8 +286,7 @@ contains
        icePressure, &
        replacementPressure, &
        areaCell, &
-       dtElastic, &
-       evpDamping)
+       dtElastic)
 
     real(kind=RKIND), intent(inout) :: &
          stress11, & !< Input/Output: 
@@ -204,9 +305,6 @@ contains
 
     real(kind=RKIND), intent(out) :: &
          replacementPressure !< Output: 
-
-    logical, intent(in) :: &
-         evpDamping !< Input:
 
     real(kind=RKIND) :: &
          strainDivergence,    &
@@ -228,31 +326,103 @@ contains
 
     ! perform the constituitive relation
     Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
-
-    if (evpDamping) then
-       pressureCoefficient = icePressure  / max(Delta,4.0_RKIND*puny)
-       replacementPressure = pressureCoefficient * Delta
-       pressureCoefficient = min(pressureCoefficient,evpDampingCriterion*areaCell)
-    else
-       pressureCoefficient = icePressure / max(Delta,puny)
-       replacementPressure = pressureCoefficient * Delta
-    endif
+    
+    pressureCoefficient = icePressure / max(Delta,puny)
+    replacementPressure = pressureCoefficient * Delta
 
     pressureCoefficient = (pressureCoefficient * dtElastic) / (2.0_RKIND * dampingTimescale)
 
     denominator = 1.0_RKIND + (0.5_RKIND * dtElastic) / dampingTimescale
 
     stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
-
     stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
-
     stress12 = (stress12 + (pressureCoefficient / eccentricitysquared) *  strainShearing * 0.5_RKIND) / denominator
-
+    
     ! convert back
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
 
   end subroutine cice_evp_constitutive_relation
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_evp_constitutive_relation_revised
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_evp_constitutive_relation_revised(&
+       stress11, &
+       stress22, &
+       stress12, &
+       strain11, &
+       strain22, &
+       strain12, &
+       icePressure, &
+       replacementPressure, &
+       areaCell, &
+       dtElastic)
+
+    real(kind=RKIND), intent(inout) :: &
+         stress11, & !< Input/Output: 
+         stress22, & !< Input/Output: 
+         stress12    !< Input/Output: 
+
+    real(kind=RKIND), intent(in) :: &
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
+
+    real(kind=RKIND), intent(in) :: &
+         icePressure, & !< Input:
+         dtElastic, &   !< Input:
+         areaCell       !< Input:
+
+    real(kind=RKIND), intent(out) :: &
+         replacementPressure !< Output:
+    
+    real(kind=RKIND) :: &
+         strainDivergence,    &
+         strainTension,       &
+         strainShearing,      &
+         stress1,             &
+         stress2,             &
+         Delta,               &
+         pressureCoefficient, &
+         denominator
+    
+    ! convert from stress11 to stress1 etc
+    strainDivergence = strain11 + strain22
+    strainTension    = strain11 - strain22
+    strainShearing   = strain12 * 2.0_RKIND
+    
+    stress1 = stress11 + stress22
+    stress2 = stress11 - stress22
+
+    ! perform the constituitive relation
+    Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+    
+    pressureCoefficient = icePressure / max(Delta,puny)
+    replacementPressure = pressureCoefficient * Delta
+
+    pressureCoefficient = (pressureCoefficient * 2.0_RKIND * dampingRatio) / dampingRatioDenominator
+
+    denominator = 1.0_RKIND + (2.0_RKIND * dampingRatio) / dampingRatioDenominator
+
+    stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
+    stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
+    stress12 = (stress12 + (pressureCoefficient / eccentricitysquared) *  strainShearing * 0.5_RKIND) / denominator
+    
+    ! convert back
+    stress11 = 0.5_RKIND * (stress1 + stress2)
+    stress22 = 0.5_RKIND * (stress1 - stress2)
+
+  end subroutine cice_evp_constitutive_relation_revised
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -295,7 +465,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_solve_velocity
+!  cice_solve_velocity_Hunke13
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -310,6 +480,8 @@ contains
        solvePoints, &
        uVelocity, &
        vVelocity, &
+       uVelocityInitial, &
+       vVelocityInitial, &
        mass, &
        massCoriolisParameter, &
        stressDivergenceU, &
@@ -332,9 +504,11 @@ contains
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, & !< Output: 
-         vVelocity    !< Output: 
+         vVelocity    !< Output:
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         uVelocityInitial, &      !< Input:
+         vVelocityInitial, &      !< Input:
          mass, &                  !< Input:
          massCoriolisParameter, & !< Input:
          stressDivergenceU, &     !< Input:
@@ -368,7 +542,7 @@ contains
     do iPoint = 1, nPoints
 
        if (solvePoints(iPoint) == 1) then
-
+          
           ! U equation
           leftMatrix(1,1) =  mass(iPoint) / dtElastic      + oceanStressCoeff(iPoint) * cosOceanTurningAngle
           leftMatrix(1,2) = -massCoriolisParameter(iPoint) - oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
@@ -395,12 +569,130 @@ contains
           uVelocity(iPoint) = 0.0_RKIND
           vVelocity(iPoint) = 0.0_RKIND
 
-       endif ! solvePoints
+       endif ! solvePoints       
 
     enddo ! iPoint
 
   end subroutine cice_solve_velocity
+  
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_solve_velocity_revised
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
 
+  subroutine cice_solve_velocity_revised(&
+       nPoints, &
+       solvePoints, &
+       uVelocity, &
+       vVelocity, &
+       uVelocityInitial, &
+       vVelocityInitial, &
+       mass, &
+       massCoriolisParameter, &
+       stressDivergenceU, &
+       stressDivergenceV, &
+       airStressU, &
+       airStressV, &
+       surfaceTiltForceU, &
+       surfaceTiltForceV, &
+       oceanStressU, &
+       oceanStressV, &
+       oceanStressCoeff, &
+       dt, &
+       mesh)
+
+    integer, intent(in) :: &
+         nPoints !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         solvePoints !< Input:
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         uVelocity, & !< Output: 
+         vVelocity    !< Output:
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         uVelocityInitial, &      !< Input:
+         vVelocityInitial, &      !< Input:
+         mass, &                  !< Input:
+         massCoriolisParameter, & !< Input:
+         stressDivergenceU, &     !< Input:
+         stressDivergenceV, &     !< Input:
+         airStressU, &            !< Input:
+         airStressV, &            !< Input:
+         surfaceTiltForceU, &     !< Input:
+         surfaceTiltForceV, &     !< Input:
+         oceanStressU, &          !< Input:
+         oceanStressV, &          !< Input: 
+         oceanStressCoeff         !< Input:
+
+    real(kind=RKIND), intent(in) :: &
+         dt !< Input:
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
+
+    real(kind=RKIND), dimension(2) :: &
+         rightHandSide
+
+    real(kind=RKIND), dimension(2,2) :: &
+         leftMatrix
+
+    real(kind=RKIND) :: &
+         solutionDenominator
+
+    integer :: &
+         iPoint
+ 
+    do iPoint = 1, nPoints
+
+       if (solvePoints(iPoint) == 1) then
+          
+          ! U equation
+          leftMatrix(1,1) =  (numericalInertiaCoefficient + 1.0_RKIND) * (mass(iPoint) / dt) &
+                          +  oceanStressCoeff(iPoint) * cosOceanTurningAngle
+          leftMatrix(1,2) = -massCoriolisParameter(iPoint) &
+                          -  oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
+
+          ! V equation
+          leftMatrix(2,1) =  massCoriolisParameter(iPoint) &
+                          +  oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
+          leftMatrix(2,2) =  (numericalInertiaCoefficient + 1.0_RKIND) * (mass(iPoint) / dt) &
+                          +  oceanStressCoeff(iPoint) * cosOceanTurningAngle
+
+          ! right hand side of matrix solve
+          rightHandSide(1) = stressDivergenceU(iPoint) + airStressU(iPoint) + surfaceTiltForceU(iPoint) + &
+                             oceanStressCoeff(iPoint) * oceanStressU(iPoint) + &
+                             (mass(iPoint) * (numericalInertiaCoefficient * uVelocity(iPoint) + uVelocityInitial(iPoint))) / dt
+
+          rightHandSide(2) = stressDivergenceV(iPoint) + airStressV(iPoint) + surfaceTiltForceV(iPoint) + &
+                             oceanStressCoeff(iPoint) * oceanStressV(iPoint) + &
+                             (mass(iPoint) * (numericalInertiaCoefficient * vVelocity(iPoint) + vVelocityInitial(iPoint))) / dt
+
+          ! solve the equation
+          solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
+
+          uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
+          vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
+          
+       else
+
+          uVelocity(iPoint) = 0.0_RKIND
+          vVelocity(iPoint) = 0.0_RKIND
+
+       endif ! solvePoints       
+
+    enddo ! iPoint
+
+  end subroutine cice_solve_velocity_revised
+  
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  cice_air_stress
@@ -500,8 +792,11 @@ contains
 
           oceanStressU(iPoint) = uOceanVelocity(iPoint) * cosOceanTurningAngle - &
                                  vOceanVelocity(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint))
-          oceanStressV(iPoint) = uOceanVelocity(iPoint) * sinOceanTurningAngle + &
-                                 vOceanVelocity(iPoint) * cosOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint))
+          oceanStressV(iPoint) = uOceanVelocity(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)) + &
+                                 vOceanVelocity(iPoint) * cosOceanTurningAngle
+
+          !oceanStressU(iPoint) = 0.0_RKIND
+          !oceanStressV(iPoint) = 0.0_RKIND
           
        else
 
@@ -566,6 +861,9 @@ contains
           oceanStressCoeff(iPoint) = iceOceanDragCoeff * densityWater * iceArea(iPoint) * &
                                      sqrt((uOceanVelocity(iPoint) - uVelocity(iPoint))**2 + &
                                           (vOceanVelocity(iPoint) - vVelocity(iPoint))**2)
+
+          !oceanStressCoeff(iPoint) = 0.0_RKIND
+
        else
 
           oceanStressCoeff(iPoint) = 0.0_RKIND
@@ -589,70 +887,100 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine cice_ocean_stress_final(&
-       nPoints, &
-       iceArea, &
+       mesh, &
+       boundary, &
+       nVerticesSolve, &
+       iceAreaVertex, &
        coriolisParameter, &
        uVelocity, &
        vVelocity, &
-       uOceanVelocity, &
-       vOceanVelocity, &
+       uOceanVelocityVertex, &
+       vOceanVelocityVertex, &
        oceanStressU, &
        oceanStressV, &
        oceanStressCoeff, &
-       solvePoints)
+       oceanStressCellU, &
+       oceanStressCellV, &
+       solveVelocity)
+
+    use cice_mesh, only: &
+         cice_interpolate_vertex_to_cell
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh, &
+         boundary
 
     integer, intent(in) :: &
-         nPoints
+         nVerticesSolve
 
     real(kind=RKIND), dimension(:), intent(in) :: &    
-         iceArea, &           !< Input:
-         coriolisParameter, & !< Input:
-         uVelocity, &         !< Input:
-         vVelocity, &         !< Input:
-         uOceanVelocity, &    !< Input:
-         vOceanVelocity       !< Input:
+         iceAreaVertex, &        !< Input:
+         coriolisParameter, &    !< Input:
+         uVelocity, &            !< Input:
+         vVelocity, &            !< Input:
+         uOceanVelocityVertex, & !< Input:
+         vOceanVelocityVertex    !< Input:
     
     real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressU, &  !< Output: 
-         oceanStressV, &  !< Output: 
-         oceanStressCoeff !< Output: 
+         oceanStressU, &     !< Output: 
+         oceanStressV, &     !< Output:
+         oceanStressCellU, & !< Output:
+         oceanStressCellV, & !< Output: 
+         oceanStressCoeff    !< Output: 
 
     integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+         solveVelocity !< Input:
 
     real(kind=RKIND) :: &
          oceanIceRelativeVelocity
 
+    real(kind=RKIND), dimension(:), allocatable :: &
+         oceanStressUVertexTmp, &
+         oceanStressVVertexTmp
+
     integer :: &
-         iPoint
+         iVertex
 
     call cice_ocean_stress_coefficient(&
-         nPoints, &
+         nVerticesSolve, &
          oceanStressCoeff, &
-         uOceanVelocity, &
-         vOceanVelocity, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
          uVelocity, &
          vVelocity, &
-         iceArea, &
-         solvePoints)
+         iceAreaVertex, &
+         solveVelocity)
 
-    do iPoint = 1, nPoints
+    allocate(oceanStressUVertexTmp(nVerticesSolve))
+    allocate(oceanStressVVertexTmp(nVerticesSolve))
 
-       if (solvePoints(iPoint) == 1) then
+    do iVertex = 1, nVerticesSolve
 
-          oceanStressU(iPoint) = oceanStressCoeff(iPoint) * ((uOceanVelocity(iPoint) - uVelocity(iPoint)) * cosOceanTurningAngle &
-                                                           - (vOceanVelocity(iPoint) - vVelocity(iPoint)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)))
-          oceanStressV(iPoint) = oceanStressCoeff(iPoint) * ((vOceanVelocity(iPoint) - vVelocity(iPoint)) * cosOceanTurningAngle &
-                                                           + (uOceanVelocity(iPoint) - uVelocity(iPoint)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)))
+       if (solveVelocity(iVertex) == 1) then
+
+          oceanStressU(iVertex) = oceanStressCoeff(iVertex) * ((uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * cosOceanTurningAngle &
+                                                             - (vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iVertex)))
+          oceanStressV(iVertex) = oceanStressCoeff(iVertex) * ((vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * cosOceanTurningAngle &
+                                                             + (uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iVertex)))
+
+          oceanStressUVertexTmp(iVertex) = oceanStressU(iVertex) / iceAreaVertex(iVertex)
+          oceanStressVVertexTmp(iVertex) = oceanStressV(iVertex) / iceAreaVertex(iVertex)
 
        else
 
-          oceanStressU(iPoint) = 0.0_RKIND
-          oceanStressV(iPoint) = 0.0_RKIND
+          oceanStressU(iVertex) = 0.0_RKIND
+          oceanStressV(iVertex) = 0.0_RKIND
 
-       endif ! solvePoints
+       endif ! solveVelocity
 
-    enddo ! iPoint
+    enddo ! iVertex
+
+    ! interpolate stress to cells
+    call cice_interpolate_vertex_to_cell(mesh, boundary, oceanStressCellU, oceanStressUVertexTmp)
+    call cice_interpolate_vertex_to_cell(mesh, boundary, oceanStressCellV, oceanStressVVertexTmp)
+
+    deallocate(oceanStressUVertexTmp)
+    deallocate(oceanStressVVertexTmp)
 
   end subroutine cice_ocean_stress_final
   
@@ -703,6 +1031,9 @@ contains
 
           surfaceTiltForceU(iPoint) = -coriolisParameter(iPoint) * totalMass(iPoint) * vOceanVelocity(iPoint)
           surfaceTiltForceV(iPoint) =  coriolisParameter(iPoint) * totalMass(iPoint) * uOceanVelocity(iPoint)
+
+          !surfaceTiltForceU(iPoint) = 0.0_RKIND
+          !surfaceTiltForceV(iPoint) = 0.0_RKIND
 
        else
 
@@ -794,8 +1125,6 @@ contains
     integer :: &
          iPoint
 
-    !open(48,file='principal.txt')
-
     do iPoint = 1, nPoints
 
        if (replacementPressure(iPoint) > puny) then
@@ -817,11 +1146,7 @@ contains
 
        endif
 
-       !write(48,*) principalStress1(iPoint), principalStress2(iPoint)
-
     enddo ! iPoint
-
-    !close(48)
 
   end subroutine cice_principal_stresses
 

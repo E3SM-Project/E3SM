@@ -243,7 +243,7 @@ contains
          velocity_solver, &
          boundary, &
          atmos_forcing, &
-         ocean_forcing
+         ocean_coupling
 
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
@@ -259,7 +259,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
-    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
@@ -268,8 +268,8 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
     call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
 
-    call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
-    call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
 
     call square_test_correct_positions(mesh)
 
@@ -291,7 +291,7 @@ contains
          mesh,          &
          tracers,       &
          velocity_solver,        &
-         ocean_forcing, &
+         ocean_coupling, &
          boundary)
 
   end subroutine cice_init_square_test_case_hex
@@ -437,7 +437,7 @@ contains
        mesh, &
        tracers, &
        velocity_solver, &
-       ocean_forcing, &
+       ocean_coupling, &
        boundary)
 
     type(MPAS_pool_type), pointer, intent(in) :: &
@@ -446,7 +446,7 @@ contains
     type(MPAS_pool_type), pointer :: &
          tracers, &
          velocity_solver, &
-         ocean_forcing, &
+         ocean_coupling, &
          boundary
 
     real(kind=RKIND) :: &
@@ -501,8 +501,8 @@ contains
     call MPAS_pool_get_array(velocity_solver, "uOceanVelocityVertex", uOceanVelocityVertex)
     call MPAS_pool_get_array(velocity_solver, "vOceanVelocityVertex", vOceanVelocityVertex)
 
-    call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
-    call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
 
     ! thickness and area
     

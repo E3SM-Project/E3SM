@@ -230,7 +230,9 @@ module cice_core
       use mpas_stream_manager
       use mpas_timer
       use cice_forcing, only: cice_forcing_get
-   
+      use cice_initialize, only: cice_init_post_clock_advance
+      use cice_debug, only: istep
+      
       implicit none
    
       type (domain_type), intent(inout) :: domain
@@ -275,6 +277,11 @@ module cice_core
       ! initial forcing
       call cice_forcing_get(domain % streamManager, domain, clock, .true.)
 
+      ! final initialization after clock advance
+      call cice_init_post_clock_advance(domain, clock)
+
+      istep = istep + 1
+
       timeLoop: do
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
@@ -307,6 +314,7 @@ module cice_core
          ! advance the clock
          itimestep = itimestep + 1
          call mpas_advance_clock(clock)
+         istep = istep + 1
 
          ! forcing
          call cice_forcing_get(domain % streamManager, domain, clock, .false.)

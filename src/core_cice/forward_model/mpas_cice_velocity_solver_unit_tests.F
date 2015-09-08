@@ -1917,6 +1917,7 @@ contains
 
     use cice_velocity_solver_shared, only: &
          cice_evp_constitutive_relation, &
+         cice_evp_constitutive_relation_revised, &         
          cice_init_evp
 
     type(domain_type), intent(inout) :: &
@@ -1942,7 +1943,7 @@ contains
          areaCell
 
     logical, pointer :: &
-         config_evp_damping
+         config_revised_evp
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -1956,7 +1957,7 @@ contains
     integer :: &
          iTest
 
-    call MPAS_pool_get_config(domain % configs, "config_evp_damping", config_evp_damping)
+    call MPAS_pool_get_config(domain % configs, "config_revised_evp", config_revised_evp)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
     call cice_init_evp(domain)
@@ -1980,18 +1981,35 @@ contains
 
        do iTest = 1, nTests
 
-          call cice_evp_constitutive_relation(&
-               stress11(iTest), &
-               stress22(iTest), &
-               stress12(iTest), &
-               strain11(iTest), &
-               strain22(iTest), &
-               strain12(iTest), &
-               icePressure(iTest), &
-               replacementPressure,   &
-               areaCell, &
-               elasticTimeStep, &
-               config_evp_damping)
+          if (.not. config_revised_evp) then
+          
+             call cice_evp_constitutive_relation(&
+                  stress11(iTest), &
+                  stress22(iTest), &
+                  stress12(iTest), &
+                  strain11(iTest), &
+                  strain22(iTest), &
+                  strain12(iTest), &
+                  icePressure(iTest), &
+                  replacementPressure,   &
+                  areaCell, &
+                  elasticTimeStep)
+
+          else
+
+             call cice_evp_constitutive_relation_revised(&
+                  stress11(iTest), &
+                  stress22(iTest), &
+                  stress12(iTest), &
+                  strain11(iTest), &
+                  strain22(iTest), &
+                  strain12(iTest), &
+                  icePressure(iTest), &
+                  replacementPressure,   &
+                  areaCell, &
+                  config_dt)
+             
+          endif
 
        enddo ! iTest
 

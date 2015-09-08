@@ -5,7 +5,6 @@
 		<dim name="nEdges"/>
 		<dim name="maxEdges"/>
 		<dim name="maxEdges2"/>
-		<dim name="nAdvectionCells" definition="maxEdges2+0"/>
 		<dim name="nVertices"/>
 		<dim name="ONE"                definition="1"/>
 		<dim name="TWO"                definition="2"/>
@@ -22,16 +21,13 @@
 		<dim name="nAerosols"          definition="1"/>
 		<dim name="nSpectralIntervals" definition="3"/>
 		<dim name="nZBGCTracers"       definition="0"/>
-		<dim name="nVertLevels"/>
-	  	<dim name="POP_nx"/>
-		<dim name="POP_ny"/>
 	</dims>
 	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="3600.0"/>
 		<nml_option name="config_calendar_type"              type="character"     default_value="gregorian_noleap"/>
-		<nml_option name="config_start_time"                 type="character"     default_value="1997-01-01_00:00:00"/>
+		<nml_option name="config_start_time"                 type="character"     default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_stop_time"                  type="character"     default_value="none"/>
-		<nml_option name="config_run_duration"               type="character"     default_value="0000_01:00:00"/>
+		<nml_option name="config_run_duration"               type="character"     default_value="0000_24:00:00"/>
 		<nml_option name="config_num_halos"                  type="integer"       default_value="2"/>
 	</nml_record>
 	<nml_record name="io" in_defaults="true">
@@ -51,28 +47,28 @@
 		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
-		<nml_option name="config_initial_condition_type"     type="character"     default_value="uniform"    possible_values="'uniform', 'circle', 'square' or 'uniform_interior'"/>
-		<nml_option name="config_initial_ice_area"           type="real"          default_value="0.0"/>
-		<nml_option name="config_initial_ice_volume"         type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_condition_type"     type="character"     default_value="cice_default"    possible_values="'uniform', 'circle', 'square' or 'uniform_interior'"/>
+		<nml_option name="config_initial_ice_area"           type="real"          default_value="1.0"/>
+		<nml_option name="config_initial_ice_volume"         type="real"          default_value="1.0"/>
 		<nml_option name="config_initial_snow_volume"        type="real"          default_value="0.0"/>
-		<nml_option name="config_initial_latitude_north"     type="real"          default_value="0.0"/>
-		<nml_option name="config_initial_latitude_south"     type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_latitude_north"     type="real"          default_value="70.0"/>
+		<nml_option name="config_initial_latitude_south"     type="real"          default_value="-60.0"/>
 		<nml_option name="config_initial_velocity_type"      type="character"     default_value="uniform"/>
 		<nml_option name="config_initial_uvelocity"          type="real"          default_value="0.0"/>
 		<nml_option name="config_initial_vvelocity"          type="real"          default_value="0.0"/>
 	</nml_record>
 	<nml_record name="use_sections" in_defaults="true">
-		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="false"/>
+		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="true"/>
 		<nml_option name="config_use_advection"               type="logical"       default_value="false"/>
 		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
 		<nml_option name="config_use_vertical_thermodynamics" type="logical"       default_value="false"/>
-		<nml_option name="config_use_column_package"          type="logical"       default_value="false"/>
+		<nml_option name="config_use_column_package"          type="logical"       default_value="true"/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_atmospheric_forcing_type"    type="character"     default_value="CORE"/>
 		<nml_option name="config_forcing_start_time"          type="character"     default_value="2000-01-01_00:00:00"/>
 		<nml_option name="config_forcing_cycle_start"         type="character"     default_value="2000-01-01_00:00:00"/>
-		<nml_option name="config_forcing_cycle_duration"      type="character"     default_value="1-00-00_00:00:00"/>
+		<nml_option name="config_forcing_cycle_duration"      type="character"     default_value="2-00-00_00:00:00"/>
 		<nml_option name="config_forcing_restart_file"        type="character"     default_value="restart_forcing_timestamps"/>
 		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
@@ -85,13 +81,13 @@
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
-		<nml_option name="config_dynamics_subcycle_number"    type="integer"       default_value="1"          possible_values="any positive integer"/> 
-		<nml_option name="config_rotate_cartesian_grid"       type="logical"       default_value="true"       possible_values="true or false"/>	
-		<nml_option name="config_include_metric_terms"        type="logical"       default_value="true"       possible_values="true or false"/>	
-		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"        possible_values="any positive integer"/> 
-		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="weak"       possible_values="'weak' or 'variational'"/>
-		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress" possible_values="'wachspress' or 'pwl'"/>
-		<nml_option name="config_evp_damping"                 type="logical"       default_value="true"       possible_values="true or false"/>		
+		<nml_option name="config_dynamics_subcycle_number"    type="integer"       default_value="1"           possible_values="any positive integer"/> 
+		<nml_option name="config_rotate_cartesian_grid"       type="logical"       default_value="true"        possible_values="true or false"/>	
+		<nml_option name="config_include_metric_terms"        type="logical"       default_value="true"        possible_values="true or false"/>	
+		<nml_option name="config_elastic_subcycle_number"     type="integer"       default_value="120"         possible_values="any positive integer"/> 
+		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="variational" possible_values="'weak' or 'variational'"/>
+		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress"  possible_values="'wachspress' or 'pwl'"/>
+		<nml_option name="config_revised_evp"                 type="logical"	   default_value="false"       possible_values="true or false"/>		
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
@@ -131,12 +127,12 @@
 	</nml_record>
 
 	<nml_record name="column_tracers" in_defaults="true">
-        	<nml_option name="config_use_ice_age"                            type="logical"       default_value="false"/>
-        	<nml_option name="config_use_first_year_ice"                     type="logical"       default_value="false"/>
-       		<nml_option name="config_use_level_ice"                          type="logical"       default_value="false"/>
-       		<nml_option name="config_use_meltponds"                          type="logical"       default_value="false"/>
+        	<nml_option name="config_use_ice_age"                            type="logical"       default_value="true"/>
+        	<nml_option name="config_use_first_year_ice"                     type="logical"       default_value="true"/>
+       		<nml_option name="config_use_level_ice"                          type="logical"       default_value="true"/>
+       		<nml_option name="config_use_meltponds"                          type="logical"       default_value="true"/>
         	<nml_option name="config_use_cesm_meltponds"                     type="logical"       default_value="false"/>
-        	<nml_option name="config_use_level_meltponds"                    type="logical"       default_value="false"/>
+        	<nml_option name="config_use_level_meltponds"                    type="logical"       default_value="true"/>
         	<nml_option name="config_use_topo_meltponds"                     type="logical"       default_value="false"/>
         	<nml_option name="config_use_aerosols"                           type="logical"       default_value="false"/>
         	<nml_option name="config_use_brine"                              type="logical"       default_value="false"/>
@@ -144,7 +140,7 @@
 
 	<nml_record name="shortwave" in_defaults="true">
 		<nml_option name="config_shortwave_type"                         type="character"     default_value="dEdd"/>
-		<nml_option name="config_albedo_type"                            type="character"     default_value="default"/>
+		<nml_option name="config_albedo_type"                            type="character"     default_value="ccsm3"/>
 		<nml_option name="config_visible_ice_albedo"                     type="real"          default_value="0.78"/>
 		<nml_option name="config_infrared_ice_albedo"                    type="real"          default_value="0.36"/>
 		<nml_option name="config_visible_snow_albedo"                    type="real"          default_value="0.98"/>
@@ -182,11 +178,11 @@
 
 	<nml_record name="itd" in_defaults="true">
 		<nml_option name="config_itd_conversion_type"                     type="character"     default_value="linear remap"/>
-		<nml_option name="config_category_bounds_type"                    type="character"     default_value="old"/>
+		<nml_option name="config_category_bounds_type"                    type="character"     default_value="original"/>
 	</nml_record>
 
 	<nml_record name="ridging" in_defaults="true">
-		<nml_option name="config_ice_strength_formulation"                type="character"     default_value="rothrock75"/>
+		<nml_option name="config_ice_strength_formulation"                type="character"     default_value="Rothrock75"/>
 		<nml_option name="config_ridging_participation_function"          type="character"     default_value="exponential"/>
 		<nml_option name="config_ridging_redistribution_function"         type="character"     default_value="exponential"/>
     		<nml_option name="config_ridiging_efolding_scale"                 type="real"          default_value="3.0"/>
@@ -194,7 +190,7 @@
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
-    		<nml_option name="config_atmos_boundary_method"                   type="character"     default_value="default"/>
+    		<nml_option name="config_atmos_boundary_method"                   type="character"     default_value="ccsm3"/>
     		<nml_option name="config_calc_surface_stresses"                   type="logical"       default_value="true"/>
     		<nml_option name="config_calc_surface_temperature"                type="logical"       default_value="true"/>
     		<nml_option name="config_use_form_drag"                           type="logical"       default_value="false"/>
@@ -234,16 +230,13 @@
 	    <var name="yVertex"/>
 	    <var name="zVertex"/>
 	    <var name="indexToVertexID"/>
-	    <var name="meshDensity"/>
 	    <var name="cellsOnEdge"/>
 	    <var name="nEdgesOnCell"/>
 	    <var name="nEdgesOnEdge"/>
 	    <var name="edgesOnCell"/>
 	    <var name="edgesOnEdge"/>
-	    <var name="weightsOnEdge"/>
 	    <var name="dvEdge"/>
 	    <var name="dcEdge"/>
-	    <var name="angleEdge"/>
 	    <var name="areaCell"/>
 	    <var name="areaTriangle"/>
 	    <var name="cellsOnCell"/>
@@ -306,7 +299,7 @@
 		  type="output"
 		  filename_template="output.nc"
 		  filename_interval="none"
-		  output_interval="6:00:00"
+		  output_interval="1:00:00"
 		  clobber_mode="replace_files"
 		  runtime_format="single_file">
 	    <stream name="mesh"/>
@@ -328,10 +321,6 @@
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
 	    <var name="surfaceTemperature"/>
-	    <var name="iceAreaCategoryPlot"/>
-	    <var name="iceVolumeCategoryPlot"/>
-	    <var name="snowVolumeCategoryPlot"/>
-	    <var name="surfaceTemperaturePlot"/>
 	    <var name="iceThickness"/>
 	    <var name="snowThickness"/>
 	    <var name="iceAreaCell"/>
@@ -345,8 +334,6 @@
 	    <var name="airStressVertexV"/>
 	    <var name="airTemperature"/>
 	    <var name="airPotentialTemperature"/>
-	    <var name="uAirVelocityPOP"/>
-	    <var name="vAirVelocityPOP"/>
 	    <var name="windSpeed"/>
 	    <var name="uAirStress"/>
 	    <var name="vAirStress"/>
@@ -359,32 +346,6 @@
 	    <var name="snowfallRate"/>
 	    <var name="sensibleTransferCoefficient"/>
 	    <var name="latentTransferCoefficient"/>
-	    <var name="uPOPAlongGridVector"/>
-	    <var name="vPOPAlongGridVector"/>
-	    <var name="iceAreaCategoryMin"/>
-	    <var name="iceAreaCategoryMax"/>
-	    <var name="iceVolumeCategoryMin"/>
-	    <var name="iceVolumeCategoryMax"/>
-	    <var name="snowVolumeCategoryMin"/>
-	    <var name="snowVolumeCategoryMax"/>
-	    <var name="surfaceTemperatureMin"/>
-	    <var name="surfaceTemperatureMax"/>
-	    <var name="iceThicknessCategoryMin"/>
-	    <var name="iceThicknessCategoryMax"/>
-	    <var name="snowThicknessCategoryMin"/>
-	    <var name="snowThicknessCategoryMax"/>
-	    <var name="snowThicknessCategoryLocMax"/>
-	    <var name="globalIceArea"/>
-	    <var name="globalIceExtent"/>
-	    <var name="globalIceVolume"/>
-	    <var name="globalIceThickness"/>
-	    <var name="globalSnowVolume"/>
-	    <var name="globalSnowThickness"/>
-	    <var name="basisIntegralsU"/>
-	    <var name="basisIntegralsV"/>
-	    <var name="basisIntegralsMetric"/>
-	    <var name="basisGradientU"/>
-	    <var name="basisGradientV"/>
 	  </stream>
 
         <!-- forcing streams -->
@@ -452,7 +413,6 @@
 		<var name="yVertex"                           type="real"     dimensions="nVertices"/>
 		<var name="zVertex"                           type="real"     dimensions="nVertices"/>
 		<var name="indexToVertexID"                   type="integer"  dimensions="nVertices"/>
-		<var name="meshDensity"                       type="real"     dimensions="nCells"/>
 		<var name="cellsOnEdge"                       type="integer"  dimensions="TWO nEdges"/>
 		<var name="nEdgesOnCell"                      type="integer"  dimensions="nCells"/>
 		<var name="nEdgesOnEdge"                      type="integer"  dimensions="nEdges"/>
@@ -461,7 +421,6 @@
 		<var name="weightsOnEdge"                     type="real"     dimensions="maxEdges2 nEdges"/>
 		<var name="dvEdge"                            type="real"     dimensions="nEdges"/>
 		<var name="dcEdge"                            type="real"     dimensions="nEdges"/>
-		<var name="angleEdge"                         type="real"     dimensions="nEdges"/>
 		<var name="areaCell"                          type="real"     dimensions="nCells"/>
 		<var name="areaTriangle"                      type="real"     dimensions="nVertices"/>
 		<var name="cellsOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
@@ -640,16 +599,16 @@
 
 	<!--ocean coupling -->	
 	<var_struct name="ocean_coupling" time_levs="1">
-		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells"              name_in_code="seaSurfaceTemperature"/>
-		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
-		<var name="seaFreezingTemperature"            type="real"     dimensions="nCells"              name_in_code="seaFreezingTemperature"/>
-		<var name="freezingMeltingPotential"	      type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotential"/>
-		<var name="uOceanVelocity"                    type="real"     dimensions="nCells"              name_in_code="uOceanVelocity"/>
-		<var name="vOceanVelocity"                    type="real"     dimensions="nCells"              name_in_code="vOceanVelocity"/>
-		<var name="seaSurfaceTiltU"                   type="real"     dimensions="nCells"              name_in_code="seaSurfaceTiltU"/>	
-		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells"              name_in_code="seaSurfaceTiltV"/>
-		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells"              name_in_code="oceanMixedLayerDepth"/>
-		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells"              name_in_code="oceanHeatFluxConvergence"/>
+		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTemperature"/>
+		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceSalinity"/>
+		<var name="seaFreezingTemperature"            type="real"     dimensions="nCells Time"              name_in_code="seaFreezingTemperature"/>
+		<var name="freezingMeltingPotential"	      type="real"     dimensions="nCells Time"              name_in_code="freezingMeltingPotential"/>
+		<var name="uOceanVelocity"                    type="real"     dimensions="nCells Time"              name_in_code="uOceanVelocity"/>
+		<var name="vOceanVelocity"                    type="real"     dimensions="nCells Time"              name_in_code="vOceanVelocity"/>
+		<var name="seaSurfaceTiltU"                   type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTiltU"/>	
+		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTiltV"/>
+		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells Time"              name_in_code="oceanMixedLayerDepth"/>
+		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxConvergence"/>
 	</var_struct>
 
 	<!-- boundary variables -->
@@ -666,28 +625,35 @@
 		<var name="elasticTimeStep"                   type="real"     dimensions=""                              name_in_code="elasticTimeStep"/>
 		<var name="uVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="uVelocity"/>
 		<var name="vVelocity"                         type="real"     dimensions="nVertices Time"                name_in_code="vVelocity"/>
+		<var name="uVelocityInitial"                         type="real"     dimensions="nVertices Time"                name_in_code="uVelocityInitial"/>
+		<var name="vVelocityInitial"                         type="real"     dimensions="nVertices Time"                name_in_code="vVelocityInitial"/>
 		<var name="edgeVelocity"                      type="real"     dimensions="nEdges"                   name_in_code="edgeVelocity"/>
 		<var name="normalVectorEdge"                  type="real"     dimensions="TWO maxEdges nCells"      name_in_code="normalVectorEdge"/>
 		<var name="solveStress"                       type="integer"  dimensions="nCells"                   name_in_code="solveStress"/>
-		<var name="solveVelocity"                     type="integer"  dimensions="nVertices"                name_in_code="solveVelocity"/>	
-		<var name="icePressure"                       type="real"     dimensions="nCells"                   name_in_code="icePressure"/>
+		<var name="solveVelocity"                     type="integer"  dimensions="nVertices"                name_in_code="solveVelocity"/>
+		<var name="solveVelocityPrevious"             type="integer"  dimensions="nVertices"                name_in_code="solveVelocityPrevious"/>		    
+		<var name="icePressure"                       type="real"     dimensions="nCells Time"                   name_in_code="icePressure"/>
 		<var name="stressDivergenceU"                 type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceU"/>
 		<var name="stressDivergenceV"                 type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceV"/>
 		<var name="airStressCellU"                    type="real"     dimensions="nCells Time"                   name_in_code="airStressCellU"/>
 		<var name="airStressCellV"                    type="real"     dimensions="nCells Time"                   name_in_code="airStressCellV"/>
 		<var name="airStressVertexU"                  type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexU"/>
 		<var name="airStressVertexV"                  type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexV"/>
-		<var name="uOceanVelocityVertex"              type="real"     dimensions="nVertices"                name_in_code="uOceanVelocityVertex"/>
-		<var name="vOceanVelocityVertex"              type="real"     dimensions="nVertices"                name_in_code="vOceanVelocityVertex"/>
+		<var name="uOceanVelocityVertex"              type="real"     dimensions="nVertices Time"                name_in_code="uOceanVelocityVertex"/>
+		<var name="vOceanVelocityVertex"              type="real"     dimensions="nVertices Time"                name_in_code="vOceanVelocityVertex"/>
 		<var name="oceanStressU"                      type="real"     dimensions="nVertices Time"                name_in_code="oceanStressU"/>
 		<var name="oceanStressV"                      type="real"     dimensions="nVertices Time"                name_in_code="oceanStressV"/>
 		<var name="oceanStressCoeff"                  type="real"     dimensions="nVertices Time"                name_in_code="oceanStressCoeff"/>
-		<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceU"/>
-		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceV"/>
-		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices"                name_in_code="totalMassVertexfVertex"/>
+                <var name="oceanStressCellU"                  type="real"     dimensions="nCells Time"                   name_in_code="oceanStressCellU"/>
+                <var name="oceanStressCellV"                  type="real"     dimensions="nCells Time"                   name_in_code="oceanStressCellV"/>
+                <var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceU"/>
+		<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceV"/>
+		<var name="totalMassVertexfVertex"            type="real"     dimensions="nVertices Time"                name_in_code="totalMassVertexfVertex"/>
 		<var name="principalStress1"                  type="real"     dimensions="nCells"                   name_in_code="principalStress1"/>
 		<var name="principalStress2"                  type="real"     dimensions="nCells"                   name_in_code="principalStress2"/>
 		<var name="replacementPressure"               type="real"     dimensions="nCells"                   name_in_code="replacementPressure"/>
+		<var name="divergence"               type="real"     dimensions="nCells Time"                   name_in_code="divergence"/>
+		<var name="shear"               type="real"     dimensions="nCells Time"                   name_in_code="shear"/>
 	</var_struct>
 
 	<!-- weak formulation -->
@@ -721,6 +687,53 @@
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisGradientV"/>
 	</var_struct>
 
+	<!-- geographical output -->
+	<var_struct name="velocity_geographical" time_levs="1">
+		<var name="uVelocityGeo"                      type="real"     dimensions="nVertices Time"                name_in_code="uVelocityGeo"/>
+		<var name="vVelocityGeo"                      type="real"     dimensions="nVertices Time"                name_in_code="vVelocityGeo"/>
+		<var name="stressDivergenceUGeo"              type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceUGeo"/>
+		<var name="stressDivergenceVGeo"              type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceVGeo"/>
+		<var name="airStressVertexUGeo"               type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexUGeo"/>
+		<var name="airStressVertexVGeo"               type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexVGeo"/>
+		<var name="oceanStressUGeo"                   type="real"     dimensions="nVertices Time"                name_in_code="oceanStressUGeo"/>
+		<var name="oceanStressVGeo"                   type="real"     dimensions="nVertices Time"                name_in_code="oceanStressVGeo"/>
+		<var name="surfaceTiltForceUGeo"              type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceUGeo"/>
+		<var name="surfaceTiltForceVGeo"              type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceVGeo"/>
+		<var name="uOceanVelocityVertexGeo"           type="real"     dimensions="nVertices Time"                name_in_code="uOceanVelocityVertexGeo"/>
+		<var name="vOceanVelocityVertexGeo"           type="real"     dimensions="nVertices Time"                name_in_code="vOceanVelocityVertexGeo"/>
+	</var_struct>
+<!--
+	<var_struct name="mesh_test" time_levs="1">
+		<var name="vectorCellU"                          type="real"     dimensions="nCells Time"  name_in_code="vectorCellU"/>
+		<var name="vectorCellV"                          type="real"     dimensions="nCells Time"  name_in_code="vectorCellV"/>
+		<var name="vectorVertexU"                        type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexU"/>
+		<var name="vectorVertexV"                        type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexV"/>
+		<var name="vectorCellURotate"                    type="real"     dimensions="nCells Time"  name_in_code="vectorCellURotate"/>
+		<var name="vectorCellVRotate"                    type="real"     dimensions="nCells Time"  name_in_code="vectorCellVRotate"/>
+		<var name="vectorVertexURotate"                  type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotate"/>
+		<var name="vectorVertexVRotate"                  type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotate"/>
+		<var name="vectorVertexUInterpolate"             type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUInterpolate"/>
+		<var name="vectorVertexVInterpolate"             type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVInterpolate"/>
+		<var name="vectorVertexURotateInterpolate"       type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotateInterpolate"/>
+		<var name="vectorVertexVRotateInterpolate"       type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotateInterpolate"/>
+		<var name="vectorCellURotateRotate"              type="real"     dimensions="nCells Time"  name_in_code="vectorCellURotateRotate"/>
+		<var name="vectorCellVRotateRotate"              type="real"     dimensions="nCells Time"  name_in_code="vectorCellVRotateRotate"/>
+		<var name="vectorVertexURotateRotate"            type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotateRotate"/>
+		<var name="vectorVertexVRotateRotate"            type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotateRotate"/>
+		<var name="vectorVertexURotateInterpolateRotate" type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotateInterpolateRotate"/>
+		<var name="vectorVertexVRotateInterpolateRotate" type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotateInterpolateRotate"/>
+		<var name="vectorCellUDiff"                      type="real"     dimensions="nCells Time"  name_in_code="vectorCellUDiff"/>
+		<var name="vectorCellVDiff"                      type="real"     dimensions="nCells Time"  name_in_code="vectorCellVDiff"/>
+		<var name="vectorVertexUDiff"                    type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUDiff"/>
+		<var name="vectorVertexVDiff"                    type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVDiff"/>
+		<var name="vectorVertexUInterpolateDiff"         type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUInterpolateDiff"/>
+		<var name="vectorVertexVInterpolateDiff"         type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVInterpolateDiff"/>
+		<var name="vectorVertexUDiffRotate"              type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUDiffRotate"/>
+                <var name="vectorVertexVDiffRotate"              type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVDiffRotate"/>
+                <var name="vectorVertexUDiffNoRotate"            type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUDiffNoRotate"/>
+                <var name="vectorVertexVDiffNoRotate"	         type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVDiffNoRotate"/>
+        </var_struct>
+-->
 	<!-- column physics -->
 
 	<!-- ridging -->

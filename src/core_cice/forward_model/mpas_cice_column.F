@@ -37,7 +37,8 @@ module cice_column
        cice_column_postdynamics_time_integration, &
        cice_init_column_shortwave, &
        cice_column_aggregate, &
-       cice_column_initial_air_drag_coefficient
+       cice_column_initial_air_drag_coefficient, &
+       cice_column_reinitialize_fluxes
 
   ! constants
   real(kind=RKIND), parameter :: puny = 1e-11_RKIND
@@ -136,22 +137,40 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_init_column_physics_package_variables(domain)
+  subroutine cice_init_column_physics_package_variables(domain, clock)
 
     type(domain_type), intent(inout) :: domain
 
-    ! initialize level ice tracers
-    call init_column_level_ice_tracers(domain)
+    type (MPAS_Clock_type), intent(in) :: &
+         clock !< Input: 
+    
+    logical, pointer :: &
+         config_use_column_package, &
+         config_do_restart
 
-    ! initialize the itd thickness classes
-    call init_column_itd(domain)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
-    ! initialize thermodynamic tracer profiles
-    call init_column_thermodynamic_profiles(domain)
+    if (config_use_column_package) then
 
-    ! history variables
-    call init_column_history_variables(domain)
+       ! initialize level ice tracers
+       call init_column_level_ice_tracers(domain)
+       
+       ! initialize the itd thickness classes
+       call init_column_itd(domain)
+       
+       ! initialize thermodynamic tracer profiles
+       call init_column_thermodynamic_profiles(domain)
+       
+       ! history variables
+       call init_column_history_variables(domain)
 
+       ! shortwave
+       call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+       if (config_do_restart) &
+            call cice_init_column_shortwave(domain, clock)
+       
+    endif
+       
   end subroutine cice_init_column_physics_package_variables
 
 !-----------------------------------------------------------------------
@@ -314,7 +333,8 @@ contains
     type(MPAS_pool_type), pointer :: &
          mesh, &
          tracers, &
-         shortwave
+         shortwave, &
+         atmos_coupling
 
     real(kind=RKIND), dimension(:), pointer :: &
          solarZenithAngleCosine, &
@@ -330,7 +350,11 @@ contains
          snowAlbedoCell, &
          pondAlbedoCell, &
          effectivePondAreaCell, &
-         shortwaveScalingFactor
+         shortwaveScalingFactor, &
+         shortwaveVisibleDirectDown, &
+         shortwaveVisibleDiffuseDown, &
+         shortwaveIRDirectDown, &
+         shortwaveIRDiffuseDown
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          albedoVisibleDirectCategory, &
@@ -356,14 +380,26 @@ contains
     character(len=strKIND), pointer :: &
          config_shortwave_type
 
+    logical, pointer :: &
+         config_do_restart
+
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     if (trim(config_shortwave_type) == "dEdd") then
+
+       abortFlag = .false.
 
        call colpkg_init_orbit(&
             stdoutUnit, &
             abortFlag, &
             abortMessage)
+
+       if (abortFlag) then
+          COLUMN_ERROR_WRITE("colpkg_init_orbit")
+          COLUMN_ERROR_WRITE(trim(abortMessage))
+          call MPAS_dmpar_global_abort(trim(abortMessage)) 
+      endif
 
     endif
 
@@ -379,6 +415,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -413,6 +450,11 @@ contains
        call MPAS_pool_get_array(shortwave, "effectivePondAreaCategory", effectivePondAreaCategory)
 
        call MPAS_pool_get_array(shortwave, "shortwaveScalingFactor", shortwaveScalingFactor)
+
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveIRDirectDown", shortwaveIRDirectDown)
+       call MPAS_pool_get_array(atmos_coupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
 
        do iCell = 1, nCellsSolve
 
@@ -461,8 +503,17 @@ contains
           albedoIRDirectArea(iCell)       = albedoIRDirectCell(iCell)
           albedoIRDiffuseArea(iCell)      = albedoIRDiffuseCell(iCell)
 
-       enddo ! iCell
+          ! Save net shortwave for scaling factor in scale_factor 
+          if (.not. config_do_restart) then
+             shortwaveScalingFactor(iCell) = &
+                  shortwaveVisibleDirectDown(iCell)  * (1.0_RKIND - albedoVisibleDirectArea(iCell)) + &
+                  shortwaveVisibleDiffuseDown(iCell) * (1.0_RKIND - albedoVisibleDiffuseArea(iCell)) + &
+                  shortwaveIRDirectDown(iCell)       * (1.0_RKIND - albedoIRDirectArea(iCell)) + &
+                  shortwaveIRDiffuseDown(iCell)      * (1.0_RKIND - albedoIRDiffuseArea(iCell))
+          endif
 
+       enddo ! iCell
+       
        block => block % next
     end do
 
@@ -638,6 +689,7 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
+         config_use_column_package, &
          config_use_column_shortwave, &
          config_use_column_vertical_thermodynamics, &
          !config_use_column_biogeochemistry, &
@@ -647,57 +699,65 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
-    !call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
-    call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
-
-    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
-
-    !-----------------------------------------------------------------
-    ! Scale radiation fields
-    !-----------------------------------------------------------------
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     
-    call mpas_timer_start("Column shortwave prep")
-    if (config_use_column_shortwave .and. config_calc_surface_temperature) &
-         call column_prep_radiation(domain)
-    call mpas_timer_stop("Column shortwave prep")
+    if (config_use_column_package) then
     
-    !-----------------------------------------------------------------
-    ! Vertical thermodynamics
-    !-----------------------------------------------------------------
-            
-    call mpas_timer_start("Column vertical thermodynamics")
-    if (config_use_column_vertical_thermodynamics) &
-         call column_vertical_thermodynamics(domain, clock)
-    call mpas_timer_stop("Column vertical thermodynamics")
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+       !call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
+       call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
 
-    !-----------------------------------------------------------------
-    ! Biogeochemistry
-    !-----------------------------------------------------------------
+       call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
-    !call mpas_timer_start("Column biogeochemistry")
-    !if (config_use_column_biogeochemistry) &
-    ! call column biogeochemistry ! not implemented yet
-    !call mpas_timer_stop("Column biogeochemistry")
+       !-----------------------------------------------------------------
+       ! Scale radiation fields
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! ITD thermodynamics
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column shortwave prep")
+       if (config_use_column_shortwave .and. config_calc_surface_temperature) &
+            call column_prep_radiation(domain)
+       call mpas_timer_stop("Column shortwave prep")
 
-    call mpas_timer_start("Column ITD thermodynamics")
-    if (config_use_column_itd_thermodynamics) &
-         call column_itd_thermodynamics(domain, clock)
-    call mpas_timer_stop("Column ITD thermodynamics")
+       !-----------------------------------------------------------------
+       ! Vertical thermodynamics
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Update the aggregated state variables
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column vertical thermodynamics")
+       if (config_use_column_vertical_thermodynamics) &
+            call column_vertical_thermodynamics(domain, clock)
+       call mpas_timer_stop("Column vertical thermodynamics")
 
-    call mpas_timer_start("Column update state")
-    call cice_column_update_state(domain, config_dt, config_dt)
-    call mpas_timer_stop("Column update state")
+       !-----------------------------------------------------------------
+       ! Biogeochemistry
+       !-----------------------------------------------------------------
+
+       !call mpas_timer_start("Column biogeochemistry")
+       !if (config_use_column_biogeochemistry) &
+       ! call column biogeochemistry ! not implemented yet
+       !call mpas_timer_stop("Column biogeochemistry")
+
+       !-----------------------------------------------------------------
+       ! ITD thermodynamics
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column ITD thermodynamics")
+       if (config_use_column_itd_thermodynamics) &
+            call column_itd_thermodynamics(domain, clock)
+       call mpas_timer_stop("Column ITD thermodynamics")
+
+       !-----------------------------------------------------------------
+       ! Update the aggregated state variables
+       !-----------------------------------------------------------------
+
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 1)
+       call mpas_timer_start("Column update state")
+       call cice_column_update_state(domain, config_dt, config_dt)
+       call mpas_timer_stop("Column update state")
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 2)
+
+    endif
 
   end subroutine cice_column_predynamics_time_integration
 
@@ -720,6 +780,7 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
+         config_use_column_package, &
          config_use_column_ridging
 
     type(MPAS_pool_type), pointer :: &
@@ -728,27 +789,35 @@ contains
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+
+    if (config_use_column_package) then
     
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
-    call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
 
-    !-----------------------------------------------------------------
-    ! Ridging
-    !-----------------------------------------------------------------
+       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
+       call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
 
-    call mpas_timer_start("Column ridging")
-    if (config_use_column_ridging) &
-         call column_ridging(domain)
-    call mpas_timer_stop("Column ridging")
+       !-----------------------------------------------------------------
+       ! Ridging
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Update the aggregated state variables
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column ridging")
+       if (config_use_column_ridging) &
+            call column_ridging(domain)
+       call mpas_timer_stop("Column ridging")
 
-    call mpas_timer_start("Column update state")
-    call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
-    call mpas_timer_stop("Column update state")
+       !-----------------------------------------------------------------
+       ! Update the aggregated state variables
+       !-----------------------------------------------------------------
+
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 3)
+       call mpas_timer_start("Column update state")
+       call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
+       call mpas_timer_stop("Column update state")
+       call cice_debug_write_out_fields(domain, "cice_column_update_state", 4)
+
+    endif
 
   end subroutine cice_column_dynamics_time_integration
 
@@ -771,26 +840,33 @@ contains
     type(MPAS_clock_type), intent(in) :: clock
 
     logical, pointer :: &
+         config_use_column_package, &
          config_use_column_shortwave
 
-    call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
-    !-----------------------------------------------------------------
-    ! Shortwave radiation
-    !-----------------------------------------------------------------
+    if (config_use_column_package) then
+    
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       
+       !-----------------------------------------------------------------
+       ! Shortwave radiation
+       !-----------------------------------------------------------------
+       
+       call mpas_timer_start("Column shortwave")
+       if (config_use_column_shortwave) &
+            call column_radiation(domain, clock, .false.)
+       call mpas_timer_stop("Column shortwave")
 
-    call mpas_timer_start("Column shortwave")
-    if (config_use_column_shortwave) &
-         call column_radiation(domain, clock, .false.)
-    call mpas_timer_stop("Column shortwave")
+       !-----------------------------------------------------------------
+       ! Coupling prep
+       !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Coupling prep
-    !-----------------------------------------------------------------
+       call mpas_timer_start("Column coupling prep")
+       call cice_column_coupling_prep(domain)
+       call mpas_timer_stop("Column coupling prep")
 
-    call mpas_timer_start("Column coupling prep")
-    call cice_column_coupling_prep(domain)
-    call mpas_timer_stop("Column coupling prep")
+    endif
 
   end subroutine cice_column_postdynamics_time_integration
 
@@ -895,8 +971,8 @@ contains
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
-         oceanStressU, &
-         oceanStressV, &
+         oceanStressCellU, &
+         oceanStressCellV, &
          freezingMeltingPotential, &
          lateralIceMeltFraction, &
          snowfallRate, &
@@ -993,6 +1069,8 @@ contains
     real(kind=RKIND) :: &
          dayOfYear
 
+    call cice_debug_write_out_fields(domain, "column_vertical_thermodynamics", 1)
+
     ! day of year
     call get_day_of_year(clock, dayOfYear)
 
@@ -1060,8 +1138,8 @@ contains
        call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocity_solver, "airStressCellU", airStressCellU)
        call MPAS_pool_get_array(velocity_solver, "airStressCellV", airStressCellV)
-       call MPAS_pool_get_array(velocity_solver, "oceanStressU", oceanStressU)
-       call MPAS_pool_get_array(velocity_solver, "oceanStressV", oceanStressV)
+       call MPAS_pool_get_array(velocity_solver, "oceanStressCellU", oceanStressCellU)
+       call MPAS_pool_get_array(velocity_solver, "oceanStressCellV", oceanStressCellV)
 
        call MPAS_pool_get_array(atmos_coupling, "uAirVelocity", uAirVelocity)
        call MPAS_pool_get_array(atmos_coupling, "vAirVelocity", vAirVelocity)
@@ -1158,7 +1236,7 @@ contains
 
        call MPAS_pool_get_array(diagnostics, "meltOnset", meltOnset)
        call MPAS_pool_get_array(diagnostics, "freezeOnset", freezeOnset)
-       
+
        ! aerosols
        if (config_use_aerosols) then
 
@@ -1209,7 +1287,9 @@ contains
           else
              northernHemisphereMask = .false.
           endif
-          
+
+          abortFlag = .false.
+
           call colpkg_step_therm1(&
                config_dt, &
                nCategories, &
@@ -1275,8 +1355,8 @@ contains
                seaSurfaceTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
                seaFreezingTemperature(iCell), &
-               oceanStressU(iCell), &
-               oceanStressV(iCell), &
+               oceanStressCellU(iCell), &
+               oceanStressCellV(iCell), &
                freezingMeltingPotential(iCell), &
                lateralIceMeltFraction(iCell), &
                snowfallRate(iCell), &
@@ -1338,7 +1418,7 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_vertical_thermodynamics")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             stop
+             call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
           ! aerosol
@@ -1372,6 +1452,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_vertical_thermodynamics", 2)
     
   end subroutine column_vertical_thermodynamics
 
@@ -1478,6 +1560,8 @@ contains
     real(kind=RKIND) :: &
          dayOfYear
 
+    call cice_debug_write_out_fields(domain, "column_itd_thermodynamics", 1)
+
     ! day of year
     call get_day_of_year(clock, dayOfYear)
 
@@ -1557,6 +1641,8 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
 
+          abortFlag = .false.
+
           call colpkg_step_therm2(&
                config_dt, &
                nCategories, &
@@ -1606,7 +1692,7 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_itd_thermodynamics")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             stop
+             call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
        enddo ! iCell
@@ -1616,6 +1702,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_itd_thermodynamics", 2)
 
   end subroutine column_itd_thermodynamics
 
@@ -1681,6 +1769,8 @@ contains
     integer :: &
          iCell
 
+    call cice_debug_write_out_fields(domain, "column_prep_radiation", 1)
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -1744,6 +1834,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_prep_radiation", 2)
 
   end subroutine column_prep_radiation
 
@@ -1864,6 +1956,8 @@ contains
 
     real(kind=RKIND), parameter :: &
          CCSMDayNextShortwaveCalculation = 0.0_RKIND
+
+    call cice_debug_write_out_fields(domain, "column_radiation", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -2018,6 +2112,8 @@ contains
        block => block % next
     end do
 
+    call cice_debug_write_out_fields(domain, "column_radiation", 2)
+
   end subroutine column_radiation
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2118,6 +2214,8 @@ contains
     character(len=strKIND) :: &
          abortMessage
 
+    call cice_debug_write_out_fields(domain, "column_ridging", 1)
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -2191,6 +2289,8 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
 
+          abortFlag = .false.
+
           call colpkg_step_ridge(&
                config_dt, &        
                config_dynamics_subcycle_number, &
@@ -2242,7 +2342,7 @@ contains
           if (abortFlag) then
              COLUMN_ERROR_WRITE("column_ridging")
              COLUMN_ERROR_WRITE(trim(abortMessage))
-             stop
+             call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
        enddo ! iCell
@@ -2252,6 +2352,8 @@ contains
 
        block => block % next
     end do
+
+    call cice_debug_write_out_fields(domain, "column_ridging", 2)
 
   end subroutine column_ridging
 
@@ -2726,6 +2828,8 @@ contains
          iCell, &
          iCategory
 
+    call cice_debug_write_out_fields(domain, "cice_column_coupling_prep", 1)
+
     call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
@@ -2862,6 +2966,8 @@ contains
     enddo
 
     call cice_column_scale_fluxes(domain)
+
+    call cice_debug_write_out_fields(domain, "cice_column_coupling_prep", 2)
 
   end subroutine cice_column_coupling_prep
 
@@ -5683,6 +5789,151 @@ contains
                        * (vonkar/log(zref/iceruf)) ! atmo drag for RASM
 
   end function cice_column_initial_air_drag_coefficient
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_fluxes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31st August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_fluxes(domain)
+
+    type(domain_type) :: domain
+
+    ! atmospheric fluxes
+    call cice_column_reinitialize_atmospheric_fluxes(domain)
+
+    ! oceanic fluxes
+    call cice_column_reinitialize_oceanic_fluxes(domain)
+
+  end subroutine cice_column_reinitialize_fluxes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_atmospheric_fluxes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31st August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_atmospheric_fluxes(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         atmosFluxesPool, &
+         shortwavePool, &
+         atmosCouplingPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airStressCellU, &
+         airStressCellV, &
+         sensibleHeatFlux, &
+         latentHeatFlux, &
+         evaporativeHeatFlux, &
+         longwaveUp, &
+         absorbedShortwaveFlux, &
+         atmosReferenceTemperature2m, &
+         atmosReferenceHumidity2m, &
+         atmosReferenceSpeed10m
+    
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
+       call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
+       
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
+
+       call MPAS_pool_get_array(atmosFluxesPool, "sensibleHeatFlux", sensibleHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "latentHeatFlux", latentHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "evaporativeHeatFlux", evaporativeHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "longwaveUp", longwaveUp)
+
+       call MPAS_pool_get_array(shortwavePool, "absorbedShortwaveFlux", absorbedShortwaveFlux)
+
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceTemperature2m", atmosReferenceTemperature2m)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceHumidity2m", atmosReferenceHumidity2m)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceSpeed10m", atmosReferenceSpeed10m)
+
+       airStressCellU(:)              = 0.0_RKIND
+       airStressCellV(:)              = 0.0_RKIND
+       sensibleHeatFlux(:)            = 0.0_RKIND
+       latentHeatFlux(:)              = 0.0_RKIND
+       evaporativeHeatFlux(:)         = 0.0_RKIND
+       longwaveUp(:)                  = 0.0_RKIND
+       absorbedShortwaveFlux(:)       = 0.0_RKIND
+       atmosReferenceTemperature2m(:) = 0.0_RKIND
+       atmosReferenceHumidity2m(:)    = 0.0_RKIND
+       atmosReferenceSpeed10m(:)      = 0.0_RKIND
+
+       block => block % next
+    end do
+
+  end subroutine cice_column_reinitialize_atmospheric_fluxes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_oceanic_fluxes
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 31st August 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_oceanic_fluxes(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         oceanFluxesPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         oceanFreshWaterFlux, &
+         oceanSaltFlux, &
+         oceanHeatFlux, &
+         oceanShortwaveFlux
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxesPool)
+
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanFreshWaterFlux", oceanFreshWaterFlux)
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanSaltFlux", oceanSaltFlux)
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanHeatFlux", oceanHeatFlux)
+       call MPAS_pool_get_array(oceanFluxesPool, "oceanShortwaveFlux", oceanShortwaveFlux)
+
+       oceanFreshWaterFlux(:) = 0.0_RKIND
+       oceanSaltFlux(:)       = 0.0_RKIND
+       oceanHeatFlux(:)       = 0.0_RKIND
+       oceanShortwaveFlux(:)  = 0.0_RKIND
+
+       block => block % next
+    end do
+
+  end subroutine cice_column_reinitialize_oceanic_fluxes
 
 !-----------------------------------------------------------------------
 

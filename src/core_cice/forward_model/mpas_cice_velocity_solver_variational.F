@@ -24,8 +24,9 @@ module cice_velocity_solver_variational
        cice_init_velocity_solver_variational, &
        cice_strain_tensor_variational, &
        cice_stress_divergence_variational, &
-       cice_internal_stress_variational
-
+       cice_internal_stress_variational, &
+       cice_final_divergence_shear_variational
+  
 contains
 
 !-----------------------------------------------------------------------
@@ -118,7 +119,8 @@ contains
        icePressure, &
        replacementPressure, &
        dtElastic, &
-       evpDamping, &
+       dt, &
+       revisedEVP, &
        stressDivergenceU, &
        stressDivergenceV, &
        solveStress, &
@@ -137,10 +139,11 @@ contains
          replacementPressure !< Input/Output: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic  !< Input: 
-
+         dtElastic, & !< Input: 
+         dt           !< Input: 
+         
     logical, intent(in) :: &
-         evpDamping !< Input: 
+         revisedEVP !< Input: 
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, & !< Output: 
@@ -184,8 +187,9 @@ contains
     call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
     call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
     call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
-
-    call cice_strain_tensor_variational(mesh, &
+    
+    call cice_strain_tensor_variational(&
+         mesh, &
          strain11, &
          strain22, &
          strain12, &
@@ -196,7 +200,8 @@ contains
          tanLatVertexRotatedOverRadius, &
          solveStress)
     
-    call cice_stress_tensor_variational(mesh, &
+    call cice_stress_tensor_variational(&
+         mesh, &
          stress11, &
          stress22, &
          stress12, &
@@ -206,9 +211,12 @@ contains
          icePressure, &
          replacementPressure, &
          solveStress, &
-         dtElastic, evpDamping)
+         dtElastic, &
+         dt, &
+         revisedEVP)
     
-    call cice_stress_divergence_variational(mesh, &
+    call cice_stress_divergence_variational(&
+         mesh, &
          stressDivergenceU, &
          stressDivergenceV, &
          stress11, &
@@ -359,11 +367,12 @@ contains
        replacementPressure, &
        solveStress, &
        dtElastic, &
-       evpDamping)!{{{
+       dt, &
+       revisedEVP)!{{{
     
     use cice_velocity_solver_shared, only: &
          cice_evp_constitutive_relation, &
-         cice_linear_constitutive_relation
+         cice_evp_constitutive_relation_revised
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input: 
@@ -388,12 +397,13 @@ contains
          solveStress !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input: 
-
+         dtElastic, & !< Input: 
+         dt           !< Input: 
+         
     logical, intent(in) :: &
-         evpDamping !< Input: 
+         revisedEVP !< Input: 
 
-    real(kind=RKIND) :: &
+    real(kind=RKIND), dimension(:), allocatable :: &
          replacementPressureCell
 
     integer :: &
@@ -401,7 +411,8 @@ contains
          iVertexOnCell
 
     integer, pointer :: &
-         nCells
+         nCells, &
+         maxEdges
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
@@ -411,53 +422,87 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
+    call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
+    
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
-    do iCell = 1, nCells
+    allocate(replacementPressureCell(maxEdges))
 
-       if (solveStress(iCell) == 1) then
+    if (.not. revisedEVP) then
+    
+       do iCell = 1, nCells
 
-          do iVertexOnCell = 1, nEdgesOnCell(iCell)
+          if (solveStress(iCell) == 1) then
 
-             call cice_evp_constitutive_relation(&
-                  stress11(iVertexOnCell,iCell), &
-                  stress22(iVertexOnCell,iCell), &
-                  stress12(iVertexOnCell,iCell), &
-                  strain11(iVertexOnCell,iCell), &
-                  strain22(iVertexOnCell,iCell), &
-                  strain12(iVertexOnCell,iCell), &
-                  icePressure(iCell), &
-                  replacementPressureCell, &
-                  areaCell(iCell), &
-                  dtElastic, evpDamping)
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-             if (iVertexOnCell == 1) then
+                call cice_evp_constitutive_relation(&
+                     stress11(iVertexOnCell,iCell), &
+                     stress22(iVertexOnCell,iCell), &
+                     stress12(iVertexOnCell,iCell), &
+                     strain11(iVertexOnCell,iCell), &
+                     strain22(iVertexOnCell,iCell), &
+                     strain12(iVertexOnCell,iCell), &
+                     icePressure(iCell), &
+                     replacementPressureCell(iVertexOnCell), &
+                     areaCell(iCell), &
+                     dtElastic)
 
-                replacementPressure(iCell) = replacementPressureCell
+             enddo ! iVertexOnCell
 
-             endif
+             !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
+             replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
 
-             !call cice_linear_constitutive_relation(&
-             !     stress11(iVertexOnCell,iCell), &
-             !     stress22(iVertexOnCell,iCell), &
-             !     stress12(iVertexOnCell,iCell), &
-             !     strain11(iVertexOnCell,iCell), &
-             !     strain22(iVertexOnCell,iCell), &
-             !     strain12(iVertexOnCell,iCell))
+          else
 
-          enddo ! iVertexOnCell
+             stress11(:,iCell) = 0.0_RKIND
+             stress22(:,iCell) = 0.0_RKIND
+             stress12(:,iCell) = 0.0_RKIND
 
-       else
+          endif ! solveStress
 
-          stress11(:,iCell) = 0.0_RKIND
-          stress22(:,iCell) = 0.0_RKIND
-          stress12(:,iCell) = 0.0_RKIND
+       enddo ! iCell
 
-       endif ! solveStress
+    else
 
-    enddo ! iCell
+       do iCell = 1, nCells
+
+          if (solveStress(iCell) == 1) then
+
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+                call cice_evp_constitutive_relation_revised(&
+                     stress11(iVertexOnCell,iCell), &
+                     stress22(iVertexOnCell,iCell), &
+                     stress12(iVertexOnCell,iCell), &
+                     strain11(iVertexOnCell,iCell), &
+                     strain22(iVertexOnCell,iCell), &
+                     strain12(iVertexOnCell,iCell), &
+                     icePressure(iCell), &
+                     replacementPressureCell(iVertexOnCell), &
+                     areaCell(iCell), &
+                     dt)
+
+             enddo ! iVertexOnCell
+
+             !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
+             replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
+
+          else
+
+             stress11(:,iCell) = 0.0_RKIND
+             stress22(:,iCell) = 0.0_RKIND
+             stress12(:,iCell) = 0.0_RKIND
+
+          endif ! solveStress
+
+       enddo ! iCell
+       
+    endif
+
+    ! clean up
+    deallocate(replacementPressureCell)
 
   end subroutine cice_stress_tensor_variational!}}}
 
@@ -601,6 +646,161 @@ contains
     enddo ! iVertex
 
   end subroutine cice_stress_divergence_variational!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  final_divergence_shear_variational
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date July 9th 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_final_divergence_shear_variational(block)
+
+    use cice_velocity_solver_shared, only: &
+         eccentricitySquared
+    
+    type(block_type), intent(inout) :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityVariationalPool, &
+         velocitySolverPool, &
+         ridgingPool
+
+    integer, pointer :: &
+         nCells
+    
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell, &
+         solveStress
+    
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         divergence, &
+         shear, &
+         ridgeConvergence, &
+         ridgeShear
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         DeltaAverage
+
+    real(kind=RKIND) :: &
+         strainDivergenceSum, &
+         strainTensionSum, &
+         strainShearingSum, &
+         strainDivergence, &
+         strainTension, &
+         strainShearing, &
+         Delta
+
+    logical, pointer :: &
+         pkgColumnRidgingActive
+    
+    integer :: &
+         iCell, &
+         iVertexOnCell
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+    call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+    
+    call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
+    
+    call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
+    
+    call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
+    call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
+    call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
+
+    call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
+    call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
+    call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+    allocate(DeltaAverage(nCells))
+     
+    do iCell = 1, nCells
+
+       if (solveStress(iCell) == 1) then
+
+          strainDivergenceSum = 0.0_RKIND
+          strainTensionSum    = 0.0_RKIND
+          strainShearingSum   = 0.0_RKIND
+          DeltaAverage(iCell) = 0.0_RKIND
+
+          do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+             strainDivergence = strain11(iVertexOnCell,iCell) + strain22(iVertexOnCell,iCell)
+             strainTension    = strain11(iVertexOnCell,iCell) - strain22(iVertexOnCell,iCell)
+             strainShearing   = strain12(iVertexOnCell,iCell) * 2.0_RKIND
+
+             Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+
+             strainDivergenceSum = strainDivergenceSum + strainDivergence
+             strainTensionSum    = strainTensionSum    + strainTension
+             strainShearingSum   = strainShearingSum   + strainShearing
+             DeltaAverage(iCell) = DeltaAverage(iCell) + Delta
+
+          enddo ! iVertexOnCell
+
+          divergence(iCell)   = strainDivergenceSum                              / real(nEdgesOnCell(iCell),RKIND)
+          shear(iCell)        = sqrt(strainTensionSum**2 + strainShearingSum**2) / real(nEdgesOnCell(iCell),RKIND)
+          DeltaAverage(iCell) = DeltaAverage(iCell)                              / real(nEdgesOnCell(iCell),RKIND)
+
+       else
+
+          divergence(iCell)   = 0.0_RKIND
+          shear(iCell)        = 0.0_RKIND
+
+       endif
+       
+    enddo ! iCell
+
+    ! ridging parameters
+    call MPAS_pool_get_package(block % packages, "pkgColumnRidgingActive", pkgColumnRidgingActive)
+
+    if (pkgColumnRidgingActive) then
+
+       call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
+
+       call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
+       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
+
+       do iCell = 1, nCells
+          
+          if (solveStress(iCell) == 1) then
+
+             ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
+             ridgeShear(iCell)       = 0.5_RKIND * (DeltaAverage(iCell) - abs(divergence(iCell)))
+
+          else
+
+             ridgeConvergence(iCell) = 0.0_RKIND
+             ridgeShear(iCell)       = 0.0_RKIND
+
+          endif
+
+       enddo ! iCell
+       
+    endif ! pkgColumnRidgingActive
+
+    ! units - for comparison to CICE
+    divergence = divergence * 100.0_RKIND * 86400.0_RKIND
+    shear      = shear      * 100.0_RKIND * 86400.0_RKIND
+
+    ! cleanup
+    deallocate(DeltaAverage)
+
+  end subroutine cice_final_divergence_shear_variational
 
 !-----------------------------------------------------------------------
 
