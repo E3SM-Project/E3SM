@@ -2724,15 +2724,15 @@ end subroutine ccsm_init
 	    if (ocn_c2_glc) then
 	       call prep_glc_calc_o2x_gx(timer='driver_glcprep_ocn2glc')
 	    end if
-
+	    
+	    !Jer: average the accumulated fields from both lnd and ocn
+	    call prep_glc_accum_avg(timer='driver_glcprep_avg')
+	    
             !Jer: get lnd inputs to glc, on glc grid
             if (lnd_c2_glc) then
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
                call prep_glc_calc_l2x_gx(timer='driver_glcprep_lnd2glc')
 	    end if
-	    
-	    !Jer: average the accumulated fields from both lnd and ocn
-	    call prep_glc_accum_avg(timer='driver_glcprep_avg')
 
             call prep_glc_mrg(infodata, timer_mrg='driver_glcprep_mrgx2g')
 
