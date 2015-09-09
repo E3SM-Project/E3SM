@@ -42,8 +42,7 @@ only one IO task.  Since this technique does not guarantee that data
 on the IO node represents a contiguous block of data on the file it
 may require multiple calls to the underlying (NetCDF) IO library.
 
-As an example suppose we have a global two dimensional grid of size 4x5 decomposed over 5 tasks. We represent the 
-two dimensional grid in terms of offset from the initial element ie
+As an example suppose we have a global two dimensional grid of size 4x5 decomposed over 5 tasks. We represent the two dimensional grid in terms of offset from the initial element ie
 <pre>
      0  1  2  3 
      4  5  6  7 

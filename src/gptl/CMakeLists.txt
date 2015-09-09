@@ -44,6 +44,11 @@ endif ()
 target_compile_definitions (gptl
     PUBLIC ${CMAKE_Fortran_COMPILER_DIRECTIVE})
 
+if (CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
+   target_compile_options (gptl
+       PUBLIC -mismatch_all)
+endif ()
+
 #==============================================================================
 #  DEFINE THE INSTALL
 #==============================================================================
