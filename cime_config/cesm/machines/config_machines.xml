@@ -506,10 +506,13 @@
     <!-- pbs is for crays.. -->
     <batch_system type="pbs" version="x.y">
       <queues>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
+        <queue walltimemax="48:00:00" jobmin="1" jobmax="16368" >regular</queue>
+        <queue walltimemax="36:00:00" jobmin="98304" jobmax="49152" >regular</queue>
+        <queue walltimemax="12:00:00" jobmin="98305" jobmax="131088" default="true">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="512">debug</queue>
       </queues>
       <walltimes>
-	<walltime default="true">01:15:00</walltime>
+	<walltime default="true">00:30:00</walltime>
 	<walltime ccsm_estcost="1">01:50:00</walltime>
 	<walltime ccsm_estcost="3">05:00:00</walltime>
       </walltimes>
