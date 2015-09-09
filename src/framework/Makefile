@@ -59,7 +59,7 @@ mpas_derived_types.o: mpas_kind_types.o mpas_constants.o $(TYPE_DEPS)
 
 mpas_domain_routines.o: mpas_derived_types.o mpas_pool_routines.o
 
-mpas_field_routines.o: mpas_derived_types.o duplicate_field_array.inc duplicate_field_scalar.inc
+mpas_field_routines.o: mpas_derived_types.o duplicate_field_array.inc duplicate_field_scalar.inc mpas_threading.o
 
 mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o mpas_dmpar.o
 
