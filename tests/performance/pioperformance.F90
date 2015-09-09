@@ -308,7 +308,8 @@ contains
 #ifdef VARDOUBLE
                    nvarmult = nvarmult+2
 #endif
-                   print *, 'write ',rearr_name(rearr), varsize, ntasks, nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'write ',rearr_name(rearr), varsize, ntasks, nvars, &
+                                     nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY
   call print_memusage()
 #endif
