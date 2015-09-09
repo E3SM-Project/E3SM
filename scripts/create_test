@@ -1392,13 +1392,13 @@ sub testcaseSetup
     #&Debug("XMLVARS:");
     #&Debug( eval { Dumper \%xmlvars} );
 
-    chdir($caseroot); 
-
     my $cwd = getcwd();
     chdir ($caseroot);
     foreach my $attr(keys %xmlvars)
     {
+        &Debug("attr $attr $xmlvars{$attr}\n");
 	$xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+        &Debug("setting $xmlvars{$attr}\n");
     }
     chdir ($cwd);
 
@@ -1419,6 +1419,7 @@ sub testcaseSetup
     }
 
     print "Setting up test case \n";
+    chdir ($caseroot);
     $sysmod = "./case_setup";
     &Debug("sysmod is $sysmod");
     system($sysmod) == 0 or warn "$sysmod failed: $?\n";
