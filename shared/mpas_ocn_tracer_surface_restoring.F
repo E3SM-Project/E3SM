@@ -120,8 +120,6 @@ contains
         tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) - &
                                                pistonVelocity(iTracer,iCell) *      &
                                                (tracers(iTracer, iLevel, iCell) - tracersSurfaceRestoringValue(iTracer,iCell))
-        write(6,10) iCell,iTracer,tracersSurfaceFlux(iTracer, iCell), pistonVelocity(iTracer,iCell), tracersSurfaceRestoringValue(iTracer,iCell), tracers(iTracer, iLevel, iCell)
-        10 format(5x,2i4,4e12.2)
       enddo
       enddo
 
