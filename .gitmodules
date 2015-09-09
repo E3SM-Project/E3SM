@@ -1,5 +1,5 @@
 [submodule "mpas-o"]
-	path = models/ocn/mpas-o/model
+	path = components/mpas-o/model
 	url = git@github.com:ACME-Climate/MPAS.git
 	branch = ocean/develop
 [submodule "mpas-li"]
