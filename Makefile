@@ -422,6 +422,7 @@ ifeq "$(OPENMP)" "true"
 	FFLAGS += $(FFLAGS_OMP)
 	CFLAGS += $(CFLAGS_OMP)
 	CXXFLAGS += $(CFLAGS_OMP)
+	override CPPFLAGS += "-DMPAS_OPENMP"
 	LDFLAGS += $(FFLAGS_OMP)
 endif #OPENMP IF
 
