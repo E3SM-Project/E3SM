@@ -11,7 +11,7 @@ fi
 GIT=/soft/versioning/git/2.3.0/bin/git
 CTEST=/soft/buildtools/cmake/3.3.0/bin/ctest
 
-export LIBZ=/soft/libraries/alcf/current/xl/ZLIB/lib
+export LIBZ=/soft/libraries/alcf/current/xl/ZLIB
 export HDF5=/soft/libraries/hdf5/1.8.14/cnk-xl/V1R2M2-20150213
 export NETCDF=/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/V1R2M2-20150213
 export PNETCDF=/soft/libraries/pnetcdf/1.6.0/cnk-xl/V1R2M2-20150213
