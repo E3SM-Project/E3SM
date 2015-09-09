@@ -66,17 +66,17 @@
 		<package name="mixedLayerDepthsAMPKG" description="This package includes variables required for the mixedLayerDepths analysis member."/>
 	</packages>
 	<var_struct name="mixedLayerDepthsAM" time_levs="1" packages="mixedLayerDepthsAMPKG">
-		<var name="tThreshMLD" type="real" dimensions="nCells" units="m"
+		<var name="tThreshMLD" type="real" dimensions="nCells Time" units="m"
 			description="mixed layer depth based on temperature threshold"
 		/>
-		<var name="dThreshMLD" type="real" dimensions="nCells" units="m"
+		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
 	                description="mixed layer depth based on temperature threshold"
 	        />
 
-		<var name="tGradMLD" type="real" dimensions="nCells" units="m"
+		<var name="tGradMLD" type="real" dimensions="nCells Time" units="m"
 			description="mixed layer depth based on gradient of temperature"
 		/>
-                <var name="dGradMLD" type="real" dimensions="nCells" units="m"
+                <var name="dGradMLD" type="real" dimensions="nCells Time" units="m"
 		        description="mixed layer depth based on gradient of density"
 		/>
 	</var_struct>
