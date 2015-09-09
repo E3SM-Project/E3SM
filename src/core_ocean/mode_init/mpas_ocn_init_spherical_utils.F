@@ -32,6 +32,7 @@ module ocn_init_spherical_utils
    public :: ocn_init_expand_sphere, ocn_transform_from_lonlat_to_xyz
    public :: transform_from_xyz_to_lonlat, ocn_unit_vector_in_3space
    public :: ocn_vector_on_tangent_plane, ocn_cross_product_in_3space
+   public :: ocn_init_set_pools_sphere_radius
 
    !--------------------------------------------------------------------
    !
@@ -143,6 +144,8 @@ contains
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
+        call ocn_init_set_pools_sphere_radius(block_ptr % structs, newRadius)
+
         ! Expand cell quantities
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
@@ -251,6 +254,44 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_expand_sphere!}}}
+
+!***********************************************************************
+!
+!  recursive routine ocn_init_set_pools_sphere_radius
+!
+!> \brief   MPAS-Ocean Sphere radius update routine
+!> \author  Doug Jacobsen
+!> \date    09/09/2015
+!> \details 
+!>  This routine updates the value of sphere_radius in all pools that contain
+!>  it.
+!
+!-----------------------------------------------------------------------
+   recursive subroutine ocn_init_set_pools_sphere_radius(inPool, newRadius)!{{{
+      type (mpas_pool_type), intent(inout) :: inPool
+      real (kind=RKIND), intent(in) :: newRadius
+
+      type (mpas_pool_type), pointer :: subPool
+      type (mpas_pool_iterator_type) :: poolItr
+      real (kind=RKIND), pointer :: sphere_radius
+
+      call mpas_pool_begin_iteration(inPool)
+
+      do while ( mpas_pool_get_next_member(inPool, poolItr) )
+         if ( poolItr % memberType == MPAS_POOL_SUBPOOL ) then
+            call mpas_pool_get_subpool(inPool, poolItr % memberName, subPool)
+            call ocn_init_set_pools_sphere_radius(subPool, newRadius)
+         else if ( poolItr % memberType == MPAS_POOL_CONFIG ) then
+
+            if ( poolItr % memberName == 'sphere_radius' ) then
+               call mpas_pool_get_config(inPool, poolItr % memberName, sphere_radius)
+               sphere_radius = newRadius
+            end if
+
+         end if
+      end do
+
+   end subroutine ocn_init_set_pools_sphere_radius!}}}
 
 !***********************************************************************
 !
