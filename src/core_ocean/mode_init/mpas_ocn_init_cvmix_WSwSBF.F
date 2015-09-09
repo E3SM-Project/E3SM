@@ -165,9 +165,6 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_max_windstress', config_cvmix_WSwSBF_max_windstress)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_coriolis_parameter', config_cvmix_WSwSBF_coriolis_parameter)
 
-      write(6,*) config_cvmix_WSwSBF_surface_temperature, config_cvmix_WSwSBF_surface_salinity, &
-                   config_cvmix_WSwSBF_surface_salinity, config_cvmix_WSwSBF_surface_restoring_salinity
-
       ! load data that required to initialize the ocean simulation
       block_ptr => domain % blocklist
       do while(associated(block_ptr))

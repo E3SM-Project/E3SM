@@ -128,7 +128,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      write(6,*) ' calling ocn_vel_forcing_windstress_tend'
       call ocn_vel_forcing_windstress_tend(meshPool, surfaceWindStress, layerThicknessEdge, tend, err1)
       call ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err2)
 

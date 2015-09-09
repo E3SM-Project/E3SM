@@ -129,7 +129,6 @@ contains
 
       err = 0
 
-      write(6,*) 'windStressOn',windStressOn
       if ( .not. windStressOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
