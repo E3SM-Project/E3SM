@@ -96,21 +96,21 @@
   <!-- babbage is PBS -->
   <batch_system MACH="babbage" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
   <!-- babbageKnc is PBS -->
   <batch_system MACH="babbageKnc" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
   <!-- brutus is PBS -->
   <batch_system MACH="brutus" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -126,7 +126,7 @@
   <!-- brutus is PBS -->
   <batch_system MACH="brutus" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -134,7 +134,6 @@
     <batch_system MACH="edison" version="x.y">
       <directives>
 	    <directive>-l mppwidth={{ mppwidth }}</directive>
-        <directive> -P {{ account }} </directive>
         <directive default="/bin/bash" > -S {{ shell }} </directive>
       </directives>
     </batch_system> 
@@ -146,21 +145,21 @@
       <directive>-A {{ project }}</directive>
       <directive>-l mppwidth={{ mppwidth }}</directive>
       <directive>-l  nodes={{ num_nodes }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
    </batch_system> 
 
   <!-- erebus is PBS -->
   <batch_system MACH="erebus" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
   <!-- evergreen is PBS -->
   <batch_system MACH="evergreen" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -181,7 +180,7 @@
   <batch_system MACH="goldbach" version="x.y">
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -189,7 +188,7 @@
   <batch_system MACH="hobart" version="x.y">
     <directives>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -205,14 +204,14 @@
   <!-- hopper is PBS -->
   <batch_system MACH="hopper" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
   <!-- janus is PBS -->
   <batch_system MACH="janus" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -222,7 +221,7 @@
       <directive>-W group_list={{ project }} </directive>
       <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:has</directive>
       <directive>-l place=scatter:excl</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -232,7 +231,7 @@
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:ivy</directive>
       <directive>-l place=scatter:excl</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -242,7 +241,7 @@
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:san</directive>
       <directive>-l place=scatter:excl</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -252,7 +251,7 @@
       <directive>-W group_list={{ project }} </directive>
       <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:wes</directive>
       <directive>-l place=scatter:excl</directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
@@ -260,7 +259,7 @@
    <batch_system MACH="sierra">
    <batch_directive>#MSUB</batch_directive>
    <directives>
-     <directive>-V </directive>
+     <directive> </directive>
      <directive>-A ees </directive>
      <directive>-l nodes={{ num_nodes }}</directive>
      <directive>-l gres=lscratchd</directive>
@@ -270,7 +269,7 @@
   <!-- titan is PBS -->
   <batch_system MACH="titan" version="x.y">
     <directives>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
 
