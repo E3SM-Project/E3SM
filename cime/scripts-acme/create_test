@@ -55,7 +55,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if ("PROJECT" in os.environ):
         default_project = os.environ["PROJECT"]
 
-    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_source_repo())
+    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
 
     parser.add_argument("testargs", nargs="+", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
 
@@ -211,7 +211,7 @@ def create_test(testargs, compiler, no_run=False, no_build=False, no_batch=False
         create_test_cmd = "%s -autosubmit off -nobatch on" % create_test_cmd
 
     stat = acme_util.run_cmd(create_test_cmd,
-                             from_dir=os.path.join(acme_util.get_source_repo(), "cime", "scripts"),
+                             from_dir=os.path.join(acme_util.get_cime_root(), "scripts"),
                              ok_to_fail=True,
                              verbose=True,
                              arg_stdout=None, arg_stderr=None)[0]

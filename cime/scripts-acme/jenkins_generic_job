@@ -61,7 +61,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only compare/generate namelists. Useful for quick namelist-only operations")
 
-    parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_source_repo()),
+    parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_cime_root()),
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
     parser.add_argument("-t", "--test-suite", default=default_test_suite,
@@ -176,14 +176,14 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
 
         baseline_action = "-g" if generate_baselines else "-c"
         test_id = "%s_%s" % (test_id_root, acme_util.get_utc_timestamp())
-        create_test_cmd = "acme-scripts/create_test %s --test-root %s -p %s -t %s %s -b %s" % \
+        create_test_cmd = "./create_test %s --test-root %s -p %s -t %s %s -b %s" % \
                           (test_suite, casearea, project, test_id, baseline_action, baseline_name)
 
         if (namelists_only):
             create_test_cmd += " -n"
 
         if (not wait_for_tests.SIGNAL_RECEIVED):
-            create_test_stat = acme_util.run_cmd(create_test_cmd, from_dir=acme_util.get_source_repo(),
+            create_test_stat = acme_util.run_cmd(create_test_cmd, from_dir=acme_util.get_acme_scripts_root(),
                                                  verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
             if (create_test_stat != 0):
                 warning("create_test FAILED!")

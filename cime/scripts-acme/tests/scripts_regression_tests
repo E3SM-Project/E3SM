@@ -39,6 +39,11 @@ class RunUnitTests(unittest.TestCase):
     def test_wait_for_tests_unit_test(self):
         self.do_unit_tests("wait_for_tests")
 
+    def test_acme_util_unit_test(self):
+        # A little different since this is a library, not an executable
+        stat, output, _ = run_cmd("python -m doctest acme_util.py -v 2>&1", ok_to_fail=True, from_dir=SCRIPT_DIR)
+        self.assertEqual(stat, 0, msg=output)
+
 ###############################################################################
 def make_fake_teststatus(path, testname, status):
 ###############################################################################

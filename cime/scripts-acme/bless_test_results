@@ -44,7 +44,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_source_repo())
+    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
 
     default_compiler, _, _, _, acme_root, _, _ = acme_util.get_machine_info()
     default_testroot = os.path.join(acme_root, "jenkins")
@@ -163,7 +163,7 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
                                     warning("Skipping hist files for this test")
                                     continue
                                 hist_file = hist_files[0]
-                                hist_compare_script = os.path.join(acme_util.get_source_repo(), "cime", "scripts", "Tools", "hist_compare.csh")
+                                hist_compare_script = os.path.join(acme_util.get_cime_root(), "scripts", "Tools", "hist_compare.csh")
                                 stat = run_cmd("%s %s %s" % (hist_compare_script, hist_file, baseline_file), arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
                                 if (stat != 0):
                                     print "Hist files '%s' and '%s' did not match" % (baseline_file, hist_file)

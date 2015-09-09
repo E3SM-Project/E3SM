@@ -83,8 +83,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     utc_time_tuple = time.gmtime(current_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
-    acme_repo = acme_util.get_source_repo()
-    git_commit = acme_util.get_current_commit(repo=acme_repo)
+    git_commit = acme_util.get_current_commit(repo=acme_util.get_cime_root())
 
     hostname = acme_util.probe_machine_name()
     if (hostname is None):

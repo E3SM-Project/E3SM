@@ -114,6 +114,12 @@ def expect(condition, error_msg):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
+
+    >>> expect(True, "error1")
+    >>> expect(False, "error2")
+    Traceback (most recent call last):
+        ...
+    SystemExit: FAIL: error2
     """
     if (not condition):
         raise SystemExit("FAIL: %s" % error_msg)
@@ -121,6 +127,9 @@ def expect(condition, error_msg):
 ###############################################################################
 def warning(msg):
 ###############################################################################
+    """
+    Print a warning to stderr
+    """
     print >> sys.stderr, "WARNING:", msg
 
 ###############################################################################
@@ -140,6 +149,23 @@ _hack=object()
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack):
 ###############################################################################
+    """
+    Wrapper around subprocess to make it much more convenient to run shell commands
+
+    >>> run_cmd('echo foo')
+    'foo'
+
+    >>> run_cmd('ls file_i_hope_doesnt_exist')
+    Traceback (most recent call last):
+        ...
+    SystemExit: FAIL: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
+
+    >>> run_cmd('ls file_i_hope_doesnt_exist', ok_to_fail=True)[0] != 0
+    True
+
+    >>> run_cmd('grep foo', input_str='foo')
+    'foo'
+    """
     import subprocess # Not safe to do globally, module not available in older pythons
 
     # Real defaults for these value should be subprocess.PIPE
@@ -163,6 +189,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             cwd=from_dir)
     output, errput = proc.communicate(input_str)
     output = output.strip() if output is not None else output
+    errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
     verbose_print("  stat: %d\n" % stat, verbose)
@@ -182,6 +209,12 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
 ###############################################################################
 def check_minimum_python_version(major, minor):
 ###############################################################################
+    """
+    Check your python version.
+
+    >>> check_minimum_python_version(sys.version_info[0], sys.version_info[1])
+    >>>
+    """
     expect(sys.version_info[0] == major and sys.version_info[1] >= minor,
            "Python %d.%d+ is required, you have %d.%d" %
            (major, minor, sys.version_info[0], sys.version_info[1]))
@@ -189,6 +222,14 @@ def check_minimum_python_version(major, minor):
 ###############################################################################
 def normalize_case_id(case_id):
 ###############################################################################
+    """
+    Given an ACME case_id, return it in form TEST.GRID.COMPSET.PLATFORM
+
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
+    'ERT.ne16_g37.B1850C5.skybridge_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.G.20151121')
+    'ERT.ne16_g37.B1850C5.skybridge_intel'
+    """
     sep_count = case_id.count(".")
     expect(sep_count in [3, 5],
            "Case needs to be in form: TEST.GRID.COMPSET.PLATFORM  or  TEST.GRID.COMPSET.PLATFORM.GC.TESTID")
@@ -203,6 +244,9 @@ def probe_machine_name():
     """
     Use the hostname of your machine to probe for the ACME name for this
     machine.
+
+    >>> probe_machine_name() is not None
+    True
     """
     hostname = socket.gethostname().split(".")[0]
 
@@ -217,6 +261,9 @@ def get_current_branch(repo=None):
 ###############################################################################
     """
     Return the name of the current branch for a repository
+
+    >>> get_current_branch() is not None
+    True
     """
     if ("GIT_BRANCH" in os.environ):
         # This approach works better for Jenkins jobs because the Jenkins
@@ -235,17 +282,70 @@ def get_current_commit(short=False, repo=None):
 ###############################################################################
     """
     Return the sha1 of the current HEAD commit
+
+    >>> get_current_commit() is not None
+    True
     """
     output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
     return output
 
 ###############################################################################
-def get_source_repo():
+def get_acme_scripts_location_within_cime():
 ###############################################################################
     """
-    Return the absolute path to the root of the repo that contains this script
+    From within CIME, return subdirectory where ACME scripts live.
     """
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return "scripts-acme"
+
+###############################################################################
+def get_cime_location_within_acme():
+###############################################################################
+    """
+    From within ACME, return subdirectory where CIME lives.
+    """
+    return "cime"
+
+###############################################################################
+def get_acme_scripts_location_within_acme():
+###############################################################################
+    """
+    From within ACME, return subdirectory where ACME scripts live.
+    """
+    os.path.join(get_cime_location_within_acme(), get_acme_scripts_location_within_cime())
+
+###############################################################################
+def get_cime_root():
+###############################################################################
+    """
+    Return the absolute path to the root of CIME that contains this script
+
+    >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
+    True
+    """
+    acme_script_absdir = os.path.abspath(os.path.dirname(__file__))
+    assert acme_script_absdir.endswith(get_acme_scripts_location_within_cime())
+    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_acme_scripts_location_within_cime())])
+
+###############################################################################
+def get_acme_root():
+###############################################################################
+    """
+    Return the absolute path to the root of ACME that contains this script
+
+    >>> os.path.isdir(os.path.join(get_acme_root(), '.git'))
+    True
+    """
+    cime_absdir = get_cime_root()
+    assert cime_absdir.endswith(get_cime_location_within_acme()), cime_absdir
+    return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_acme())])
+
+###############################################################################
+def get_acme_scripts_root():
+###############################################################################
+    """
+    Get absolute path to acme scripts
+    """
+    return os.path.abspath(os.path.dirname(__file__))
 
 ###############################################################################
 def stop_buffering_output():
