@@ -72,6 +72,7 @@ module ocn_analysis_driver
 
    character (len=*), parameter :: initTimerPrefix = 'init_'
    character (len=*), parameter :: computeTimerPrefix = 'compute_'
+   character (len=*), parameter :: computeStartupTimerPrefix = 'compute_startup_'
    character (len=*), parameter :: writeTimerPrefix = 'write_'
    character (len=*), parameter :: alarmTimerPrefix = 'reset_alarm_'
    character (len=*), parameter :: restartTimerPrefix = 'restart_'
@@ -338,7 +339,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start('analysis_compute', .false.)
+      call mpas_timer_start('analysis_compute_startup', .false.)
 
       timeLevel=1
 
@@ -355,7 +356,7 @@ contains
             call mpas_pool_get_config(domain % configs, configName, config_AM_write_on_startup)
 
             if ( config_AM_compute_on_startup ) then
-               timerName = trim(computeTimerPrefix) // poolItr % memberName(1:nameLength)
+               timerName = trim(computeStartupTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName, .false.)
                call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
@@ -377,7 +378,7 @@ contains
          end if
       end do
 
-      call mpas_timer_stop('analysis_compute')
+      call mpas_timer_stop('analysis_compute_startup')
 
    end subroutine ocn_analysis_compute_startup!}}}
 
