@@ -73,7 +73,7 @@ mpas_sort.o: mpas_kind_types.o mpas_io_units.o
 
 mpas_timekeeping.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o mpas_dmpar.o
 
-mpas_timer.o: mpas_kind_types.o mpas_io_units.o mpas_dmpar.o
+mpas_timer.o: mpas_kind_types.o mpas_io_units.o mpas_dmpar.o mpas_threading.o
 
 mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_dmpar.o
 
