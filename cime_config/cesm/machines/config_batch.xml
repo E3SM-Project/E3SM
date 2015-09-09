@@ -75,6 +75,7 @@
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
+      <directive> -V </directive>
     </directives>
   </batch_system>
 
