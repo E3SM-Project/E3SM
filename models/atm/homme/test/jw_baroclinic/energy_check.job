@@ -1,0 +1,221 @@
+#!/bin/tcsh -f 
+#PBS -l nodes=20:ppn=2
+#PBS -l walltime=1:00:00
+#PBS -j oe
+#PBS -A 109710/1
+
+set NCPU = 2
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+    echo using NCPU = $NCPU
+endif
+
+#
+#  energy balance debug test case
+#  see homme/test/jw_baroclinic/README for details of what the output
+#  should look like
+#
+#
+# first set makerestart=1 to make the reference restart file 
+# by running from day 0 to day 9:
+#
+# then set makerestart=0 to run 3 timestep restart runs with different
+# timesteps/viscosity coefficients: (tstep2, nu2, nu_s2 below)
+#
+set makerestart=0
+
+set tadv = 1
+
+set nlev=26
+set ne = 6
+set tstep = 360
+set NPTS = 4
+set qsize = 1
+
+set nu = 4e16
+set nu_s = 4e16
+set nu_p = 0
+set hypervis = 2
+set subcycle = 1
+
+
+#timestep of restart run
+# runtype = 1 exact restart.   bad results if we change tstep
+# runtype = 2 initial run, but restart file used as initial condtion
+#             uses leapfrog bootstrap procedure to get good results
+#set tstep2 = 360
+set tstep2 = 180
+set runtype = 2
+set nu2 = 4e16
+set nu_s2 = 4e16
+set nu_p2 = 0
+#set nu_top2 = 2.5e5
+set nu_top2 = 0
+
+# set number of hours
+set nmax = 216
+@ nmax *= 3600
+@ nmax /= $tstep
+
+# restartfreq every 9 days
+set rfreq = 216
+@ rfreq *= 3600
+@ rfreq /= $tstep
+
+
+
+
+# number of min between calls to prim_printstate
+set sfreq = 360
+@ sfreq *= 60
+@ sfreq /= $tstep
+
+
+
+
+if ( dosadi == `hostname`  || nostromo == `hostname` ) then
+   set src = ~/codes/homme/build.Linux
+   set input = ~/codes/homme/test/jw_baroclinic
+   set wdir = /tmp/preqx
+   set vdir = ~/codes/homme/test/vcoord
+else if ( Darwin == `uname` ) then
+   set src = ~/homme/build.Darwin
+   set input = ~/homme/test/jw_baroclinic
+   set wdir = ~/data/preqx/jw
+   set vdir = /Users/mataylo/homme/test/vcoord
+else
+   set src = ~/homme/build.Linux
+   set input = ~/homme/test/jw_baroclinic
+   set wdir = ~/scratch1/preqx
+   set vdir = ~/homme/test/vcoord
+endif
+
+set mpirun = "mpirun -np $NCPU "
+
+# override defaults for Jaguar
+if ( jaguar == `hostname | head -c 6` ) then
+   set mpirun = "aprun -n $NCPU "
+   set vdir = /lustre/scr144/taylorm/preqx/vcoord
+endif
+
+
+if ( $NPTS == 8 ) then
+   set namelist = Params${nlev}.inc
+   set mesh = ne${ne}t${tstep}l${nlev}
+else
+   set namelist = Params${nlev}-${NPTS}.inc
+   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+endif
+
+if ( $hypervis == 0 ) then
+   set name = jw-${mesh}-nu${nu}
+endif
+if ( $hypervis == 1 ) then
+   set name = jw-${mesh}-wnu${nu}-$subcycle
+endif
+if ( $hypervis == 2 ) then
+   if ( $nu_p == 0 ) then
+      set name = jw-${mesh}-hnu${nu}-$subcycle
+   else
+      set name = jw-${mesh}-hpnu${nu}-$subcycle
+   endif
+endif
+
+echo $name
+
+
+
+
+# setup the work directory
+mkdir $wdir
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+mkdir $wdir/restart
+ln -s $vdir $wdir/vcoord
+
+
+
+
+# copy Params.inc into output directory to archive it
+if ( Darwin == `uname` ) then
+   sed s/MOVIE.\*/"MOVIE = _PNETCDF"/ $input/$namelist > $wdir/Params.inc
+else
+   cp $input/$namelist  $wdir/Params.inc
+endif
+
+
+cd $input
+rm -f $wdir/explicit.nl
+sed s/NE/$ne/ debug${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/NMAX/$nmax/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
+sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
+sed s/qsize.\*/"qsize = $qsize"/  |\
+sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv"/  |\
+sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/explicit.nl
+
+
+diff  $wdir/Params.inc $src/../Params.inc
+if ($status != 0) then
+   echo "replacing Params.inc"
+   cp $wdir/Params.inc $src/../Params.inc
+endif
+
+cd $src
+rm -f preqx
+make preqx
+cd $wdir
+
+# RUN TO TIME=9, writing restart files:
+if ( 1 == $makerestart ) then
+   rm -Rf restart/R00*
+   $mpirun $src/preqx < $wdir/explicit.nl
+   exit
+endif
+
+
+#
+# now setupt the restart run, restart from TIME=9
+#
+
+set nu = $nu2
+set nu_s = $nu_s2
+set nu_p = $nu_p2
+set nu_top = $nu_top2
+set hypervis = 2
+set subcycle = 1
+set tstep = $tstep2
+
+
+# run for 1 timestep
+set nmax = 3
+set sfreq = 1
+
+# compute last file to use as restart:
+cd $wdir/restart
+set rname = `ls -t R*[0-9] | head -1 `
+set rname = restart/$rname
+echo $rname
+
+
+cd $input
+rm -f $wdir/explicit.nl
+sed s/NE/$ne/ debug${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/NMAX/$nmax/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
+sed s/nu_top.\*/"nu_top = $nu_top"/ |\
+sed s/runtype.\*/"runtype = $runtype"/ |\
+sed s/qsize.\*/"qsize = $qsize"/  |\
+sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv"/  |\
+sed s@R0001@$rname@ |\
+sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/explicit.nl
+
+
+
+#sed s@restartfile.\*@restartfile=\"restart/$rname\"@ |\
+#sed s/output_timeunits.\*/"output_timeunits=0, output_dir='analysis\/', output_end_time=99999999,"/ |\
+#sed s/output_frequency.\*/output_frequency=2/  > restart.nl
+
+
+cd $wdir
+$mpirun  $src/preqx < $wdir/explicit.nl
+

@@ -1,0 +1,178 @@
+#!/bin/tcsh -f 
+#PBS -l nodes=20:ppn=2
+#PBS -l walltime=1:00:00
+#PBS -j oe
+#PBS -A 109710/1
+
+#BSUB -P 43310039
+#BSUB -n 64           
+#BSUB -R "span[ptile=64]" 
+#BSUB -o baro.%J.out   # ouput filename
+#BSUB -e baro.%J.err   # error filename
+#BSUB -J work               # job name
+#BSUB -W 0:28
+#BSUB -q premium                 # queue
+
+set arch = `uname -s`
+if ( $arch == 'Linux' ) then
+  set NCPU = 24
+  if ( ${?PBS_NODEFILE} ) then
+      set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+      echo using NCPU = $NCPU
+  endif
+  if ( ${?SLURM_NNODES} ) then
+    # SLURM_NNODES  = number of nodes
+    # hard to tell how many cores per nodes
+    # set NCPU to zero, and mpirun will use the max allowed
+    set NCPU = 0
+  endif
+endif
+
+# setup directories
+set HOMME = `pwd`/../..
+set src = $HOMME/build/preqx
+set input = $HOMME/test/baroclinic
+set wdir = $input/scratch1/preqx
+set vdir = $HOMME/test/vcoord
+if ( -d ~/scratch1 ) set wdir = ~/scratch1/preqx
+
+
+set integration = "'explicit'"
+set nlev=20
+#set nlev=26
+set semi_imp = 0
+set ne = 9
+
+
+if ( $ne == 8 ) then
+  set ne = 8
+  set tstep = 360
+  set NPTS = 4
+  if ( $semi_imp == 1 ) then
+    set tstep = 2880
+    set integration = "'semi_imp'"
+  endif
+endif
+
+if ( $ne == 21 ) then
+  set ne = 21
+  set NPTS = 4
+  set tstep = 120  
+  if ( $semi_imp == 1 ) then
+    set tstep = 1200   # 1200 ok,  1800 unstable
+    set integration = "'semi_imp'"
+  endif
+endif
+
+
+if ( $ne == 9 ) then
+  set NPTS = 8
+  set tstep = 60
+  if ( $semi_imp == 1 ) then
+    set tstep = 600
+    set integration = "'semi_imp'"
+  endif
+endif
+
+
+if ( $ne == 13 ) then
+  set NPTS = 8
+  set tstep = 40
+  if ( $semi_imp == 1 ) then
+    set tstep = 400
+    set integration = "'semi_imp'"
+  endif
+endif
+
+
+
+# number of hours between calls to prim_printstate
+set sfreq = 6
+@ sfreq *= 3600
+@ sfreq /= $tstep
+
+
+# hypervis = 0   then use -nu${nu} for name.  strong form viscosity
+# hypervis = 1   then use -wnu${nu} for name.  weak form viscosity
+# hypervis = 2   then use -hnu${nu} for name.  hyper viscosity
+
+set nu = 7e5
+set nu_s = 7e5
+
+if ( $semi_imp == 1 ) then
+  # semi-imp uses older, more expensive strong form viscosity
+  set hypervis = 0
+  set subcycle = 1
+else
+  set hypervis = 1
+  set subcycle = 1
+
+  #set nu = 8e16
+  #set nu_s = 8e16
+  #set hypervis = 2
+  #set subcycle = 100
+endif
+
+
+
+if ( $NPTS == 8 ) then
+#   set namelist = Params${nlev}.inc
+   set mesh = ne${ne}t${tstep}l${nlev}
+else
+#   set namelist = Params${nlev}-${NPTS}.inc
+   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+endif
+
+if ( $hypervis == 0 ) then
+   set name = baro-${mesh}-nu${nu}
+endif
+if ( $hypervis == 1 ) then
+   set name = baro-${mesh}-wnu${nu}-$subcycle
+endif
+if ( $hypervis == 2 ) then
+   set name = baro-${mesh}-hnu${nu}-$subcycle
+endif
+
+echo $name
+
+
+
+cd $src
+rm -f preqx
+make -j 4
+
+mkdir $wdir
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+rsync -a $vdir/*$nlev*  $wdir/vcoord
+
+
+
+# copy Params.inc into output directory to archive it
+#cp -f $input/$namelist $wdir/Params.inc
+
+
+
+cd $input
+rm -f $wdir/input.nl
+sed s/NE/$ne/ explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
+sed s/integration.\*/integration=$integration/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl
+
+
+
+
+
+cd $wdir
+if ( $arch == 'AIX' ) then
+  mv -f input.nl temp.nl
+  sed s/.littleendian// temp.nl > input.nl
+  mpirun.lsf $src/preqx
+else 
+  mpirun -np $NCPU $src/preqx < $wdir/input.nl
+endif
+
+#run this to generate the reference plots:
+ncl $input/zetall.ncl    # lat/lon output
+#ncl $input/zeta.ncl      # native output
