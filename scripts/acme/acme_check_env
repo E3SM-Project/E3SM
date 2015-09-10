@@ -81,11 +81,28 @@ def check_git():
         log.append('* ACME requires Git version %d.%d+. You appear to be using version %d.%d.'%(acme_git_major_version, acme_git_minor_version, major_version, minor_version))
 
 ###############################################################################
+def check_svn():
+###############################################################################
+    acme_svn_major_version = 1
+    acme_svn_minor_version = 4
+    acme_svn_patch_version = 2
+    p = subprocess.Popen('svn --version --quiet', shell=True, stdout=subprocess.PIPE)
+    first_line = p.stdout.readline()
+    if '.' not in first_line:
+        log.append('* Subversion appears not to be available in your environment.')
+        log.append('  Please make sure it exists in your PATH.')
+        return
+    major_version, minor_version, patch_version = [int(s) for s in first_line.split('.')]
+    if major_version < acme_svn_major_version or minor_version < acme_svn_minor_version or patch_version < acme_svn_patch_version:
+        log.append('* ACME requires Subversion version %d.%d.%d+. You appear to be using version %d.%d.%d.'%(acme_svn_major_version, acme_svn_minor_version, acme_svn_patch_version, major_version, minor_version, patch_version))
+
+###############################################################################
 
 if (__name__ == "__main__"):
     check_python()
     check_perl()
     check_git()
+    check_svn()
 
     if len(log) > 0:
         print('acme_check_env found problems with your ACME development environment:\n')
