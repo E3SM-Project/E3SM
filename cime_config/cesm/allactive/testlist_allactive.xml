@@ -202,13 +202,13 @@
     </grid>
   </compset>
   <compset name="BGC5L45BGC">
-    <grid name="T31_g37">
+    <grid name="T31_g37_gl20">
       <test name="SMS_D_Ld5">
         <machine compiler="nag" testtype="prebeta" testmods="allactive/cism/test_coupling">hobart</machine>
       </test>
     </grid>
     <grid name="f19_g16">
-      <test name="NCK_Ld5">
+      <test name="NCK_Ld5_gl5">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
       </test>
