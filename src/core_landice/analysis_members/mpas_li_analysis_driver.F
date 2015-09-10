@@ -10,8 +10,8 @@
 !  li_analysis_driver
 !
 !> \brief Driver for MPAS Land Ice analysis members
-!> \author MPAS-LI Team
-!> \date   November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This is the driver for the MPAS Land Ice members.
 !
@@ -26,7 +26,7 @@ module li_analysis_driver
    use mpas_stream_manager
 
    use li_constants
-!   use li_TEM_PLATE
+   use li_global_stats
 
    implicit none
    private
@@ -77,8 +77,8 @@ contains
 !  routine li_analysis_setup_packages
 !
 !> \brief   Setup packages for MPAS-Land Ice analysis driver
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine is intended to configure the packages for all
 !>   Land Ice analysis members.
@@ -127,7 +127,7 @@ contains
       err = 0
 
       call mpas_pool_create_pool(analysisMemberList)
-!     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
+      call mpas_pool_add_config(analysisMemberList, 'globalStats', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -152,8 +152,8 @@ contains
 !  routine li_analysis_init
 !
 !> \brief   Initialize MPAS-Land Ice analysis driver
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine calls all initializations required for the
 !>  MPAS-Land Ice analysis driver.
@@ -268,8 +268,8 @@ contains
 !  routine li_analysis_compute_startup
 !
 !> \brief   Driver for MPAS-Land Ice analysis computations
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine calls all computation subroutines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -364,8 +364,8 @@ contains
 !  routine li_analysis_compute
 !
 !> \brief   Driver for MPAS-Land Ice analysis computations
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine calls all computation subroutines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -457,8 +457,8 @@ contains
 !  routine li_analysis_restart
 !
 !> \brief   Save restart for MPAS-Land Ice analysis driver
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine calls all subroutines required to prepare to save
 !>  the restart state for the MPAS-Land Ice analysis driver.
@@ -530,8 +530,8 @@ contains
 !  routine li_analysis_write
 !
 !> \brief   Driver for MPAS-Land Ice analysis output
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine calls all output writing subroutines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -548,7 +548,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (domain_type), intent(in) :: domain
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -613,8 +613,8 @@ contains
 !  routine li_analysis_finalize
 !
 !> \brief   Finalize MPAS-Land Ice analysis driver
-!> \author  MPAS-LI Team
-!> \date    November 2013
+!> \author S. Price
+!> \date   9/10/2015    
 !> \details
 !>  This routine calls all finalize routines required for the
 !>  MPAS-Land Ice analysis driver.
@@ -704,8 +704,8 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call li_init_TEM_PLATE(domain, analysisMemberName, err_tmp)
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+        call li_init_TEM_PLATE(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -735,8 +735,8 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call li_compute_TEM_PLATE(domain, analysisMemberName, timeLevel, err_tmp)
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+        call li_compute_TEM_PLATE(domain, analysisMemberName, timeLevel, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -765,8 +765,8 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call li_restart_TEM_PLATE(domain, analysisMemberName, err_tmp)
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+        call li_restart_TEM_PLATE(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -795,8 +795,8 @@ contains
 
       nameLength = len_trim(analysisMemberName)
 
-!     if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
-!        call li_finalize_TEM_PLATE(domain, analysisMemberName, err_tmp)
+      if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
+        call li_finalize_TEM_PLATE(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
