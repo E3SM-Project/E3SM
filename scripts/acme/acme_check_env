@@ -11,7 +11,7 @@ import sys, subprocess
 # Here's where we keep the various reports and instructions.
 log = []
 
-def check_python_version():
+def check_python():
     acme_python_major_version = 2
     acme_python_minor_version = 7
     if sys.version_info[0] != acme_python_major_version or sys.version_info[1] < acme_python_minor_version:
@@ -20,8 +20,21 @@ def check_python_version():
         log.append('  possibly via a loadable module.')
 
 ###############################################################################
-def check_perl_version():
+def check_perl_module(module_name):
+    p = subprocess.Popen('perl -e "require %s;"'%module_name, shell=True, stderr=subprocess.PIPE)
+    lines = p.stderr.readlines()
+    if len(lines) == 0:
+        return
+    first_line = lines[0]
+    if "Can't locate " in first_line:
+        log.append('* ACME requires the Perl module %s, but it is not available.'%module_name)
+        log.append('  Please make sure that it exists in your @INC.')
 ###############################################################################
+
+###############################################################################
+def check_perl():
+###############################################################################
+    # First, make sure we have the right version of Perl.
     acme_perl_major_version = 5
     acme_perl_minor_version = 16
     p = subprocess.Popen('perl --version', shell=True, stdout=subprocess.PIPE)
@@ -42,8 +55,14 @@ def check_perl_version():
         log.append('  Please check to see whether an appropriate version exists on this machine,')
         log.append('  possibly via a loadable module.')
 
+    # Okay, our version is good. What about all those pesky modules?
+    check_perl_module('XML::LibXML')
+    check_perl_module('XML::SAX')
+    check_perl_module('XML::SAX::Exception')
+    check_perl_module('Switch')
+
 ###############################################################################
-def check_git_version():
+def check_git():
 ###############################################################################
     acme_git_major_version = 2
     acme_git_minor_version = 0
@@ -64,9 +83,9 @@ def check_git_version():
 ###############################################################################
 
 if (__name__ == "__main__"):
-    check_python_version()
-    check_perl_version()
-    check_git_version()
+    check_python()
+    check_perl()
+    check_git()
 
     if len(log) > 0:
         print('acme_check_env found problems with your ACME development environment:\n')
