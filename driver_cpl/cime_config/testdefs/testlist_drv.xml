@@ -58,10 +58,7 @@
     </grid>
     <grid name="f45_g37_rx1">
       <test name="CME_Ld3">
-        <machine compiler="cray" testtype="prebeta">eos</machine>
-        <machine compiler="intel" testtype="prealpha">eos</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
-        <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_D_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
