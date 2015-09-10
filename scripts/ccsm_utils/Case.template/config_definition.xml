@@ -964,6 +964,23 @@ a restart file."
  sdesc="ocn2wav state mapping file"
 ></entry>
 
+<entry id="OCN2GLC_SMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="ocn2glc state mapping file"
+></entry>
+
+
+<entry id="OCN2GLC_FMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="ocn2glc flux mapping file"
+></entry>
+
 <!--- 
 <entry id="OCN2WAV_SMAPTYPE" 
  type="char"

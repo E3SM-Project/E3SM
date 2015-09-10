@@ -10,7 +10,8 @@ module POP_CplIndices
 
   ! ocn -> drv
 
-  integer :: index_o2x_So_t      
+  integer :: index_o2x_So_t
+  integer :: index_o2x_So_tglc  
   integer :: index_o2x_So_u
   integer :: index_o2x_So_v
   integer :: index_o2x_So_s
@@ -72,6 +73,7 @@ contains
     call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=1)
 
     index_o2x_So_t          = mct_avect_indexra(o2x,'So_t')
+    index_o2x_So_tglc       = mct_avect_indexra(o2x,'So_tglc')
     index_o2x_So_u          = mct_avect_indexra(o2x,'So_u')
     index_o2x_So_v          = mct_avect_indexra(o2x,'So_v')
     index_o2x_So_s          = mct_avect_indexra(o2x,'So_s')
