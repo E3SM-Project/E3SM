@@ -555,7 +555,7 @@ sub loadModuleModules()
 		{
 		    $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
 		}
-		print "running cmd: $cmd\n";
+		#print "running cmd: $cmd\n";
 		eval qx($cmd);
 		if($?)
 		{
