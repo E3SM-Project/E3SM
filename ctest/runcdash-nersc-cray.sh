@@ -12,6 +12,7 @@ module load PrgEnv-cray
 module load craype-ivybridge
 module load cray-shmem
 module load cray-mpich
+module swap cce cce/8.4.0.219
 module load torque
 module load git/2.4.6 
 module load cmake/3.0.0
