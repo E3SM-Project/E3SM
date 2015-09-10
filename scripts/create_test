@@ -1392,13 +1392,13 @@ sub testcaseSetup
     #&Debug("XMLVARS:");
     #&Debug( eval { Dumper \%xmlvars} );
 
-    chdir($caseroot); 
-
     my $cwd = getcwd();
     chdir ($caseroot);
     foreach my $attr(keys %xmlvars)
     {
+        &Debug("attr $attr $xmlvars{$attr}\n");
 	$xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+        &Debug("setting $xmlvars{$attr}\n");
     }
     chdir ($cwd);
 
@@ -1409,16 +1409,17 @@ sub testcaseSetup
     my $case     = $xmlvars{'CASE'};
 
     if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ./${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/${case}.test_build";
 	&Debug("sysmod is $sysmod");
 	system($sysmod) == 0 or die "$sysmod failed: $?\n";
     } else {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ./${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/${case}.test_build";
 	&Debug("sysmod is $sysmod");
 	system($sysmod) == 0 or die "$sysmod failed: $?\n";
     }
 
     print "Setting up test case \n";
+    chdir ($caseroot);
     $sysmod = "./case_setup";
     &Debug("sysmod is $sysmod");
     system($sysmod) == 0 or warn "$sysmod failed: $?\n";

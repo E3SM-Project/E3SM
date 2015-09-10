@@ -726,6 +726,7 @@ use Data::Dumper;
 sub getBatchMaker()
 {
 	my (%params) = @_;
+
 	if(! defined $params{'machine'})
 	{
 		die "BatchFactory: params{'machine'} must be defined!";
@@ -839,7 +840,8 @@ sub setTaskInfo()
 {
     my $self = shift;
     $self->SUPER::setTaskInfo();
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'},
+	                                cimeroot => $self->{cimeroot});
 
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
     my $pes_per_node = ${$taskmaker->{'config'}}{'PES_PER_NODE'};

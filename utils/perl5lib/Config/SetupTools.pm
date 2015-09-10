@@ -3,7 +3,7 @@ my $pkg_nm = 'SetupTools';
 
 use strict;
 use XML::LibXML;
-
+use Data::Dumper;
 #-----------------------------------------------------------------------------------------------
 # SYNOPSIS
 # 
@@ -68,6 +68,11 @@ sub expand_xml_var
 {
     my ($value, $xmlvars_ref) = @_;
 
+    if($value =~ /\$ENV\{(.*)\}/){
+	my $subst = $ENV{$1};
+	die "No environment variable found for $1" unless(defined $subst);
+	$value =~ s/\$ENV\{*${1}\}/$subst/g;
+    }
     if ($value =~ /\$\{*([\w_]+)}*(.*)$/) {
 	my $found_xml;
 	while ( my ($key, $subst) = each(%$xmlvars_ref) ) {
@@ -201,10 +206,13 @@ sub set_compiler
 
 	my %a = ();
 	my @attrs = $flag->attributes();
+	
 	foreach my $attr (@attrs) {
-	    my $attr_value = $attr->getValue();
-	    my $attr_name  = $attr->getName();
-	    $a{$attr_name} = $attr_value;
+	    if(defined $attr){
+		my $attr_value = $attr->getValue();
+		my $attr_name  = $attr->getName();
+		$a{$attr_name} = $attr_value;
+	    }
 	}
 	my @keys =  keys %a;
 	my $name = $flag->nodeName();

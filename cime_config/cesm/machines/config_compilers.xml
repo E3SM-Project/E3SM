@@ -300,8 +300,6 @@ for mct, etc.
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 
   <ADD_FFLAGS MPILIB="mpi-serial"> -mcmodel medium </ADD_FFLAGS>
-  <ADD_FFLAGS OS="Linux"> -mcmodel medium -shared-intel </ADD_FFLAGS>
-
 </compiler>
 
 <compiler COMPILER="intelmic">
