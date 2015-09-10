@@ -330,10 +330,10 @@ sub writeXML
 	    $newfilename = "$cimeroot/cime_config/${model}/allactive/testlist_allactive-$dtformat.xml";
 	}
 	elsif ($component eq 'drv') {
-	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
+	    $newfilename = "$cimeroot/driver_cpl/cime_config/testdefs//testlist_drv-$dtformat.xml";
 	}
 	else {
-            my $dir = "$cimeroot/../components/$component/cimetest";
+            my $dir = "$cimeroot/../components/$component/cime_config/testdefs";
             if ( ! -d $dir ) {
               die "ERROR: Can not find directory: $dir\n";
             }
@@ -344,7 +344,7 @@ sub writeXML
 	print "original, and if you are satisfied with the changes, move \n";
 	print "$newfilename to \n";
 	print "$testlist\n";
-	print "as in with the unix command: \nmv $newfilename $testlist\n\n";
+	print "as in with the unix command: \nmv $newfilename $testlist\n\n";	
 
 	open my $NEWTESTXML, ">", "$newfilename" or die $?;
 	my $tststring = $testxml->toString(1);
