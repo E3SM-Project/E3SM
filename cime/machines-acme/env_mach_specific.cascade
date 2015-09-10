@@ -40,5 +40,6 @@ if ( $COMPILER == "nag" ) then
 endif
 limit coredumpsize 1000000
 limit stacksize unlimited
-
-
+if ( $?PERL ) then
+  printenv
+endif
