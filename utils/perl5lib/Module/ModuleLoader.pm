@@ -58,7 +58,6 @@ sub new
 sub loadModulesCshEval()
 {
     my $self = shift;
-    if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
 
     my %oldenv = %ENV;
     my $envfile = $self->{'caseroot'} . "/env_mach_specific";
@@ -123,7 +122,6 @@ sub loadModulesCshEval()
 	    $ENV{$k} = $newenv{$k};
 	}
     }
-    $ENV{CIME_MODULES_LOADED} = 1;
     return %newbuildenv;
 
 }
@@ -460,6 +458,9 @@ sub findModules()
 sub loadModules()
 {
     my $self = shift;
+
+    if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
+
     if($self->{modulesystemtype}  eq 'module')
     {
         $self->loadModuleModules();
@@ -472,6 +473,7 @@ sub loadModules()
     {
 	$self->loadDotKitModules();
     }
+    $ENV{CIME_MODULES_LOADED} = 1;
 }
 
 sub loadDotKitModules()
