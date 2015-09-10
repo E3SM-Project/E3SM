@@ -337,8 +337,13 @@
              <command name="load">cmake</command>
              <command name="rm">darshan</command>
            </modules>
-           
          </module_system>
+        <environment_variables>
+            <env name="OMP_STACKSIZE">64M</env>
+            <env name="MPICH_ENV_DISPLAY">1</env>
+            <env name="MPICH_PTL_MATCH_OFF">1</env>
+        </environment_variables>
+
 </machine>
 
 <machine MACH="brutus">
@@ -595,6 +600,11 @@
              <command name="load">cmake/2.8.11.2</command>
            </modules>
         </module_system>
+        <environment_variables>
+            <env name="MPICH_ENV_DISPLAY">1</env>
+            <env name="MPICH_VERSION_DISPLAY">1</env>
+            <env name="PERL5LIB">/global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0</env>
+        </environment_variables>
 </machine>
 
 
@@ -757,10 +767,10 @@
              <command name="load">cmake/2.8.11.2</command>
            </modules>
          </module_system>
-         <environment_varaibles>
+         <environment_variables>
            <env name="MPICH_ENV_DISPLAY">1</env>
            <env name="MPICH_VERSION_DISPLAY">1</env>
-         </environment_varaibles>
+         </environment_variables>
          
 </machine>
 
@@ -1309,6 +1319,9 @@
            <env name="MPI_TYPE_MAX">100000</env>
            <env name="KMP_AFFINITY">noverbose,disabled</env>
            <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
          </environment_variables>
 </machine>
 
@@ -1371,6 +1384,9 @@
            <env name="MPI_TYPE_MAX">100000</env>
            <env name="KMP_AFFINITY">noverbose,disabled</env>
            <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
          </environment_variables>
 </machine>
 
@@ -1433,6 +1449,9 @@
            <env name="MPI_TYPE_MAX">100000</env>
            <env name="KMP_AFFINITY">noverbose,disabled</env>
            <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
          </environment_variables>
          
 </machine>
@@ -1496,6 +1515,9 @@
            <env name="MPI_TYPE_MAX">100000</env>
            <env name="KMP_AFFINITY">noverbose,disabled</env>
            <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
          </environment_variables>
 </machine>
 
@@ -1620,7 +1642,7 @@
            </modules>
            <modules compiler="pgicuda">
              <command name="load">PrgEnv-pgi</command>
-             <command name="switch">pgi pgi14.2.0</command>
+             <command name="switch">pgi pgi/14.2.0</command>
              <command name="load">cray-mpich/7.0.4</command>
              <command name="load">cray-libsci/13.0.1</command>
              <command name="load">esmf/5.2.0rp2</command>
@@ -1666,9 +1688,6 @@
              <env name="MPSTKZ">64M</env>
              <env name="OMP_STACKSIZE">64M</env>
          </environment_variables>
-         
-     
-         
 </machine>
 
 <machine MACH="yellowstone">
