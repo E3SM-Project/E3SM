@@ -69,11 +69,12 @@ contains
    !>  0 being the top of top layer and 1 being the bottom of bottom layer
    !
    !-----------------------------------------------------------------------
-   subroutine ocn_generate_vertical_grid(gridType, interfaceLocations)!{{{
+   subroutine ocn_generate_vertical_grid(gridType, interfaceLocations, configPool)!{{{
       implicit none
 
       character (len=*), intent(in) :: gridType
       real (kind=RKIND), dimension(:), intent(out) :: interfaceLocations
+      type (mpas_pool_type), optional, intent(in) :: configPool !< Input: Pool with namelist options
 
       if ( trim(gridType) == 'uniform' ) then
          call ocn_generate_uniform_vertical_grid(interfaceLocations)
@@ -83,6 +84,12 @@ contains
          call ocn_generate_42layerWOCE_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '100layerACMEv1' ) then
          call ocn_generate_100layerACMEv1_vertical_grid(interfaceLocations)
+      else if ( trim(gridType) == '1dCVTgenerator' ) then
+         if (.not. present(configPool)) then
+            call mpas_dmpar_global_abort("ERROR: requesting a 1d CVT vertical grid generation without passing the corresponding parameters. Exiting...")
+         else
+            call ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)
+         end if
       else
          write(stderrUnit, *) ' WARNING: '//trim(gridType)//' is an invalid vertical grid choice. No vertical grid will be generated.'
       end if
@@ -422,6 +429,66 @@ contains
       interfaceLocations(:) = interfaceLocations(:) / maxInterfaceLocation
 
    end subroutine ocn_generate_100layerACMEv1_vertical_grid!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_generate_1dCVT_vertical_grid
+!
+!> \brief   1D CVT vertical grid generator
+!> \author  Juan A. Saenz
+!> \date    09/10/2015
+!> \details 
+!>  This routine generates a vertical grid with total depth = 1.
+!>  This code is adapted from Todd's cvt_1d code.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)!{{{
+
+      type (mpas_pool_type), intent(in) :: configPool
+      real (kind=RKIND), dimension(:), intent(out) :: interfaceLocations
+
+      integer :: k
+      integer :: nInterfaces, nVertLevels
+      real (kind=RKIND) :: stretch1
+      real (kind=RKIND) :: stretch2
+      real (kind=RKIND) :: dzSeed
+
+      real (kind=RKIND) :: stretch
+      real (kind=RKIND) :: dz
+      real (kind=RKIND) :: maxInterfaceLocation
+
+      real (kind=RKIND), pointer :: config_1dCVTgenerator_stretch1
+      real (kind=RKIND), pointer :: config_1dCVTgenerator_stretch2
+      real (kind=RKIND), pointer :: config_1dCVTgenerator_dzSeed
+
+      call mpas_pool_get_config(configPool, 'config_1dCVTgenerator_stretch1', config_1dCVTgenerator_stretch1)
+      call mpas_pool_get_config(configPool, 'config_1dCVTgenerator_stretch2', config_1dCVTgenerator_stretch2)
+      call mpas_pool_get_config(configPool, 'config_1dCVTgenerator_dzSeed', config_1dCVTgenerator_dzSeed)
+
+      stretch1 = config_1dCVTgenerator_stretch1
+      stretch2 = config_1dCVTgenerator_stretch2
+      dzSeed = config_1dCVTgenerator_dzSeed
+
+      nInterfaces = size(interfaceLocations, dim=1)
+      nVertLevels = nInterfaces - 1
+
+      ! compute profile starting at top and stretch dz as we move down
+      dz = dzSeed
+      interfaceLocations(1) = 0.0_RKIND
+      interfaceLocations(2) = dz
+      do k=2,nVertLevels
+         stretch = stretch1 + (stretch2-stretch1)*k/nVertLevels
+         dz = stretch*dz
+         interfaceLocations(k+1) = interfaceLocations(k) + dz
+      enddo
+      
+      ! normalize so that positions span 0 to 1
+      maxInterfaceLocation = maxval(interfaceLocations)
+      interfaceLocations(:) = interfaceLocations(:) / maxInterfaceLocation
+      
+   end subroutine ocn_generate_1dCVT_vertical_grid!}}}
 
 !***********************************************************************
 

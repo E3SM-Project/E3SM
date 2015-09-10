@@ -160,6 +160,20 @@
 					possible_values="'uniform', ..."
 		/>
 	</nml_record>
+	<nml_record name="CVTgenerator" mode="init">
+		<nml_option name="config_1dCVTgenerator_stretch1" type="real" default_value="1.0770" units="unitless"
+					description="Parameter for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+		<nml_option name="config_1dCVTgenerator_stretch2" type="real" default_value="1.0275" units="unitless"
+					description="Parameter for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+		<nml_option name="config_1dCVTgenerator_dzSeed" type="real" default_value="1.2" units="unitless"
+					description="Seed thickness of the first layer for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+	</nml_record>
 
 	<!--*************************************-->
 	<!-- Namelists for forward run mode only -->
