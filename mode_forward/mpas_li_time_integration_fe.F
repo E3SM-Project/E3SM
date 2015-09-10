@@ -29,6 +29,7 @@ module li_time_integration_fe
    use mpas_vector_reconstruction
    use li_velocity, only: li_velocity_solve
    use li_tendency
+   use li_calving, only: do_calving
    use li_diagnostic_vars
    use li_setup
 
@@ -120,6 +121,11 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("calc. new prognostic vars")
 
+! === Calve ice ========================                                                                                                                                             
+      call mpas_timer_start("calve_ice")
+      call do_calving(domain, deltat, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("calve_ice")
 
 ! === Calculate diagnostic variables for new state =====================
 
