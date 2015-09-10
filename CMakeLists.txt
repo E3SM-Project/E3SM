@@ -152,19 +152,19 @@ IF (${ENABLE_NANOTIMERS})
 ENDIF ()
 
 # Use pio FindNETCDF path
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/pio/cmake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../scripts/ccsm_utils/CMake" ${CMAKE_MODULE_PATH})
 # For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
 IF (HDF5_DIR)
   SET(ENV{HDF5_ROOT} ${HDF5_DIR})
 ENDIF ()
-ADD_SUBDIRECTORY(utils/pio)
+ADD_SUBDIRECTORY(../../utils/pio)
 
 # CPRNC locations
 SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cprnc)
 SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cprnc/cprnc)
-ADD_SUBDIRECTORY(utils/cprnc)
+ADD_SUBDIRECTORY(../../../tools/cprnc)
 
-ADD_SUBDIRECTORY(utils/timing)
+ADD_SUBDIRECTORY(../../utils/timing)
 
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(src/sweqx)
