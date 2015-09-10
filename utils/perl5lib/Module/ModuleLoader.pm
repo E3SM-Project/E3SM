@@ -711,7 +711,7 @@ sub getCshModuleCode()
 #===============================================================================
 
     source $self->{cshinitpath}
-    START
+START
 	
 	if(! -e "$self->{caseroot}/env_mach_specific.xml")
     {
@@ -863,7 +863,7 @@ sub getShModuleCode()
 #===============================================================================
 
     .  $self->{shinitpath}
-    START
+START
 
 	
 	my @allmodules = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
