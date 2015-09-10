@@ -23,7 +23,7 @@ define_package_component (MPISERIAL DEFAULT
 # Define MPISERIAL Fortran component
 define_package_component (MPISERIAL
                           COMPONENT Fortran
-                          INCLUDE_NAMES mpi.mod
+                          INCLUDE_NAMES mpi.mod mpif.h
                           LIBRARY_NAMES mpi-serial)
 
 # Search for list of valid components requested
