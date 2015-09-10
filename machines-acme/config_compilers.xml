@@ -151,8 +151,11 @@ for mct, etc.
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  </ADD_CPPDEFS>
-  <CFLAGS> -gopt  -time </CFLAGS>
+  <CFLAGS> -gopt -Mlist  -time </CFLAGS>
 
+  <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="false"> </ADD_LDFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
@@ -163,6 +166,7 @@ for mct, etc.
 
   <FFLAGS>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
 
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
@@ -222,16 +226,23 @@ for mct, etc.
 
 
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
-  <CFLAGS> -gopt -time </CFLAGS>
+  <CFLAGS> -Mlist -time </CFLAGS>
 
+  <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
 
   <FIXEDFLAGS> -Mfixed </FIXEDFLAGS>
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS>  -i4 -Mlist  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <ADD_FFLAGS MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35  </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
   
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
@@ -305,6 +316,34 @@ for mct, etc.
 
 </compiler>
 
+<compiler COMPILER="intel14">
+  <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <FREEFLAGS> -free </FREEFLAGS>
+  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <FFLAGS> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </FFLAGS>
+  <CFLAGS> -O2 -fp-model precise </CFLAGS>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc  </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+</compiler>
+
 <compiler COMPILER="intelmic">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
@@ -335,6 +374,35 @@ for mct, etc.
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
 </compiler>
 
+<compiler COMPILER="intelmic14">
+  <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <FREEFLAGS> -free </FREEFLAGS>
+  <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <FFLAGS> -mmic -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs </FFLAGS>
+  <CFLAGS> -mmic -O2 -fp-model precise -DFORTRANUNDERSCOR </CFLAGS>
+  <CONFIG_ARGS>--host=x86_64-k1om-linux --build=x86_64-unknown-linux</CONFIG_ARGS>
+  <FFLAGS_NOOPT> -O0 -mmic </FFLAGS_NOOPT>
+  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <MPIFC> mpiifort</MPIFC>
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
+  <ADD_LDFLAGS> -mmic </ADD_LDFLAGS>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+</compiler>
 
 <compiler COMPILER="gnu">
   <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
@@ -366,6 +434,20 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
+<compiler COMPILER="pathscale">
+  <!-- http://www.pathscale.com/node/70 -->
+  <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRPATHSCALE </ADD_CPPDEFS>
+  <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -trapuv -Wuninitialized </ADD_FFLAGS>
+  <FFLAGS> -O -extend_source -ftpp -fno-second-underscore -funderscoring -byteswapio  </FFLAGS>
+  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <FC_AUTO_R8> -r8 </FC_AUTO_R8>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc  </MPICC>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+</compiler>
 
 <compiler COMPILER="cray">
   <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
@@ -375,8 +457,8 @@ for mct, etc.
   <ADD_FFLAGS compile_threaded="false"> -h noomp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="false"> -h noomp </ADD_LDFLAGS>
   <ADD_CPPDEFS MODEL="moby"> -DDIR=NOOP </ADD_CPPDEFS>
-  <ADD_FFLAGS DEBUG="TRUE"> -g -K trap=fp  -m1 </ADD_FFLAGS>
-  <FFLAGS> -O2  -f free -N 255  -h byteswapio -x dir </FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -trapuv  -Wuninitialized </ADD_FFLAGS>
+  <FFLAGS> -O2  -f free -N 255  -h byteswapio -em </FFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> -h noomp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -s real64 </FC_AUTO_R8>
@@ -399,13 +481,14 @@ for mct, etc.
   <!-- interfaces from certain argument checks. Should not be necessary in   -->
   <!-- libraries that only use the F90 module interface. mpibcast and        -->
   <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
-  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>
+  <FFLAGS      > -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv,mpi_alltoallw,nfmpi_get_vara_all,NFMPI_IPUT_VARA,NFMPI_GET_VAR_ALL,NFMPI_PUT_VARA,NFMPI_PUT_ATT_REAL,NFMPI_PUT_ATT_DOUBLE,NFMPI_PUT_ATT_INT,NFMPI_GET_ATT_REAL,NFMPI_GET_ATT_INT,NFMPI_GET_ATT_DOUBLE,NFMPI_PUT_VARA_DOUBLE_ALL,NFMPI_PUT_VARA_REAL_ALL,NFMPI_PUT_VARA_INT_ALL    -convert=BIG_ENDIAN </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
   <ADD_FFLAGS       DEBUG="FALSE"> -ieee=full -O2 </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT DEBUG="FALSE"> -ieee=full     </ADD_FFLAGS_NOOPT>
 
+  <ADD_FFLAGS       DEBUG="TRUE"> -g -time -f2003 -ieee=stop </ADD_FFLAGS>
   <ADD_CFLAGS       DEBUG="TRUE"> -g </ADD_CFLAGS>
 
   <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
@@ -455,9 +538,11 @@ for mct, etc.
   <MPIFC> ftn </MPIFC>
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$(PARALLEL_NETCDF_DIR)</PNETCDF_PATH>
+  <MPI_LIB_NAME> mpich </MPI_LIB_NAME>
+  <MPI_PATH> $(MPICH_DIR)</MPI_PATH>
   <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PARALLEL_NETCDF_DIR)</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
 <!--   <CMAKE_OPTS> -DCMAKE_SHARED_LIBRARY_LINK_C_FLAGS=" "
@@ -471,6 +556,18 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="mac">
+  <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
+  <ADD_LDFLAGS>-framework Accelerate</ADD_LDFLAGS>
+  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="linux-generic">
+  <NETCDF_PATH> $(NETCDF_PATH)</NETCDF_PATH>
+  <PNETCDF_PATH> $(PNETCDF_PATH)</PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nc-config --flibs) </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="melvin">
@@ -499,6 +596,12 @@ for mct, etc.
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="penn">
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas </ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+</compiler>
 
 <compiler>
   <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
@@ -556,6 +659,30 @@ for mct, etc.
   <SCC>mpicc</SCC>
   <SFC>mpif90</SFC>
 </compiler>
+
+<compiler MACH="oic2" COMPILER="gnu">
+  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
+  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
+  <INC_NETCDF>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/include</INC_NETCDF>
+  <LIB_NETCDF>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/lib</LIB_NETCDF>
+  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
+  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
+  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
+  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
+  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
+</compiler>
+
+<compiler MACH="oic5" COMPILER="gnu">
+  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
+  <ADD_SLIBS>-L/user/lib64 -llapack -lblas -lnetcdff </ADD_SLIBS>
+  <INC_NETCDF>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/include</INC_NETCDF>
+  <LIB_NETCDF>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/lib</LIB_NETCDF>
+  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
+  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
+  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
+  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
+  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
+</compiler>
  
 <compiler COMPILER="intel" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
@@ -572,7 +699,17 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>  
-  <TRILINOS_PATH>/lustre/atlas1/cli900/world-shared/cesm/software/Trilinos/Trilinos-11.12.1/titan-pgi-cesm/install</TRILINOS_PATH>
+  <TRILINOS_PATH>/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-pgi-ci-nophal/install</TRILINOS_PATH>
+  <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler COMPILER="pgicuda" MACH="titan">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -703,6 +840,19 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
+<compiler COMPILER="ibm" MACH="cetus">
+  <SFC> mpixlf2003_r </SFC>
+  <MPIFC> mpixlf2003_r </MPIFC>
+  <SCC> mpixlc_r </SCC>
+  <MPICC> mpixlc_r </MPICC>
+  <NETCDF_PATH>/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/</NETCDF_PATH>
+  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.3.1/cnk-xl/current/</PNETCDF_PATH>
+  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
+  <ADD_LDFLAGS>-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl </ADD_LDFLAGS>
+   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
 <compiler COMPILER="ibm" MACH="juqueen">
   <SFC> mpixlf2003_r </SFC>
   <MPIFC> mpixlf2003_r </MPIFC>
@@ -722,11 +872,33 @@ for mct, etc.
   <CONFIG_ARGS> --host=LINUX </CONFIG_ARGS>
 </compiler>    
 
+<compiler COMPILER="pgi" MACH="blues">
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/pgi-13.9</MPI_PATH>
+  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-pgi-13.9/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
 <compiler COMPILER="intel" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/intel-13.1</MPI_PATH>
   <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-intel-13.1</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="blues">
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.6.5-gcc-4.7.2</MPI_PATH>
+  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-gcc-4.7.2/</MPI_PATH>
   <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
@@ -751,6 +923,63 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="olympus">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="sooty">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF)</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lpmi </SLIBS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="sooty">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="cascade">
+  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <CONFIG_ARGS> --host=Linux --enable-filesystem-hints=lustre</CONFIG_ARGS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt </SLIBS>
+</compiler>
+
+<compiler COMPILER="nag" MACH="cascade">
+ <NETCDF_PATH>$(NETCDF_ROOT)</NETCDF_PATH >
+ <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+ <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+ <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
+ <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
+ <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
+ <!--  -C=Undefined flag doesn't work as it requires MPI and NETCDF to be 
+      compiled with this flag, which is not available now. NAG has the following debug flags
+      <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
+      "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model. 
+ -->
+ <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
+ <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
+ <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
 </compiler>
  
 <compiler COMPILER="intel" MACH="evergreen">
@@ -835,6 +1064,13 @@ for mct, etc.
   <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
 </compiler>
 
+<compiler MACH="cab">
+  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
+</compiler>
 
 <compiler MACH="goldbach">
  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
