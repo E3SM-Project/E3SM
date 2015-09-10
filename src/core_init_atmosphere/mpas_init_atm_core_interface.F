@@ -93,9 +93,9 @@ module init_atm_core_interface
    !>  not allocated until after this routine has been called.
    !
    !-----------------------------------------------------------------------
-   function init_atm_setup_packages(configs, packages) result(ierr)
+   function init_atm_setup_packages(configs, packages, iocontext) result(ierr)
 
-      use mpas_derived_types, only : mpas_pool_type
+      use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
       use mpas_io_units, only : stderrUnit
 
@@ -103,6 +103,7 @@ module init_atm_core_interface
 
       type (mpas_pool_type), intent(inout) :: configs
       type (mpas_pool_type), intent(inout) :: packages
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
       logical, pointer :: initial_conds, sfc_update, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out

@@ -202,7 +202,7 @@ module mpas_subdriver
          call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain_ptr % core % coreName))
       end if
 
-      ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages)
+      ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages, domain_ptr % iocontext)
       if ( ierr /= 0 ) then
          call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain_ptr % core % coreName))
       end if
