@@ -21,3 +21,6 @@ if $?PNETCDF then
   setenv PNETCDF_PATH $PNETCDF
   setenv PNETCDF_DIR $PNETCDF
 endif
+if ( $?PERL ) then
+  printenv
+endif

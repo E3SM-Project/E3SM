@@ -39,4 +39,6 @@ limit stacksize unlimited
 setenv MPSTKZ 64M
 setenv OMP_STACKSIZE 64M
 #
-
+if ( $?PERL ) then
+  printenv
+endif

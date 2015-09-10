@@ -25,4 +25,6 @@ soft add +mpiwrapper-xl
 soft add @ibm-compilers-2014-11
 soft add +cmake
 
-
+if ( $?PERL ) then
+  printenv
+endif

@@ -29,4 +29,6 @@ setenv NETCDF `where ncdump | sed s_/bin/ncdump__`
 limit coredumpsize 1000000
 limit stacksize unlimited
 
-
+if ( $?PERL ) then
+  printenv
+endif
