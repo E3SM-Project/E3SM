@@ -11,13 +11,33 @@ import sys, subprocess
 # Here's where we keep the various reports and instructions.
 log = []
 
+###############################################################################
 def check_python():
+###############################################################################
     acme_python_major_version = 2
     acme_python_minor_version = 7
     if sys.version_info[0] != acme_python_major_version or sys.version_info[1] < acme_python_minor_version:
         log.append('* ACME currently requires Python version %d.%d+. You appear to be using version %d.%d.'%(acme_python_major_version, acme_python_minor_version, sys.version_info[0], sys.version_info[1]))
         log.append('  Please check to see whether an appropriate version exists on this machine,')
         log.append('  possibly via a loadable module.')
+
+###############################################################################
+def check_sh(): 
+###############################################################################
+    p = subprocess.Popen('sh --version', shell=True, stdout=subprocess.PIPE)
+    first_line = p.stdout.readline()
+    if 'sh' not in first_line:  
+        log.append('* sh appears not to be available in your environment.')
+        log.append('  Please make sure it exists in your PATH.')
+
+###############################################################################
+def check_csh():  # Can't believe I'm actually checking for csh. -JNJ
+###############################################################################
+    p = subprocess.Popen('csh --version', shell=True, stdout=subprocess.PIPE)
+    first_line = p.stdout.readline()
+    if 'csh' not in first_line:  # Also tolerates tcsh
+        log.append('* csh appears not to be available in your environment.')
+        log.append('  Please make sure it exists in your PATH.')
 
 ###############################################################################
 def check_perl_module(module_name):
@@ -100,6 +120,8 @@ def check_svn():
 
 if (__name__ == "__main__"):
     check_python()
+    check_sh()
+    check_csh()
     check_perl()
     check_git()
     check_svn()
