@@ -1,5 +1,0 @@
-! For this test, we do an increase in glacier area;
-! note that the increase is small, since its point is just to create some glacier area where there used to be none
-enable_frac_overrides = .true.
-override_delay = 1
-increase_frac = 0.001
