@@ -12,7 +12,8 @@ MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_high_frequency_output.o \
           mpas_ocn_zonal_mean.o \
           mpas_ocn_eliassen_palm.o \
-          mpas_ocn_time_filters.o
+          mpas_ocn_time_filters.o \
+          mpas_ocn_mixed_layer_depths.o
 
 all: $(OBJS)
 

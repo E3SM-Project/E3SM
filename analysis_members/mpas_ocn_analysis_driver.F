@@ -37,6 +37,7 @@ module ocn_analysis_driver
    use ocn_high_frequency_output
    use ocn_time_filters
    use ocn_eliassen_palm
+   use ocn_mixed_layer_depths
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -150,7 +151,8 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeFilters', 1)
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
-!      call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
+      call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
+!     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -749,6 +751,8 @@ contains
         call ocn_init_time_filters(domain, err_tmp)
      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
         call ocn_init_eliassen_palm(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+        call ocn_init_mixed_layer_depths(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -802,6 +806,8 @@ contains
         call ocn_compute_time_filters(domain, timeLevel, err_tmp)
      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
         call ocn_compute_eliassen_palm(domain, timeLevel, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+        call ocn_compute_mixed_layer_depths(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       end if
@@ -854,6 +860,8 @@ contains
         call ocn_restart_time_filters(domain, err_tmp)
      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
         call ocn_restart_eliassen_palm(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+        call ocn_restart_mixed_layer_depths(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       end if
@@ -906,6 +914,8 @@ contains
         call ocn_finalize_time_filters(domain, err_tmp)
      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
         call ocn_finalize_eliassen_palm(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+        call ocn_finalize_mixed_layer_depths(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       end if
