@@ -115,12 +115,12 @@ contains
       err = 0
 
       iLevel = 1  ! base surface flux restoring on tracer fields in the top layer
-      do iTracer=1,nTracers
       do iCell=1,nCellsSolve
-        tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) - &
-                                               pistonVelocity(iTracer,iCell) *      &
-                                               (tracers(iTracer, iLevel, iCell) - tracersSurfaceRestoringValue(iTracer,iCell))
-      enddo
+        do iTracer=1,nTracers
+          tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) - &
+                                                 pistonVelocity(iTracer,iCell) *      &
+                                                 (tracers(iTracer, iLevel, iCell) - tracersSurfaceRestoringValue(iTracer,iCell))
+        enddo
       enddo
 
    !--------------------------------------------------------------------
