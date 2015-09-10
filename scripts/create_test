@@ -1400,7 +1400,7 @@ sub testcaseSetup
 	$xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
         &Debug("setting $xmlvars{$attr}\n");
     }
-    chdir ($cwd);
+    chdir ($caseroot);
 
     print "Setting up tools for test case..\n";
 
