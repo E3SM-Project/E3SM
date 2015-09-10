@@ -168,7 +168,7 @@ endif ()
 
 # Check for MPI Fortran module
 find_path(MPIMOD_PATH
-          NAMES mpi.mod
+          NAMES mpi.mod MPI.mod
           HINTS ${MPI_Fortran_INCLUDE_PATH})
 if (MPIMOD_PATH)
     check_macro (MPI_HAS_Fortran_MOD
