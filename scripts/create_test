@@ -1409,11 +1409,11 @@ sub testcaseSetup
     my $case     = $xmlvars{'CASE'};
 
     if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ./${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/${case}.test_build";
 	&Debug("sysmod is $sysmod");
 	system($sysmod) == 0 or die "$sysmod failed: $?\n";
     } else {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ./${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/${case}.test_build";
 	&Debug("sysmod is $sysmod");
 	system($sysmod) == 0 or die "$sysmod failed: $?\n";
     }
