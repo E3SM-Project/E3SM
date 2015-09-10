@@ -12,7 +12,3 @@
 # Define the extra CMake configure options
 set (CTEST_CONFIGURE_OPTIONS "-DCMAKE_VERBOSE_MAKEFILE=TRUE")
 set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DPREFER_STATIC=TRUE")
-set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DLIBZ_PATH=/soft/libraries/alcf/current/xl/ZLIB/")
-set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DHDF5_PATH=/soft/libraries/hdf5/current/cnk-xl/current")
-set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DNetCDF_PATH=/soft/libraries/netcdf/current/cnk-xl/current")
-set (CTEST_CONFIGURE_OPTIONS "${CTEST_CONFIGURE_OPTIONS} -DPnetCDF_PATH=/soft/libraries/pnetcdf/current/cnk-xl/current")
