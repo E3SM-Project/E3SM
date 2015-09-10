@@ -958,7 +958,6 @@
 			<var name="fCell"/>
 			<var name="refZMid"/>
 			<var_array name="activeTracers"/>
-			<var_array name="activeTracersPistonVelocity"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="restingThickness"/>
@@ -972,6 +971,7 @@
 			<var name="edgeMask"/>
 			<var name="cullCell"/>
 		</stream>
+
 		<stream name="mesh" 
 				type="input"
 				filename_template="mesh.nc"
@@ -1065,7 +1065,6 @@
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
-
 		</stream>
 		<stream name="output" 
 				type="output"
@@ -1202,7 +1201,22 @@
 
                         <var name="windStressZonal"/>
                         <var name="windStressMeridional"/>
+			<var_array name="activeTracersPistonVelocity"/>
+			<var_array name="activeTracersSurfaceRestoringValue"/>
+                </stream>
 
+                <stream name="forcing_data_init"
+                                type="output"
+                                filename_template="init_mode_forcing_data.nc"
+ 				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
+
+                        <var name="windStressZonal"/>
+                        <var name="windStressMeridional"/>
+			<var_array name="activeTracersPistonVelocity"/>
+			<var_array name="activeTracersSurfaceRestoringValue"/>
                 </stream>
 
 		<stream name="forcing"
