@@ -2681,7 +2681,7 @@ sub write_filepath
 
     print $fh "$srcdir/atm/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
-	print $fh "$srcdir/atm/cam/src/dynamics/se/share\n";
+	print $fh "$srcdir/atm/homme/src/share\n";
     }
 
     # Parallelization utilies
