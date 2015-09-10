@@ -1,11 +1,15 @@
 # These routines have problems with stacksize when omp is invoked add -qsmallstack to resolve
-SSOBJS = shr_reprosum_mod.o mo_sethet.o mo_drydep.o
+SSOBJS = mo_sethet.o mo_drydep.o time_management.o
 
 $(SSOBJS): %.o: %.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmallstack $<
 
-time_management.o: time_management.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
+QSMPFLAGS:=
+ifeq ($(compile_threaded), true)
+  QSMPFLAGS += -qsmp=noauto:noomp
+endif
+shr_reprosum_mod.o: shr_reprosum_mod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
 
 # These routines benefit from -qnostrict without violating the bfb test
 PERFOBJS=\
@@ -18,5 +22,31 @@ uwshcu.o \
 wetdep.o 
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
-	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -qnostrict  $<
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
 endif
+
+### These files take long time to compile with default optimization flags.
+### Reducing optimization gives <1min build-times and little impact on model run time.
+### begin
+## atm files taking more than a minute to compile
+# this takes 9 mins to compile at default -O3 level
+buffer.o: buffer.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 $<
+
+## lnd files taking more than a minute to compile
+# this takes 4 mins to compile with -O3 -qsmp=omp
+BiogeophysRestMod.o: BiogeophysRestMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
+
+# this takes 17 mins to compile with -O3 -qsmp=omp
+CNrestMod.o: CNrestMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 -qsmp=noopt $<
+
+# this takes 4 mins to compile with -qsmp=omp
+clmtypeInitMod.o: clmtypeInitMod.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+
+# this takes 2 mins to compile with -qsmp=omp
+clmtype.o: clmtype.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+### end
