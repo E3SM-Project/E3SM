@@ -91,7 +91,7 @@ mpas_threading.o: mpas_kind_types.o mpas_io_units.o
 
 mpas_stream_list.o: mpas_derived_types.o mpas_kind_types.o mpas_io_units.o mpas_io_streams.o mpas_timekeeping.o
 
-mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_derived_types.o mpas_io_units.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o mpas_dmpar.o mpas_io.o
+mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_derived_types.o mpas_io_units.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o mpas_dmpar.o mpas_io.o mpas_threading.o
 
 mpas_forcing.o: mpas_derived_types.o mpas_timekeeping.o mpas_io_streams.o mpas_stream_manager.o
 
