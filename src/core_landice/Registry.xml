@@ -85,6 +85,28 @@
 -->
 	</nml_record>
 
+	<nml_record name="calving" in_defaults="true">
+		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for calving ice."
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold'"
+		/>
+		<nml_option name="config_calving_on_startup" type="logical" default_value=".false." units="unitless"
+		            description="If true, then calve ice on startup; if false, wait until the first prognostic step"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_calving_topographic_threshold" type="real" default_value="-200.0" units="m"
+		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
+		            possible_values="Any real value"
+		/>
+		<nml_option name="config_calving_thickness_threshold" type="real" default_value="200.0" units="m of ice"
+		            description="Defines the ice thickness below which ice calves (for thickness_threshold option). Must be >= config_dynamic_thickness."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_calving_timescale" type="real" default_value="0.0" units="s"
+		            description="Defines the timescale for calving. The fraction of eligible ice that calves is max(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves."
+		            possible_values="Any non-negative real value"
+		/>
+	</nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
@@ -247,6 +269,10 @@
 		            description="Prints additional information about thickness advection."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_print_calving_info" type="logical" default_value=".false." units="unitless"
+		            description="Prints additional information about calving."
+		            possible_values=".true. or .false."
+		/>
 		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".false." units="unitless"
 		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes."
 		            possible_values=".true. or .false."
@@ -300,6 +326,7 @@
 			<var name="zVertex"/>
 			<var name="indexToVertexID"/>
 			<var name="cellsOnEdge"/>
+			<var name="nCellsOnCell"/>
 			<var name="nEdgesOnCell"/>
 			<var name="nEdgesOnEdge"/>
 			<var name="edgesOnCell"/>
@@ -487,6 +514,9 @@ is the value of that variable from the *previous* time level!
 		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
 		     description="List of global vertex IDs."
 		/>
+		<var name="nCellsOnCell" type="integer" dimensions="nCells" units="unitless"
+		     description="Number of cells that border each cell."
+		/>
 		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
 		     description="Number of edges that border each cell."
 		/>
@@ -640,6 +670,9 @@ is the value of that variable from the *previous* time level!
                      description="Basal mass balance on floating regions"
                 />
 
+		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+		     description="thickness of ice that calves (<= ice thickness)"
+		/>
 		<!-- Variables only needed by SIA solver or for calculating diffusivity -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
@@ -762,7 +795,11 @@ is the value of that variable from the *previous* time level!
 	<!-- Scratch Variables -->
 	<var_struct name="scratch" time_levs="1">
 	  <var name="iceCellMask" type="integer" dimensions="nCells" units="none"
-	       description="mask set to 1 in cells where ice is present and 0 otherwise"
+	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
+	       persistence="scratch"
+	       />
+	  <var name="iceCellMask2" type="integer" dimensions="nCells" units="none"
+	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
 	       persistence="scratch"
 	       />
 	  <var name="iceEdgeMask" type="integer" dimensions="nEdges" units="none"
