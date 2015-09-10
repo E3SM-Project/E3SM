@@ -3696,7 +3696,7 @@
   <entry id="PIO_TYPENAME"
 	 type="char"
 	 valid_values="netcdf,pnetcdf,netcdf4p,netcdf4c,default"
-	 value="netcdf" 
+	 value="pnetcdf" 
 	 group="run_pio"
 	 sdesc="pio io type"
 	 ></entry> 
