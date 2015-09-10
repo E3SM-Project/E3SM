@@ -1695,7 +1695,7 @@ sub namelistCompare
     if($opts{'compare'}){
 
 	# get the full path to the baseline test. 
-	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$caseroot/env_test.xml");
+	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$testpath/env_test.xml");
 
 	my $basecmp;
 	my @nodes = $xml->findnodes(".//entry[\@id=\"BASECMP_CASE\"]");
