@@ -51,13 +51,13 @@ sub expand_env
 {
     my ($value, $xmlvars_ref) = @_;
 
-    if ($value =~ /\$ENV\{*([\w_]+)}*(.*)$/) {
+    if ($value =~ /\$\{*([\w_]+)}*(.*)$/) {
        my $subst = $xmlvars_ref->{$1};
        $subst = $ENV{$1} unless defined $subst;
-       $value =~ s/\$ENV\{*${1}\}*/$subst/g;
+       $value =~ s/\$\{*${1}\}*/$subst/g;
     }
     
-    if ($value =~ /\$ENV\{*[\w_]+\}*.*$/) {
+    if ($value =~ /\$\{*[\w_]+\}*.*$/) {
 	$value = expand_env($value, $xmlvars_ref) 
     }
     return $value; 
@@ -68,6 +68,11 @@ sub expand_xml_var
 {
     my ($value, $xmlvars_ref) = @_;
 
+    if($value =~ /\$ENV\{(.*)\}/){
+	my $subst = $ENV{$1};
+	die "No environment variable found for $1" unless(defined $subst);
+	$value =~ s/\$ENV\{*${1}\}/$subst/g;
+    }
     if ($value =~ /\$\{*([\w_]+)}*(.*)$/) {
 	my $found_xml;
 	while ( my ($key, $subst) = each(%$xmlvars_ref) ) {
