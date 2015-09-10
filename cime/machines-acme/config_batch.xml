@@ -266,5 +266,13 @@
    </directives>
    </batch_system>
 
+   <batch_system MACH="titan" version="x.y">
+     <jobid_pattern>(\d+)</jobid_pattern>
+     <directives>
+       <directive>-A {{ project }}</directive>
+       <directive>-l nodes={{ num_nodes }}</directive>
+     </directives>
+   </batch_system>
+
 </config_batch>
 
