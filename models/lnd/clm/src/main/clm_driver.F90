@@ -678,8 +678,11 @@ contains
              ! - CNDV defined: prognostic biogeography; else prescribed
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
-             ! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2)
-
+             !!--------------------------------------------------------------------------------
+             !! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2)
+             !! CNEcosystemDynNoLeaching1 is called before clm_bgc_interface
+             !! CNEcosystemDynNoLeaching2 is called after clm_bgc_interface
+             !!--------------------------------------------------------------------------------
              call CNEcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
                        filter(nc)%num_soilp, filter(nc)%soilp,                          &!!num_pcropp, filter_pcropp, doalb, &

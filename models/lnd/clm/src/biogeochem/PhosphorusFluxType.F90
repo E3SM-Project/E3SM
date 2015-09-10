@@ -275,6 +275,7 @@ module PhosphorusFluxType
 
      ! clm_bgc_interface & pflotran
      !------------------------------------------------------------------------
+     real(r8), pointer :: plant_pdemand_col                         (:)     ! col P flux required to support initial GPP (gN/m2/s)
      real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
      ! for PF-bgc mass-balance error checking
      real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col net N fluxes associated with litter/som-adding/removal to decomp pools (gP/m3/s)
@@ -593,6 +594,7 @@ contains
 
     ! clm_bgc_interface & pflotran
     !------------------------------------------------------------------------
+    allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
     allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
     allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externalp_to_decomp_ppools_col    (:,:,:) = spval
     allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    ; this%externalp_to_decomp_delta_col     (:)     = spval
@@ -1430,6 +1432,12 @@ contains
          avgflag='A', long_name='total allocated P flux', &
          ptr_patch=this%plant_palloc_patch, default='inactive')
 
+    !! bgc interface
+    this%plant_pdemand_col(begc:endc) = spval
+    call hist_addfld1d (fname='PLANT_PDEMAND_COL', units='gN/m^2/s', &
+        avgflag='A', long_name='P flux required to support initial GPP', &
+        ptr_col=this%plant_pdemand_col)
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -1864,7 +1872,7 @@ contains
           this%net_pmin_vr_col(i,j)                      = value_column
           this%biochem_pmin_vr_col(i,j)                  = value_column
 
-          ! pflotran
+          ! bgc interface & pflotran
           this%plant_pdemand_vr_col(i,j)                 = value_column
        end do
     end do
@@ -1899,6 +1907,9 @@ contains
        ! Zero p2c column fluxes
        this%fire_ploss_col(i) = value_column
        this%wood_harvestp_col(i) = value_column
+
+       !! bgc-interface
+       this%plant_pdemand_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools

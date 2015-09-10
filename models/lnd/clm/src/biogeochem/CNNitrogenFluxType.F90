@@ -329,13 +329,12 @@ module CNNitrogenFluxType
      real(r8), pointer :: avail_retransn_patch                      (:)     ! N flux available from retranslocation pool (gN/m2/s)
      real(r8), pointer :: plant_nalloc_patch                        (:)     ! total allocated N flux (gN/m2/s)
 
-     ! pflotran
+     ! bgc interfacepflotran
      !------------------------------------------------------------------------
+     real(r8), pointer :: plant_ndemand_col                         (:)     ! col N flux required to support initial GPP (gN/m2/s)
+     !! pflotran
      real(r8), pointer :: plant_ndemand_vr_col                      (:,:)   ! col vertically-resolved N flux required to support initial GPP (gN/m3/s)
-     ! nitrification-denitrification fluxes
-!     real(r8), pointer :: r_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission ratio of mineralization (-)
-!     ! (from 'simplyn' modules for CN)
-!     real(r8), pointer :: r_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission ratio of nitrification (-)
+
      real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
      real(r8), pointer :: f_ngas_decomp_col                         (:)     ! col N emission from excess mineral N pool due to mineralization (gN/m2/s)
      real(r8), pointer :: f_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission from nitrification (gN/m3/s)
@@ -692,8 +691,9 @@ contains
     allocate(this%avail_retransn_patch        (begp:endp)) ;    this%avail_retransn_patch        (:) = nan
     allocate(this%plant_nalloc_patch          (begp:endp)) ;    this%plant_nalloc_patch          (:) = nan
 
-    ! pflotran
+    ! bgc interface & pflotran
     !------------------------------------------------------------------------
+    allocate(this%plant_ndemand_col           (begc:endc))                   ; this%plant_ndemand_col                (:)    = nan
     allocate(this%plant_ndemand_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%plant_ndemand_vr_col             (:,:)  = nan
 
     allocate(this%f_ngas_decomp_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%f_ngas_decomp_vr_col             (:,:)  = nan
@@ -1791,6 +1791,12 @@ contains
          ptr_patch=this%plant_nalloc_patch, default='inactive')
 
     !!-----------------------------------------------------------
+    !! bgc interface & pflotran
+    this%plant_ndemand_col(begc:endc) = spval
+       call hist_addfld1d (fname='PLANT_NDEMAND_COL', units='gN/m^2/s', &
+            avgflag='A', long_name='N flux required to support initial GPP', &
+            ptr_col=this%plant_ndemand_col)
+
     if (use_pflotran.and.pf_cmode) then
           this%f_ngas_decomp_col(begc:endc) = spval
           call hist_addfld1d (fname='F_NGAS_DECOMP', units='gN/m^2/s',  &
@@ -2432,6 +2438,9 @@ contains
        ! Zero p2c column fluxes
        this%fire_nloss_col(i) = value_column
        this%wood_harvestn_col(i) = value_column
+
+       !! bgc-interface
+       this%plant_ndemand_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools

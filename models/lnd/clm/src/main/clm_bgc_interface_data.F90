@@ -60,27 +60,11 @@ module clm_bgc_interface_data
      real(r8), pointer :: frac_h2osfc_col                           (:)     ! col fractional area with surface water greater than zero
      real(r8), pointer :: h2osoi_vol_col                            (:,:)   ! col volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
 
-     ! (2.3) waterflux_vars:
-     real(r8), pointer :: qflx_top_soil_col                         (:)     ! col net water input into soil from top (mm/s)
-     real(r8), pointer :: qflx_sub_snow_col                         (:)     ! col sublimation rate from snow pack (mm H2O /s) [+]
-     real(r8), pointer :: qflx_evap_soi_col                         (:)     ! col soil evaporation (mm H2O/s) (+ = to atm)
-     real(r8), pointer :: qflx_ev_h2osfc_col                        (:)     ! col evaporation heat flux from soil         (W/m**2) [+ to atm]
-     real(r8), pointer :: qflx_tran_veg_col                         (:)     ! col vegetation transpiration (mm H2O/s) (+ = to atm)
 
      ! (2.4) temperature_vars:
      real(r8), pointer :: t_soisno_col                              (:,:)   ! col soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
      real(r8), pointer :: t_grnd_col                                (:)     ! col ground temperature (Kelvin)
 
-     ! (2.5) energyflux_vars:
-     real(r8), pointer :: htvp_col                                  (:)     ! latent heat of vapor of water (or sublimation) [j/kg]
-     real(r8), pointer :: eflx_bot_col                              (:)     ! col heat flux from beneath the soil or ice column (W/m**2)
-     real(r8), pointer :: eflx_gnet_col                             (:)     ! col net heat flux into ground  (W/m**2)
-     real(r8), pointer :: eflx_soil_grnd_col                        (:)     ! col soil heat flux (W/m**2) [+ = into soil]
-
-     ! (2.6) atm2lnd:
-     real(r8), pointer :: forc_pbot_not_downscaled_grc              (:)     ! not downscaled atm pressure (Pa)
-     real(r8), pointer :: forc_pco2_grc                             (:)     ! CO2 partial pressure (Pa)
-     real(r8), pointer :: forc_pch4_grc                             (:)     ! CH4 partial pressure (Pa)
 
      ! (2.7) canopystate_vars
      integer  , pointer :: alt_indx_col                             (:)     ! col current depth of thaw
@@ -121,27 +105,10 @@ module clm_bgc_interface_data
 
 
      ! (4) bgc rates (fluxes), pass from clm to interface
-     ! (4.1) to decomposition pools
-     real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
-     real(r8), pointer :: externaln_to_decomp_npools_col            (:,:,:) ! col (gN/m3/s) net N fluxes associated with litter/som-adding/removal to decomp pools
-     real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col (gP/m3/s) net P fluxes associated with litter/som-adding/removal to decomp pools
-
-     ! (4.2) to nh4 / no3
-     real(r8), pointer :: externaln_to_nh4_col                      (:,:)   ! col (gN/m3/s) net N fluxes to nh4 pool: deposition + fertilization + supplement + nfix + soyfixn
-     real(r8), pointer :: externaln_to_no3_col                      (:,:)   ! col (gN/m3/s) net N fluxes to no3 pool: deposition + fertilization + supplement
-     real(r8), pointer :: externaln_to_sminn_col                    (:,:)   ! col (gN/m3/s) net N fluxes to sminn pool: deposition + fertilization + supplement + nfix + soyfixn
-     real(r8), pointer :: smin_no3_leached_vr_col                   (:,:)   ! col vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
-     real(r8), pointer :: smin_no3_runoff_vr_col                    (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
-     real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s)
-
-     ! (4.3) to mineral P
-     real(r8), pointer :: externalp_to_primp_col                    (:,:)   ! pdep_to_sminp_col                         (:)     ! col atmospheric P deposition to soil mineral P (gP/m2/s)
-     real(r8), pointer :: externalp_to_labilep_col                  (:,:)   ! fert_p_to_sminp_col                       (:)     ! col fertilizer P to soil mineral P (gP/m2/s)
-     real(r8), pointer :: externalp_to_solutionp_col                (:,:)   ! supplement_to_sminp_vr_col                (:,:)   ! col vertically-resolved supplemental P supply (gP/m3/s)
-     real(r8), pointer :: sminp_leached_vr_col                      (:,:)   ! col vertically-resolved soil mineral P pool loss to leaching (gP/m3/s)
-     real(r8), pointer :: sminp_net_transport_vr_col                (:,:)   ! sminp_leached_vr_col                      (:,:) col net sminp transport associated with runoff/leaching (gN/m3/s)
 
      ! (4.4) plant demand
+     real(r8), pointer :: plant_ndemand_col                         (:)     ! col N flux required to support initial GPP (gN/m3/s)
+     real(r8), pointer :: plant_pdemand_col                         (:)     ! col P flux required to support initial GPP (gP/m3/s)
      real(r8), pointer :: plant_ndemand_vr_col                      (:,:)   ! col vertically-resolved N flux required to support initial GPP (gN/m3/s)
      real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
 
@@ -214,10 +181,6 @@ module clm_bgc_interface_data
      real(r8), pointer :: f_n2o_soil_vr_col                         (:,:)   ! col flux of N2o from soil-N processes [gN/m^3/s]
      real(r8), pointer :: f_n2_soil_vr_col                          (:,:)   ! col flux of N2 from soil-N processes [gN/m^3/s]
 
-     real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
-     real(r8), pointer :: f_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission from nitrification (gN/m3/s)
-     real(r8), pointer :: f_ngas_denit_vr_col                       (:,:)   ! col vertically-resolved N emission from denitrification (gN/m3/s)
-
      real(r8), pointer :: phr_vr_col                                (:,:)   ! potential hr (not N-limited) (gC/m3/s)
      real(r8), pointer :: fphr_col                                  (:,:)   ! fraction of potential heterotrophic respiration
 
@@ -229,6 +192,55 @@ module clm_bgc_interface_data
      real(r8) , pointer :: fpi_p_vr_col                             (:,:)   ! col fraction of potential immobilization (no units)
      real(r8) , pointer :: fpi_p_col                                (:)     ! col fraction of potential immobilization (no units)
      real(r8),  pointer :: fpg_p_col                                (:)     ! col fraction of potential gpp (no units)
+
+     !! pflotran
+     !!------------------------------------------------------------------------------------------
+     ! (2.3) waterflux_vars:
+     real(r8), pointer :: qflx_top_soil_col                         (:)     ! col net water input into soil from top (mm/s)
+     real(r8), pointer :: qflx_sub_snow_col                         (:)     ! col sublimation rate from snow pack (mm H2O /s) [+]
+     real(r8), pointer :: qflx_evap_soi_col                         (:)     ! col soil evaporation (mm H2O/s) (+ = to atm)
+     real(r8), pointer :: qflx_ev_h2osfc_col                        (:)     ! col evaporation heat flux from soil         (W/m**2) [+ to atm]
+     real(r8), pointer :: qflx_tran_veg_col                         (:)     ! col vegetation transpiration (mm H2O/s) (+ = to atm)
+
+     ! (2.5) energyflux_vars:
+     real(r8), pointer :: htvp_col                                  (:)     ! latent heat of vapor of water (or sublimation) [j/kg]
+     real(r8), pointer :: eflx_bot_col                              (:)     ! col heat flux from beneath the soil or ice column (W/m**2)
+     real(r8), pointer :: eflx_gnet_col                             (:)     ! col net heat flux into ground  (W/m**2)
+     real(r8), pointer :: eflx_soil_grnd_col                        (:)     ! col soil heat flux (W/m**2) [+ = into soil]
+
+     ! (2.6) atm2lnd:
+     real(r8), pointer :: forc_pbot_not_downscaled_grc              (:)     ! not downscaled atm pressure (Pa)
+     real(r8), pointer :: forc_pco2_grc                             (:)     ! CO2 partial pressure (Pa)
+     real(r8), pointer :: forc_pch4_grc                             (:)     ! CH4 partial pressure (Pa)
+
+     ! (4) bgc rates (fluxes), pass from clm to interface
+     ! (4.1) to decomposition pools
+     real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
+     real(r8), pointer :: externaln_to_decomp_npools_col            (:,:,:) ! col (gN/m3/s) net N fluxes associated with litter/som-adding/removal to decomp pools
+     real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col (gP/m3/s) net P fluxes associated with litter/som-adding/removal to decomp pools
+
+     ! (4.2) to nh4 / no3
+     real(r8), pointer :: externaln_to_nh4_col                      (:,:)   ! col (gN/m3/s) net N fluxes to nh4 pool: deposition + fertilization + supplement + nfix + soyfixn
+     real(r8), pointer :: externaln_to_no3_col                      (:,:)   ! col (gN/m3/s) net N fluxes to no3 pool: deposition + fertilization + supplement
+     real(r8), pointer :: externaln_to_sminn_col                    (:,:)   ! col (gN/m3/s) net N fluxes to sminn pool: deposition + fertilization + supplement + nfix + soyfixn
+     real(r8), pointer :: smin_no3_leached_vr_col                   (:,:)   ! col vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
+     real(r8), pointer :: smin_no3_runoff_vr_col                    (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
+     real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s)
+
+     ! (4.3) to mineral P
+     real(r8), pointer :: externalp_to_primp_col                    (:,:)   ! pdep_to_sminp_col                         (:)     ! col atmospheric P deposition to soil mineral P (gP/m2/s)
+     real(r8), pointer :: externalp_to_labilep_col                  (:,:)   ! fert_p_to_sminp_col                       (:)     ! col fertilizer P to soil mineral P (gP/m2/s)
+     real(r8), pointer :: externalp_to_solutionp_col                (:,:)   ! supplement_to_sminp_vr_col                (:,:)   ! col vertically-resolved supplemental P supply (gP/m3/s)
+     real(r8), pointer :: sminp_leached_vr_col                      (:,:)   ! col vertically-resolved soil mineral P pool loss to leaching (gP/m3/s)
+     real(r8), pointer :: sminp_net_transport_vr_col                (:,:)   ! sminp_leached_vr_col                      (:,:) col net sminp transport associated with runoff/leaching (gN/m3/s)
+
+     ! gases:
+     real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
+     real(r8), pointer :: f_ngas_nitri_vr_col                       (:,:)   ! col vertically-resolved N emission from nitrification (gN/m3/s)
+     real(r8), pointer :: f_ngas_denit_vr_col                       (:,:)   ! col vertically-resolved N emission from denitrification (gN/m3/s)
+
+     !!------------------------------------------------------------------------------------------
+
 
 !!-------------------------------------------------------------------------------------------------
   contains
@@ -385,6 +397,8 @@ contains
     allocate(this%sminp_net_transport_vr_col(begc:endc, 1:nlevdecomp_full)) ; this%sminp_net_transport_vr_col   (:,:) = spval
 
     ! (4.4) plant demand
+    allocate(this%plant_ndemand_col         (begc:endc))                    ; this%plant_ndemand_col            (:)    = ival
+    allocate(this%plant_pdemand_col         (begc:endc))                    ; this%plant_pdemand_col            (:)    = ival
     allocate(this%plant_ndemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr_col         (:,:)  = ival
     allocate(this%plant_pdemand_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%plant_pdemand_vr_col         (:,:)  = ival
 

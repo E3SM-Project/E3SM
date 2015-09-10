@@ -580,31 +580,31 @@ contains
     !
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
-      externalc_to_decomp_cpools_vr    => carbonflux_vars%externalc_to_decomp_cpools_col   , &
-      externaln_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col , &
-      externalp_to_decomp_ppools_vr    => phosphorusflux_vars%externalp_to_decomp_ppools_col , &
+      externalc_to_decomp_cpools_vr    => carbonflux_vars%externalc_to_decomp_cpools_col        , &
+      externaln_to_decomp_npools_vr    => nitrogenflux_vars%externaln_to_decomp_npools_col      , &
+      externalp_to_decomp_ppools_vr    => phosphorusflux_vars%externalp_to_decomp_ppools_col    , &
       ! inorg. nitrogen source
-      ndep_to_sminn                  => nitrogenflux_vars%ndep_to_sminn_col                 , &
-      nfix_to_sminn                  => nitrogenflux_vars%nfix_to_sminn_col                 , &
-      fert_to_sminn                  => nitrogenflux_vars%fert_to_sminn_col                 , &
-      soyfixn_to_sminn               => nitrogenflux_vars%soyfixn_to_sminn_col              , &
-      supplement_to_sminn_vr         => nitrogenflux_vars%supplement_to_sminn_vr_col        , &
+      ndep_to_sminn                    => nitrogenflux_vars%ndep_to_sminn_col                   , &
+      nfix_to_sminn                    => nitrogenflux_vars%nfix_to_sminn_col                   , &
+      fert_to_sminn                    => nitrogenflux_vars%fert_to_sminn_col                   , &
+      soyfixn_to_sminn                 => nitrogenflux_vars%soyfixn_to_sminn_col                , &
+      supplement_to_sminn_vr           => nitrogenflux_vars%supplement_to_sminn_vr_col          , &
       !
-      nfixation_prof                 => cnstate_vars%nfixation_prof_col                     , &
-      ndep_prof                      => cnstate_vars%ndep_prof_col                          , &
-!      activeroot_prof                => cnstate_vars%activeroot_prof_col                    , &
-      ! inorg. nitrogen sink (if not going to be done in PF)
-      no3_net_transport_vr           => nitrogenflux_vars%no3_net_transport_vr_col          , &
-      ! inorg. nitrogen sink potential
-      col_plant_ndemand_vr           => nitrogenflux_vars%plant_ndemand_vr_col              , &
+      nfixation_prof                   => cnstate_vars%nfixation_prof_col                       , &
+      ndep_prof                        => cnstate_vars%ndep_prof_col                            , &
 
-      pdep_to_sminp                   => phosphorusflux_vars%pdep_to_sminp_col             , &
+      no3_net_transport_vr             => nitrogenflux_vars%no3_net_transport_vr_col            , &
+      col_plant_ndemand_vr             => nitrogenflux_vars%plant_ndemand_vr_col                , &
+
+      plant_ndemand_col                => nitrogenflux_vars%plant_ndemand_col                   , &
+      plant_pdemand_col                => phosphorusflux_vars%plant_pdemand_col                 , &
+
+      col_plant_pdemand_vr             => phosphorusflux_vars%plant_pdemand_vr_col              , &
+      pdep_to_sminp                    => phosphorusflux_vars%pdep_to_sminp_col                 , &
       ! assume pdep_prof = ndep_prof
-      fert_p_to_sminp                 => phosphorusflux_vars%fert_p_to_sminp_col           , &
-      supplement_to_sminp_vr          => phosphorusflux_vars%supplement_to_sminp_vr_col    , &
-
-      sminp_net_transport_vr         => phosphorusflux_vars%sminp_net_transport_vr_col      , &
-      col_plant_pdemand_vr           => phosphorusflux_vars%plant_pdemand_vr_col              &
+      fert_p_to_sminp                  => phosphorusflux_vars%fert_p_to_sminp_col               , &
+      supplement_to_sminp_vr           => phosphorusflux_vars%supplement_to_sminp_vr_col        , &
+      sminp_net_transport_vr           => phosphorusflux_vars%sminp_net_transport_vr_col          &
     )
 
 !    dtime = get_step_size()
@@ -616,6 +616,9 @@ contains
 !
     do fc = 1,num_soilc
         c = filter_soilc(fc)
+        clm_bgc_data%plant_ndemand_col(c)   = plant_ndemand_col(c)
+        clm_bgc_data%plant_pdemand_col(c)   = plant_pdemand_col(c)
+
         fnh4_dep  = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_dep(c)+1._r8)))
         fnh4_fert = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_fert(c)+1._r8)))
 
@@ -1425,6 +1428,9 @@ contains
         occlp_vr                => phosphorusstate_vars%occlp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
         primp_vr                => phosphorusstate_vars%primp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
 
+        plant_ndemand_col       => nitrogenflux_vars%plant_ndemand_col          , &
+        plant_pdemand_col       => phosphorusflux_vars%plant_pdemand_col        , &
+
         alt_indx                => canopystate_vars%alt_indx_col                , & ! Input:  [integer  (:)     ]  current depth of thaw
 
         watsat                  => soilstate_vars%watsat_col                    , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity) (nlevgrnd)
@@ -1454,8 +1460,12 @@ contains
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
-        alt_indx(c)     = clm_bgc_data%alt_indx_col(c)
-        finundated(c)   = clm_bgc_data%finundated_col(c)
+
+        plant_ndemand_col(c) = clm_bgc_data%plant_ndemand_col(c)
+        plant_pdemand_col(c) = clm_bgc_data%plant_pdemand_col(c)
+
+        alt_indx(c)          = clm_bgc_data%alt_indx_col(c)
+        finundated(c)        = clm_bgc_data%finundated_col(c)
 
         do j = 1,nlevsoi
             bd(c,j) = clm_bgc_data%bd_col(c,j)
