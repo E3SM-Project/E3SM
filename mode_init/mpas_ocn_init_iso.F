@@ -350,7 +350,7 @@ contains
 
       ! Define interface locations
       allocate( interfaceLocations( nVertLevelsP1 ) )
-      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
+      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations, domain % configs )
 
       ! assign config variables
       nVertLevels  = config_iso_vert_levels
@@ -676,7 +676,9 @@ contains
 
            ! Set up debugging tracers
            idx = index_tracer1
-           debugTracers(idx, :, iCell) = 1.0_RKIND
+           if ( associated(debugTracers) ) then
+              debugTracers(idx, :, iCell) = 1.0_RKIND
+           end if
            
            ! Heat fluxes
            heatFluxZonal = 0.0_RKIND
