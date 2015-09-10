@@ -118,7 +118,6 @@
   <!-- bluewaters is PBS -->
   <batch_system MACH="bluewaters" version="x.y">
     <directives>
-      <directive>-A {{ project }}</directive>
       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}:xe</directive>
       <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
