@@ -42,6 +42,10 @@ if ( $GLC_GRID == 'mpas.gis20km' ) then
         set date_stamp = 150505
 	set input_mesh = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/gis20km.${date_stamp}.nc
 	set graph_prefix = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/mpas-li.graph.info.${date_stamp}
+else if ( $GLC_GRID == 'mpas.ais20km' ) then
+        set date_stamp = 150910
+	set input_mesh = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/ais20km.${date_stamp}.nc
+	set graph_prefix = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/mpas-li.graph.info.${date_stamp}
 endif
 
 # Write mpas-li.input_data_list file
