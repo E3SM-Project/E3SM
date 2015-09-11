@@ -88,11 +88,23 @@
 	<var_struct name="timeSeriesStatsAM" 
 				time_levs="1" 
 				packages="timeSeriesStatsAMPKG">
-		<var name="timeSeriesStatsCounter" 
+		<var name="timeSeriesStatsOneString" 
+			type="text" 
+			dimensions="Time" 
+			units="unitless"
+			description="a placeholder string so that timeSeriesStats has a memory to duplicate per instance"
+			packages="forwardMode;analysisMode"/>
+		<var name="timeSeriesStatsOneInteger" 
+			type="integer" 
+			dimensions="Time" 
+			units="unitless"
+			description="a placeholder integer so that timeSeriesStats has a memory to duplicate per instance"
+			packages="forwardMode;analysisMode"/>
+		<var name="timeSeriesStatsOneReal" 
 			type="real" 
 			dimensions="Time" 
 			units="unitless"
-			description="a placeholder counter so that timeSeriesStats has a memory to duplicate"
+			description="a placeholder real so that timeSeriesStats has a memory to duplicate per instance"
 			packages="forwardMode;analysisMode"/>
 	</var_struct>
 
