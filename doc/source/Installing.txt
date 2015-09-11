@@ -59,6 +59,8 @@ CMake configuration line:
 
 This works for the dependencies: `NetCDF`, `PnetCDF`, `HDF5`, `LIBZ`, `SZIP`.
 
+For specific instructions to install on various commonly used super computers, please read the [walk-through guide to PIO Installation](@ref mach_walkthrough). 
+
 ### Additional CMake Options ###
 
 Additional configuration options can be specified on the command line.
