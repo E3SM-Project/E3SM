@@ -16,3 +16,6 @@ setenv MPI_GROUP_MAX 1024
 setenv MPI_TYPE_MAX 100000
 setenv KMP_AFFINITY noverbose,disabled
 setenv KMP_SCHEDULE static,balanced
+setenv OMP_DYNAMIC FALSE
+setenv MPI_TYPE_DEPTH 10
+setenv PNETCDF_PATH /home1/fvitt/parallel-netcdf-1.3.1

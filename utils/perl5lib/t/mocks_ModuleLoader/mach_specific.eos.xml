@@ -44,4 +44,8 @@
       <command name="load">cmake/2.8.11.2</command>
     </modules>
   </module_system>
+  <environment_variables>
+    <env name="MPICH_ENV_DISPLAY">1</env>
+    <env name="MPICH_VERSION_DISPLAY">1</env>
+  </environment_variables>
 </machine>

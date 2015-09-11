@@ -36,3 +36,6 @@ if ( $MPILIB == "mpi-serial" ) then
 endif
 module load cmake
 module rm darshan
+setenv OMP_STACKSIZE 64M
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_PTL_MATCH_OFF 1

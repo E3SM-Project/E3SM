@@ -21,5 +21,8 @@
     <env name="MPI_TYPE_MAX">100000</env>
     <env name="KMP_AFFINITY">noverbose,disabled</env>
     <env name="KMP_SCHEDULE">static,balanced</env>
+    <env name="OMP_DYNAMIC">FALSE</env>
+    <env name="MPI_TYPE_DEPTH">10</env>
+    <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
   </environment_variables>
 </machine>

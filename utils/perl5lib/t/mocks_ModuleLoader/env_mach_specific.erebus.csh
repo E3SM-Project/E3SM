@@ -24,3 +24,8 @@ endif
 module load ncarcompilers/1.0
 module load netcdf-mpi/4.2
 module load pnetcdf/1.3.0
+setenv XLSMPOPTS stack=256000000
+setenv MP_LABELIO yes
+setenv MP_INFOLEVEL 2
+setenv MP_SHARED_MEMORY yes
+setenv MP_EUILIB us

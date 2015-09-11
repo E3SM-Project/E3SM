@@ -28,3 +28,8 @@ fi
 module load ncarcompilers/1.0 
 module load netcdf-mpi/4.2 
 module load pnetcdf/1.3.0 
+export XLSMPOPTS=stack=256000000
+export MP_LABELIO=yes
+export MP_INFOLEVEL=2
+export MP_SHARED_MEMORY=yes
+export MP_EUILIB=us

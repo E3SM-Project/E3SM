@@ -38,5 +38,3 @@ module load netcdf/mic-4.1.3
 module load pnetcdf/mic-1.5.0 
 export MKL=-mkl
 export OMP_STACKSIZE=64M
-ulimit -c unlimited
-ulimit -s unlimited

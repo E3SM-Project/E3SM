@@ -30,5 +30,3 @@ if ( $COMPILER == "gnu" ) then
 endif
 setenv P4_GLOBMEMSIZE 500000000
 setenv NETCDF_DIR $NETCDF_PATH
-limit stacksize unlimited
-limit coredumpsize unlimited

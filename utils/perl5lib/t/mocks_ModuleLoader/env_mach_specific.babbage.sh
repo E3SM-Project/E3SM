@@ -36,5 +36,3 @@ then
 fi
 export MKL=-mkl
 export OMP_STACKSIZE=64M
-ulimit -c unlimited
-ulimit -s unlimited
