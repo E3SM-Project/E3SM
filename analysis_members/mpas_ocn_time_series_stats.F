@@ -253,8 +253,8 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
 
   ! update the counter
   do b = 1, series % number_of_buffers
-    if (series % buffers(b) % accumulate_flag) then
-      if (series % buffers(b) % reset_flag) then
+    if (series % buffers(b) % accumulate_flag == 1) then
+      if (series % buffers(b) % reset_flag == 1) then
         series % buffers(b) % counter = 1
       else 
         series % buffers(b) % counter = series % buffers(b) % counter + 1
