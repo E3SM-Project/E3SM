@@ -2,6 +2,10 @@
 
 A high-level Parallel I/O Library for structured grid applications
 
+## Website
+
+For complete documentation, see our website at [http://parallelio.github.io/ParallelIO/](http://parallelio.github.io/ParallelIO/).
+
 ## Dependencies
 
 PIO can use NetCDF (version 4.3.3+) and/or PnetCDF (version 1.6.0+) for I/O.
