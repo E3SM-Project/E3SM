@@ -30,9 +30,6 @@ require Depends::Checks;
 require Module::ModuleLoader;
 require Batch::BatchUtils;
 
-# Set OMP_NUM_THREADS
-$ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
-
 
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
@@ -317,6 +314,9 @@ sub runModel()
     
     system("sleep 10");
     my $localtime = localtime;
+    # Set OMP_NUM_THREADS
+    $ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
+
     print "$localtime MODEL EXECUTION BEGINS HERE\n";
     # Run the model
     {{ mpirun }}
@@ -465,6 +465,7 @@ sub resubmitCheck()
 							      machine	  => $config{'MACH'},
                                                               machroot    => $config{'MACHDIR'}, 
 							      mpilib      => $config{'MPILIB'});
+
     $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
 

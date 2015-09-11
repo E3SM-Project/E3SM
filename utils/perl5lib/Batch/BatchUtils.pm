@@ -253,6 +253,10 @@ sub doResubmit()
 	    my $newresubmit = $config{'RESUBMIT'} - 1;
 	    my $owd = getcwd;
 	    chdir $config{'CASEROOT'};
+	    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
+		`./xmlchange CONTINUE_RUN=TRUE`;
+	    }
+
 	    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
 	    if($?)
 	    {
