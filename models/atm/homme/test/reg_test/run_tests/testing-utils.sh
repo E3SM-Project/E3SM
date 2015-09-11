@@ -302,7 +302,7 @@ createAllRunScripts() {
       testExec=TEST_${testNum}
       echo "# Pure MPI test ${testNum}" >> $thisRunScript
       #echo "mpiexec -n ${NUM_CPUS }${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
-      execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}
+      execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}_${testNum}
       echo "" >> $thisRunScript # new line
     done
 
@@ -315,7 +315,7 @@ createAllRunScripts() {
          testExec=OMP_TEST_${testNum}
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
-         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}
+         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}_${testNum}
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -416,7 +416,7 @@ createRunScript() {
   do
     testExec=TEST_${testNum}
     echo "# Pure MPI test ${testNum}" >> $thisRunScript
-    execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}
+    execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}_${testNum}
     echo "" >> $thisRunScript # new line
   done
 
@@ -427,7 +427,7 @@ createRunScript() {
     do
        testExec=${OMP_TEST_${testNum}}
        echo "# Hybrid test ${testNum}" >> $thisRunScript
-       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}
+       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}_${testNum}
        echo "" >> $thisRunScript # new line
     done
   fi
