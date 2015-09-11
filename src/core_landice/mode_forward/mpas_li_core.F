@@ -10,6 +10,8 @@ module li_core
    use mpas_framework
    use mpas_timekeeping
 
+   use li_analysis_driver   !SFP added
+
    implicit none
    private
 
@@ -152,6 +154,9 @@ module li_core
          block => block % next
       end do
 
+      !SFP added: initialize analysis driver
+!      call li_analysis_init(domain, err_tmp)
+!      err = ior(err, err_tmp)
 
       ! check for errors and exit
 
@@ -414,6 +419,11 @@ module li_core
             err = ior(err, err_tmp)
          endif
          err = ior(err, err_tmp)
+
+         !SFP added: call analysis driver compute, etc.
+!         call li_analysis_compute(domain, err) 
+!         call li_analysis_restart(domain, err) 
+!         call li_analysis_write(domain, err)
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error

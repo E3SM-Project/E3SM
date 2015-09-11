@@ -46,3 +46,4 @@ clean:
 	$(RM) -r default_inputs
 	(cd shared; $(MAKE) clean)
 	(cd mode_forward; $(MAKE) clean)
+	(cd analysis_members; $(MAKE) clean)

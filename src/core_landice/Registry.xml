@@ -320,7 +320,6 @@
 			<var name="meshDensity"/>
 		</stream>
 
-
 		<stream name="input"
 				type="input"
 				immutable="true"
