@@ -51,7 +51,7 @@ target_compile_definitions (piof
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
         PRIVATE -ffree-line-length-none)
-elseif (CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
     target_compile_options (piof
         PRIVATE -mismatch_all)
 endif()
