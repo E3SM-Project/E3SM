@@ -107,6 +107,9 @@ Each grid is associated with five names
 <GRID sname="1.9x2.5_gx1v6"     alias="f19_g16"  compset="_CISM">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</GRID> <!-- back compat -->
 <GRID sname="0.9x1.25_gx1v6"    alias="f09_g16"  compset="_CISM">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</GRID> <!-- back compat -->
 
+<!--- mpasli grids -->
+<GRID sname="0.9x1.25_gx1v6_gis20"    alias="f09_g16_g"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.gis20km_w%null</GRID>
+
 <!-- new runoff grids for data runoff model DROF -->
 
 <GRID sname="T31_gx3v7_rx1"              alias="T31_g37_rx1"      compset="_DROF">a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</GRID> <!-- back compat -->
@@ -436,6 +439,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <support_level>For testing of the WAV model</support_level>
   <nx>90</nx>  <ny>50</ny>  
   <desc>WW3 90 x 50 global grid</desc>
+</gridhorz>
+
+<!-- GLC grids -->
+<!-- GLC:MPASLI grids -->
+<gridhorz name="mpas.gis20km">
+  <support_level>Experimental, under development</support_level>
+  <nx>7425</nx>  <ny>1</ny>    
+  <desc>mpas.gis20km is a uniform-resolution 20km MPASLI grid of the Greenland Ice Sheet.  It is primarily intended for testing.</desc>
 </gridhorz>
 
 <!-- ======================================================== -->

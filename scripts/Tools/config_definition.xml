@@ -130,7 +130,7 @@
 
   <entry id="COMP_GLC" 
 	 type="char"
-	 valid_values="cism,xglc,sglc" 
+	 valid_values="cism,xglc,sglc,mpasli" 
 	 value="sglc"  
 	 group="case_comp" 
 	 sdesc="Name of land ice-sheet component"
@@ -382,7 +382,7 @@
 
   <entry id="GLC_GRID" 
 	 type="char"
-         valid_values="gland20,gland10,gland5,gland5UM,gland4,null"  
+         valid_values=""
 	 value="UNSET" 
 	 group="build_grid"
          sdesc="glacier (glc) grid - DO NOT EDIT (for experts only)"
