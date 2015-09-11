@@ -334,40 +334,38 @@ sub postRun()
     # of the variables  
     chdir $config{'CASEROOT'};
     %config = SetupTools::getAllResolved();
-
+    my $rundir = $config{RUNDIR};
     my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
-    chdir $config{'RUNDIR'};
+
     my $workingdir = getcwd;
 
     # find the last $model.log and cpl.log
-    my @logs = glob q(cesm.log.*);
-    my $logfile = $logs[$#logs];
-    my @cpllogs = glob q(cpl.log.*);
-    my $cpllogfile = $cpllogs[$#cpllogs];
+    my $logfile = "$rundir/cesm.log.$LID";
+    my $cpllogfile = "$rundir/cpl.log.$LID";
 
-    if(length($logfile) <= 0)
+    if( -z $logfile) 
     {
         print "Model did not complete, no cesm.log file present\n";
     }
 
-    if(! defined $cpllogfile)
+    if(! -e $cpllogfile)
     {
-        my $msg = "Model did not complete - no cpl.log file corresponding to most recent model log: $config{'RUNDIR'}/$logfile";
+        my $msg = "Model did not complete - no cpl.log file corresponding to most recent model log: $logfile";
         print("$msg\n");
         appendCaseStatus($msg);
         exit(-1);
     }
 
-    if(length($cpllogfile) <= 0)
+    if(-z $cpllogfile)
     {
-        print "Model did not complete, see $config{'RUNDIR'}/$logfile\n";
+        print "Model did not complete, see $logfile\n";
         open (my $CS, ">>", "$config{'CASEROOT'}/CaseStatus") or warn "cannot open $config{'CASEROOT'}/CaseStatus, error was $!";
         print $CS "Run FAILED $sdate\n";
         exit(-1);
     }
-    elsif( -e "$config{'RUNDIR'}/$cpllogfile")
+    elsif( -e  $cpllogfile)
     {
-        open my $CPLLOG, "<", "$config{'RUNDIR'}/$cpllogfile" or warn "could not open $config{'RUNDIR'}/$cpllogfile, $!";
+        open my $CPLLOG, "<", "$cpllogfile" or warn "could not open $cpllogfile, $!";
         my @cpllines = <$CPLLOG>;
         close $CPLLOG;
         if(@cpllines)
@@ -379,19 +377,19 @@ sub postRun()
             }
             else
             {
-                appendCaseStatus("Model did not complete - see $config{'RUNDIR'}/$logfile");
+                appendCaseStatus("Model did not complete - see $logfile");
                 exit(-1);
             }
 
         }
         else
         {
-            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent model log: $config{'RUNDIR'}/$logfile");
+            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent model log: $logfile");
             exit(-1);
         }
     }
 
-    
+    chdir($rundir) or die "could not cd to $rundir";
     qx(gzip *.$LID);
     if($?)
     {
