@@ -258,16 +258,20 @@ foreach my $file (values (%id_file))
     
     # Write out the file header
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file); 
-    my @nodes_header = $xml->findnodes(".//header");
-    my $header_text = $nodes_header[0]->textContent();
+
     my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
     print $fh "<?xml version=\"1.0\"?> \n";
     print $fh "\n";
     print $fh "<config_definition> \n";
     print $fh "\n";
-    print $fh "<header>";
-    print $fh "$header_text";
-    print $fh "</header> ";
+
+    my @nodes_header = $xml->findnodes(".//header");
+    if ($#nodes_header == 0)  {
+	my $header_text = $nodes_header[0]->textContent();
+	print $fh "<header>";
+	print $fh "$header_text";
+	print $fh "</header> "; 
+    }
 
     # Write out the groups contained in the file
     print $fh "\n\n";
