@@ -104,6 +104,8 @@ contains
 
       err = 0
 
+      print *, 'in li_init_global_stats'     
+
    end subroutine li_init_global_stats!}}}
 
 !***********************************************************************
@@ -260,8 +262,8 @@ contains
             totalIceVolume = totalIceVolume + real( iceMask(iCell), RKIND) * areaCell(iCell) * thickness(iCell) 
 
             ! debugging
-            print *, 'totalIceArea=', totalIceArea
-            print *, 'totalIceVolume=', totalIceVolume
+!            print *, 'totalIceArea=', totalIceArea
+!            print *, 'totalIceVolume=', totalIceVolume
 
             ! calculate grounded ice area and volume
             groundedIceArea = groundedIceArea + real( groundedMask(iCell), RKIND) * areaCell(iCell) 
@@ -293,6 +295,8 @@ contains
 
          block => block % next
       end do
+
+      print *, 'in li_compute_global_stats'     
 
    end subroutine li_compute_global_stats!}}}
 
@@ -343,6 +347,8 @@ contains
 
       err = 0
 
+      print *, 'in li_restart_global_stats'     
+
    end subroutine li_restart_global_stats!}}}
 
 !***********************************************************************
@@ -391,6 +397,8 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
+
+      print *, 'in li_finalize_global_stats'     
 
    end subroutine li_finalize_global_stats!}}}
 
