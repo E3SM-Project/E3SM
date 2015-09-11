@@ -12,8 +12,8 @@ SET(EXEC_NAME baroC)
 SET(NUM_CPUS 16)
 
 SET(NAMELIST_FILES
-  ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}-run1.nl
-  ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}-run2.nl
+  ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}-run1.nl
+  ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}-run2.nl
 )
 
 SET(NC_OUTPUT_FILES 
@@ -24,7 +24,7 @@ SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*26*)
 
 SET(OMP_SUB_TESTS true)
 SET(OMP_NUM_THREADS 4)
-SET(OMP_NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}-run2-omp.nl)
+SET(OMP_NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}-run2-omp.nl)
 
 SET(OMP_NC_OUTPUT_FILES 
   baro2c-run2-omp-jw_baroclinic-000000000-1.nc)

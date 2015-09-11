@@ -1,5 +1,5 @@
 &ctl_nl
-NThreads                     = 4
+NThreads                     = 1
 partmethod                   = 4
 topology                     = "cube"
 test_case                    = "asp_baroclinic"
@@ -22,8 +22,8 @@ smooth                       = 0
 nu                           = 1e16
 nu_s                         = -1        ! use same value as nu
 nu_q                         = 1e16    
-nu_p                         = 0
-limiter_option               = 8 
+nu_p                         = 1e16
+limiter_option               = 4 
 energy_fixer                 = -1
 hypervis_order               = 2
 hypervis_subcycle            = -1
@@ -49,8 +49,8 @@ kcut_fm       = 2
 
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "vcoord/camm-26.fbin"
-vfile_int     = "vcoord/cami-26.fbin"
+vfile_mid     = "vcoord/camm-26.ascii"
+vfile_int     = "vcoord/cami-26.ascii"
 /
 
 &prof_inparm
@@ -59,14 +59,15 @@ profile_single_file	= .true.
 /
 
 &analysis_nl
- interp_gridtype   = 2
- output_timeunits  = 1,1
- output_frequency  = 9,9
- output_start_time = 0,0
- output_end_time   = 30,30
- output_varnames1  = 'ps', 'zeta', 'DIFFT'
- output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C','C2','C3','C4'
- io_stride         = 8
- output_type       = 'netcdf' 
+output_prefix     = "baro2b-"
+interp_gridtype   = 2
+output_timeunits  = 1,1
+output_frequency  = 9,9
+output_start_time = 0,0
+output_end_time   = 30,30
+output_varnames1  = 'u', 'v', 'ps', 'T'
+output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4','phys_lat','phys_lon'
+io_stride         = 8
+output_type       = 'netcdf' 
 /
 

@@ -19,7 +19,7 @@ SET(EXEC_NAME baroA)
 SET(NUM_CPUS 16)
 
 # The following paths are best specified frome HOMME_ROOT (the svn checkout directory)
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}.nl)
+SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}.nl)
 SET(VCOORD_FILES "${HOMME_ROOT}/test/vcoord/*20*")
 SET(NCL_FILES ${HOMME_ROOT}/test/reg_test/ncl/${TEST_NAME}.ncl)
 

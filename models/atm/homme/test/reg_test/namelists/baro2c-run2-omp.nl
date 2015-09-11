@@ -1,5 +1,5 @@
 &ctl_nl
-NThreads      = 1
+NThreads      = 4
 partmethod    = 4
 topology      = "cube"
 test_case     = "jw_baroclinic"
@@ -42,11 +42,11 @@ kcut_fm       = 2
 /
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "vcoord/camm-26.fbin.littleendian"
-vfile_int     = "vcoord/cami-26.fbin.littleendian"
+vfile_mid     = "vcoord/camm-26.ascii"
+vfile_int     = "vcoord/cami-26.ascii"
 /
 &analysis_nl
-output_prefix    = "baro2c-run2-"
+output_prefix    = "baro2c-run2-omp-"
 output_timeunits = 0
 output_frequency = 3
 output_varnames1 = 'u', 'v', 'ps', 'T'
@@ -54,5 +54,3 @@ interp_type      = 0          ! native high order
 output_type      = 'netcdf'
 io_stride        = 8
 /
-
-
