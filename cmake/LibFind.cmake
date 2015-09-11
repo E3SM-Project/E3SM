@@ -314,18 +314,26 @@ function (find_package_component PKG)
         endif ()
         
         # Set cache variables
-        set (${PKGCOMP}_FOUND        ${${PKGCOMP}_FOUND}
-             CACHE BOOL "Whether the ${PKGCOMP} package was found" FORCE)
-        set (${PKGCOMP}_INCLUDE_DIR  ${${PKGCOMP}_INCLUDE_DIR}
-             CACHE PATH "Directory containing the ${PKGCOMP} include file" FORCE)
-        set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIRS}
-             CACHE STRING "Include path for the ${PKGCOMP} package" FORCE)
-        set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}
-             CACHE FILEPATH "Location of the ${PKGCOMP} library file" FORCE)
-        set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}
-             CACHE STRING "Libraries for the ${PKGCOMP} package" FORCE)
-        set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}
-             CACHE BOOL "Whether the ${PKGCOMP} library is dynamic" FORCE)
+#        set (${PKGCOMP}_FOUND        ${${PKGCOMP}_FOUND}
+#             CACHE BOOL "Whether the ${PKGCOMP} package was found" FORCE)
+#        set (${PKGCOMP}_INCLUDE_DIR  ${${PKGCOMP}_INCLUDE_DIR}
+#             CACHE PATH "Directory containing the ${PKGCOMP} include file" FORCE)
+#        set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIRS}
+#             CACHE STRING "Include path for the ${PKGCOMP} package" FORCE)
+#        set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}
+#             CACHE FILEPATH "Location of the ${PKGCOMP} library file" FORCE)
+#        set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}
+#             CACHE STRING "Libraries for the ${PKGCOMP} package" FORCE)
+#        set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}
+#             CACHE BOOL "Whether the ${PKGCOMP} library is dynamic" FORCE)
+
+        # Set variables in parent scope
+        set (${PKGCOMP}_FOUND        ${${PKGCOMP}_FOUND}         PARENT_SCOPE)
+        set (${PKGCOMP}_INCLUDE_DIR  ${${PKGCOMP}_INCLUDE_DIR}   PARENT_SCOPE)
+        set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIRS}  PARENT_SCOPE)
+        set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}       PARENT_SCOPE)
+        set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}     PARENT_SCOPE)
+        set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}     PARENT_SCOPE)
         
     endif ()
 
