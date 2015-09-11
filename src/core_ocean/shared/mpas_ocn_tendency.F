@@ -135,10 +135,11 @@ contains
       ! height tendency: start accumulating tendency terms
       !
       tend_layerThickness = 0.0
+      surfaceThicknessFlux(:) = 0.0_RKIND
 
       if(config_disable_thick_all_tend) return
 
-      ! Build windstress array from bulk
+      ! Build suface stress array from bulk
       call mpas_timer_start("bulk_thick", .false.)
       call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
       call mpas_timer_stop("bulk_thick")
@@ -198,7 +199,7 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
+      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, normalVelocity, tangentialVelocity, density, potentialDensity, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
@@ -251,19 +252,21 @@ contains
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
                   
-      call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
-      call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
+      call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
       !
       ! velocity tendency: start accumulating tendency terms
       !
       tend_normalVelocity(:,:) = 0.0
+      surfaceStress(:) = 0.0_RKIND
+      surfaceStressMagnitude(:) = 0.0_RKIND
 
       if(config_disable_vel_all_tend) return
 
-      ! Build bulk forcing windstress
+      ! Build bulk forcing suface stress
       call mpas_timer_start("bulk_ws", .false.)
-      call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceWindStress, surfaceWindStressMagnitude, err)
+      call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
       call mpas_timer_stop("bulk_ws")
 
       !
@@ -315,7 +318,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
-      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceWindStress, layerThicknessEdge, tend_normalVelocity, err)
+      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
       !

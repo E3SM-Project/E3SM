@@ -17,7 +17,7 @@ OBJS =     mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_hmix_leith.o \
 	   mpas_ocn_vel_hmix_del4.o \
 	   mpas_ocn_vel_forcing.o \
-	   mpas_ocn_vel_forcing_windstress.o \
+	   mpas_ocn_vel_forcing_surface_stress.o \
 	   mpas_ocn_vel_forcing_rayleigh.o \
 	   mpas_ocn_vel_pressure_grad.o \
 	   mpas_ocn_vmix.o \
@@ -86,9 +86,9 @@ mpas_ocn_vel_hmix_leith.o: mpas_ocn_constants.o
 
 mpas_ocn_vel_hmix_del4.o: mpas_ocn_constants.o
 
-mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_windstress.o mpas_ocn_vel_forcing_rayleigh.o mpas_ocn_forcing.o mpas_ocn_constants.o
+mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_surface_stress.o mpas_ocn_vel_forcing_rayleigh.o mpas_ocn_forcing.o mpas_ocn_constants.o
 
-mpas_ocn_vel_forcing_windstress.o: mpas_ocn_forcing.o mpas_ocn_constants.o
+mpas_ocn_vel_forcing_surface_stress.o: mpas_ocn_forcing.o mpas_ocn_constants.o
 
 mpas_ocn_vel_forcing_rayleigh.o: mpas_ocn_constants.o
 
