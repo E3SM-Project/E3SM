@@ -19,10 +19,8 @@ SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
 #SET (FORCE_Fortran_FLAGS "-openmp -fp-model fast -ftz -g -O2" CACHE STRING "")
 SET (FORCE_Fortran_FLAGS "-openmp -traceback -fp-model precise -ftz -g -O2" CACHE STRING "")
 
-
-SET (PNETCDF_DIR "/projects/ccsm/pnetcdf1.2.0-intel" CACHE FILEPATH "")
-#SET (NETCDF_DIR "/opt/netcdf-4.1-intel" CACHE FILEPATH "")
-SET (NETCDF_DIR "/projects/ccsm/netcdf4.3.2-intel12" CACHE FILEPATH "")
+SET (NETCDF_DIR "/projects/ccsm/yellowstone/netcdf-4.3.2-intel-14.0-openmpi-1.6" CACHE FILEPATH "")
+SET (HDF5_DIR /projects/ccsm/yellowstone/hdf5-1.8.11-intel-14.0-2 CACHE FILEPATH "")
 
 
 SET (USE_QUEUING FALSE CACHE BOOL "")

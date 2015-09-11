@@ -207,8 +207,6 @@ submitTestsToQueue() {
       cat $THIS_STDERR
       exit -6
     fi
-    rm $THIS_STDOUT
-    rm $THIS_STDERR
   done
 }
 
@@ -255,8 +253,6 @@ runTestsStd() {
       cat $THIS_STDERR
       exit -7
     fi
-    rm $THIS_STDOUT
-    rm $THIS_STDERR
   done
 }
 
@@ -306,7 +302,7 @@ createAllRunScripts() {
       testExec=TEST_${testNum}
       echo "# Pure MPI test ${testNum}" >> $thisRunScript
       #echo "mpiexec -n ${NUM_CPUS }${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
-      execLine $thisRunScript "${!testExec}" ${NUM_CPUS}
+      execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}
       echo "" >> $thisRunScript # new line
     done
 
@@ -319,7 +315,7 @@ createAllRunScripts() {
          testExec=OMP_TEST_${testNum}
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
-         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI}
+         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -420,7 +416,7 @@ createRunScript() {
   do
     testExec=TEST_${testNum}
     echo "# Pure MPI test ${testNum}" >> $thisRunScript
-    execLine $thisRunScript "${!testExec}" ${NUM_CPUS}
+    execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}
     echo "" >> $thisRunScript # new line
   done
 
@@ -431,7 +427,7 @@ createRunScript() {
     do
        testExec=${OMP_TEST_${testNum}}
        echo "# Hybrid test ${testNum}" >> $thisRunScript
-       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI}
+       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}
        echo "" >> $thisRunScript # new line
     done
   fi
@@ -449,23 +445,25 @@ execLine() {
   RUN_SCRIPT=$1
   EXEC=$2
   NUM_MPI_PROCS=$3
+  OPT="> $4.out 2> $4.err"
+
 
   if [ -n "${MPI_EXEC}" ]; then
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
-      echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
     else
-      echo "${MPI_EXEC} -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "${MPI_EXEC} -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
     fi
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
-      echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
 
     elif [ "$HOMME_Submission_Type" = pbs ]; then
-      echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
 
     else
-      echo "mpiexec -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "mpiexec -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
 
     fi
   fi

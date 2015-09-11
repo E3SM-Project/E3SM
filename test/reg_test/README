@@ -37,10 +37,7 @@ shallow water equations:
    PIO_INTERP output
 
 primitive equations:
-   explicit leapfrog
    RK w/ subcycling
-   semi-implicit
-   viscosity
    hyper-viscosity
    conservation (inviscid)
    conservation (with hyper-viscosity)
@@ -88,6 +85,97 @@ swtc6.sh   short time, low resolution Rossby wave test
 
 
 
+=======================================================================
+3D PRIMITIVIE EQUATION TESTS -- DETAILS
+
+
+When rebaselining, in addition to extra details specified below (exact restart, conservation),
+   run baro2b and baro2d for 9 days.  (baro2d normally only run for 1 day)
+   output will be in (path from cmake build directory)
+          tests/baro2d/movies
+   where is the output?
+
+
+
+   compute l2 error in PS against EUL result (see NCL scripts from baro2b.sh)
+   scritp will plot PS, zeta, tracers at day 9.  
+   Compare with reference plots (should be visually identical)
+             baro2b.sh:  verifty q=1 tracer is preserved to 12 digits
+                         l2 PS error at day 9:  1.13mb
+             baro2d.sh:  verifty q=1 tracer is preserved to 12 digits
+                         l2 PS error at day 9:  1.25mb 
+             check tracer mass conservation:
+               (Q-Q0)/Q0   0.740187328509209E-14   Q1
+               (Q-Q0)/Q0   0.146454099118228E-13   Q2
+               (Q-Q0)/Q0   0.470825202983687E-14   Q3
+               (Q-Q0)/Q0   0.625678319683976E-14   Q4
+
+
+
+baro2b.sh   Test case from Jablonowski and Williamson 2006
+            Spectral Element core
+            (with 4 tracers, per ASP)
+            Runge-Kutta timestepping with subcycling + hyper-viscosity 
+            sign preserving limiter 
+            nu_p=nu
+            Output using PIO_INTERP
+            NE=15, NP=4, PLEV=26, dt=180
+            Run the configuration in this script, visually
+            compare plots produced in q.pdf (either run
+            in branch AND trunk or compare to plots in
+            baro2b-ref.pdf in ref_sol/)
+
+baro2c.sh   first runs 9 days of the JW baroclinic test case (to get to an
+            interesting flow field).  Then do a short restart run
+            with a very small timestep to measure mass and energy
+            conservation.  IE dissipation should be very small.
+            KE dissipation should be matched by heating term, resulting
+            in very small total energy dissipation.
+
+            Verification:  mass and tracer mass conservation to machine precision.
+            verify IE,KE balance to machine precision
+            verify tracer variance dissipation has not changed significantly  
+            This script will make two runs: run1: 9 days and writes a restart file
+            run2: restarts from this file and runs 3 timesteps.       
+            Example output from last timstep of run2:  
+             
+KE,d/dt,diss:  0.16556417255055E+07  0.38649033390296E-01 -0.25801357782547E-01
+IE,d/dt,diss:  0.26216763769734E+10 -0.51174783706665E-01  0.25801414962755E-01
+PE,d/dt,diss:  0.63765066746567E+03  0.12525807506476E-01  0.98007470195061E-11
+ E,dE/dt       0.26233326563496E+10  0.63578287760417E-07
+Q1,Q diss, dQ^2/dt:  0.65215821593973E+04 kg/m^2  0.0000000E+00 -0.4239988E-03
+        
+Verify that:
+  KE diss = -.25e-1
+  IE diss = +.25e-1
+  PE diss = O(e-11)
+  Q diss  = O(e-14)
+  dE/dt   = .8e-8   
+  dQ^2/dt = -.42e-3
+
+
+
+baro2d.sh   Test case from Jablonowski and Williamson 2006
+            Same as baro2b.sh, but configred to match CAM-SE
+            subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
+            monotone limiter            
+            Output using PIO_INTERP
+            NE=15, NP=4, PLEV=26, dt=180
+            Regression test runs for 1 day.  
+
+
+
+baroCamMoist.cmake
+              Similar to one of the tests above, but with moisture turned on
+              so Q1 field feeds back to dynamics.  
+              NE=6 run for 3 days
+
+
+
+======================================================================================
+tests removed from ACME:
+======================================================================================
+
 swtc1-dg.sh Test case 1 from Williamson et al 1992 (advection)
             Discontinuous Galerkin core
             Runge-kutta, inviscid test
@@ -121,8 +209,6 @@ swtc5-dg.sh Test case 5 from Williamson et al 1992 (isolated mtn)
             l1,l2,mx = 0.0109583 0.0154157 0.0734919
 
 
-=======================================================================
-3D PRIMITIVIE EQUATION TESTS -- DETAILS
 
 baro1a.sh   Test case from Polvani et al 2004
             Spectral Element core
@@ -133,22 +219,6 @@ baro1a.sh   Test case from Polvani et al 2004
             compare plots produced in baro1a.pdf (either
             run in branch AND trunk or compare to plots in
             baro1a-ref.pdf in this directory)
-
-baro1b.sh   Test case from Polvani et al 2004
-            Spectral Element core
-            Semi-implicit time-stepping
-            Output using PIO
-            NE=9, NP=8, PLEV=20, dt=600
-            Run the configuration in this script, visually
-            compare plots produced in baro1b.pdf (either
-            run in branch AND trunk or compare to plots in
-            baro1b-ref.pdf in this directory)
-
-            Verification: baro1[ab].sh 
-            run both tests, verify enstrophy norm has not changed significantly
-            ( 0.79e-5, 2-3 digits).  Plot vorticity with the NCL script provided and
-            compare with reference plots provided.  Plots should be 
-           visually identical.
 
 
 baro2a.sh   Test case from Jablonowski and Williamson 2006
@@ -174,74 +244,22 @@ baro2a.sh   Test case from Jablonowski and Williamson 2006
             plot PS, zeta, compare with reference plots.  
 
 
-baro2c.sh   first runs 9 days of the JW baroclinic test case (to get to an
-            interesting flow field).  Then do a short restart run
-            with a very small timestep to measure mass and energy
-            conservation.  IE dissipation should be very small.
-            KE dissipation should be matched by heating term, resulting
-            in very small total energy dissipation.
-
-            Verification:  mass and tracer mass conservation to machine precision.
-            verify IE,KE balance to machine precision
-            verify tracer variance dissipation has not changed significantly  
-            This script will make two runs: run1: 9 days and writes a restart file
-            run2: restarts from this file and runs 3 timesteps.       
-            Example output from last timstep of run2:  
-             
-KE,d/dt,diss:  0.16556417255055E+07  0.38649033390296E-01 -0.25801357782547E-01
-IE,d/dt,diss:  0.26216763769734E+10 -0.51174783706665E-01  0.25801414962755E-01
-PE,d/dt,diss:  0.63765066746567E+03  0.12525807506476E-01  0.98007470195061E-11
- E,dE/dt       0.26233326563496E+10  0.63578287760417E-07
-Q1,Q diss, dQ^2/dt:  0.65215821593973E+04 kg/m^2  0.0000000E+00 -0.4239988E-03
-        
-Verify that:
-  KE diss = -.25e-1
-  IE diss = +.25e-1
-  PE diss = O(e-11)
-  Q diss  = O(e-14)
-  dE/dt   = .8e-8   
-  dQ^2/dt = -.42e-3
-
-
-
-baro2b.sh   Test case from Jablonowski and Williamson 2006
+baro1b.sh   Test case from Polvani et al 2004
             Spectral Element core
-            (with 4 tracers, per ASP)
-            Runge-Kutta timestepping with subcycling + hyper-viscosity 
-            sign preserving limiter 
-            nu_p=nu
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
+            Semi-implicit time-stepping
+            Output using PIO
+            NE=9, NP=8, PLEV=20, dt=600
             Run the configuration in this script, visually
-            compare plots produced in q.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro2b-ref.pdf in ref_sol/)
+            compare plots produced in baro1b.pdf (either
+            run in branch AND trunk or compare to plots in
+            baro1b-ref.pdf in this directory)
 
-baro2d.sh   Test case from Jablonowski and Williamson 2006
-            Same as baro2b.sh, but configred to match CAM-SE
-            subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
-            monotone limiter            
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-            Regression test runs for 1 day.  
-            To rebaseline regression test, run for 9 days and then:   
-            plot and visually compare tracers (Q and C) and vorticity
-            using NCL scripts from baro2b.sh 
+            Verification: baro1[ab].sh 
+            run both tests, verify enstrophy norm has not changed significantly
+            ( 0.79e-5, 2-3 digits).  Plot vorticity with the NCL script provided and
+            compare with reference plots provided.  Plots should be 
+           visually identical.
 
-                           
-baro2[bd].sh Verification:
-             run both tests.  compute l2 error in PS against EUL result
-             scritp will plot PS, zeta, tracers at day 9.  
-             Compare with reference plots (should be visually identical)
-             baro2b.sh:  verifty q=1 tracer is preserved to 12 digits
-                         l2 PS error at day 9:  1.13mb
-             baro2d.sh:  verifty q=1 tracer is preserved to 12 digits
-                         l2 PS error at day 9:  1.25mb 
-             check tracer mass conservation:
-               (Q-Q0)/Q0   0.740187328509209E-14   Q1
-               (Q-Q0)/Q0   0.146454099118228E-13   Q2
-               (Q-Q0)/Q0   0.470825202983687E-14   Q3
-               (Q-Q0)/Q0   0.625678319683976E-14   Q4
 
 
 
