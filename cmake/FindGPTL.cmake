@@ -46,29 +46,26 @@ foreach (GPTL_comp IN LISTS GPTL_FIND_VALID_COMPONENTS)
     if (NOT GPTL_${GPTL_comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (GPTL_comp STREQUAL C)
-            if (MPI_C_FOUND)
-                set (GPTL_${GPTL_comp}_PATHS ${MPI_C_INCLUDE_PATH})
-                foreach (lib IN LISTS MPI_C_LIBRARIES)
-                    get_filename_component (libdir ${lib} PATH)
-                    list (APPEND GPTL_${GPTL_comp}_PATHS ${libdir})
-                    unset (libdir)
-                endforeach ()
-            endif ()
-        else ()
-            if (MPI_Fortran_FOUND)
-                set (GPTL_${GPTL_comp}_PATHS ${MPI_Fortran_INCLUDE_PATH})
-                foreach (lib IN LISTS MPI_Fortran_LIBRARIES)
-                    get_filename_component (libdir ${lib} PATH)
-                    list (APPEND GPTL_${GPTL_comp}_PATHS ${libdir})
-                    unset (libdir)
-                endforeach ()
-            endif ()
+        if (GPTL_comp STREQUAL C AND MPI_C_FOUND)
+            set (mpiincs ${MPI_C_INCLUDE_PATH})
+            set (mpilibs ${MPI_C_LIBRARIES})
+            set (mpifound ${MPI_C_FOUND})
+        elseif (MPI_Fortran_FOUND)
+            set (mpiincs ${MPI_Fortran_INCLUDE_PATH})
+            set (mpilibs ${MPI_Fortran_LIBRARIES})
+            set (mpifound ${MPI_Fortran_FOUND})
         endif ()
-
+        
         # Search for the package component
-        find_package_component(GPTL COMPONENT ${GPTL_comp}
-                               PATHS ${GPTL_${GPTL_comp}_PATHS})
+        if (mpifound)
+            initialize_paths (GPTL_${GPTL_comp}_PATHS
+                              INCLUDE_DIRECTORIES ${mpiincs}
+                              LIBRARIES ${mpilibs})
+            find_package_component(GPTL COMPONENT ${GPTL_comp}
+                                   PATHS ${GPTL_${GPTL_comp}_PATHS})
+        else ()
+            find_package_component(GPTL COMPONENT ${GPTL_comp})
+        endif ()
 
     endif ()
     

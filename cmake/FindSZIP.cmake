@@ -22,18 +22,16 @@ define_package_component (SZIP
 # SEARCH FOR PACKAGE
 if (NOT SZIP_FOUND)
 
-    # Manually add the MPI include and library dirs to search paths
+    # Manually add the MPI include and library dirs to search paths 
+    # and search for the package component
     if (MPI_C_FOUND)
-        set (SZIP_PATHS ${MPI_C_INCLUDE_PATH})
-        foreach (lib IN LISTS MPI_C_LIBRARIES)
-            get_filename_component (libdir ${lib} PATH)
-            list (APPEND SZIP_PATHS ${libdir})
-            unset (libdir)
-        endforeach ()
+        initialize_paths (SZIP_PATHS
+                          INCLUDE_DIRECTORIES ${MPI_C_INCLUDE_PATH}
+                          LIBRARIES ${MPI_C_LIBRARIES})
+        find_package_component(SZIP
+                               PATHS ${SZIP_PATHS})
+    else ()
+        find_package_component(SZIP)
     endif ()
-    
-    # Search for the package
-    find_package_component(SZIP
-                           PATHS ${SZIP_PATHS})
 
 endif ()
