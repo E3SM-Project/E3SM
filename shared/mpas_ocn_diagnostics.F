@@ -1110,7 +1110,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
            normalVelocitySurfaceLayer
-      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
+      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, densitySurfaceDisplaced, density, &
            normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff
@@ -1173,8 +1173,8 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
-      call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
+      call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
 
@@ -1223,18 +1223,18 @@ contains
        ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
          surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell) * gravity
 
-       ! compute magnitude of surface windstress
+       ! compute magnitude of surface stress
         deltaVelocitySquared = 0.0
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-          delU2 =  (surfaceWindStress(iEdge))**2
+          delU2 =  (surfaceStress(iEdge))**2
           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
         enddo
-        surfacewindStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
+        surfaceStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
 
        ! compute surface friction velocity
-         surfaceFrictionVelocity(iCell) = sqrt(surfacewindStressMagnitude(iCell) / config_density0)
+         surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / config_density0)
 
        ! zero the bulk Richardson number within the ocean surface layer
        ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer

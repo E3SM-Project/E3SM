@@ -590,7 +590,7 @@
 	</nml_record>
 	<nml_record name="forcing" mode="forward">
 		<nml_option name="config_use_bulk_wind_stress" type="logical" default_value=".false." units="unitless"
-					description="Controls if zonal and meridional components of windstress are used to build surfaceWindStress."
+					description="Controls if zonal and meridional components of windstress are used to build surface wind stress."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_bulk_thickness_flux" type="logical" default_value=".false." units="unitless"
@@ -939,7 +939,7 @@
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="restingThickness"/>
-			<var name="surfaceWindStress"/>
+			<var name="surfaceStress"/>
 			<var name="seaSurfacePressure"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="refBottomDepth"/>
@@ -1227,8 +1227,8 @@
 			<var_array name="SSHGradient"/>
 			<var_array name="tracersSurfaceFlux"/>
 			<var_array name="vertNonLocalFlux"/>
-			<var name="surfaceWindStressMagnitude"/>
-			<var name="surfaceWindStress"/>
+			<var name="surfaceStressMagnitude"/>
+			<var name="surfaceStress"/>
 			<var name="surfaceThicknessFlux"/>
 			<var name="seaIceEnergy"/>
 			<var name="penetrativeTemperatureFlux"/>
@@ -2135,11 +2135,11 @@
 				constituent fields, depending on the forcing options selected.
 
 			 ********************************************************************* -->
-		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
-			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
+		<var name="surfaceStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
+			 description="surface stress on the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>
-		<var name="surfaceWindStressMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
-			 description="Magnitude of wind stress at the surface of the ocean, at cell centers."
+		<var name="surfaceStressMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="Magnitude of surface stress, at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="surfaceThicknessFlux" type="real" dimensions="nCells Time" units="m s^{-1}"
