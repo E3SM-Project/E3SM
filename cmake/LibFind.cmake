@@ -191,8 +191,8 @@ function (find_package_component PKG)
     string (TOUPPER ${PKGCOMP} PKGCOMPUP)
     
     # Only continue if package not found already
-    if (NOT ${PKGCOMP}_FOUND)
-    
+#    if (NOT ${PKGCOMP}_FOUND)
+#    
         # Handle QUIET and REQUIRED arguments
         if (${${PKG}_FIND_QUIETLY})
             set (${PKGCOMP}_FIND_QUIETLY TRUE)
@@ -327,7 +327,7 @@ function (find_package_component PKG)
         set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}
              CACHE BOOL "Whether the ${PKGCOMP} library is dynamic" FORCE)
         
-    endif ()
+#    endif ()
 
 endfunction ()
 
