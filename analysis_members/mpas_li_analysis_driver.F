@@ -705,7 +705,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
-        call li_init_TEM_PLATE(domain, analysisMemberName, err_tmp)
+        call li_init_global_stats(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -736,7 +736,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
-        call li_compute_TEM_PLATE(domain, analysisMemberName, timeLevel, err_tmp)
+        call li_compute_global_stats(domain, analysisMemberName, timeLevel, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -766,7 +766,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
-        call li_restart_TEM_PLATE(domain, analysisMemberName, err_tmp)
+        call li_restart_global_stats(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -796,7 +796,7 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
-        call li_finalize_TEM_PLATE(domain, analysisMemberName, err_tmp)
+        call li_finalize_global_stats(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
