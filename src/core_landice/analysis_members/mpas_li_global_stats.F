@@ -260,8 +260,8 @@ contains
             totalIceVolume = totalIceVolume + real( iceMask(iCell), RKIND) * areaCell(iCell) * thickness(iCell) 
 
             ! debugging
-!            print *, 'totalIceArea=', totalIceArea
-!            print *, 'totalIceVolume=', totalIceVolume
+            print *, 'totalIceArea=', totalIceArea
+            print *, 'totalIceVolume=', totalIceVolume
 
             ! calculate grounded ice area and volume
             groundedIceArea = groundedIceArea + real( groundedMask(iCell), RKIND) * areaCell(iCell) 

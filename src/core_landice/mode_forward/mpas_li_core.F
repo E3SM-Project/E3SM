@@ -155,8 +155,8 @@ module li_core
       end do
 
       !SFP added: initialize analysis driver
-!      call li_analysis_init(domain, err_tmp)
-!      err = ior(err, err_tmp)
+      call li_analysis_init(domain, err_tmp)
+      err = ior(err, err_tmp)
 
       ! check for errors and exit
 
@@ -421,9 +421,9 @@ module li_core
          err = ior(err, err_tmp)
 
          !SFP added: call analysis driver compute, etc.
-!         call li_analysis_compute(domain, err) 
-!         call li_analysis_restart(domain, err) 
-!         call li_analysis_write(domain, err)
+         call li_analysis_compute(domain, err) 
+         call li_analysis_restart(domain, err) 
+         call li_analysis_write(domain, err)
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -495,6 +495,10 @@ module li_core
       err = ior(err, err_tmp)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+      !SFP: added call to finalize subroutine in analysis driver 
+      call li_analysis_finalize(domain, err_tmp)
+      err = ior(err, err_tmp)
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
