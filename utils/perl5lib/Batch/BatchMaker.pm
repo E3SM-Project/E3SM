@@ -42,6 +42,7 @@ sub new
 	my $self = {
 	    case	=> $params{'case'}	|| undef,
 	    caseroot	=> $params{'caseroot'}	|| undef,
+	    cimeroot	=> $params{'cimeroot'}	|| undef,
 	    compiler    => $params{'compiler'}  || undef,
 	    config	=> $params{'config'}    || undef,
 	    machine     => $params{'machine'}   || undef,
@@ -65,7 +66,7 @@ sub new
 	$self->{'output_error_path'} = $self->{'case'};
 	$self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
 	$self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
-
+	
 	# we need ProjectTools. 
 	my $cimeroot = "$self->{'cimeroot'}";
 	push(@INC, "$cimeroot/utils/per5lib");

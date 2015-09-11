@@ -9,7 +9,6 @@
 use strict;
 use warnings;
 package Batch::BatchUtils;
-use Data::Dumper;
 use Cwd;
 use Exporter qw(import);
 use XML::LibXML;
@@ -210,6 +209,7 @@ sub submitSingleJob()
 	}
 	print "Submitting job script: $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
+	chdir $config{'CASEROOT'};
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
 	print ": $runcmd\n";    
 	my $output;
@@ -240,10 +240,8 @@ sub submitSingleJob()
 #==============================================================================
 sub doResubmit()
 {
-	my $self = shift;
-    my $islastjob = shift;
-    my $resubmit = shift;
-	my $sta_ok = shift;
+    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+
 	
     # If the islastjob flag is true, and resubmit is > 0,  do the dependency
     # check and job resubmission again 
@@ -420,7 +418,7 @@ sub getSubmitArguments()
 package Batch::BatchUtilsFactory;
 use Exporter qw(import);
 use XML::LibXML;
-use Data::Dumper;
+
 sub getBatchUtils
 {
     my (%params) = @_;
@@ -525,7 +523,7 @@ sub getBatchSystemType()
 #==============================================================================
 package Batch::BatchUtils_mira;
 use base qw( Batch::BatchUtils );
-use Data::Dumper;
+
 use Cwd;
 
 #==============================================================================
@@ -629,11 +627,7 @@ sub submitSingleJob()
 #==============================================================================
 sub doResubmit()
 {
-    my $self = shift;
-    my $islastjob = shift;
-    my $resubmit = shift;
-    my $scriptname = shift;
-    my $sta_ok = shift;
+    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
 
     my %config = %{$self->{'caseconfig'}};
     if(defined $sta_ok)
