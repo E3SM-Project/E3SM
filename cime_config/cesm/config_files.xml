@@ -195,10 +195,11 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="pop" >$SRCROOT/components/pop/cime_config/config_component.xml</value>
-      <value component="docn">$CIMEROOT/components/data_comps/docn/cime_config/config_component.xml</value>
-      <value component="socn">$CIMEROOT/components/stub_comps/socn/cime_config/config_component.xml</value>
-      <value component="xocn">$CIMEROOT/components/xcpl_comps/xocn/cime_config/config_component.xml</value>
+      <value component="pop"  >$SRCROOT/components/pop/cime_config/config_component.xml</value>
+      <value component="aquap">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
+      <value component="docn" >$CIMEROOT/components/data_comps/docn/cime_config/config_component.xml</value>
+      <value component="socn" >$CIMEROOT/components/stub_comps/socn/cime_config/config_component.xml</value>
+      <value component="xocn" >$CIMEROOT/components/xcpl_comps/xocn/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

@@ -44,4 +44,9 @@
       <command name="rm">darshan</command>
     </modules>
   </module_system>
+  <environment_variables>
+    <env name="OMP_STACKSIZE">64M</env>
+    <env name="MPICH_ENV_DISPLAY">1</env>
+    <env name="MPICH_PTL_MATCH_OFF">1</env>
+  </environment_variables>
 </machine>

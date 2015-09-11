@@ -138,20 +138,24 @@ exit;
 sub _listids
 {
     my ($idlist) = @_; 
+
     # First create the hash %xmlvars and %xmlfile in order to call
     # expand_xml_var if needed
     my %xmlvars;
     my %xmlfile;
-    my @files = glob( "env_*.xml" );
+    my @files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
+		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml'); 
     foreach my $file (@files) {
-	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-	my @nodes = $xml->findnodes("//entry");
-	if (@nodes) {
-	    foreach my $node (@nodes) {
-		my $id    = $node->getAttribute('id');
-		my $value = $node->getAttribute('value');
-		$xmlvars{$id} = $value;
-		$xmlfile{$id}  = $file;
+	if (-f $file) {
+	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+	    my @nodes = $xml->findnodes(".//entry");
+	    if (@nodes) {
+		foreach my $node (@nodes) {
+		    my $id    = $node->getAttribute('id');
+		    my $value = $node->getAttribute('value');
+		    $xmlvars{$id} = $value;
+		    $xmlfile{$id} = $file;
+		}
 	    }
 	}
     }
@@ -168,8 +172,7 @@ sub _listids
 	    if ( $opts{'value'} ) {
 		exit(1);
 	    } else {
-		my @files = glob( "env_*.xml" );
-		die "WARNING: id $id not found in any of the files: @files \n"; 
+		die "ERROR xmlquery: id $id not found in any of the xml files: @files \n"; 
 	    }
 	}
 	if ( $opts{'noexpandxml'} ) {
@@ -201,7 +204,7 @@ sub _listall
 
     foreach my $file (@files) {
 	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-	my @nodes = $xml->findnodes("//entry");
+	my @nodes = $xml->findnodes(".//entry");
 	if (@nodes) {
 	    foreach my $node (@nodes) {
 		my $id    = $node->getAttribute('id');

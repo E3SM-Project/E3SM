@@ -32,5 +32,3 @@ module load netcdf/mic-4.1.3
 module load pnetcdf/mic-1.5.0
 setenv MKL -mkl
 setenv OMP_STACKSIZE 64M
-limit coredumpsize unlimited
-limit stacksize unlimited

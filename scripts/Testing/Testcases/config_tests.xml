@@ -82,6 +82,14 @@
     <DOUT_S>TRUE</DOUT_S> 
   </test>
 
+  <test NAME="LII">
+    <DESC>CLM initial condition interpolation test (requires configuration with non-blank finidat)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <REST_OPTION>none</REST_OPTION>
+    <DOUT_S>FALSE</DOUT_S> 
+  </test>
+
   <test NAME="PEA">
     <DESC>single pe bfb test (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>

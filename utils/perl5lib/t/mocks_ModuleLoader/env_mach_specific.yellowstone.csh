@@ -54,5 +54,3 @@ setenv MP_EUILIB us
 setenv MP_MPILIB $MPILIB
 setenv MP_STDOUTMODE unordered
 setenv MP_RC_USE_LMC yes
-limit stacksize unlimited
-limit coredumpsize unlimited

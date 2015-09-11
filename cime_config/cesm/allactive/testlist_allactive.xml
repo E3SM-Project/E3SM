@@ -207,8 +207,10 @@
         <machine compiler="nag" testtype="prebeta" testmods="allactive/cism/test_coupling">hobart</machine>
       </test>
     </grid>
-    <grid name="f19_g16">
-      <test name="NCK_Ld5_gl5">
+  </compset>
+  <compset name="BGC5L45BGC">
+    <grid name="f19_g16_gl5">
+      <test name="NCK_Ld5">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
       </test>

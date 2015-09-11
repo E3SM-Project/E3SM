@@ -112,6 +112,7 @@ sub add_config_variables
 
     my ($self, $file, $srcroot, $cimeroot, $model) = @_;
 
+    (-f $file) || die "ERROR ConfigCase.pm::add_config_variables file \'$file\' does not exist \n";
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my @nodes = $xml->findnodes(".//entry");
     if (! @nodes) {

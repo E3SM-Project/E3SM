@@ -289,7 +289,7 @@ sub test_writeCshModuleFile_babbage() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeShModuleFile_babbage() : Test(1):
@@ -315,7 +315,7 @@ sub test_writeShModuleFile_babbage() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_moduleInit_babbageKnc() : Test(2)
@@ -416,7 +416,7 @@ sub test_writeCshModuleFile_babbageKnc() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeShModuleFile_babbageKnc() : Test(1):
@@ -442,7 +442,7 @@ sub test_writeShModuleFile_babbageKnc() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_moduleInit_bluewaters() : Test(2)
@@ -507,7 +507,7 @@ sub test_writeXMLFileForCase_bluewaters() : Test(3):
 	my $actual = do { local $/; <$ACTUAL> };
 	close $ACTUAL;
 	cmp_ok($actual, 'eq', $expected);
-	unlink $actualfile;
+	#unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_bluewaters() : Test(1):
@@ -532,7 +532,7 @@ sub test_writeCshModuleFile_bluewaters() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeShModuleFile_bluewaters() : Test(1):
@@ -558,7 +558,24 @@ sub test_writeShModuleFile_bluewaters() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
+}
+sub test_findEnvVars_bluewaters() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich',
+                                                debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'OMP_STACKSIZE' => '64M',
+          'MPICH_ENV_DISPLAY' => '1',
+          'MPICH_PTL_MATCH_OFF' => '1',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
 }
 
 sub test_moduleInit_eastwind() : Test(2)
@@ -812,7 +829,7 @@ sub test_writeXMLFileForCase_edison() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 sub test_writeCshModuleFile_edison() : Test(1):
 {
@@ -864,6 +881,23 @@ sub test_writeShModuleFile_edison() : Test(1):
     #unlink $actualfile;
 }
 
+sub test_findEnvVars_edison() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'edison', compiler => 'intel', mpilib => 'mpich',
+                                                debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'MPICH_ENV_DISPLAY' => '1',
+          'MPICH_VERSION_DISPLAY' => '1',
+          'PERL5LIB' => '/global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
 sub test_moduleInit_eastwind() : Test(2)
 {
     my $self = shift;
@@ -1062,7 +1096,7 @@ sub test_writeXMLFileForCase_erebus() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_erebus() : Test(1):
@@ -1200,7 +1234,7 @@ sub test_writeXMLFileForCase_eos() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_eos() : Test(1):
@@ -1225,7 +1259,7 @@ sub test_writeCshModuleFile_eos() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeShModuleFile_eos() : Test(1):
@@ -1250,146 +1284,25 @@ sub test_writeShModuleFile_eos() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
-}
-
-
-sub test_moduleInit_goldbach() : Test(2)
-{
-	my $self = shift;
-	my $moduleloaderintel  = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi', 
-                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
-	
-	$moduleloaderintel->moduleInit();
-	
-	ok($moduleloaderintel->{initpath} eq '/usr/share/Modules/init/perl.pm') || diag($moduleloaderintel->{initpath});
-	ok($moduleloaderintel->{cmdpath} eq '/usr/bin/modulecmd perl') || diag($moduleloaderintel->{cmdpath});
-}
-
-sub test_findModulesFromMachinesDir_goldbach() : Test(3):
-{
-	my $self = shift;
-	my @expectedintelmodules = ( {action => 'purge', actupon => '' , seqnum => 1},
-                                 { action => 'load', actupon => 'compiler/intel/14.0.2', seqnum => 2} );
-	my $moduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi', 
-                                                 debug => 'FALSE', cimeroot => "../../", caseroot => '.');
-	$moduleloader->moduleInit();
-	my @actualintelmodules = $moduleloader->findModulesFromMachinesDir();
-
-	is_deeply(\@expectedintelmodules, \@actualintelmodules);
-
-	my @expectedpgimodules = ( { action => 'purge', actupon => '' , seqnum => 1 },
-                               { action => 'load', actupon => 'compiler/pgi/14.10', seqnum => 2} );
-	my $pgimoduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'pgi', mpilib => 'openmpi', 
-                                                 debug => 'FALSE', cimeroot => "../../", caseroot => '.');
-	$pgimoduleloader->moduleInit();
-	my @actualpgimodules = $pgimoduleloader->findModulesFromMachinesDir();
-	is_deeply(\@expectedpgimodules, \@actualpgimodules);
-}
-
-sub test_writeXMLFileForCase_goldbach() : Test(3):
-{
-    my $self = shift;
-    my $moduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi',
-                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-    $moduleloader->moduleInit();
-    $moduleloader->writeXMLFileForCase();
-
-    my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.goldbach.xml";
-    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-    #my $expected = <$EXPECTED>;
-	my $expected = do { local $/; <$EXPECTED> };
-    close $EXPECTED;
-
-    my $actualfile = "./env_mach_specific.xml";
-    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
-    my $actual = do { local $/; <$ACTUAL> };
-    close $actual;
     #unlink $actualfile;
 }
-
-
-sub test_findModulesForCase_goldbach() : Test(1):
-{
-	my $self = shift;
-	
-	my $moduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi',
-                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-	
-	$moduleloader->moduleInit();
-	$moduleloader->writeXMLFileForCase();
-	my @actualmodules = $moduleloader->findModulesForCase();
-	
-	my @expectedmodules = ( {action => 'purge', actupon => '', seqnum => 1},
-                            { action => 'load', actupon => 'compiler/intel/14.0.2', seqnum => 2} );
-	is_deeply(\@expectedmodules, \@actualmodules);
-}
-
-#sub test_loadModules_goldbach()  : Test(1):
-#{
-#	my $self = shift;
-#
-#    my $moduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi',
-#                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-#
-#    $moduleloader->moduleInit();
-#    $moduleloader->writeXMLFileForCase();
-#    $moduleloader->findModulesForCase();
-#	$moduleloader->loadModules();
-#    ok($ENV{_LMFILES_} = "/etc/modulefiles/mpi/intel/openmpi-1.4.3-qlc:/etc/modulefiles/tool/netcdf/4.3.0/intel:/etc/modulefiles/compiler/intel/14.0.2");
-#}
-
-sub test_writeCshModuleFile_goldbach() : Test(1):
+sub test_findEnvVars_eos() : Test(1):
 {
     my $self = shift;
 
-    my $moduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi',
-                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-
+    my $moduleloader = Module::ModuleLoader->new(machine => 'eos', compiler => 'intel', mpilib => 'mpich',
+                                                debug => "FALSE", cimeroot => "../../", caseroot => '.');
     $moduleloader->moduleInit();
     $moduleloader->writeXMLFileForCase();
     $moduleloader->findModulesForCase();
-	$moduleloader->writeCshModuleFile();
-
-    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.goldbach.csh";
-    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-    #my $expected = <$EXPECTED>;
-    my $expected = do { local $/; <$EXPECTED> };
-    close $EXPECTED;
-
-    my $actualfile = "./.env_mach_specific.csh";
-    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
-    my $actual = do { local $/; <$ACTUAL> };
-    close $ACTUAL;
-    ok($actual eq $expected);
-    #unlink $actualfile;
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'MPICH_ENV_DISPLAY' => '1',
+          'MPICH_VERSION_DISPLAY' => '1',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
 }
 
-sub test_writeShModuleFile_goldbach() : Test(1):
-{
-    my $self = shift;
-
-    my $moduleloader = Module::ModuleLoader->new(machine => 'goldbach', compiler => 'intel', mpilib => 'openmpi',
-                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-
-    $moduleloader->moduleInit();
-    $moduleloader->writeXMLFileForCase();
-    $moduleloader->findModulesForCase();
-    $moduleloader->writeShModuleFile();
-
-    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.goldbach.sh";
-    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-    #my $expected = <$EXPECTED>;
-    my $expected = do { local $/; <$EXPECTED> };
-    close $EXPECTED;
-
-    my $actualfile = "./.env_mach_specific.sh";
-    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
-    my $actual = do { local $/; <$ACTUAL> };
-    close $ACTUAL;
-    ok($actual eq $expected);
-    #unlink $actualfile;
-}
 
 sub test_moduleInit_hobart() : Test(2)
 {
@@ -1536,6 +1449,22 @@ sub test_writeShModuleFile_hobart() : Test(1):
     #unlink $actualfile;
 }
 
+sub test_findEnvVars_hobart() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'intel', mpilib => 'mvapich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'P4_GLOBMEMSIZE' => '500000000',
+          'NETCDF_DIR' => '$NETCDF_PATH',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
 sub test_moduleInit_gaea() : Test(2)
 {
     my $self = shift;
@@ -1640,7 +1569,7 @@ sub test_writeCshModuleFile_gaea() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
 sub test_writeShModuleFile_gaea() : Test(1):
@@ -1666,9 +1595,25 @@ sub test_writeShModuleFile_gaea() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    unlink $actualfile;
+    #unlink $actualfile;
 }
 
+sub test_findEnvVars_gaea() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'gaea', compiler => 'pgi', mpilib => 'mpich',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'OMP_STACKSIZE' => '64M',
+          'MPICH_ENV_DISPLAY' => '1',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
 sub test_moduleInit_hera() : Test(2)
 {
     my $self = shift;
@@ -1788,6 +1733,21 @@ sub test_writeShModuleFile_hera() : Test(1):
     #unlink $actualfile;
 }
 
+sub test_findEnvVars_hera() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'hera', compiler => 'pgi', mpilib => 'mvapich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'NETCDF' => '/usr/local/tools/netcdf-pgi-4.1.3/',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
 sub test_moduleInit_mira() : Test(2)
 {
     my $self = shift;
@@ -1909,6 +1869,22 @@ sub test_writeShModuleFile_mira() : Test(1):
     #unlink $actualfile;
 }
 
+sub test_findEnvVars_mira() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'mira', compiler => 'ibm', mpilib => 'ibm',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'MPI_TYPE_MAX' => '$MPI_TYPE_MAX',
+          'OMP_DYNAMIC' => '$OMP_DYNAMIC',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
 sub test_moduleInit_olympus() : Test(2)
 {
     my $self = shift;
@@ -2030,6 +2006,20 @@ sub test_writeShModuleFile_olympus() : Test(1):
     close $ACTUAL;
     ok($actual eq $expected);
     #unlink $actualfile;
+}
+sub test_findEnvVars_olympus() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'olympus', compiler => 'pgi', mpilib => 'mvapich2',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
 }
 
 sub test_moduleInit_pleiades_has() : Test(2)
@@ -2157,6 +2147,28 @@ sub test_writeShModuleFile_pleiades_has() : Test(1):
     #unlink $actualfile;
 }
 
+sub test_findEnvVars_pleiades_has() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'pleiades-has', compiler => 'intel', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'MPI_GROUP_MAX' => '1024',
+          'MPI_TYPE_MAX' => '100000',
+          'KMP_AFFINITY' => 'noverbose,disabled',
+          'KMP_SCHEDULE' => 'static,balanced',
+          'MPI_TYPE_DEPTH' => '10',
+          'PNETCDF_PATH' => '/home1/fvitt/parallel-netcdf-1.3.1',
+          'OMP_DYNAMIC' => 'FALSE',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
+
 sub test_moduleInit_sierra() : Test(2)
 {
     my $self = shift;
@@ -2274,6 +2286,22 @@ sub test_writeShModuleFile_sierra() : Test(1):
     close $ACTUAL;
     ok($actual eq $expected);
     unlink $actualfile;
+}
+
+sub test_findEnvVars_sierra() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader = Module::ModuleLoader->new(machine => 'sierra', compiler => 'pgi', mpilib => 'mvapich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'NETCDF' => '/usr/local/tools/netcdf-pgi-4.1.3/',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
 }
 sub test_moduleInit_yellowstone() : Test(2)
 {
@@ -2472,19 +2500,237 @@ sub test_writeShModuleFile_yellowstone() : Test(1):
     ok($actual eq $expected);
     #unlink $actualfile;
 }
+
+sub test_findEnvVars_yellowstone() : Test(1):
+{
+    my $self = shift;
+    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'OMP_STACKSIZE' => '256M',
+          'MP_LABELIO' => 'yes',
+          'MP_INFOLEVEL' => '2',
+          'MP_SHARED_MEMORY' => 'yes',
+          'MP_EUILIB' => 'us',
+          'MP_MPILIB' => '$MPILIB',
+          'MP_STDOUTMODE' => 'unordered',
+          'MP_RC_USE_LMC' => 'yes',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
+###sub test_loadModules_yellowstone()  : Test(1):
+###{
+###    my $self = shift;
+###
+###    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+###                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+###
+###    $moduleloader->moduleInit();
+###    $moduleloader->writeXMLFileForCase();
+###    $moduleloader->findModulesForCase();
+###    $moduleloader->loadModules();
+###}
+##
+##
 #
-##sub test_loadModules_yellowstone()  : Test(1):
-##{
-##    my $self = shift;
-##
-##    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-##                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
-##
-##    $moduleloader->moduleInit();
-##    $moduleloader->writeXMLFileForCase();
-##    $moduleloader->findModulesForCase();
-##    $moduleloader->loadModules();
-##}
-	
+sub test_moduleInit_titan() : Test(2)
+{
+    my $self = shift;
+    my $moduleloaderys = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich2',
+                                                   debug => "FALSE", cimeroot => "../../", caseroot => ".");
+
+    $moduleloaderys->moduleInit();
+
+    ok($moduleloaderys->{initpath} eq '/opt/modules/default/init/perl') || diag($moduleloaderys->{initpath});
+    ok($moduleloaderys->{cmdpath} eq '/opt/modules/default/bin/modulecmd perl') || diag($moduleloaderys->{cmdpath});
+}
+
+sub test_findModulesFromMachinesDir_titan() : Test(1):
+{
+    my $self = shift;
+    my @expectedmodules = (
+                                 { action => 'rm', actupon => 'PrgEnv-intel' , seqnum => 1},
+                                 { action => 'rm', actupon => 'PrgEnv-pgi' , seqnum => 2},
+                                 { action => 'rm', actupon => 'PrgEnv-cray' , seqnum => 3},
+                                 { action => 'rm', actupon => 'PrgEnv-gnu' , seqnum => 4},
+                                 { action => 'rm', actupon => 'PrgEnv-pathscale' , seqnum => 5},
+                                 { action => 'rm', actupon => 'intel' , seqnum => 6},
+                                 { action => 'rm', actupon => 'pgi' , seqnum => 7},
+                                 { action => 'rm', actupon => 'cray' , seqnum => 8},
+                                 { action => 'rm', actupon => 'pathscale' , seqnum => 9},
+                                 { action => 'rm', actupon => 'parallel-netcdf' , seqnum => 10},
+                                 { action => 'rm', actupon => 'netcdf' , seqnum => 11},
+                                 { action => 'rm', actupon => 'cmake' , seqnum => 12},
+                                 { action => 'rm', actupon => 'cray-mpich' , seqnum => 13},
+                                 { action => 'rm', actupon => 'cray-mpich2' , seqnum => 14},
+                                 { action => 'rm', actupon => 'cray-libsci' , seqnum => 15},
+                                 { action => 'rm', actupon => 'xt-libsci' , seqnum => 16},
+                                 { action => 'rm', actupon => 'cray-netcdf' , seqnum => 17},
+                                 { action => 'rm', actupon => 'cray-netcdf-hdf5parallel' , seqnum => 18},
+                                 { action => 'rm', actupon => 'cray-parallel-netcdf' , seqnum => 19},
+                                 { action => 'load', actupon => 'PrgEnv-pgi' , seqnum => 20},
+                                 { action => 'switch', actupon => 'pgi pgi/14.2.0' , seqnum => 21},
+                                 { action => 'load', actupon => 'cray-mpich/7.0.4' , seqnum => 22},
+                                 { action => 'load', actupon => 'cray-libsci/13.0.1' , seqnum => 23},
+                                 { action => 'load', actupon => 'esmf/5.2.0rp2' , seqnum => 24},
+                                 { action => 'load', actupon => 'cray-netcdf-hdf5parallel/4.3.2' , seqnum => 25},
+                                 { action => 'load', actupon => 'cray-parallel-netcdf/1.5.0' , seqnum => 26},
+                                 { action => 'load', actupon => 'subversion' , seqnum => 27},
+                                 { action => 'load', actupon => 'cmake/2.8.11.2' , seqnum => 28},
+                          );
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    my @actualmodules = $moduleloader->findModulesFromMachinesDir();
+    #print "titan actualmodules\n";
+    #print Dumper \@actualmodules;
+    is_deeply(\@actualmodules, \@expectedmodules);
+}
+
+sub test_findModulesForCase_titan() : Test(1):
+{
+    my $self = shift;
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    my @expectedmodules = (
+                                 { action => 'rm', actupon => 'PrgEnv-intel' , seqnum => 1},
+                                 { action => 'rm', actupon => 'PrgEnv-pgi' , seqnum => 2},
+                                 { action => 'rm', actupon => 'PrgEnv-cray' , seqnum => 3},
+                                 { action => 'rm', actupon => 'PrgEnv-gnu' , seqnum => 4},
+                                 { action => 'rm', actupon => 'PrgEnv-pathscale' , seqnum => 5},
+                                 { action => 'rm', actupon => 'intel' , seqnum => 6},
+                                 { action => 'rm', actupon => 'pgi' , seqnum => 7},
+                                 { action => 'rm', actupon => 'cray' , seqnum => 8},
+                                 { action => 'rm', actupon => 'pathscale' , seqnum => 9},
+                                 { action => 'rm', actupon => 'parallel-netcdf' , seqnum => 10},
+                                 { action => 'rm', actupon => 'netcdf' , seqnum => 11},
+                                 { action => 'rm', actupon => 'cmake' , seqnum => 12},
+                                 { action => 'rm', actupon => 'cray-mpich' , seqnum => 13},
+                                 { action => 'rm', actupon => 'cray-mpich2' , seqnum => 14},
+                                 { action => 'rm', actupon => 'cray-libsci' , seqnum => 15},
+                                 { action => 'rm', actupon => 'xt-libsci' , seqnum => 16},
+                                 { action => 'rm', actupon => 'cray-netcdf' , seqnum => 17},
+                                 { action => 'rm', actupon => 'cray-netcdf-hdf5parallel' , seqnum => 18},
+                                 { action => 'rm', actupon => 'cray-parallel-netcdf' , seqnum => 19},
+                                 { action => 'load', actupon => 'PrgEnv-pgi' , seqnum => 20},
+                                 { action => 'switch', actupon => 'pgi pgi/14.2.0' , seqnum => 21},
+                                 { action => 'load', actupon => 'cray-mpich/7.0.4' , seqnum => 22},
+                                 { action => 'load', actupon => 'cray-libsci/13.0.1' , seqnum => 23},
+                                 { action => 'load', actupon => 'esmf/5.2.0rp2' , seqnum => 24},
+                                 { action => 'load', actupon => 'cray-netcdf-hdf5parallel/4.3.2' , seqnum => 25},
+                                 { action => 'load', actupon => 'cray-parallel-netcdf/1.5.0' , seqnum => 26},
+                                 { action => 'load', actupon => 'subversion' , seqnum => 27},
+                                 { action => 'load', actupon => 'cmake/2.8.11.2' , seqnum => 28},
+                          );
+
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    my @actualmodules = $moduleloader->findModulesForCase();
+
+
+    #print Dumper \@expectedintelmpichmodules;
+    #    #print Dumper \@actualintelmpichmodules;
+    is_deeply(\@actualmodules, \@expectedmodules);
+ }
+
+sub test_writeXMLFileForCase_titan() : Test(1):
+{
+    my $self = shift;
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.titan.xml";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    binmode $EXPECTED;
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./env_mach_specific.xml";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    binmode $ACTUAL;
+    my $actual = do { local $/; <$ACTUAL> } ;
+    close $actual;
+    cmp_ok($actual,  'eq',  $expected);
+    #unlink $actualfile;
+}
+
+sub test_writeCshModuleFile_titan() : Test(1):
+{
+    my $self = shift;
+
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeCshModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.titan.csh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.csh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    #unlink $actualfile;
+}
+
+sub test_writeShModuleFile_titan() : Test(1):
+{
+    my $self = shift;
+
+
+    my $moduleloader  = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    $moduleloader->writeShModuleFile();
+
+    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.titan.sh";
+    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
+    my $expected = do { local $/; <$EXPECTED> };
+    close $EXPECTED;
+
+    my $actualfile = "./.env_mach_specific.sh";
+    open(my $ACTUAL, "<", $actualfile) or die "could not open $actualfile";
+    my $actual = do { local $/; <$ACTUAL> };
+    close $ACTUAL;
+    ok($actual eq $expected);
+    #unlink $actualfile;
+}
+sub test_findEnvVars_titan() : Test(1):
+{
+    my $self = shift;
+    my $moduleloader = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
+                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
+    
+    $moduleloader->moduleInit();
+    $moduleloader->writeXMLFileForCase();
+    $moduleloader->findModulesForCase();
+    my %actualenvs = $moduleloader->findEnvVars();
+    my $expectedenvs = {
+          'MPSTKZ' => '64M',
+          'MPICH_CPUMASK_DPSPLAY' => '1',
+          'MPICH_ENV_DISPLAY' => '1',
+          'MPICH_RANK_REORDER_DISPLAY' => '1',
+          'OMP_STACKSIZE' => '64M',
+          'MPICH_VERSION_DISPLAY' => '1',
+          'CRAY_CPU_TARGET' => 'istanbul',
+        };
+    is_deeply(\%actualenvs, $expectedenvs);
+}
 1;
 	

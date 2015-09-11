@@ -40,3 +40,5 @@ then
 	module load cray-parallel-netcdf/1.5.0
 fi
 module load cmake/2.8.11.2 
+export MPICH_ENV_DISPLAY=1
+export MPICH_VERSION_DISPLAY=1

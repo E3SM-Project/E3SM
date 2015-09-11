@@ -1020,6 +1020,29 @@ sub setQueue()
 		$self->{'partition'} = "c1";
 	}
 }
-
+package Batch::BatchMaker_erebus;
 use base qw (Batch::BatchMaker );
+sub _test()
+{
+    my $self = shift;
+    return 1;
+}
+
+sub writeBatchScript()
+{
+    my $self = shift;
+    if($ENV{'HOSTNAME'} =~ /login/)
+    {
+        my $hostfilename = $self->{caseroot} . "/hostfile";
+        open my $HFILE, "<", $hostfilename or die "could not open $hostfilename for writing!";
+        print $HFILE $ENV{'HOSTNAME'}; 
+        close $HFILE;
+        $ENV{'MP_HOSTFILE'} = $hostfilename;
+        $ENV{'MP_PROCS'} = 1;
+        
+    }
+    $self->SUPER::writeBatchScript();
+}
+
+
 1;

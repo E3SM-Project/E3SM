@@ -35,3 +35,5 @@ if ( $MPILIB != "mpi-serial" ) then
 	module load cray-parallel-netcdf/1.5.0
 endif
 module load cmake/2.8.11.2
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1

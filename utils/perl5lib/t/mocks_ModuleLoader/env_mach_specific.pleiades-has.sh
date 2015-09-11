@@ -16,3 +16,6 @@ export MPI_GROUP_MAX=1024
 export MPI_TYPE_MAX=100000
 export KMP_AFFINITY=noverbose,disabled
 export KMP_SCHEDULE=static,balanced
+export OMP_DYNAMIC=FALSE
+export MPI_TYPE_DEPTH=10
+export PNETCDF_PATH=/home1/fvitt/parallel-netcdf-1.3.1
