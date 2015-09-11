@@ -132,7 +132,7 @@
     <batch_system MACH="edison" version="x.y">
       <directives>
 	<directive>-l mppwidth={{ mppwidth }}</directive>
-      <directive> -P {{ account }} </directive>
+      <directive> -A {{ account }} </directive>
       </directives>
     </batch_system> 
 
