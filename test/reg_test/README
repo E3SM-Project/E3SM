@@ -91,15 +91,14 @@ swtc6.sh   short time, low resolution Rossby wave test
 
 When rebaselining, in addition to extra details specified below (exact restart, conservation),
    run baro2b and baro2d for 9 days.  (baro2d normally only run for 1 day)
-   output will be in (path from cmake build directory)
-          tests/baro2d/movies
-   where is the output?
-
-
+   test output:     [cmake build directory]/tests/baro2d/movies
+   baseline output: [cmake build directory]/tests/baseline/baro2d/movies
 
    compute l2 error in PS against EUL result (see NCL scripts from baro2b.sh)
    scritp will plot PS, zeta, tracers at day 9.  
+   ncl  ~/codes/acme-dev/models/atm/homme/test/reg_test/ncl/baro2.ncl 
    Compare with reference plots (should be visually identical)
+
              baro2b.sh:  verifty q=1 tracer is preserved to 12 digits
                          l2 PS error at day 9:  1.13mb
              baro2d.sh:  verifty q=1 tracer is preserved to 12 digits
