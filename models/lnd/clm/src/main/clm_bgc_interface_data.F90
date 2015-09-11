@@ -47,7 +47,6 @@ module clm_bgc_interface_data
      real(r8), pointer :: eff_porosity_col                          (:,:)   ! col effective porosity = porosity - vol_ice (nlevgrnd)
      real(r8), pointer :: cellorg_col                               (:,:)   ! col organic matter for gridcell containing column (1:nlevsoi)
 
-
      ! (2) soil thermohydrology
      ! (2.1) soilstate_vars:
      real(r8), pointer :: soilpsi_col                               (:,:)   ! col soil water potential in each soil layer (MPa) (CN)
@@ -64,7 +63,6 @@ module clm_bgc_interface_data
      ! (2.4) temperature_vars:
      real(r8), pointer :: t_soisno_col                              (:,:)   ! col soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
      real(r8), pointer :: t_grnd_col                                (:)     ! col ground temperature (Kelvin)
-
 
      ! (2.7) canopystate_vars
      integer  , pointer :: alt_indx_col                             (:)     ! col current depth of thaw

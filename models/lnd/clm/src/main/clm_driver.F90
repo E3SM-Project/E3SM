@@ -685,14 +685,14 @@ contains
              !!--------------------------------------------------------------------------------
              call CNEcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
-                       filter(nc)%num_soilp, filter(nc)%soilp,                          &!!num_pcropp, filter_pcropp, doalb, &
+                       filter(nc)%num_soilp, filter(nc)%soilp,                          &
                        cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-                       c13_carbonflux_vars,                                             &!!c13_carbonstate_vars, &
-                       c14_carbonflux_vars,                                             &!!c14_carbonstate_vars, &
+                       c13_carbonflux_vars,                                             &
+                       c14_carbonflux_vars,                                             &
                        nitrogenflux_vars, nitrogenstate_vars,                           &
                        atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
                        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
-                       ch4_vars, photosyns_vars,                                        & !!dgvs_vars, soilhydrology_vars, energyflux_vars, &
+                       ch4_vars, photosyns_vars,                                        &
                        phosphorusflux_vars,phosphorusstate_vars)
 
              !!--------------------------------------------------------------------------------
@@ -742,7 +742,6 @@ contains
                     !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc
                     !! STEP-2: (ii) run CNDecompAlloc
                     !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc
-                    print*,"DEBUG | clm_bgc_run VIA clm_bgc_interface..."
                     call clm_bgc_run(clm_bgc_data, bounds_clump,                &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &

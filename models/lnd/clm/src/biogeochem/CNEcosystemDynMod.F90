@@ -220,16 +220,17 @@ contains
 !!-------------------------------------------------------------------------------------------------
   subroutine CNEcosystemDynNoLeaching1(bounds,                          &
        num_soilc, filter_soilc,                                         &
-       num_soilp, filter_soilp,                                         &!!num_pcropp, filter_pcropp, doalb, &
+       num_soilp, filter_soilp,                                         &
        cnstate_vars, carbonflux_vars, carbonstate_vars,                 &
-       c13_carbonflux_vars,                                             &!!c13_carbonstate_vars, &
-       c14_carbonflux_vars,                                             &!!c14_carbonstate_vars, &
+       c13_carbonflux_vars,                                             &
+       c14_carbonflux_vars,                                             &
        nitrogenflux_vars, nitrogenstate_vars,                           &
        atm2lnd_vars, waterstate_vars, waterflux_vars,                   &
-       canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   & !! &
-       ch4_vars, photosyns_vars,                                        & !!dgvs_vars, soilhydrology_vars, energyflux_vars, &
+       canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
+       ch4_vars, photosyns_vars,                                        &
        phosphorusflux_vars,phosphorusstate_vars)
-    !
+    ! Phase-1 of CNEcosystemDynNoLeaching: call CNAllocation1_PlantNPDemand before soil_bgc
+
     ! !DESCRIPTION:
     ! The core CN code is executed here. Calculates fluxes for maintenance
     ! respiration, decomposition, allocation, phenology, and growth respiration.
@@ -260,12 +261,12 @@ contains
     use CropType               , only: crop_type
 !    use dynHarvestMod          , only: CNHarvest
     use clm_varpar             , only: crop_prog
-    !! wgs: BEGIN
-    use CNAllocationMod        , only: CNAllocation1_PlantNPDemand !! 1st phase of CNAllocation
+
+    use CNAllocationMod        , only: CNAllocation1_PlantNPDemand !! Phase-1 of CNAllocation
 !    use CNDecompMod            , only: CNDecompAlloc2
     use CNNDynamicsMod         , only: CNNLeaching
     use PDynamicsMod           , only: PLeaching
-    !! wgs: END
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -380,20 +381,21 @@ contains
 !!-------------------------------------------------------------------------------------------------
 !! 'decomp_vertprofiles' (calc nfixation_prof) is moved from CNDecompAlloc:
 !! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
-        call decomp_vertprofiles(bounds,                     &
+       call decomp_vertprofiles(bounds,                      &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
 !!-------------------------------------------------------------------------------------------------
         !! CNAllocation1 is always called (w/ or w/o use_bgc_interface)
         !! pflotran: call 'CNAllocation1' to obtain potential N demand for support initial GPP
-          call t_startf('CNAllocation - phase-1')
-          call CNAllocation1_PlantNPDemand (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,    &
-               photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                 &
-               carbonstate_vars, carbonflux_vars, c13_carbonflux_vars,                    &
-               c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars,                &
-               phosphorusstate_vars, phosphorusflux_vars)
+       call t_startf('CNAllocation - phase-1')
+       call CNAllocation1_PlantNPDemand (bounds                             , &
+                num_soilc, filter_soilc, num_soilp, filter_soilp            , &
+                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
+                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars      , &
+                c14_carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars  , &
+                phosphorusstate_vars, phosphorusflux_vars)
 
-          call t_stopf('CNAllocation - phase-1')
+       call t_stopf('CNAllocation - phase-1')
 
     end if !end of if not use_ed block
 
@@ -411,7 +413,8 @@ contains
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
        phosphorusflux_vars,phosphorusstate_vars)
-    !
+    ! Phase-2 of CNEcosystemDynNoLeaching: call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
+
     ! !DESCRIPTION:
     ! The core CN code is executed here. Calculates fluxes for maintenance
     ! respiration, decomposition, allocation, phenology, and growth respiration.
@@ -502,7 +505,7 @@ contains
                 phosphorusstate_vars,phosphorusflux_vars)
        end if !!if(.not.use_bgc_interface)
        !----------------------------------------------------------------
-       !! CNDecompAlloc2 is called by both PFLOTRAN & clm-bgc
+       !! CNDecompAlloc2 is called by both clm-bgc & pflotran
        !! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
        !! pflotran & clm-bgc : 'CNAllocation3_AG' and vertically integrate net and gross mineralization fluxes
        call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &

@@ -95,9 +95,9 @@ contains
        nitrogenstate_vars, nitrogenflux_vars, crop_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
 
-    ! This is the clm-bgc Module
+    ! This is the clm-bgc (soil) Module
     ! ONLY includes code for SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
-    ! CNAllocation3_AG is moved to CNDecompAlloc2:
+    ! CNAllocation3 is moved to CNDecompAlloc2
 
     ! !USES:
 !    use CNAllocationMod , only: CNAllocation
@@ -259,14 +259,6 @@ contains
          end do
       end do
 
-! write(*,*)">>>DEBUG | CN, CP: 1st"
-! write(*,'(A30,12E14.4)')'>>>DEBUG | CN0=',initial_cn_ratio(1:ndecomp_pools)
-! write(*,'(A30,12E14.4)')'>>>DEBUG | CP0=',initial_cp_ratio(1:ndecomp_pools)
-! do j = 1,nlevdecomp
-!    write(*,'(A30,I5,12E14.4)')">>>DEBUG | N: lev=",j, cn_decomp_pools(1,j,1:ndecomp_pools)
-!    write(*,'(A30,I5,12E14.4)')">>>DEBUG | P: lev=",j, cp_decomp_pools(1,j,1:ndecomp_pools)
-! end do
-
       ! calculate the non-nitrogen-limited fluxes
       ! these fluxes include the  "/ dt" term to put them on a
       ! per second basis, since the rate constants have been
@@ -380,7 +372,6 @@ contains
 
 
 !!-------------------------------------------------------------------------------------------------
-!! 'decomp_vertprofiles' is moved to CNEcosystemDynNoLeaching1
 !! 'decomp_vertprofiles' (calc nfixation_prof) is moved to CNEcosystemDynNoLeaching1
 !! 'nfixation_prof' is used to 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in CNAllocation1,2,3
 !      call decomp_vertprofiles(bounds, &
@@ -457,6 +448,7 @@ contains
 !            end do
 !         end if
 !      end do
+!!-------------------------------------------------------------------------------------------------
 
       ! upon return from CNAllocation, the fraction of potential immobilization
       ! has been set (cnstate_vars%fpi_vr_col). now finish the decomp calculations.
@@ -583,15 +575,14 @@ contains
   end subroutine CNDecompAlloc
 
 !!-------------------------------------------------------------------------------------------------
-  ! Majorly for coupling with pflotran
-  !
+
   subroutine CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
        photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
        waterstate_vars, cnstate_vars, ch4_vars,                                          &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
        nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
        phosphorusstate_vars,phosphorusflux_vars)
-    !
+    ! Majorly for coupling with pflotran
     !DESCRIPTION: simplified codes of CNDecompAlloc subroutine for coupling with pflotran
     !
     ! !USES:
@@ -684,6 +675,7 @@ contains
       do fc=1,num_soilc
          c = filter_soilc(fc)
          sminn_to_plant(c)       = 0._r8
+         !! local var 'col_plant_ndemand' is replaced by fluxtype%plant_ndemand_col
 !         col_plant_ndemand(c)    = 0._r8
          do j = 1, nlevdecomp           ! sum up actual and potential column-level N fluxes to plant
             sminn_to_plant(c)    = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
@@ -751,18 +743,19 @@ contains
 
       ! needs to zero CLM-CN variables NOT available from pflotran bgc coupling
       call CNvariables_nan4pf(bounds, num_soilc, filter_soilc,   &
-            carbonflux_vars, nitrogenflux_vars)
+                        carbonflux_vars, nitrogenflux_vars)
     end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
 !!------------------------------------------------------------------
       
 
       ! phase-3 Allocation for plants
       call t_startf('CNAllocation - phase-3')
-      call CNAllocation3_PlantCNPAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,     &
-            cnstate_vars, carbonstate_vars, carbonflux_vars,                               &
-            c13_carbonflux_vars, c14_carbonflux_vars,                                      &
-            nitrogenstate_vars, nitrogenflux_vars,                                         &
-            phosphorusstate_vars, phosphorusflux_vars)
+      call CNAllocation3_PlantCNPAlloc (bounds                      , &
+                num_soilc, filter_soilc, num_soilp, filter_soilp    , &
+                cnstate_vars, carbonstate_vars, carbonflux_vars     , &
+                c13_carbonflux_vars, c14_carbonflux_vars            , &
+                nitrogenstate_vars, nitrogenflux_vars               , &
+                phosphorusstate_vars, phosphorusflux_vars)
       call t_stopf('CNAllocation - phase-3')
 !!------------------------------------------------------------------
 

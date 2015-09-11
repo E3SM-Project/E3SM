@@ -2,8 +2,7 @@ module clm_bgc_interfaceMod
 !!=================================================================================================
 ! CLM Soil BioGeoChemistry Interface
 !
-! CCSI & ESD
-! Oak Ridge National Laboratory
+! CCSI & ESD @ ORNL
 !
 ! date: 8/25/2015
 !!=================================================================================================
