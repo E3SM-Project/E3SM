@@ -46,7 +46,7 @@ target_compile_definitions (gptl
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
     target_compile_options (gptl
-        PUBLIC -mismatch_all)
+        PRIVATE -mismatch_all)
 endif ()
 
 #==============================================================================
