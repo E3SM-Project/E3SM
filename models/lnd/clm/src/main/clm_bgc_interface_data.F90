@@ -387,7 +387,7 @@ contains
     allocate(this%externaln_to_sminn_col    (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_sminn_col       (:,:) = spval
     allocate(this%smin_no3_leached_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_leached_vr_col      (:,:) = ival
     allocate(this%smin_no3_runoff_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_runoff_vr_col       (:,:) = ival
-    allocate(this%no3_net_transport_vr_col  (begc:endc, 1:nlevdecomp_full)) ; this%no3_net_transport_vr_col     (:,:) = spval
+    allocate(this%no3_net_transport_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%no3_net_transport_vr_col     (:,:) = spval
 
     ! (4.3) to mineral P
     allocate(this%externalp_to_primp_col    (begc:endc,1:nlevdecomp_full))  ; this%externalp_to_primp_col       (:,:) = spval
@@ -443,7 +443,7 @@ contains
     allocate(this%potential_immob_p_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%potential_immob_p_vr_col     (:,:) = ival
     allocate(this%actual_immob_p_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%actual_immob_p_vr_col        (:,:) = ival
     allocate(this%sminp_to_plant_vr_col     (begc:endc,1:nlevdecomp_full))  ; this%sminp_to_plant_vr_col        (:,:) = ival
-    allocate(this%supplement_to_sminp_vr_col (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminp_vr_col   (:,:) = ival
+    allocate(this%supplement_to_sminp_vr_col(begc:endc,1:nlevdecomp_full))  ; this%supplement_to_sminp_vr_col   (:,:) = ival
 
     allocate(this%sminp_to_plant_col        (begc:endc))                    ; this%sminp_to_plant_col           (:)   = ival
     allocate(this%potential_immob_p_col     (begc:endc))                    ; this%potential_immob_p_col        (:)   = ival
