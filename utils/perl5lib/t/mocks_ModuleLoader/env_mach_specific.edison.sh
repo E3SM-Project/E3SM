@@ -70,3 +70,6 @@ then
 fi
 module load perl/5.20.0 
 module load cmake/2.8.11.2 
+export MPICH_ENV_DISPLAY=1
+export MPICH_VERSION_DISPLAY=1
+export PERL5LIB=/global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0

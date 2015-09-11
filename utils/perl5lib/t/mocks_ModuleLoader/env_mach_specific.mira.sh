@@ -12,4 +12,3 @@ soft add +cmake
 soft add +python 
 export MPI_TYPE_MAX=$MPI_TYPE_MAX
 export OMP_DYNAMIC=$OMP_DYNAMIC
-ulimit -d unlimited

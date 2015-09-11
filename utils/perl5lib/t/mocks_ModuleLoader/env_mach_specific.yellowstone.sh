@@ -63,5 +63,3 @@ export MP_EUILIB=us
 export MP_MPILIB=$MPILIB
 export MP_STDOUTMODE=unordered
 export MP_RC_USE_LMC=yes
-ulimit -s unlimited
-ulimit -c unlimited

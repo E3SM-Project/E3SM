@@ -36,5 +36,3 @@ then
 fi
 export P4_GLOBMEMSIZE=500000000
 export NETCDF_DIR=$NETCDF_PATH
-ulimit -s unlimited
-ulimit -c unlimited

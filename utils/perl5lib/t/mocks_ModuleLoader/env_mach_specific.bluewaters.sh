@@ -41,3 +41,6 @@ then
 fi
 module load cmake 
 module rm darshan 
+export OMP_STACKSIZE=64M
+export MPICH_ENV_DISPLAY=1
+export MPICH_PTL_MATCH_OFF=1

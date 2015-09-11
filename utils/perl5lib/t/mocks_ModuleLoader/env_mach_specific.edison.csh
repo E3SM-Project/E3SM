@@ -62,3 +62,6 @@ if ( $MPILIB != "mpi-serial" ) then
 endif
 module load perl/5.20.0
 module load cmake/2.8.11.2
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv PERL5LIB /global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0

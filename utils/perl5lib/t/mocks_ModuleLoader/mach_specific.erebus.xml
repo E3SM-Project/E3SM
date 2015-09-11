@@ -31,4 +31,11 @@
       <command name="load">pnetcdf/1.3.0</command>
     </modules>
   </module_system>
+  <environment_variables>
+    <env name="XLSMPOPTS">stack=256000000</env>
+    <env name="MP_LABELIO">yes</env>
+    <env name="MP_INFOLEVEL">2</env>
+    <env name="MP_SHARED_MEMORY">yes</env>
+    <env name="MP_EUILIB">us</env>
+  </environment_variables>
 </machine>

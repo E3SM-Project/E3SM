@@ -30,5 +30,3 @@ if ( $MPILIB == "impi5.0.1" ) then
 endif
 setenv MKL -mkl
 setenv OMP_STACKSIZE 64M
-limit coredumpsize unlimited
-limit stacksize unlimited

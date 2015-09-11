@@ -12,4 +12,3 @@ soft add +cmake
 soft add +python
 setenv MPI_TYPE_MAX $MPI_TYPE_MAX
 setenv OMP_DYNAMIC $OMP_DYNAMIC
-limit datasize unlimited

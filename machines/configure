@@ -242,6 +242,7 @@ my @dirs = ( "$scriptdir/Tools", "$cimeroot/utils/perl5lib" );
 unshift @INC, @dirs;
 require ConfigCase;
 require SetupTools;
+require Module::ModuleLoader;
 
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
