@@ -16,6 +16,7 @@ module cube_mod
   use physical_constants, only : dd_pi, rearth
   use control_mod, only : hypervis_scaling, cubed_sphere_map
   use parallel_mod, only : abortmp
+  use dimensions_mod, only : np,ne
 
   implicit none
   private
@@ -111,7 +112,6 @@ contains
   ! =======================================
   subroutine cube_init_atomic(elem,gll_points,alpha_in)
     use element_mod, only : element_t
-    use dimensions_mod, only : np
     type (element_t),intent(inout) :: elem
     real (kind=real_kind),optional :: alpha_in
     real (kind=real_kind)          :: alpha=1
@@ -141,7 +141,6 @@ contains
 
   subroutine coordinates_atomic(elem,gll_points)
     use element_mod, only : element_t, element_var_coordinates
-    use dimensions_mod, only : np
     type (element_t) :: elem
     real (kind=longdouble_kind)      :: gll_points(np)
 
@@ -180,31 +179,6 @@ contains
 
   end subroutine coordinates_atomic
 
-  ! elem_jacobians:
-  !
-  ! Calculate Jacobian associated with mapping
-  ! from arbitrary quadrilateral to [-1,1]^2
-  ! along with its inverse and determinant
-  ! ==========================================
-
-  subroutine elem_jacobians(coords, unif2quadmap)
-
-    use dimensions_mod, only : np
-    type (cartesian2D_t),  dimension(np,np), intent(in) :: coords
-    ! unif2quadmap is the bilinear map from [-1,1]^2 -> arbitrary quadrilateral
-    real (kind=real_kind), dimension(4,2), intent(out) :: unif2quadmap
-    integer :: ii,jj
-
-    unif2quadmap(1,1)=(coords(1,1)%x+coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
-    unif2quadmap(1,2)=(coords(1,1)%y+coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
-    unif2quadmap(2,1)=(-coords(1,1)%x+coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
-    unif2quadmap(2,2)=(-coords(1,1)%y+coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
-    unif2quadmap(3,1)=(-coords(1,1)%x-coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
-    unif2quadmap(3,2)=(-coords(1,1)%y-coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
-    unif2quadmap(4,1)=(coords(1,1)%x-coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
-    unif2quadmap(4,2)=(coords(1,1)%y-coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
-
-  end subroutine elem_jacobians
 
   ! =========================================
   ! metric_atomic:
@@ -240,7 +214,6 @@ contains
 
   subroutine metric_atomic(elem,gll_points,alpha)
     use element_mod, only : element_t
-    use dimensions_mod, only : np
     use physical_constants, only : rrearth
 
     type (element_t) :: elem
@@ -272,11 +245,6 @@ contains
     ! inverse
     ! ==============================================
 
-    ! MNL: Calculate Jacobians of bilinear map from cubed-sphere to ref element
-    if (cubed_sphere_map==0) then
-       call elem_jacobians(elem%cartp, elem%u2qmap)
-    endif
-
     max_svd = 0.0d0
     max_normDinv = 0.0d0
     min_svd = 1d99
@@ -284,7 +252,7 @@ contains
        do i=1,np
           x1=gll_points(i)
           x2=gll_points(j)
-          call Dmap(elem%D(i,j,:,:),x1,x2,elem%corners3D,cubed_sphere_map,elem%corners,elem%u2qmap,elem%facenum)
+          call Dmap(elem%D(i,j,:,:),x1,x2,elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
 
 
           ! Numerical metric tensor based on analytic D: met = D^T times D
@@ -545,22 +513,21 @@ contains
   ! vector fields on the reference element onto vector fields on
   ! the sphere. 
   ! ========================================================
-  subroutine Dmap(D, a,b, corners3D, ref_map, corners, u2qmap, facenum)
+  subroutine Dmap(D, a,b, corners3D, ref_map, cartp, facenum)
     real (kind=real_kind), intent(out)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     type (cartesian3D_t)   :: corners3D(4)  !x,y,z coords of element corners
     integer :: ref_map 
     ! only needed for ref_map=0,1
-    type (cartesian2D_t),optional   :: corners(4)    ! gnomonic coords of element corners
-    real (kind=real_kind),optional  :: u2qmap(4,2)   
+    type (cartesian2D_t),optional   :: cartp(np,np)    ! gnomonic coords of element corners
     integer,optional  :: facenum
 
 
 
     if (ref_map==0) then
-       if (.not. present ( corners ) ) &
+       if (.not. present ( cartp ) ) &
             call abortmp('Dmap(): missing arguments for equiangular map')
-       call dmap_equiangular(D,a,b,corners,u2qmap,facenum)
+       call dmap_equiangular(D,a,b,cartp,facenum)
     else if (ref_map==1) then
        call abortmp('equi-distance gnomonic map not yet implemented')
     else if (ref_map==2) then
@@ -579,41 +546,35 @@ contains
   ! Composition of equiangular Gnomonic projection to cubed-sphere face,
   ! followd by bilinear map to reference element
   ! ========================================================
-  subroutine dmap_equiangular(D, a,b, corners,u2qmap,facenum )
-    use dimensions_mod, only : np
+  subroutine dmap_equiangular(D, a,b, cartp,facenum )
     real (kind=real_kind), intent(out)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
-    real (kind=real_kind)    :: u2qmap(4,2)   
-    type (cartesian2D_t)     :: corners(4)                          ! gnomonic coords of element corners
+    type (cartesian2D_t)     :: cartp(np,np)          ! gnomonic coords of GLL points
     integer :: facenum
     ! local
+    type (cartesian2D_t)     :: corners(4)            ! gnomonic coords of element corners
     real (kind=real_kind)  :: tmpD(2,2), Jp(2,2),x1,x2,pi,pj,qi,qj
     real (kind=real_kind), dimension(4,2) :: unif2quadmap
 
-#if 0
-    ! we shoud get rid of elem%u2qmap() and routine cube_mod.F90::elem_jacobian()
-    ! and replace with this code below:
-    ! but this produces roundoff level changes
-    !unif2quadmap(1,1)=(elem%cartp(1,1)%x+elem%cartp(np,1)%x+elem%cartp(np,np)%x+elem%cartp(1,np)%x)/4.0d0
-    !unif2quadmap(1,2)=(elem%cartp(1,1)%y+elem%cartp(np,1)%y+elem%cartp(np,np)%y+elem%cartp(1,np)%y)/4.0d0
-    unif2quadmap(2,1)=(-elem%cartp(1,1)%x+elem%cartp(np,1)%x+elem%cartp(np,np)%x-elem%cartp(1,np)%x)/4.0d0
-    unif2quadmap(2,2)=(-elem%cartp(1,1)%y+elem%cartp(np,1)%y+elem%cartp(np,np)%y-elem%cartp(1,np)%y)/4.0d0
-    unif2quadmap(3,1)=(-elem%cartp(1,1)%x-elem%cartp(np,1)%x+elem%cartp(np,np)%x+elem%cartp(1,np)%x)/4.0d0
-    unif2quadmap(3,2)=(-elem%cartp(1,1)%y-elem%cartp(np,1)%y+elem%cartp(np,np)%y+elem%cartp(1,np)%y)/4.0d0
-    unif2quadmap(4,1)=(elem%cartp(1,1)%x-elem%cartp(np,1)%x+elem%cartp(np,np)%x-elem%cartp(1,np)%x)/4.0d0
-    unif2quadmap(4,2)=(elem%cartp(1,1)%y-elem%cartp(np,1)%y+elem%cartp(np,np)%y-elem%cartp(1,np)%y)/4.0d0
+
+    corners(1) = cartp(1,1)
+    corners(2) = cartp(np,1)
+    corners(3) = cartp(np,np)
+    corners(4) = cartp(1,np)
+
+
+    unif2quadmap(1,1)=( cartp(1,1)%x+cartp(np,1)%x+cartp(np,np)%x+cartp(1,np)%x)/4.0d0
+    unif2quadmap(1,2)=( cartp(1,1)%y+cartp(np,1)%y+cartp(np,np)%y+cartp(1,np)%y)/4.0d0
+    unif2quadmap(2,1)=(-cartp(1,1)%x+cartp(np,1)%x+cartp(np,np)%x-cartp(1,np)%x)/4.0d0
+    unif2quadmap(2,2)=(-cartp(1,1)%y+cartp(np,1)%y+cartp(np,np)%y-cartp(1,np)%y)/4.0d0
+    unif2quadmap(3,1)=(-cartp(1,1)%x-cartp(np,1)%x+cartp(np,np)%x+cartp(1,np)%x)/4.0d0
+    unif2quadmap(3,2)=(-cartp(1,1)%y-cartp(np,1)%y+cartp(np,np)%y+cartp(1,np)%y)/4.0d0
+    unif2quadmap(4,1)=( cartp(1,1)%x-cartp(np,1)%x+cartp(np,np)%x-cartp(1,np)%x)/4.0d0
+    unif2quadmap(4,2)=( cartp(1,1)%y-cartp(np,1)%y+cartp(np,np)%y-cartp(1,np)%y)/4.0d0
     Jp(1,1) = unif2quadmap(2,1) + unif2quadmap(4,1)*b
     Jp(1,2) = unif2quadmap(3,1) + unif2quadmap(4,1)*a
     Jp(2,1) = unif2quadmap(2,2) + unif2quadmap(4,2)*b
     Jp(2,2) = unif2quadmap(3,2) + unif2quadmap(4,2)*a
-#else
-    ! input (a,b) shold be a point in the reference element [-1,1]
-    ! compute Jp(a,b)
-    Jp(1,1) = u2qmap(2,1) + u2qmap(4,1)*b
-    Jp(1,2) = u2qmap(3,1) + u2qmap(4,1)*a
-    Jp(2,1) = u2qmap(2,2) + u2qmap(4,2)*b
-    Jp(2,2) = u2qmap(3,2) + u2qmap(4,2)*a
-#endif
 
     ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
     ! a = gp%points(i)
@@ -838,7 +799,6 @@ contains
 
   subroutine coreolis_init_atomic(elem)
     use element_mod, only : element_t
-    use dimensions_mod, only : np
     use physical_constants, only : omega
 
     type (element_t) :: elem
@@ -875,7 +835,6 @@ contains
 
  subroutine rotation_init_atomic(elem, rot_type)
     use element_mod, only : element_t
-    use dimensions_mod, only : np
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
 
     type (element_t) :: elem
@@ -1279,7 +1238,6 @@ contains
 
   subroutine set_corner_coordinates(elem)
     use element_mod,    only : element_t 
-    use dimensions_mod, only : ne
  
     type (element_t) :: elem 
 
@@ -1331,7 +1289,6 @@ contains
 
 
   subroutine assign_node_numbers_to_elem(elements, GridVertex)
-    use dimensions_mod, only : ne
     use element_mod,    only : element_t
     use control_mod,    only : north, south, east, west, neast, seast, swest, nwest
     use gridgraph_mod,  only : GridVertex_t
@@ -1416,7 +1373,6 @@ contains
   ! ================================================
 
   subroutine convert_gbl_index(number,ie,je,face_no)
-    use dimensions_mod, only : ne
     integer, intent(in)  :: number
     integer, intent(out) :: ie,je,face_no
 
@@ -1432,7 +1388,6 @@ contains
   subroutine CubeTopology(GridEdge, GridVertex)
     use gridgraph_mod, only : GridEdge_t, GridVertex_t, initgridedge, PrintGridEdge, &
          allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs 
-    use dimensions_mod, only : np, ne
     use spacecurve_mod, only :  IsFactorable, genspacecurve
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
     !-----------------------
@@ -2130,23 +2085,9 @@ contains
     DEALLOCATE(GridElem)
     DEALLOCATE(nbrs_used)
 
-#if 0
-    if(OutputFiles) then
-       close(7)
-       close(8)
-    endif
-#endif
-
     ! =======================================
     ! Generate cube graph...
     ! =======================================
-
-#if 0
-    if(OutputFiles) then
-       write(9,*)nelem,2*nelem      ! METIS requires this first line
-    endif
-#endif
-
     ! ============================================
     !  Setup the Grid edges (topology independent)
     ! ============================================
@@ -2326,7 +2267,6 @@ contains
   ! ===================================================================
 
   function CubeEdgeCount()  result(nedge)
-    use dimensions_mod, only     : ne
     implicit none
     integer                     :: nedge
 
@@ -2343,9 +2283,6 @@ contains
   ! ===================================================================
 
   function CubeElemCount()  result(nelem)
-
-    use dimensions_mod, only     : ne
-
     implicit none
     integer                     :: nelem
     if (0==ne) call abortmp('Error in CubeElemCount: ne is zero')
@@ -2355,7 +2292,6 @@ contains
 
   subroutine CubeSetupEdgeIndex(Edge)
     use gridgraph_mod, only : gridedge_t
-    use dimensions_mod, only : np
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
     type (GridEdge_t),target           :: Edge
 
