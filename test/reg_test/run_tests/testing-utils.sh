@@ -315,7 +315,7 @@ createAllRunScripts() {
          testExec=OMP_TEST_${testNum}
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
-         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}_${testNum}
+         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}_OMP${testNum}
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -427,7 +427,7 @@ createRunScript() {
     do
        testExec=${OMP_TEST_${testNum}}
        echo "# Hybrid test ${testNum}" >> $thisRunScript
-       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}_${testNum}
+       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI} ${TEST_NAME}_OMP${testNum}
        echo "" >> $thisRunScript # new line
     done
   fi

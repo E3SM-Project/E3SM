@@ -89,25 +89,31 @@ swtc6.sh   short time, low resolution Rossby wave test
 3D PRIMITIVIE EQUATION TESTS -- DETAILS
 
 
-When rebaselining, in addition to extra details specified below (exact restart, conservation),
-   run baro2b and baro2d for 9 days.  (baro2d normally only run for 1 day)
-   test output:     [cmake build directory]/tests/baro2d/movies
-   baseline output: [cmake build directory]/tests/baseline/baro2d/movies
+When rebaselining, in addition to extra details specified below for
+individual tests (i.e. exact restart, conservation), one should also:
 
-   compute l2 error in PS against EUL result (see NCL scripts from baro2b.sh)
-   scritp will plot PS, zeta, tracers at day 9.  
-   ncl  ~/codes/acme-dev/models/atm/homme/test/reg_test/ncl/baro2.ncl 
-   Compare with reference plots (should be visually identical)
-
-             baro2b.sh:  verifty q=1 tracer is preserved to 12 digits
-                         l2 PS error at day 9:  1.13mb
-             baro2d.sh:  verifty q=1 tracer is preserved to 12 digits
-                         l2 PS error at day 9:  1.25mb 
-             check tracer mass conservation:
+   (1) look at stdout/log file and verify:
+        tracer/tracer mass consistency:  tracer number 4 min/max 1.0 to 12 digits:
+           qv=   0.999999999999636E+00  0.100000000000039E+01  0.561600000000003E+06
+        check tracer mass conservation:  "Q diss" is near zero:
                (Q-Q0)/Q0   0.740187328509209E-14   Q1
                (Q-Q0)/Q0   0.146454099118228E-13   Q2
                (Q-Q0)/Q0   0.470825202983687E-14   Q3
                (Q-Q0)/Q0   0.625678319683976E-14   Q4
+   (2) Run NCL script and verify that the l2 PS error has not changed:
+             baro2b.sh:  l2 PS error at day 9:  1.13mb
+             baro2d.sh:  l2 PS error at day 9:  1.25mb 
+   (3) Example plots of PS, zeta and tracers produced by NCL script and
+       compare with reference plots on github.    
+
+   stdout will be stored:
+     test output:     [cmake build directory]/tests/baro2d/movies
+     baseline output: [cmake build directory]/tests/baseline/baro2d/movies
+   NCL script to make plots and compute l2 error:
+     ACME/models/atm/homme/test/reg_test/ncl/baro2.ncl 
+   Reference solution plots and 'T340ref.nc' available from homme-archive repo:  
+     https://github.com/ACME-Climate/homme-archive/tree/master/test/reg_test/ref_sol
+
 
 
 
@@ -155,18 +161,18 @@ Verify that:
 
 
 baro2d.sh   Test case from Jablonowski and Williamson 2006
-            Same as baro2b.sh, but configred to match CAM-SE
+            Same as baro2b.sh, but configred to match CAM-SE (Eulerian)
             subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
             monotone limiter            
             Output using PIO_INTERP
             NE=15, NP=4, PLEV=26, dt=180
-            Regression test runs for 1 day.  
+            Regression test runs for 9 day.  
 
 
 
 baroCamMoist.cmake
-              Similar to one of the tests above, but with moisture turned on
-              so Q1 field feeds back to dynamics.  
+              Similar to baro2b.sh, but configured to match CAM-SE Lagrangian
+              moisture is turned on, so Q1 field feeds back to dynamics.  
               NE=6 run for 3 days
 
 

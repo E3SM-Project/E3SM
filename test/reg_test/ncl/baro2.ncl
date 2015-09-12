@@ -223,7 +223,7 @@ end do
 ;
 ;  now compute l2 error against T340 reference solution 
 ;
-  fref    = addfile("./T340ref.nc","r")       ; Open netCDF files.	
+  fref    = addfile("~/scratch1/regtest/T340ref.nc","r")       ; Open netCDF files.	
 
   if (get_gridtype(f->lat) .ne. 1 ) then
     print("Error: reference solution must be on a Gauss grid") 
