@@ -561,7 +561,7 @@ sub loadModuleModules()
         {
             $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
         }
-        print "running cmd: $cmd\n";
+        print "running cmd: $mod->{action} $mod->{actupon}\n";
         eval qx($cmd);
         if($?)
         {
@@ -776,7 +776,7 @@ START
     if(! defined $configuremode)
     {
         $csh .=<<"START";
-set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+set CIMEROOT = `./xmlquery CIMEROOT -value`
 if(\$status == 0) then
   set COMPILER            = `./xmlquery  COMPILER          -value`
   set MPILIB              = `./xmlquery  MPILIB        -value`

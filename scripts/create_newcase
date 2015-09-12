@@ -756,7 +756,10 @@ sub _set_mpi_library
 	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1) 
 	{ 
 	    $mpilib = "mpi-serial"; 
-	}
+	}else{
+	    my $compiler = $config->get('COMPILER');
+	    $mpilib = "openmpi" if($compiler eq "nag");
+        }
     }
     if ( $mpilib =~ 'default' || $mpilib =~ m/^\s*$/ ) {
 	$mpilib = $mpilibs[0];
