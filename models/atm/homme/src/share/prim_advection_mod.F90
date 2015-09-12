@@ -2283,7 +2283,7 @@ end subroutine ALE_parametric_coords
   !
   ! ===================================
   use kinds          , only : real_kind
-  use dimensions_mod , only : np, npdg, nlev
+  use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
   use element_mod    , only : element_t
   use derivative_mod , only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere, limiter_optim_iter_full
@@ -2319,10 +2319,6 @@ end subroutine ALE_parametric_coords
   integer :: ie,q,i,j,k, kptr
   integer :: rhs_viss = 0
 
-  if ( npdg > 0 ) then
-    call euler_step_dg( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
-    return
-  endif
 #if USE_CUDA_FORTRAN
   call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   ! PGI 14.7.0 and up segfault if we have a return statement here'
@@ -2620,193 +2616,6 @@ end subroutine ALE_parametric_coords
   end subroutine euler_step
 !-----------------------------------------------------------------------------
 
-  subroutine euler_step_dg(np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
-      DSSopt,rhs_multiplier)
-  ! ===================================
-  ! This routine is the basic foward
-  ! euler component used to construct RK SSP methods
-  !
-  !           u(np1) = u(n0) + dt2*DSS[ RHS(u(n0)) ]
-  !
-  ! n0 can be the same as np1.
-  !
-  ! DSSopt = DSSeta or DSSomega:   also DSS eta_dot_dpdn or omega
-  !
-  ! ===================================
-  use kinds, only : real_kind
-  use dimensions_mod, only : np, npdg, nlev
-  use hybrid_mod, only : hybrid_t
-  use element_mod, only : element_t
-  use derivative_mod, only : derivative_t, divergence_sphere_wk, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll
-  use edge_mod, only : edgevpack, edgevunpack, edgedgvunpack
-  use bndry_mod, only : bndry_exchangev
-  use hybvcoord_mod, only : hvcoord_t
-
-  implicit none
-  integer :: np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
-  real (kind=real_kind), intent(in)  :: dt
-
-  type (hvcoord_t)     , intent(in) :: hvcoord
-  type (hybrid_t)      , intent(in) :: hybrid
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (derivative_t)  , intent(in) :: deriv
-
-  ! local
-  real (kind=real_kind), dimension(np,np)    :: divdp
-  real (kind=real_kind), dimension(npdg,npdg)    :: pshat
-  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev,qsize)    :: qedges
-  real (kind=real_kind), dimension(np,np,2)    :: vtemp
-  real(kind=real_kind), dimension(np,np,nlev) :: dp,dp_star
-  real(kind=real_kind), dimension(np,np,2,nlev) :: Vstar
-  real (kind=real_kind), pointer, dimension(:,:,:)   :: DSSvar
-! nelemd
-
-  real(kind=real_kind) :: dp0
-  integer :: ie,q,i,j,k
-  integer :: rhs_viss=0
-
-  call t_barrierf('sync_euler_step_dg', hybrid%par%comm)
-  call t_startf('euler_step_dg')
-
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !   compute Q min/max values for lim8
-  !   compute biharmonic mixing term f
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  rhs_viss=0
-  if (limiter_option /= 4) then
-     call abortmp('only limiter_opiton=4 supported for dg advection')
-     ! todo:  we need to track a 'dg' mass, and use that to back out Q
-     ! then compute Qmin/Qmax here
-  endif
-
-
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !   2D Advection step
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  do ie=nets,nete
-
-     ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
-     ! all zero so we only have to DSS 1:nlev
-     if ( DSSopt == DSSeta) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
-     if ( DSSopt == DSSomega) DSSvar => elem(ie)%derived%omega_p(:,:,:)
-     if ( DSSopt == DSSdiv_vdp_ave) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
-
-     if(DSSopt==DSSno_var)then
-	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
-     else
-	call edgeVpack(edgeAdvp1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,ie)
-	! also DSS extra field
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-	do k=1,nlev
-	    DSSvar(:,:,k) = elem(ie)%spheremp(:,:)*DSSvar(:,:,k)
-	enddo
-	call edgeVpack(edgeAdvp1,DSSvar(:,:,1:nlev),nlev,nlev*qsize,ie)
-     endif
-
-  end do
-
-  if(DSSopt==DSSno_var)then
-     call bndry_exchangeV(hybrid,edgeAdv)
-  else
-     call bndry_exchangeV(hybrid,edgeAdvp1)
-  endif
-
-  do ie=nets,nete
-
-     if ( DSSopt == DSSeta) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
-     if ( DSSopt == DSSomega) DSSvar => elem(ie)%derived%omega_p(:,:,:)
-     if ( DSSopt == DSSdiv_vdp_ave) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
-
-     if(DSSopt==DSSno_var)then
-	call edgeDGVunpack(edgeAdv,qedges,nlev*qsize,0,ie)
-     else
-	call edgeDGVunpack(edgeAdvp1,qedges,nlev*qsize,0,ie)
-	call edgeVunpack(edgeAdvp1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,ie)
-	do k=1,nlev
-	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
-	enddo
-     endif
-
-     ! compute flux and advection term
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-     do k=1,nlev
-        dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - &
-             rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k)
-        Vstar(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k)/dp(:,:,k)
-        Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k)/dp(:,:,k)
-     enddo
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,vtemp,divdp,pshat,j,i)
-#endif
-     do q=1,qsize
-        do k=1,nlev
-           vtemp(:,:,1)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,1,k)
-           vtemp(:,:,2)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,2,k)
-
-           divdp = divergence_sphere_wk(vtemp,deriv,elem(ie)) + &
-                edge_flux_u_cg( Vstar(:,:,:,k), elem(ie)%state%Qdp(:,:,k,q,n0_qdp),qedges(:,:,k,q),&
-                deriv, elem(ie), u_is_contra=.false.)
-
-           ! advance in time. GLL quadrature, cardinal function basis, under-integrated.
-           ! local mass matrix is diagonal, with entries elem(ie)%spheremp(),
-           ! so we divide through by elem(ie)%spheremp().
-           elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp) - dt*divdp/elem(ie)%spheremp
-
-           if (npdg<np) then
-              ! modal timestep, with exact integration.  using prognostic variable: p*metdet
-              ! local mass matrix is diagonal assuming npdg<np so that GLL quadrature is exact)
-              ! (note: GLL/modal conversion comutes with time-stepping)
-
-              ! compute modal coefficients of p*metdet
-              ! (spherical inner-product of Legendre polynomial and p)
-              pshat = gll_to_dgmodal(elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%metdet(:,:),deriv)
-
-              ! modal based limiter goes here
-              ! apply a little dissipation to last mode:
-              do j=1,npdg
-              do i=1,npdg
-                 !if ( (i-1)+(j-1) == 4) pshat(i,j)=pshat(i,j)*.75
-                 !if ( (i-1)+(j-1) == 3) pshat(i,j)=pshat(i,j)*.90
-                 if ( i==npdg) pshat(i,j)=pshat(i,j)*.90
-                 if ( j==npdg) pshat(i,j)=pshat(i,j)*.90
-              enddo
-              enddo
-
-
-              ! evalute modal expanion of p*metdet on GLL points
-              divdp=dgmodal_to_gll(pshat,deriv)
-
-              ! convert from p*metdet back to p:
-              elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=divdp/elem(ie)%metdet(:,:)
-           endif
-        enddo
-        if(limiter_option == 4)then
-           ! reuse CG limiter, which wants Qdp*spheremp:
-           do k=1,nlev
-              elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
-           enddo
-           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp))
-           do k=1,nlev
-              elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/elem(ie)%spheremp(:,:)
-           enddo
-        endif
-     end do
-  end do
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
-  call t_stopf('euler_step_dg')
-
-  end subroutine euler_step_dg
 
 
   subroutine limiter2d_zero(Q)

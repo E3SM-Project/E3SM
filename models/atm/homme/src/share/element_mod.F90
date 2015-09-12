@@ -169,60 +169,6 @@ module element_mod
 
   end type elem_accum_t
 
-#elif defined _PRIMDG
-
-! ============ DISCONTINUOUS-GALERKIN DATA-STRUCTURES ================
-
-  type, public :: elem_state_t
-
-    ! prognostic variables for DG primitive-eqn solver
-
-    real (kind=real_kind) :: p(np,np,nlev,timelevels)
-    real (kind=real_kind) :: phis(np,np)                              ! surface geopotential
-    real (kind=real_kind) :: gradps(np,np,2)                          ! gradient of surface geopotential
-    real (kind=real_kind) :: v(np,np,2,nlev,timelevels)               ! contravarient comp
-
-    real (kind=real_kind) :: couv(np,np,2,nlev)                       ! covariant velocities
-    real (kind=real_kind) :: uv(np,np,2,nlev)                         ! redundant copy of v (eliminate?)
-    real (kind=real_kind) :: uv0(np,np,2,nlev)                        ! temp variable for velocities (eliminate?)
-    real (kind=real_kind) :: pgrads(np,np,2,nlev)
-
-    real (kind=real_kind) :: psi(np,np,nlev)
-    real (kind=real_kind) :: phi(np,np,nlev)
-    real (kind=real_kind) :: ht(np,np,nlev)
-    real (kind=real_kind) :: T(np,np,nlev,timelevels)                 ! temperature
-    real (kind=real_kind) :: Q(np,np,nlev,timelevels)                 ! moisture
-    real (kind=real_kind) :: pt3d(np,np,nlev)                         ! potential temperature
-    real (kind=real_kind) :: qt3d(np,np,nlev)
-    real (kind=real_kind) :: peta(np,np,nlev)
-    real (kind=real_kind) :: dp3d(np,np,nlev)
-
-    real (kind=real_kind) :: zeta(np,np,nlev)
-    real (kind=real_kind) :: pr3d(np,np,nlev+1)
-    real (kind=real_kind) :: pr3d_ref(np,np,nlev+1)
-    real (kind=real_kind) :: gp3d(np,np,nlev+1)
-
-    real (kind=real_kind) :: ptop(np,np)
-    real (kind=real_kind) :: sgp(np,np)
-    real (kind=real_kind) :: tbar(nlev)
-
-    ! note: non-state variables should be moved into derived_state_t
-
-  end type elem_state_t
-
-  !___________________________________________________________________
-  type, public :: derived_state_t
-     real (kind=real_kind) :: dummmy
-     real (kind=real_kind) :: vstar(np,np,2,nlev)                     ! velocity on Lagrangian surfaces
-  end type derived_state_t
-
-  !___________________________________________________________________
-  type, public :: elem_accum_t
-    real (kind=real_kind) :: u(np,np,nlev)                            ! zonal velocity on sphere
-    real (kind=real_kind) :: T(np,np,nlev)                            ! temperature
-    real (kind=real_kind) :: ke(np,np,nlev)                           ! kinetic energy
-  end type
-
 #else
 ! ================== SHALLOW-WATER DATA-STRUCTURES ===================
 
@@ -233,15 +179,6 @@ module element_mod
      real (kind=real_kind) :: ps(np,np)                               ! surface geopotential
      real (kind=real_kind) :: gradps(np,np,2)                         ! gradient of surface geopotential
      real (kind=real_kind) :: v(np,np,2,nlev,timelevels)              ! contravarient comp
-
-#ifdef _SWDG
-     ! variables for discontinuous-Galerkin shallow-water
-     real (kind=real_kind) :: couv(np,np,2,nlev)                      ! covarient velocity
-     real (kind=real_kind) :: uv(np,np,2,nlev)                        ! spherical (u,v) velocity  vector
-     real (kind=real_kind) :: psi(np,np,nlev)                         ! (ht+hs)*metdet(G)
-     real (kind=real_kind) :: ht(np,np,nlev)                          ! height variable
-     real (kind=real_kind) :: hs(np,np,nlev)                          ! mountain height
-#endif
 
   end type elem_state_t
 
@@ -297,7 +234,7 @@ module element_mod
      type (elem_state_t)      :: state
 
      type (derived_state_t)   :: derived
-#if defined _PRIM || defined _PRIMDG
+#if defined _PRIM 
      type (elem_accum_t)       :: accum
 #endif
      ! Metric terms
