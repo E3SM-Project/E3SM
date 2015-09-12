@@ -829,27 +829,26 @@
 	<command name="load">compiler/intel/15.0.2.164</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
-	<command name="unload">mpi/intel/openmpi-1.8.1-qlc</command>
-	<command name="load">mpi/intel/mvapich2-1.8.1-qlc</command>
+	<command name="load">  tool/parallel-netcdf/1.6.1/intel/mvapich2  </command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">compiler/pgi/15.1</command>
       </modules>
-      <modules compiler="pgi" mpilib="mvapich2">
-	<command name="unload">mpi/pgi/openmpi-1.8.1-qlc</command>
-	<command name="load">mpi/pgi/mvapich2-1.8.1-qlc</command>
+      <modules  compiler="pgi" mpilib="mvapich2">
+	  <command name="load">  tool/parallel-netcdf/1.6.1/pgi/mvapich2  </command>
       </modules>
       <modules compiler="nag">
 	<command name="load">compiler/nag/6.0</command>
-	<command name="xmlchange">MPILIB=openmpi</command>
+      </modules>
+      <modules compiler="nag" mpilib="openmpi">
+	  <command name="load">  tool/parallel-netcdf/1.6.1/nag/openmpi </command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">compiler/gnu/4.8.3</command>
       </modules>
     </module_system>
     <environment_variables>
-      <env name="P4_GLOBMEMSIZE">500000000</env>
-      <env name="NETCDF_DIR">$NETCDF_PATH</env>
+      <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
     <limits>
       <limit name="stacksize">unlimited</limit>
