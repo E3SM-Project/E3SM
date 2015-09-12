@@ -209,8 +209,7 @@ module element_mod
      ! Equ-angular gnomonic projection coordinates
      type (cartesian2D_t)     :: cartp(np,np)                         ! gnomonic coords of GLL points
      type (cartesian2D_t)     :: corners(4)                           ! gnomonic coords of element corners
-     real (kind=real_kind)    :: u2qmap(4,2)                          ! bilinear map from ref element to quad in cubedsphere coordinates
-                                                                      ! SHOULD BE REMOVED
+
      ! 3D cartesian coordinates
      type (cartesian3D_t)     :: corners3D(4)
 
