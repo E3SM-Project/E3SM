@@ -825,7 +825,7 @@ end subroutine interpol_spelt_latlon
 #endif
 
 
-  function parametric_coordinates(sphere, corners3D,ref_map_in, corners,u2qmap,facenum) result (ref)
+  function parametric_coordinates(sphere, corners3D,ref_map_in, corners,cartp,facenum) result (ref)
     implicit none
     type (spherical_polar_t), intent(in) :: sphere
     type (cartesian2D_t) :: ref
@@ -834,7 +834,7 @@ end subroutine interpol_spelt_latlon
     integer,optional  :: ref_map_in    ! default is global variable 'cubed_sphere_map'
     ! optional arguments, only needed for ref_map=1 (equi-angle gnomonic projection):
     type (cartesian2D_t),optional   :: corners(4)    ! gnomonic coords of element corners
-    real (kind=real_kind),optional  :: u2qmap(4,2)   
+    type (cartesian2D_t),optional   :: cartp(np,np)  ! gnomonic coords of element data
     integer,optional  :: facenum
 
 
@@ -881,7 +881,7 @@ end subroutine interpol_spelt_latlon
 
        resb = sphere1%lat - sphere%lat 
 
-       call Dmap(D,a,b,corners3D,ref_map,corners,u2qmap,facenum)
+       call Dmap(D,a,b,corners3D,ref_map,cartp,facenum)
        detD = D(1,1)*D(2,2) - D(1,2)*D(2,1)      
        Dinv(1,1) =  D(2,2)/detD
        Dinv(1,2) = -D(1,2)/detD
@@ -1251,7 +1251,7 @@ end subroutine interpol_spelt_latlon
        if (found) then
           number = ii
           cart = parametric_coordinates(sphere, elem(ii)%corners3D,&
-               cubed_sphere_map,elem(ii)%corners,elem(ii)%u2qmap,elem(ii)%facenum)
+               cubed_sphere_map,elem(ii)%corners,elem(ii)%cartp,elem(ii)%facenum)
           exit
        end if
     end do
@@ -1828,7 +1828,7 @@ end subroutine interpolate_ce
     do i=1,interpdata%n_interp
        ! convert fld from contra->latlon
        call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
-            elem%corners3D,cubed_sphere_map,elem%corners,elem%u2qmap,elem%facenum)
+            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
        ! convert fld from contra->latlon
        v1 = fld(i,1)
        v2 = fld(i,2)
@@ -1923,7 +1923,7 @@ end subroutine interpolate_ce
     do i=1,interpdata%n_interp
        ! compute D(:,:) at the point elem%interp_cube(i)
        call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
-            elem%corners3D,cubed_sphere_map,elem%corners,elem%u2qmap,elem%facenum)
+            elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
        do k=1,nlev
           ! convert fld from contra->latlon
           v1 = fld(i,k,1)
