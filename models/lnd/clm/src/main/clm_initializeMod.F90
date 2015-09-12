@@ -412,7 +412,7 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    ! pflotran
+    ! bgc interface & pflotran
     use clm_varctl                          , only : use_bgc_interface, use_pflotran
     use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     !
@@ -737,7 +737,7 @@ contains
        call nitrogenflux_vars%Init(bounds_proc) 
 
 
-       call phosphorusstate_vars%Init(bounds_proc,                      &
+       call phosphorusstate_vars%Init(bounds_proc,                    &
             carbonstate_vars%leafc_patch(begp:endp),                  &
             carbonstate_vars%leafc_storage_patch(begp:endp),          &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
@@ -746,11 +746,6 @@ contains
             carbonstate_vars%decomp_cpools_1m_col(begc:endc, 1:))
 
        call phosphorusflux_vars%Init(bounds_proc) 
-
-       !! initialize clm_bgc_interface_data_type
-       if (use_bgc_interface) then
-            call clm_bgc_data%Init(bounds_proc)
-       end if
 
        ! Note - always initialize the memory for the dgvs_vars data structure so
        ! that it can be used in associate statements (nag compiler complains otherwise)
@@ -1063,12 +1058,16 @@ contains
     deallocate(topo_glc_mec)
 
     !------------------------------------------------------------
-    ! PFLOTRAN initialization
-    call t_startf('init_pflotran')
-    if (use_bgc_interface.and.use_pflotran) then
-       call clm_pf_interface_init(bounds_proc)
+    !! initialize clm_bgc_interface_data_type
+    call t_startf('init_clm_bgc_interface_data & pflotran')
+    if (use_bgc_interface) then
+        call clm_bgc_data%Init(bounds_proc)
+        ! PFLOTRAN initialization
+        if (use_pflotran) then
+            call clm_pf_interface_init(bounds_proc)
+        end if
     end if
-    call t_stopf('init_pflotran')
+    call t_stopf('init_clm_bgc_interface_data & pflotran')
     !------------------------------------------------------------
 
     !------------------------------------------------------------       

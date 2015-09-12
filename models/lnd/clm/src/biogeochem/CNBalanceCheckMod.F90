@@ -533,14 +533,6 @@ write(*,'(A,120(1h-))')">>>DEBUG | ALM_Nitrogen_Balance_Check: END"
 
       if (err_found) then
          c = err_index
-!-----------------------------------------------------------------------------
-write(*,'(/,A,120(1h-))')">>>DEBUG | ALM_Phosphorus_Balance_Check: BEG"
-write(*,'(A5,10A20)')"Col","err","in-out","end-beg","in","out","end","beg"
-write(*,'(I5,10E20.10)')c,col_errpb(c), &
-            (col_pinputs(c)-col_poutputs(c))*dt, col_endpb(c)-col_begpb(c),&
-            col_pinputs(c)*dt,col_poutputs(c)*dt,col_endpb(c),col_begpb(c)
-write(*,'(A,120(1h-))')">>>DEBUG | ALM_Phosphorus_Balance_Check: END"
-!-----------------------------------------------------------------------------
          write(iulog,*)'column pbalance error = ', col_errpb(c), c
          write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
          write(iulog,*)'begpb       = ',col_begpb(c)
