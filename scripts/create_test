@@ -470,7 +470,6 @@ sub options
 	if ($ENV{'MODEL'}) { 
 	    $model = $ENV{'MODEL'};
 	}
-	print "DEBUG: model is $model \n";
 	$file_config = "$cimeroot/cime_config/${model}/config_files.xml";
 
 	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file_config);

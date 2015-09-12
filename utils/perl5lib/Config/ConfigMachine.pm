@@ -228,35 +228,47 @@ sub _setPIOsettings
     $file =~ s/\$CIMEROOT/$cimeroot/;
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 
-    my $max_matches = 0;
-    my @attributes;
-    my $value;
-    my $attr_value, my $attr_name;
     foreach my $entry ($xml->findnodes(".//entry")) {
 	my $id = $entry->getAttribute('id');
-      foreach my $value ($entry->findnodes("./values/value")) {
+
+	# Loop over each value node for the given entry node
+	my $index_match   = -1;
+	my $value_counter = 0;
+	my $max_matches   = 0;
+	my @values = $entry->findnodes("./values/value");
+	foreach my $value (@values) {
+	    # Loop over each attribute in the value node and make sure they all match
+	    # If they do increment the match counter
+	    $value_counter++;
+	    my $attr_value;
 	    my $matches = 0;
-  	    MATCH: foreach my $qualifier ('COMPSET', 'GRID', 'MACH', 'COMPILER', 'MPILIB') {
-		my $debug = $value->hasAttribute(lc $qualifier);
-		if ($value->hasAttribute(lc $qualifier)) {
-		    my $target = $config->get($qualifier);
-		    $attr_name  = lc $qualifier;
-		    $attr_value = $value->getAttribute(lc $qualifier);
-		    if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
-			$matches++;
-		    } elsif ($target =~ m/$attr_value/) {
-			$matches++;
-		    } else {
-			$matches = 0;
-			last MATCH;
-		    }
+	    MATCH: foreach my $attr ($value->attributes()) {
+		$attr_value = $attr->value(); 
+		my $attr_name  = $attr->name();
+		my $target = $config->get(uc $attr_name);
+		if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
+		    $matches++;
+		} elsif ($target =~ m/$attr_value/) {
+		    $matches++;
+		} else {
+		    # Not all attributes match - reset match counter to 0 
+		    # and go to next value node
+		    $matches = 0;
+		    last MATCH;
 		}
 	    }
+	    # If the number of matches is greater than $max_matches - then
+	    # reset $max_matches and set new value for $index_match
 	    if ($matches > $max_matches) {
 		$max_matches = $matches;
-		my $newval = $value->textContent();
-		$config->set($id, $newval);
+		$index_match = $value_counter;
 	    }
+	}
+
+	# If $index_match is greater than -1, reset the value of $id
+	if ($index_match > -1) {
+	    my $newval = $values[$index_match]->textContent();
+	    $config->set($id, $newval);
 	}
     }
 }

@@ -52,10 +52,11 @@
   <entry id="PIO_TYPENAME">
     <values>
       <value mach="userdefined">netcdf</value>
-      <value mach="!userdefined">pnetcdf</value>
+      <value mach="!userdefined" mpilib="!mpi-serial">pnetcdf</value>
+      <value mach="!userdefined" mpilib="mpi-serial">netcdf</value>
       <value mach="hobart" compiler="!intel">netcdf</value>
       <value mach="hobart" compiler="intel" mpilib="!mpi-serial">pnetcdf</value> 
-      <value mach="hobart" compiler="intel" mpilib="mpiserial">netcdf</value>
+      <value mach="hobart" compiler="intel" mpilib="mpi-serial">netcdf</value>
       <value grid="l%1x1">netcdf</value>
       <value grid="l%5x5">netcdf</value>
       <value grid="l%CLM_USRDAT">netcdf</value>
