@@ -228,28 +228,27 @@ contains
 
     associate( &
          ! Assign local pointer to derived subtypes components (column-level)
-         z          =>  col%z                                   , & !  [real(r8) (:,:)]  layer depth (m)
-         dz         =>  col%dz                                  , & !  [real(r8) (:,:)]  layer thickness depth (m)
-!         zi         =>  col%zi         , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
+         z                  => col%z                                                , & !  [real(r8) (:,:)]  layer depth (m)
+         dz                 => col%dz                                               , & !  [real(r8) (:,:)]  layer thickness depth (m)
 
-         bd         =>  soilstate_vars%bd_col                   , & !
-         bsw        =>  soilstate_vars%bsw_col                  , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
-         hksat      =>  soilstate_vars%hksat_col                , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
-         sucsat     =>  soilstate_vars%sucsat_col               , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
-         watsat     =>  soilstate_vars%watsat_col               , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
-         watfc      =>  soilstate_vars%watfc_col                , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+         bd                 => soilstate_vars%bd_col                                , & !
+         bsw                => soilstate_vars%bsw_col                               , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
+         hksat              => soilstate_vars%hksat_col                             , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
+         sucsat             => soilstate_vars%sucsat_col                            , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
+         watsat             => soilstate_vars%watsat_col                            , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+         watfc              => soilstate_vars%watfc_col                             , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
 
-         cellorg    =>    soilstate_vars%cellorg_col            , & ! Input:  [real(r8) (:,:)  ]  column 3D org (kg/m3 organic matter) (nlevgrnd)
+         cellorg            => soilstate_vars%cellorg_col                           , & ! Input:  [real(r8) (:,:)  ]  column 3D org (kg/m3 organic matter) (nlevgrnd)
 
-         porosity   =>  soilstate_vars%porosity_col             , &
-         eff_porosity=> soilstate_vars%eff_porosity_col         , &
+         porosity           => soilstate_vars%porosity_col                          , &
+         eff_porosity       => soilstate_vars%eff_porosity_col                      , &
 
-         initial_cn_ratio => decomp_cascade_con%initial_cn_ratio, &
-         initial_cp_ratio => decomp_cascade_con%initial_cp_ratio, &
+         initial_cn_ratio   => decomp_cascade_con%initial_cn_ratio                  , &
+         initial_cp_ratio   => decomp_cascade_con%initial_cp_ratio                  , &
 
-         decomp_pool_name => decomp_cascade_con%decomp_pool_name_history        , &
-         floating_cn_ratio=> decomp_cascade_con%floating_cn_ratio_decomp_pools  , &
-         floating_cp_ratio=> decomp_cascade_con%floating_cp_ratio_decomp_pools    &
+         decomp_pool_name   => decomp_cascade_con%decomp_pool_name_history          , &
+         floating_cn_ratio  => decomp_cascade_con%floating_cn_ratio_decomp_pools    , &
+         floating_cp_ratio  => decomp_cascade_con%floating_cp_ratio_decomp_pools      &
 
          )
 
@@ -268,14 +267,14 @@ contains
     do fc = 1, num_soilc
         c = filter_soilc(fc)
 !        do j = 1,nlevsoi
-            clm_bgc_data%z(c,:)             = z(c,:)
-            clm_bgc_data%dz(c,:)            = dz(c,:)
-            clm_bgc_data%bd_col(c,:)        = bd(c,:)
-            clm_bgc_data%bsw_col(c,:)       = bsw(c,:)
-            clm_bgc_data%hksat_col(c,:)     = hksat(c,:)
-            clm_bgc_data%sucsat_col(c,:)    = sucsat(c,:)
-            clm_bgc_data%watsat_col(c,:)    = watsat(c,:)
-            clm_bgc_data%watfc_col(c,:)     = watfc(c,:)
+            clm_bgc_data%z(c,:)                 = z(c,:)
+            clm_bgc_data%dz(c,:)                = dz(c,:)
+            clm_bgc_data%bd_col(c,:)            = bd(c,:)
+            clm_bgc_data%bsw_col(c,:)           = bsw(c,:)
+            clm_bgc_data%hksat_col(c,:)         = hksat(c,:)
+            clm_bgc_data%sucsat_col(c,:)        = sucsat(c,:)
+            clm_bgc_data%watsat_col(c,:)        = watsat(c,:)
+            clm_bgc_data%watfc_col(c,:)         = watfc(c,:)
 
             clm_bgc_data%porosity_col(c,:)      = porosity(c,:)
             clm_bgc_data%eff_porosity_col(c,:)  = eff_porosity(c,:)

@@ -745,9 +745,8 @@ contains
       call CNvariables_nan4pf(bounds, num_soilc, filter_soilc,   &
                         carbonflux_vars, nitrogenflux_vars)
     end if !!if(use_bgc_interface.and.use_pflotran.and.pf_cmode)
-!!------------------------------------------------------------------
-      
 
+!!------------------------------------------------------------------
       ! phase-3 Allocation for plants
       call t_startf('CNAllocation - phase-3')
       call CNAllocation3_PlantCNPAlloc (bounds                      , &

@@ -43,12 +43,12 @@ module CNEcosystemDynMod
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: CNEcosystemDynInit   ! Ecosystem dynamics initialization
+  public :: CNEcosystemDynInit          ! Ecosystem dynamics initialization
 !  public :: CNEcosystemDynNoLeaching       ! Ecosystem dynamics: phenology, vegetation, before doing N leaching
-  public :: CNEcosystemDynLeaching       ! Ecosystem dynamics: phenology, vegetation, doing N leaching
-  ! bgc & pflotran interface
-  public :: CNEcosystemDynNoLeaching1       ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc & N leaching
-  public :: CNEcosystemDynNoLeaching2       ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
+  public :: CNEcosystemDynLeaching      ! Ecosystem dynamics: phenology, vegetation, doing N leaching
+  ! bgc interface
+  public :: CNEcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc & N leaching
+  public :: CNEcosystemDynNoLeaching2   ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
   !-----------------------------------------------------------------------
 
 contains

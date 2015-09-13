@@ -678,11 +678,11 @@ contains
              ! - CNDV defined: prognostic biogeography; else prescribed
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
              
-             !!--------------------------------------------------------------------------------
-             !! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2)
+             !!===========================================================================================
+             !! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): BEGIN
              !! CNEcosystemDynNoLeaching1 is called before clm_bgc_interface
              !! CNEcosystemDynNoLeaching2 is called after clm_bgc_interface
-             !!--------------------------------------------------------------------------------
+             !!===========================================================================================
              call CNEcosystemDynNoLeaching1(bounds_clump,                               &
                        filter(nc)%num_soilc, filter(nc)%soilc,                          &
                        filter(nc)%num_soilp, filter(nc)%soilp,                          &
@@ -711,14 +711,13 @@ contains
 
                  if (use_pflotran .and. pf_cmode) then
                     call t_startf('pflotran')
-                   ! ===========================================================================
-                   ! PFLOTRAN calling for solving below-ground and ground-surface processes,
-                   ! including thermal, hydrological and biogeochemical processes
-                   ! ===========================================================================
-
+                    ! -------------------------------------------------------------------------
+                    ! PFLOTRAN calling for solving below-ground and ground-surface processes,
+                    ! including thermal, hydrological and biogeochemical processes
                     !! STEP-2: (i) pass data from clm_bgc_data to pflotran
                     !! STEP-2: (ii) run pflotran
                     !! STEP-2: (iii) update clm_bgc_data from pflotran
+                    ! -------------------------------------------------------------------------
                     call clm_pf_run(clm_bgc_data,bounds_clump,                  &
                            filter(nc)%num_soilc, filter(nc)%soilc)
 
@@ -738,10 +737,13 @@ contains
                     call t_stopf('pflotran')
 
                  elseif (use_clm_bgc) then
+                    call t_startf('clm-bgc via interface')
+                    ! -------------------------------------------------------------------------
                     !! run clm-bgc (CNDecompAlloc) through interface
                     !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc
                     !! STEP-2: (ii) run CNDecompAlloc
                     !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc
+                    ! -------------------------------------------------------------------------
                     call clm_bgc_run(clm_bgc_data, bounds_clump,                &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
@@ -765,6 +767,7 @@ contains
                            nitrogenflux_vars, nitrogenstate_vars,               &
                            phosphorusflux_vars, phosphorusstate_vars,           &
                            ch4_vars)
+                    call t_stopf('clm-bgc via interface')
                  end if !!if (use_pflotran .and. pf_cmode)
              end if !!if (use_bgc_interface)
              !!--------------------------------------------------------------------------------
@@ -781,6 +784,10 @@ contains
                    canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
                    dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
                    phosphorusflux_vars,phosphorusstate_vars)
+
+             !!===========================================================================================
+             !! clm_bgc_interface: 'CNEcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
+             !!===========================================================================================
 
              call CNAnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -890,8 +897,6 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
-
-print*,">>>DEBUG | CNP Balance_Check | nstep=",nstep,"; nstep_day=",nstep/48.0
 
              if (nstep < 2 )then
                 if (masterproc) then
