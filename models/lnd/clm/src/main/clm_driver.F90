@@ -752,13 +752,11 @@ contains
                     ! -------------------------------------------------------------------------
                     call clm_bgc_run(clm_bgc_data, bounds_clump,                &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
-                           filter(nc)%num_soilp, filter(nc)%soilp,              &
-                           photosyns_vars, canopystate_vars,                    &
-                           soilstate_vars, temperature_vars, waterstate_vars,   &
+                           canopystate_vars, soilstate_vars,                    &
+                           temperature_vars, waterstate_vars,                   &
                            cnstate_vars, ch4_vars,                              &
                            carbonstate_vars, carbonflux_vars,                   &
-                           c13_carbonflux_vars, c14_carbonflux_vars,            &
-                           nitrogenstate_vars, nitrogenflux_vars, crop_vars,    &
+                           nitrogenstate_vars, nitrogenflux_vars,               &
                            phosphorusstate_vars,phosphorusflux_vars)
 
                     !! STEP-3: update CLM from clm_bgc_data
@@ -903,7 +901,7 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
-
+print*,">>>DEBUG | CNP Balance_Check | nstep=",nstep,"; nstep_day=",nstep/48.0
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'

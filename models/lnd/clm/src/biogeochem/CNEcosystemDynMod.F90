@@ -507,12 +507,19 @@ contains
        if(.not.use_bgc_interface) then
             !! directly run clm-bgc
             !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
-            call CNDecompAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
-                cnstate_vars, ch4_vars,                                                             &
-                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
-                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
-                phosphorusstate_vars,phosphorusflux_vars)
+            call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
+                       canopystate_vars, soilstate_vars,            &
+                       temperature_vars, waterstate_vars,           &
+                       cnstate_vars, ch4_vars,                      &
+                       carbonstate_vars, carbonflux_vars,           &
+                       nitrogenstate_vars, nitrogenflux_vars,       &
+                       phosphorusstate_vars,phosphorusflux_vars)
+!            call CNDecompAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+!                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
+!                cnstate_vars, ch4_vars,                                                             &
+!                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
+!                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
+!                phosphorusstate_vars,phosphorusflux_vars)
        end if !!if(.not.use_bgc_interface)
        !----------------------------------------------------------------
        !! CNDecompAlloc2 is called by both clm-bgc & pflotran

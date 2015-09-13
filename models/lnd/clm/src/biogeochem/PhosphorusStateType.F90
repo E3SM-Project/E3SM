@@ -109,7 +109,7 @@ module PhosphorusStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , private :: InitAllocate 
+     procedure , private :: InitAllocate
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
 

@@ -62,7 +62,7 @@ module clm_bgc_interfaceMod
   use clm_bgc_interface_data        , only : clm_bgc_interface_data_type
 
   ! most used constants in this module
-  use clm_varpar            , only : nlevsoi, nlevgrnd, nlevdecomp, nlevdecomp_full
+  use clm_varpar            , only : nlevsoi, nlevsno,nlevgrnd, nlevdecomp, nlevdecomp_full
   use clm_varpar            , only : ndecomp_pools
   use clm_varpar            , only : max_patch_per_col
   use clm_varcon            , only : denh2o, denice, tfrz, dzsoi_decomp
@@ -1294,15 +1294,14 @@ contains
 ! BEG of CLM-bgc through interface
 !!--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  subroutine clm_bgc_run(clm_bgc_data, bounds,                          &
-            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-            photosyns_vars, canopystate_vars,                           &
-            soilstate_vars, temperature_vars, waterstate_vars,          &
-            cnstate_vars, ch4_vars,                                     &
-            carbonstate_vars, carbonflux_vars,                          &
-            c13_carbonflux_vars, c14_carbonflux_vars,                   &
-            nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
-            phosphorusstate_vars,phosphorusflux_vars)
+  subroutine clm_bgc_run(clm_bgc_data, bounds,              &
+                num_soilc, filter_soilc,                    &
+                canopystate_vars, soilstate_vars,           &
+                temperature_vars, waterstate_vars,          &
+                cnstate_vars, ch4_vars,                     &
+                carbonstate_vars, carbonflux_vars,          &
+                nitrogenstate_vars, nitrogenflux_vars,      &
+                phosphorusstate_vars,phosphorusflux_vars)
 
     !! USES:
     use CNDecompMod          , only: CNDecompAlloc
@@ -1311,9 +1310,9 @@ contains
     type(bounds_type)                   , intent(in)    :: bounds
     integer                             , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                             , intent(in)    :: filter_soilc(:)    ! filter for soil columns
-    integer                             , intent(in)    :: num_soilp          ! number of soil patches in filter
-    integer                             , intent(in)    :: filter_soilp(:)    ! filter for soil patches
-    type(photosyns_type)                , intent(in)    :: photosyns_vars
+!    integer                             , intent(in)    :: num_soilp          ! number of soil patches in filter
+!    integer                             , intent(in)    :: filter_soilp(:)    ! filter for soil patches
+!    type(photosyns_type)                , intent(in)    :: photosyns_vars
     type(canopystate_type)              , intent(inout) :: canopystate_vars
     type(soilstate_type)                , intent(inout) :: soilstate_vars
     type(temperature_type)              , intent(inout) :: temperature_vars
@@ -1322,58 +1321,77 @@ contains
     type(ch4_type)                      , intent(inout) :: ch4_vars
     type(carbonstate_type)              , intent(inout) :: carbonstate_vars
     type(carbonflux_type)               , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)               , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)               , intent(inout) :: c14_carbonflux_vars
+!    type(carbonflux_type)               , intent(inout) :: c13_carbonflux_vars
+!    type(carbonflux_type)               , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type)            , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
-    type(crop_type)                     , intent(inout) :: crop_vars
+!    type(crop_type)                     , intent(inout) :: crop_vars
     type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
 
     type(clm_bgc_interface_data_type)   , intent(inout) :: clm_bgc_data
 
+    !!-------------------------------------------------------------
     !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc
-    call clm_bgc_get_data (clm_bgc_data, bounds,                        &
-            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-            photosyns_vars, canopystate_vars,                           &
-            soilstate_vars, temperature_vars, waterstate_vars,          &
-            cnstate_vars, ch4_vars,                                     &
-            carbonstate_vars, carbonflux_vars,                          &
-            c13_carbonflux_vars, c14_carbonflux_vars,                   &
-            nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
-            phosphorusstate_vars,phosphorusflux_vars)
+    call clm_bgc_get_data(clm_bgc_data, bounds,             &
+                num_soilc, filter_soilc,                    &
+                canopystate_vars, soilstate_vars,           &
+                temperature_vars, waterstate_vars,          &
+                cnstate_vars, ch4_vars,                     &
+                carbonstate_vars, carbonflux_vars,          &
+                nitrogenstate_vars, nitrogenflux_vars,      &
+                phosphorusstate_vars,phosphorusflux_vars)
+!    call clm_bgc_get_data (clm_bgc_data, bounds,                        &
+!            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+!            photosyns_vars, canopystate_vars,                           &
+!            soilstate_vars, temperature_vars, waterstate_vars,          &
+!            cnstate_vars, ch4_vars,                                     &
+!            carbonstate_vars, carbonflux_vars,                          &
+!            c13_carbonflux_vars, c14_carbonflux_vars,                   &
+!            nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
+!            phosphorusstate_vars,phosphorusflux_vars)
 
     !! STEP-2: (ii) run CNDecompAlloc
-    call CNDecompAlloc (bounds,                                         &
-            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-            photosyns_vars, canopystate_vars,                           &
-            soilstate_vars, temperature_vars, waterstate_vars,          &
-            cnstate_vars, ch4_vars,                                     &
-            carbonstate_vars, carbonflux_vars,                          &
-            c13_carbonflux_vars, c14_carbonflux_vars,                   &
-            nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
-            phosphorusstate_vars,phosphorusflux_vars)
+    call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
+               canopystate_vars, soilstate_vars,            &
+               temperature_vars, waterstate_vars,           &
+               cnstate_vars, ch4_vars,                      &
+               carbonstate_vars, carbonflux_vars,           &
+               nitrogenstate_vars, nitrogenflux_vars,       &
+               phosphorusstate_vars,phosphorusflux_vars)
+!    call CNDecompAlloc (bounds,                                         &
+!            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+!            photosyns_vars, canopystate_vars,                           &
+!            soilstate_vars, temperature_vars, waterstate_vars,          &
+!            cnstate_vars, ch4_vars,                                     &
+!            carbonstate_vars, carbonflux_vars,                          &
+!            c13_carbonflux_vars, c14_carbonflux_vars,                   &
+!            nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
+!            phosphorusstate_vars,phosphorusflux_vars)
 
     !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc
-    call clm_bgc_update_data (clm_bgc_data, bounds,                     &
-            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-            cnstate_vars, carbonflux_vars,                              &
-            c13_carbonflux_vars, c14_carbonflux_vars,                   &
-            nitrogenflux_vars, phosphorusflux_vars)
+    call clm_bgc_update_data(clm_bgc_data, bounds,          &
+                num_soilc, filter_soilc,                    &
+                cnstate_vars, carbonflux_vars,              &
+                nitrogenflux_vars, phosphorusflux_vars)
+!    call clm_bgc_update_data (clm_bgc_data, bounds,                     &
+!            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+!            cnstate_vars, carbonflux_vars,                              &
+!            c13_carbonflux_vars, c14_carbonflux_vars,                   &
+!            nitrogenflux_vars, phosphorusflux_vars)
   end subroutine clm_bgc_run
 !!--------------------------------------------------------------------------------------
 
 !!--------------------------------------------------------------------------------------
   ! !INTERFACE:
   !! pass data from clm_bgc_data to clm original data-types that used by CNDecompAlloc
-  subroutine clm_bgc_get_data(clm_bgc_data, bounds,                     &
-            num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-            photosyns_vars, canopystate_vars,                           &
-            soilstate_vars, temperature_vars, waterstate_vars,          &
-            cnstate_vars, ch4_vars,                                     &
-            carbonstate_vars, carbonflux_vars,                          &
-            c13_carbonflux_vars, c14_carbonflux_vars,                   &
-            nitrogenstate_vars, nitrogenflux_vars, crop_vars,           &
+  subroutine clm_bgc_get_data(clm_bgc_data, bounds,     &
+            num_soilc, filter_soilc,                    &
+            canopystate_vars, soilstate_vars,           &
+            temperature_vars, waterstate_vars,          &
+            cnstate_vars, ch4_vars,                     &
+            carbonstate_vars, carbonflux_vars,          &
+            nitrogenstate_vars, nitrogenflux_vars,      &
             phosphorusstate_vars,phosphorusflux_vars)
 
     !! USES:
@@ -1383,9 +1401,9 @@ contains
     type(bounds_type)           , intent(in)    :: bounds
     integer                     , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                     , intent(in)    :: filter_soilc(:)    ! filter for soil columns
-    integer                     , intent(in)    :: num_soilp          ! number of soil patches in filter
-    integer                     , intent(in)    :: filter_soilp(:)    ! filter for soil patches
-    type(photosyns_type)        , intent(in)    :: photosyns_vars
+!    integer                     , intent(in)    :: num_soilp          ! number of soil patches in filter
+!    integer                     , intent(in)    :: filter_soilp(:)    ! filter for soil patches
+!    type(photosyns_type)        , intent(in)    :: photosyns_vars
     type(canopystate_type)      , intent(inout) :: canopystate_vars
     type(soilstate_type)        , intent(inout) :: soilstate_vars
     type(temperature_type)      , intent(inout) :: temperature_vars
@@ -1394,11 +1412,11 @@ contains
     type(ch4_type)              , intent(inout) :: ch4_vars
     type(carbonstate_type)      , intent(inout) :: carbonstate_vars
     type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)       , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)       , intent(inout) :: c14_carbonflux_vars
+!    type(carbonflux_type)       , intent(inout) :: c13_carbonflux_vars
+!    type(carbonflux_type)       , intent(inout) :: c14_carbonflux_vars
     type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(crop_type)             , intent(in)    :: crop_vars
+!    type(crop_type)             , intent(in)    :: crop_vars
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
@@ -1519,25 +1537,24 @@ contains
 !!--------------------------------------------------------------------------------------
   ! !INTERFACE:
   !! pass data from clm_bgc to clm_bgc_data
-  subroutine clm_bgc_update_data(clm_bgc_data, bounds,             &
-            num_soilc, filter_soilc, num_soilp, filter_soilp,   &
-            cnstate_vars, carbonflux_vars,                      &
-            c13_carbonflux_vars, c14_carbonflux_vars,           &
+  subroutine clm_bgc_update_data(clm_bgc_data, bounds,  &
+            num_soilc, filter_soilc,                    &
+            cnstate_vars, carbonflux_vars,              &
             nitrogenflux_vars, phosphorusflux_vars)
-
+!            c13_carbonflux_vars, c14_carbonflux_vars,           &
     !! USES:
 
     !! ARGUMENTS:
     type(bounds_type)                   , intent(in)    :: bounds
     integer                             , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                             , intent(in)    :: filter_soilc(:)    ! filter for soil columns
-    integer                             , intent(in)    :: num_soilp          ! number of soil patches in filter
-    integer                             , intent(in)    :: filter_soilp(:)    ! filter for soil patches
+!    integer                             , intent(in)    :: num_soilp          ! number of soil patches in filter
+!    integer                             , intent(in)    :: filter_soilp(:)    ! filter for soil patches
 
     type(cnstate_type)                  , intent(in)    :: cnstate_vars
     type(carbonflux_type)               , intent(in)    :: carbonflux_vars
-    type(carbonflux_type)               , intent(in)    :: c13_carbonflux_vars
-    type(carbonflux_type)               , intent(in)    :: c14_carbonflux_vars
+!    type(carbonflux_type)               , intent(in)    :: c13_carbonflux_vars
+!    type(carbonflux_type)               , intent(in)    :: c14_carbonflux_vars
     type(nitrogenflux_type)             , intent(in)    :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
 
