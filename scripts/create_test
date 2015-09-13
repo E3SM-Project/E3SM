@@ -1275,7 +1275,7 @@ sub runCreateNewcase
 	close $CS;
 
 	# Skip to the next test..
-	next;
+	return;
     }
     my $readmetmp = new IO::File;
     $readmetmp->open("> $caseroot/README.case.tmp") or print "can't open $caseroot/README.case.tmp";
