@@ -1,6 +1,6 @@
 module clm_bgc_interfaceMod
 !!=================================================================================================
-! CLM Soil BioGeoChemistry Interface
+! CLM BioGeoChemistry (BGC) Interface
 !
 ! CCSI & ESD @ ORNL
 !

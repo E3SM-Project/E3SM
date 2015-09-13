@@ -18,6 +18,7 @@ module PStateUpdate1Mod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
   use PatchType              , only : pft
+  !! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   !
   implicit none

@@ -15,7 +15,7 @@ module CNCarbonFluxType
   use PatchType              , only : pft                
   use ColumnType             , only : col                
   use LandunitType           , only : lun
-  ! bgc & pflotran interface
+  ! bgc interface & pflotran
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
@@ -4675,7 +4675,7 @@ contains
        this%som_c_leached_col(c)      = 0._r8
     end do
 
-    ! pflotran
+    ! bgc interface & pflotran:
     !----------------------------------------------------------------
     if (.not.(use_pflotran .and. pf_cmode)) then
     ! vertically integrate HR and decomposition cascade fluxes
@@ -4747,7 +4747,7 @@ contains
     end if !!if (.not.(use_pflotran .and. pf_cmode))
     !----------------------------------------------------------------
 
-    ! pflotran
+    ! bgc interface & pflotran:
     !----------------------------------------------------------------
     if (use_bgc_interface) then
         call CSummary_interface(this, bounds, num_soilc, filter_soilc)
@@ -4846,7 +4846,7 @@ contains
     end do
 
     ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
-    ! pflotran
+    ! ! bgc interface & pflotran
     !----------------------------------------------------------------
     if (.not.(use_pflotran .and. pf_cmode)) then
     ! _col(cWDC_HR) - coarse woody debris heterotrophic respiration
@@ -4936,6 +4936,7 @@ contains
 subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
+!! bgc interface & pflotran:
 ! On the radiation time step, perform column-level carbon
 ! summary calculations, which mainly from PFLOTRAN bgc
 !

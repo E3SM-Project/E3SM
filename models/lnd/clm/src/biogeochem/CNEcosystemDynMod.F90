@@ -34,7 +34,7 @@ module CNEcosystemDynMod
 
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  ! pflotran
+  ! bgc interface & pflotran
   use clm_varctl          , only : use_bgc_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use CNVerticalProfileMod   , only : decomp_vertprofiles
   !
@@ -46,8 +46,10 @@ module CNEcosystemDynMod
   public :: CNEcosystemDynInit          ! Ecosystem dynamics initialization
 !  public :: CNEcosystemDynNoLeaching       ! Ecosystem dynamics: phenology, vegetation, before doing N leaching
   public :: CNEcosystemDynLeaching      ! Ecosystem dynamics: phenology, vegetation, doing N leaching
-  ! bgc interface
-  public :: CNEcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc & N leaching
+  !!----------------------------------------------------------------------
+  !! bgc interface & pflotran:
+  !! CNEcosystemDynNoLeaching is divided into 2 subroutines:
+  public :: CNEcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc
   public :: CNEcosystemDynNoLeaching2   ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
   !-----------------------------------------------------------------------
 
@@ -229,7 +231,11 @@ contains
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars,   &
        ch4_vars, photosyns_vars,                                        &
        phosphorusflux_vars,phosphorusstate_vars)
-    ! Phase-1 of CNEcosystemDynNoLeaching: call CNAllocation1_PlantNPDemand before soil_bgc
+    !!-------------------------------------------------------------------
+    !! bgc interface
+    !! Phase-1 of CNEcosystemDynNoLeaching
+    !! call CNAllocation1_PlantNPDemand before soil_bgc
+    !!-------------------------------------------------------------------
 
     ! !DESCRIPTION:
     ! The core CN code is executed here. Calculates fluxes for maintenance
@@ -413,7 +419,11 @@ contains
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        dgvs_vars, photosyns_vars, soilhydrology_vars, energyflux_vars,          &
        phosphorusflux_vars,phosphorusstate_vars)
-    ! Phase-2 of CNEcosystemDynNoLeaching: call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
+    !!-------------------------------------------------------------------
+    !! bgc interface
+    !! Phase-2 of CNEcosystemDynNoLeaching
+    !! call CNDecompAlloc (w/o bgc_interface) & CNDecompAlloc2
+    !!-------------------------------------------------------------------
 
     ! !DESCRIPTION:
     ! The core CN code is executed here. Calculates fluxes for maintenance

@@ -34,7 +34,7 @@ module CNDecompMod
   use WaterStateType         , only : waterstate_type
   use ch4Mod                 , only : ch4_type
   use cropType               , only : crop_type
-  ! pflotran
+  !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode
   !
   implicit none
@@ -94,10 +94,15 @@ contains
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
        nitrogenstate_vars, nitrogenflux_vars, crop_vars,&
        phosphorusstate_vars,phosphorusflux_vars)
-
-    ! This is the clm-bgc (soil) Module
-    ! ONLY includes code for SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
-    ! CNAllocation3 is moved to CNDecompAlloc2
+    !!-----------------------------------------------------------------------------
+    !! DESCRIPTION:
+    !! clm-bgc soil Module, can be called through clm_bgc_interface
+    !! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
+    !! CNAllocaiton is divided into 3 subroutines:
+    !! (1) CNAllocation1_PlantNPDemand  is called in CNEcosystemDynNoLeaching1
+    !! (2) CNAllocation2_ResolveNPLimit is called in CNDecompAlloc (this subroutine)
+    !! (3) CNAllocation3_PlantCNPAlloc  is called in CNDecompAlloc2
+    !!-----------------------------------------------------------------------------
 
     ! !USES:
 !    use CNAllocationMod , only: CNAllocation
@@ -391,7 +396,7 @@ contains
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
       call t_startf('CNAllocation - phase-2')
-      call CNAllocation2_ResolveNPLimit(bounds,                                                          &
+      call CNAllocation2_ResolveNPLimit(bounds,                                           &
            num_soilc, filter_soilc, num_soilp, filter_soilp,                              &
            photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                     &
            carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,   &
@@ -582,9 +587,14 @@ contains
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
        nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
        phosphorusstate_vars,phosphorusflux_vars)
-    ! Majorly for coupling with pflotran
-    !DESCRIPTION: simplified codes of CNDecompAlloc subroutine for coupling with pflotran
-    !
+    !!-----------------------------------------------------------------------------
+    !! DESCRIPTION:
+    !! bgc interface & pflotran:
+    !! (1) Simplified codes of CNDecompAlloc subroutine for coupling with pflotran
+    !! (2) call CNAllocation3_PlantCNPAlloc
+    !! (3) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
+    !!-----------------------------------------------------------------------------
+
     ! !USES:
     use CNAllocationMod , only: CNAllocation3_PlantCNPAlloc !! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type

@@ -13,7 +13,7 @@ module CNNitrogenFluxType
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
-  ! bgc & pflotran interface
+  !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
@@ -2840,7 +2840,7 @@ contains
        end do
     end do
 
-    ! pflotran
+    ! bgc interface & pflotran
     !----------------------------------------------------------------
     if (use_bgc_interface) then
         call NSummary_interface(this, bounds, num_soilc, filter_soilc)
@@ -2853,6 +2853,7 @@ contains
 subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 !
 ! !DESCRIPTION:
+!! bgc interface & pflotran:
 ! On the radiation time step, perform olumn-level nitrogen
 ! summary calculations, which mainly from PFLOTRAN bgc coupling
 !

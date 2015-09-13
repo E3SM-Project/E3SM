@@ -12,6 +12,7 @@ module CNCStateUpdate3Mod
   use clm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
+  !! bgc interface & pflotran:
   use clm_varctl       , only : use_pflotran, pf_cmode
   !
   implicit none

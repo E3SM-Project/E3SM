@@ -1,10 +1,8 @@
 module clm_bgc_interface_data
 !!=================================================================================================
-! CLM Soil BGC Interface: Data Type (Variables)
+! CLM BioGeoChemistry (BGC) Interface: Data Type (Variables)
 !
-!
-! CCSI & ESD
-! Oak Ridge National Laboratory
+! CCSI & ESD @ ORNL
 !
 ! date: 8/25/2015
 !!=================================================================================================

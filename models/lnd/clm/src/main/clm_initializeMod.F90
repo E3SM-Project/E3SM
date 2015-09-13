@@ -15,7 +15,7 @@ module clm_initializeMod
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use perf_mod         , only : t_startf, t_stopf
   use readParamsMod    , only : readParameters
-  use ncdio_pio       , only : file_desc_t
+  use ncdio_pio        , only : file_desc_t
   ! 
   !-----------------------------------------
   ! Definition of component types
@@ -121,7 +121,7 @@ module clm_initializeMod
 
   type(phosphorusstate_type)    :: phosphorusstate_vars
   type(phosphorusflux_type)     :: phosphorusflux_vars
-
+  !! bgc interface:
   type(clm_bgc_interface_data_type) :: clm_bgc_data
   !
   public :: initialize1  ! Phase one initialization
@@ -412,7 +412,7 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    ! bgc interface & pflotran
+    ! bgc interface & pflotran:
     use clm_varctl                          , only : use_bgc_interface, use_pflotran
     use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     !

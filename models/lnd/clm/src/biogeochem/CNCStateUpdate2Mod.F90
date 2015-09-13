@@ -14,6 +14,7 @@ module CNCStateUpdate2Mod
   use CNCarbonFluxType , only : carbonflux_type
   use PatchType        , only : pft
   use pftvarcon        , only : npcropmin
+  ! bgc interface & pflotran:
   use clm_varctl       , only : use_pflotran, pf_cmode
   !
   implicit none

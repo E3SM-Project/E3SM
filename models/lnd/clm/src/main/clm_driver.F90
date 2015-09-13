@@ -113,20 +113,26 @@ module clm_driver
   use clm_initializeMod      , only : lnd2glc_vars
   use clm_initializeMod      , only : EDbio_vars
   use clm_initializeMod      , only : soil_water_retention_curve
-  ! bgc interface
-  use clm_initializeMod      , only : clm_bgc_data
-  use clm_bgc_interfaceMod   , only : get_clm_bgc_data
 
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
-  ! bgc & pflotran interface
-  use clm_varctl             , only : use_bgc_interface, use_clm_bgc, use_pflotran, use_nitrif_denitrif
-  use clm_varctl             , only : pf_hmode, pf_tmode, pf_cmode
-  use clm_bgc_interfaceMod   , only : clm_bgc_run, update_bgc_data_clm2clm, update_bgc_data_pf2clm
+
+  !!----------------------------------------------------------------------------
+  !! bgc interface & pflotran:
+  use clm_varctl             , only : use_bgc_interface
+  use clm_initializeMod      , only : clm_bgc_data
+  use clm_bgc_interfaceMod   , only : get_clm_bgc_data
+  !! (1) clm_bgc through interface
+  use clm_varctl             , only : use_clm_bgc
+  use clm_bgc_interfaceMod   , only : clm_bgc_run, update_bgc_data_clm2clm
+  !! (2) pflotran
+  use clm_varctl             , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
+  use clm_bgc_interfaceMod   , only : update_bgc_data_pf2clm
   use clm_pflotran_interfaceMod   , only : clm_pf_run, clm_pf_write_restart
 !  use clm_pflotran_interfaceMod   , only : clm_pf_finalize
+  !!----------------------------------------------------------------------------
 
   !
   ! !PUBLIC TYPES:
@@ -714,9 +720,9 @@ contains
                     ! -------------------------------------------------------------------------
                     ! PFLOTRAN calling for solving below-ground and ground-surface processes,
                     ! including thermal, hydrological and biogeochemical processes
-                    !! STEP-2: (i) pass data from clm_bgc_data to pflotran
-                    !! STEP-2: (ii) run pflotran
-                    !! STEP-2: (iii) update clm_bgc_data from pflotran
+                    !! STEP-2: (1) pass data from clm_bgc_data to pflotran
+                    !! STEP-2: (2) run pflotran
+                    !! STEP-2: (3) update clm_bgc_data from pflotran
                     ! -------------------------------------------------------------------------
                     call clm_pf_run(clm_bgc_data,bounds_clump,                  &
                            filter(nc)%num_soilc, filter(nc)%soilc)
@@ -740,9 +746,9 @@ contains
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
                     !! run clm-bgc (CNDecompAlloc) through interface
-                    !! STEP-2: (i) pass data from clm_bgc_data to CNDecompAlloc
-                    !! STEP-2: (ii) run CNDecompAlloc
-                    !! STEP-2: (iii) update clm_bgc_data from CNDecompAlloc
+                    !! STEP-2: (1) pass data from clm_bgc_data to CNDecompAlloc
+                    !! STEP-2: (2) run CNDecompAlloc
+                    !! STEP-2: (3) update clm_bgc_data from CNDecompAlloc
                     ! -------------------------------------------------------------------------
                     call clm_bgc_run(clm_bgc_data, bounds_clump,                &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &

@@ -13,6 +13,7 @@ module CNNStateUpdate3Mod
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
+  !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none

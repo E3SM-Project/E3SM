@@ -25,7 +25,7 @@ module CNBalanceCheckMod
   use subgridAveMod       , only : p2c
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  ! pflotran
+  ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
 
 

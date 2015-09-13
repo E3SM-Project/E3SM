@@ -18,6 +18,7 @@ module CNCStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use EcophysConType         , only : ecophyscon
   use PatchType              , only : pft
+  ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
   !
   implicit none

@@ -12,6 +12,7 @@ module PStateUpdate2Mod
   use clm_varctl          , only : iulog
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
+  !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none

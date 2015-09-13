@@ -17,6 +17,7 @@ module PStateUpdate3Mod
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
+  !! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none

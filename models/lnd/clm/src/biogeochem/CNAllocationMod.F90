@@ -28,7 +28,7 @@ module CNAllocationMod
   use LandunitType        , only : lun                
   use ColumnType          , only : col                
   use PatchType           , only : pft
-  ! bgc interfacter & pflotran module switches
+  ! bgc interface & pflotran module switches
   use clm_varctl          , only: use_bgc_interface,use_clm_bgc, use_pflotran, pf_cmode
   !
   implicit none
@@ -40,8 +40,13 @@ module CNAllocationMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: readCNAllocParams
   public :: CNAllocationInit         ! Initialization
-!  public :: CNAllocation             ! run method, divided into 3 subroutines/phases (see below)
-  public :: CNAllocation1_PlantNPDemand, CNAllocation2_ResolveNPLimit, CNAllocation3_PlantCNPAlloc !run method
+!  public :: CNAllocation             ! run method
+  !!-----------------------------------------------------------------------------------------------------
+  !! CNAllocation is divided into 3 subroutines/phases:
+  public :: CNAllocation1_PlantNPDemand     !!Plant N/P Demand;       called in CNEcosystemDynNoLeaching1
+  public :: CNAllocation2_ResolveNPLimit    !!Resolve N/P Limitation; called in CNDecompAlloc
+  public :: CNAllocation3_PlantCNPAlloc     !!Plant C/N/P Allocation; called in CNDecompAlloc2
+  !!-----------------------------------------------------------------------------------------------------
 
 
   type :: CNAllocParamsType
@@ -851,7 +856,7 @@ contains
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
-    ! !LOCAL VARIABLES: wgs: ALL
+    ! !LOCAL VARIABLES:
     real(r8) :: compet_plant_no3       ! (unitless) relative compettiveness of plants for NO3
     real(r8) :: compet_plant_nh4       ! (unitless) relative compettiveness of plants for NH4
     real(r8) :: compet_decomp_no3      ! (unitless) relative competitiveness of immobilizers for NO3
@@ -1638,8 +1643,8 @@ contains
         c13_carbonflux_vars, c14_carbonflux_vars            , &
         nitrogenstate_vars, nitrogenflux_vars               , &
         phosphorusstate_vars, phosphorusflux_vars)
-    !! PHASE-3 of CNAllocation: start new pft loop to distribute the available N between the
-    ! competing patches on the basis of relative demand, and allocate C and N to new growth and storage
+    !! PHASE-3 of CNAllocation: start new pft loop to distribute the available N/P between the
+    ! competing patches on the basis of relative demand, and allocate C/N/P to new growth and storage
 
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
@@ -2067,7 +2072,8 @@ contains
 !!-------------------------------------------------------------------------------------------------
   subroutine calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
 !     use clm_varcon          , only : dzsoi_decomp  !! declared in module CNAllocationMod
-    ! nuptake_prof is used in CNAllocation1, 2, 3
+    !! bgc interface & pflotran:
+    !! nuptake_prof is used in CNAllocation1, 2, 3
     ! !USES:
     use clm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
@@ -2123,6 +2129,7 @@ contains
                else
                   nuptake_prof(c,j) = nfixation_prof(c,j)
                endif
+               !! sum_ndemand_vr will be calculated after calling calc_nuptake_prof
 !                sum_ndemand_vr(c,j) = col_plant_ndemand(c) * nuptake_prof(c,j) + potential_immob_vr(c,j)
             end do
          end do
@@ -2134,7 +2141,8 @@ contains
 !!-------------------------------------------------------------------------------------------------
   subroutine calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 !     use clm_varcon          , only : dzsoi_decomp  !! declared in module CNAllocationMod
-    !!wgs: puptake_prof is used in CNAllocation1 & 2
+    !! bgc interface & pflotran:
+    !! puptake_prof is used in CNAllocation1, 2, & 3
     ! !USES:
     use clm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
@@ -2183,6 +2191,7 @@ contains
                else
                   puptake_prof(c,j) = nfixation_prof(c,j)      !!!! need modifications !!!!
                endif
+               !! sum_pdemand_vr will be calculated after calling calc_puptake_prof
 !               sum_pdemand_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j) + potential_immob_p_vr(c,j)
             end do
          end do
