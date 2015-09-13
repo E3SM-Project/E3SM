@@ -289,6 +289,10 @@ module li_core
          call mpas_timer_stop("compute_statistics")
       endif
 
+      !SFP added: compute analysis members on startup if option activiated
+      call li_analysis_compute_startup(domain, err_tmp)
+      err = ior(err, err_tmp)
+
       ! ===
       ! === Write Initial Output
       ! ===
@@ -421,9 +425,13 @@ module li_core
          err = ior(err, err_tmp)
 
          !SFP added: call analysis driver compute, etc.
-         call li_analysis_compute(domain, err) 
-         call li_analysis_restart(domain, err) 
-         call li_analysis_write(domain, err)
+         call li_analysis_compute(domain, err_tmp) 
+         err = ior(err, err_tmp)
+
+!         call li_analysis_restart(domain, err) 
+
+         call li_analysis_write(domain, err_tmp)
+         err = ior(err, err_tmp)
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error

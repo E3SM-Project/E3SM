@@ -503,7 +503,6 @@ contains
       integer :: nameLength
 
       err = 0
-      timeLevel=1
 
       call mpas_timer_start('analysis_restart', .false.)
 
