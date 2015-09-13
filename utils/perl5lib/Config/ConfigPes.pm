@@ -44,21 +44,18 @@ sub setPes {
     } else {
 
 	if ($pesize_opts =~ m!^([0-9]+)D?$!) {
-
 	    my $ntasks = $1;
-	    my $nthrds = 1;
+	    my $nthrds =  1;
 	    my $rootpe =  0;
 	    _setPESmatch1($pesize_opts, $ntasks, $nthrds, $rootpe, $config);
 
 	} elsif ($pesize_opts =~ m!^([0-9]+)x([0-9]+)D?$!) {
-
 	    my $ntasks = $1;
 	    my $nthrds = $2;
 	    my $rootpe =  0;
 	    _setPESmatch2($pesize_opts, $ntasks, $nthrds, $rootpe, $config);
 
 	} else {
-
 	    # Determine pe layout settings
 	    _setPESsettings($pesize_opts, $config);
 	}
@@ -70,15 +67,12 @@ sub setPes {
 #-----------------------------------------------------------------------------------------------
 sub _setPESmatch1
 {
-    my ($pesize_opts, $config) = @_; 
-
-    my $ntasks = $1;
-    my $nthrds = 1;
-    my $root = 0;
+    my ($pesize_opts, $ntasks, $nthrds, $rootpe, $config) = @_; 
 
     foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL" ) {
-	$config->set("NTASKS_$comp") = $ntasks; 
-	$config->set("NTHRDS_$comp") = $nthrds; 
+	$config->set("NTASKS_" . "${comp}", $ntasks); 
+	$config->set("NTHRDS_" . "${comp}", $nthrds); 
+	$config->set("ROOTPE_" . "${comp}", $rootpe); 
     }
 
     my $root;
@@ -92,7 +86,6 @@ sub _setPESmatch1
 	$root = 6 * $ntasks; $config->set('ROOTPE_ROF') = $root;
 	$root = 7 * $ntasks; $config->set('ROOTPE_CPL') = $root;
     }
-
 }
 
 #-------------------------------------------------------------------------------
@@ -101,8 +94,9 @@ sub _setPESmatch2
     my ($pesize_opts, $ntasks, $nthrds, $rootpe, $config) = @_; 
 
     foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL") {
-	$config->set("NTASKS_$comp") = $ntasks; 
-	$config->set("NTHRDS_$comp") = $nthrds; 
+	$config->set("NTASKS_" . "$comp", $ntasks); 
+	$config->set("NTHRDS_" . "$comp", $nthrds); 
+	$config->set("ROOTPE_" . "$comp", $rootpe); 
     }
     
     my $root;

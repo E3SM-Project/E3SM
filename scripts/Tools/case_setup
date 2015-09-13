@@ -346,13 +346,13 @@ if ($clean) {
 	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
     }
     # back up relevant files
-    $sysmod = "cp ${case}.run env_build.xml env_mach_pes.xml Macros ${backupdir}";
+    $sysmod = "cp ${case}.run env_build.xml env_mach_pes.xml Macros* ${backupdir}";
     system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
     # remove relevant files from $caseroot
     $sysmod = "rm ./${case}.run";
     system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
-    $sysmod = "rm Macros";
+    $sysmod = "rm Macros*";
     system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
     # remove relevant files from $caseroot/LockedFiels

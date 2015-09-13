@@ -436,6 +436,14 @@ ConfigMachine::setMachineValues($file, $pes_setby, $machine, $compiler, $print, 
 #}
 
 #------------------------------------------------------------------------------------------
+# *** Set the input configure options if appropriate and also some additional $config variables
+#------------------------------------------------------------------------------------------
+if (defined $opts{'confopts'}) {
+    $confopts = $opts{'confopts'};
+    _set_confopts($confopts, $config);
+}
+
+#------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
 ConfigPes::setPes($pecount, $pes_setby, \%opts, $config);
@@ -536,6 +544,7 @@ if (defined $opts{'testname'}) {
 #------------------------------------------------------------------------------------------
 # *** Set the input configure options if appropriate and also some additional $config variables
 #------------------------------------------------------------------------------------------
+#TODO - need to fix this
 if (defined $opts{'confopts'}) {
     $confopts = $opts{'confopts'};
     _set_confopts($confopts, $config);
@@ -677,7 +686,6 @@ sub _set_confopts
 	$config->set('COMP_INTERFACE', "ESMF");
 	print "    confopts COMP_INTERFACE ESMF set \n";
     }
-
     if ($coptions =~ "_P") {
 	my $popt = $coptions;
 	$popt =~ s/.*_P([A-Za-z0-9]*)_?.*/$1/;
