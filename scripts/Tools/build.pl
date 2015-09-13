@@ -169,8 +169,9 @@ sub main {
     # For now, there is just the one CISM_USE_TRILINOS variable, but in
     # the future there may be others -- so USE_TRILINOS will be true if
     # ANY of those are true.
+    $CISM_USE_TRILINOS = `./xmlquery CISM_USE_TRILINOS -value`;
     my $use_trilinos = 'FALSE';
-    if (defined $CISM_USE_TRILINOS) {
+    if ($CISM_USE_TRILINOS) {
 	if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
 	my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
 	$ENV{USE_TRILINOS} = ${use_trilinos};
