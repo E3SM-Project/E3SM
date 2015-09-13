@@ -1524,10 +1524,7 @@
       <env name="MP_MPILIB">$MPILIB</env>
       <env name="MP_STDOUTMODE">unordered</env>
       <env name="MP_RC_USE_LMC">yes</env>
-      <!-- MP_EAGER_LIMIT=0 avoids a memory leak in the mpi library on 
-           yellowstone.  It also adversely affects performance for some
-           cesm model configurations -->
-      <env name=MP_EAGER_LIMIT">0</env>
+      <env name="MP_EAGER_LIMIT">0</env>
     </environment_variables>
     <limits>
       <limit name="stacksize">unlimited</limit>
