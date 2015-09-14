@@ -264,7 +264,9 @@ sub write_file
 	my @groups;
 	foreach my $id (keys %$self) {
 	    my $file_id  = $self->{$id}->{'file'};
+	    next unless defined $file_id;
 	    my $file_xml = basename($output_xml_file);
+
 	    if ($file_id eq $file_xml) {
 		my $group = $self->{$id}->{'group'};
 		push (@groups, $group);
@@ -319,8 +321,8 @@ sub write_xml_entry
     print $fh "\n";
     print $fh "<entry id=\"$id\"  value=\"$value\">\n";   	    
     print $fh "  <type>$type</type> \n"; 
-    if ($valid_values  ne '') {print $fh "  <valid_values>$valid_values</valid_values> \n";}
-    if ($is_list_value ne '') {print $fh "  <list>$is_list_value</list> \n";}
+    if (defined $valid_values && $valid_values  ne '') {print $fh "  <valid_values>$valid_values</valid_values> \n";}
+    if (defined $is_list_value && $is_list_value ne '') {print $fh "  <list>$is_list_value</list> \n";}
     print $fh "  <group>$group</group> \n"; 
     print $fh "  <desc>$desc</desc> \n";
     print $fh "</entry> \n";

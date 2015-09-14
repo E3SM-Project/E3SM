@@ -157,7 +157,9 @@ sub _set_machine_values
 	    }
 	    # allow for environment variables in the config_machines.xml file using $ENV{variablename} syntax
 	    if ($value =~/^(.*)\$ENV{(.*)}(.*)$/){
-		$value = $1.$ENV{$2}.$3;
+		$value = $ENV{$2};
+		$value = $1.$value if (defined $1);
+		$value .= $3 if (defined $3);
 	    }
 	    $config->set($name, $value);
 	    print "config: $name set to ".$config->get($name)."  $value\n" if($print_flag==2);

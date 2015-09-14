@@ -520,9 +520,8 @@ if ( $opts{'compset'} ) {
    #   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir); TODO
    #   $testsforcase = $testlistobj->findTestsForCase(\%case); TODO
 } else {
-   $testsforcase = "WARNING!:: User compset names are NOT tested.\n" .
-                   "           Thus you may likely find that this configuration will NOT work.\n" .
-                   "           And you are completely on your own to figure out how to get it working.";
+    my $compset = $config->get('COMPSET');
+    $testsforcase = "WARNING!:: Compset  $compset is NOT a tested configuration.\n" ;
 }
 my $banner = '-' x 80;
 # print "$banner\n";
@@ -530,7 +529,7 @@ if ( defined($support_level) ) {
    print "Compset and grid support levels for this case are:\n";
    print "$support_level\n";
 }
-print "$testsforcase\n";
+print "$testsforcase\n" if(defined $testsforcase);
 # print "$banner\n";
 
 #------------------------------------------------------------------------------------------
