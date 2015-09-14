@@ -6,7 +6,7 @@ module glc_comp_mct
 ! !INTERFACE:
 
 ! !DESCRIPTION:
-!  This is the main driver for the Model for Predication Across Scales Land Ice Model (MPAS-LI).
+!  This is the main driver for the Model for Predication Across Scales Land Ice Model (MPASLI).
 !
 ! !REVISION HISTORY:
 !
@@ -47,7 +47,7 @@ module glc_comp_mct
   use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
   use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
 
-  ! MPAS-LI modules
+  ! MPASLI modules
   use li_core
   use li_core_interface
 
@@ -105,7 +105,7 @@ contains
   subroutine glc_init_mct( EClock, cdata_g, x2g_g, g2x_g, NLFilename )!{{{
 !
 ! ! DESCRIPTION:
-! Initialize MPAS-LI
+! Initialize MPASLI
 !
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -204,7 +204,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   setup mpas-li data structures
+!   setup mpasli data structures
 !
 !-----------------------------------------------------------------------
     allocate(corelist)
@@ -266,15 +266,15 @@ contains
    
 !-----------------------------------------------------------------------
 !
-!   first initializaiton phase of mpas-li
-!   initialize mpas-li because grid information is needed for
+!   first initializaiton phase of mpasli
+!   initialize mpasli because grid information is needed for
 !   creation of GSMap_glc.
-!   call mpas-li initialization routines
+!   call mpasli initialization routines
 !
 !-----------------------------------------------------------------------
     inst_suffix = seq_comm_suffix(glcID)
 
-    call t_startf('mpas-li_init')
+    call t_startf('mpasli_init')
 
     io_system => shr_pio_getiosys(glcid)
 
@@ -306,7 +306,7 @@ contains
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
-    ! Setup function pointers for MPAS-LI core and domain types
+    ! Setup function pointers for MPASLI core and domain types
     call li_setup_core(corelist)
     call li_setup_domain(domain)
 
@@ -371,7 +371,7 @@ contains
 
     end if
 
-    ! Setup MPAS-LI simulation clock
+    ! Setup MPASLI simulation clock
     ierr = domain % core % setup_clock(domain % clock, domain % configs)
     if ( ierr /= 0 ) then
        call mpas_dmpar_global_abort('ERROR: Clock setup failed for core ' // trim(domain % core % coreName))
@@ -469,7 +469,7 @@ contains
 
 
 
-    ! Initialize the MPAS-LI core
+    ! Initialize the MPASLI core
     ierr = domain % core % core_init(domain, timeStamp)
     if ( ierr /= 0 ) then
        call mpas_dmpar_global_abort('ERROR: Core init failed for core ' // trim(domain % core % coreName))
@@ -480,11 +480,11 @@ contains
 !   initialize time-stamp information
 !
 !-----------------------------------------------------------------------
-    call t_stopf ('mpas-li_init')
+    call t_stopf ('mpasli_init')
 
 !-----------------------------------------------------------------------
 !
-!   check for consistency of mpas-li and sync clock initial time
+!   check for consistency of mpasli and sync clock initial time
 !
 !-----------------------------------------------------------------------
 
@@ -520,7 +520,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call t_startf ('mpas-li_mct_init')
+    call t_startf ('mpasli_mct_init')
 
     call glc_SetGSMap_mct( mpicom_g, glcID, GSMap_g )
     lsize = mct_gsMap_lsize(gsMap_g, mpicom_g)
@@ -601,7 +601,7 @@ contains
 !      end do
 !    end if
 
-    call t_stopf ('mpas-li_mct_init')
+    call t_stopf ('mpasli_mct_init')
 
     call seq_infodata_PutData( infodata, glc_prognostic=.true.)
 
@@ -685,14 +685,14 @@ contains
 ! !INTERFACE:
   subroutine glc_run_mct( EClock, cdata_g, x2g_g, g2x_g)!{{{
 
-    ! MPAS-LI modules
+    ! MPASLI modules
     use li_time_integration
     use li_statistics
 
     implicit none
 !
 ! !DESCRIPTION:
-! Run MPAS-LI for one coupling interval
+! Run MPASLI for one coupling interval
 !
 ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -711,7 +711,7 @@ contains
 ! Variables related to ACME coupler
       integer :: shrloglev, shrlogunit
 
-! Variable related to MPAS-LI
+! Variable related to MPASLI
       integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
@@ -933,7 +933,7 @@ contains
     use li_velocity, only: li_velocity_finalize
 !
 ! !DESCRIPTION:
-! Finalize MPAS-LI
+! Finalize MPASLI
 !
 ! !USES:
 ! !ARGUMENTS:
@@ -961,7 +961,7 @@ contains
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (stdoutUnit)
 
-    ! Finalize MPAS-LI
+    ! Finalize MPASLI
     iErr = domain % core % core_finalize(domain)
     if ( iErr /= 0 ) then
        call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain % core % coreName))
@@ -989,7 +989,7 @@ contains
    use mpas_dmpar
 
 ! !DESCRIPTION:
-!  This routine sets up the MPAS-LI grid numbering for MCT
+!  This routine sets up the MPASLI grid numbering for MCT
 !
 ! !REVISION HISTORY:
 !  same as module
@@ -1073,7 +1073,7 @@ contains
   subroutine glc_domain_mct( lsize, gsMap_g, dom_g )!{{{
 
 ! !DESCRIPTION:
-!  This routine sets up the MCT domain for MPAS-LI
+!  This routine sets up the MCT domain for MPASLI
 !
 ! !REVISION HISTORY:
 !  same as module

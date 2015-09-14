@@ -3,11 +3,11 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the MPAS-LI configuration of ACME.
+# This script builds the namelists for the MPASLI configuration of ACME.
 #
 # build-namelist uses a config_cache.xml file that current contains the landice grid information.
 # build-namelist reads this file to obtain information it needs to provide
-# default values that are consistent with the MPAS-LI XML file.  For example, the grid resolution
+# default values that are consistent with the MPASLI XML file.  For example, the grid resolution
 # is obtained from the cache file and used to determine appropriate defaults for namelist input
 # that is resolution dependent.
 #
@@ -46,7 +46,7 @@ OPTIONS
      -scriptsroot          SCRIPTSROOT directory variable
      -glc_grid             GLC_GRID variable
      -date_stamp           date_stamp variable
-     -cfg_grid             Directory containing MPAS-LI configuration scripts.
+     -cfg_grid             Directory containing MPASLI configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
@@ -61,7 +61,7 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the MPAS-LI configuration scripts.  If the command was
+# Set the directory that contains the MPASLI configuration scripts.  If the command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -128,7 +128,7 @@ if ($opts{'verbose'}) { $print = 2; }
 if ($opts{'preview'}) { $preview = 1; }
 my $eol = "\n";
 
-if ($print>=2) { print "Setting MPAS-LI configuration script directory to $cfgdir$eol"; }
+if ($print>=2) { print "Setting MPASLI configuration script directory to $cfgdir$eol"; }
 
 my $CASEROOT    = $opts{'caseroot'};
 my $CASEBUILD   = $opts{'casebuild'};
@@ -142,7 +142,7 @@ $cfgdir         = $opts{'cfg_dir'};
 validate_options("commandline", \%opts);
 
 # build config_cache.xml file (needed below)
-my $config_cache = "${CASEBUILD}/mpas-liconf/config_cache.xml";
+my $config_cache = "${CASEBUILD}/mpasliconf/config_cache.xml";
 my  $fh = new IO::File;
 $fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
 print $fh  <<"EOF";
@@ -196,16 +196,16 @@ EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
-# fixed MPAS-LI tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
-# who make use of the SourceMods/src.mpas-li directory - we allow the definition file 
+# fixed MPASLI tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
+# who make use of the SourceMods/src.mpasli directory - we allow the definition file 
 # to come from that directory
 my $nl_definition_file;
-if (-f "${CASEROOT}/SourceMods/src.mpas-li/namelist_definition_mpas-li.xml") {
-    $nl_definition_file = "${CASEROOT}/SourceMods/src.mpas-li/namelist_definition_mpas-li.xml";
+if (-f "${CASEROOT}/SourceMods/src.mpasli/namelist_definition_mpasli.xml") {
+    $nl_definition_file = "${CASEROOT}/SourceMods/src.mpasli/namelist_definition_mpasli.xml";
 }
 if (! defined $nl_definition_file) {
     # default location of namelist definition file
-    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_mpas-li.xml";
+    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_mpasli.xml";
     (-f "$nl_definition_file")  or  die <<"EOF";
     ** $ProgName - ERROR: Cannot find namelist definition file \"$nl_definition_file\" **
 EOF
@@ -214,11 +214,11 @@ if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol";
 
 # The namelist defaults file contains default values for all required namelist variables.
 my $nl_defaults_file;
-if (-f "${CASEROOT}/SourceMods/src.mpas-li/namelist_defaults_mpas-li.xml") {
-    $nl_defaults_file = "${CASEROOT}/SourceMods/src.mpas-li/namelist_defaults_mpas-li.xml";
+if (-f "${CASEROOT}/SourceMods/src.mpasli/namelist_defaults_mpasli.xml") {
+    $nl_defaults_file = "${CASEROOT}/SourceMods/src.mpasli/namelist_defaults_mpasli.xml";
 }
 if (! defined $nl_defaults_file) {
-    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_mpas-li.xml";
+    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_mpasli.xml";
     (-f "$nl_defaults_file")  or  die <<"EOF";
     ** $ProgName - Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
@@ -235,8 +235,8 @@ require Build::NamelistDefaults;
 require Build::Namelist;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the MPAS-LI config_cache.xml file-  created by 
-# mpas-li.cpl7.template in $CASEBUILD/mpas-liconf
+# Create a configuration object from the MPASLI config_cache.xml file-  created by 
+# mpasli.cpl7.template in $CASEBUILD/mpasliconf
 my $cfg = Build::Config->new('config_cache.xml');
 
 # Create a namelist definition object.  This object provides a method for verifying that the
@@ -246,7 +246,7 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
-# values that are relevent for the MPAS-LI library for which the namelist is being produced.
+# values that are relevent for the MPASLI library for which the namelist is being produced.
 my $defaults = Build::NamelistDefaults->new($nl_defaults_file, $cfg);
 
 # Create an empty namelist object.  Add values to it in order of precedence.
@@ -310,11 +310,11 @@ if (defined $opts{'infile'}) {
           $var_local = $var;
         }
 
-        # Make sure variable is defined in namelist_definition_mpas-li.xml
+        # Make sure variable is defined in namelist_definition_mpasli.xml
         $nl_check_var->set_variable_value($group, $var_local,$val);
         eval { $nl_check_valid = $definition->validate($nl_check_var); };
         (not $@) or die <<"EOF";
-** ERROR: either $var_local is not a valid MPAS-LI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mpasli. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mpasli using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mpasli_in namelist containing $var_local.**
+** ERROR: either $var_local is not a valid MPASLI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mpasli. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mpasli using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mpasli_in namelist containing $var_local.**
 EOF
 
         # If group was specified in user_nl_mpasli, make sure it matches
@@ -369,16 +369,16 @@ my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 
-my $output_r = "./${CASE}.mpas-li.r";
-my $output_h = "./${CASE}.mpas-li.h";
-my $output_d = "./${CASE}.mpas-li.d";
+my $output_r = "./${CASE}.mpasli.r";
+my $output_h = "./${CASE}.mpasli.h";
+my $output_d = "./${CASE}.mpasli.d";
 if ($inst_string) {
-    $output_r = "./${CASE}.mpas-li${inst_string}.r";
-    $output_h = "./${CASE}.mpas-li${inst_string}.h";
-    $output_d = "./${CASE}.mpas-li${inst_string}.d";
+    $output_r = "./${CASE}.mpasli${inst_string}.r";
+    $output_h = "./${CASE}.mpasli${inst_string}.h";
+    $output_d = "./${CASE}.mpasli${inst_string}.d";
 } 
 
-# Environment variables set in mpas-li.buildnml.csh that are not xml variables
+# Environment variables set in mpasli.buildnml.csh that are not xml variables
 my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}"; 
 my $LID = $ENV{'LID'};
 
@@ -386,7 +386,7 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 
 if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 
-print "MPAS-LI build-namelist: glc_grid is $GLC_GRID \n";
+print "MPASLI build-namelist: glc_grid is $GLC_GRID \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -435,7 +435,7 @@ add_default($nl, 'config_time_integration');
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpas-li/${GLC_GRID}/mpas-li.graph.info.${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/mpasli.graph.info.${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -476,7 +476,7 @@ add_default($nl, 'config_flowLawExponent');
 add_default($nl, 'config_dynamic_thickness');
 
 #-----------------------------------------------------------------------------------------------
-# *** Write output namelist file (mpasli_in) and input dataset list (mpas-li.input_data_list) ***
+# *** Write output namelist file (mpasli_in) and input dataset list (mpasli.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
 
@@ -499,10 +499,10 @@ for my $var ($nl->get_variable_names('derived')) {
 # Write out all groups  to mpasli_in
 my $outfile = "./mpasli_in";
 $nl->write($outfile, 'groups'=>\@groups);
-if ($print>=2) { print "Writing mpas-li glc component namelist to $outfile $eol"; }
+if ($print>=2) { print "Writing mpasli glc component namelist to $outfile $eol"; }
 
 # Write input dataset list.
-check_input_files($DIN_LOC_ROOT, "../mpas-li.input_data_list");
+check_input_files($DIN_LOC_ROOT, "../mpasli.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT

@@ -8,8 +8,8 @@ mkdir -p $CASEROOT/CaseDocs
 if !(-d $EXEROOT/glc/obj ) mkdir -p $EXEROOT/glc/obj || exit 2
 if !(-d $EXEROOT/glc/source) mkdir -p $EXEROOT/glc/source || exit 3
 
-if !(-d $CASEBUILD/mpas-liconf) mkdir -p $CASEBUILD/mpas-liconf || exit 1
-cd $CASEBUILD/mpas-liconf || exit -1
+if !(-d $CASEBUILD/mpasliconf) mkdir -p $CASEBUILD/mpasliconf || exit 1
+cd $CASEBUILD/mpasliconf || exit -1
 
 set inst_string = ""
 set STREAM_NAME = "streams.landice"
@@ -18,7 +18,7 @@ set NML_NAME = "mpasli_in"
 if (-e $CASEROOT/user_nl_mpasli${inst_string}) then
 	$UTILROOT/Tools/user_nlcreate                                           \
 		-user_nl_file $CASEROOT/user_nl_mpasli${inst_string}                 \
-		-namelist_name mpasli_inparm >! $CASEBUILD/mpas-liconf/cesm_namelist
+		-namelist_name mpasli_inparm >! $CASEBUILD/mpasliconf/cesm_namelist
 endif
 
 # Check to see if "-preview" flag should be passed
@@ -29,25 +29,25 @@ else
 endif
 
 # Check to see if build-namelist exists in SourceMods
-if (-e $CASEROOT/SourceMods/src.mpas-li/build-namelist) then
-	set BLD_NML_DIR = $CASEROOT/SourceMods/src.mpas-li
-	set CFG_FLAG = "-cfg_dir $CODEROOT/glc/mpas-li/bld"
+if (-e $CASEROOT/SourceMods/src.mpasli/build-namelist) then
+	set BLD_NML_DIR = $CASEROOT/SourceMods/src.mpasli
+	set CFG_FLAG = "-cfg_dir $CODEROOT/glc/mpasli/bld"
 else
-	set BLD_NML_DIR = $CODEROOT/glc/mpas-li/bld
+	set BLD_NML_DIR = $CODEROOT/glc/mpasli/bld
 	set CFG_FLAG = ""
 endif
 
-# Define input_mesh file and graph prefix for each defined GLC/MPAS-LI mesh
+# Define input_mesh file and graph prefix for each defined GLC/MPASLI mesh
 if ( $GLC_GRID == 'mpas.gis20km' ) then
         set date_stamp = 150505
-	set input_mesh = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/gis20km.${date_stamp}.nc
-	set graph_prefix = $DIN_LOC_ROOT/glc/mpas-li/$GLC_GRID/mpas-li.graph.info.${date_stamp}
+	set input_mesh = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/gis20km.${date_stamp}.nc
+	set graph_prefix = $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/mpasli.graph.info.${date_stamp}
 endif
 
-# Write mpas-li.input_data_list file
-echo "mesh = $input_mesh" > $CASEBUILD/mpas-li.input_data_list
-#echo "graph1 = $graph_prefix" >> $CASEBUILD/mpas-li.input_data_list
-echo "graph$NTASKS_GLC = $graph_prefix.part.$NTASKS_GLC" >> $CASEBUILD/mpas-li.input_data_list
+# Write mpasli.input_data_list file
+echo "mesh = $input_mesh" > $CASEBUILD/mpasli.input_data_list
+#echo "graph1 = $graph_prefix" >> $CASEBUILD/mpasli.input_data_list
+echo "graph$NTASKS_GLC = $graph_prefix.part.$NTASKS_GLC" >> $CASEBUILD/mpasli.input_data_list
 
 
 
@@ -60,8 +60,8 @@ touch $MPAS_STREAMS
 chmod 644 $MPAS_STREAMS
 
 # Write streams file, if there isn't one in SourceMods
-if (-e $CASEROOT/SourceMods/src.mpas-li/$STREAM_NAME) then
-	cp $CASEROOT/SourceMods/src.mpas-li/$STREAM_NAME $MPAS_STREAMS
+if (-e $CASEROOT/SourceMods/src.mpasli/$STREAM_NAME) then
+	cp $CASEROOT/SourceMods/src.mpasli/$STREAM_NAME $MPAS_STREAMS
 else
 	cat >! $MPAS_STREAMS << 'EOF'
 	<streams>
@@ -138,7 +138,7 @@ EOF
 endif # Writing streams file
 
 $BLD_NML_DIR/build-namelist $CFG_FLAG $PREVIEW_FLAG                        \
-		-infile $CASEBUILD/mpas-liconf/cesm_namelist                        \
+		-infile $CASEBUILD/mpasliconf/cesm_namelist                        \
 		-caseroot $CASEROOT                                                \
 		-casebuild $CASEBUILD                                              \
 		-scriptsroot $SCRIPTSROOT                                          \
@@ -147,7 +147,7 @@ $BLD_NML_DIR/build-namelist $CFG_FLAG $PREVIEW_FLAG                        \
 		-glc_grid "$GLC_GRID" || exit -1
 
 if ( -d ${RUNDIR} ) then
-	cp $CASEBUILD/mpas-liconf/mpasli_in ${RUNDIR}/mpasli_in
+	cp $CASEBUILD/mpasliconf/mpasli_in ${RUNDIR}/mpasli_in
 endif
 
 #cp $MPAS_STREAMS $RUNDIR

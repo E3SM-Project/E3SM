@@ -25,7 +25,7 @@
 
 <!-- &decomposition -->
 <config_num_halos>3</config_num_halos>
-<config_block_decomp_file_prefix>'mpas-li.graph.info.part.'</config_block_decomp_file_prefix>
+<config_block_decomp_file_prefix>'mpasli.graph.info.part.'</config_block_decomp_file_prefix>
 <config_number_of_blocks>0</config_number_of_blocks>
 <config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
 <config_proc_decomp_file_prefix>'none'</config_proc_decomp_file_prefix>

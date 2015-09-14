@@ -4,7 +4,7 @@ if !(-d $OBJROOT/glc/obj ) mkdir -p $OBJROOT/glc/obj || exit 2
 if !(-d $OBJROOT/glc/source) mkdir -p $OBJROOT/glc/source || exit 3
 if !(-d $OBJROOT/glc/input ) mkdir -p $OBJROOT/glc/input || exit 4
 
-set my_path = $CASEROOT/SourceMods/src.mpas-li
+set my_path = $CASEROOT/SourceMods/src.mpasli
 
 echo -----------------------------------------------------------------
 echo Copy the necessary files into $OBJROOT/glc/source
@@ -12,8 +12,8 @@ echo -----------------------------------------------------------------
 
 cd $OBJROOT/glc/source
 
-cp -fpR $CODEROOT/glc/mpas-li/model/src/* .
-cp -fpR $CODEROOT/glc/mpas-li/driver glc_cesm_driver
+cp -fpR $CODEROOT/glc/mpasli/model/src/* .
+cp -fpR $CODEROOT/glc/mpasli/driver glc_cesm_driver
 
 if ( $?MACH ) then
         if ( "X$MACH" == "Xedison" ) then

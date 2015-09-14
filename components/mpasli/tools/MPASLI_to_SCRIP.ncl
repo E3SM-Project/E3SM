@@ -1,7 +1,7 @@
 begin
 
   if ((.not.isdefined("in_file")).or.(.not.isdefined("out_file"))) then
-    print((/"Run this script from the MPAS-LI_to_SCRIP.sh driver!"/))
+    print((/"Run this script from the MPASLI_to_SCRIP.sh driver!"/))
     status_exit(1)
   end if
 

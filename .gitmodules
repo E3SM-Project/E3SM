@@ -3,5 +3,5 @@
 	url = git@github.com:ACME-Climate/MPAS.git
 	branch = ocean/develop
 [submodule "mpas-li"]
-	path = components/mpas-li/model
+	path = components/mpasli/model
 	url = git@github.com:ACME-Climate/MPAS.git

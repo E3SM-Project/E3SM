@@ -5,12 +5,12 @@
 # ================
 
 usage() {
-  echo 'MPAS-LI_to_SCRIP.sh'
-  echo 'Creates a grid file in the SCRIP format from an MPAS-LI grid file.'
+  echo 'MPASLI_to_SCRIP.sh'
+  echo 'Creates a grid file in the SCRIP format from an MPASLI grid file.'
   echo ''
   echo 'usage:'
   echo './`basename $0` -mpas_file INPUT_FILENAME -scrip_file OUTPUT_FILENAME'
-  echo '  -mpas_file   Input MPAS-LI grid file'
+  echo '  -mpas_file   Input MPASLI grid file'
   echo '  -scrip_file  Output SCRIP grid file'
   echo '  [--help|-h]  Show usage directions'
 }

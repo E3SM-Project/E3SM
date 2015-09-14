@@ -11,6 +11,6 @@
 !
 ! Users cannot use this file to configure streams. In order to configure streams,
 ! write a stream configuration file, and place it in
-! SourceMods/src.mpas-li/streams.landice
+! SourceMods/src.mpasli/streams.landice
 !----------------------------------------------------------------------------------
 
