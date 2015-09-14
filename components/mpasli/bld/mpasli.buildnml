@@ -150,10 +150,10 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "\n";
 	print $stream_file "	<immutable_stream name=" . '"input"' . "\n";
 	print $stream_file "					  type=" . '"input"' . "\n";
+	print $stream_file "                      filename_template=" . '"' 
+			. "$DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$grid_prefix.$grid_date.nc" 
+			. '"' . "\n";
 	print $stream_file "					  input_interval=" . '"initial_only"' . "/>\n";
-	print $stream_file "                  filename_template=" . '"' 
-	. "$DIN_LOC_ROOT/glc/mpasli/$GLC_GRID/$grid_prefix.$grid_date.nc" 
-	. '"' . "\n";
 	print $stream_file "\n";
 	print $stream_file "	<!--\n";
 	print $stream_file "	The restart stream is actually controlled via the coupler.\n";

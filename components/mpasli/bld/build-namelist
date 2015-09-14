@@ -22,7 +22,7 @@
 # 2015-03-16  mhoffman         Original version
 #--------------------------------------------------------------------------------------------
 use strict;
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -72,7 +72,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -162,36 +162,41 @@ EOF
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
 
-# The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/ccsm_utils/Tools/perl5lib";
+# The root directory for the input data files must be specified.
+my $cesmroot = abs_path("$SCRIPTSROOT/../../");
+if (! -d "$cesmroot") {
+    die "** Invalid CESM root directory: $cesmroot ** ";
+}
 
-# The XML::Lite module is required to parse the XML files.
-(-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory \"$perl5lib_dir\" **
-EOF
+print "CESM ROOT IS: $cesmroot\n";
+
+my $perl5lib = "$cesmroot/cime/utils/perl5lib";
+if (! -d "$perl5lib") {
+    die "** Invalid perl5lib root directory: $perl5lib ** ";
+}
 
 # The Build::Config module provides utilities to access the configuration information
-# in the config_cache.xml file (see below)
-(-f "$perl5lib_dir/Build/Config.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib_dir\" **
+# in the config_cache.xml file
+(-f "$perl5lib/Build/Config.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
-(-f "$perl5lib_dir/Build/NamelistDefinition.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
 # variables based on finding a best fit with the attributes specified in the defaults file.
-(-f "$perl5lib_dir/Build/NamelistDefaults.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The Build::Namelist module provides utilities to parse input namelists, to query and modify
 # namelists, and to write output namelists.
-(-f "$perl5lib_dir/Build/Namelist.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib_dir\" **
+(-f "$perl5lib/Build/Namelist.pm")  or  die <<"EOF";
+** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib\" **
 EOF
 
 # The namelist definition file contains entries for all namelist variables that
@@ -227,12 +232,12 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib_dir";
-require XML::Lite;
+unshift @INC, "$perl5lib", "$CASEROOT/Tools", "$cesmroot/cime/scripts/Tools";
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the MPASLI config_cache.xml file-  created by 
@@ -341,15 +346,10 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-# Determine xml variables
-unshift @INC, "$CASEROOT/Tools";
-require XML::Lite;
-require SetupTools;
-
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-  $xmlvars{$attr} = SetupTools::expand_env_var($xmlvars{$attr}, \%xmlvars);
+  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $RUNDIR                 = "$xmlvars{'RUNDIR'}";
