@@ -668,21 +668,24 @@ sub _setComponentAdditiveNewVal
 	    
 	    # Grab option name.
 	    my ($optname) = $nameopt =~ m/^(\w+)\s/;
-	    my $name_found = 0;
+	    if (defined $optname) {
+		my $name_found = 0;
 	    
-	    # Check current options for values to replace.
-	    foreach my $curopt (@curopts) {
-		if ($curopt =~ m/^$optname\s/) {
-		    $name_found = 1;
-		    # Substitute, adding one space just in case.
-		    $new_val =~ s/$curopt/$nameopt /;
+		# Check current options for values to replace.
+		foreach my $curopt (@curopts) {
+		    if ($curopt =~ m/^$optname\s/) {
+			$name_found = 1;
+			# Substitute, adding one space just in case.
+			$new_val =~ s/$curopt/$nameopt /;
+		    }
+		}
+		# If the new option was not found in existing options, append it.
+		if ( ! $name_found) {
+		    $new_val = "$new_val -$nameopt";
 		}
 	    }
-	    # If the new option was not found in existing options, append it.
-	    if ( ! $name_found) {
-		$new_val = "$new_val -$nameopt";
-	    }
 	}
+
 	# Get rid of extra spaces.
 	$new_val =~ s/\s+/ /g; # spaces in middle
 	$new_val =~ s/\s*$//; # spaces at end
