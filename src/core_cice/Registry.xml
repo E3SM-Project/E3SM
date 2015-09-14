@@ -773,7 +773,7 @@
 		<var name="sensibleHeatFluxCategory"          type="real"     dimensions="nCategories nCells"  name_in_code="sensibleHeatFluxCategory"/>
 		<var name="latentHeatFlux"                    type="real"     dimensions="nCells"              name_in_code="latentHeatFlux"/>
 		<var name="latentHeatFluxCategory"            type="real"     dimensions="nCategories nCells"  name_in_code="latentHeatFluxCategory"/>
-		<var name="evaporativeHeatFlux"               type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFlux"/>
+		<var name="evaporativeWaterFlux"               type="real"     dimensions="nCells"              name_in_code="evaporativeWaterFlux"/>
 	</var_struct>
 
 	<!-- fluxes with the ocean -->
@@ -782,6 +782,10 @@
 		<var name="oceanSaltFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFlux"/>
 		<var name="oceanHeatFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFlux"/>
 		<var name="oceanShortwaveFlux"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFlux"/>
+		<var name="oceanFreshWaterFluxArea"               type="real"     dimensions="nCells"              name_in_code="oceanFreshWaterFluxArea"/>
+		<var name="oceanSaltFluxArea"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFluxArea"/>
+		<var name="oceanHeatFluxArea"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFluxArea"/>
+		<var name="oceanShortwaveFluxArea"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFluxArea"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->
@@ -797,7 +801,7 @@
 		<var name="longwaveUpOcean"                   type="real"     dimensions="nCells"              name_in_code="longwaveUpOcean"/>
 		<var name="sensibleHeatFluxOcean"             type="real"     dimensions="nCells"              name_in_code="sensibleHeatFluxOcean"/>
 		<var name="latentHeatFluxOcean"               type="real"     dimensions="nCells"              name_in_code="latentHeatFluxOcean"/>
-		<var name="evaporativeHeatFluxOcean"          type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFluxOcean"/>
+		<var name="evaporativeWaterFluxOcean"          type="real"     dimensions="nCells"              name_in_code="evaporativeWaterFluxOcean"/>
 	</var_struct>
 
 	<!-- shortwave radiation -->
@@ -907,6 +911,7 @@
 	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyTransport"/>
 	        <var name="iceVolumeTendencyTransport"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyTransport"/>
 	        <var name="iceAgeTendencyTransport"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyTransport"/>
+	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
 	</var_struct>
 
 	<!-- Global diagnostics -->

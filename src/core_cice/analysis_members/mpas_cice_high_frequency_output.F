@@ -43,6 +43,7 @@ module cice_high_frequency_output
    !--------------------------------------------------------------------
 
    public :: cice_init_high_frequency_output, &
+             cice_precompute_high_frequency_output, &
              cice_compute_high_frequency_output, &
              cice_restart_high_frequency_output, &
              cice_finalize_high_frequency_output
@@ -103,6 +104,55 @@ contains
       err = 0
 
    end subroutine cice_init_high_frequency_output!}}}
+
+!***********************************************************************
+!
+!  routine cice_precompute_high_frequency_output
+!
+!> \brief   Precompute MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    2015/09/09
+!> \details
+!>  This routine conducts all precomputation required for this
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_precompute_high_frequency_output(domain, timeLevel, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: timeLevel
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_precompute_high_frequency_output!}}}
 
 !***********************************************************************
 !

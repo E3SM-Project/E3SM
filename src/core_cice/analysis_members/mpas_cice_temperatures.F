@@ -44,6 +44,7 @@ module cice_temperatures
    !--------------------------------------------------------------------
 
    public :: cice_init_temperatures, &
+             cice_precompute_temperatures, &
              cice_compute_temperatures, &
              cice_restart_temperatures, &
              cice_finalize_temperatures
@@ -104,6 +105,54 @@ contains
       err = 0
 
    end subroutine cice_init_temperatures!}}}
+
+!***********************************************************************
+!
+!  routine cice_precompute_temperatures
+!
+!> \brief   Precompute MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    9th September 2015
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_precompute_temperatures(domain, timeLevel, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: timeLevel
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_precompute_temperatures!}}}
 
 !***********************************************************************
 !

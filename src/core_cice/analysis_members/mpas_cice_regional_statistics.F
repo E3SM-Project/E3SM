@@ -43,6 +43,7 @@ module cice_regional_statistics
    !--------------------------------------------------------------------
 
    public :: cice_init_regional_statistics, &
+             cice_precompute_regional_statistics, &
              cice_compute_regional_statistics, &
              cice_restart_regional_statistics, &
              cice_finalize_regional_statistics
@@ -155,6 +156,55 @@ contains
       enddo
 
    end subroutine cice_init_regional_statistics!}}}
+
+!***********************************************************************
+!
+!  routine cice_precompute_regional_statistics
+!
+!> \brief   Compute MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    9th September 2015
+!> \details
+!>  This routine conducts all computation required for this
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_precompute_regional_statistics(domain, timeLevel, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: timeLevel
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_precompute_regional_statistics!}}}
 
 !***********************************************************************
 !

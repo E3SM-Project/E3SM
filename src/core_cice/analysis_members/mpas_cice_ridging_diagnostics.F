@@ -42,6 +42,7 @@ module cice_ridging_diagnostics
    !--------------------------------------------------------------------
 
    public :: cice_init_ridging_diagnostics, &
+             cice_precompute_ridging_diagnostics, &
              cice_compute_ridging_diagnostics, &
              cice_restart_ridging_diagnostics, &
              cice_finalize_ridging_diagnostics
@@ -102,6 +103,55 @@ contains
       err = 0
 
    end subroutine cice_init_ridging_diagnostics!}}}
+
+!***********************************************************************
+!
+!  routine cice_precompute_ridging_diagnostics
+!
+!> \brief   Precompute MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    9th September 2015
+!> \details
+!>  This routine conducts all computation required for this
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_precompute_ridging_diagnostics(domain, timeLevel, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: timeLevel
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_precompute_ridging_diagnostics!}}}
 
 !***********************************************************************
 !
