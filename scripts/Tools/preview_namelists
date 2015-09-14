@@ -138,7 +138,7 @@ if($dryrun){
 	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
 	}
 	my $libdir = "$EXEROOT/$model";
-	if (! -d libdir) {
+	if (! -d $libdir) {
 	    my $sysmod = "mkdir -p $libdir";
 	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
 	}
