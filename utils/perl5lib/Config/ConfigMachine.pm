@@ -89,7 +89,15 @@ sub setMachineValues
 	die "Exiting \n";
     }	    
 
-    $config->set('COMPILER'     , "$compiler");
+    if (defined $compiler) {
+	$config->set('COMPILER', "$compiler");
+    } else {
+	my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/COMPILERS");
+	my $compilers = $nodes[0]->textContent();
+	my @compilers = split(/,/,$compilers);
+	my $compiler = $compilers[0];
+	$config->set('COMPILER', "$compiler");
+    }	
     $config->set('MACH'         ,  $machine);
     $config->set('MACHINES_FILE', "$machines_file");
     $config->set('MACHDIR'      , "$machines_dir");

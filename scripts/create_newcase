@@ -822,21 +822,24 @@ sub _create_caseroot
 
     # Copy README/disclaimer file 
     #TODO - this needs to be updated
-#    $sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
-#    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #$sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
+    #system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-    _create_caseroot_sourcemods($caseroot, $cimeroot, $config);  
-    _create_caseroot_tools($caseroot, $cimeroot);
-    _create_caseroot_files($case, $caseroot, $cimeroot, $machine, $compiler, $print, $config);
+    _create_caseroot_sourcemods($config);  
+    _create_caseroot_tools($config);
+    _create_caseroot_files($config, $print);
 }
 
 #-------------------------------------------------------------------------------
 sub _create_caseroot_tools
 {
     # Copy relevant files into $caseroot
-    my ($caseroot, $cimeroot) = @_;
-    
-    $sysmod;
+    my ($config) = @_;
+
+    my $cimeroot = $config->get('CIMEROOT');
+    my $caseroot = $config->get('CASEROOT');
+
+    my $sysmod;
 
     my @files = (
 	"$cimeroot/scripts/Tools/case_setup", 
@@ -889,10 +892,15 @@ sub _create_caseroot_tools
 #-------------------------------------------------------------------------------
 sub _create_caseroot_files
 {
-    my ($case, $caseroot, $cimeroot, $machine, $compiler, $print, $config) = @_;
+    my ($config, $print) = @_;
 
     my $model         = $config->get('MODEL');
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
+    my $compiler      = $config->get('COMPILER');
+    my $cimeroot      = $config->get('CIMEROOT');
+    my $machine       = $config->get('MACH');
+    my $caseroot      = $config->get('CASEROOT');
+    my $case          = $config->get('CASE');
 
     my $machines_dir  = dirname($machines_file);
     my $mkbatch_file = "$ENV{'HOME'}/.cime/mkbatch.$machine";
@@ -992,8 +1000,10 @@ sub _create_caseroot_files
 #-------------------------------------------------------------------------------
 sub _create_caseroot_sourcemods
 {
-    my ($caseroot, $cimeroot, $config) = @_;  
+    my ($config) = @_;  
 
+    my $caseroot   = $config->get('CASEROOT');
+    my $cimeroot   = $config->get('CIMEROOT');
     my $comps_atm  = $config->get("COMP_ATM"); 
     my $comps_lnd  = $config->get("COMP_LND"); 
     my $comps_ocn  = $config->get("COMP_OCN"); 
