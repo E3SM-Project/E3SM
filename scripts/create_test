@@ -164,6 +164,9 @@ OPTIONS:
                             not exist under the specified baselineroot, the 
                             script will exit with an error. 
 
+      -component <name>    Manually specify the component to use for the testlist.
+                           Can be "drv" or any valid model component.
+
       -compiler <name>     Manually specify the compiler. 
 
       -compset_file <file> For a single test, manually specify the compset file. 
