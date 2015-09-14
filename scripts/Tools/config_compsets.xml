@@ -854,9 +854,6 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <CLM_CO2_TYPE compset="HIST.*_DATM"    >diagnostic</CLM_CO2_TYPE>
 <CLM_CO2_TYPE compset="RCP.*_DATM"     >diagnostic</CLM_CO2_TYPE>
 
-<CLM_FORCE_COLDSTART compset="_CLM.+CISM"        >on</CLM_FORCE_COLDSTART>
-<CLM_FORCE_COLDSTART compset="4804.*_CLM.*_CISM1">off</CLM_FORCE_COLDSTART>
-
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
 <!-- Add new values for                      -->
