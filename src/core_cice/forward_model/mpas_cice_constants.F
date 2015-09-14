@@ -19,7 +19,9 @@ module cice_constants
 
   private
   save
-  
+
+  character (len=*), public, parameter :: coupleAlarmID = 'coupling'
+
   real(kind=RKIND), parameter, public :: &
        ciceDegreesToRadians = pii / 180.0_RKIND, &
        ciceRadiansToDegrees = 180.0_RKIND / pii
