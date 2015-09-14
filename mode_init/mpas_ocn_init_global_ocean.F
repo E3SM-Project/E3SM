@@ -1013,13 +1013,6 @@ contains
           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
           call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
 
-          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-          call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
-          call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
-          call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
-
           if (config_global_ocean_tracer_method .eq. "nearest_neighbor") then
              do iCell = 1, nCells
                 currentLat = latCell(iCell)
@@ -1148,33 +1141,6 @@ contains
              call mpas_dmpar_finalize(domain % dminfo)
           endif
 
-           ! set surface restoring values and rate
-           do iCell=1,nCells
-             if ( associated(activeTracersSurfaceRestoringValue) .and. associated(activeTracers) ) then
-                activeTracersSurfaceRestoringValue(idxTemperature, iCell) = activeTracers(idxTemperature, 1, iCell)
-                activeTracersSurfaceRestoringValue(idxSalinity, iCell) = activeTracers(idxSalinity, 1, iCell)
-             end if
-
-             if ( associated(activeTracersPistonVelocity) ) then
-                activeTracersPistonVelocity(idxTemperature, iCell) = config_global_ocean_piston_velocity
-                activeTracersPistonVelocity(idxSalinity, iCell) =  config_global_ocean_piston_velocity
-             end if
-           enddo
-
-          ! set interior restoring values and rate
-          do iCell=1,nCells
-            do k = 1, maxLevelCell(iCell)
-              if ( associated(activeTracersInteriorRestoringValue) .and. associated(activeTracers) ) then
-                 activeTracersInteriorRestoringValue(idxTemperature, k, iCell) = activeTracers(idxTemperature, k, iCell)
-                 activeTracersInteriorRestoringValue(idxSalinity, k, iCell) = activeTracers(idxSalinity, k, iCell)
-              end if
-
-              if ( associated(activeTracersInteriorRestoringRate) ) then
-                 activeTracersInteriorRestoringRate(idxTemperature, k, iCell) = config_global_ocean_interior_restore_rate
-                 activeTracersInteriorRestoringRate(idxSalinity, k, iCell) = config_global_ocean_interior_restore_rate
-              end if
-            enddo
-          enddo
 
           block_ptr => block_ptr % next
        end do
@@ -1210,11 +1176,6 @@ contains
                 call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
                 call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-
-                call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-                call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-                call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
-                call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
 
                 call mpas_pool_get_array(scratchPool, 'smoothedTemperature', smoothedTemperature)
                 call mpas_pool_get_array(scratchPool, 'smoothedSalinity', smoothedSalinity)
@@ -1255,13 +1216,6 @@ contains
                    activeTracers(idxSalinity, :, :) = smoothedsalinity(:,:) 
                 end if
 
-                if ( associated(activeTracersInteriorRestoringValue) .and. associated(activeTracers) ) then
-                   activeTracersInteriorRestoringValue(:,:,:) = activeTracers(:,:,:)
-                end if
-                if ( associated(activeTracersSurfaceRestoringValue) .and. associated(activeTracers) ) then
-                   activeTracersSurfaceRestoringValue(:,:) = activeTracers(:,1,:)
-                end if
-
                 block_ptr => block_ptr % next
              end do
 
@@ -1279,6 +1233,45 @@ contains
           call mpas_deallocate_scratch_field(smoothedTemperatureField, .false.)
           call mpas_deallocate_scratch_field(smoothedSalinityField, .false.)
        endif
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+
+          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+          call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
+          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
+          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
+          call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+          call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
+
+          ! set interior restoring values and rate
+          if ( associated(activeTracersInteriorRestoringValue) .and. associated(activeTracers) ) then
+             activeTracersInteriorRestoringValue(:, :, :) = activeTracers(:, :, :)
+          end if
+
+          if ( associated(activeTracersInteriorRestoringRate) ) then
+             activeTracersInteriorRestoringRate(:, :, :) = config_global_ocean_interior_restore_rate
+          end if
+
+           ! set surface restoring values and rate
+          if ( associated(activeTracersSurfaceRestoringValue) .and. associated(activeTracers) ) then
+             activeTracersSurfaceRestoringValue(:, :) = activeTracers(:, 1, :)
+          end if
+
+          if ( associated(activeTracersPistonVelocity) ) then
+             activeTracersPistonVelocity(:, :) = config_global_ocean_piston_velocity
+          end if
+
+          block_ptr => block_ptr % next
+       end do
+
 
     end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
 
