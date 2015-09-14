@@ -45,7 +45,7 @@
 				<var name="tracer1" array_group="debugGRP" units="na"
 					 description="tracer for debugging purposes"
 				/>
-		   </var_array>
+			</var_array>
 		</var_struct>
 	</var_struct>
 
@@ -67,49 +67,49 @@
 				/>
 			</var_array>
 		</var_struct>
-               <var_struct name="tracersSurfaceRestoringFields" time_levs="1">
-                        <var_array name="debugTracersPistonVelocity" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
-                                <var name="tracer1PistonVelocity" array_group="debugGRP" units="m s^{-1}"
-                                         description="A non-negative field controlling the rate at which tracer1 is restored to tracer1SurfaceRestoringValue"
-                                />
-                        </var_array>
-                        <var_array name="debugTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
-                                <var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
-                                         description="tracer1 is restored toward this field at a rate controlled by temperaturePistonVelocity."
-                                />
-                        </var_array>
-                </var_struct>
-               <var_struct name="tracersInteriorRestoringFields" time_levs="1">
-                        <var_array name="debugTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
-                                <var name="tracer1InteriorRestoringRate" array_group="debugGRP" units="{s}^-1"
-                                         description="A non-negative field controlling the rate at which tracer1 is restored to tracer1InteriorRestoringValue"
-                                />
-                        </var_array>
-                        <var_array name="debugTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
-                                <var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
-                                         description="tracer1 is restored toward this field at a rate controlled by tracer1InteriorRestoringRate."
-                                />
-                        </var_array>
-                </var_struct>
-               <var_struct name="tracersExponentialDecayFields" time_levs="1">
-                        <var_array name="debugTracersExponentialDecayRate" type="real" dimensions="Time" packages="debugTracersExponentialDecayPKG">
-                                <var name="tracer1ExponentialDecayRate" array_group="debugGRP" units="s^{-1}"
-                                         description="A non-negative field controlling the exponential decay of tracer1"
-                                />
-                        </var_array>
-                </var_struct>
-               <var_struct name="tracersIdealAgeFields" time_levs="1">
-                        <var_array name="debugTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="debugTracersIdealAgePKG">
-                                <var name="tracer1IdealAgeMask" array_group="debugGRP" units="unitless"
-                                         description="In top layer, tracer1 is reset to tracer1 * tracer1IdealAgeMask, valid values of tracer1IdealAgeMask or 0 and 1"
-                                />
-                        </var_array>
-                </var_struct>
-               <var_struct name="tracersTTDFields" time_levs="1">
-                        <var_array name="debugTracersTTDMask" type="real" dimensions="nCells Time" packages="debugTracersTTDPKG">
-                                <var name="tracer1TTDMask" array_group="debugGRP" units="unitless"
-                                         description="In top layer, tracer1 is reset to TTDMask, valid values of tracer1TTDMask or 0 and 1"
-                                />
-                        </var_array>
-                </var_struct>
+		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
+			<var_array name="debugTracersPistonVelocity" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
+				<var name="tracer1PistonVelocity" array_group="debugGRP" units="m s^{-1}"
+					 description="A non-negative field controlling the rate at which tracer1 is restored to tracer1SurfaceRestoringValue"
+				/>
+			</var_array>
+			<var_array name="debugTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
+				<var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+					 description="tracer1 is restored toward this field at a rate controlled by temperaturePistonVelocity."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
+			<var_array name="debugTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
+				<var name="tracer1InteriorRestoringRate" array_group="debugGRP" units="{s}^-1"
+				 description="A non-negative field controlling the rate at which tracer1 is restored to tracer1InteriorRestoringValue"
+				/>
+			</var_array>
+			<var_array name="debugTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
+				<var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				 description="tracer1 is restored toward this field at a rate controlled by tracer1InteriorRestoringRate."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersExponentialDecayFields" time_levs="1">
+			<var_array name="debugTracersExponentialDecayRate" type="real" dimensions="Time" packages="debugTracersExponentialDecayPKG">
+				<var name="tracer1ExponentialDecayRate" array_group="debugGRP" units="s^{-1}"
+					 description="A non-negative field controlling the exponential decay of tracer1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersIdealAgeFields" time_levs="1">
+			<var_array name="debugTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="debugTracersIdealAgePKG">
+				<var name="tracer1IdealAgeMask" array_group="debugGRP" units="unitless"
+					 description="In top layer, tracer1 is reset to tracer1 * tracer1IdealAgeMask, valid values of tracer1IdealAgeMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersTTDFields" time_levs="1">
+			<var_array name="debugTracersTTDMask" type="real" dimensions="nCells Time" packages="debugTracersTTDPKG">
+				<var name="tracer1TTDMask" array_group="debugGRP" units="unitless"
+					 description="In top layer, tracer1 is reset to TTDMask, valid values of tracer1TTDMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
 	</var_struct>
