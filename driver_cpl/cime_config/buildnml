@@ -20,6 +20,11 @@ my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
 my $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
 my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
 
+my $CAM_CONFIG_OPTS;
+if ($COMP_ATM eq 'cam') {
+    $CAM_CONFIG_OPTS = `./xmlquery  CAM_CONFIG_OPTS -value`;
+}
+
 my @dirs = ( "${CIMEROOT}/utils/perl5lib" );
 unshift @INC, @dirs;
 require Config::SetupTools;
@@ -32,12 +37,12 @@ if (! -d "$CASEBUILD/cplconf" ) {
 chdir "$CASEBUILD/cplconf";
 
 # -----------------------------------------------------
-# create cplconf/namelist
+# create cplconf/namelist *** this is confusing!!!***
+# cam is actually changing the driver namelist settings
 # -----------------------------------------------------
 
 my $infile_text = "";
 if ($COMP_ATM eq 'cam') {
-    my $CAM_CONFIG_OPTS = `./xmlquery  CAM_CONFIG_OPTS -value`;
     if ( "$CAM_CONFIG_OPTS" =~ /.*adiabatic.*/ ) {
 	$infile_text .= "atm_adiabatic = .true.";
     }
