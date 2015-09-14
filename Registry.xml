@@ -147,10 +147,10 @@
 					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
 					possible_values=".true. or .false."
 		/>
-                <nml_option name="config_realistic_coriolis_parameter" type="logical" default_value="false" units="unitless"
-                                        description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
-                                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_realistic_coriolis_parameter" type="logical" default_value="false" units="unitless"
+					description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_write_cull_cell_mask" type="logical" default_value="true" units="unitless"
 					description="Logicial flag that controls if the cullCell field is written to output."
 					possible_values=".true. or .false."
@@ -876,6 +876,7 @@
 	</packages>
 
 	<streams>
+		<!-- Init mode streams -->
 		<stream name="input_init"
 				type="input"
 				filename_template="mesh.nc"
@@ -923,6 +924,7 @@
 			<var name="fVertex"/>
 			<var name="fCell"/>
 		</stream>
+
 		<stream name="output_init"
 				type="output"
 				filename_template="ocean.nc"
@@ -931,45 +933,7 @@
 				runtime_format="single_file"
 				mode="init">
 
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="meshDensity"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="fCell"/>
+			<stream name="input_init"/>
 			<var name="refZMid"/>
 			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
@@ -986,6 +950,24 @@
 			<var name="cullCell"/>
 		</stream>
 
+		<stream name="forcing_data_init"
+				type="output"
+				filename_template="init_mode_forcing_data.nc"
+				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
+
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+		</stream>
+
+		<!-- Forward mode streams -->
 		<stream name="mesh" 
 				type="input"
 				filename_template="mesh.nc"
@@ -1036,8 +1018,8 @@
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
 			<var name="restingThickness" packages="forwardMode;analysisMode"/>
-			<var name="surfaceWindStress"/>
 		</stream>
+
 		<stream name="input" 
 				type="input"
 				filename_template="init.nc"
@@ -1053,6 +1035,7 @@
 			<var name="lowFreqDivergence"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
+
 		<stream name="restart"
 				type="input;output"
 				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
@@ -1080,6 +1063,7 @@
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
 		</stream>
+
 		<stream name="output" 
 				type="output"
 				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
@@ -1113,6 +1097,24 @@
 			<var name="volumeEdgeGlobal"/>
 			<var name="CFLNumberGlobal"/>
 		</stream>
+
+		<stream name="forcing_data"
+				type="input"
+				filename_template="forcing_data.nc"
+				input_interval="initial_only"
+				runtime_format="single_file"
+				mode="forward">
+
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+		</stream>
+
+		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"
 				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
@@ -1137,6 +1139,7 @@
 			<var name="vertAleTransportTop"/>
 			<var name="vertVelocityTop"/>
 		</stream>
+
 		<stream name="real_world"
 				type="none"
 				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1162,6 +1165,7 @@
 			<var name="surfaceBuoyancyForcing"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
+
 		<stream name="averages"
 				type="none"
 				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1191,6 +1195,7 @@
 			<var name="varVelocityZonal"/>
 			<var name="varVelocityMeridional"/>
 		</stream>
+
 		<stream name="Cartesian"
 				type="none"
 				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1204,39 +1209,6 @@
 			<stream name="mesh"/>
 			<var name="velocityX"/>
 			<var name="velocityY"/>
-		</stream>
-
-		<stream name="forcing_data"
-				type="input"
-				filename_template="forcing_data.nc"
-				input_interval="initial_only"
-				runtime_format="single_file"
-				mode="forward">
-
-			<var name="windStressZonal"/>
-			<var name="windStressMeridional"/>
-			<var_struct name="tracersSurfaceRestoringFields"/>
-			<var_struct name="tracersInteriorRestoringFields"/>
-			<var_struct name="tracersExponentialDecayFields"/>
-			<var_struct name="tracersIdealAgeFields"/>
-			<var_struct name="tracersTTDFields"/>
-		</stream>
-
-		<stream name="forcing_data_init"
-				type="output"
-				filename_template="init_mode_forcing_data.nc"
-				output_interval="0000-00-00_00:00:01"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="init">
-
-			<var name="windStressZonal"/>
-			<var name="windStressMeridional"/>
-			<var_struct name="tracersSurfaceRestoringFields"/>
-			<var_struct name="tracersInteriorRestoringFields"/>
-			<var_struct name="tracersExponentialDecayFields"/>
-			<var_struct name="tracersIdealAgeFields"/>
-			<var_struct name="tracersTTDFields"/>
 		</stream>
 
 		<stream name="forcing"
@@ -1289,6 +1261,7 @@
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 		</stream>
+
 		<stream name="Gent_McWilliams_spherical"
 				type="none"
 				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1315,6 +1288,7 @@
 			<var name="avgGMBolusVelocityMeridional"/>
 			<var name="avgVertGMBolusVelocityTop"/>
 		</stream>
+
 		<stream name="Gent_McWilliams_Cartesian"
 				type="none"
 				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1942,9 +1916,9 @@
 			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
 		/>
-                <var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-                         description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
-                />
+		<var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
+		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
 		/>
