@@ -41,6 +41,7 @@ my $testtype = undef;
 my $debug = 0;
 my $dumpxml = 0;
 my $printreport = 0;
+my $dryrun = 0;
 # full path to the expected fails file. 
 my $expectedFailsFile;
 # Hash with expected fails data
@@ -69,7 +70,10 @@ my $xfailelems = getExpectedFails();
 &Debug( eval { Dumper $teststatus} );
 &Debug( eval { Dumper \%suiteinfo } );
 my $testxml = &makeResultsXml($teststatus, \%suiteinfo, $nlfailreport);
-&sendresults(\%teststatus, \%suiteinfo, $testxml);
+if(!$dryrun)
+{
+	&sendresults(\%teststatus, \%suiteinfo, $testxml);
+}
 &printreport($teststatus, $nlfailreport) if $printreport;
 
 #-------------------------------------------------------------------------------
@@ -92,6 +96,8 @@ sub opts
 	"dumpxml|x"	=> \$dumpxml,
 	"printreport|p" => \$printreport,
     "expectedfails=s" => \$expectedFailsFile,
+	"dryrun"    => \$dryrun,
+    
 	);
 
     # Show usage if the required options aren't specified. 
@@ -303,6 +309,8 @@ sub getTestStatus
 	#my $lotsacasestatus = $teststatus;
 	my $statusline = $teststatus;
 	$teststatus = (split(/\s+/, $teststatus))[0];
+
+	
 	&Debug("Testcase:   $testcase\n");
 	&Debug( "Teststatus: $teststatus\n"); 
 	
@@ -359,14 +367,21 @@ sub getTestStatus
 		}
 	
 	}
-	$teststatushash{$testcase}{'status'} = $teststatus;
 
 	# Now go through the TestStats getting the memleak, compare, baseline tag, throughput, and comments if any. 
 	my @statuslines = <$teststatusfile>;
 	chomp @statuslines;
-	#my $lotsacasestatus = join( "\n", @statuslines);
-	#print "lotsacasestatus\n";
-	#print "$lotsacasestatus\n";
+
+    #If the 'test functionality summary' is not PASS, then report the
+    # test functionality summary as the teststatus field.
+    my @testsummarylines = grep { /test functionality summary/ } @statuslines;
+    my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+    if(defined $testsummary && $testsummary !~ /PASS/)
+    {
+        $teststatus = $testsummary;
+		$teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
+    }
+    $teststatushash{$testcase}{'status'} = $teststatus;
 
 	# Get the baseline compare summary
 	#my @comparelines = grep { /compare_hist/} @statuslines;
