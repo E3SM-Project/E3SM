@@ -96,9 +96,10 @@ my $compare_baseline	=  `./xmlquery COMPARE_BASELINE		-value`;
 my $generate_baseline	=  `./xmlquery GENERATE_BASELINE	-value`;
 my $cleanup             =  `./xmlquery CLEANUP	                -value`;
 my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
-my $compiler            =  `./xmlquery COMPILER             -value`;
-my $mpilib              =  `./xmlquery MPILIB               -value`;
-my $build_threaded      =  `./xmlquery BUILD_THREADED       -value`;
+my $compiler            =  `./xmlquery COMPILER                 -value`;
+my $mpilib              =  `./xmlquery MPILIB                   -value`;
+my $build_threaded      =  `./xmlquery BUILD_THREADED           -value`;
+my $debug               =  `./xmlquery DEBUG                    -value`;
 
 # generate baseline test flag
 my $basegen_dir;
@@ -171,6 +172,9 @@ print $testfh " $eol cd $caseroot  $eol";
 my $testcase_interp = <<END_INTERP;
 
     setenv CASEROOT  $caseroot
+    setenv COMPILER  $compiler
+    setenv MPILIB    $mpilib
+    setenv DEBUG    $debug
 
     source .env_mach_specific.csh
 

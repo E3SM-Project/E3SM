@@ -5,7 +5,15 @@
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
 
-source /usr/share/Modules/init/csh
+source  /usr/share/Modules/init/csh
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER            = `./xmlquery  COMPILER          -value`
+  set MPILIB              = `./xmlquery  MPILIB        -value`
+  set DEBUG               = `./xmlquery  DEBUG         -value`
+  set OS                  = `./xmlquery  OS        -value`
+  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+endif
 module purge 
 if ( $COMPILER == "intel" ) then
 	module load compiler/intel/15.0.2.164
@@ -13,6 +21,7 @@ endif
 if ( $COMPILER == "intel" && $MPILIB == "mvapich2" ) then
 	module unload mpi/intel/openmpi-1.8.1-qlc
 	module load mpi/intel/mvapich2-1.8.1-qlc
+	module load tool/parallel-netcdf/1.6.1/intel/mvapich2
 endif
 if ( $COMPILER == "pgi" ) then
 	module load compiler/pgi/15.1
@@ -20,9 +29,11 @@ endif
 if ( $COMPILER == "pgi" && $MPILIB == "mvapich2" ) then
 	module unload mpi/pgi/openmpi-1.8.1-qlc
 	module load mpi/pgi/mvapich2-1.8.1-qlc
+	module load tool/parallel-netcdf/1.6.1/pgi/mvapich2
 endif
 if ( $COMPILER == "nag" ) then
 	module load compiler/nag/6.0
+	module load tool/parallel-netcdf/1.6.1/nag/openmpi
 	./xmlchange MPILIB=openmpi
 endif
 if ( $COMPILER == "gnu" ) then

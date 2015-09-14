@@ -6,6 +6,15 @@
 #===============================================================================
 
 .  /usr/share/Modules/init/sh
+CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+if [ -n $CIME_REPO  ]
+then 
+  COMPILER=`./xmlquery  COMPILER          -value`
+  MPILIB=`./xmlquery  MPILIB        -value`
+  DEBUG=`./xmlquery  DEBUG         -value`
+  OS=`./xmlquery  OS        -value`
+  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+fi
 module purge  
 if [ "$COMPILER" = "intel" ]
 then
@@ -15,6 +24,7 @@ if [ "$COMPILER" = "intel" ] && [ "$MPILIB" = "mvapich2" ]
 then
 	module unload mpi/intel/openmpi-1.8.1-qlc
 	module load mpi/intel/mvapich2-1.8.1-qlc
+	module load tool/parallel-netcdf/1.6.1/intel/mvapich2
 fi
 if [ "$COMPILER" = "pgi" ]
 then
@@ -24,10 +34,12 @@ if [ "$COMPILER" = "pgi" ] && [ "$MPILIB" = "mvapich2" ]
 then
 	module unload mpi/pgi/openmpi-1.8.1-qlc
 	module load mpi/pgi/mvapich2-1.8.1-qlc
+	module load tool/parallel-netcdf/1.6.1/pgi/mvapich2
 fi
 if [ "$COMPILER" = "nag" ]
 then
 	module load compiler/nag/6.0
+	module load tool/parallel-netcdf/1.6.1/nag/openmpi
 	./xmlchange MPILIB=openmpi
 fi
 if [ "$COMPILER" = "gnu" ]

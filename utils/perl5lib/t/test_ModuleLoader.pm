@@ -124,7 +124,7 @@ sub test_writeXMLFileForCase_brutus() : Test(1)
 	close $ACTUAL;
 	
 	cmp_ok($actual, 'eq', $expected);
-	#unlink $actualfile;
+	unlink $actualfile;
 }
 
 sub test_findModulesForCase_brutus() : Test(1)
@@ -166,8 +166,8 @@ sub test_writeCshModuleFile_brutus() : Test(1):
 	binmode $ACTUAL;
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
-	ok($actual eq $expected);
-	unlink $actualfile;
+	ok($actual eq $expected) || diag "wtf";
+	#unlink $actualfile;
 }
 
 sub test_writeShModuleFile_brutus() : Test(1):
@@ -289,7 +289,7 @@ sub test_writeCshModuleFile_babbage() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_babbage() : Test(1):
@@ -315,7 +315,7 @@ sub test_writeShModuleFile_babbage() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_moduleInit_babbageKnc() : Test(2)
@@ -416,7 +416,7 @@ sub test_writeCshModuleFile_babbageKnc() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_babbageKnc() : Test(1):
@@ -442,7 +442,7 @@ sub test_writeShModuleFile_babbageKnc() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_moduleInit_bluewaters() : Test(2)
@@ -507,7 +507,7 @@ sub test_writeXMLFileForCase_bluewaters() : Test(3):
 	my $actual = do { local $/; <$ACTUAL> };
 	close $ACTUAL;
 	cmp_ok($actual, 'eq', $expected);
-	#unlink $actualfile;
+	unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_bluewaters() : Test(1):
@@ -532,7 +532,7 @@ sub test_writeCshModuleFile_bluewaters() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_bluewaters() : Test(1):
@@ -558,7 +558,7 @@ sub test_writeShModuleFile_bluewaters() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 sub test_findEnvVars_bluewaters() : Test(1):
 {
@@ -647,7 +647,7 @@ sub test_writeXMLFileForCase_eastwind() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_eastwind() : Test(1):
@@ -672,7 +672,7 @@ sub test_writeCshModuleFile_eastwind() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_eastwind() : Test(1):
@@ -698,9 +698,8 @@ sub test_writeShModuleFile_eastwind() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
-
 
 sub test_moduleInit_edison() : Test(2)
 {
@@ -829,7 +828,7 @@ sub test_writeXMLFileForCase_edison() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 sub test_writeCshModuleFile_edison() : Test(1):
 {
@@ -853,7 +852,7 @@ sub test_writeCshModuleFile_edison() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_edison() : Test(1):
@@ -878,7 +877,7 @@ sub test_writeShModuleFile_edison() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_edison() : Test(1):
@@ -898,128 +897,7 @@ sub test_findEnvVars_edison() : Test(1):
         };
     is_deeply(\%actualenvs, $expectedenvs);
 }
-sub test_moduleInit_eastwind() : Test(2)
-{
-    my $self = shift;
-    my $moduleloader = Module::ModuleLoader->new(machine => 'eastwind', compiler => 'pgi', mpilib => 'mpich',
-                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
 
-    $moduleloader->moduleInit();
-
-    ok($moduleloader->{initpath} eq '/etc/profile.d/modules.perl') || diag($moduleloader->{initpath});
-    ok($moduleloader->{cmdpath} eq '/usr/bin/modulecmd perl') || diag($moduleloader->{cmdpath});
-}
-
-sub test_findModulesFromMachinesDir_eastwind() : Test(3):
-{
-    my $self = shift;
-    my $moduleloader = Module::ModuleLoader->new(machine => 'eastwind', compiler => 'pgi', mpilib => 'mpich',
-                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
-    my @expectedmodules = (
-                             { action => 'purge', actupon => '', seqnum => 1},
-                             { action => 'load', actupon => 'pgi/11.3', seqnum => 2},
-                             { action => 'load', actupon => 'mpi/mvapich2/1.5.1p1/pgi11.3', seqnum => 3},
-                             { action => 'load', actupon => 'netcdf/4.1.2/pgi', seqnum => 4},
-                          );
-     $moduleloader->moduleInit();
-    my @actualmodules = $moduleloader->findModulesFromMachinesDir();
-    #print Dumper \@expectedmodules;
-    #print Dumper \@actualmodules;
-     is_deeply(\@expectedmodules, \@actualmodules);
-}
-
-
-sub test_findModulesForCase_eastwind() : Test(1):
-{
-    my $self = shift;
-
-   my @expectedmodules = (
-                             { action => 'purge', actupon => '', seqnum => 1},
-                             { action => 'load', actupon => 'pgi/11.3', seqnum => 2},
-                             { action => 'load', actupon => 'mpi/mvapich2/1.5.1p1/pgi11.3', seqnum => 3},
-                             { action => 'load', actupon => 'netcdf/4.1.2/pgi', seqnum => 4},
-                          );
-    my $moduleloader = Module::ModuleLoader->new(machine => 'eastwind', compiler => 'pgi', mpilib => 'mvapich2',
-                                                 debug => 'FALSE', cimeroot => "../../", caseroot => '.');
-
-    $moduleloader->writeXMLFileForCase();
-    my @actualmodules = $moduleloader->findModulesForCase();
-    is_deeply(\@expectedmodules, \@actualmodules);
-}
-
-sub test_writeXMLFileForCase_eastwind() : Test(3):
-{
-    my $self = shift;
-
-    my $moduleloader = Module::ModuleLoader->new(machine => 'eastwind', compiler => 'pgi', mpilib => 'mvapich2',
-                                                debug => "FALSE", cimeroot => "../../", caseroot => '.');
-
-    $moduleloader->writeXMLFileForCase();
-
-    my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.eastwind.xml";
-    open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-    binmode $EXPECTED;
-    my $expected = do { local $/; <$EXPECTED> };
-    close $EXPECTED;
-
-    my $actualfile = "./env_mach_specific.xml";
-    open(my $ACTUAL, "<", $actualfile) or die " could not open $actualfile";
-    binmode $ACTUAL;
-    my $actual = do { local $/; <$ACTUAL> };
-    close $ACTUAL;
-    cmp_ok($actual, 'eq', $expected);
-    unlink $actualfile;
-}
-
-sub test_writeCshModuleFile_eastwind() : Test(1):
-{
-    my $self = shift;
-    my $moduleloader = Module::ModuleLoader->new(machine => 'eastwind', compiler => 'pgi', mpilib => 'mvapich2',
-                                                 debug => 'FALSE', cimeroot => "../../", caseroot => ".");
-
-    $moduleloader->writeXMLFileForCase();
-    $moduleloader->findModulesForCase();
-    $moduleloader->writeCshModuleFile();
-
-    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.eastwind.csh";
-    open (my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-    binmode $EXPECTED;
-    my $expected = do { local $/; <$EXPECTED> };
-    close $EXPECTED;
-
-    my $actualfile = "./.env_mach_specific.csh";
-    open (my $ACTUAL, "<", $actualfile) or die "could not open $actualfile, $!";
-    binmode $ACTUAL;
-    my $actual = do { local $/; <$ACTUAL> };
-    close $ACTUAL;
-    ok($actual eq $expected);
-    unlink $actualfile;
-}
-
-sub test_writeShModuleFile_eastwind() : Test(1):
-{
-    my $self = shift;
-
-    my $moduleloader = Module::ModuleLoader->new(machine => 'eastwind', compiler => 'pgi', mpilib => 'mvapich2',
-                                                 debug => 'FALSE', cimeroot => "../../", caseroot => ".");
-    $moduleloader->writeXMLFileForCase();
-    $moduleloader->findModulesForCase();
-    $moduleloader->writeShModuleFile();
-
-    my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.eastwind.sh";
-    open (my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-    binmode $EXPECTED;
-    my $expected = do { local $/; <$EXPECTED> };
-    close $EXPECTED;
-
-    my $actualfile = "./.env_mach_specific.sh";
-    open (my $ACTUAL, "<", $actualfile) or die "could not open $actualfile, $!";
-    binmode $ACTUAL;
-    my $actual = do { local $/; <$ACTUAL> };
-    close $ACTUAL;
-    ok($actual eq $expected);
-    unlink $actualfile;
-}
 
 sub test_moduleInit_erebus() : Test(2)
 {
@@ -1096,7 +974,7 @@ sub test_writeXMLFileForCase_erebus() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_erebus() : Test(1):
@@ -1234,7 +1112,7 @@ sub test_writeXMLFileForCase_eos() : Test(3):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     cmp_ok($actual, 'eq', $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_eos() : Test(1):
@@ -1259,7 +1137,7 @@ sub test_writeCshModuleFile_eos() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_eos() : Test(1):
@@ -1284,7 +1162,7 @@ sub test_writeShModuleFile_eos() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 sub test_findEnvVars_eos() : Test(1):
 {
@@ -1322,7 +1200,9 @@ sub test_findModulesFromMachinesDir_hobart() : Test(3):
     my @expectedintelmodules = ( {action => 'purge', actupon => '' , seqnum => 1},
                                  { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2}, 
                                  { action => 'unload', actupon => 'mpi/intel/openmpi-1.8.1-qlc', seqnum => 3},
-                                 { action => 'load', actupon => 'mpi/intel/mvapich2-1.8.1-qlc', seqnum => 4});
+                                 { action => 'load', actupon => 'mpi/intel/mvapich2-1.8.1-qlc', seqnum => 4},
+                                 { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/intel/mvapich2', seqnum => 5}
+                               );
     my $moduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'intel', mpilib => 'mvapich2',
                                                  debug => 'FALSE', cimeroot => "../../", caseroot => '.');
     $moduleloader->moduleInit();
@@ -1333,7 +1213,9 @@ sub test_findModulesFromMachinesDir_hobart() : Test(3):
     my @expectedpgimodules = ( { action => 'purge', actupon => '' , seqnum => 1 },
                                { action => 'load', actupon => 'compiler/pgi/15.1', seqnum => 2},
                                { action => 'unload', actupon => 'mpi/pgi/openmpi-1.8.1-qlc', seqnum => 3},
-                               { action => 'load', actupon => 'mpi/pgi/mvapich2-1.8.1-qlc', seqnum => 4} );
+                               { action => 'load', actupon => 'mpi/pgi/mvapich2-1.8.1-qlc', seqnum => 4},
+                               { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/pgi/mvapich2', seqnum => 5}, 
+                               );
     my $pgimoduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'pgi', mpilib => 'mvapich2',
                                                  debug => 'FALSE', cimeroot => "../../", caseroot => '.');
     $pgimoduleloader->moduleInit();
@@ -1342,7 +1224,9 @@ sub test_findModulesFromMachinesDir_hobart() : Test(3):
 	
 	my @expectednagmodules = ( { action => 'purge', actupon => '', seqnum => 1},
                                { action => 'load', actupon => 'compiler/nag/6.0', seqnum => 2},
-                               { action => 'xmlchange', actupon => 'MPILIB=openmpi', seqnum => 3});
+                               { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/nag/openmpi', seqnum => 3}, 
+                               { action => 'xmlchange', actupon => 'MPILIB=openmpi', seqnum => 4},
+                               );
 	
 	my $nagmoduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'nag', mpilib => 'openmpi', 
                                                     debug => 'FALSE', cimeroot => "../../", caseroot => '.');
@@ -1373,7 +1257,7 @@ sub test_writeXMLFileForCase_hobart() : Test(3):
     my $actual = do { local $/; <$ACTUAL> } ;
     close $actual;
     cmp_ok($actual,  'eq',  $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findModulesForCase_hobart() : Test(1):
@@ -1386,13 +1270,13 @@ sub test_findModulesForCase_hobart() : Test(1):
     $moduleloader->moduleInit();
     $moduleloader->writeXMLFileForCase();
     my @actualmodules = $moduleloader->findModulesForCase();
-    #print Dumper \@actualmodules;
-    #print Dumper $moduleloader->{modulestoload};
 
-    my @expectedmodules = ( {action => 'purge', actupon => '', seqnum => 1},
-                            { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2},
-                            { action => 'unload', actupon => 'mpi/intel/openmpi-1.8.1-qlc', seqnum => 3},
-                            { action => 'load', actupon => 'mpi/intel/mvapich2-1.8.1-qlc', seqnum => 4} );
+    my @expectedmodules = ( {action => 'purge', actupon => '' , seqnum => 1},
+                                 { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2}, 
+                                 { action => 'unload', actupon => 'mpi/intel/openmpi-1.8.1-qlc', seqnum => 3},
+                                 { action => 'load', actupon => 'mpi/intel/mvapich2-1.8.1-qlc', seqnum => 4},
+                                 { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/intel/mvapich2', seqnum => 5}
+                               );
     is_deeply(\@expectedmodules, \@actualmodules);
     #is_deeply(\@expectedmodules, @{$moduleloader->{modulestoload}});
 }
@@ -1420,7 +1304,7 @@ sub test_writeCshModuleFile_hobart() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_hobart() : Test(1):
@@ -1446,7 +1330,7 @@ sub test_writeShModuleFile_hobart() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_hobart() : Test(1):
@@ -1569,7 +1453,7 @@ sub test_writeCshModuleFile_gaea() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_gaea() : Test(1):
@@ -1595,7 +1479,7 @@ sub test_writeShModuleFile_gaea() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_gaea() : Test(1):
@@ -1678,7 +1562,7 @@ sub test_writeXMLFileForCase_hera() : Test(3):
     my $actual = do { local $/; <$ACTUAL> } ;
     close $actual;
     cmp_ok($actual,  'eq',  $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_hera() : Test(1):
@@ -1704,7 +1588,7 @@ sub test_writeCshModuleFile_hera() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_hera() : Test(1):
@@ -1730,7 +1614,7 @@ sub test_writeShModuleFile_hera() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_hera() : Test(1):
@@ -1814,7 +1698,7 @@ sub test_writeXMLFileForCase_mira() : Test(3):
     my $actual = do { local $/; <$ACTUAL> } ;
     close $actual;
     cmp_ok($actual,  'eq',  $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_mira() : Test(1):
@@ -1840,7 +1724,7 @@ sub test_writeCshModuleFile_mira() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_mira() : Test(1):
@@ -1866,7 +1750,7 @@ sub test_writeShModuleFile_mira() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_mira() : Test(1):
@@ -1953,7 +1837,7 @@ sub test_writeXMLFileForCase_olympus() : Test(3):
     my $actual = do { local $/; <$ACTUAL> } ;
     close $actual;
     cmp_ok($actual,  'eq',  $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_olympus() : Test(1):
@@ -1979,7 +1863,7 @@ sub test_writeCshModuleFile_olympus() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_olympus() : Test(1):
@@ -2005,7 +1889,7 @@ sub test_writeShModuleFile_olympus() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 sub test_findEnvVars_olympus() : Test(1):
 {
@@ -2092,7 +1976,7 @@ sub test_writeXMLFileForCase_pleiades_has() : Test(3):
     my $actual = do { local $/; <$ACTUAL> } ;
     close $actual;
     cmp_ok($actual,  'eq',  $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_pleiades_has() : Test(1):
@@ -2118,7 +2002,7 @@ sub test_writeCshModuleFile_pleiades_has() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_pleiades_has() : Test(1):
@@ -2144,7 +2028,7 @@ sub test_writeShModuleFile_pleiades_has() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_pleiades_has() : Test(1):
@@ -2412,7 +2296,7 @@ sub test_writeXMLFileForCase_yellowstone() : Test(3):
 	my $actual = do { local $/; <$ACTUAL> } ;
 	close $actual;
 	cmp_ok($actual,  'eq',  $expected);
-	#unlink $actualfile; 
+	unlink $actualfile; 
 }
 
 sub test_findModulesForCase_yellowstone() : Test(1):
@@ -2472,7 +2356,7 @@ sub test_writeCshModuleFile_yellowstone() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_yellowstone() : Test(1):
@@ -2498,7 +2382,7 @@ sub test_writeShModuleFile_yellowstone() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_findEnvVars_yellowstone() : Test(1):
@@ -2523,21 +2407,21 @@ sub test_findEnvVars_yellowstone() : Test(1):
         };
     is_deeply(\%actualenvs, $expectedenvs);
 }
-###sub test_loadModules_yellowstone()  : Test(1):
-###{
-###    my $self = shift;
+####sub test_loadModules_yellowstone()  : Test(1):
+####{
+####    my $self = shift;
+####
+####    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
+####                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
+####
+####    $moduleloader->moduleInit();
+####    $moduleloader->writeXMLFileForCase();
+####    $moduleloader->findModulesForCase();
+####    $moduleloader->loadModules();
+####}
 ###
-###    my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
-###                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
 ###
-###    $moduleloader->moduleInit();
-###    $moduleloader->writeXMLFileForCase();
-###    $moduleloader->findModulesForCase();
-###    $moduleloader->loadModules();
-###}
 ##
-##
-#
 sub test_moduleInit_titan() : Test(2)
 {
     my $self = shift;
@@ -2659,7 +2543,7 @@ sub test_writeXMLFileForCase_titan() : Test(1):
     my $actual = do { local $/; <$ACTUAL> } ;
     close $actual;
     cmp_ok($actual,  'eq',  $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeCshModuleFile_titan() : Test(1):
@@ -2684,7 +2568,7 @@ sub test_writeCshModuleFile_titan() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 
 sub test_writeShModuleFile_titan() : Test(1):
@@ -2709,7 +2593,7 @@ sub test_writeShModuleFile_titan() : Test(1):
     my $actual = do { local $/; <$ACTUAL> };
     close $ACTUAL;
     ok($actual eq $expected);
-    #unlink $actualfile;
+    unlink $actualfile;
 }
 sub test_findEnvVars_titan() : Test(1):
 {
