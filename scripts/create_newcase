@@ -696,7 +696,11 @@ sub _set_confopts
 	my $mopt = $coptions;
 	$mopt =~ s/.*_M([A-Za-z0-9\-]*)_?.*/$1/;
 	$mpilib = $mopt;
-	print "    mpilib set to $mpilib \n";
+        if($mpilib =~ /\w+/){
+  	  print "    mpilib set to $mpilib \n";
+        }else{
+	  die "M option found but no MPILIB provided";
+        }
     }
     if ($coptions =~ "_L") {
 	my $lopt = $coptions;

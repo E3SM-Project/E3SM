@@ -164,7 +164,7 @@ sub getGridLongname
     } elsif (@nodes_sname) {
 	$grid_node = $nodes_sname[0];
     } else { 
-	die " ERROR: no supported grid match for target grid $grid_input \n";
+	die " ERROR: no supported grid match for target grid $grid_input ";
     }
     
     # set the compset grid alias and longname

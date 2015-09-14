@@ -203,15 +203,18 @@ sub get_valid_values
 
     my $valid_values = $self->{$name}->{'valid_values'};
     my $type = $self->{$name}->{'type'};
-    my @values = split( /,/, $valid_values );
+    my @values;
+    if(defined $valid_values){
+	@values = split( /,/, $valid_values );
 
-    # if string type and NOT noquote option and have a list -- add quotes around values
-    if ( ! defined($opts{'noquotes'}) || ! $opts{'noquotes'} ) {
-       if ( $#values > -1 && ($type eq "char") ) {
-          for( my $i=0; $i <= $#values; $i++ ) {
-             $values[$i] = "'$values[$i]'";
-          }
-       }
+	# if string type and NOT noquote option and have a list -- add quotes around values
+	if ( ! defined($opts{'noquotes'}) || ! $opts{'noquotes'} ) {
+	    if ( $#values > -1 && ($type eq "char") ) {
+		for( my $i=0; $i <= $#values; $i++ ) {
+		    $values[$i] = "'$values[$i]'";
+		}
+	    }
+	}
     }
     return( @values );
 }
