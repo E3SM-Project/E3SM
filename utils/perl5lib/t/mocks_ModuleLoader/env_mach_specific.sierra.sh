@@ -6,6 +6,15 @@
 #===============================================================================
 
 .  /usr/global/tools/dotkit/init.sh
+CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+if [ -n $CIME_REPO  ]
+then 
+  COMPILER=`./xmlquery  COMPILER          -value`
+  MPILIB=`./xmlquery  MPILIB        -value`
+  DEBUG=`./xmlquery  DEBUG         -value`
+  OS=`./xmlquery  OS        -value`
+  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+fi
  use -q pgi-11.1 
  use -q mvapich2-pgi-1.7 
  use -q netcdf-pgi-4.1.3 

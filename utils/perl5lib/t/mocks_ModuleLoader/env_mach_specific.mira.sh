@@ -6,6 +6,15 @@
 #===============================================================================
 
 .  /etc/profile.d/00softenv.sh
+CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+if [ -n $CIME_REPO  ]
+then 
+  COMPILER=`./xmlquery  COMPILER          -value`
+  MPILIB=`./xmlquery  MPILIB        -value`
+  DEBUG=`./xmlquery  DEBUG         -value`
+  OS=`./xmlquery  OS        -value`
+  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+fi
 soft add +mpiwrapper-xl 
 soft add @ibm-compilers-2015-02 
 soft add +cmake 

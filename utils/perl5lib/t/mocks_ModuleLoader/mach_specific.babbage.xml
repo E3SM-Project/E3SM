@@ -36,8 +36,4 @@
     <env name="MKL">-mkl</env>
     <env name="OMP_STACKSIZE">64M</env>
   </environment_variables>
-  <limits>
-    <limit name="coredumpsize">unlimited</limit>
-    <limit name="stacksize">unlimited</limit>
-  </limits>
 </machine>

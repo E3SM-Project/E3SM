@@ -165,10 +165,6 @@
            <env name="MKL">-mkl</env>
            <env name="OMP_STACKSIZE">64M</env>
          </environment_variables>
-         <limits>
-           <limit name="coredumpsize">unlimited</limit>
-           <limit name="stacksize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="babbageKnc">
@@ -251,10 +247,6 @@
            <env name="MKL">-mkl</env>
            <env name="OMP_STACKSIZE">64M</env>
          </environment_variables>
-         <limits>
-           <limit name="coredumpsize">unlimited</limit>
-           <limit name="stacksize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="bluewaters">
@@ -846,10 +838,6 @@
            <env name="P4_GLOBMEMSIZE">500000000</env>
            <env name="NETCDF_DIR">$NETCDF_PATH</env>
          </environment_variables>
-         <limits>
-           <limit name="stacksize">unlimited</limit>
-           <limit name="coredumpsize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="hobart">
@@ -929,10 +917,6 @@
            <env name="P4_GLOBMEMSIZE">500000000</env>
            <env name="NETCDF_DIR">$NETCDF_PATH</env>
          </environment_variables>
-         <limits>
-           <limit name="stacksize">unlimited</limit>
-           <limit name="coredumpsize">unlimited</limit>
-         </limits>
 </machine>
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
@@ -1004,10 +988,6 @@
            <env name="P4_GLOBMEMSIZE">500000000</env>
            <env name="NETCDF_DIR">$NETCDF_PATH</env>
          </environment_variables>
-         <limits>
-           <limit name="stacksize">unlimited</limit>
-           <limit name="coredumpsize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="gaea">
@@ -1207,9 +1187,6 @@
            <env name="MPI_TYPE_MAX">$MPI_TYPE_MAX</env>
            <env name="OMP_DYNAMIC">$OMP_DYNAMIC</env>
          </environment_variables>
-         <limits>
-           <limit name="datasize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="olympus">
@@ -1819,10 +1796,6 @@
         <env name="MP_STDOUTMODE">unordered</env>
         <env name="MP_RC_USE_LMC">yes</env>
       </environment_variables>
-      <limits>
-        <limit name="stacksize">unlimited</limit>
-        <limit name="coredumpsize">unlimited</limit>
-      </limits>
 </machine>
 
 <machine MACH="pronghorn">

@@ -5,7 +5,15 @@
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
 
-source /glade/apps/opt/lmod/lmod/init/csh
+source  /glade/apps/opt/lmod/lmod/init/csh
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER            = `./xmlquery  COMPILER          -value`
+  set MPILIB              = `./xmlquery  MPILIB        -value`
+  set DEBUG               = `./xmlquery  DEBUG         -value`
+  set OS                  = `./xmlquery  OS        -value`
+  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+endif
 module purge 
 module load ncarenv/0.0
 module load ncarbinlibs/0.0

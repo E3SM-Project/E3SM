@@ -112,7 +112,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>16</PES_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="10:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
            </queues>
@@ -129,42 +129,42 @@
            </arguments>
          </mpirun>
          <module_system type="module">
-           <init_path>/usr/share/Modules/init/perl.pm</init_path>
-           <cmd_path>/usr/bin/modulecmd perl</cmd_path>
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <unload>intel</unload>
-             <unload>impi</unload>
-             <unload>hdf5</unload>
-             <unload>netcdf</unload>
+             <command name="unload">intel</command>
+             <command name="unload">impi</command>
+             <command name="unload">hdf5</command>
+             <command name="unload">netcdf</command>
            </modules>
            <modules compiler="intel">
-             <load>intel/13.1.2</load>
+             <command name="load">intel/13.1.2</command>
            </modules>
            <modules compiler="intel14">
-             <load>intel/14.0.3</load>
+             <command name="load">intel/14.0.3</command>
            </modules>
            <modules compiler="intel15">
-             <load>intel/15.0.0</load>
+             <command name="load">intel/15.0.0</command>
            </modules>
 
            <modules mpilib="impi">
-             <load>impi/4.1.1</load>
+             <command name="load">impi/4.1.1</command>
            </modules>
            <modules mpilib="impi4.1.3">
-             <load>impi/4.1.3</load>
+             <command name="load">impi/4.1.3</command>
            </modules>
            <modules mpilib="impi5.0.1">
-             <load>impi/5.0.1</load>
+             <command name="load">impi/5.0.1</command>
            </modules>
          </module_system>
          <environment_variables>
            <env name="MKL">-mkl</env>
            <env name="OMP_STACKSIZE">64M</env>
          </environment_variables>
-         <limits>
-           <limit type="coredumpsize">unlimited</limit>
-           <limit type="stacksize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="babbageKnc">
@@ -190,7 +190,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>192</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>60</PES_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="04:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
            </queues>
@@ -207,47 +207,46 @@
            </arguments>
          </mpirun>
          <module_system type="module">
-           <init_path>/usr/share/Modules/init/perl.pm</init_path>
-           <cmd_path>/usr/bin/modulecmd perl</cmd_path>
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <unload>intel</unload>
-             <unload>impi</unload>
-             <unload>netcdf</unload>
+             <command name="unload">intel</command>
+             <command name="unload">impi</command>
+             <command name="unload">netcdf</command>
            </modules>
            <modules compiler="intel13">
-             <load>intel/13.1.2</load> 
+             <command name="load">intel/13.1.2</command> 
            </modules>
            <modules compiler="intel14">
-             <load>intel/14.0.3</load> 
+             <command name="load">intel/14.0.3</command> 
            </modules>
            <modules compiler="intel15">
-             <load>intel/15.0.0</load> 
+             <command name="load">intel/15.0.0</command> 
            </modules>
 
            <modules mpilib="impi">
-             <load>impi/4.1.1</load>
+             <command name="load">impi/4.1.1</command>
            </modules>
            <modules mpilib="impi4.1.3">
-             <load>impi/4.1.3</load>
+             <command name="load">impi/4.1.3</command>
            </modules>
            <modules mpilib="impi5.0.1">
-             <load>impi/5.0.1</load>
+             <command name="load">impi/5.0.1</command>
            </modules>
-         
            <modules>
-             <load>cmake</load>
-             <load>netcdf/mic-4.1.3</load>
-             <load>pnetcdf/mic-1.5.0</load>
+             <command name="load">cmake</command>
+             <command name="load">netcdf/mic-4.1.3</command>
+             <command name="load">pnetcdf/mic-1.5.0</command>
            </modules>
          </module_system>
          <environment_variables>
            <env name="MKL">-mkl</env>
            <env name="OMP_STACKSIZE">64M</env>
          </environment_variables>
-         <limits>
-           <limit type="coredumpsize">unlimited</limit>
-           <limit type="stacksize">unlimited</limit>
-         </limits>
 </machine>
 
 <machine MACH="bluewaters">
@@ -288,42 +287,55 @@
              </arguments>
          </mpirun>
          <module_system type="module">
-           <init_path>/opt/modules/default/init/perl.pm</init_path>
-           <cmd_path>/opt/modules/3.2.10.3/bin/modulecmd perl</cmd_path>
+           <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+           <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+           <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+           <cmd_path lang="perl">/opt/modules/3.2.10.3/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
            <modules>
-             <rm>PrgEnv-pgi</rm>
-             <rm>PrgEnv-cray</rm>
-             <rm>PrgEnv-gnu</rm>
-             <rm>pgi</rm>
-             <rm>cray</rm>
+             <command name="rm">PrgEnv-pgi</command>
+             <command name="rm">PrgEnv-cray</command>
+             <command name="rm">PrgEnv-gnu</command>
+             <command name="rm">pgi</command>
+             <command name="rm">cray</command>
            </modules>
            <modules compiler="pgi">
-             <load>PrgEnv-pgi</load>
-             <switch>pgi pgi/14.2.0</switch>
+             <command name="load">PrgEnv-pgi</command>
+             <command name="switch">pgi pgi/14.2.0</command>
            </modules>
            <modules compiler="gnu">
-             <load>PrgEnv-gnu/4.2.84</load>
-             <switch>gcc gcc/4.8.2</switch>
+             <command name="load">PrgEnv-gnu/4.2.84</command>
+             <command name="switch">gcc gcc/4.8.2</command>
            </modules>
            <modules compiler="cray">
-             <load>PrgEnv-cray/4.2.34</load>
-             <switch>cce cce/8.2.6</switch>
+             <command name="load">PrgEnv-cray/4.2.34</command>
+             <command name="switch">cce cce/8.2.6</command>
            </modules>
            <modules>
-             <load>papi/5.3.2</load>
-             <switch> cray-mpich cray-mpich/7.0.3</switch>
-             <switch> cray-libsci cray-libsci/12.2.0</switch>
-             <load>torque/5.0.1</load>
-             <load>cray-netcdf-hdf5parallel/4.3.2</load>
-             <load>cray-parallel-netcdf/1.5.0</load>
+             <command name="load">papi/5.3.2</command>
+             <command name="switch">cray-mpich cray-mpich/7.0.3</command>
+             <command name="switch">cray-libsci cray-libsci/12.2.0</command>
+             <command name="load">torque/5.0.1</command>
+           </modules>
+           <modules mpilib="!mpi-serial">
+             <command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="load">cray-parallel-netcdf/1.5.0</command>
            </modules>
            <modules mpilib="mpi-serial">
-             <unload>cray-netcdf-hdf5parallel/4.3.2</unload>
-             <unload>cray-parallel-netcdf/1.5.0</unload>
-             <load>cray-netcdf/4.3.2</load>
+             <command name="load">cray-netcdf/4.3.2</command>
            </modules>
-           
+           <modules>
+             <command name="load">cmake</command>
+             <command name="rm">darshan</command>
+           </modules>
          </module_system>
+        <environment_variables>
+            <env name="OMP_STACKSIZE">64M</env>
+            <env name="MPICH_ENV_DISPLAY">1</env>
+            <env name="MPICH_PTL_MATCH_OFF">1</env>
+        </environment_variables>
+
 </machine>
 
 <machine MACH="brutus">
@@ -346,7 +358,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>1</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
@@ -371,9 +383,31 @@
            <executable></executable>
          </mpirun>
          <module_system type="module">
-           <init_path>/etc/profile.d/modules.perl</init_path>
+           <init_path lang="perl">/etc/profile.d/modules.perl</init_path>
+           <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+           <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
            <!-- This is a guess!! -->
-           <cmd_path>/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="purge"/>
+           </modules>
+           <modules compiler="intel">
+             <command name="load">intel/10.1.018</command>
+           </modules>
+           <modules compiler="pgi">
+             <command name="load">pgi/9.0-1</command>
+           </modules>
+           <modules mpilib="mpich">
+             <command name="load">mvapich2/1.4rc2</command>
+           </modules>
+           <modules mpilib="openmpi">
+             <command name="load">open_mpi/1.4.1</command>
+	       </modules>
+           <modules>
+             <command name="load">netcdf/4.0.1</command>
+           </modules>
          </module_system>
 </machine>
 
@@ -397,7 +431,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-         <batch_system name="slurm" version="x.y">
+         <batch_system type="slurm" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
@@ -424,6 +458,21 @@
              <arg name="killonbadexit"> --kill-on-bad-exit</arg>
            </arguments>
          </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/etc/profile.d/modules.perl</init_path>
+           <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+           <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+           <!-- This is a guess!! -->
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="purge"/> 
+			 <command name="load">pgi/11.3</command>
+			 <command name="load">mpi/mvapich2/1.5.1p1/pgi11.3</command>
+			 <command name="load">netcdf/4.1.2/pgi</command>
+           </modules>
+         </module_system>
 </machine>
 
 <machine MACH="edison">
@@ -450,10 +499,12 @@
           <!-- pbs is for crays.. -->
          <batch_system type="pbs" version="x.y">
            <queues>
-             <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">debug</queue>
+             <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">regular</queue>
            </queues>
            <walltimes>
-             <walltime default="true">00:30:00</walltime>
+             <walltime default="true">01:15:00</walltime>
+             <walltime ccsm_estcost="1">01:50:00</walltime>
+             <walltime ccsm_estcost="3">05:00:00</walltime>
            </walltimes>
          </batch_system>
          <mpirun mpilib="default">
@@ -464,8 +515,88 @@
              <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
              <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
              <arg name="thread_count" > -d {{ thread_count }}</arg>
+             <arg name="numa_node" > -cc {{ numa_node }}</arg>
            </arguments>
          </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+           <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+           <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+           <!-- This is a guess!! -->
+           <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="rm">PrgEnv-intel</command>
+             <command name="rm">PrgEnv-cray</command>
+             <command name="rm">PrgEnv-gnu</command>
+             <command name="rm">intel</command>
+             <command name="rm">cce</command>
+             <command name="rm">cray-parallel-netcdf</command>
+             <command name="rm">cray-parallel-hdf5</command>
+             <command name="rm">pmi</command>
+             <command name="rm">cray-libsci</command>
+             <command name="rm">cray-mpich2</command>
+             <command name="rm">cray-mpich</command>
+             <command name="rm">cray-netcdf</command>
+             <command name="rm">cray-hdf5</command>
+             <command name="rm">cray-netcdf-hdf5parallel</command>
+             <command name="rm">craype-sandybridge</command>
+             <command name="rm">craype-ivybridge</command>
+             <command name="rm">craype</command>
+           </modules>
+     
+           <modules compiler="intel">
+             <command name="load">PrgEnv-intel</command>
+             <command name="switch">intel intel/15.0.1.133</command>
+             <command name="rm">cray-libsci</command>
+             <command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
+           </modules>
+           <modules compiler="intel" debug="true">
+             <command name="load">esmf/6.2.0-defio-mpi-g</command>
+           </modules>
+           <modules compiler="intel" debug="false">
+             <command name="load">esmf/6.2.0-defio-mpi-O</command>
+           </modules>
+		   <modules compiler="cray">
+             <command name="load">PrgEnv-cray</command>
+             <command name="switch">cce cce/8.3.7</command>
+           </modules>
+		   <modules compiler="gnu">
+             <command name="load">PrgEnv-gnu</command>
+             <command name="switch">gcc gcc/4.8.0</command>
+           </modules>
+           <modules>
+             <command name="load">papi/5.3.2</command>
+             <command name="swap">craype craype/2.1.1</command>
+             <command name="load">craype-ivybridge</command>
+           </modules>
+           <modules compiler="!intel">
+             <command name="load">cray-libsci/13.0.1</command>
+           </modules>
+           <modules>
+             <command name="load">cray-mpich/7.1.1</command>
+             <command name="load">pmi/5.0.6-1.0000.10439.140.2.ari</command>
+           </modules>
+           <modules mpilib="mpi-serial">
+             <command name="load">cray-hdf5/1.8.11</command>
+             <command name="load">cray-netcdf/4.3.0</command>
+           </modules>
+           <modules mpilib="!mpi-serial">
+             <command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="load">cray-hdf5-parallel/1.8.13</command>
+             <command name="load">cray-parallel-netcdf/1.5.0</command>
+           </modules>
+           <modules>
+             <command name="load">perl/5.20.0</command>
+             <command name="load">cmake/2.8.11.2</command>
+           </modules>
+        </module_system>
+        <environment_variables>
+            <env name="MPICH_ENV_DISPLAY">1</env>
+            <env name="MPICH_VERSION_DISPLAY">1</env>
+            <env name="PERL5LIB">/global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0</env>
+        </environment_variables>
 </machine>
 
 
@@ -506,43 +637,44 @@
            <executable></executable>
          </mpirun>
          </batch_system>
-</machine>
-
-<machine MACH="evergreen">
-         <DESC>UMD cluster</DESC>
-         <OS>LINUX</OS>
-	 <COMPILERS>intel</COMPILERS>
-	 <MPILIBS>openmpi</MPILIBS>
-         <RUNDIR>/lustre/data/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/lustre/data/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/lustre/data/$USER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/data/eg_nfs/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/data/eg_nfs/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lustre/data/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/data/eg_nfs/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/data/eg_nfs/tcraig/IRESM/tools/cprnc/cprnc</CCSM_CPRNC>
-         <BATCHQUERY>showq</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
-         <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-         <batch_system type="pbs" version="x.y">
-           <queues>
-             <queue walltimemax="05:59:00" jobmin="1" jobmax="9999" default="true">standard</queue>
-           </queues>
-           <walltimes>
-             <walltime default="true">02:59:00</walltime>
-             <walltime ccsm_estcost="2" default="true">02:59:00</walltime>
-           </walltimes>
-         </batch_system>
-         <mpirun mpilib="default">
-           <executable>mpirun</executable>
-           <arguments>
-             <arg name="num_tasks"> -np {{ num_tasks }} </arg>
-           </arguments>
-         </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl.pm</init_path>
+           <init_path lang="sh">/glade/apps/opt/lmod/lmod/init/sh</init_path>
+           <init_path lang="csh">/glade/apps/opt/lmod/lmod/init/csh</init_path>
+           <!-- This is a guess!! -->
+           <cmd_path lang="perl">/glade/apps/opt/lmod/lmod/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="purge"/>
+             <command name="load">ncarenv/0.0</command>
+             <command name="load">ncarbinlibs/0.0</command>
+           </modules>
+           <modules compiler="intel">
+             <command name="load">intel/12.1.4</command>
+           </modules>
+           <modules compiler="pgi">
+             <command name="load">pgi/12.5</command>
+           </modules>
+           <modules compiler="gnu">
+             <command name="load">gnu/4.7.0</command>
+           </modules>
+           <modules compiler="pathscale">
+             <command name="load">pathscale/4.0.12.1</command>
+           </modules>
+           <modules>
+             <command name="load">ncarcompilers/1.0</command>
+             <command name="load">netcdf-mpi/4.2</command>
+             <command name="load">pnetcdf/1.3.0</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+             <env name="XLSMPOPTS">stack=256000000</env>
+             <env name="MP_LABELIO">yes</env>
+             <env name="MP_INFOLEVEL">2</env>
+             <env name="MP_SHARED_MEMORY">yes</env>
+             <env name="MP_EUILIB">us</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="eos">
@@ -590,6 +722,54 @@
          <mpirun mpilib="mpi-serial">
            <executable></executable>
          </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+           <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+           <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+           <!-- This is a guess!! -->
+           <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="rm">intel</command>
+             <command name="rm">cray</command>
+             <command name="rm">cray-parallel-netcdf</command>
+             <command name="rm">cray-libsci</command>
+             <command name="rm">cray-netcdf</command>
+             <command name="rm">cray-netcdf-hdf5parallel</command>
+             <command name="rm">netcdf</command>
+           </modules>
+           <modules compiler="intel">
+             <command name="load">intel/14.0.2.144</command>
+           </modules>
+           <modules compiler="cray">
+             <command name="load">PrgEnv-cray</command>
+             <command name="switch">cce cce/8.1.9</command>
+             <command name="load">cray-libsci/12.1.00</command>
+           </modules>
+           <modules compiler="gnu">
+             <command name="load">PrgEnv-gnu</command>
+             <command name="switch">gcc gcc/4.8.0</command>
+             <command name="load">cray-libsci/12.1.00</command>
+           </modules>
+           <modules>
+             <command name="load">cray-mpich/7.0.4</command>
+           </modules>
+           <modules mpilib="mpi-serial">
+             <command name="load">cray-netcdf/4.3.2</command>
+           </modules>
+           <modules mpilib="!mpi-serial">
+             <command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="load">cray-parallel-netcdf/1.5.0</command>
+           </modules>
+           <modules>
+             <command name="load">cmake/2.8.11.2</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="MPICH_ENV_DISPLAY">1</env>
+           <env name="MPICH_VERSION_DISPLAY">1</env>
+         </environment_variables>
          
 </machine>
 
@@ -632,31 +812,111 @@
          </mpirun>
          <!-- all commands in the module_system elements will be executed sequentially... -->
          <module_system type="module">
-           <!--<init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path> -->
-           <init_path >/usr/share/Modules/init/perl.pm</init_path> 
-           <!-- <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path> -->
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path> 
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path> 
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path> 
            <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="purge"></command>
+           </modules>
            <modules compiler="intel">
-             <load>compiler/intel/14.0.2</load>
+             <command name="load">compiler/intel/14.0.2</command>
            </modules>
            <modules compiler="pgi">
-             <load>compiler/pgi/14.10</load>
+             <command name="load">compiler/pgi/14.10</command>
            </modules>
            <modules compiler="nag">
-             <load>compiler/nag/5.3.1-907</load>
+             <command name="load">compiler/nag/5.3.1-907</command>
            </modules>
            <modules compiler="gnu">
-             <load>compiler/gnu/4.4.7</load>
+             <command name="load">compiler/gnu/4.4.7</command>
            </modules>
          </module_system>
          <environment_variables>
            <env name="P4_GLOBMEMSIZE">500000000</env>
-           <env name="NETCDF_DIR">NETCDF_PATH</env>
+           <env name="NETCDF_DIR">$NETCDF_PATH</env>
          </environment_variables>
-         <limits>
-           <limit type="stacksize">unlimited</limit>
-           <limit type="coredumpsize">unlimited</limit>
-         </limits>
+</machine>
+
+<machine MACH="hobart">
+         <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
+         <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
+         <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
+         <RUNDIR>/scratch/cluster/$CCSMUSER/$CASE/run</RUNDIR>
+         <EXEROOT>/scratch/cluster/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
+         <OBJROOT>$EXEROOT</OBJROOT>
+         <INCROOT>$EXEROOT/lib/include</INCROOT>
+         <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/scratch/cluster/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_hobart/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>qstat</BATCHQUERY>
+         <BATCHREDIRECT></BATCHREDIRECT>
+         <BATCHSUBMIT>qsub </BATCHSUBMIT>
+         <GMAKE_J>4</GMAKE_J>
+         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <PES_PER_NODE>24</PES_PER_NODE>
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
+             <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">02:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpiexec</executable>
+           <arguments>
+	     <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+             <arg name="num_tasks"> -n {{ num_tasks }} </arg>
+           </arguments>
+         </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="purge"></command>
+           </modules>
+           <modules compiler="intel">
+             <command name="load">compiler/intel/15.0.2.164</command>
+           </modules>
+           <modules compiler="intel" mpilib="mvapich2">
+             <command name="unload">mpi/intel/openmpi-1.8.1-qlc</command>
+             <command name="load">mpi/intel/mvapich2-1.8.1-qlc</command>
+             <command name="load">tool/parallel-netcdf/1.6.1/intel/mvapich2</command>
+           </modules>
+           <modules compiler="pgi">
+             <command name="load">compiler/pgi/15.1</command>
+           </modules>
+           <modules compiler="pgi" mpilib="mvapich2">
+             <command name="unload">mpi/pgi/openmpi-1.8.1-qlc</command>
+             <command name="load">mpi/pgi/mvapich2-1.8.1-qlc</command>
+             <command name="load">tool/parallel-netcdf/1.6.1/pgi/mvapich2</command>
+           </modules>
+           <modules compiler="nag">
+             <command name="load">compiler/nag/6.0</command>
+             <command name="load">tool/parallel-netcdf/1.6.1/nag/openmpi</command>
+             <command name="xmlchange">MPILIB=openmpi</command>
+           </modules>
+           <modules compiler="gnu">
+             <command name="load">compiler/gnu/4.8.3</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="P4_GLOBMEMSIZE">500000000</env>
+           <env name="NETCDF_DIR">$NETCDF_PATH</env>
+         </environment_variables>
 </machine>
 <machine MACH="logan">
          <DESC>"NCAR CGD General compute server"</DESC>
@@ -691,6 +951,43 @@
          <mpirun mpilib="default">
            <executable>mpiexec</executable>
          </mpirun>
+
+         <module_system type="module">
+           <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+           <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+           <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+           <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="purge"></command>
+           </modules>
+           <modules compiler="intel">
+             <command name="load">compiler/intel/15.0.2.164</command>
+           </modules>
+           <modules compiler="intel" mpilib="mvapich2">
+             <command name="unload">mpi/intel/openmpi-1.8.1-qlc</command>
+             <command name="load">mpi/intel/mvapich2-1.8.1-qlc</command>
+           </modules>
+           <modules compiler="pgi">
+             <command name="load">compiler/pgi/15.1</command>
+           </modules>
+           <modules compiler="pgi" mpilib="mvapich2">
+             <command name="unload">mpi/pgi/openmpi-1.8.1-qlc</command>
+             <command name="load">mpi/pgi/mvapich2-1.8.1-qlc</command>
+           </modules>
+           <modules compiler="nag">
+             <command name="load">compiler/nag/6.0</command>
+             <command name="xmlchange">MPILIB=openmpi</command>
+           </modules>
+           <modules compiler="gnu">
+             <command name="load">compiler/gnu/4.8.3</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="P4_GLOBMEMSIZE">500000000</env>
+           <env name="NETCDF_DIR">$NETCDF_PATH</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="gaea">
@@ -737,6 +1034,42 @@
          <mpirun mpilib="mpi-serial">
            <executable></executable>
          </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+           <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+           <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+           <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="rm">PrgEnv-pgi</command>
+             <command name="rm">PrgEnv-cray</command>
+             <command name="rm">PrgEnv-gnu</command>
+             <command name="rm">pgi</command>
+             <command name="rm">cray</command>
+           </modules>
+           <modules compiler="pgi">
+             <command name="load">PrgEnv-pgi</command>
+             <command name="switch">pgi pgi/12.5.0</command>
+           </modules>
+           <modules compiler="gnu">
+             <command name="load">PrgEnv-gnu</command>
+             <command name="load">torque</command>
+           </modules>
+           <modules compiler="cray">
+             <command name="load">PrgEnv-cray/4.0.36</command>
+             <command name="load">cce/8.0.2</command>
+           </modules>
+           <modules>
+             <command name="load">torque/4.1.3</command>
+             <command name="load">netcdf-hdf5parallel/4.2.0</command>
+             <command name="load">parallel-netcdf/1.2.0</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="OMP_STACKSIZE">64M</env>
+           <env name="MPICH_ENV_DISPLAY">1</env>
+         </environment_variables>
 </machine>
 
 
@@ -776,86 +1109,21 @@
          <mpirun mpilib="mpi-serial">
             <executable></executable>
          </mpirun>
+         <module_system type="dotkit">
+           <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
+           <init_path lang="sh">/usr/global/tools/dotkit/init.sh</init_path>
+           <cmd_path lang="csh"></cmd_path>
+           <cmd_path lang="sh"></cmd_path>
+           <modules>
+             <command name="use -q">pgi-11.1</command>
+             <command name="use -q">mvapich2-pgi-1.7</command>
+             <command name="use -q">netcdf-pgi-4.1.3</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
+         </environment_variables>
 </machine>
-
-<machine MACH="hopper">
-         <DESC>NERSC XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>pgi,intel,gnu,cray,pathscale</COMPILERS>
-	 <MPILIBS>mpt,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc/cprnc</CCSM_CPRNC>
-         <OS>CNL</OS>
-         <BATCHQUERY>qstat -f</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
-         <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-         <batch_system type="pbs" version="x.y">
-            <queues>
-               <queue walltimemax="00:30:00" jomin="1" jobmax="512" default="true">debug</queue>
-            </queues>
-            <walltimes>
-               <walltime default="true">00:30:00</walltime>
-            </walltimes>
-         </batch_system>
-         <mpirun mpilib="default">
-            <executable>aprun</executable>
-            <arguments>
-             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-             <arg name="thread_count" > -d {{ thread_count }}</arg>
-            </arguments>
-         </mpirun>
-</machine>
-
-<machine MACH="janus">
-         <DESC>CU Linux Cluster (intel), 2 pes/node, batch system is PBS</DESC>
-	 <COMPILERS>intel,pgi</COMPILERS>
-	 <MPILIBS>openmpi,mpi-serial</MPILIBS>
-         <OS>LINUX</OS>
-         <RUNDIR>/lustre/janus_scratch/$CCSMUSER/$CASE/run</RUNDIR>
-         <EXEROOT>/lustre/janus_scratch/$CCSMUSER/$CASE/bld</EXEROOT>
-         <CESMSCRATCHROOT>/lustre/janus_scratch/$USER</CESMSCRATCHROOT>
-         <DIN_LOC_ROOT>/lustre/janus_scratch/cesm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/lustre/janus_scratch/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lustre/janus_scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-         <CCSM_BASELINE>/lustre/janus_scratch/cesm/baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/lustre/janus_scratch/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
-         <BATCHQUERY>sqeueu</BATCHQUERY>
-         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
-         <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>cseg</SUPPORTED_BY>
-         <GMAKE_J>12</GMAKE_J>
-         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
-     <batch_system type="slurm" version="x.y">
-       <queues>
-         <queue jobmin="1" jobmax="480" default="true">normal</queue>
-       </queues>
-       <walltimes>
-         <walltime default="true">0:50:00</walltime>
-         <walltime ccsm_estcost="0">1:50:00</walltime>
-         <walltime ccsm_estcost="1">4:00:00</walltime>
-       </walltimes>
-     </batch_system>
-     <mpirun mpilib="default">
-       <executable>mpirun</executable>
-       <arguments>
-         <arg name="num_tasks"> -np {{ num_tasks }}</arg>
-         <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
-       </arguments>
-     </mpirun>
-</machine>
-
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
@@ -903,6 +1171,22 @@
                <arg name="colon">:</arg>
              </arguments>
          </mpirun>
+         <module_system type="soft">
+           <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
+           <cmd_path lang="csh">soft</cmd_path>
+           <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
+           <cmd_path lang="sh">soft</cmd_path>
+           <modules>
+               <command name="add">+mpiwrapper-xl</command>
+               <command name="add">@ibm-compilers-2015-02</command>
+               <command name="add">+cmake</command>
+               <command name="add">+python</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="MPI_TYPE_MAX">$MPI_TYPE_MAX</env>
+           <env name="OMP_DYNAMIC">$OMP_DYNAMIC</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="olympus">
@@ -945,6 +1229,21 @@
     </arguments>
   </mpirun>
   </batch_system>
+  <module_system type="module">
+    <init_path lang="perl">/share/apps/modules/Modules/3.2.7/init/perl.pm</init_path>
+    <init_path lang="csh">/share/apps/modules/Modules/3.2.7/init/csh</init_path>
+    <init_path lang="sh">/share/apps/modules/Modules/3.2.7/init/sh</init_path>
+    <cmd_path lang="perl">/share/apps/modules/Modules/3.2.7/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <modules>
+      <command name="purge"/>
+      <command name="load">precision/i4</command>
+      <command name="load">pgi/11.8</command>
+      <command name="load">mvapich2/1.7</command>
+      <command name="load">netcdf/4.1.3</command>
+    </modules>
+  </module_system>
 </machine>
 
 
@@ -986,6 +1285,31 @@
              </arguments>
            </mpirun>
          </batch_system>
+         <module_system type="module">
+           <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
+           <init_path lang="csh">/usr/share/modules/init/csh</init_path>
+           <init_path lang="sh">/usr/share/modules/init/sh</init_path>
+           <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="purge"/>
+             <command name="load">comp-intel/2015.0.090</command>
+             <command name="load">mpi-sgi/mpt.2.11r13</command>
+             <command name="load">netcdf/4.1.3/intel/mpt</command>
+             <command name="load">cmake/2.8.12.1</command>
+             <command name="load">nas</command>
+           </modules>
+	     </module_system>
+         <environment_variables>
+           <env name="MPI_GROUP_MAX">1024</env>
+           <env name="MPI_TYPE_MAX">100000</env>
+           <env name="KMP_AFFINITY">noverbose,disabled</env>
+           <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="pleiades-wes">
@@ -1026,6 +1350,31 @@
                <arg name="num_tasks">-n {{ num_tasks }}</arg>
              </arguments>
            </mpirun>
+         <module_system type="module">
+           <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
+           <init_path lang="csh">/usr/share/modules/init/csh</init_path>
+           <init_path lang="sh">/usr/share/modules/init/sh</init_path>
+           <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="purge"/>
+             <command name="load">comp-intel/2015.0.090</command>
+             <command name="load">mpi-sgi/mpt.2.11r13</command>
+             <command name="load">netcdf/4.1.3/intel/mpt</command>
+             <command name="load">cmake/2.8.12.1</command>
+             <command name="load">nas</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="MPI_GROUP_MAX">1024</env>
+           <env name="MPI_TYPE_MAX">100000</env>
+           <env name="KMP_AFFINITY">noverbose,disabled</env>
+           <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="pleiades-san">
@@ -1066,6 +1415,31 @@
              </arguments>
            </mpirun>
          </batch_system>
+         <module_system type="module">
+           <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
+           <init_path lang="csh">/usr/share/modules/init/csh</init_path>
+           <init_path lang="sh">/usr/share/modules/init/sh</init_path>
+           <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="purge"/>
+             <command name="load">comp-intel/2015.0.090</command>
+             <command name="load">mpi-sgi/mpt.2.11r13</command>
+             <command name="load">netcdf/4.1.3/intel/mpt</command>
+             <command name="load">cmake/2.8.12.1</command>
+             <command name="load">nas</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="MPI_GROUP_MAX">1024</env>
+           <env name="MPI_TYPE_MAX">100000</env>
+           <env name="KMP_AFFINITY">noverbose,disabled</env>
+           <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
+         </environment_variables>
          
 </machine>
 
@@ -1107,6 +1481,31 @@
              </arguments>
            </mpirun>
          </batch_system>
+         <module_system type="module">
+           <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
+           <init_path lang="csh">/usr/share/modules/init/csh</init_path>
+           <init_path lang="sh">/usr/share/modules/init/sh</init_path>
+           <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <modules>
+             <command name="purge"/>
+             <command name="load">comp-intel/2015.0.090</command>
+             <command name="load">mpi-sgi/mpt.2.11r13</command>
+             <command name="load">netcdf/4.1.3/intel/mpt</command>
+             <command name="load">cmake/2.8.12.1</command>
+             <command name="load">nas</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="MPI_GROUP_MAX">1024</env>
+           <env name="MPI_TYPE_MAX">100000</env>
+           <env name="KMP_AFFINITY">noverbose,disabled</env>
+           <env name="KMP_SCHEDULE">static,balanced</env>
+           <env name="OMP_DYNAMIC">FALSE</env>
+           <env name="MPI_TYPE_DEPTH">10</env>
+           <env name="PNETCDF_PATH">/home1/fvitt/parallel-netcdf-1.3.1</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="sierra">
@@ -1144,6 +1543,20 @@
          <mpirun mpilib="mpi-serial">
            <executable></executable>
          </mpirun>
+         <module_system type="dotkit">
+           <init_path lang="csh">/usr/global/tools/dotkit/init.csh</init_path>
+           <init_path lang="sh">/usr/global/tools/dotkit/init.sh</init_path>
+           <cmd_path lang="csh"></cmd_path>
+           <cmd_path lang="sh"></cmd_path>
+           <modules>
+             <command name="use -q">pgi-11.1</command>
+             <command name="use -q">mvapich2-pgi-1.7</command>
+             <command name="use -q">netcdf-pgi-4.1.3</command>
+           </modules>
+         </module_system>
+         <environment_variables>
+           <env name="NETCDF">/usr/local/tools/netcdf-pgi-4.1.3/</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="titan">
@@ -1186,7 +1599,82 @@
                 <arg name="thread_count"> -d {{ thread_count }}</arg>
              </arguments>
          </mpirun>
-         
+         <module_system type="module">
+           <init_path lang="perl">/opt/modules/default/init/perl</init_path>
+           <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+           <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+           <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+           <cmd_path lang="sh">module</cmd_path>
+           <cmd_path lang="csh">module</cmd_path>
+           <modules>
+             <command name="rm">PrgEnv-intel</command>
+             <command name="rm">PrgEnv-pgi</command>
+             <command name="rm">PrgEnv-cray</command>
+             <command name="rm">PrgEnv-gnu</command>
+             <command name="rm">PrgEnv-pathscale</command>
+             <command name="rm">intel</command>
+             <command name="rm">pgi</command>
+             <command name="rm">cray</command>
+             <command name="rm">pathscale</command>
+             <command name="rm">parallel-netcdf</command>
+             <command name="rm">netcdf</command>
+             <command name="rm">cmake</command>
+             <command name="rm">cray-mpich</command>
+             <command name="rm">cray-mpich2</command>
+             <command name="rm">cray-libsci</command>
+             <command name="rm">xt-libsci</command>
+             <command name="rm">cray-netcdf</command>
+             <command name="rm">cray-netcdf-hdf5parallel</command>
+             <command name="rm">cray-parallel-netcdf</command>
+           </modules>
+           <modules compiler="pgicuda">
+             <command name="load">PrgEnv-pgi</command>
+             <command name="switch">pgi pgi/14.2.0</command>
+             <command name="load">cray-mpich/7.0.4</command>
+             <command name="load">cray-libsci/13.0.1</command>
+             <command name="load">esmf/5.2.0rp2</command>
+             <command name="switch">atp atp/1.7.5</command>
+             <command name="add">cudatoolkit</command>
+           </modules>
+           <modules compiler="pgi">
+             <command name="load">PrgEnv-pgi</command>
+             <command name="switch">pgi pgi/14.2.0</command>
+             <command name="load">cray-mpich/7.0.4</command>
+             <command name="load">cray-libsci/13.0.1</command>
+             <command name="load">esmf/5.2.0rp2</command>
+           </modules>
+           <modules compiler="intel">
+             <command name="load">PrgEnv-pgi</command>
+             <command name="switch">intel intel/14.0.2.144</command>
+             <command name="load">cray-mpich/7.0.4</command>
+           </modules>
+           <modules mpilib="mpi-serial">
+             <command name="load">cray-netcdf/4.3.0</command>
+           </modules>
+           <modules mpilib="!mpi-serial">
+             <command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
+             <command name="load">cray-parallel-netcdf/1.5.0</command>
+           </modules>
+           <modules>
+             <command name="load">subversion</command>
+             <command name="load">cmake/2.8.11.2</command>
+           </modules>
+         </module_system>
+         <environment_variables compiler="pgicuda">
+             <env name="CRAY_CPU_TARGET">istanbul</env>
+             <env name="CRAY_CUDA_PROXY">1</env>
+         </environment_variables>
+         <environment_variables compiler="pgi">
+             <env name="CRAY_CPU_TARGET">istanbul</env>
+         </environment_variables>
+         <environment_variables>
+             <env name="MPICH_ENV_DISPLAY">1</env>
+             <env name="MPICH_VERSION_DISPLAY">1</env>
+             <env name="MPICH_CPUMASK_DPSPLAY">1</env>
+             <env name="MPICH_RANK_REORDER_DISPLAY">1</env>
+             <env name="MPSTKZ">64M</env>
+             <env name="OMP_STACKSIZE">64M</env>
+         </environment_variables>
 </machine>
 
 <machine MACH="yellowstone">
@@ -1210,7 +1698,7 @@
         <SUPPORTED_BY>cseg</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
-        <PES_PER_NODE>16</PES_PER_NODE>
+         <PES_PER_NODE>16</PES_PER_NODE>
         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
         <batch_system type="lsf" version="9.1">
         <queues>
@@ -1239,66 +1727,62 @@
         <executable>mpirun.lsf </executable>
       </mpirun>
       <module_system type="module">
-      <init_path>/glade/apps/opt/lmod/lmod/init/perl</init_path>
-      <cmd_path>/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
+      <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>
+      <init_path lang="csh">/glade/apps/opt/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/apps/opt/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
       <modules>
-	    <purge></purge>
-        <load>ncarenv/1.0</load>
-        <load>ncarbinlibs/1.1</load>
-        <load>perlmods</load>
-        <load>gmake/4.1</load>
-        <load>python</load>
-        <load>all-python-libs</load>
+	    <command name="purge"/>
+        <command name="load">ncarenv/1.0</command>
+        <command name="load">ncarbinlibs/1.1</command>
+        <command name="load">perlmods</command>
+        <command name="load">gmake/4.1</command>
+        <command name="load">python</command>
+        <command name="load">all-python-libs</command>
       </modules>
         
       <modules compiler="intel">
-        <load>intel/15.0.1</load>
-        <load>mkl/11.1.2</load>
-        <load>netcdf-mpi/4.3.3-rc3</load>
-        <load>pnetcdf/1.6.0</load>
-        <load>esmf</load>
+        <command name="load">intel/15.0.3</command>
+        <command name="load">mkl/11.1.2</command>
+        <command name="load">trilinos/11.10.2</command>
+        <command name="load">esmf</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
-        <unload>netcdf-mpi/4.3.3-rc3</unload>
-        <unload>pnetcdf/1.6.0</unload>
-        <load>netcdf/4.3.2</load>
+      <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+        <command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
       </modules>
-      <modules compiler="intel" debug="true">
-        <load>esmf-6.3.0rp1-defio-mpi-g</load>
-      </modules>
-      <modules compiler="intel" debug="false">
-        <load>esmf-6.3.0rp1-defio-mpi-O</load>
+      <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+        <command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
       </modules>
 
       <modules compiler="intel" mpilib="mpi-serial" debug="true">
-        <unload>esmf-6.3.0rp1-defio-mpi-g</unload>
-        <load>esmf-6.3.0rp1-defio-uni-g</load>
+        <command name="load">esmf-6.3.0rp1-defio-uni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" debug="false">
-        <unload> esmf-6.3.0rp1-defio-mpi-O</unload>
-        <load> esmf-6.3.0rp1-defio-uni-O</load>
+        <command name="load"> esmf-6.3.0rp1-defio-uni-O</command>
       </modules>
       
       <modules compiler="pgi">
-        <load>pgi/14.7</load>
-        <load>netcdf/4.3.0</load>
-        <load>pnetcdf/1.4.1</load>
+        <command name="load">pgi/15.1</command>
       </modules>
-      <modules compiler="pgi" mpilib="mpi-serial">
-        <unload>pnetcdf/1.4.1</unload>
-      </modules>
+
       <modules compiler="gnu">
-        <load>gnu/4.9.2</load>
-        <load>netcdf/4.3.0</load>
-        <load>pnetcdf/1.4.1</load>
+        <command name="load">gnu/5.1.0</command>
       </modules>
-      <modules compiler="gnu" mpilib="mpi-serial">
-        <unload>pnetcdf/1.4.1</unload>
+    
+      <modules mpilib="mpi-serial">
+        <command name="load">netcdf/4.3.3.1</command>
+      </modules>
+
+      <modules mpilib="!mpi-serial">
+        <command name="load">netcdf-mpi/4.3.3.1</command>
+        <command name="load">pnetcdf/1.6.0</command>
       </modules>
 
       <modules>
-        <load>ncarcompilers/1.0</load>
-        <load>cmake/2.8.10.2</load>
+        <command name="load">ncarcompilers/1.0</command>
+        <command name="load">cmake/2.8.10.2</command>
       </modules>
       </module_system>
       
@@ -1308,14 +1792,10 @@
         <env name="MP_INFOLEVEL">2</env>
         <env name="MP_SHARED_MEMORY">yes</env>
         <env name="MP_EUILIB">us</env>
-        <env name="MP_MPILIB">$mpilib</env>
+        <env name="MP_MPILIB">$MPILIB</env>
         <env name="MP_STDOUTMODE">unordered</env>
         <env name="MP_RC_USE_LMC">yes</env>
       </environment_variables>
-      <limits>
-        <limit type="stacksize">unlimited</limit>
-        <limit type="coredumpsize">unlimited</limit>
-      </limits>
 </machine>
 
 <machine MACH="pronghorn">
@@ -1404,6 +1884,14 @@
               </arguments>
           </mpirun>
         </batch_system>
+        <module_system type="module">
+          <init_path lang="perl"></init_path>
+          <init_path lang="csh"></init_path>
+          <init_path lang="sh"></init_path>
+          <cmd_path lang="perl"></cmd_path>
+          <cmd_path lang="csh"></cmd_path>
+          <cmd_path lang="sh"></cmd_path>
+        </module_system>
 </machine>
 <default_run_suffix>$config{'EXEROOT'}/cesm.exe >> cesm.log.$LID 2>&amp;1</default_run_suffix>
 </config_machines>

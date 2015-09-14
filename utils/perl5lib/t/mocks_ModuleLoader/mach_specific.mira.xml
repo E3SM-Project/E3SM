@@ -16,7 +16,4 @@
     <env name="MPI_TYPE_MAX">$MPI_TYPE_MAX</env>
     <env name="OMP_DYNAMIC">$OMP_DYNAMIC</env>
   </environment_variables>
-  <limits>
-    <limit name="datasize">unlimited</limit>
-  </limits>
 </machine>
