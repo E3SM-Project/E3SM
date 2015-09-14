@@ -311,13 +311,13 @@ sub write_xml_entry
     $value =~ s/'/&apos;/g;
     $value =~ s/\</&lt;/g;
     $value =~ s/\</&gt;/g;
-    
-    $desc =~ s/^\n//;
-    $desc =~ s/\n$//;
-    $desc =~ s/^ *//;
-    $desc =~ s/ *$//g;
-    chomp $desc;
-    
+    if(defined $desc){
+	$desc =~ s/^\n//;
+	$desc =~ s/\n$//;
+	$desc =~ s/^ *//;
+	$desc =~ s/ *$//g;
+	chomp $desc;
+    }
     print $fh "\n";
     print $fh "<entry id=\"$id\"  value=\"$value\">\n";   	    
     print $fh "  <type>$type</type> \n"; 
