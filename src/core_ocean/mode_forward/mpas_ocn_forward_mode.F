@@ -51,6 +51,7 @@ module ocn_forward_mode
    use ocn_vel_coriolis
    use ocn_vel_forcing_surface_stress
    use ocn_surface_bulk_forcing
+   use ocn_surface_land_ice_fluxes
 
    use ocn_tracer_hmix
    use ocn_tracer_surface_flux_to_tend
@@ -180,6 +181,8 @@ module ocn_forward_mode
       call ocn_vel_forcing_surface_stress_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_surface_bulk_forcing_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_surface_land_ice_fluxes_init(err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)
@@ -388,6 +391,9 @@ module ocn_forward_mode
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: scratchPool
+
 
       type (MPAS_timeInterval_type) :: timeStep
       character(len=StrKIND), pointer :: config_restart_timestamp_name
@@ -444,7 +450,11 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-           call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingpool, ierr, 1)
+           call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+           call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+           call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
+           call ocn_surface_land_ice_fluxes_build_arrays(meshPool, statePool, diagnosticsPool, &
+                                                         forcingPool, scratchPool, 1, err)
            block_ptr => block_ptr % next
          end do
 
