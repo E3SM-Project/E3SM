@@ -282,6 +282,7 @@ void computeMap();
 
 void setBdFacesOnPrism (const std::vector<std::vector<std::vector<int> > >& prismStruct, const std::vector<int>& prismFaceIds, std::vector<int>& tetraPos, std::vector<int>& facePos);
 void tetrasFromPrismStructured (int const* prismVertexMpasIds, int const* prismVertexGIds, int tetrasIdsOnPrism[][4]);
+void procsSharingVertex(const int vertex, std::vector<int>& procIds);
 
 bool belongToTria(double const* x, double const* t, double bcoords[3], double eps = 1e-3);
 
