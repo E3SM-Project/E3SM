@@ -28,6 +28,7 @@ module ocn_tendency
    use ocn_constants
 
    use ocn_surface_bulk_forcing
+   use ocn_surface_land_ice_fluxes
 
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
@@ -139,10 +140,15 @@ contains
 
       if(config_disable_thick_all_tend) return
 
-      ! Build suface stress array from bulk
+      ! Build suface mass flux array from bulk
       call mpas_timer_start("bulk_thick", .false.)
       call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
       call mpas_timer_stop("bulk_thick")
+
+      ! Build suface thickness flux array from land ice
+      call mpas_timer_start("land_ice_thick", .false.)
+      call ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
+      call mpas_timer_stop("land_ice_thick")
 
       !
       ! height tendency: horizontal advection term -\nabla\cdot ( hu)
@@ -268,6 +274,11 @@ contains
       call mpas_timer_start("bulk_ws", .false.)
       call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
       call mpas_timer_stop("bulk_ws")
+
+      ! Add top drag to suface stress
+      call mpas_timer_start("top_drag", .false.)
+      call ocn_surface_land_ice_fluxes_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
+      call mpas_timer_stop("top_drag")
 
       !
       ! velocity tendency: nonlinear Coriolis term and grad of kinetic energy
@@ -550,11 +561,11 @@ contains
                      call mpas_timer_stop("surface_restoring_" // trim(groupItr % memberName))
                  endif
 
-               ! land-ice / ocean interface flux
-               ! this is a flux at the top ocean surface -- so these fluxes should be added into tracerGroupSurfaceFlux
-               ! if (put correct logic here, only 'active' when coupling is turned on)
-               !    call ocn_tracer_landIce_ocean_coupling(tracerGroup, tracerGroupSurfaceFlux)
-               ! endif
+               ! tracer fluxes at the land-ice / ocean interface
+               ! this is a flux at the top ocean surface -- so these fluxes are added into tracerGroupSurfaceFlux
+               call mpas_timer_start("land_ice_" // trim(groupItr % memberName), .false.)
+               call ocn_surface_land_ice_fluxes_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroupSurfaceFlux, err)
+               call mpas_timer_stop("land_ice_" // trim(groupItr % memberName))
 
                !
                ! other additions to tracerGroupSurfaceFlux should be added here

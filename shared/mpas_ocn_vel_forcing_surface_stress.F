@@ -51,7 +51,7 @@ module ocn_vel_forcing_surface_stress
    !
    !--------------------------------------------------------------------
 
-   logical :: windStressOn
+   logical :: surfaceStressOn
 
 !***********************************************************************
 
@@ -129,7 +129,7 @@ contains
 
       err = 0
 
-      if ( .not. windStressOn ) return
+      if ( .not. surfaceStressOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
@@ -197,9 +197,9 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_surface_stress', config_disable_vel_surface_stress)
 
-      windStressOn = .true.
+      surfaceStressOn = .true.
 
-      if(config_disable_vel_surface_stress) windStressOn = .false.
+      if(config_disable_vel_surface_stress) surfaceStressOn = .false.
 
       err = 0
 
