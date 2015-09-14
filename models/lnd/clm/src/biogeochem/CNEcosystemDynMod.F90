@@ -457,9 +457,9 @@ contains
     use dynHarvestMod          , only: CNHarvest
 !    use clm_varpar             , only: crop_prog
 
-!    use CNAllocationMod        , only: CNAllocation1 !!cnallocation  !!wgs
+!    use CNAllocationMod        , only: cnallocation
     use CNDecompMod            , only: CNDecompAlloc
-    use CNDecompMod            , only: CNDecompAlloc2 !! CNDecompAlloc2 after CNDecompAlloc
+    use CNDecompMod            , only: CNDecompAlloc2 !!after CNDecompAlloc
 
     !
     ! !ARGUMENTS:
@@ -508,28 +508,23 @@ contains
             !! directly run clm-bgc
             !! if (use_bgc_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
             call CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
+                       num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
                        temperature_vars, waterstate_vars,           &
                        cnstate_vars, ch4_vars,                      &
                        carbonstate_vars, carbonflux_vars,           &
                        nitrogenstate_vars, nitrogenflux_vars,       &
                        phosphorusstate_vars,phosphorusflux_vars)
-!            call CNDecompAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
-!                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars,&
-!                cnstate_vars, ch4_vars,                                                             &
-!                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,        &
-!                nitrogenstate_vars, nitrogenflux_vars, crop_vars,                                   &
-!                phosphorusstate_vars,phosphorusflux_vars)
        end if !!if(.not.use_bgc_interface)
        !----------------------------------------------------------------
        !! CNDecompAlloc2 is called by both clm-bgc & pflotran
        !! pflotran: call 'CNDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
        !! pflotran & clm-bgc : 'CNAllocation3_AG' and vertically integrate net and gross mineralization fluxes
-       call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,   &
-                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,               &
-                waterstate_vars, cnstate_vars, ch4_vars,                                          &
-                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
-                nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
+       call CNDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
+                photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars,             &
+                waterstate_vars, cnstate_vars, ch4_vars,                                        &
+                carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,    &
+                nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                 &
                 phosphorusstate_vars,phosphorusflux_vars)
 
        !----------------------------------------------------------------

@@ -89,20 +89,17 @@ contains
 
 !!-------------------------------------------------------------------------------------------------
   subroutine CNDecompAlloc (bounds, num_soilc, filter_soilc,    &
-               canopystate_vars, soilstate_vars,                &
-               temperature_vars, waterstate_vars,               &
-               cnstate_vars, ch4_vars,                          &
-               carbonstate_vars, carbonflux_vars,               &
-               nitrogenstate_vars, nitrogenflux_vars,           &
-               phosphorusstate_vars,phosphorusflux_vars)
-!  subroutine CNDecompAlloc (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-!       photosyns_vars, canopystate_vars, soilstate_vars, temperature_vars, waterstate_vars, &
-!       cnstate_vars, ch4_vars, &
-!       carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-!       nitrogenstate_vars, nitrogenflux_vars, crop_vars,&
-!       phosphorusstate_vars,phosphorusflux_vars)
+                num_soilp, filter_soilp,                        &
+                canopystate_vars, soilstate_vars,               &
+                temperature_vars, waterstate_vars,              &
+                cnstate_vars, ch4_vars,                         &
+                carbonstate_vars, carbonflux_vars,              &
+                nitrogenstate_vars, nitrogenflux_vars,          &
+                phosphorusstate_vars,phosphorusflux_vars)
+
     !!-----------------------------------------------------------------------------
     !! DESCRIPTION:
+    !! Modified for bgc-interface (wgs): 9/12/2015
     !! clm-bgc soil Module, can be called through clm_bgc_interface
     !! ONLY includes SOM decomposition & nitrification/denitrification (if use_nitrif_denitrif)
     !! CNAllocaiton is divided into 3 subroutines:
@@ -119,8 +116,8 @@ contains
     type(bounds_type)        , intent(in)    :: bounds   
     integer                  , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
-!    integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
-!    integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
+    integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
+    integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
 !    type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
@@ -403,18 +400,11 @@ contains
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
       call t_startf('CNAllocation - phase-2')
-      call CNAllocation2_ResolveNPLimit(bounds,         &
-           num_soilc, filter_soilc,                     &
-           cnstate_vars,                                &
-           nitrogenstate_vars, nitrogenflux_vars,       &
-           phosphorusstate_vars,phosphorusflux_vars)
-
-!      call CNAllocation2_ResolveNPLimit(bounds,                                           &
-!           num_soilc, filter_soilc, num_soilp, filter_soilp,                              &
-!           photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,                     &
-!           carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,   &
-!           nitrogenstate_vars, nitrogenflux_vars,                                         &
-!           phosphorusstate_vars,phosphorusflux_vars)
+      call CNAllocation2_ResolveNPLimit(bounds,                     &
+               num_soilc, filter_soilc, num_soilp, filter_soilp,    &
+               cnstate_vars,                                        &
+               nitrogenstate_vars, nitrogenflux_vars,               &
+               phosphorusstate_vars,phosphorusflux_vars)
       call t_stopf('CNAllocation - phase-2')
 
 
