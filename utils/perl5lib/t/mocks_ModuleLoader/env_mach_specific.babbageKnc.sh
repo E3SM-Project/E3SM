@@ -6,6 +6,15 @@
 #===============================================================================
 
 .  /usr/share/Modules/init/sh
+CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+if [ -n $CIME_REPO  ]
+then 
+  COMPILER=`./xmlquery  COMPILER          -value`
+  MPILIB=`./xmlquery  MPILIB        -value`
+  DEBUG=`./xmlquery  DEBUG         -value`
+  OS=`./xmlquery  OS        -value`
+  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+fi
 module unload intel 
 module unload impi 
 module unload netcdf 

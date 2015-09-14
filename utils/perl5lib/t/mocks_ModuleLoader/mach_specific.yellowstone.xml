@@ -69,8 +69,4 @@
     <env name="MP_STDOUTMODE">unordered</env>
     <env name="MP_RC_USE_LMC">yes</env>
   </environment_variables>
-  <limits>
-    <limit type="stacksize">unlimited</limit>
-    <limit type="coredumpsize">unlimited</limit>
-  </limits>
 </machine>

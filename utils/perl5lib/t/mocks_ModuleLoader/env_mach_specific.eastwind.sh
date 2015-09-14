@@ -6,6 +6,15 @@
 #===============================================================================
 
 .  /etc/profile.d/modules.sh
+CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+if [ -n $CIME_REPO  ]
+then 
+  COMPILER=`./xmlquery  COMPILER          -value`
+  MPILIB=`./xmlquery  MPILIB        -value`
+  DEBUG=`./xmlquery  DEBUG         -value`
+  OS=`./xmlquery  OS        -value`
+  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+fi
 module purge  
 module load pgi/11.3 
 module load mpi/mvapich2/1.5.1p1/pgi11.3 

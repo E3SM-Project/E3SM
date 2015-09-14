@@ -5,7 +5,15 @@
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
 
-source /opt/modules/default/init/csh
+source  /opt/modules/default/init/csh
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+if($status == 0) then
+  set COMPILER            = `./xmlquery  COMPILER          -value`
+  set MPILIB              = `./xmlquery  MPILIB        -value`
+  set DEBUG               = `./xmlquery  DEBUG         -value`
+  set OS                  = `./xmlquery  OS        -value`
+  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+endif
 module rm PrgEnv-pgi
 module rm PrgEnv-cray
 module rm PrgEnv-gnu

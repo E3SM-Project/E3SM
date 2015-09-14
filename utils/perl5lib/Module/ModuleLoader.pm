@@ -7,6 +7,7 @@ package Module::ModuleLoader;
 #------------------------------------------------------------------------------
 use strict;
 use warnings;
+use diagnostics;
 use XML::LibXML;
 use Data::Dumper;
 use Cwd;
@@ -50,92 +51,6 @@ sub new
     return $self;
 }
 
-#------------------------------------------------------------------------------
-# eval the env_mach_specific file for this machine, which should give us the new environment, 
-# then insert the new or modified environment variables into %ENV
-# TODO: remove!
-#------------------------------------------------------------------------------
-sub loadModulesCshEval()
-{
-    my $self = shift;
-    #my $self = {   
-    #   machine => $params{'machine'} || undef,
-    #   compiler => $params{'compiler'} || undef,
-    #   mpilib =>   $params{'mpilib'} || undef,
-    #   debug  =>   $params{'debug'} || undef,
-    #   scriptsroot => $params{'scriptsroot'} || undef,
-    #   caseroot => $params{'caseroot'} || undef,
-    #};
-    #eval qx($self->{cmdpath} $cmd);
-
-    if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
-
-    my %oldenv = %ENV;
-    my $envfile = $self->{'caseroot'} . "/env_mach_specific";
-    my $cshenv = "env ";
-    $cshenv .= "COMPILER=". $self->{'compiler'} . " " ;
-    $cshenv .= "MPILIB=". $self->{'mpilib'} . " " ;
-    $cshenv .= "DEBUG=". $self->{'debug'} . " " ;
-    $cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
-    $cshenv .= "PERL=TRUE ";
-    my $cmd = $cshenv . " " . $envfile ;
-    #print "running command $cmd\n";
-    my @output;
-    eval { @output = qx($cmd);};
-    #eval { $out = `$cmd`;};
-    #$out = `$cmd`;
-    chomp @output;
-    if($?)
-    {
-    die "could not load modules for machine $self->{'machine'}";
-    }
-    my %newenv;
-    
-    #foreach my $line(@output)
-    for my $i(0 .. $#output)
-    {
-    chomp $output[$i];
-    if($output[$i] !~ /=/)
-    {
-        $output[$i] = '';
-    }
-    if($output[$i] =~ /BASH_FUNC/i)
-    {
-        $output[$i] = '';
-    }
-    }
-    foreach my $line(@output)
-    {
-    if(length($line) > 0)
-    {
-        chomp $line;
-        #print "line: $line\n";
-        my ($key, $value) = split('=', $line, 2);
-        $newenv{$key} = $value;
-    }
-    }
-    my %newbuildenv;
-    
-    foreach my $k(keys %newenv)
-    {
-    if(! defined $oldenv{$k})
-    {
-        #print "new env var: $newenv{$k}\n";
-        $newbuildenv{$k} = $newenv{$k};
-        $ENV{$k} = $newenv{$k};
-    }
-    if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
-    {
-        #print "modified env var: $newenv{$k}\n";
-        $newbuildenv{$k} = $newenv{$k};
-        $ENV{$k} = $newenv{$k};
-    }
-    }
-    $ENV{CIME_MODULES_LOADED} = 1;
-    return %newbuildenv;
-
-}
-
 sub moduleInit()
 {
     my $self = shift;
@@ -147,7 +62,7 @@ sub moduleInit()
     }
     else
     {
-    $self->{configmachinesfile} = $configmachinesfile;
+        $self->{configmachinesfile} = $configmachinesfile;
     }
     
     $self->{machspecificfile} = $self->{'caseroot'} . "/env_mach_specific.xml";
@@ -414,51 +329,51 @@ sub findModules()
             foreach my $qualifier ( qw/ machine compiler mpilib debug/)
             {
             
-            if($mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) eq lc $self->{$qualifier})
-            {
-                $attrmatch = 1;
-            }
-            elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) =~ /^\!/)
-            {
-                 my $negatedattr = $mod->getAttribute($qualifier);
-                    $negatedattr =~ s/!//g;
-                    #print "negated attr is: $negatedattr\n";
-                    #print "mod attr is ", $mod->getAttribute($qualifier), "\n";
-                    #print "self attr is ", $self->{$qualifier}, "\n";
-                    if($negatedattr ne $self->{$qualifier})
-                    {
-                        #print "negated attributes do not match, this is a match\n";
-                        $attrmatch = 1;
-                        next;
-                    }
-                    else
-                    {
-                        #print "negated attributes do match, this is NOT a match\n";
-                        $attrmatch = 0;
-                        last;
-                    }
+                if($mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) eq lc $self->{$qualifier})
+                {
+                    $attrmatch = 1;
+                }
+                elsif( $mod->hasAttribute($qualifier) && $mod->getAttribute($qualifier) =~ /^\!/)
+                {
+                     my $negatedattr = $mod->getAttribute($qualifier);
+                        $negatedattr =~ s/!//g;
+                        #print "negated attr is: $negatedattr\n";
+                        #print "mod attr is ", $mod->getAttribute($qualifier), "\n";
+                        #print "self attr is ", $self->{$qualifier}, "\n";
+                        if($negatedattr ne $self->{$qualifier})
+                        {
+                            #print "negated attributes do not match, this is a match\n";
+                            $attrmatch = 1;
+                            next;
+                        }
+                        else
+                        {
+                            #print "negated attributes do match, this is NOT a match\n";
+                            $attrmatch = 0;
+                            last;
+                        }
 
-                 }
-            # if the qualifier exists as an attribute but doesn't match, skip the entire block. 
-            elsif( $mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) ne lc $self->{$qualifier})
-            {
-                $attrmatch = 0;
-                last;
+                     }
+                # if the qualifier exists as an attribute but doesn't match, skip the entire block. 
+                elsif( $mod->hasAttribute($qualifier) && lc $mod->getAttribute($qualifier) ne lc $self->{$qualifier})
+                {
+                    $attrmatch = 0;
+                    last;
+                }
             }
-        }
-        if($attrmatch == 1)
-        {
-            my @modchildren = $mod->getChildNodes();
-            foreach my $child(@modchildren)
+            if($attrmatch == 1)
             {
-                #my $action = $child->getName();
-                my $action = $child->getAttribute('name');
-                my $actupon = $child->textContent();    
-                my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum };
-                push(@foundmodules, $modhash);
-                $seqnum += 1;
+                my @modchildren = $mod->getChildNodes();
+                foreach my $child(@modchildren)
+                {
+                    #my $action = $child->getName();
+                    my $action = $child->getAttribute('name');
+                    my $actupon = $child->textContent();    
+                    my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum };
+                    push(@foundmodules, $modhash);
+                    $seqnum += 1;
+                }
             }
-        }
         }
     }
     #print Dumper \@foundmodules;
@@ -478,7 +393,11 @@ sub loadModules()
     }
     elsif($self->{modulesystemtype} eq 'dotkit')
     {
-    $self->loadDotKitModules();
+        $self->loadDotKitModules();
+    }
+    elsif($self->{modulesystemtype} eq 'none')
+    {
+        $self->loadNoneModules();
     }
 }
 
@@ -582,12 +501,102 @@ sub loadModuleModules()
                  $ENV{$key} = $moduleenv{$key};
          }
      }
-
     $self->writeCshModuleFile();
     $self->writeShModuleFile();
 }
 
-
+# Module system type "none" 
+sub loadNoneModules()
+{
+    my $self = shift;
+    my $machine = $self->{machine};
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    my $xml;
+    if( -e "$ENV{'HOME'}/.cesm/config_machines.xml")
+    {
+        $xml = $parser->parse_file("$ENV{'HOME'}/.cesm/config_machines.xml");
+    }
+    elsif( -e $self->{machspecificfile})
+    {
+        $xml = $parser->parse_file($self->{machspecificfile});
+    }
+    else
+    {
+        $xml = $parser->parse_file($self->{configmachinesfile});
+    }
+    
+    my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables");
+    foreach my $envnode(@envnodes)
+    {
+        if(! $envnode->hasAttributes())
+        {
+            my @envs = $envnode->childNodes();
+            foreach my $e(@envs)
+            {
+                my $name = $e->getAttribute('name');    
+                my $value = $e->textContent();
+                if($value =~ /^\$/)
+                {
+                    $value = $ENV{$value};
+                }
+                else
+                {
+                    $ENV{$name} = $value; 
+                }
+            }
+        }
+        else
+        {
+            my $attrMatch = 0;
+            my @envnodeattrs = $envnode->attributes;
+            foreach my $a(@envnodeattrs)
+            {
+                my $attrName = $a->getName();
+                my $attrValue = $a->getValue();
+                if(defined $self->{$attrName} && lc $attrValue eq lc $self->{$attrName})
+                {
+                    $attrMatch = 1;
+                    next;
+                }
+                elsif(defined $self->{$attrName} && $attrName !~ /^\!/ && lc $attrValue ne $self->{$attrName})
+                {
+                    $attrMatch = 0;
+                    last;
+                }
+                elsif(defined $self->{$attrName} && $attrName =~ /^\!/)
+                {
+                    if($envnode->getAttribute($attrName) ne $self->{$attrName})
+                    {
+                        $attrMatch = 1;
+                        next;
+                    }
+                    if($envnode->getAttribute($attrName) eq $self->{$attrName})
+                    {
+                        $attrMatch = 0;
+                        last;
+                    }
+                 }
+             }
+             if($attrMatch)
+             {
+                  my @envs = $envnode->childNodes();
+                  foreach my $e(@envs)
+                  {
+                      my $name = $e->getAttribute('name');
+                      my $value = $e->textContent();
+                      if($value =~ /^\$/)
+                      {
+                          $value = $ENV{$value};
+                      }
+                      else
+                      {
+                          $ENV{$name} = $value;
+                      }
+                  }
+              }
+         }
+    }
+}
 sub loadSoftModules()
 {
     my $self = shift;
@@ -752,14 +761,14 @@ sub getCshModuleCode()
     die "no csh init path defined for this machine!" if !@cshinitnodes;
     foreach my $node(@cshinitnodes)
     {
-    $self->{cshinitpath} = $node->textContent();
+        $self->{cshinitpath} = $node->textContent();
     }
 
     my @cshcmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'csh\']");
     die "no c shell ccmd_path defined for this machine!" if ! @cshcmdnodes;
     foreach my $node(@cshcmdnodes)
     {
-    $self->{cshcmdpath} = $node->textContent();
+        $self->{cshcmdpath} = $node->textContent();
     }
     
     
@@ -771,6 +780,8 @@ sub getCshModuleCode()
 # DO NOT EDIT THIS FILE DIRECTLY!  Please edit env_mach_specific.xml 
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
+
+source  $self->{cshinitpath}
 START
 
     if(! defined $configuremode)
@@ -801,129 +812,111 @@ START
     
     if(! -e "$self->{caseroot}/env_mach_specific.xml")
     {
-    $self->writeXmlFileForCase();
+        $self->writeXmlFileForCase();
     }
     my $casexml = $parser->parse_file("$self->{caseroot}/env_mach_specific.xml");
     my @allmodules = $casexml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
     
     foreach my $mod(@allmodules)
     {
-    if(!$mod->hasAttributes())
-    {
-        my @modchildren = $mod->getChildNodes();
-        foreach my $child(@modchildren)
+        if(!$mod->hasAttributes())
         {
-        #my $action = $child->getName();
+            my @modchildren = $mod->getChildNodes();
+            foreach my $child(@modchildren)
+            {
                 my $action = $child->getAttribute('name');
-        my $actupon = $child->textContent();
-        $csh .= "$self->{cshcmdpath} $action $actupon\n";
-        }
-    }
-    else
-    {
-        my @attrs = $mod->attributes;
-        
-        $csh .= "if ( ";
-        while(@attrs)
-        {
-        my $attr = shift @attrs;
-        my $name = uc($attr->getName());
-        my $value = $attr->getValue();
-        if($value =~ /^\!/)
-        {
-            $value =~ s/\!//g;
-            $csh .= "\$$name != \"$value\"";
+                my $actupon = $child->textContent();
+                $csh .= "$self->{cshcmdpath} $action $actupon\n";
+            }
         }
         else
         {
-            $csh .= "\$$name == \"$value\"";
-        }
-        $csh .= " && " if(@attrs);
-        }
-        $csh .= " ) then\n";
+            my @attrs = $mod->attributes;
+            
+            $csh .= "if ( ";
+            while(@attrs)
+            {
+                my $attr = shift @attrs;
+                my $name = uc($attr->getName());
+                my $value = $attr->getValue();
+                if($value =~ /^\!/)
+                {
+                    $value =~ s/\!//g;
+                    $csh .= "\$$name != \"$value\"";
+                }
+                else
+                {
+                    $csh .= "\$$name == \"$value\"";
+                }
+                $csh .= " && " if(@attrs);
+            }
+            $csh .= " ) then\n";
 
-        my @modchildren = $mod->getChildNodes();
-        foreach my $child(@modchildren)
-        {
-        
-        #my $action = $child->getName();
-        my $action = $child->getAttribute('name');
-        my $actupon = $child->textContent();
-        if($action =~ /xmlchange/)
-        {
-            $csh .= "\t./$action $actupon\n";
+            my @modchildren = $mod->getChildNodes();
+            foreach my $child(@modchildren)
+            {
+                my $action = $child->getAttribute('name');
+                my $actupon = $child->textContent();
+                if($action =~ /xmlchange/)
+                {
+                    $csh .= "\t./$action $actupon\n";
+                }
+                else
+                {
+                    $csh .= "\t$self->{cshcmdpath} $action $actupon\n";
+                }
+            }
+            $csh .= "endif\n";
         }
-        else
-        {
-            $csh .= "\t$self->{cshcmdpath} $action $actupon\n";
-        }
-        }
-        $csh .= "endif\n";
-    }
     }
     
     my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables");
+    foreach my $envnode(@envnodes)
     {
-        foreach my $envnode(@envnodes)
+        if(! $envnode->hasAttributes())
         {
-            if(! $envnode->hasAttributes())
+            my @envs = $envnode->childNodes();
+            foreach my $e(@envs)
             {
-                my @envs = $envnode->childNodes();
-                foreach my $e(@envs)
-                {
-                    my $name = $e->getAttribute('name');
-                    my $value = $e->textContent();
-                    $csh .= "setenv $name $value\n";
-                }
+                my $name = $e->getAttribute('name');
+                my $value = $e->textContent();
+                $csh .= "setenv $name $value\n";
             }
-            else
+         }
+         else
+         {
+            my @attrs = $envnode->attributes;
+            $csh .= "if ( ";
+            while(@attrs)
             {
-                my @attrs = $envnode->attributes;
-                $csh .= "if ( ";
-                while(@attrs)
-                {
-                    my $attr = shift @attrs;
-                    my $name = uc($attr->getName());
-                    my $value = $attr->getValue();
+                my $attr = shift @attrs;
+                my $name = uc($attr->getName());
+                my $value = $attr->getValue();
         
-                    if($value =~ /^\!/)
-                    {
-                        $value =~ s/\!//g;
-                        $csh .= "\$$name != \"$value\"";
-        
-                    }
-                    else
-                    {
-                        $csh .= "\$$name == \"$value\"";
-                    }
-                    $csh .= " && " if(@attrs);
-                
-                }
-                $csh .= " ) then\n";
-                
-                my @envs = $envnode->childNodes();
-                foreach my $e(@envs)
+                if($value =~ /^\!/)
                 {
-                    my $name = $e->getAttribute('name');
-                    my $value = $e->textContent();
-                    $csh .= "\tsetenv $name $value\n";
+                    $value =~ s/\!//g;
+                    $csh .= "\$$name != \"$value\"";
                 }
-                $csh .= "endif\n";
+                else
+                {
+                    $csh .= "\$$name == \"$value\"";
+                }
+                $csh .= " && " if(@attrs);
+                
             }
+            $csh .= " ) then\n";
+            
+            my @envs = $envnode->childNodes();
+            foreach my $e(@envs)
+            {
+                my $name = $e->getAttribute('name');
+                my $value = $e->textContent();
+                $csh .= "\tsetenv $name $value\n";
+            }
+            $csh .= "endif\n";
         }
     }
-
-    #my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/limits/limit");
-    #if(@limitnodes)
-    #{
-    #    foreach my $lnode(@limitnodes)
-    #    {
-    #        my $name = $lnode->getAttribute('name');
-    #        my $value = $lnode->textContent();
-    #        $csh .= "limit $name $value\n";
-    #    }
-    #}
-    
     $self->{cshmodulecode} = $csh;
 }
 sub writeCshModuleFile()
@@ -941,6 +934,7 @@ sub writeCshModuleFile()
 sub getShModuleCode()
 {
     my $self = shift;
+    my $configuremode = shift;
     my %cshtosh = ( "cputime" => "-t", 
             "filesize" => "-f",
             "datasize" => "-d", 
@@ -953,7 +947,6 @@ sub getShModuleCode()
             "maxproc" => "-u" );
     my $machine = $self->{machine};
 
-    #my $xml = $self->{configmachinesroot};
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $xml;
     if( -e $self->{machspecificfile})
@@ -990,144 +983,139 @@ sub getShModuleCode()
 
 .  $self->{shinitpath}
 START
+    if(! defined $configuremode)
+    {
+        $sh .=<<"START";
+CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+if [ -n \$CIME_REPO  ]
+then 
+  COMPILER=`./xmlquery  COMPILER          -value`
+  MPILIB=`./xmlquery  MPILIB        -value`
+  DEBUG=`./xmlquery  DEBUG         -value`
+  OS=`./xmlquery  OS        -value`
+  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+fi
+START
+    }
+    else
+    {
+        $sh .=<<"START";
+COMPILER=$self->{compiler}
+MPILIB=$self->{mpilib}
+DEBUG=$self->{debug}
+START
+    }
 
     
     my @allmodules = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
     foreach my $mod(@allmodules)
     {
-    if(! $mod->hasAttributes())
-    {
-        my @modchildren = $mod->getChildNodes();
-        foreach my $child(@modchildren)
+        if(! $mod->hasAttributes())
         {
-        #my $action = $child->getName();
-        my $action = $child->getAttribute('name');
-        my $actupon = $child->textContent();
-        #$sh .= "module $action $actupon \n";
-                print "$self->{shcmdpath}  $action $actupon \n";
-        $sh .= "$self->{shcmdpath} $action $actupon \n";
-        }
-    }
-    else
-    {
-        my @attrs = $mod->attributes;
-        
-        $sh .= "if [ ";
-        while(@attrs)
-        {
-        my $attr = shift @attrs;
-        my $name = uc($attr->getName());
-        my $value = $attr->getValue();
-                if($value =~ /^\!/)
-                {
-                    $value =~ s/\!//g;
-                    #$sh .= "\$$name != \"$value\"";
-            $sh .= "\"\$$name\" != \"$value\"";
-                }
-                else
-                {
-                    #$csh .= "\$$name == \"$value\"";
-            $sh .= "\"\$$name\" = \"$value\"";
-                }
-        $sh .= " ] && [ " if (@attrs);
-        }
-        $sh .= " ]\n";
-        $sh .= "then\n";
-        
-        my @modchildren = $mod->getChildNodes();
-        foreach my $child(@modchildren)
-        {
+            my @modchildren = $mod->getChildNodes();
+            foreach my $child(@modchildren)
+            {
                 #my $action = $child->getName();
                 my $action = $child->getAttribute('name');
-        my $actupon = $child->textContent();
-        if($action =~ /xmlchange/)
-        {
-            $sh .= "\t./$action $actupon\n";
+                my $actupon = $child->textContent();
+                #$sh .= "module $action $actupon \n";
+                print "$self->{shcmdpath}  $action $actupon \n";
+                $sh .= "$self->{shcmdpath} $action $actupon \n";
+            }
         }
         else
         {
-            $sh .= "\t$self->{shcmdpath} $action $actupon\n";
+            my @attrs = $mod->attributes;
+            
+            $sh .= "if [ ";
+            while(@attrs)
+            {
+                my $attr = shift @attrs;
+                my $name = uc($attr->getName());
+                my $value = $attr->getValue();
+                if($value =~ /^\!/)
+                {
+                    $value =~ s/\!//g;
+                    $sh .= "\"\$$name\" != \"$value\"";
+                }
+                else
+                {
+                    $sh .= "\"\$$name\" = \"$value\"";
+                }
+                $sh .= " ] && [ " if (@attrs);
+             }
+             $sh .= " ]\n";
+             $sh .= "then\n";
+             
+             my @modchildren = $mod->getChildNodes();
+             foreach my $child(@modchildren)
+             {
+                 #my $action = $child->getName();
+                 my $action = $child->getAttribute('name');
+                 my $actupon = $child->textContent();
+                 if($action =~ /xmlchange/)
+                 {
+                     $sh .= "\t./$action $actupon\n";
+                 }
+                 else
+                 {
+                     $sh .= "\t$self->{shcmdpath} $action $actupon\n";
+                 }
+             }
+             $sh .= "fi\n";
         }
-        }
-        $sh .= "fi\n";
     }
-    }
-
 
     my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables");
+    foreach my $envnode(@envnodes)
     {
-        foreach my $envnode(@envnodes)
+        if(! $envnode->hasAttributes())
         {
-            if(! $envnode->hasAttributes())
+            my @envs = $envnode->childNodes();
+            foreach my $e(@envs)
             {
-                my @envs = $envnode->childNodes();
-                foreach my $e(@envs)
-                {
-                    my $name = $e->getAttribute('name');
-                    my $value = $e->textContent();
-                    $sh .= "export $name=$value\n";
-                }
-            }
-            else
-            {
-                my @attrs = $envnode->attributes;
-                $sh .= "if [ ";
-                while(@attrs)
-                {
-                    my $attr = shift @attrs;
-                    my $name = uc($attr->getName());
-                    my $value = $attr->getValue();
-
-                    if($value =~ /^\!/)
-                    {
-                        $value =~ s/\!//g;
-                        $sh .= "\$$name\" != \"$value\"";
-
-                    }
-                    else
-                    {
-                        $sh .= "\"\$$name\" = \"$value\"";
-                    }
-                    $sh .= "] && [ " if(@attrs);
-
-                }
-                $sh .= " ]\n";
-                $sh .= "then\n";
-
-                my @envs = $envnode->childNodes();
-                foreach my $e(@envs)
-                {
-                    my $name = $e->getAttribute('name');
-                    my $value = $e->textContent();
-                    $sh .= "\texport $name=$value\n";
-                }
-                $sh .= "fi\n";
+                my $name = $e->getAttribute('name');
+                my $value = $e->textContent();
+                $sh .= "export $name=$value\n";
             }
         }
-    }
-    #my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables/env");
-    #if(@envnodes)
-    #{
-    #    foreach my $enode(@envnodes)
-    #    {
-    #        my $name = $enode->getAttribute('name');
-    #        my $value = $enode->textContent();
-    #        $sh .= "export $name=$value\n";
-    #    }
-    #}
+        else
+        {
+            my @attrs = $envnode->attributes;
+            $sh .= "if [ ";
+            while(@attrs)
+            {
+                my $attr = shift @attrs;
+                my $name = uc($attr->getName());
+                my $value = $attr->getValue();
 
-    #my @limitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/limits/limit");
-    #if(@limitnodes)
-    #{
-    #    foreach my $lnode(@limitnodes)
-    #    {
-    #        my $name = $lnode->getAttribute('name');
-    #        my $value = $lnode->textContent();
-    #        print "name: $name, value: $value\n";
-    #    my $shname = $cshtosh{$name};
-    #        $sh .= "ulimit $shname $value\n";
-    #    }
-    #}
+                if($value =~ /^\!/)
+                {
+                    $value =~ s/\!//g;
+                    $sh .= "\$$name\" != \"$value\"";
+
+                }
+                else
+                {
+                    $sh .= "\"\$$name\" = \"$value\"";
+                }
+                $sh .= "] && [ " if(@attrs);
+
+            }
+            $sh .= " ]\n";
+            $sh .= "then\n";
+
+            my @envs = $envnode->childNodes();
+            foreach my $e(@envs)
+            {
+                my $name = $e->getAttribute('name');
+                my $value = $e->textContent();
+                $sh .= "\texport $name=$value\n";
+            }
+            $sh .= "fi\n";
+         }
+    }
+
     $self->{shmodulecode} = $sh;
 }
 
@@ -1142,4 +1130,5 @@ sub writeShModuleFile
     print $SHFILE $self->{shmodulecode};
     close $SHFILE;
 }
+
 1;

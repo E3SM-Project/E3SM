@@ -27,8 +27,4 @@
     <env name="P4_GLOBMEMSIZE">500000000</env>
     <env name="NETCDF_DIR">$NETCDF_PATH</env>
   </environment_variables>
-  <limits>
-    <limit name="stacksize">unlimited</limit>
-    <limit name="coredumpsize">unlimited</limit>
-  </limits>
 </machine>
