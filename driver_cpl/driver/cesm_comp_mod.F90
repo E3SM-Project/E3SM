@@ -1518,9 +1518,6 @@ subroutine cesm_init()
    if ((ice_prognostic .or. ocn_prognostic .or. lnd_prognostic) .and. .not. atm_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic surface model must also have atm present')
    endif
-   if (glc_prognostic .and. .not.lnd_present) then
-      call shr_sys_abort(subname//' ERROR: if prognostic glc must also have lnd present')
-   endif
    if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
       call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
    endif
