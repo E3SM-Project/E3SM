@@ -772,6 +772,34 @@ sub getCshModuleCode()
     }
     
     
+    my @modattributes = $self->findModulesAttributes();
+    my %modattrvalues;
+
+    foreach my $attr(@modattributes)
+    {
+        my $ucattr = uc $attr;
+        my $lcattr = lc $attr;
+        if(defined $self->{$lcattr})
+        {
+            $modattrvalues{$attr} = $self->{$lcattr};
+        }
+        elsif(defined $self->{$ucattr})
+        {
+            $modattrvalues{$attr} = $self->{$ucattr};
+        }
+        elsif(defined $ENV{$lcattr})
+        {
+            $modattrvalues{$attr} = $ENV{$lcattr};
+        }
+        elsif(defined $ENV{$ucattr})
+        {
+            $modattrvalues{$attr} = $ENV{$ucattr};
+        }
+        else
+        {
+            die "could not find $attr in either the environment or in the instance variables set on the object, aborting";
+        }
+    }
 
     my $csh =<<"START";
 #!/usr/bin/env csh -f 
@@ -784,31 +812,31 @@ sub getCshModuleCode()
 source  $self->{cshinitpath}
 START
 
-    if(! defined $configuremode)
-    {
-        $csh .=<<"START";
-set CIMEROOT = `./xmlquery CIMEROOT -value`
+    $csh .=<<"START";
+set COMPILER = `./xmlquery COMPILER -value`
 if(\$status == 0) then
-  set COMPILER            = `./xmlquery  COMPILER          -value`
-  set MPILIB              = `./xmlquery  MPILIB        -value`
-  set DEBUG               = `./xmlquery  DEBUG         -value`
-  set OS                  = `./xmlquery  OS        -value`
-  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
-endif
 START
-    }
-    else
+
+    foreach my $attrKey(keys %modattrvalues)
     {
-        $csh .=<<"START";
-set COMPILER = $self->{compiler}
-set MPILIB = $self->{mpilib}
-set DEBUG = $self->{debug}
-START
+        $csh .= "\tset $attrKey = `xmlquery $attrKey -value`\n";
     }
+    $csh .= "else\n";
+
+    foreach my $attrKey(keys %modattrvalues)
+    {
+        $csh .= "\tset $attrKey $modattrvalues{$attrKey}\n";
+    }
+    $csh .= "endif\n";
+#  set COMPILER            = `./xmlquery  COMPILER          -value`
+#  set MPILIB              = `./xmlquery  MPILIB        -value`
+#  set DEBUG               = `./xmlquery  DEBUG         -value`
+#  set OS                  = `./xmlquery  OS        -value`
+#  set PROFILE_PAPI_ENABLE = `./xmlquery  PROFILE_PAPI_ENABLE -value`
+#endif
+#START
     
 
-#source $self->{cshinitpath}
-#START
     
     if(! -e "$self->{caseroot}/env_mach_specific.xml")
     {
@@ -972,6 +1000,35 @@ sub getShModuleCode()
     {
         $self->{shcmdpath} = $node->textContent();
     }
+    
+    my @modattributes = $self->findModulesAttributes();
+    my %modattrvalues;
+    
+    foreach my $attr(@modattributes)
+    {
+        my $ucattr = uc $attr;
+        my $lcattr = lc $attr;
+        if(defined $self->{$lcattr})
+        {
+            $modattrvalues{$attr} = $self->{$lcattr};
+        }
+        elsif(defined $self->{$ucattr})
+        {
+            $modattrvalues{$attr} = $self->{$ucattr};
+        }
+        elsif(defined $ENV{$lcattr})
+        {
+            $modattrvalues{$attr} = $ENV{$lcattr};
+        }
+        elsif(defined $ENV{$ucattr})
+        {
+            $modattrvalues{$attr} = $ENV{$ucattr};
+        }
+        else
+        {
+            die "could not find $attr in either the environment or in the instance variables set on the object, aborting";
+        }
+    }
 
     my $sh =<<"START";
 #!/usr/bin/env sh -f 
@@ -983,29 +1040,27 @@ sub getShModuleCode()
 
 .  $self->{shinitpath}
 START
-    if(! defined $configuremode)
-    {
         $sh .=<<"START";
-CIME_REPO=`./xmlquery CIME_REPOTAG -value`
+COMPILER=`./xmlquery COMPILER -value`
 if [ -n \$CIME_REPO  ]
 then 
-  COMPILER=`./xmlquery  COMPILER          -value`
-  MPILIB=`./xmlquery  MPILIB        -value`
-  DEBUG=`./xmlquery  DEBUG         -value`
-  OS=`./xmlquery  OS        -value`
-  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
-fi
 START
-    }
-    else
+    foreach my $attrKey(keys %modattrvalues)
     {
-        $sh .=<<"START";
-COMPILER=$self->{compiler}
-MPILIB=$self->{mpilib}
-DEBUG=$self->{debug}
-START
+        $sh .="\t$attrKey=`./xmlquery $attrKey -value`\n";
     }
-
+    $sh .= "else\n";
+    
+    foreach my $attrKey(keys %modattrvalues)
+    {
+        $sh .= "\t$attrKey=\"$modattrvalues{$attrKey}\"\n"
+    }
+    $sh .= "fi\n";
+#  DEBUG=`./xmlquery  DEBUG         -value`
+#  OS=`./xmlquery  OS        -value`
+#  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
+#fi
+#START
     
     my @allmodules = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
     foreach my $mod(@allmodules)
@@ -1129,6 +1184,38 @@ sub writeShModuleFile
     open my $SHFILE, ">", "$self->{caseroot}/.env_mach_specific.sh" || die "could not open .env_mach_specific.sh, $!";
     print $SHFILE $self->{shmodulecode};
     close $SHFILE;
+}
+
+sub findModulesAttributes()
+{
+    my $self = shift;
+    my $machine = $self->{machine};
+
+    my $parser = XML::LibXML->new(no_blanks => 1);
+    my $xml;
+    if( -e $self->{machspecificfile})
+    {
+        $xml = $parser->parse_file($self->{machspecificfile});
+    }
+    else
+    {
+        $xml = $parser->parse_file($self->{configmachinesfile});
+    }
+    
+    my %modattrs;
+    my @modulenodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/modules");
+
+    foreach my $module(@modulenodes)
+    {
+        my @mattrs = $module->attributes;
+        foreach my $mattr(@mattrs)
+        {
+            my $name = uc $mattr->getName();
+            $modattrs{$name} = 1;
+        }
+    }
+    $self->{moduleattributes} = keys %modattrs;
+    return keys %modattrs;
 }
 
 1;
