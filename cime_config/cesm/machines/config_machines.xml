@@ -125,7 +125,7 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="machine_file">-hostfile $ENV{'PBS_JOBID'}</arg>
+	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
 	<arg name="tasks_per_node"> -ppn {{ tasks_per_node }}</arg>
 	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
       </arguments>
@@ -203,7 +203,7 @@
     <mpirun mpilib="default">
       <executable>mpirun.mic</executable>
       <arguments>
-	<arg name="machine_file">-hostfile $ENV{'PBS_JOBID'}</arg>
+	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
 	<arg name="tasks_per_node"> -ppn {{ tasks_per_node }}</arg>
 	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
       </arguments>
@@ -372,7 +372,7 @@
     <mpirun mpilib="mpich">
       <executable>mpirun</executable>
       <arguments>
-	<arg name="machine_file">-hostfile $ENV{'PBS_JOBID'}</arg>
+	<arg name="machine_file">-hostfile $ENV{PBS_JOBID}</arg>
 	<arg name="tasks_per_node"> -ppn {{ tasks_per_node }}</arg>
 	<arg name="num_tasks"> -n {{ num_tasks }}</arg>
       </arguments>
@@ -803,7 +803,7 @@
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
       <arguments>
-	<arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
 	<arg name="num_tasks"> -n {{ num_tasks }} </arg>
       </arguments>
     </mpirun>
@@ -1440,10 +1440,10 @@
       <executable></executable>
     </mpirun>
     <mpirun mpilib="default" threaded="false">
-      <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/launch </executable>
+      <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/launch </executable>
     </mpirun>
     <mpirun mpilib="default" threaded="true">
-      <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf $ENV{'CESMDATAROOT'}/tools/bin/hybrid_launch </executable>
+      <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/hybrid_launch </executable>
     </mpirun>
     <mpirun compiler="gnu">
       <executable>mpirun.lsf </executable>
