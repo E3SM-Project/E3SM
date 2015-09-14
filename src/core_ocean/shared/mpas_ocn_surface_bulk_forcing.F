@@ -188,13 +188,13 @@ contains
         zonalAverage = 0.5 * (windStressZonal(cell1) + windStressZonal(cell2))
         meridionalAverage = 0.5 * (windStressMeridional(cell1) + windStressMeridional(cell2))
 
-        surfaceStress(iEdge) = cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
+        surfaceStress(iEdge) = surfaceStress(iEdge) + cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
       end do
 
 
       ! Build surface fluxes at cell centers
       do iCell = 1, nCells
-        surfaceStressMagnitude(iCell) = sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
+        surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
       end do
 
    end subroutine ocn_surface_bulk_forcing_vel!}}}
@@ -267,7 +267,7 @@ contains
 
       ! Build surface fluxes at cell centers
       do iCell = 1, nCells
-        surfaceThicknessFlux(iCell) = ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + riverRunoffFlux(iCell) ) / refDensity
+        surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + riverRunoffFlux(iCell) ) / refDensity
       end do
 
    end subroutine ocn_surface_bulk_forcing_thick!}}}
