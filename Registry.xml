@@ -971,7 +971,7 @@
 			<var name="fVertex"/>
 			<var name="fCell"/>
 			<var name="refZMid"/>
-			<var_array name="activeTracers"/>
+			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="restingThickness"/>
@@ -1046,7 +1046,7 @@
 				mode="forward;analysis">
 
 			<stream name="mesh"/>
-			<var_array name="activeTracers"/>
+			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -1065,7 +1065,7 @@
 				mode="forward;analysis">
 
 			<stream name="mesh"/>
-			<var_array name="activeTracers"/>
+			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -1091,7 +1091,7 @@
 				mode="forward">
 
 			<stream name="mesh"/>
-			<var_array name="activeTracers"/>
+			<var_struct name="tracers"/>
 			<var name="layerThickness"/>
 			<var name="ssh"/>
 			<var name="maxLevelEdgeTop"/>
@@ -1206,32 +1206,38 @@
 			<var name="velocityY"/>
 		</stream>
 
-                <stream name="forcing_data"
-                                type="input"
-                                filename_template="forcing_data.nc"
-                                input_interval="initial_only"
-                                runtime_format="single_file"
-                                mode="forward">
+		<stream name="forcing_data"
+				type="input"
+				filename_template="forcing_data.nc"
+				input_interval="initial_only"
+				runtime_format="single_file"
+				mode="forward">
 
-                        <var name="windStressZonal"/>
-                        <var name="windStressMeridional"/>
-			<var_array name="activeTracersPistonVelocity"/>
-			<var_array name="activeTracersSurfaceRestoringValue"/>
-                </stream>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+		</stream>
 
-                <stream name="forcing_data_init"
-                                type="output"
-                                filename_template="init_mode_forcing_data.nc"
- 				output_interval="0000-00-00_00:00:01"
+		<stream name="forcing_data_init"
+				type="output"
+				filename_template="init_mode_forcing_data.nc"
+				output_interval="0000-00-00_00:00:01"
 				clobber_mode="truncate"
 				runtime_format="single_file"
 				mode="init">
 
-                        <var name="windStressZonal"/>
-                        <var name="windStressMeridional"/>
-			<var_array name="activeTracersPistonVelocity"/>
-			<var_array name="activeTracersSurfaceRestoringValue"/>
-                </stream>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+		</stream>
 
 		<stream name="forcing"
 				type="none"
@@ -1247,7 +1253,7 @@
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
-			<var_array name="activeTracersSurfaceFlux"/>
+			<var_array name="tracersSurfaceFlux"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceWindStress"/>
