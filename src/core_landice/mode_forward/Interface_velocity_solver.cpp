@@ -36,15 +36,22 @@ double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, 
 std::vector<double> xCellProjected, yCellProjected, zCellProjected;
 const double unit_length = 1000;
 const double T0 = 273.15;
+const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, but this should be close enough for how this is used.
 const double minThick = 1e-3; //1m
 const double minBeta = 1e-5;
+double rho_ice;
+//unsigned char dynamic_ice_bit_value;
+//unsigned char ice_present_bit_value;
+int dynamic_ice_bit_value;
+int ice_present_bit_value;
+
 //void *phgGrid = 0;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
     verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge;
 std::vector<int> indexToVertexID, vertexToFCell, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, smb_F, thicknessOnCells;
+    elevationData, thicknessData, betaData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 ;
 int numBoundaryEdges;
@@ -68,12 +75,27 @@ extern "C" {
 // ===================================================
 //! Interface functions
 // ===================================================
+
 int velocity_solver_init_mpi(int* fComm) {
   // get MPI_Comm from Fortran
   comm = MPI_Comm_f2c(*fComm);
 
   return 0;
 }
+
+
+void velocity_solver_set_parameters(double const* rhoi_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
+  // This function sets parameter values used by MPAS on the C/C++ side
+  rho_ice = *rhoi_F;
+  //std::cout << "rhoi Fortran value:" << *rhoi_F << std::endl;
+  //std::cout << "rhoi C++ value:" << rho_ice << std::endl;
+  dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
+  ice_present_bit_value = *li_mask_ValueIce;
+  //std::cout << "mask dynamic Fortran value:" << *li_mask_ValueDynamicIce << std::endl;
+  //std::cout << "mask dynamic C++ value:" << dynamic_ice_bit_value << std::endl;
+  // Could add seconds in a year, but that can change from time step to time step on the MPAS side, so leaving it out for now.
+}
+
 
 
 void velocity_solver_export_2d_data(double const* lowerSurface_F,
@@ -284,9 +306,9 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 }
 
 void velocity_solver_solve_fo(double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F, double const* temperature_F,
+    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
-    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
+    double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
 
   std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
 
@@ -328,7 +350,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
 
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
+    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F, minThick);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -336,10 +358,13 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
     importP0Temperature(temperature_F);
 
+    std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
+
+    double dt = (*deltat)/secondsInAYear;
     velocity_solver_solve_fo__(nLayers, nGlobalVertices, nGlobalTriangles,
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
-        betaData, temperatureOnTetra, velocityOnVertices);
+        betaData, smbData, temperatureOnTetra, velocityOnVertices, dt);
 
     std::vector<int> mpasIndexToVertexID(nVertices);
     for (int i = 0; i < nVertices; i++) {
@@ -483,7 +508,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
   std::vector<int> fVertexToTriangle(nVertices_F, NotAnId);
   bool changed = false;
   for (int i(0); i < nVerticesSolve_F; i++) {
-    if ((verticesMask_F[i] & 0x02) && !isGhostTriangle(i)) {
+    if ((verticesMask_F[i] & dynamic_ice_bit_value) && !isGhostTriangle(i)) {
       fVertexToTriangle[i] = triangleToFVertex.size();
       triangleToFVertex.push_back(i);
     }
@@ -751,7 +776,7 @@ void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _diri
     bool isBoundary;
     do {
       int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + j++] - 1;
-      isBoundary = !(verticesMask_F[fVertex] & 0x02);
+      isBoundary = !(verticesMask_F[fVertex] & dynamic_ice_bit_value);
     } while ((j < nEdg) && (!isBoundary));
     isVertexBoundary[iV] = isBoundary;
   }
@@ -1246,11 +1271,13 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 }
 
 void import2DFields(double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double eps) {
+    double const * beta_F, double const * smb_F, double eps) {
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+  if (smb_F != 0)
+    smbData.assign(nVertices, 1e10);
 
   std::map<int, int> bdExtensionMap;
 
@@ -1261,6 +1288,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     elevationData[index] = (lowerSurface_F[iCell] / unit_length) + thicknessData[index];
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
+    if (smb_F != 0)
+      smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
   }
 
   //extend thickness elevation and basal friction data to the border for floating vertices
@@ -1280,8 +1309,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
       double elevTemp =1e10;
       for (int j = 0; j < nEdg; j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & 0x02)
-            && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & 0x02);
+        bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+            && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
         if (!keep)
           continue;
 
@@ -1306,6 +1335,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     elevationData[iv] = thicknessData[iv] + lowerSurface_F[ic] / unit_length;
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
+    if (smb_F != 0)
+      smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
   }
 
 }
