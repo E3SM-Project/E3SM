@@ -94,7 +94,9 @@ contains
     call initialize_coupler_fields(domain)
  
     ! initialize forcing
-    call cice_forcing_init(domain)
+    if (config_use_forcing) then
+       call cice_forcing_init(domain)
+    endif
 
     ! init dynamics
     call cice_init_velocity_solver(domain)
