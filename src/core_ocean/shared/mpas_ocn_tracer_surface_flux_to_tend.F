@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_surface_flux
+!  ocn_tracer_surface_flux_to_tend
 !
 !> \brief MPAS ocean tracer surface flux
 !> \author Doug Jacobsen
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_tracer_surface_flux
+module ocn_tracer_surface_flux_to_tend
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -114,7 +114,6 @@ contains
       integer :: iCell, k, iTracer, nTracers
       integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
-      integer, dimension(:,:), pointer :: cellMask
 
       real (kind=RKIND) :: remainingFlux
 
@@ -127,7 +126,6 @@ contains
       nTracers = size(tend, dim=1)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
@@ -135,13 +133,13 @@ contains
           remainingFlux = remainingFlux - fractionAbsorbed(k, iCell)
 
           do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * fractionAbsorbed(k, iCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + surfaceTracerFlux(iTracer, iCell) * fractionAbsorbed(k, iCell)
           end do
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
           do iTracer = 1, nTracers
-            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + cellMask(k, iCell) * surfaceTracerFlux(iTracer, iCell) * remainingFlux
+            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + surfaceTracerFlux(iTracer, iCell) * remainingFlux
           end do
         end if
       end do
@@ -169,12 +167,10 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       logical, pointer :: config_disable_tr_sflux
-      character (len=StrKIND), pointer :: config_forcing_type
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_sflux', config_disable_tr_sflux)
-      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       surfaceTracerFluxOn = .true.
 
@@ -182,15 +178,11 @@ contains
          surfaceTracerFluxOn = .false.
       end if
 
-      if (config_forcing_type == trim('off')) then
-         surfaceTracerFluxOn = .false.
-      end if
-
    end subroutine ocn_tracer_surface_flux_init!}}}
 
 !***********************************************************************
 
-end module ocn_tracer_surface_flux
+end module ocn_tracer_surface_flux_to_tend
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

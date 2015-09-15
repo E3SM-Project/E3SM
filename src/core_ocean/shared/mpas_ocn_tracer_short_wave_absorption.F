@@ -139,7 +139,7 @@ contains
       useJerlov = .false.
 
       if ( trim( config_sw_absorption_type ) .ne. 'jerlov') then
-        write(0,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov'
+        write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov'
         err = 1
         return
       else if ( trim( config_sw_absorption_type ) == 'jerlov') then

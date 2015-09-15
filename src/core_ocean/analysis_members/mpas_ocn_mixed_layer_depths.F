@@ -158,8 +158,8 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: mixedLayerDepthsAM
 
       ! Here are some example variables which may be needed for your analysis member
@@ -219,14 +219,16 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'mixedLayerDepthsAM', mixedLayerDepthsAMPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
  
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+
+         call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', &
                         potentialDensity)
          call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
@@ -234,6 +236,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
 
          if(tThresholdFlag) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThresholdMLD)

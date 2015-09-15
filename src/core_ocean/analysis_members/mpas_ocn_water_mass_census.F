@@ -159,6 +159,7 @@ contains
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:,:,:), pointer :: waterMassFractionalDistribution
       real (kind=RKIND), dimension(:,:,:), pointer :: potentialDensityOfTSDiagram
@@ -168,9 +169,9 @@ contains
 
       ! pointers to data in pools required for T/S water mass census
       real (kind=RKIND), dimension(:,:),   pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       real (kind=RKIND), dimension(:,:),   pointer :: potentialDensity
       real (kind=RKIND), dimension(:,:),   pointer :: zMid
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       ! pointers to data in mesh pool
       ! (note: nOceanRegionsTmpCensus, lonCell, latCell to be removed when region mask is intent(in))
@@ -276,13 +277,16 @@ contains
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+         ! get indices for T and S
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
 
          ! get pointers to mesh
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nOceanRegionsTmpCensus', nOceanRegionsTmpCensus)
-         call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
@@ -290,44 +294,46 @@ contains
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
          ! loop over and bin all data
+         if ( associated(activeTracers) ) then
          do iCell=1,nCellsSolve
-         do iLevel=1,maxLevelCell(iCell)
+           do iLevel=1,maxLevelCell(iCell)
 
-           ! make copies of data for convienence
-           temperature = tracers(index_temperature,iLevel,iCell)
-           salinity = tracers(index_salinity,iLevel,iCell)
-           density = potentialDensity(iLevel,iCell)
-           zPosition = zMid(iLevel,iCell)
-           volume = layerThickness(iLevel,iCell) * areaCell(iCell)
+               ! make copies of data for convienence
+               temperature = activeTracers(index_temperature,iLevel,iCell)
+               salinity = activeTracers(index_salinity,iLevel,iCell)
+               density = potentialDensity(iLevel,iCell)
+               zPosition = zMid(iLevel,iCell)
+               volume = layerThickness(iLevel,iCell) * areaCell(iCell)
 
-           ! find temperature bin, cycle if bin is out of range
-           iTemperatureBin = int((temperature-minTemperature)/deltaTemperature) + 1
-           if (iTemperatureBin < 1) cycle
-           if (iTemperatureBin > nTemperatureBins) cycle
+               ! find temperature bin, cycle if bin is out of range
+               iTemperatureBin = int((temperature-minTemperature)/deltaTemperature) + 1
+               if (iTemperatureBin < 1) cycle
+               if (iTemperatureBin > nTemperatureBins) cycle
 
-           ! find salinity bin, cycle if bin is out of range
-           iSalinityBin = int((salinity-minSalinity)/deltaSalinity) + 1
-           if (iSalinityBin < 1) cycle
-           if (iSalinityBin > nSalinityBins) cycle
+               ! find salinity bin, cycle if bin is out of range
+               iSalinityBin = int((salinity-minSalinity)/deltaSalinity) + 1
+               if (iSalinityBin < 1) cycle
+               if (iSalinityBin > nSalinityBins) cycle
 
-           do iRegion=1,nOceanRegionsTmpCensus
-             ! add volume into water mass census array for each region
-             waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion) = &
-                       waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)  &
-                       + volume * regionMask(iRegion,iCell)
-             potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
-                       potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)  &
-                       + density * volume * regionMask(iRegion,iCell)
-             zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
-                       zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)  &
-                       + zPosition * volume * regionMask(iRegion,iCell)
-           enddo
+               do iRegion=1,nOceanRegionsTmpCensus
+                 ! add volume into water mass census array for each region
+                 waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion) = &
+                           waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)  &
+                           + volume * regionMask(iRegion,iCell)
+                 potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
+                           potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)  &
+                           + density * volume * regionMask(iRegion,iCell)
+                 zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
+                           zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)  &
+                           + zPosition * volume * regionMask(iRegion,iCell)
+               enddo
 
-         enddo   ! iLevel
-         enddo   ! iCell
+             enddo   ! iLevel
+           enddo   ! iCell
+         endif   ! associated(activeTracers)
 
          block => block % next
       end do   ! block loop
@@ -335,16 +341,16 @@ contains
       ! store data in buffer in order to allow only one dmpar calls
       kBuffer=0
       do iTemperatureBin=1,nTemperatureBins
-      do iSalinityBin=1,nSalinityBins
-      do iRegion=1,nOceanRegionsTmpCensus
-        kBuffer = kBuffer+1
-        workBufferSum(kBuffer) = waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
-        kBuffer = kBuffer+1
-        workBufferSum(kBuffer) = potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)
-        kBuffer = kBuffer+1
-        workBufferSum(kBuffer) = zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)
-      enddo
-      enddo
+         do iSalinityBin=1,nSalinityBins
+            do iRegion=1,nOceanRegionsTmpCensus
+                kBuffer = kBuffer+1
+                workBufferSum(kBuffer) = waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
+                kBuffer = kBuffer+1
+                workBufferSum(kBuffer) = potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)
+                kBuffer = kBuffer+1
+                workBufferSum(kBuffer) = zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion)
+            enddo
+         enddo
       enddo
 
       ! communication
@@ -353,40 +359,40 @@ contains
       ! unpack the buffer into intent(out) of this analysis member
       kBuffer=0
       do iTemperatureBin=1,nTemperatureBins
-      do iSalinityBin=1,nSalinityBins
-      do iRegion=1,nOceanRegionsTmpCensus
-        kBuffer = kBuffer+1
-        waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
-        kBuffer = kBuffer+1
-        potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
-        kBuffer = kBuffer+1
-        zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
-      enddo
-      enddo
+         do iSalinityBin=1,nSalinityBins
+            do iRegion=1,nOceanRegionsTmpCensus
+               kBuffer = kBuffer+1
+               waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
+               kBuffer = kBuffer+1
+               potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
+               kBuffer = kBuffer+1
+               zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = workBufferSumReduced(kBuffer)
+            enddo
+         enddo
       enddo
 
       ! normalize potentialDensityOfTSDiagram by volume in each T,S bin
       do iTemperatureBin=1,nTemperatureBins
-      do iSalinityBin=1,nSalinityBins
-      do iRegion=1,nOceanRegionsTmpCensus
-        potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
-          potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
-          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8_RKIND)
-        zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
-          zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
-          max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8_RKIND)
-      enddo
-      enddo
+         do iSalinityBin=1,nSalinityBins
+            do iRegion=1,nOceanRegionsTmpCensus
+              potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
+                potentialDensityOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
+                max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8_RKIND)
+              zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) = &
+                zPositionOfTSDiagram(iTemperatureBin,iSalinityBin,iRegion) / &
+                max(waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion), 1.0e-8_RKIND)
+            enddo
+         enddo
       enddo
 
       ! use workBufferSum as workspace to find total volume for each region
       workBufferSum = 0.0_RKIND
       do iTemperatureBin=1,nTemperatureBins
-      do iSalinityBin=1,nSalinityBins
-      do iRegion=1,nOceanRegionsTmpCensus
-        workBufferSum(iRegion) = workBufferSum(iRegion) + waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
-      enddo
-      enddo
+         do iSalinityBin=1,nSalinityBins
+            do iRegion=1,nOceanRegionsTmpCensus
+              workBufferSum(iRegion) = workBufferSum(iRegion) + waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
+            enddo
+         enddo
       enddo
 
       ! use this sum to convert waterMassFractionalDistribution from total volume to fractional volume
@@ -426,17 +432,20 @@ contains
       do iCell=1,nCellsSolve
         if(latCell(iCell).lt. 60.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
+      write(stdoutUnit,*) ' Arctic ', sum(workMask)
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt. 15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(latCell(iCell).lt.-15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
+      write(stdoutUnit,*) ' Equatorial ', sum(workMask)
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
         if(latCell(iCell).gt.-50.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
+      write(stdoutUnit,*) ' Southern Ocean ', sum(workMask)
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
@@ -445,6 +454,7 @@ contains
         if(lonCell(iCell).lt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.270.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
+      write(stdoutUnit,*) ' Nino 3 ', sum(workMask)
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
@@ -453,6 +463,7 @@ contains
         if(lonCell(iCell).lt.160.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
+      write(stdoutUnit,*) ' Nino 4 ', sum(workMask)
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
@@ -461,8 +472,10 @@ contains
         if(lonCell(iCell).lt.190.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
         if(lonCell(iCell).gt.240.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
+      write(stdoutUnit,*) ' Nino 3.4 ', sum(workMask)
    else
       ! global (do nothing!)
+      write(stdoutUnit,*) ' Global ', sum(workMask)
    endif
 
    end subroutine compute_mask

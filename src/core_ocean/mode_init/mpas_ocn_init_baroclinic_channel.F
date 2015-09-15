@@ -87,6 +87,7 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: verticalMeshPool
 
       integer :: iCell, k, idx
@@ -105,7 +106,7 @@ contains
 
       ! Define dimension pointers
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
-      integer, pointer :: index_temperature, index_salinity
+      integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
       integer, dimension(:), pointer :: maxLevelCell
@@ -113,7 +114,7 @@ contains
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
       ! Define local interfaceLocations variable
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
@@ -197,12 +198,14 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-        call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
         call mpas_pool_get_array(meshPool, 'xCell', xCell)
         call mpas_pool_get_array(meshPool, 'yCell', yCell)
@@ -214,7 +217,8 @@ contains
         call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
-        call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
@@ -236,42 +240,52 @@ contains
            ! Determine cutoff location for large sin wave
            yOffset = perturbationWidth * sin (6.0_RKIND * pii * (xCell(iCell) - xMinGlobal) / (xMaxGlobal - xMinGlobal))
 
+           ! Set debug tracer
+           if ( associated(debugTracers) ) then
+              idx = index_tracer1
+              do k = 1, nVertLevels
+                 debugTracers(idx, k, iCell) = 1.0_RKIND
+              enddo
+           end if
+
            ! Set stratification based on northern half of domain temperature
-           idx = index_temperature
-           do k = nVertLevels, 1, -1
-              temperature = config_baroclinic_channel_bottom_temperature &
-                          + (config_baroclinic_channel_surface_temperature - config_baroclinic_channel_bottom_temperature) &
-                          * ( (refZMid(k) + refBottomDepth(nVertLevels)) / refBottomDepth(nVertLevels) )
-              tracers(idx, k, iCell) = temperature
-           end do
+           if ( associated(activeTracers) ) then
+              idx = index_temperature
+              do k = nVertLevels, 1, -1
+                 temperature = config_baroclinic_channel_bottom_temperature &
+                             + (config_baroclinic_channel_surface_temperature - config_baroclinic_channel_bottom_temperature) &
+                             * ( (refZMid(k) + refBottomDepth(nVertLevels)) / refBottomDepth(nVertLevels) )
+                 activeTracers(idx, k, iCell) = temperature
+              end do
 
-           if(yCell(iCell) < yMidGlobal - yOffset) then
-                ! If cell is in the southern half, outside the sin width, subtract temperature difference
-                tracers(idx, :, iCell) = tracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
-           else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
-                   yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
-                tracers(idx, :, iCell) = tracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
-                              - ((yMaxGlobal + yMinGlobal) * 0.5 - yOffset)) / perturbationWidth)
+              if(yCell(iCell) < yMidGlobal - yOffset) then
+                   ! If cell is in the southern half, outside the sin width, subtract temperature difference
+                   activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
+              else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
+                      yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
+                   activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
+                                 - ((yMaxGlobal + yMinGlobal) * 0.5 - yOffset)) / perturbationWidth)
+              end if
+
+              ! Determine yOffset for 3rd crest in sin wave.
+              yOffset = 0.5_RKIND * perturbationWidth * sin(pii * (xCell(iCell) - xPerturbationMin)/(xPerturbationMax - xPerturbationMin))
+
+              if ( yCell(iCell) >= yMidGlobal - yOffset - 0.5_RKIND * perturbationWidth .and. &
+                   yCell(iCell) <= yMidGlobal - yOffset + 0.5_RKIND * perturbationWidth .and. &
+                   xCell(iCell) >= xPerturbationMin .and. &
+                   xCell(iCell) <= xPerturbationMax) then
+
+
+                   do k = 1, nVertLevels
+                      activeTracers(idx, k, iCell) = activeTracers(idx, k, iCell) + &
+                                0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) /(0.5_RKIND * perturbationWidth)))
+                   end do
+              end if
+
+              ! Set salinity
+              idx = index_salinity
+              activeTracers(idx, :, iCell) = config_baroclinic_channel_salinity
            end if
-
-           ! Determine yOffset for 3rd crest in sin wave.
-           yOffset = 0.5_RKIND * perturbationWidth * sin(pii * (xCell(iCell) - xPerturbationMin)/(xPerturbationMax - xPerturbationMin))
-
-           if ( yCell(iCell) >= yMidGlobal - yOffset - 0.5_RKIND * perturbationWidth .and. &
-                yCell(iCell) <= yMidGlobal - yOffset + 0.5_RKIND * perturbationWidth .and. &
-                xCell(iCell) >= xPerturbationMin .and. &
-                xCell(iCell) <= xPerturbationMax) then
-
-
-                do k = 1, nVertLevels
-                   tracers(idx, k, iCell) = tracers(idx, k, iCell) + &
-                             0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) /(0.5_RKIND * perturbationWidth)))
-                end do
-           end if
-
-           ! Set salinity
-           idx = index_salinity
-           tracers(idx, :, iCell) = config_baroclinic_channel_salinity
 
            ! Set layerThickness and restingThickness
            do k = 1, nVertLevels

@@ -397,14 +397,14 @@ contains
             B(k) = 1 - A(k) - C(k)
          enddo
 
-         call tridiagonal_solve_mult(A(2:N),B,C(1:N-1),tracers(:,:,iCell), &
-              tracersTemp, N, nVertLevels,num_tracers)
+         call tridiagonal_solve_mult(A(2:N), B, C(1:N-1), tracers(:,:,iCell), &
+              tracersTemp, N, nVertLevels, num_tracers)
 
          tracers(:,1:N,iCell) = tracersTemp(:,1:N)
          tracers(:,N+1:nVertLevels,iCell) = -1e34
       end do
 
-      deallocate(A,B,C,tracersTemp)
+      deallocate(A, B, C, tracersTemp)
 
    !--------------------------------------------------------------------
 
@@ -432,16 +432,21 @@ contains
       integer, intent(out) :: err
       integer, intent(in), optional :: timeLevelIn
 
+      type (mpas_pool_type), pointer :: tracersPool
+
       integer :: timeLevel, k, cell1, cell2, iEdge
       integer, pointer :: nCells, nEdges
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
       logical, pointer :: config_use_cvmix
+      type (mpas_pool_iterator_type) :: groupItr
 
       err = 0
+
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -452,7 +457,6 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
@@ -488,10 +492,20 @@ contains
       call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
 
       !
-      !  Implicit vertical solve for tracers
+      !  Implicit vertical solve for all tracers
       !
 
-      call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracers, err)
+      call mpas_pool_begin_iteration(tracersPool)
+      do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+
+         if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+            call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, timeLevel)
+            if ( associated(tracersGroup) ) then
+               call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, err)
+            end if
+         end if
+      end do
+
 
    end subroutine ocn_vmix_implicit!}}}
 

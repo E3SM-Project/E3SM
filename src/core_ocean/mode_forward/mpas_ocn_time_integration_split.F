@@ -94,10 +94,12 @@ module ocn_time_integration_split
       real (kind=RKIND), intent(in) :: dt
 
       type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: tendPool
+      type (mpas_pool_type), pointer :: tracersTendPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: averagePool
       type (mpas_pool_type), pointer :: scratchPool
@@ -113,7 +115,7 @@ module ocn_time_integration_split
       integer :: useVelocityCorrection, err
       real (kind=RKIND), dimension(:,:), pointer :: &
                  vertViscTopOfEdge, vertDiffTopOfCell
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:), allocatable:: uTemp
       real (kind=RKIND), dimension(:,:), allocatable:: tracersTemp
 
@@ -129,12 +131,13 @@ module ocn_time_integration_split
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
+      logical, pointer :: config_use_tracerGroup
 
       real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
       real (kind=RKIND), pointer :: config_btr_gam3_velWt2
 
       ! Dimensions
-      integer, pointer :: nCells, nEdges, nVertLevels, num_tracers, startIndex, endIndex
+      integer, pointer :: nCells, nEdges, nVertLevels, num_tracersGroup, startIndex, endIndex
       integer, pointer :: indexTemperature, indexSalinity
       integer, pointer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       integer, pointer :: indexSSHGradientZonal, indexSSHGradientMeridional
@@ -158,14 +161,14 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessCur, layerThicknessNew
       real (kind=RKIND), dimension(:,:), pointer :: highFreqThicknessCur, highFreqThicknessNew
       real (kind=RKIND), dimension(:,:), pointer :: lowFreqDivergenceCur, lowFreqDivergenceNew
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracersCur, tracersNew
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupCur, tracersGroupNew
 
       ! Tend Array Pointers
       real (kind=RKIND), dimension(:), pointer :: sshTend
       real (kind=RKIND), dimension(:,:), pointer :: highFreqThicknessTend
       real (kind=RKIND), dimension(:,:), pointer :: lowFreqDivergenceTend
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityTend, layerThicknessTend
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracersTend
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupTend, activeTracersTend
 
       ! Diagnostics Array Pointers
       real (kind=RKIND), dimension(:), pointer :: barotropicForcing, barotropicThicknessFlux
@@ -190,7 +193,12 @@ module ocn_time_integration_split
       type (field2DReal), pointer :: highFreqThicknessField, lowFreqDivergenceField
       type (field2DReal), pointer :: normalBaroclinicVelocityField, layerThicknessField
       type (field2DReal), pointer :: normalVelocityField
-      type (field3DReal), pointer :: tracersField
+      type (field3DReal), pointer :: tracersGroupField
+
+      ! tracer iterators
+      type (mpas_pool_iterator_type) :: groupItr
+      character (len=StrKIND) :: modifiedGroupName
+      character (len=StrKIND) :: configName
 
       call mpas_timer_start("se timestep", .false., timer_main)
 
@@ -236,6 +244,7 @@ module ocn_time_integration_split
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
          call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityCur, 1)
@@ -251,9 +260,6 @@ module ocn_time_integration_split
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
-
-         call mpas_pool_get_array(statePool, 'tracers', tracersCur, 1)
-         call mpas_pool_get_array(statePool, 'tracers', tracersNew, 2)
 
          call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThicknessCur, 1)
          call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThicknessNew, 2)
@@ -290,10 +296,26 @@ module ocn_time_integration_split
          do iCell = 1, nCells  
             do k = 1, maxLevelCell(iCell)
                layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
-
-               tracersNew(:,k,iCell) = tracersCur(:,k,iCell) 
             end do
          end do
+
+
+         call mpas_pool_begin_iteration(tracersPool)
+         do while ( mpas_pool_get_next_member(tracersPool, groupItr))
+            if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+               call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupCur, 1)
+               call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
+
+               if ( associated(tracersGroupCur) .and. associated(tracersGroupNew) ) then
+                  do iCell = 1, nCells  
+                     do k = 1, maxLevelCell(iCell)
+                        tracersGroupNew(:,k,iCell) = tracersGroupCur(:,k,iCell) 
+                     end do
+                  end do
+               end if
+            end if
+         end do
+
 
          if (associated(highFreqThicknessNew)) then
             highFreqThicknessNew(:,:) = highFreqThicknessCur(:,:)
@@ -351,7 +373,9 @@ module ocn_time_integration_split
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+               call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
                call mpas_pool_get_subpool(block % structs, 'state', statepool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
                call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
@@ -362,6 +386,7 @@ module ocn_time_integration_split
 
             call mpas_timer_start("se freq-filtered-thick halo update")
             call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
+            call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
             call mpas_pool_get_field(tendPool, 'highFreqThickness', highFreqThicknessField)
             call mpas_pool_get_field(tendPool, 'lowFreqDivergence', lowFreqDivergenceField)
@@ -376,7 +401,9 @@ module ocn_time_integration_split
 
                call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                call mpas_pool_get_subpool(block % structs, 'state', statePool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+               call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
                call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
@@ -403,9 +430,11 @@ module ocn_time_integration_split
          block => domain % blocklist
          do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+           call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
            call mpas_pool_get_subpool(block % structs, 'state', statePool)
+           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
            call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
            call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
@@ -454,8 +483,10 @@ module ocn_time_integration_split
                call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
                call mpas_pool_get_subpool(block % structs, 'state', statePool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+               call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
                call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
                call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -557,6 +588,7 @@ module ocn_time_integration_split
                call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
                call mpas_pool_get_subpool(block % structs, 'state', statePool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
                call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
@@ -580,8 +612,6 @@ module ocn_time_integration_split
                      ! normalTransportVelocity = normalBaroclinicVelocity + normalGMBolusVelocity 
                      ! This is u used in advective terms for layerThickness and tracers 
                      ! in tendency calls in stage 3.
-!mrp note: in QC version, there is an if (config_use_standardGM) on adding normalGMBolusVelocity  
-! I think it is not needed because normalGMBolusVelocity=0 when GM not on.
                      normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge) &
                            *( normalBaroclinicVelocityNew(k,iEdge) + normalGMBolusVelocity(k,iEdge) )
 
@@ -601,6 +631,7 @@ module ocn_time_integration_split
 
                call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
                call mpas_pool_get_subpool(block % structs, 'state', statePool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
                call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
@@ -652,6 +683,7 @@ module ocn_time_integration_split
 
                      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                      call mpas_pool_get_subpool(block % structs, 'state', statePool)
+                     call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
                      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -695,6 +727,7 @@ module ocn_time_integration_split
                 !   boundary update on normalBarotropicVelocityNew
                 call mpas_timer_start("se halo normalBarotropicVelocity", .false., timer_halo_normalBarotropicVelocity)
                 call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                 call mpas_pool_get_field(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleField, newBtrSubcycleTime)
                 call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
@@ -710,8 +743,10 @@ module ocn_time_integration_split
                 call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
                 call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+                call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
                 call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                 call mpas_pool_get_subpool(block % structs, 'state', statePool)
+                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                 call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
                 call mpas_pool_get_array(tendPool, 'ssh', sshTend)
@@ -831,6 +866,7 @@ module ocn_time_integration_split
                    call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
                    call mpas_pool_get_subpool(block % structs, 'state', statePool)
+                   call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                    call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                    call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
@@ -883,6 +919,7 @@ module ocn_time_integration_split
                 !   boundary update on normalBarotropicVelocityNew
                 call mpas_timer_start("se halo normalBarotropicVelocity", .false., timer_halo_normalBarotropicVelocity)
                 call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                 call mpas_pool_get_field(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleField, newBtrSubcycleTime)
 
@@ -901,8 +938,10 @@ module ocn_time_integration_split
                    call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
                    call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+                   call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
                    call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                    call mpas_pool_get_subpool(block % structs, 'state', statePool)
+                   call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                    call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
                    call mpas_pool_get_array(tendPool, 'ssh', sshTend)
@@ -1003,6 +1042,7 @@ module ocn_time_integration_split
                 !   boundary update on SSHnew
                 call mpas_timer_start("se halo ssh", .false., timer_halo_ssh)
                 call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                 call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField)
 
@@ -1019,6 +1059,7 @@ module ocn_time_integration_split
                   call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
                   call mpas_pool_get_subpool(block % structs, 'state', statePool)
+                  call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                   call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
                   call mpas_pool_get_array(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleNew, newBtrSubcycleTime)
@@ -1048,6 +1089,7 @@ module ocn_time_integration_split
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
                call mpas_pool_get_subpool(block % structs, 'state', statePool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
                call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
@@ -1086,6 +1128,7 @@ module ocn_time_integration_split
                call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
                call mpas_pool_get_subpool(block % structs, 'state', statePool)
+               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
                call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
@@ -1117,8 +1160,6 @@ module ocn_time_integration_split
                do iEdge = 1, nEdges
 
                   ! velocity for normalVelocityCorrectionection is normalBarotropicVelocity + normalBaroclinicVelocity + uBolus
-!mrp note: in QC version, there is an if (config_use_standardGM) on adding normalGMBolusVelocity
-! I think it is not needed because normalGMBolusVelocity=0 when GM not on.
                   uTemp(:) = normalBarotropicVelocityNew(iEdge) + normalBaroclinicVelocityNew(:,iEdge) + normalGMBolusVelocity(:,iEdge)
 
                   ! thicknessSum is initialized outside the loop because on land boundaries 
@@ -1171,8 +1212,10 @@ module ocn_time_integration_split
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+            call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
             call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
@@ -1204,6 +1247,7 @@ module ocn_time_integration_split
          ! update halo for thickness tendencies
          call mpas_timer_start("se halo thickness", .false., timer_halo_thickness)
          call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
+         call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
          call mpas_pool_get_field(tendPool, 'layerThickness', layerThicknessField)
 
@@ -1213,7 +1257,9 @@ module ocn_time_integration_split
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+            call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
             call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1225,10 +1271,16 @@ module ocn_time_integration_split
          ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers", .false., timer_halo_tracers)
          call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
+         call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
-         call mpas_pool_get_field(tendPool, 'tracers', tracersField)
+         call mpas_pool_begin_iteration(tracersTendPool)
+         do while ( mpas_pool_get_next_member(tracersTendPool, groupItr) )
+            if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+               call mpas_pool_get_field(tracersTendPool, groupItr % memberName, tracersGroupField)
 
-         call mpas_dmpar_exch_halo_field(tracersField)
+               call mpas_dmpar_exch_halo_field(tracersGroupField)
+            end if
+         end do
          call mpas_timer_stop("se halo tracers", timer_halo_tracers)
 
          block => domain % blocklist
@@ -1239,19 +1291,19 @@ module ocn_time_integration_split
 
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
+            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+            call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-
-            call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
             call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
             call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-            call mpas_pool_get_array(statePool, 'tracers', tracersCur, 1)
-            call mpas_pool_get_array(statePool, 'tracers', tracersNew, 2)
+            call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupCur, 1)
+            call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
             call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
             call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
             call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
@@ -1265,11 +1317,12 @@ module ocn_time_integration_split
             call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityCur, 1)
             call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityNew, 2)
 
-            call mpas_pool_get_array(tendPool, 'tracers', tracersTend)
             call mpas_pool_get_array(tendPool, 'layerThickness', layerThicknessTend)
             call mpas_pool_get_array(tendPool, 'normalVelocity', normalVelocityTend)
             call mpas_pool_get_array(tendPool, 'highFreqThickness', highFreqThicknessTend)
             call mpas_pool_get_array(tendPool, 'lowFreqDivergence', lowFreqDivergenceTend)
+
+            call mpas_pool_get_array(tracersTendPool, 'activeTracersTend', activeTracersTend)
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !
@@ -1279,8 +1332,8 @@ module ocn_time_integration_split
             if (split_explicit_step < config_n_ts_iter) then
 
                ! Get indices for dynamic tracers (Includes T&S).
-               call mpas_pool_get_dimension(statePool, 'dynamics_start', startIndex)
-               call mpas_pool_get_dimension(statePool, 'dynamics_end', endIndex)
+               call mpas_pool_get_dimension(tracersPool, 'activeGRP_start', startIndex)
+               call mpas_pool_get_dimension(tracersPool, 'activeGRP_end', endIndex)
 
                ! Only need T & S for earlier iterations,
                ! then all the tracers needed the last time through.
@@ -1296,10 +1349,10 @@ module ocn_time_integration_split
 
                      do i = startIndex, endIndex
                         ! This is Phi at n+1
-                        temp = ( tracersCur(i,k,iCell) * layerThicknessCur(k,iCell) + dt * tracersTend(i,k,iCell)) / temp_h
+                        temp = ( tracersGroupCur(i,k,iCell) * layerThicknessCur(k,iCell) + dt * activeTracersTend(i,k,iCell)) / temp_h
   
                         ! This is Phi at n+1/2
-                        tracersNew(i,k,iCell) = 0.5 * ( tracersCur(i,k,iCell) + temp )
+                        tracersGroupNew(i,k,iCell) = 0.5 * ( tracersGroupCur(i,k,iCell) + temp )
                      end do
                   end do
                end do ! iCell
@@ -1338,7 +1391,7 @@ module ocn_time_integration_split
 
                ! Efficiency note: We really only need this to compute layerThicknessEdge, density, pressure, and SSH 
                ! in this diagnostics solve.
-               call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 2)
+               call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !
@@ -1349,17 +1402,32 @@ module ocn_time_integration_split
 
                do iCell = 1, nCells
                   do k = 1, maxLevelCell(iCell)
-
                      ! this is h_{n+1}
                      layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell) + dt * layerThicknessTend(k,iCell) 
-
-                     ! This is Phi at n+1
-                     do i = 1, num_tracers
-                        tracersNew(i,k,iCell) = (tracersCur(i,k,iCell) * layerThicknessCur(k,iCell) + dt * tracersTend(i,k,iCell) ) &
-                         / layerThicknessNew(k,iCell)
-
-                     enddo
                   end do
+               end do
+
+               call mpas_pool_begin_iteration(tracersPool)
+               do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+                  if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+                     configName = 'config_use_' // trim(groupItr % memberName)
+                     call mpas_pool_get_config(domain % configs, configName, config_use_tracerGroup)
+
+                     if ( config_use_tracerGroup ) then
+                        call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupCur, 1)
+                        call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
+
+                        modifiedGroupName = trim(groupItr % memberName) // 'Tend'
+                        call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
+
+                        do iCell = 1, nCells
+                           do k = 1, maxLevelCell(iCell)
+                              tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt * tracersGroupTend(:,k,iCell) ) &
+                               / layerThicknessNew(k,iCell)
+                           end do
+                        end do
+                     end if
+                  end if
                end do
 
                if (config_use_freq_filtered_thickness) then
@@ -1405,22 +1473,23 @@ module ocn_time_integration_split
       block => domain % blocklist
       do while(associated(block))
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
-        call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
-        call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
-        call mpas_pool_get_array(statePool, 'tracers', tracersNew, 2)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
 
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
 
-        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 2)
+        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
         call ocn_sea_ice_formation(meshPool, indexTemperature, indexSalinity, layerThicknessNew, &
-                                   tracersNew, seaIceEnergy, err)
+                                   tracersGroupNew, seaIceEnergy, err)
         block => block % next
       end do
 
@@ -1428,6 +1497,7 @@ module ocn_time_integration_split
       block => domain % blocklist
       do while(associated(block))
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -1439,7 +1509,7 @@ module ocn_time_integration_split
         ! be computed.  For kpp, more variables may be needed.  Either way, this
         ! could be made more efficient by only computing what is needed for the
         ! implicit vmix routine that follows.
-        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 2)
+        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
         if (config_use_standardGM) then
@@ -1456,12 +1526,19 @@ module ocn_time_integration_split
       ! communicate the change due to implicit vertical mixing across the boundary.
       call mpas_timer_start("se implicit vert mix halos")
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocityField, 2)
-      call mpas_pool_get_field(statePool, 'tracers', tracersField, 2)
 
       call mpas_dmpar_exch_halo_field(normalVelocityField)
-      call mpas_dmpar_exch_halo_field(tracersField)
+
+      call mpas_pool_begin_iteration(tracersPool)
+      do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+         if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+            call mpas_pool_get_field(tracersPool, groupItr % memberName, tracersGroupField, 2)
+            call mpas_dmpar_exch_halo_field(tracersGroupField)
+         end if
+      end do
       call mpas_timer_stop("se implicit vert mix halos")
 
       call mpas_timer_stop("se implicit vert mix")
@@ -1469,6 +1546,7 @@ module ocn_time_integration_split
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -1510,7 +1588,7 @@ module ocn_time_integration_split
             layerThicknessNew(:,:) = layerThicknessCur(:,:)
          end if
 
-         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, 2)
+         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
          ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle. 
          if (config_use_standardGM) then
@@ -1569,7 +1647,7 @@ module ocn_time_integration_split
       integer :: i, iCell, iEdge, iVertex, k
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: statePool, meshPool
+      type (mpas_pool_type), pointer :: statePool, meshPool, tracersPool
 
       integer :: iTracer, cell, cell1, cell2
       integer, dimension(:), pointer :: maxLevelEdgeTop
@@ -1589,6 +1667,7 @@ module ocn_time_integration_split
          call mpas_pool_get_config(block % configs, 'config_time_integrator', config_time_integrator)
          call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
