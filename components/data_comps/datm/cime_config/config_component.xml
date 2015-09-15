@@ -10,7 +10,7 @@
     <default_value>datm</default_value>
     <group>case_comp</group>
     <file>env_case.xml</file>
-    <sdesc>Name of atmospheric component</sdesc>
+    <desc>Name of atmospheric component</desc>
   </entry>
 
   <entry id="DATM_MODE">
