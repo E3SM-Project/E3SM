@@ -56,7 +56,7 @@ module ocn_surface_land_ice_fluxes
 
    logical :: landIceFluxesOn, isomipOn, jenkinsOn, hollandJenkinsOn
 
-   real (kind=RKIND) :: Tf0, dTf_dp, dTf_dS, cp_land_ice, rho_land_ice, refDensity
+   real (kind=RKIND) :: Tf0, dTf_dp, dTf_dS, cp_land_ice, rho_land_ice
 
 
 !***********************************************************************
@@ -129,7 +129,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)!{{{
+   subroutine ocn_surface_land_ice_fluxes_vel(meshPool, diagnosticsPool, surfaceStress, surfaceStressMagnitude, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -137,7 +137,7 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
-      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostics information
 
       !-----------------------------------------------------------------
       !
@@ -172,8 +172,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      call mpas_pool_get_array(forcingPool, 'topDrag', topDrag)
-      call mpas_pool_get_array(forcingPool, 'topDragMagnitude', topDragMagnitude)
+      call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
+      call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMagnitude)
 
       do iEdge = 1, nEdges
         surfaceStress(iEdge) = surfaceStress(iEdge) + topDrag(iEdge)
@@ -247,7 +247,7 @@ contains
 
       ! Build surface fluxes at cell centers
       do iCell = 1, nCells
-        surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / refDensity
+        surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}
@@ -309,7 +309,7 @@ contains
 
       ! add to surface fluxes at cell centers
       do iCell = 1, nCells
-        tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + landIceHeatFlux(iCell)/(refDensity*cp_sw)
+        tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + landIceHeatFlux(iCell)/(rho_sw*cp_sw)
       end do
 
    end subroutine ocn_surface_land_ice_fluxes_active_tracers!}}}
@@ -323,12 +323,13 @@ contains
 !> \author Xylar Asay-Davis
 !> \date   10/02/2014
 !> \details
-!>  This routine builds surface flux arrays related to land-ice forcing.
+!>  This routine computes surface fluxes related to land-ice forcing based
+!>  on diagnostics from the previous time step.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, statePool, diagnosticsPool, &
-      forcingPool, scratchPool, timeLevel, err)!{{{
+   subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+      forcingPool, scratchPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -337,11 +338,8 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         statePool, &    !< Input: State information
          meshPool, &     !< Input: mesh information
          diagnosticsPool !< Input: diagnostics information
-
-      integer, intent(in) :: timeLevel
 
       !-----------------------------------------------------------------
       !
@@ -368,126 +366,59 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer :: iCell, iEdge, cell1, cell2, iLevel, i
-      integer, pointer :: nCellsSolve, nEdgesSolve
+      integer :: iCell
+      integer, pointer :: nCellsSolve
 
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell
-
-      integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
-
-      integer, pointer :: indexT, indexS
-
-      real (kind=RKIND), pointer :: config_land_ice_flux_topDragCoeff, config_land_ice_flux_ISOMIP_gammaT, &
-                                    config_land_ice_flux_boundaryLayerThickness, &
-                                    config_land_ice_flux_boundaryLayerNeighborWeight, &
-                                    config_land_ice_flux_rms_tidal_velocity, &
-                                    config_land_ice_flux_jenkins_heat_transfer_coefficient, &
-                                    config_land_ice_flux_jenkins_salt_transfer_coefficient
+      real (kind=RKIND), pointer :: config_land_ice_flux_ISOMIP_gammaT
 
       logical, pointer :: config_land_ice_flux_useHollandJenkinsAdvDiff
 
 
-      real (kind=RKIND) :: velocityMagnitude, freshwaterFlux, heatFlux, &
-                           landIceEdgeFraction, blThickness, dz, blWeightSum, h_nu, Gamma_turb
+      real (kind=RKIND) :: freshwaterFlux, heatFlux
 
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, landIceFraction, &
+                                                  landIceSurfaceTemperature, &
                                                   landIceInterfaceTemperature, &
                                                   landIceInterfaceSalinity, landIceFrictionVelocity, &
                                                   landIceBoundaryLayerTemperature, &
                                                   landIceBoundaryLayerSalinity, &
-                                                  landIceFreshwaterFlux, topDrag, topDragMagnitude, &
+                                                  landIceFreshwaterFlux, &
                                                   landIceHeatFlux, heatFluxToLandIce, &
-                                                  blTempScratch, blSaltScratch, heatTransferVelocity, &
-                                                  saltTransferVelocity, landIceTemperature, &
-                                                  landIceHeatTransferVelocity, fCell, &
+                                                  landIceHeatTransferVelocity, &
+                                                  landIceSaltTransferVelocity, &
                                                   freezeInterfaceSalinity, freezeInterfaceTemperature, &
                                                   freezeFreshwaterFlux, freezeHeatFlux, &
                                                   freezeIceHeatFlux
 
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, kineticEnergyCell, layerThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       type (field1DReal), pointer :: boundaryLayerTemperatureField, boundaryLayerSalinityField, &
-                                     heatTransferVelocityField, saltTransferVelocityField, &
                                      freezeInterfaceSalinityField, freezeInterfaceTemperatureField, &
                                      freezeFreshwaterFluxField, freezeHeatFluxField, &
                                      freezeIceHeatFluxField
 
-      ! constants for Holland and Jenkins 1999 parameterization of the boundary layer
-      real (kind=RKIND), parameter :: &
-         Pr = 13.8_RKIND, &             ! the Prandtl number
-         Sc = 2432.0_RKIND, &           ! the Schmidt number
-         nuSaltWater = 1.95e-6_RKIND, & ! molecular viscosity of sea water (m^2/s)
-         kVonKarman = 0.4_RKIND, &      ! the von Karman constant
-         xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
-
-      
-
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_topDragCoeff', config_land_ice_flux_topDragCoeff)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerThickness', config_land_ice_flux_boundaryLayerThickness)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerNeighborWeight', config_land_ice_flux_boundaryLayerNeighborWeight)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rms_tidal_velocity', config_land_ice_flux_rms_tidal_velocity)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', config_land_ice_flux_useHollandJenkinsAdvDiff)
 
-      if(jenkinsOn) then
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_heat_transfer_coefficient', config_land_ice_flux_jenkins_heat_transfer_coefficient)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_salt_transfer_coefficient', config_land_ice_flux_jenkins_salt_transfer_coefficient)
-      end if
-
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexT)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexS)
-
-
-      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
+      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTemperature', landIceBoundaryLayerTemperature)
+      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerSalinity', landIceBoundaryLayerSalinity)
+      call mpas_pool_get_array(diagnosticsPool, 'landIceHeatTransferVelocity', landIceHeatTransferVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'landIceSaltTransferVelocity', landIceSaltTransferVelocity)
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
 
-      call mpas_pool_get_array(forcingPool, 'topDrag', topDrag)
-      call mpas_pool_get_array(forcingPool, 'topDragMagnitude', topDragMagnitude)
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
       call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceTemperature', landIceInterfaceTemperature)
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceSalinity', landIceInterfaceSalinity)
       call mpas_pool_get_array(forcingPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
-      call mpas_pool_get_array(forcingPool, 'landIceBoundaryLayerTemperature', landIceBoundaryLayerTemperature)
-      call mpas_pool_get_array(forcingPool, 'landIceBoundaryLayerSalinity', landIceBoundaryLayerSalinity)
 
-      call mpas_pool_get_field(scratchPool, 'boundaryLayerTemperatureScratch', boundaryLayerTemperatureField)
-      call mpas_pool_get_field(scratchPool, 'boundaryLayerSalinityScratch', boundaryLayerSalinityField)
-      call mpas_allocate_scratch_field(boundaryLayerTemperatureField, .true.)
-      call mpas_allocate_scratch_field(boundaryLayerSalinityField, .true.)
-      blTempScratch => boundaryLayerTemperatureField % array
-      blSaltScratch => boundaryLayerSalinityField % array
-      if(jenkinsOn .or. hollandJenkinsOn) then
-         call mpas_pool_get_array(forcingPool, 'landIceTemperature', landIceTemperature)
-         call mpas_pool_get_array(forcingPool, 'landIceHeatTransferVelocity', landIceHeatTransferVelocity)
-
-         call mpas_pool_get_field(scratchPool, 'heatTransferVelocityScratch', heatTransferVelocityField)
-         call mpas_pool_get_field(scratchPool, 'saltTransferVelocityScratch', saltTransferVelocityField)
-         call mpas_allocate_scratch_field(heatTransferVelocityField, .true.)
-         call mpas_allocate_scratch_field(saltTransferVelocityField, .true.)
-         heatTransferVelocity => heatTransferVelocityField % array
-         saltTransferVelocity => saltTransferVelocityField % array
-      end if
-      if(hollandJenkinsOn) then
-         call mpas_pool_get_array(meshPool, 'fCell', fCell)
-      end if
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
          call mpas_pool_get_field(scratchPool, 'freezeInterfaceSalinityScratch', freezeInterfaceSalinityField)
          call mpas_pool_get_field(scratchPool, 'freezeInterfaceTemperatureScratch', freezeInterfaceTemperatureField)
@@ -506,68 +437,6 @@ contains
          freezeIceHeatFlux => freezeIceHeatFluxField % array
       end if
 
-
-      ! Compute top drag
-      do iEdge = 1, nEdgesSolve
-         cell1 = cellsOnEdge(1, iEdge)
-         cell2 = cellsOnEdge(2, iEdge)
-
-         ! top drag tau = - CD*|u|*u, where |u| = sqrt(2*KE) = sqrt(KE1 + KE2) from the neighboring cells
-         velocityMagnitude = sqrt(kineticEnergyCell(1,cell1) + kineticEnergyCell(1,cell2))
-         landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
-
-         topDrag(iEdge) = - landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
-                          * velocityMagnitude * normalVelocity(1,iEdge)
-
-      end do
-
-      ! compute top drag and friction velocity at cell centers
-      do iCell = 1, nCellsSolve
-         ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
-         topDragMagnitude(iCell) = landIceFraction(iCell) &
-                                   * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
-         ! the friction velocity is the square root of the top drag + variance of tidal velocity (computed regardless of land-ice coverage)
-         landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff* (2.0_RKIND * kineticEnergyCell(1,iCell) &
-                                   + config_land_ice_flux_rms_tidal_velocity))
-      end do
-
-      ! average temperature and salinity over horizontal neighbors and the sub-ice-shelf boundary layer
-      do iCell = 1, nCellsSolve
-         blThickness = 0.0_RKIND
-         blTempScratch(iCell) = 0.0_RKIND
-         blSaltScratch(iCell) = 0.0_RKIND
-         do iLevel = 1, maxLevelCell(iCell)
-            dz = min(layerThickness(iLevel,iCell),config_land_ice_flux_boundaryLayerThickness-blThickness)
-            if(dz <= 0.0_RKIND) exit
-            blTempScratch(iCell) = blTempScratch(iCell) + activeTracers(indexT, iLevel, iCell)*dz
-            blSaltScratch(iCell) = blSaltScratch(iCell) + activeTracers(indexS, iLevel, iCell)*dz
-            blThickness = blThickness + dz
-         end do
-         if(blThickness > 0.0_RKIND) then
-           blTempScratch(iCell) = blTempScratch(iCell)/blThickness
-           blSaltScratch(iCell) = blSaltScratch(iCell)/blThickness
-         end if
-      end do
-      do iCell = 1, nCellsSolve
-         blWeightSum = 1.0_RKIND
-         landIceBoundaryLayerTemperature(iCell) = blTempScratch(iCell)
-         landIceBoundaryLayerSalinity(iCell) = blSaltScratch(iCell)
-         do i = 1, nEdgesOnCell(iCell)
-           cell2 = cellsOnCell(i,iCell)
-           if(cell2 <= 0 .or. cell2 > nCellsSolve) cycle
-
-           landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell) &
-             + config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
-           landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell) &
-             + config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
-           blWeightSum = blWeightSum + config_land_ice_flux_boundaryLayerNeighborWeight
-         end do
-         if(blWeightSum > 0.0_RKIND) then
-           landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell)/blWeightSum
-           landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell)/blWeightSum
-         end if
-      end do
-
       if(isomipOn) then
          do iCell = 1, nCellsSolve
             ! linearized equaiton for the S and p dependent potential freezing temperature
@@ -579,7 +448,7 @@ contains
             ! or (7) from Jenkins et al. (2001) if gamma constant
             ! and no heat flux into ice
             ! freshwater flux = density * melt rate is in kg/m^2/s
-            freshwaterFlux = -refDensity * config_land_ice_flux_ISOMIP_gammaT * (cp_sw/latent_heat_fusion_mks) &
+            freshwaterFlux = -rho_sw * config_land_ice_flux_ISOMIP_gammaT * (cp_sw/latent_heat_fusion_mks) &
                        * (landIceInterfaceTemperature(iCell)-landIceBoundaryLayerTemperature(iCell))
 
             landIceFreshwaterFlux(iCell) = landIceFraction(iCell)*freshwaterFlux
@@ -587,7 +456,7 @@ contains
             ! Using (13) from Jenkins et al. (2001)
             ! heat flux is in W/s
             heatFlux = cp_sw*(freshwaterFlux*landIceInterfaceTemperature(iCell) &
-                              + refDensity*config_land_ice_flux_ISOMIP_gammaT &
+                              + rho_sw*config_land_ice_flux_ISOMIP_gammaT &
                                 * (landIceInterfaceTemperature(iCell)-landIceBoundaryLayerTemperature(iCell)))
             landIceHeatFlux(iCell) = landIceFraction(iCell)*heatFlux
 
@@ -597,35 +466,14 @@ contains
       end if
 
       if(jenkinsOn .or. hollandJenkinsOn) then
-         do iCell = 1, nCellsSolve
-            if(jenkinsOn) then
-               ! transfer coefficients from namelist
-               heatTransferVelocity(iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_heat_transfer_coefficient
-               saltTransferVelocity(iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_salt_transfer_coefficient
-            else
-               ! friction-velocity dependent non-dimensional transfer coefficients from
-               ! Holland and Jenkins 1999, (14)-(16) with eta_* = 1
-               h_nu = 5.0_RKIND*nuSaltWater/landIceFrictionVelocity(iCell) ! uStar should never be zero because of tidal term
-       
-               Gamma_turb = 1.0_RKIND/(2.0_RKIND*xiN) - 1.0_RKIND/kVonKarman
-               if(abs(fCell(iCell)) > 0.0_RKIND) then
-                 Gamma_turb = Gamma_turb + 1.0_RKIND/kVonKarman*log(landIceFrictionVelocity(iCell) &
-                   *xiN/(abs(fCell(iCell))*h_nu))
-               end if
-       
-               heatTransferVelocity(iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND*Pr**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
-               saltTransferVelocity(iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND*Sc**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
-
-            end if
-         end do
          if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
             ! melting solution
             call compute_HJ99_melt_fluxes( &
                landIceBoundaryLayerTemperature, &
                landIceBoundaryLayerSalinity, &
-               heatTransferVelocity, &
-               saltTransferVelocity, &
-               landIceTemperature, &
+               landIceHeatTransferVelocity, &
+               landIceSaltTransferVelocity, &
+               landIceSurfaceTemperature, &
                seaSurfacePressure, &
                landIceInterfaceSalinity, &
                landIceInterfaceTemperature, &
@@ -639,14 +487,11 @@ contains
             end if
 
             ! freezing solution
-            landIceHeatTransferVelocity(:) = 0.0_RKIND
             call compute_melt_fluxes( &
                landIceBoundaryLayerTemperature, &
                landIceBoundaryLayerSalinity, &
-               heatTransferVelocity, &
-               saltTransferVelocity, &
-               landIceTemperature, &
                landIceHeatTransferVelocity, &
+               landIceSaltTransferVelocity, &
                seaSurfacePressure, &
                freezeInterfaceSalinity, &
                freezeInterfaceTemperature, &
@@ -666,14 +511,12 @@ contains
                landIceHeatFlux = freezeHeatFlux
                heatFluxToLandIce = freezeIceHeatFlux
             end where
-         else
+         else ! not using Holland and Jenkins advection/diffusion
             call compute_melt_fluxes( &
                landIceBoundaryLayerTemperature, &
                landIceBoundaryLayerSalinity, &
-               heatTransferVelocity, &
-               saltTransferVelocity, &
-               landIceTemperature, &
                landIceHeatTransferVelocity, &
+               landIceSaltTransferVelocity, &
                seaSurfacePressure, &
                landIceInterfaceSalinity, &
                landIceInterfaceTemperature, &
@@ -692,12 +535,6 @@ contains
 
       end if
 
-      call mpas_deallocate_scratch_field(boundaryLayerTemperatureField, .true.)
-      call mpas_deallocate_scratch_field(boundaryLayerSalinityField, .true.)
-      if(jenkinsOn .or. hollandJenkinsOn) then
-         call mpas_deallocate_scratch_field(heatTransferVelocityField, .true.)
-         call mpas_deallocate_scratch_field(saltTransferVelocityField, .true.)
-      end if
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
          call mpas_deallocate_scratch_field(freezeInterfaceSalinityField, .true.)
          call mpas_deallocate_scratch_field(freezeInterfaceTemperatureField, .true.)
@@ -734,8 +571,7 @@ contains
                                     config_land_ice_flux_dTf_dp, &
                                     config_land_ice_flux_dTf_dS, &
                                     config_land_ice_flux_cp_ice, &
-                                    config_land_ice_flux_rho_ice, &
-                                    config_density0
+                                    config_land_ice_flux_rho_ice
 
 
       err = 0
@@ -754,7 +590,6 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_dTf_dS', config_land_ice_flux_dTf_dS)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_cp_ice', config_land_ice_flux_cp_ice)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rho_ice', config_land_ice_flux_rho_ice)
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       if ( trim(config_land_ice_flux_formulation) == 'ISOMIP' ) then
          isomipOn = .true.
@@ -773,7 +608,6 @@ contains
       dTf_dS = config_land_ice_flux_dTf_dS
       cp_land_ice = config_land_ice_flux_cp_ice
       rho_land_ice = config_land_ice_flux_rho_ice
-      refDensity = config_density0
 
    !--------------------------------------------------------------------
 
@@ -797,13 +631,11 @@ contains
 !>  They should be the product of the friction velocity and a (possibly
 !>  spatially variable) non-dimenional transfer coefficient.
 !>  
-!>  The ice heat transfer velocity is either zero if heat conduction into the
-!>  ice is to be neglected or is computed as:
-!>  iceHeatTransferVelocity = kappa_ice/(0.5*dz_ice),
-!>  where kappa_ice is the molecular diffusivity of heat
-!>  in ice and dz_ice is the thickness of the bottom layer of ice, where 
-!>  iceTemperature is supplied.
-!>  
+!>  The iceTemperatureDistance is the distance between the location
+!>  where the iceTemperature is supplied and the ice-ocean interface,
+!>  used to compute a temperature gradient.  The ice thermal conductivity,
+!>  kappa_land_ice, is zero for the freezing solution from Holland and Jenkins
+!>  (1999) in which the ice is purely insulating.
 !
 !-----------------------------------------------------------------------
 
@@ -813,8 +645,6 @@ contains
     oceanSalinity, &
     oceanHeatTransferVelocity, &
     oceanSaltTransferVelocity, &
-    iceTemperature, &
-    iceHeatTransferVelocity, &
     interfacePressure, &
     outInterfaceSalinity, &
     outInterfaceTemperature, &
@@ -822,7 +652,10 @@ contains
     outOceanHeatFlux, &
     outIceHeatFlux, &
     nCells, &
-    err)
+    err, &
+    iceTemperature, &
+    iceTemperatureDistance, &
+    kappa_land_ice)
 
     !-----------------------------------------------------------------
     !
@@ -835,17 +668,16 @@ contains
       oceanSalinity, &             !< Input: ocean salinity in top layer
       oceanHeatTransferVelocity, & !< Input: ocean heat transfer velocity
       oceanSaltTransferVelocity, & !< Input: ocean salt transfer velocity
-      iceTemperature, &            !< Input: ice temperature in bottom layer
-      iceHeatTransferVelocity, &   !< Input: ice heat transfer velocity
       interfacePressure            !< Input: pressure at the ice-ocean interface
 
     integer, intent(in) :: nCells !< Input: number of cells in each array
 
-    !-----------------------------------------------------------------
-    !
-    ! input/output variables
-    !
-    !-----------------------------------------------------------------
+    real (kind=RKIND), dimension(:), intent(in), optional:: &
+      iceTemperature, &            !< Input: ice temperature in bottom layer
+      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
+
+    real (kind=RKIND), intent(in), optional:: &
+      kappa_land_ice     !< Input: the diffusivity of heat in land ice
 
     !-----------------------------------------------------------------
     !
@@ -868,18 +700,30 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
+                         iceHeatFluxCoeff, iceDeltaT
     integer :: iCell
 
+    logical :: coupled
+
     err = 0
+    coupled = present(iceTemperature) .and. present(iceTemperatureDistance) &
+            .and. present(kappa_land_ice)
     Tlatent = latent_heat_fusion_mks/cp_sw
     do iCell = 1, nCells
+      if(coupled) then 
+        iceHeatFluxCoeff = rho_land_ice*cp_land_ice*kappa_land_ice/iceTemperatureDistance(iCell)
+        nu = iceHeatFluxCoeff/(rho_sw*cp_sw*oceanHeatTransferVelocity(iCell))
+        iceDeltaT = T0 - iceTemperature(iCell)
+      else
+        nu = 0.0_RKIND
+        iceDeltaT = 0.0_RKIND
+      end if 
       T0 = Tf0 + dTf_dp*interfacePressure(iCell)
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
-      nu = (rho_land_ice*cp_land_ice*iceHeatTransferVelocity(iCell))/(refDensity*cp_sw*oceanHeatTransferVelocity(iCell))
       a = -dTf_dS*(1.0_RKIND + nu)
-      b = transferVelocityRatio*Tlatent - nu*(T0 - iceTemperature(iCell)) + oceanTemperature(iCell) - T0
+      b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
       c = -transferVelocityRatio*Tlatent
 
       ! a is strictly positive; c is strictly negative so we never get imaginary roots
@@ -891,14 +735,14 @@ contains
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
-      outFreshwaterFlux(iCell) = refDensity*oceanSaltTransferVelocity(iCell) &
+      outFreshwaterFlux(iCell) = rho_sw*oceanSaltTransferVelocity(iCell) &
         * (oceanSalinity(iCell)/outInterfaceSalinity(iCell) - 1.0_RKIND)
 
       ! According to Jenkins et al. (2001), the temperature fluxes into the ocean are:
       !   1. the advection of meltwater into the top layer (or removal for freezing)
       !   2. the turbulent transfer of heat across the boundary layer, based on the termal driving
       outOceanHeatFlux(iCell) = cp_sw*(outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell) &
-        - refDensity*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell)))
+        - rho_sw*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell)))
 
       ! the temperature fluxes into the ice are:
       !   1. the advection of ice at the interface temperature out of the domain due to melting
@@ -906,9 +750,11 @@ contains
       !   2. the diffusion (if any) of heat into the ice, based on temperature difference between
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
-      outIceHeatFlux(iCell) = cp_land_ice * &
-        (- outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell) &
-        - rho_land_ice*iceHeatTransferVelocity(iCell)*(iceTemperature(iCell) - outInterfaceTemperature(iCell)))
+      outIceHeatFlux(iCell) = -cp_land_ice*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
+      if(coupled) then
+        outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
+          - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
+      end if
     end do
 
   !--------------------------------------------------------------------
@@ -1010,7 +856,7 @@ contains
     cpRatio = cp_land_ice/cp_sw
     do iCell = 1, nCells
       T0 = Tf0 + dTf_dp*interfacePressure(iCell)
-      transferVelocityRatio = (rho_fw/refDensity)*oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
+      transferVelocityRatio = (rho_fw/rho_sw)*oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
       Tlatent = latent_heat_fusion_mks/cp_sw
 
       eta = cpRatio * transferVelocityRatio
@@ -1029,14 +875,14 @@ contains
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
-      outFreshwaterFlux(iCell) = refDensity*oceanSaltTransferVelocity(iCell) &
+      outFreshwaterFlux(iCell) = rho_sw*oceanSaltTransferVelocity(iCell) &
         * (oceanSalinity(iCell)/outInterfaceSalinity(iCell) - 1.0_RKIND)
 
       ! According to Jenkins et al. (2001), the temperature fluxes into the ocean are:
       !   1. the advection of meltwater into the top layer (or removal for freezing)
       !   2. the turbulent transfer of heat across the boundary layer, based on the termal driving
       outOceanHeatFlux(iCell) = cp_sw*(outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell) &
-        - refDensity*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell)))
+        - rho_sw*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell)))
  
       ! Since we're considering only melting and ignoring diffusion, 
       ! the ice loses heat simply by the loss of ice mass at the prescribed
