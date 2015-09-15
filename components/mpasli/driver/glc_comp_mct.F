@@ -1198,16 +1198,21 @@ contains
 
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+      ! Note: for spherical meshes, we should get the sphere_radius!
+      ! But currently only supporting planar meshes
+      !call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+
       do i = 1, nCellsSolve
         n = n + 1
-        data(n) = areaCell(i) / (sphere_radius * sphere_radius)
+        data(n) = areaCell(i) * 0.24635127E-13_RKIND  ! This is the conversion factor to rad^2
       end do
       block_ptr => block_ptr % next
     end do
     call mct_gGrid_importRattr(dom_g,"area",data,lsize)
 
-!!    data(:) = 1.0_RKIND ! No land cells in MPAS-O, only Ocean cells
+    ! For now, assume mask and frac are 1 everywhere.
+    ! This may need to be changed in the future.
+    data(:) = 1.0_RKIND
     call mct_gGrid_importRattr(dom_g,"mask",data,lsize)
     call mct_gGrid_importRattr(dom_g,"frac",data,lsize)
 
