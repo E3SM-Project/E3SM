@@ -25,6 +25,7 @@ module li_global_stats
    use mpas_stream_manager
 
    use li_constants
+   use li_mask
 
    implicit none
    private
@@ -162,26 +163,14 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: globalStatsAM
-
       type (mpas_pool_type), pointer :: geometryPool
 
-      ! Here are some example variables which may be needed for your analysis member
-!      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
-      integer, pointer :: nCellsSolve
-!      integer :: iTracer, k, iCell
-      integer :: k, iCell
-!      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
-
-!      real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge
       real (kind=RKIND), dimension(:), pointer ::  areaCell
-
       real (kind=RKIND), dimension(:), pointer ::  thickness 
-      integer, dimension(:), pointer :: cellMask 
 
-      ! simple 1 or 0 masks to be used here for calc. global sums over floating or grounded ice
-      integer, dimension(:), pointer :: iceMask 
-      integer, dimension(:), pointer :: groundedMask 
-      integer, dimension(:), pointer :: floatingMask 
+      integer, dimension(:), pointer :: cellMask 
+      integer, pointer :: nCellsSolve
+      integer :: k, iCell
 
       ! scalars to be calculated here from global sums
       real (kind=RKIND), pointer ::  totalIceArea 
@@ -191,112 +180,106 @@ contains
       real (kind=RKIND), pointer ::  floatingIceArea 
       real (kind=RKIND), pointer ::  floatingIceVolume
 
-      print *, 'in li_compute_global_stats (start)'
+      ! scalar sums over blocks
+      real (kind=RKIND) ::  blockSumIceArea
+      real (kind=RKIND) ::  blockSumIceVolume
+      real (kind=RKIND) ::  blockSumGroundedIceArea
+      real (kind=RKIND) ::  blockSumGroundedIceVolume
+      real (kind=RKIND) ::  blockSumFloatingIceArea
+      real (kind=RKIND) ::  blockSumFloatingIceVolume
+
+      print *, 'in li_compute_global_stats (start)'  ! debug
 
       err = 0
 
+      ! initialize sums over blocks to 0
+      blockSumIceArea = 0.0_RKIND
+      blockSumIceVolume = 0.0_RKIND
+      blockSumGroundedIceArea = 0.0_RKIND
+      blockSumGroundedIceVolume = 0.0_RKIND
+      blockSumFloatingIceArea = 0.0_RKIND
+      blockSumFloatingIceVolume = 0.0_RKIND
+
       dminfo = domain % dminfo
 
-      ! initialize scalar global sums and work masks to zero
-!      totalIceArea = 0.0_RKIND
-!      totalIceVolume = 0.0_RKIND
-!      groundedIceArea = 0.0_RKIND
-!      groundedIceVolume = 0.0_RKIND
-!      floatingIceArea = 0.0_RKIND
-!      floatingIceVolume = 0.0_RKIND
-!      iceMask = 0
-!      groundedMask = 0
-!      floatingMask = 0     
+      block => domain % blocklist
+      do while (associated(block))
 
-!      block => domain % blocklist
-!      do while (associated(block))
-!         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-!         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-!         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-!         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-!         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
-!
-!         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-!
-!         ! Here are some example variables which may be needed for your analysis member
-!!         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
-!
-!!         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-!         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-!!         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-!!         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
-!
-!         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-!!         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-!!         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-!!         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-!!         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-!!         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
-!
-!         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-!         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-!
-!         call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
-!         call mpas_pool_get_array(globalStatsAMPool, 'totalIceVolume', totalIceVolume)
-!         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceArea', floatingIceArea)
-!         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
-!         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
-!         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
-!
-!         ! populate work masks (1 and 0 based for multiplication of area and thickness fields)
-!         where( cellMask == 32 ); iceMask = 1; endwhere
-!         where( cellMask == 4 ); floatingMask = 1; endwhere
-!         groundedMask = iceMask - floatingMask 
-!
-!         ! Computations which are functions of nCells, nEdges, or nVertices
-!         ! must be placed within this block loop
-!         ! Here are some example loops
-!!         do iCell = 1,nCellsSolve
-!
-!!            do k = 1, maxLevelCell(iCell)
-!!               do iTracer = 1, num_tracers
-!               ! computations on tracers(iTracer,k, iCell)
-!!               end do
-!!            end do
-!
-!            ! calculate total ice area and volume
-!            totalIceArea = totalIceArea + real( iceMask(iCell), RKIND) * areaCell(iCell) 
-!            totalIceVolume = totalIceVolume + real( iceMask(iCell), RKIND) * areaCell(iCell) * thickness(iCell) 
-!
-!            ! debugging
-!!            print *, 'totalIceArea=', totalIceArea
-!!            print *, 'totalIceVolume=', totalIceVolume
-!
-!            ! calculate grounded ice area and volume
-!            groundedIceArea = groundedIceArea + real( groundedMask(iCell), RKIND) * areaCell(iCell) 
-!            groundedIceVolume = groundedIceVolume + real( groundedMask(iCell), RKIND) * areaCell(iCell) * thickness(iCell) 
-!
-!            ! calculate floating ice area and volume
-!            floatingIceArea = floatingIceArea + real( floatingMask(iCell), RKIND) * areaCell(iCell) 
-!            floatingIceVolume = floatingIceVolume + real( floatingMask(iCell), RKIND) * areaCell(iCell) * thickness(iCell) 
-!
-!!         end do
-!
-!         block => block % next
-!      end do
-!
-!      ! mpi gather/scatter calls may be placed here.
-!      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
-!!      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
-!!      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
-!!      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
-!
-!      ! Even though some variables do not include an index that is decomposed amongst
-!      ! domain partitions, we assign them within a block loop so that all blocks have the
-!      ! correct values for writing output.
-!      block => domain % blocklist
-!      do while (associated(block))
-!         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
-!
-!         ! assignment of final globalStatsAM variables could occur here.
-!
-!         block => block % next
-!      end do
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalIceVolume', totalIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceArea', floatingIceArea)
+         call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
+
+         do iCell = 1,nCellsSolve
+
+            ! sums of ice area and volume over cells
+            blockSumIceArea = blockSumIceArea + li_mask_is_ice_int(cellMask(iCell))  * areaCell(iCell) 
+            blockSumIceVolume = blockSumIceVolume + li_mask_is_ice_int(cellMask(iCell)) * areaCell(iCell) * thickness(iCell) 
+
+!            blockSumGroundedIceArea = blockSumGroundedIceArea + (1-li_mask_is_floating_ice_int(cellMask(iCell))) * areaCell(iCell) 
+!            blockSumGroundedIceVolume = blockSumGroundedIceVolume + (1-li_mask_is_floating_ice_int(cellMask(iCell))) * areaCell(iCell) * thickness(iCell) 
+
+!            blockSumFloatingIceArea = blockSumFloatingIceArea + li_mask_is_floating_ice_int(cellMask(iCell)) * areaCell(iCell) 
+!            blockSumFloatingIceVolume = blockSumFloatingIceVolume + li_mask_is_floating_ice_int(cellMask(iCell)) * areaCell(iCell) * thickness(iCell) 
+
+            ! debugging
+!            print *, 'CellMask = ', CellMask(iCell)
+!            print *, 'iceMask = ', li_mask_is_ice_int(cellMask(iCell)) 
+!            print *, 'groundedMask = ', (1 - li_mask_is_floating_ice_int(cellMask(iCell)) ) 
+!            print *, 'floatingMask = ', li_mask_is_floating_ice_int(cellMask(iCell)) 
+!            print *, 'areaCell = ', areaCell(iCell)
+!            print *, 'thickness = ', thickness(iCell)
+!            print *, 'blockSumIceArea=', blockSumIceArea
+!            print *, 'blockSumIceVolume=', blockSumIceVolume
+
+         end do
+
+         block => block % next
+      end do
+
+      totalIceArea = blockSumIceArea
+      totalIceVolume = blockSumIceVolume
+!      groundedIceArea = blockSumGroundedIceArea
+!      groundedIceVolume = blockSumGroundedIceVolume
+!      floatingIceArea = blockSumFloatingIceArea
+!      floatingIceVolume = blockSumFloatingIceVolume
+
+      ! debugging
+      print *, 'totalIceArea=', totalIceArea
+      print *, 'totalIceVolume=', totalIceVolume
+!      print *, 'groundedIceArea=', groundedIceArea
+!      print *, 'groundedIceVolume=', groundedIceVolume
+!      print *, 'floatingIceArea=', floatingIceArea
+!      print *, 'floatingIceVolume=', floatingIceVolume
+
+      ! mpi gather/scatter calls may be placed here.
+      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
+!      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
+!      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
+!      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
+
+      ! Even though some variables do not include an index that is decomposed amongst
+      ! domain partitions, we assign them within a block loop so that all blocks have the
+      ! correct values for writing output.
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
+
+         ! assignment of final globalStatsAM variables could occur here.
+
+         block => block % next
+      end do
 
       print *, 'in li_compute_global_stats (end)'     
 
