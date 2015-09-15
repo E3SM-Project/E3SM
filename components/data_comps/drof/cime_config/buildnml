@@ -8,16 +8,14 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my @dirs = ("$CASEROOT/Tools");
-unshift @INC, @dirs;
-require SetupTools;
-my $sysmod; 
-
-my $CASEBUILD	= `./xmlquery  CASEBUILD   -value`;
 my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
 my $NINST_ROF	= `./xmlquery  NINST_ROF   -value`;
 my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
-my $SCRIPTSROOT	= `./xmlquery  SCRIPTSROOT -value`;
+
+my @dirs = ("${CIMEROOT}/utils/perl5lib");
+unshift @INC, @dirs;
+require Config::SetupTools;
+my $sysmod; 
 
 # Verify rof grid is supported
 my $check_grid = "fail";
@@ -29,11 +27,11 @@ if (${check_grid} ne "OK") {
   die "  ERROR drof.buildnml: drof support on rx1 ROF_GRID only";
 }
 
-if (! -d "$CASEBUILD/drofconf" ) {
-    $sysmod = "mkdir $CASEBUILD/drofconf";
+if (! -d "$CASEROOT/Buildconf/drofconf" ) {
+    $sysmod = "mkdir $CASEROOT/Buildconf/drofconf";
     system($sysmod) == 0 or die "ERROR drof.buildnml: $sysmod failed: $?\n";
 }
-chdir "$CASEBUILD/drofconf";
+chdir "$CASEROOT/Buildconf/drofconf";
 
 my $inst_string;
 my $inst_counter = 1;
@@ -61,29 +59,29 @@ while ($inst_counter <= $NINST_ROF) {
 
     SetupTools::create_namelist_infile("$CASEROOT", 
 				       "$CASEROOT/user_nl_drof${inst_string}", 
-				       "$CASEBUILD/drofconf/cesm_namelist"); 
+				       "$CASEROOT/Buildconf/drofconf/cesm_namelist"); 
 
     # -----------------------------------------------------
     # call build-namelist
     # -----------------------------------------------------
 
     $sysmod = "$CIMEROOT/components/data_comps/drof/bld/build-namelist";
-    $sysmod = "$sysmod -infile $CASEBUILD/drofconf/cesm_namelist";
+    $sysmod = "$sysmod -infile $CASEROOT/Buildconf/drofconf/cesm_namelist";
     $sysmod = "$sysmod -caseroot $CASEROOT";
-    $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
+    $sysmod = "$sysmod -cimeroot $CIMEROOT";
     $sysmod = "$sysmod -inst_string \"$inst_string\"";
     $sysmod = "$sysmod -user_xml_dir \"$CASEROOT/SourceMods/src.drof\"";
  
     system($sysmod) == 0 or die "ERROR drof.buildnml: $sysmod failed: $?\n";
 
     if (-d ${RUNDIR}) {
-	$sysmod = "cp $CASEBUILD/drofconf/drof_in ${RUNDIR}/drof_in${inst_string}";
+	$sysmod = "cp $CASEROOT/Buildconf/drofconf/drof_in ${RUNDIR}/drof_in${inst_string}";
 	system($sysmod) == 0 or die "ERROR drof.buildnml: $sysmod failed: $?\n";
 
-	$sysmod = "cp $CASEBUILD/drofconf/drof_rof_in ${RUNDIR}/drof_rof_in${inst_string}";
+	$sysmod = "cp $CASEROOT/Buildconf/drofconf/drof_rof_in ${RUNDIR}/drof_rof_in${inst_string}";
 	system($sysmod) == 0 or die "ERROR drof.buildnml: $sysmod failed: $?\n";
 
-	$sysmod = "cp $CASEBUILD/drofconf/*txt* ${RUNDIR}/ >& /dev/null";
+	$sysmod = "cp $CASEROOT/Buildconf/drofconf/*txt* ${RUNDIR}/ >& /dev/null";
 	system($sysmod) == 0; 
     }
 
