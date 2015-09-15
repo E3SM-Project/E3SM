@@ -317,6 +317,8 @@ sub write_xml_entry
 	$desc =~ s/^ *//;
 	$desc =~ s/ *$//g;
 	chomp $desc;
+    }else{
+	$desc = "no description available";
     }
     print $fh "\n";
     print $fh "<entry id=\"$id\"  value=\"$value\">\n";   	    
