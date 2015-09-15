@@ -202,6 +202,7 @@ contains
 
       dminfo = domain % dminfo
 
+      ! compute sums over blocks
       block => domain % blocklist
       do while (associated(block))
 
@@ -243,17 +244,19 @@ contains
 !            print *, 'blockSumIceArea=', blockSumIceArea
 !            print *, 'blockSumIceVolume=', blockSumIceVolume
 
-         end do
+         end do ! end sum over cells
 
          block => block % next
-      end do
 
-      totalIceArea = blockSumIceArea
-      totalIceVolume = blockSumIceVolume
-!      groundedIceArea = blockSumGroundedIceArea
-!      groundedIceVolume = blockSumGroundedIceVolume
-!      floatingIceArea = blockSumFloatingIceArea
-!      floatingIceVolume = blockSumFloatingIceVolume
+      end do    ! end sum over blocks
+
+      ! compute sums over all procs
+      call mpas_dmpar_sum_real(dminfo, blockSumIceArea, totalIceArea)
+      call mpas_dmpar_sum_real(dminfo, blockSumIceVolume, totalIceVolume)
+!      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceArea, groundedIceArea)
+!      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceVolume, groundedIceVolume)
+!      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
+!      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
 
       ! debugging
       print *, 'totalIceArea=', totalIceArea
@@ -262,12 +265,6 @@ contains
 !      print *, 'groundedIceVolume=', groundedIceVolume
 !      print *, 'floatingIceArea=', floatingIceArea
 !      print *, 'floatingIceVolume=', floatingIceVolume
-
-      ! mpi gather/scatter calls may be placed here.
-      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
-!      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
-!      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
-!      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
 
       ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
