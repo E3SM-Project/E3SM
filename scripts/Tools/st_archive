@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# st_archive - script to handle CESM short term archiving 
+# st_archive - script to handle short term archiving 
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -20,10 +20,12 @@ use File::Find;
 use File::stat;
 use File::Glob;
 
-# the st_archive is run in the CASEROOT and needs to look in the CASEROOT/Tools for ConfigCase.pm
-my $includedirs = "./Tools";
-unshift(@INC, $includedirs);
-require ConfigCase;
+# the st_archive is run in the CASEROOT and needs to look in the CASEROOT/Tools for SetupTools.pm
+my $cimeroot  = `./xmlquery CIMEROOT  -value`;
+my @dirs = ("$cimeroot/utils/perl5lib" );
+
+unshift @INC, @dirs;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
@@ -36,7 +38,7 @@ require ConfigCase;
 my %opts = ();
 
 # the global config hash holds all valid XML variables necessary for the short term st_archive to function
-my %config = ConfigCase->getAllResolved();
+my %config = SetupTools::getAllResolved();
 
 #-----------------------------------------------------------------------------------------------
 # print out the command line usage
@@ -155,12 +157,12 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
       </comp_archive_spec>
     </components>
 
-    <entry id="[string]" value="[string]"  />
+    <variable id="[string]" value="[string]"  />
     </config_definition>
 				   
 ADDITIONAL XML / ENVIRONMENT VARIABLES USED BY THE SHORT TERM ARCHIVER THAT ARE INCLUDED IN THE ENV_RUN.XML FILE
 
-    The following xml <entry> markup tag variables are used to control the behavior of the short term archiver. 
+    The following xml <variable> markup tag variables are used to control the behavior of the short term archiver. 
     They can be queried using the xmlquery script and modified using the xmlchange script. 
 
     DOUT_S                                  [boolean] - Checked in \$CASE.run script. If TRUE (default), then st_archive script called at the 

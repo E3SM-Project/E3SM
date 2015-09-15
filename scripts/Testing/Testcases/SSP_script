@@ -33,7 +33,7 @@ rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0}
 cd $CASERR1
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT} || exit -1
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE       || exit -1
-./cesm_setup -testmode
+./case_setup -testmode
 
 #======================================================================
 # (1) Test run: do a spinup run in the main case

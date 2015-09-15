@@ -3,12 +3,7 @@
 #
 # build-namelist
 #
-# The simplest use of build-namelist is to execute it from the build directory where configure
-# was run.  
-#
-# Date        Contributor      Modification
-# -------------------------------------------------------------------------------------------
-# 2012-03-10  Vertenstein      Updated for cesm1.1
+# This is the build-namelist script for the CIME docn (Data Ocean Model).
 #--------------------------------------------------------------------------------------------
 
 use strict;
@@ -41,7 +36,7 @@ OPTIONS
                               	      1 = regular						    
                               	      2 = verbose						    
      -caseroot                     CASEROOT directory variable
-     -scriptsroot                  SCRIPTSROOT directory variable
+     -cimeroot                     CIMEROOT directory variable
      -inst_string                  INST_STRING variable
      -user_xml_dir "directory"     Directory of where to look for user versions of 
                                       namelist XML files (usually your SourceMods/src.docn directory)
@@ -58,7 +53,7 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the DOCN configuration scripts.  If the command was
+# Set the directory that contains the DOCN configuration cime.  If the command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -85,7 +80,7 @@ my $outdirname = "$cwd";                  # Default name of output directory nam
 my %opts = ( help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
-	     scriptsroot => 0,
+	     cimeroot => 0,
 	     inst_string => 0,
              user_xml_dir=> undef,
 	    );
@@ -96,7 +91,7 @@ GetOptions(
     "namelist=s"    => \$opts{'namelist'},
     "print=i"       => \$opts{'print'},
     "caseroot=s"    => \$opts{'caseroot'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s" => \$opts{'cimeroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
     "user_xml_dir=s" => \$opts{'user_xml_dir'},
 )  or usage();
@@ -129,7 +124,7 @@ EOF
 }
 
 my $CASEROOT    = $opts{'caseroot'}; 
-my $SCRIPTSROOT = $opts{'scriptsroot'};       
+my $CIMEROOT    = $opts{'cimeroot'};       
 my $INST_STRING = $opts{'inst_string'}; 
 
 if ($print>=2) { print "Setting docn configuration script directory to $cfgdir$eol"; }
@@ -155,8 +150,8 @@ EOF
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
 
-# The root directory to cesm utils Tools
-my $cimeroot = abs_path("$SCRIPTSROOT/../");
+# The root directory to utils Tools
+my $cimeroot = abs_path($CIMEROOT);
 my $perl5lib = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
@@ -233,7 +228,7 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$perl5lib", "$CASEROOT/Tools");
+my @dirs = ( "$cfgdir/..", "$perl5lib");
 unshift @INC, @dirs;
 require XML::Lite;
 require Build::Config;
@@ -241,7 +236,7 @@ require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
 require Streams::TemplateGeneric;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DOCN config_cache.xml file. 
@@ -325,11 +320,8 @@ my $OCN_GRID        = $xmlvars{'OCN_GRID'};
 my $DOCN_MODE       = $xmlvars{'DOCN_MODE'};
 my $SSTICE_STREAM   = $xmlvars{'SSTICE_STREAM'};
 
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
 if ($print>=2) { 
-    print "CESM inputdata root directory: $DIN_LOC_ROOT \n"; 
+    print "Inputdata root directory: $DIN_LOC_ROOT \n"; 
     print "  docn mode is $DOCN_MODE \n";
     print "  docn grid is $OCN_GRID \n";
 }
@@ -575,7 +567,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- CESM inputdata root directory
+#  $DIN_LOC_ROOT      -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -632,7 +624,7 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the CESM inputdata root directory.
+       # the inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});

@@ -78,8 +78,8 @@ cd ${CASERR}
 
 set CASE = `./xmlquery CASE  -value`
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
 

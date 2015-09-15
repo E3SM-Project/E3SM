@@ -11,8 +11,8 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1 env_mach_pes.xml
 endif
 
-./cesm_setup -clean -testmode
-./cesm_setup 
+./case_setup -clean -testmode
+./case_setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
@@ -97,12 +97,12 @@ if ($NTHRDS_ICE == 1) then
 endif
 
 # Build with half the tasks and double the threads
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./cesm_setup -clean
-./cesm_setup
+./case_setup -clean
+./case_setup
 ./$CASE.clean_build -all 
 
 ./$CASE.build

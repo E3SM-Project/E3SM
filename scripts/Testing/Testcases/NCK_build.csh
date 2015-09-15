@@ -55,8 +55,8 @@ endif
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./$CASE.clean_build
 
@@ -106,8 +106,8 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL -value`
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./$CASE.clean_build 
 

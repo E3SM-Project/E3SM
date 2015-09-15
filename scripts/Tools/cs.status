@@ -54,7 +54,7 @@ sub init
   $cimeroot = $node[0]->textContent(); 
   if (! defined $opts{'expectedfails'} and -e "$cimeroot/ExpectedTestFails.xml") 
   {
-    $opts{'expectedfails'} = $cimeroot . "/scripts/Testing/TestListxml/ExpectedTestFails.xml";
+    $opts{'expectedfails'} = $cimeroot . "/cime_config/cesm/ExpectedTestFails.xml";
   }
 
 
