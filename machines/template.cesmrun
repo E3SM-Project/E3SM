@@ -443,7 +443,7 @@ sub resubmitCheck()
     }
 
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'}, caseconfig => \%config, caseroot => $config{'CASEROOT'},
-                                                              ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
+                                                              cimeroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
                                                               machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
                                                               scriptsroot => $config{'SCRIPTSROOT'} );
     $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
