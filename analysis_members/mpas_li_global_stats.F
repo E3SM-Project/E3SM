@@ -225,14 +225,20 @@ contains
          do iCell = 1,nCellsSolve
 
             ! sums of ice area and volume over cells
-            blockSumIceArea = blockSumIceArea + li_mask_is_ice_int(cellMask(iCell))  * areaCell(iCell) 
-            blockSumIceVolume = blockSumIceVolume + li_mask_is_ice_int(cellMask(iCell)) * areaCell(iCell) * thickness(iCell) 
+            blockSumIceArea = blockSumIceArea + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) 
+            blockSumIceVolume = blockSumIceVolume + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * thickness(iCell) 
 
-!            blockSumGroundedIceArea = blockSumGroundedIceArea + (1-li_mask_is_floating_ice_int(cellMask(iCell))) * areaCell(iCell) 
-!            blockSumGroundedIceVolume = blockSumGroundedIceVolume + (1-li_mask_is_floating_ice_int(cellMask(iCell))) * areaCell(iCell) * thickness(iCell) 
+            blockSumGroundedIceArea = blockSumGroundedIceArea + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
+                 * areaCell(iCell) 
+            blockSumGroundedIceVolume = blockSumGroundedIceVolume + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * thickness(iCell) 
 
-!            blockSumFloatingIceArea = blockSumFloatingIceArea + li_mask_is_floating_ice_int(cellMask(iCell)) * areaCell(iCell) 
-!            blockSumFloatingIceVolume = blockSumFloatingIceVolume + li_mask_is_floating_ice_int(cellMask(iCell)) * areaCell(iCell) * thickness(iCell) 
+            blockSumFloatingIceArea = blockSumFloatingIceArea + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) 
+            blockSumFloatingIceVolume = blockSumFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * thickness(iCell) 
 
             ! debugging
 !            print *, 'CellMask = ', CellMask(iCell)
@@ -253,18 +259,18 @@ contains
       ! compute sums over all procs
       call mpas_dmpar_sum_real(dminfo, blockSumIceArea, totalIceArea)
       call mpas_dmpar_sum_real(dminfo, blockSumIceVolume, totalIceVolume)
-!      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceArea, groundedIceArea)
-!      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceVolume, groundedIceVolume)
-!      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
-!      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
+      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceArea, groundedIceArea)
+      call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceVolume, groundedIceVolume)
+      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
+      call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
 
       ! debugging
       print *, 'totalIceArea=', totalIceArea
       print *, 'totalIceVolume=', totalIceVolume
-!      print *, 'groundedIceArea=', groundedIceArea
-!      print *, 'groundedIceVolume=', groundedIceVolume
-!      print *, 'floatingIceArea=', floatingIceArea
-!      print *, 'floatingIceVolume=', floatingIceVolume
+      print *, 'groundedIceArea=', groundedIceArea
+      print *, 'groundedIceVolume=', groundedIceVolume
+      print *, 'floatingIceArea=', floatingIceArea
+      print *, 'floatingIceVolume=', floatingIceVolume
 
       ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
