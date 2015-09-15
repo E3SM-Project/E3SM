@@ -1,145 +1,149 @@
-	<nml_record name="global_realistic" mode="init" configuration="global_realistic">
-		<nml_option name="config_global_realistic_minimum_depth" type="real" default_value="15" units="m"
+	<nml_record name="global_ocean" mode="init" configuration="global_ocean">
+		<nml_option name="config_global_ocean_minimum_depth" type="real" default_value="15" units="m"
 					description="Minimum depth where column contains all water-filled cells.  The first layer with refBottomDepth greater than this value is included in whole, i.e. no partial bottom cells are used in this layer."
 					possible_values="Any positive real value greater than 0, but typically greater than 10 m."
 		/>
-		<nml_option name="config_global_realistic_depth_file" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_depth_file" type="character" default_value="none" units="unitless"
 					description="Path to the depth initial condition file."
 					possible_values="path/to/temperature/file.nc"
 		/>
-		<nml_option name="config_global_realistic_depth_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_depth_dimname" type="character" default_value="none" units="unitless"
 					description="Name of the dimension defining the number of vertical levels in input files."
 					possible_values="Dim name from input files."
 		/>
-		<nml_option name="config_global_realistic_depth_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_depth_varname" type="character" default_value="none" units="unitless"
 					description="Name of the variable containing mid-depth of levels in temperature and salinity initial condition files."
 					possible_values="Variable name from input files."
 		/>
-		<nml_option name="config_global_realistic_depth_conversion_factor" type="real" default_value="1.0" units="variable"
+		<nml_option name="config_global_ocean_depth_conversion_factor" type="real" default_value="1.0" units="variable"
 					description="Conversion factor for depth levels. Should convert units on input depth levels to meters."
 					possible_values="Any positive real value greater than 0."
 		/>
-		<nml_option name="config_global_realistic_temperature_file" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_temperature_file" type="character" default_value="none" units="unitless"
 					description="Path to the temperature initial condition file. Must be interpolated to vertical layers defined in depth file."
 					possible_values="path/to/temperature/file.nc"
 		/>
-		<nml_option name="config_global_realistic_salinity_file" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_salinity_file" type="character" default_value="none" units="unitless"
 					description="Path to the salinity initial condition file. Must be interpolated to vertical layers defined in depth file."
 					possible_values="path/to/salinity/file.nc"
 		/>
-		<nml_option name="config_global_realistic_tracer_nlat_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_tracer_nlat_dimname" type="character" default_value="none" units="unitless"
 					description="Name of the dimension that determines number of latitude lines in tracer initial condition files."
 					possible_values="Dim name from input files."
 		/>
-		<nml_option name="config_global_realistic_tracer_nlon_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_tracer_nlon_dimname" type="character" default_value="none" units="unitless"
 					description="Name of the dimension that determines number of longitude lines in tracer initial condition files."
 					possible_values="Dim name from input files."
 		/>
-		<nml_option name="config_global_realistic_temperature_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_temperature_varname" type="character" default_value="none" units="unitless"
 					description="Name of the variable containing temperature in temperature initial condition file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_salinity_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_salinity_varname" type="character" default_value="none" units="unitless"
 					description="Name of the variable containing salinity in salinity initial condition file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_tracer_latlon_degrees" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_global_ocean_tracer_latlon_degrees" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that controls if the Lat/Lon fields for tracers should be converted to radians. True means input is degrees, false means input is radians."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_global_realistic_tracer_lat_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_tracer_lat_varname" type="character" default_value="none" units="unitless"
 					description="Name of the variable containing latitude coordinates for tracer values in temperature initial condition file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_tracer_lon_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_tracer_lon_varname" type="character" default_value="none" units="unitless"
 					description="Name of the variable containing longitude coordinates for tracer values in temperature initial condition file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_tracer_method" type="character" default_value="bilinear_interpolation" units="unitless"
+		<nml_option name="config_global_ocean_tracer_method" type="character" default_value="bilinear_interpolation" units="unitless"
 					description="Method to interpolate tracer data to MPAS mesh."
 					possible_values="bilinear_interpolation, nearest_neighbor"
 		/>
-		<nml_option name="config_global_realistic_smooth_TS_iterations" type="integer" default_value="0" units="unitless"
+		<nml_option name="config_global_ocean_smooth_TS_iterations" type="integer" default_value="0" units="unitless"
 					description="Number of smoothing iterations on temperature and salinity."
 					possible_values="Any positive integer value greater or equal to 0."
+                />
+		<nml_option name="config_global_ocean_piston_velocity" type="real" default_value="5.0e-5" units="m s^{-1}"
+					description="Parameter controlling rate to which SST and SST are restored."
+					possible_values="Any real positive number."
+                />
+                <nml_option name="config_global_ocean_interior_restore_rate" type="real" default_value="1.0e-7" units="s^{-1}"
+                                        description="Parameter controlling rate to which interior temperature and salinity are restored."
+                                        possible_values="Any real positive number."
 		/>
-		<nml_option name="config_global_realistic_tracer_restore" type="logical" default_value=".true." units="unitless"
-					description="Logical flag that controls if the temperatureRestore and salinityRestore fields are filled. True means these variables are filled with temperature and salinity surface values, false means they remain zero."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_global_realistic_topography_file" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
 					description="Path to the topography initial condition file."
 					possible_values="path/to/topography/file.nc"
 		/>
-		<nml_option name="config_global_realistic_topography_nlat_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_topography_nlat_dimname" type="character" default_value="none" units="unitless"
 					description="Dimension name for the latitude in the topography file."
 					possible_values="Dimension name from input file."
 		/>
-		<nml_option name="config_global_realistic_topography_nlon_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_topography_nlon_dimname" type="character" default_value="none" units="unitless"
 					description="Dimension name for the longitude in the topography file."
 					possible_values="Dimension name from input file."
 		/>
-		<nml_option name="config_global_realistic_topography_latlon_degrees" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_global_ocean_topography_latlon_degrees" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that controls if the Lat/Lon fields for topography should be converted to radians. True means input is degrees, false means input is radians."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_global_realistic_topography_lat_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_topography_lat_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the latitude in the topography file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_topography_lon_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_topography_lon_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the longitude in the topography file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_topography_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_topography_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the topography in the topography file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_smooth_topography" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_global_ocean_smooth_topography" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that controls if topograhy should be smoothed after being interpolated."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_global_realistic_cull_inland_seas" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_global_ocean_cull_inland_seas" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that controls if inland seas should be removed."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_global_realistic_windstress_file" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_file" type="character" default_value="none" units="unitless"
 					description="Path to the windstress initial condition file."
 					possible_values="path/to/windstress/file.nc"
 		/>
-		<nml_option name="config_global_realistic_windstress_nlat_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_nlat_dimname" type="character" default_value="none" units="unitless"
 					description="Dimension name for the latitude in the windstress file."
 					possible_values="Dimension name from input file."
 		/>
-		<nml_option name="config_global_realistic_windstress_nlon_dimname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_nlon_dimname" type="character" default_value="none" units="unitless"
 					description="Dimension name for the longitude in the windstress file."
 					possible_values="Dimension name from input file."
 		/>
-		<nml_option name="config_global_realistic_windstress_latlon_degrees" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_global_ocean_windstress_latlon_degrees" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that controls if the Lat/Lon fields for windstress should be converted to radians. True means input is degrees, false means input is radians."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_global_realistic_windstress_lat_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_lat_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the latitude in the windstress file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_windstress_lon_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_lon_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the longitude in the windstress file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_windstress_zonal_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_zonal_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the zonal component of windstress in the windstress file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_windstress_meridional_varname" type="character" default_value="none" units="unitless"
+		<nml_option name="config_global_ocean_windstress_meridional_varname" type="character" default_value="none" units="unitless"
 					description="Variable name for the meridional component of windstress in the windstress file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_realistic_windstress_method" type="character" default_value="bilinear_interpolation" units="unitless"
+		<nml_option name="config_global_ocean_windstress_method" type="character" default_value="bilinear_interpolation" units="unitless"
 					description="Method to interpolate windstress data to MPAS mesh."
 					possible_values="bilinear_interpolation, nearest_neighbor"
 		/>
-		<nml_option name="config_global_realistic_windstress_conversion_factor" type="real" default_value="1" units="variable"
+		<nml_option name="config_global_ocean_windstress_conversion_factor" type="real" default_value="1" units="variable"
 					description="Factor to convert input windstress to N m^{-1}"
 					possible_values="Any positive real number."
 		/>
@@ -174,4 +178,3 @@
 			 description="Integer to hold the size of the cullStack for each block."
 		/>
 	</var_struct>
-

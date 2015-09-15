@@ -7,18 +7,18 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_init_global_realistic
+!  ocn_init_global_ocean
 !
-!> \brief MPAS ocean initialize case -- Global Realistic
+!> \brief MPAS ocean initialize case -- Global Ocean
 !> \author Doug Jacobsen
 !> \date   03/04/2014
 !> \details
 !>  This module contains the routines for initializing the 
-!>  the global realistic test case
+!>  the global ocean test case
 !
 !-----------------------------------------------------------------------
 
-module ocn_init_global_realistic
+module ocn_init_global_ocean
 
    use mpas_kind_types
    use mpas_io_units
@@ -47,8 +47,8 @@ module ocn_init_global_realistic
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_init_setup_global_realistic, &
-             ocn_init_validate_global_realistic
+   public :: ocn_init_setup_global_ocean, &
+             ocn_init_validate_global_ocean
 
    !--------------------------------------------------------------------
    !
@@ -73,17 +73,17 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic
+!  routine ocn_init_setup_global_ocean
 !
-!> \brief   Setup for global realistic test case
+!> \brief   Setup for global ocean test case
 !> \author  Doug Jacobsen
 !> \date    03/04/2014
 !> \details 
-!>  This routine sets up the initial conditions for the global realistic test case.
+!>  This routine sets up the initial conditions for the global ocean test case.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_setup_global_realistic(domain, iErr)!{{{
+   subroutine ocn_init_setup_global_ocean(domain, iErr)!{{{
 
    !--------------------------------------------------------------------
 
@@ -92,7 +92,7 @@ contains
       integer, intent(out) :: iErr
 
       character (len=StrKIND), pointer :: config_init_configuration
-      logical, pointer :: config_global_realistic_cull_inland_seas
+      logical, pointer :: config_global_ocean_cull_inland_seas
 
       logical, pointer :: on_a_sphere
 
@@ -100,56 +100,56 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
 
-      if (trim(config_init_configuration) /= "global_realistic") return
+      if (trim(config_init_configuration) /= "global_ocean") return
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( .not. on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The global realistic configuration can only be applied to a spherical mesh. Exiting...')
+      if ( .not. on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The global ocean configuration can only be applied to a spherical mesh. Exiting...')
 
-      call mpas_pool_get_config(domain % configs, 'config_global_realistic_cull_inland_seas', config_global_realistic_cull_inland_seas)
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_cull_inland_seas', config_global_ocean_cull_inland_seas)
 
       write(stderrUnit,*) 'Reading depth levels.'
-      call ocn_init_setup_global_realistic_read_depth_levels(domain, iErr)
+      call ocn_init_setup_global_ocean_read_depth_levels(domain, iErr)
 
       write(stderrUnit,*) 'Reading topography data.'
-      call ocn_init_setup_global_realistic_read_topo(domain, iErr)
+      call ocn_init_setup_global_ocean_read_topo(domain, iErr)
       write(stderrUnit,*) 'Interpolating topography data.'
-      call ocn_init_setup_global_realistic_interpolate_topo(domain, iErr)
+      call ocn_init_setup_global_ocean_interpolate_topo(domain, iErr)
       write(stderrUnit,*) 'Cleaning up topography IC fields'
-      call ocn_init_global_realistic_destroy_topo_fields()
+      call ocn_init_global_ocean_destroy_topo_fields()
 
-      if (config_global_realistic_cull_inland_seas) then
+      if (config_global_ocean_cull_inland_seas) then
          write(stderrUnit,*) 'Removing inland seas.'
-         call ocn_init_setup_global_realistic_cull_inland_seas(domain, iErr)
+         call ocn_init_setup_global_ocean_cull_inland_seas(domain, iErr)
       end if
 
 
       write(stderrUnit,*) 'Reading temperature IC.'
-      call ocn_init_setup_global_realistic_read_temperature(domain, iErr)
+      call ocn_init_setup_global_ocean_read_temperature(domain, iErr)
       write(stderrUnit,*) 'Reading salinity IC.'
-      call ocn_init_setup_global_realistic_read_salinity(domain, iErr)
+      call ocn_init_setup_global_ocean_read_salinity(domain, iErr)
       write(stderrUnit,*) 'Reading Lat/Lon tracer coordinates'
-      call ocn_init_setup_global_realistic_read_tracer_lat_lon(domain, iErr)
+      call ocn_init_setup_global_ocean_read_tracer_lat_lon(domain, iErr)
       write(stderrUnit,*) 'Interpolating tracers'
-      call ocn_init_setup_global_realistic_interpolate_tracers(domain, iErr)
+      call ocn_init_setup_global_ocean_interpolate_tracers(domain, iErr)
       write(stderrUnit,*) 'Cleaning up tracer IC fields'
-      call ocn_init_global_realistic_destroy_tracer_fields()
+      call ocn_init_global_ocean_destroy_tracer_fields()
 
       write(stderrUnit,*) 'Reading windstress IC.'
-      call ocn_init_setup_global_realistic_read_windstress(domain, iErr)
+      call ocn_init_setup_global_ocean_read_windstress(domain, iErr)
       write(stderrUnit,*) 'Interpolating windstress.'
-      call ocn_init_setup_global_realistic_interpolate_windstress(domain, iErr)
+      call ocn_init_setup_global_ocean_interpolate_windstress(domain, iErr)
       write(stderrUnit,*) 'Destroying windstress fields'
-      call ocn_init_global_realistic_destroy_windstress_fields()
+      call ocn_init_global_ocean_destroy_windstress_fields()
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_init_setup_global_realistic!}}}
+   end subroutine ocn_init_setup_global_ocean!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_read_topo
+!  routine ocn_init_setup_global_ocean_read_topo
 !
 !> \brief   Read the topography IC file
 !> \author  Doug Jacobsen
@@ -160,7 +160,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_read_topo(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_topo(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -168,31 +168,31 @@ contains
 
        type (MPAS_Stream_type) :: topographyStream
 
-       character (len=StrKIND), pointer :: config_global_realistic_topography_file, config_global_realistic_topography_lat_varname, &
-                                           config_global_realistic_topography_nlat_dimname, config_global_realistic_topography_lon_varname, &
-                                           config_global_realistic_topography_nlon_dimname, config_global_realistic_topography_varname
+       character (len=StrKIND), pointer :: config_global_ocean_topography_file, config_global_ocean_topography_lat_varname, &
+                                           config_global_ocean_topography_nlat_dimname, config_global_ocean_topography_lon_varname, &
+                                           config_global_ocean_topography_nlon_dimname, config_global_ocean_topography_varname
 
-       logical, pointer :: config_global_realistic_topography_latlon_degrees
+       logical, pointer :: config_global_ocean_topography_latlon_degrees
 
        integer :: iLat, iLon
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_file', config_global_realistic_topography_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_lat_varname', config_global_realistic_topography_lat_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_nlat_dimname', config_global_realistic_topography_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_lon_varname', config_global_realistic_topography_lon_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_nlon_dimname', config_global_realistic_topography_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_varname', config_global_realistic_topography_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_topography_latlon_degrees', config_global_realistic_topography_latlon_degrees)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_file', config_global_ocean_topography_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_lat_varname', config_global_ocean_topography_lat_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_nlat_dimname', config_global_ocean_topography_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_lon_varname', config_global_ocean_topography_lon_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_nlon_dimname', config_global_ocean_topography_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_varname', config_global_ocean_topography_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_latlon_degrees', config_global_ocean_topography_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(topographyStream, config_global_realistic_topography_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(topographyStream, config_global_ocean_topography_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup topoLat, topoLon, and topoIC fields for stream to be read in
-       topoLat % fieldName = trim(config_global_realistic_topography_lat_varname)
+       topoLat % fieldName = trim(config_global_ocean_topography_lat_varname)
        topoLat % dimSizes(1) = nLatTopo
-       topoLat % dimNames(1) = trim(config_global_realistic_topography_nlat_dimname)
+       topoLat % dimNames(1) = trim(config_global_ocean_topography_nlat_dimname)
        topoLat % isVarArray = .false.
        topoLat % isPersistent = .true.
        topoLat % isActive = .true.
@@ -200,9 +200,9 @@ contains
        topoLat % block => domain % blocklist
        allocate(topoLat % array(nLatTopo))
 
-       topoLon % fieldName = trim(config_global_realistic_topography_lon_varname)
+       topoLon % fieldName = trim(config_global_ocean_topography_lon_varname)
        topoLon % dimSizes(1) = nLonTopo
-       topoLon % dimNames(1) = trim(config_global_realistic_topography_nlon_dimname)
+       topoLon % dimNames(1) = trim(config_global_ocean_topography_nlon_dimname)
        topoLon % isVarArray = .false.
        topoLon % isPersistent = .true.
        topoLon % isActive = .true.
@@ -210,11 +210,11 @@ contains
        topoLon % block => domain % blocklist
        allocate(topoLon % array(nLonTopo))
 
-       topoIC % fieldName = trim(config_global_realistic_topography_varname)
+       topoIC % fieldName = trim(config_global_ocean_topography_varname)
        topoIC % dimSizes(1) = nLonTopo
        topoIC % dimSizes(2) = nLatTopo
-       topoIC % dimNames(1) = trim(config_global_realistic_topography_nlon_dimname)
-       topoIC % dimNames(2) = trim(config_global_realistic_topography_nlat_dimname)
+       topoIC % dimNames(1) = trim(config_global_ocean_topography_nlon_dimname)
+       topoIC % dimNames(2) = trim(config_global_ocean_topography_nlat_dimname)
        topoIC % isVarArray = .false.
        topoIC % isPersistent = .true.
        topoIC % isActive = .true.
@@ -233,7 +233,7 @@ contains
        ! Close stream
        call MPAS_closeStream(topographyStream)
 
-       if (config_global_realistic_topography_latlon_degrees) then
+       if (config_global_ocean_topography_latlon_degrees) then
           topoLat % array(:) = topoLat % array(:) * pii / 180.0_RKIND 
           topoLon % array(:) = topoLon % array(:) * pii / 180.0_RKIND
        end if
@@ -244,11 +244,11 @@ contains
           end if
        end do
 
-    end subroutine ocn_init_setup_global_realistic_read_topo!}}}
+    end subroutine ocn_init_setup_global_ocean_read_topo!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_interpolate_topo
+!  routine ocn_init_setup_global_ocean_interpolate_topo
 !
 !> \brief   Interpolate the topography IC to MPAS mesh
 !> \author  Doug Jacobsen
@@ -259,7 +259,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_interpolate_topo(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_interpolate_topo(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -284,13 +284,13 @@ contains
        integer :: iCell, coc, j, k, maxLevel
        integer :: minimum_levels
 
-       logical, pointer :: config_global_realistic_smooth_topography
-       real (kind=RKIND), pointer :: config_global_realistic_minimum_depth
+       logical, pointer :: config_global_ocean_smooth_topography
+       real (kind=RKIND), pointer :: config_global_ocean_minimum_depth
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_minimum_depth', config_global_realistic_minimum_depth)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_smooth_topography', config_global_realistic_smooth_topography)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_minimum_depth', config_global_ocean_minimum_depth)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_topography', config_global_ocean_smooth_topography)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -308,9 +308,9 @@ contains
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
           do k = 1, nVertLevels
-             if (refBottomDepth(k).gt.config_global_realistic_minimum_depth) then
+             if (refBottomDepth(k).gt.config_global_ocean_minimum_depth) then
                 minimum_levels = k
-                write (stdoutUnit,'(a,f8.2,2a,i5,a,f8.2,a)') 'config_global_realistic_minimum_depth=',config_global_realistic_minimum_depth,' m.  ', &
+                write (stdoutUnit,'(a,f8.2,2a,i5,a,f8.2,a)') 'config_global_ocean_minimum_depth=',config_global_ocean_minimum_depth,' m.  ', &
                    'Setting minimum layer index to ',minimum_levels, ' with a bottom depth of ', refBottomDepth(k), ' m.'
                 exit
              end if
@@ -368,7 +368,7 @@ contains
 
           ! Smooth depth levels. Enforce different in maxLevelCell to only be a maximum
           ! of 1 vertical level between two neighboring cells.
-          if (config_global_realistic_smooth_topography) then
+          if (config_global_ocean_smooth_topography) then
              call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
              call mpas_pool_get_field(scratchPool, 'smoothedLevels', smoothedLevelsField)
@@ -444,11 +444,11 @@ contains
           block_ptr => block_ptr % next
        end do
 
-    end subroutine ocn_init_setup_global_realistic_interpolate_topo!}}}
+    end subroutine ocn_init_setup_global_ocean_interpolate_topo!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_cull_inland_seas
+!  routine ocn_init_setup_global_ocean_cull_inland_seas
 !
 !> \brief   Read the topography IC file
 !> \author  Doug Jacobsen
@@ -460,7 +460,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_cull_inland_seas(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_cull_inland_seas(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -645,13 +645,13 @@ contains
           block_ptr => block_ptr % next
        end do
 
-    end subroutine ocn_init_setup_global_realistic_cull_inland_seas!}}}
+    end subroutine ocn_init_setup_global_ocean_cull_inland_seas!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_read_depth_levels
+!  routine ocn_init_setup_global_ocean_read_depth_levels
 !
-!> \brief   Read depth levels for global realistic test case
+!> \brief   Read depth levels for global ocean test case
 !> \author  Doug Jacobsen
 !> \date    03/04/2014
 !> \details 
@@ -660,7 +660,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_read_depth_levels(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_depth_levels(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -670,10 +670,10 @@ contains
 
        type (mpas_pool_type), pointer :: meshPool
 
-       character (len=StrKIND), pointer :: config_global_realistic_depth_file, config_global_realistic_depth_varname, &
-                                           config_global_realistic_depth_dimname
+       character (len=StrKIND), pointer :: config_global_ocean_depth_file, config_global_ocean_depth_varname, &
+                                           config_global_ocean_depth_dimname
 
-       real (kind=RKIND), pointer :: config_global_realistic_depth_conversion_factor
+       real (kind=RKIND), pointer :: config_global_ocean_depth_conversion_factor
 
        integer :: k, iCell
 
@@ -681,18 +681,18 @@ contains
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_depth_file', config_global_realistic_depth_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_depth_varname', config_global_realistic_depth_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_depth_dimname', config_global_realistic_depth_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_depth_conversion_factor', config_global_realistic_depth_conversion_factor)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_file', config_global_ocean_depth_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_varname', config_global_ocean_depth_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_conversion_factor', config_global_ocean_depth_conversion_factor)
 
        ! Define stream for depth levels
-       call MPAS_createStream(depthStream, config_global_realistic_depth_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(depthStream, config_global_ocean_depth_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup depth field for stream to be read in
-       depthIC % fieldName = trim(config_global_realistic_depth_varname)
+       depthIC % fieldName = trim(config_global_ocean_depth_varname)
        depthIC % dimSizes(1) = nDepth
-       depthIC % dimNames(1) = trim(config_global_realistic_depth_dimname)
+       depthIC % dimNames(1) = trim(config_global_ocean_depth_dimname)
        depthIC % isVarArray = .false.
        depthIC % isPersistent = .true.
        depthIC % isActive = .true.
@@ -708,7 +708,7 @@ contains
 
        ! Close stream
        call MPAS_closeStream(depthStream)
-       depthIC % array(:) = depthIC % array(:) * config_global_realistic_depth_conversion_factor
+       depthIC % array(:) = depthIC % array(:) * config_global_ocean_depth_conversion_factor
 
        ! Set refBottomDepth depending on depth levels. And convert appropriately
        block_ptr => domain % blocklist
@@ -725,13 +725,13 @@ contains
          block_ptr => block_ptr % next
        end do
 
-    end subroutine ocn_init_setup_global_realistic_read_depth_levels!}}}
+    end subroutine ocn_init_setup_global_ocean_read_depth_levels!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_read_tracer_lat_lon
+!  routine ocn_init_setup_global_ocean_read_tracer_lat_lon
 !
-!> \brief   Read Lat/Lon for tracers in global realistic test case
+!> \brief   Read Lat/Lon for tracers in global ocean test case
 !> \author  Doug Jacobsen
 !> \date    03/04/2014
 !> \details 
@@ -739,7 +739,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_read_tracer_lat_lon(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_tracer_lat_lon(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -747,30 +747,30 @@ contains
 
        type (MPAS_Stream_type) :: tracerStream
 
-       character (len=StrKIND), pointer :: config_global_realistic_temperature_file, config_global_realistic_tracer_lat_varname, &
-                                           config_global_realistic_tracer_nlat_dimname, config_global_realistic_tracer_lon_varname, &
-                                           config_global_realistic_tracer_nlon_dimname
+       character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_tracer_lat_varname, &
+                                           config_global_ocean_tracer_nlat_dimname, config_global_ocean_tracer_lon_varname, &
+                                           config_global_ocean_tracer_nlon_dimname
 
-       logical, pointer :: config_global_realistic_tracer_latlon_degrees
+       logical, pointer :: config_global_ocean_tracer_latlon_degrees
 
        integer :: iLat, iLon
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_temperature_file', config_global_realistic_temperature_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_lat_varname', config_global_realistic_tracer_lat_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_nlat_dimname', config_global_realistic_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_lon_varname', config_global_realistic_tracer_lon_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_nlon_dimname', config_global_realistic_tracer_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_latlon_degrees', config_global_realistic_tracer_latlon_degrees)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_temperature_file', config_global_ocean_temperature_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_lat_varname', config_global_ocean_tracer_lat_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', config_global_ocean_tracer_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_lon_varname', config_global_ocean_tracer_lon_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_latlon_degrees', config_global_ocean_tracer_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(tracerStream, config_global_realistic_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(tracerStream, config_global_ocean_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup tracerLat and tracerLon fields for stream to be read in
-       tracerLat % fieldName = trim(config_global_realistic_tracer_lat_varname)
+       tracerLat % fieldName = trim(config_global_ocean_tracer_lat_varname)
        tracerLat % dimSizes(1) = nLatTracer
-       tracerLat % dimNames(1) = trim(config_global_realistic_tracer_nlat_dimname)
+       tracerLat % dimNames(1) = trim(config_global_ocean_tracer_nlat_dimname)
        tracerLat % isVarArray = .false.
        tracerLat % isPersistent = .true.
        tracerLat % isActive = .true.
@@ -778,9 +778,9 @@ contains
        tracerLat % block => domain % blocklist
        allocate(tracerLat % array(nLatTracer))
 
-       tracerLon % fieldName = trim(config_global_realistic_tracer_lon_varname)
+       tracerLon % fieldName = trim(config_global_ocean_tracer_lon_varname)
        tracerLon % dimSizes(1) = nLonTracer
-       tracerLon % dimNames(1) = trim(config_global_realistic_tracer_nlon_dimname)
+       tracerLon % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
        tracerLon % isVarArray = .false.
        tracerLon % isPersistent = .true.
        tracerLon % isActive = .true.
@@ -798,7 +798,7 @@ contains
        ! Close stream
        call MPAS_closeStream(tracerStream)
 
-       if (config_global_realistic_tracer_latlon_degrees) then
+       if (config_global_ocean_tracer_latlon_degrees) then
           do iLat = 1, nLatTracer
              tracerLat % array(iLat) = tracerLat % array(iLat) * pii / 180.0_RKIND
           end do
@@ -814,13 +814,13 @@ contains
           end if
        end do
 
-    end subroutine ocn_init_setup_global_realistic_read_tracer_lat_lon!}}}
+    end subroutine ocn_init_setup_global_ocean_read_tracer_lat_lon!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_read_temperature
+!  routine ocn_init_setup_global_ocean_read_temperature
 !
-!> \brief   Read temperature ICs for global realistic test case
+!> \brief   Read temperature ICs for global ocean test case
 !> \author  Doug Jacobsen
 !> \date    03/04/2014
 !> \details 
@@ -828,7 +828,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_read_temperature(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_temperature(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -836,31 +836,31 @@ contains
 
        type (MPAS_Stream_type) :: temperatureStream
 
-       character (len=StrKIND), pointer :: config_global_realistic_temperature_file, config_global_realistic_temperature_varname, &
-                                           config_global_realistic_tracer_nlon_dimname, config_global_realistic_tracer_nlat_dimname, &
-                                           config_global_realistic_depth_dimname
+       character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_temperature_varname, &
+                                           config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
+                                           config_global_ocean_depth_dimname
 
        integer :: k
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_temperature_file', config_global_realistic_temperature_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_temperature_varname', config_global_realistic_temperature_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_nlon_dimname', config_global_realistic_tracer_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_nlat_dimname', config_global_realistic_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_depth_dimname', config_global_realistic_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_temperature_file', config_global_ocean_temperature_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_temperature_varname', config_global_ocean_temperature_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', config_global_ocean_tracer_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for temperature IC
-       call MPAS_createStream(temperatureStream, config_global_realistic_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(temperatureStream, config_global_ocean_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup temperature field for stream to be read in
-       temperatureIC % fieldName = trim(config_global_realistic_temperature_varname)
+       temperatureIC % fieldName = trim(config_global_ocean_temperature_varname)
        temperatureIC % dimSizes(1) = nLonTracer
        temperatureIC % dimSizes(2) = nLatTracer
        temperatureIC % dimSizes(3) = nDepth
-       temperatureIC % dimNames(1) = trim(config_global_realistic_tracer_nlon_dimname)
-       temperatureIC % dimNames(2) = trim(config_global_realistic_tracer_nlat_dimname)
-       temperatureIC % dimNames(3) = trim(config_global_realistic_depth_dimname)
+       temperatureIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
+       temperatureIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
+       temperatureIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
        temperatureIC % isVarArray = .false.
        temperatureIC % isPersistent = .true.
        temperatureIC % isActive = .true.
@@ -877,13 +877,13 @@ contains
        ! Close stream
        call MPAS_closeStream(temperatureStream)
 
-    end subroutine ocn_init_setup_global_realistic_read_temperature!}}}
+    end subroutine ocn_init_setup_global_ocean_read_temperature!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_read_salinity
+!  routine ocn_init_setup_global_ocean_read_salinity
 !
-!> \brief   Read salinity ICs for global realistic test case
+!> \brief   Read salinity ICs for global ocean test case
 !> \author  Doug Jacobsen
 !> \date    03/04/2014
 !> \details 
@@ -891,7 +891,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_read_salinity(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_salinity(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -899,31 +899,31 @@ contains
 
        type (MPAS_Stream_type) :: salinityStream
 
-       character (len=StrKIND), pointer :: config_global_realistic_salinity_file, config_global_realistic_salinity_varname, &
-                                           config_global_realistic_tracer_nlon_dimname, config_global_realistic_tracer_nlat_dimname, &
-                                           config_global_realistic_depth_dimname
+       character (len=StrKIND), pointer :: config_global_ocean_salinity_file, config_global_ocean_salinity_varname, &
+                                           config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
+                                           config_global_ocean_depth_dimname
 
        integer :: k
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_salinity_file', config_global_realistic_salinity_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_salinity_varname', config_global_realistic_salinity_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_nlon_dimname', config_global_realistic_tracer_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_nlat_dimname', config_global_realistic_tracer_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_depth_dimname', config_global_realistic_depth_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_salinity_file', config_global_ocean_salinity_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_salinity_varname', config_global_ocean_salinity_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlat_dimname', config_global_ocean_tracer_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for salinity IC
-       call MPAS_createStream(salinityStream, config_global_realistic_salinity_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(salinityStream, config_global_ocean_salinity_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup salinity field for stream to be read in
-       salinityIC % fieldName = trim(config_global_realistic_salinity_varname)
+       salinityIC % fieldName = trim(config_global_ocean_salinity_varname)
        salinityIC % dimSizes(1) = nLonTracer
        salinityIC % dimSizes(2) = nLatTracer
        salinityIC % dimSizes(3) = nDepth
-       salinityIC % dimNames(1) = trim(config_global_realistic_tracer_nlon_dimname)
-       salinityIC % dimNames(2) = trim(config_global_realistic_tracer_nlat_dimname)
-       salinityIC % dimNames(3) = trim(config_global_realistic_depth_dimname)
+       salinityIC % dimNames(1) = trim(config_global_ocean_tracer_nlon_dimname)
+       salinityIC % dimNames(2) = trim(config_global_ocean_tracer_nlat_dimname)
+       salinityIC % dimNames(3) = trim(config_global_ocean_depth_dimname)
        salinityIC % isVarArray = .false.
        salinityIC % isPersistent = .true.
        salinityIC % isActive = .true.
@@ -940,11 +940,11 @@ contains
        ! Close stream
        call MPAS_closeStream(salinityStream)
 
-    end subroutine ocn_init_setup_global_realistic_read_salinity!}}}
+    end subroutine ocn_init_setup_global_ocean_read_salinity!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_interoplate_tracers
+!  routine ocn_init_setup_global_ocean_interoplate_tracers
 !
 !> \brief   Interpolate tracer quantities to MPAS grid
 !> \author  Doug Jacobsen
@@ -955,12 +955,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_interpolate_tracers(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_interpolate_tracers(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
        type (block_type), pointer :: block_ptr
-       type (mpas_pool_type), pointer :: meshPool, statePool, scratchPool
+       type (mpas_pool_type), pointer :: meshPool, statePool, scratchPool, tracersPool, forcingPool
+       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
        real (kind=RKIND) :: currentLat, currentLon, counter
        real (kind=RKIND) :: minDist, dist
@@ -969,48 +970,56 @@ contains
        integer :: latSearch, lonSearch
        integer :: iCell, k
        integer :: xInd1, xInd2, yInd1, yInd2
-       integer, pointer :: idxSalinity, idxTemperature, nCells, nCellsSolve
+       integer, pointer :: idxSalinity, idxTemperature, nCells, nCellsSolve, idxTracer1
 
        type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField
-       type (field3DReal), pointer :: tracersField
+       type (field3DReal), pointer :: activeTracersField
 
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
 
-       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, temperatureRestore, salinityRestore
+       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
        real (kind=RKIND), dimension(:, :), pointer :: smoothedTemperature, smoothedSalinity
-       real (kind=RKIND), dimension(:, :, :), pointer :: tracers
+       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
+       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
+       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
 
-       character (len=StrKIND), pointer :: config_global_realistic_tracer_method
-       logical, pointer :: config_global_realistic_tracer_restore
-       integer, pointer :: config_global_realistic_smooth_TS_iterations
+       character (len=StrKIND), pointer :: config_global_ocean_tracer_method
+       integer, pointer ::  config_global_ocean_smooth_TS_iterations
+       real (kind=RKIND), pointer :: config_global_ocean_piston_velocity
+       real (kind=RKIND), pointer :: config_global_ocean_interior_restore_rate
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_method', config_global_realistic_tracer_method)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_tracer_restore', config_global_realistic_tracer_restore)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_smooth_TS_iterations', config_global_realistic_smooth_TS_iterations)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_method', config_global_ocean_tracer_method)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_TS_iterations', config_global_ocean_smooth_TS_iterations)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_piston_velocity', config_global_ocean_piston_velocity)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_interior_restore_rate', config_global_ocean_interior_restore_rate)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+          call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
+
+          call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
+          call mpas_pool_get_dimension(tracersPool, 'index_salinity', idxSalinity)
+          call mpas_pool_get_dimension(tracersPool, 'index_tracer1', idxTracer1)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-          call mpas_pool_get_dimension(statePool, 'index_temperature', idxTemperature)
-          call mpas_pool_get_dimension(statePool, 'index_salinity', idxSalinity)
-
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-          call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
-          call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
 
-          call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+          call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
 
-          if (config_global_realistic_tracer_method .eq. "nearest_neighbor") then
+          if (config_global_ocean_tracer_method .eq. "nearest_neighbor") then
              do iCell = 1, nCells
                 currentLat = latCell(iCell)
                 currentLon = lonCell(iCell)
@@ -1036,12 +1045,14 @@ contains
                 end do
 
                 do k = 1, maxLevelCell(iCell)
-                   tracers(idxTemperature, k, iCell) = temperatureIC % array(lonSearch, latSearch, k)
-                   tracers(idxSalinity, k, iCell) = salinityIC % array(lonSearch, latSearch, k)
+                   if ( associated(activeTracers) ) then
+                      activeTracers(idxTemperature, k, iCell) = temperatureIC % array(lonSearch, latSearch, k)
+                      activeTracers(idxSalinity, k, iCell) = salinityIC % array(lonSearch, latSearch, k)
+                   end if
                 end do
              end do
 
-          elseif (config_global_realistic_tracer_method .eq. "bilinear_interpolation") then
+          elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
 
              do iCell = 1, nCells
                 x = lonCell(iCell)
@@ -1112,39 +1123,36 @@ contains
                 ! formulas from http://en.wikipedia.org/wiki/Bilinear_interpolation
                 do k = 1, maxLevelCell(iCell)
 
-                   tracers(idxTemperature, k, iCell) = coef*( &
-                          coef11* temperatureIC % array(xInd1,yInd1, k) &
-                        + coef21* temperatureIC % array(xInd2,yInd1, k) &
-                        + coef12* temperatureIC % array(xInd1,yInd2, k) &
-                        + coef22* temperatureIC % array(xInd2,yInd2, k) )
+                   if ( associated(activeTracers) ) then
+                      activeTracers(idxTemperature, k, iCell) = coef*( &
+                             coef11* temperatureIC % array(xInd1,yInd1, k) &
+                           + coef21* temperatureIC % array(xInd2,yInd1, k) &
+                           + coef12* temperatureIC % array(xInd1,yInd2, k) &
+                           + coef22* temperatureIC % array(xInd2,yInd2, k) )
 
-                   tracers(idxSalinity, k, iCell) = coef*( &
-                          coef11* salinityIC % array(xInd1,yInd1, k) &
-                        + coef21* salinityIC % array(xInd2,yInd1, k) &
-                        + coef12* salinityIC % array(xInd1,yInd2, k) &
-                        + coef22* salinityIC % array(xInd2,yInd2, k) )
+                      activeTracers(idxSalinity, k, iCell) = coef*( &
+                             coef11* salinityIC % array(xInd1,yInd1, k) &
+                           + coef21* salinityIC % array(xInd2,yInd1, k) &
+                           + coef12* salinityIC % array(xInd1,yInd2, k) &
+                           + coef22* salinityIC % array(xInd2,yInd2, k) )
+                   end if
 
                 end do
+
              end do
 
           else
-             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_realistic_tracer_method.'
+             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_tracer_method.'
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
 
-          if (config_global_realistic_tracer_restore) then
-             do iCell = 1, nCellsSolve
-                temperatureRestore(iCell) = tracers(idxTemperature, 1, iCell)
-                salinityRestore(iCell) = tracers(idxSalinity, 1, iCell)
-             end do
-          endif
 
           block_ptr => block_ptr % next
        end do
 
        ! Smooth temperature and salinity.
-       if (config_global_realistic_smooth_TS_iterations .gt. 0) then
+       if (config_global_ocean_smooth_TS_iterations .gt. 0) then
           call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
           call mpas_pool_get_field(scratchPool, 'smoothedTemperature', smoothedTemperatureField)
@@ -1153,24 +1161,27 @@ contains
           call mpas_allocate_scratch_field(smoothedTemperatureField, .false.)
           call mpas_allocate_scratch_field(smoothedSalinityField, .false.)
 
-          do iSmooth = 1,config_global_realistic_smooth_TS_iterations
+          do iSmooth = 1,config_global_ocean_smooth_TS_iterations
 
              block_ptr => domain % blocklist
              do while(associated(block_ptr))
                 call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
                 call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
                 call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+                call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+                call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+                call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+                call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
 
                 call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-
-                call mpas_pool_get_dimension(statePool, 'index_temperature', idxTemperature)
-                call mpas_pool_get_dimension(statePool, 'index_salinity', idxSalinity)
+                call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
+                call mpas_pool_get_dimension(tracersPool, 'index_salinity', idxSalinity)
 
                 call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
                 call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
                 call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
-                call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+                call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
                 call mpas_pool_get_array(scratchPool, 'smoothedTemperature', smoothedTemperature)
                 call mpas_pool_get_array(scratchPool, 'smoothedSalinity', smoothedSalinity)
@@ -1179,8 +1190,10 @@ contains
 
                 do iCell = 1, nCells
                    do k = 1, maxLevelCell(iCell)
-                      smoothedtemperature(k, iCell) = tracers(idxTemperature, k, iCell)
-                      smoothedsalinity(k, iCell) = tracers(idxSalinity, k, iCell)
+                      if ( associated(activeTracers) ) then
+                         smoothedtemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
+                         smoothedsalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
+                      end if
                       counter = 1
 
                       do j = 1, nEdgesOnCell(iCell)
@@ -1188,8 +1201,10 @@ contains
                          ! check if coc not 0 (or nCells+1)?
                          if (k .le. maxLevelCell(coc)) then
 
-                            smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) + tracers (idxTemperature, k, coc)
-                            smoothedsalinity(k, iCell) = smoothedsalinity(k, iCell) + tracers(idxSalinity, k, coc)
+                            if ( associated(activeTracers) ) then
+                               smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) + activeTracers (idxTemperature, k, coc)
+                               smoothedsalinity(k, iCell) = smoothedsalinity(k, iCell) + activeTracers(idxSalinity, k, coc)
+                            end if
                             counter = counter + 1
 
                          end if
@@ -1202,16 +1217,19 @@ contains
 
                 end do ! iCell
 
-                tracers(idxTemperature, :, :) = smoothedtemperature(:,:) 
-                tracers(idxSalinity, :, :) = smoothedsalinity(:,:) 
+                if ( associated(activeTracers) ) then
+                   activeTracers(idxTemperature, :, :) = smoothedtemperature(:,:) 
+                   activeTracers(idxSalinity, :, :) = smoothedsalinity(:,:) 
+                end if
 
                 block_ptr => block_ptr % next
              end do
 
              call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-             call mpas_pool_get_field(statePool, 'tracers', tracersField, 1)
+             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+             call mpas_pool_get_field(tracersPool, 'activeTracers', activeTracersField,1)
 
-             call mpas_dmpar_exch_halo_field(tracersField)
+             call mpas_dmpar_exch_halo_field(activeTracersField)
 
           end do ! iSmooth
 
@@ -1222,11 +1240,50 @@ contains
           call mpas_deallocate_scratch_field(smoothedSalinityField, .false.)
        endif
 
-    end subroutine ocn_init_setup_global_realistic_interpolate_tracers!}}}
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+
+          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
+          call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
+          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
+          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
+          call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+          call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
+
+          ! set interior restoring values and rate
+          if ( associated(activeTracersInteriorRestoringValue) .and. associated(activeTracers) ) then
+             activeTracersInteriorRestoringValue(:, :, :) = activeTracers(:, :, :)
+          end if
+
+          if ( associated(activeTracersInteriorRestoringRate) ) then
+             activeTracersInteriorRestoringRate(:, :, :) = config_global_ocean_interior_restore_rate
+          end if
+
+           ! set surface restoring values and rate
+          if ( associated(activeTracersSurfaceRestoringValue) .and. associated(activeTracers) ) then
+             activeTracersSurfaceRestoringValue(:, :) = activeTracers(:, 1, :)
+          end if
+
+          if ( associated(activeTracersPistonVelocity) ) then
+             activeTracersPistonVelocity(:, :) = config_global_ocean_piston_velocity
+          end if
+
+          block_ptr => block_ptr % next
+       end do
+
+
+    end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_read_windstress
+!  routine ocn_init_setup_global_ocean_read_windstress
 !
 !> \brief   Read the windstress IC file
 !> \author  Doug Jacobsen
@@ -1237,7 +1294,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_read_windstress(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_read_windstress(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -1247,31 +1304,31 @@ contains
 
        integer :: iLat, iLon
 
-       character (len=StrKIND), pointer :: config_global_realistic_windstress_file, config_global_realistic_windstress_lat_varname, &
-                                           config_global_realistic_windstress_nlat_dimname, config_global_realistic_windstress_lon_varname, &
-                                           config_global_realistic_windstress_nlon_dimname, config_global_realistic_windstress_zonal_varname, &
-                                           config_global_realistic_windstress_meridional_varname
+       character (len=StrKIND), pointer :: config_global_ocean_windstress_file, config_global_ocean_windstress_lat_varname, &
+                                           config_global_ocean_windstress_nlat_dimname, config_global_ocean_windstress_lon_varname, &
+                                           config_global_ocean_windstress_nlon_dimname, config_global_ocean_windstress_zonal_varname, &
+                                           config_global_ocean_windstress_meridional_varname
 
-       logical, pointer :: config_global_realistic_windstress_latlon_degrees
+       logical, pointer :: config_global_ocean_windstress_latlon_degrees
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_file', config_global_realistic_windstress_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_lat_varname', config_global_realistic_windstress_lat_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_nlat_dimname', config_global_realistic_windstress_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_lon_varname', config_global_realistic_windstress_lon_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_nlon_dimname', config_global_realistic_windstress_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_zonal_varname', config_global_realistic_windstress_zonal_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_meridional_varname', config_global_realistic_windstress_meridional_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_latlon_degrees', config_global_realistic_windstress_latlon_degrees)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_file', config_global_ocean_windstress_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_lat_varname', config_global_ocean_windstress_lat_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_nlat_dimname', config_global_ocean_windstress_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_lon_varname', config_global_ocean_windstress_lon_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_nlon_dimname', config_global_ocean_windstress_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_zonal_varname', config_global_ocean_windstress_zonal_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_meridional_varname', config_global_ocean_windstress_meridional_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_latlon_degrees', config_global_ocean_windstress_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(windstressStream, config_global_realistic_windstress_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(windstressStream, config_global_ocean_windstress_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup windLat, windLon, and windIC fields for stream to be read in
-       windLat % fieldName = trim(config_global_realistic_windstress_lat_varname)
+       windLat % fieldName = trim(config_global_ocean_windstress_lat_varname)
        windLat % dimSizes(1) = nLatWind
-       windLat % dimNames(1) = trim(config_global_realistic_windstress_nlat_dimname)
+       windLat % dimNames(1) = trim(config_global_ocean_windstress_nlat_dimname)
        windLat % isVarArray = .false.
        windLat % isPersistent = .true.
        windLat % isActive = .true.
@@ -1279,9 +1336,9 @@ contains
        windLat % block => domain % blocklist
        allocate(windLat % array(nLatWind))
 
-       windLon % fieldName = trim(config_global_realistic_windstress_lon_varname)
+       windLon % fieldName = trim(config_global_ocean_windstress_lon_varname)
        windLon % dimSizes(1) = nLonWind
-       windLon % dimNames(1) = trim(config_global_realistic_windstress_nlon_dimname)
+       windLon % dimNames(1) = trim(config_global_ocean_windstress_nlon_dimname)
        windLon % isVarArray = .false.
        windLon % isPersistent = .true.
        windLon % isActive = .true.
@@ -1289,11 +1346,11 @@ contains
        windLon % block => domain % blocklist
        allocate(windLon % array(nLonWind))
 
-       zonalWindIC % fieldName = trim(config_global_realistic_windstress_zonal_varname)
+       zonalWindIC % fieldName = trim(config_global_ocean_windstress_zonal_varname)
        zonalWindIC % dimSizes(1) = nLonWind
        zonalWindIC % dimSizes(2) = nLatWind
-       zonalWindIC % dimNames(1) = trim(config_global_realistic_windstress_nlon_dimname)
-       zonalWindIC % dimNames(2) = trim(config_global_realistic_windstress_nlat_dimname)
+       zonalWindIC % dimNames(1) = trim(config_global_ocean_windstress_nlon_dimname)
+       zonalWindIC % dimNames(2) = trim(config_global_ocean_windstress_nlat_dimname)
        zonalWindIC % isVarArray = .false.
        zonalWindIC % isPersistent = .true.
        zonalWindIC % isActive = .true.
@@ -1301,11 +1358,11 @@ contains
        zonalWindIC % block => domain % blocklist
        allocate(zonalWindIC % array(nLonWind, nLatWind))
 
-       meridionalWindIC % fieldName = trim(config_global_realistic_windstress_meridional_varname)
+       meridionalWindIC % fieldName = trim(config_global_ocean_windstress_meridional_varname)
        meridionalWindIC % dimSizes(1) = nLonWind
        meridionalWindIC % dimSizes(2) = nLatWind
-       meridionalWindIC % dimNames(1) = trim(config_global_realistic_windstress_nlon_dimname)
-       meridionalWindIC % dimNames(2) = trim(config_global_realistic_windstress_nlat_dimname)
+       meridionalWindIC % dimNames(1) = trim(config_global_ocean_windstress_nlon_dimname)
+       meridionalWindIC % dimNames(2) = trim(config_global_ocean_windstress_nlat_dimname)
        meridionalWindIC % isVarArray = .false.
        meridionalWindIC % isPersistent = .true.
        meridionalWindIC % isActive = .true.
@@ -1325,7 +1382,7 @@ contains
        ! Close stream
        call MPAS_closeStream(windstressStream)
 
-       if (config_global_realistic_windstress_latlon_degrees) then
+       if (config_global_ocean_windstress_latlon_degrees) then
           windLat % array(:) = windLat % array(:) * pii / 180.0_RKIND 
           windLon % array(:) = windLon % array(:) * pii / 180.0_RKIND
        end if
@@ -1336,11 +1393,11 @@ contains
           end if
        end do
 
-    end subroutine ocn_init_setup_global_realistic_read_windstress!}}}
+    end subroutine ocn_init_setup_global_ocean_read_windstress!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_realistic_interpolate_windstress
+!  routine ocn_init_setup_global_ocean_interpolate_windstress
 !
 !> \brief   Interpolate the windstress IC to MPAS mesh
 !> \author  Doug Jacobsen
@@ -1351,7 +1408,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_realistic_interpolate_windstress(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_interpolate_windstress(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -1374,13 +1431,13 @@ contains
 
        integer, pointer :: nEdgesSolve, nEdges
 
-       character (len=StrKIND), pointer :: config_global_realistic_windstress_method
-       real (kind=RKIND), pointer :: config_global_realistic_windstress_conversion_factor
+       character (len=StrKIND), pointer :: config_global_ocean_windstress_method
+       real (kind=RKIND), pointer :: config_global_ocean_windstress_conversion_factor
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_method', config_global_realistic_windstress_method)
-       call mpas_pool_get_config(domain % configs, 'config_global_realistic_windstress_conversion_factor', config_global_realistic_windstress_conversion_factor)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_method', config_global_ocean_windstress_method)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_conversion_factor', config_global_ocean_windstress_conversion_factor)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -1396,7 +1453,7 @@ contains
 
           call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
 
-          if (config_global_realistic_windstress_method .eq. "nearest_neighbor") then
+          if (config_global_ocean_windstress_method .eq. "nearest_neighbor") then
              do iEdge = 1, nEdgesSolve
                 currentLat = latEdge(iEdge)
                 currentLon = lonEdge(iEdge)
@@ -1422,13 +1479,13 @@ contains
                    end if
                 end do
 
-                zonalWind = zonalWindIC % array(lonSearch, latSearch) * config_global_realistic_windstress_conversion_factor
-                meridionalWind = meridionalWindIC % array(lonSearch, latSearch) * config_global_realistic_windstress_conversion_factor
+                zonalWind = zonalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
+                meridionalWind = meridionalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
 
                 surfaceWindStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
              end do
 
-          elseif (config_global_realistic_windstress_method .eq. "bilinear_interpolation") then
+          elseif (config_global_ocean_windstress_method .eq. "bilinear_interpolation") then
 
              do iEdge = 1, nEdges
                 x = lonEdge(iEdge)
@@ -1496,13 +1553,13 @@ contains
                    coef22 = 1.0_RKIND*(x -x1)*(y -y1)
                 endif
 
-                zonalWind = coef*config_global_realistic_windstress_conversion_factor*( &
+                zonalWind = coef*config_global_ocean_windstress_conversion_factor*( &
                      coef11* zonalWindIC % array(xInd1, yInd1) &
                      + coef21* zonalWindIC % array(xInd2, yInd1) &
                      + coef12* zonalWindIC % array(xInd1, yInd2) &
                      + coef22* zonalWindIC % array(xInd2, yInd2) )
 
-                meridionalWind = coef*config_global_realistic_windstress_conversion_factor*( &
+                meridionalWind = coef*config_global_ocean_windstress_conversion_factor*( &
                      coef11* meridionalWindIC % array(xInd1, yInd1) &
                      + coef21* meridionalWindIC % array(xInd2, yInd1) &
                      + coef12* meridionalWindIC % array(xInd1, yInd2) &
@@ -1513,7 +1570,7 @@ contains
              end do
 
           else
-             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_realistic_windstress_method.'
+             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_windstress_method.'
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
@@ -1521,11 +1578,11 @@ contains
           block_ptr => block_ptr % next
        end do
 
-    end subroutine ocn_init_setup_global_realistic_interpolate_windstress!}}}
+    end subroutine ocn_init_setup_global_ocean_interpolate_windstress!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_global_realistic_destroy_tracer_fields
+!  routine ocn_init_global_ocean_destroy_tracer_fields
 !
 !> \brief   Tracer field cleanup routine
 !> \author  Doug Jacobsen
@@ -1536,16 +1593,16 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_global_realistic_destroy_tracer_fields()!{{{
+    subroutine ocn_init_global_ocean_destroy_tracer_fields()!{{{
         deallocate(temperatureIC % array)
         deallocate(salinityIC % array)
         deallocate(tracerLat % array)
         deallocate(tracerLon % array)
-    end subroutine ocn_init_global_realistic_destroy_tracer_fields!}}}
+    end subroutine ocn_init_global_ocean_destroy_tracer_fields!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_global_realistic_destroy_topo_fields
+!  routine ocn_init_global_ocean_destroy_topo_fields
 !
 !> \brief   Topography field cleanup routine
 !> \author  Doug Jacobsen
@@ -1556,15 +1613,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_global_realistic_destroy_topo_fields()!{{{
+    subroutine ocn_init_global_ocean_destroy_topo_fields()!{{{
         deallocate(topoIC % array)
         deallocate(topoLat % array)
         deallocate(topoLon % array)
-    end subroutine ocn_init_global_realistic_destroy_topo_fields!}}}
+    end subroutine ocn_init_global_ocean_destroy_topo_fields!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_global_realistic_destroy_windstress_fields
+!  routine ocn_init_global_ocean_destroy_windstress_fields
 !
 !> \brief   Windstress field cleanup routine
 !> \author  Doug Jacobsen
@@ -1575,26 +1632,26 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_global_realistic_destroy_windstress_fields()!{{{
+    subroutine ocn_init_global_ocean_destroy_windstress_fields()!{{{
         deallocate(zonalWindIC % array)
         deallocate(meridionalWindIC % array)
         deallocate(windLat % array)
         deallocate(windLon % array)
-    end subroutine ocn_init_global_realistic_destroy_windstress_fields!}}}
+    end subroutine ocn_init_global_ocean_destroy_windstress_fields!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_validate_global_realistic
+!  routine ocn_init_validate_global_ocean
 !
-!> \brief   Validation for global realistic test case
+!> \brief   Validation for global ocean test case
 !> \author  Doug Jacobsen
 !> \date    03/04/2014
 !> \details 
-!>  This routine validates the configuration options for the global realistic test case.
+!>  This routine validates the configuration options for the global ocean test case.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_validate_global_realistic(configPool, packagePool, iErr)!{{{
+   subroutine ocn_init_validate_global_ocean(configPool, packagePool, iErr)!{{{
 
    !--------------------------------------------------------------------
 
@@ -1602,13 +1659,13 @@ contains
       integer, intent(out) :: iErr
       type (MPAS_IO_Handle_type) :: inputFile
 
-      character (len=StrKIND), pointer :: config_init_configuration, config_global_realistic_depth_file, &
-                                          config_global_realistic_depth_dimname, config_global_realistic_temperature_file, &
-                                          config_global_realistic_salinity_file, config_global_realistic_tracer_nlat_dimname, &
-                                          config_global_realistic_tracer_nlon_dimname, config_global_realistic_topography_file, &
-                                          config_global_realistic_topography_nlat_dimname, config_global_realistic_topography_nlon_dimname, &
-                                          config_global_realistic_windstress_file, config_global_realistic_windstress_nlat_dimname, &
-                                          config_global_realistic_windstress_nlon_dimname
+      character (len=StrKIND), pointer :: config_init_configuration, config_global_ocean_depth_file, &
+                                          config_global_ocean_depth_dimname, config_global_ocean_temperature_file, &
+                                          config_global_ocean_salinity_file, config_global_ocean_tracer_nlat_dimname, &
+                                          config_global_ocean_tracer_nlon_dimname, config_global_ocean_topography_file, &
+                                          config_global_ocean_topography_nlat_dimname, config_global_ocean_topography_nlon_dimname, &
+                                          config_global_ocean_windstress_file, config_global_ocean_windstress_nlat_dimname, &
+                                          config_global_ocean_windstress_nlon_dimname
 
       integer, pointer :: config_vert_levels
 
@@ -1616,88 +1673,88 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_init_configuration', config_init_configuration)
 
-      if(config_init_configuration .ne. trim('global_realistic')) return
+      if(config_init_configuration .ne. trim('global_ocean')) return
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_depth_file', config_global_realistic_depth_file)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_depth_dimname', config_global_realistic_depth_dimname)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_temperature_file', config_global_realistic_temperature_file)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_salinity_file', config_global_realistic_salinity_file)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_tracer_nlat_dimname', config_global_realistic_tracer_nlat_dimname)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_tracer_nlon_dimname', config_global_realistic_tracer_nlon_dimname)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_topography_file', config_global_realistic_topography_file)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_topography_nlat_dimname', config_global_realistic_topography_nlat_dimname)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_topography_nlon_dimname', config_global_realistic_topography_nlon_dimname)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_windstress_file', config_global_realistic_windstress_file)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_windstress_nlat_dimname', config_global_realistic_windstress_nlat_dimname)
-      call mpas_pool_get_config(configPool, 'config_global_realistic_windstress_nlon_dimname', config_global_realistic_windstress_nlon_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_depth_file', config_global_ocean_depth_file)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_temperature_file', config_global_ocean_temperature_file)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_salinity_file', config_global_ocean_salinity_file)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_tracer_nlat_dimname', config_global_ocean_tracer_nlat_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_tracer_nlon_dimname', config_global_ocean_tracer_nlon_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_topography_file', config_global_ocean_topography_file)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_topography_nlat_dimname', config_global_ocean_topography_nlat_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_topography_nlon_dimname', config_global_ocean_topography_nlon_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_file', config_global_ocean_windstress_file)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlat_dimname', config_global_ocean_windstress_nlat_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlon_dimname', config_global_ocean_windstress_nlon_dimname)
 
-      inputFile = MPAS_io_open(config_global_realistic_depth_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_depth_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
 
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_depth_dimname, nDepth, iErr)
-
-      call MPAS_io_close(inputFile, iErr)
-
-      inputFile = MPAS_io_open(config_global_realistic_temperature_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
-
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_tracer_nlat_dimname, nLatTracer, iErr)
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_tracer_nlon_dimname, nLonTracer, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_depth_dimname, nDepth, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
-      inputFile = MPAS_io_open(config_global_realistic_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_temperature_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
 
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_topography_nlat_dimname, nLatTopo, iErr)
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_topography_nlon_dimname, nLonTopo, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlat_dimname, nLatTracer, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlon_dimname, nLonTracer, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
-      inputFile = MPAS_io_open(config_global_realistic_windstress_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
 
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_windstress_nlat_dimname, nLatWind, iErr)
-      call MPAS_io_inq_dim(inputFile, config_global_realistic_windstress_nlon_dimname, nLonWind, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlat_dimname, nLatTopo, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlon_dimname, nLonTopo, iErr)
+
+      call MPAS_io_close(inputFile, iErr)
+
+      inputFile = MPAS_io_open(config_global_ocean_windstress_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_windstress_nlat_dimname, nLatWind, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_windstress_nlon_dimname, nLonWind, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
       if (config_vert_levels <= 0 .and. nDepth > 0) then
          config_vert_levels = nDepth
       else if(config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for global realistic. Not given a usable value for vertical levels.'
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Not given a usable value for vertical levels.'
          iErr = 1
       end if
 
-      if (trim(config_global_realistic_temperature_file) == 'none') then
-         write(stderrUnit,*) 'ERROR: Validation failed for global realistic. Invalid filename for config_global_realistic_temperature_file'
+      if (trim(config_global_ocean_temperature_file) == 'none') then
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_temperature_file'
          iErr = 1
       end if
 
-      if (trim(config_global_realistic_salinity_file) == 'none') then
-         write(stderrUnit,*) 'ERROR: Validation failed for global realistic. Invalid filename for config_global_realistic_salinity_file'
+      if (trim(config_global_ocean_salinity_file) == 'none') then
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_salinity_file'
          iErr = 1
       end if
 
-      if (trim(config_global_realistic_depth_file) == 'none') then
-         write(stderrUnit,*) 'ERROR: Validation failed for global realistic. Invalid filename for config_global_realistic_depth_file'
+      if (trim(config_global_ocean_depth_file) == 'none') then
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_depth_file'
          iErr = 1
       end if
 
-      if (trim(config_global_realistic_topography_file) == 'none') then
-         write(stderrUnit,*) 'ERROR: Validation failed for global realistic. Invalid filename for config_global_realistic_topography_file'
+      if (trim(config_global_ocean_topography_file) == 'none') then
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_topography_file'
          iErr = 1
       end if
 
-      if (trim(config_global_realistic_windstress_file) == 'none') then
-         write(stderrUnit,*) 'ERROR: Validation failed for global realistic. Invalid filename for config_global_realistic_windstress_file'
+      if (trim(config_global_ocean_windstress_file) == 'none') then
+         write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_windstress_file'
          iErr = 1
       end if
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_init_validate_global_realistic!}}}
+   end subroutine ocn_init_validate_global_ocean!}}}
 
 !***********************************************************************
 
-end module ocn_init_global_realistic
+end module ocn_init_global_ocean
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

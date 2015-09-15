@@ -71,7 +71,7 @@ contains
 !> \date    September 2011
 !> \details 
 !>  This routine computes the vertical mixing coefficients for momentum
-!>  and tracers based user choices of mixing parameterization.
+!>  and activeTracers based user choices of mixing parameterization.
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
@@ -114,14 +114,16 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err1, err2, err3, timeLevel
-      integer, pointer :: indexT, indexS
+      integer, pointer :: indexTemperature, indexSalinity
+
+      type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfEdge, vertDiffTopOfCell, normalVelocity, layerThickness, layerThicknessEdge, density, displacedDensity
 
       real (kind=RKIND), dimension(:,:), pointer :: RiTopOfEdge, RiTopOfCell
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       !-----------------------------------------------------------------
       !
@@ -133,14 +135,16 @@ contains
 
       err = 0
 
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
          timeLevel = 1
       end if
 
-      call mpas_pool_get_dimension(statePool, 'index_temperature', indexT)
-      call mpas_pool_get_dimension(statePool, 'index_salinity', indexS)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
@@ -152,7 +156,7 @@ contains
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
-      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
       call mpas_timer_start("eos rich", .false., richEOSTimer)
 
@@ -165,8 +169,8 @@ contains
 
       call mpas_timer_stop("eos rich", richEOSTimer)
 
-      call ocn_vmix_get_rich_numbers(meshPool, indexT, indexS, normalVelocity, layerThickness, layerThicknessEdge, & 
-                                  density, displacedDensity, tracers, RiTopOfEdge, RiTopOfCell, err1)
+      call ocn_vmix_get_rich_numbers(meshPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, layerThicknessEdge, & 
+                                  density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)
 
       call ocn_vel_vmix_coefs_rich(meshPool, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err2)
       call ocn_tracer_vmix_coefs_rich(meshPool, RiTopOfCell, layerThickness, vertDiffTopOfCell, err3)
@@ -277,7 +281,7 @@ contains
 !> \author  Mark Petersen
 !> \date    September 2011
 !> \details 
-!>  This routine computes the richardson vertical mixing coefficients for tracers
+!>  This routine computes the richardson vertical mixing coefficients for activeTracers
 !
 !-----------------------------------------------------------------------
 
@@ -380,8 +384,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_get_rich_numbers(meshPool, indexT, indexS, normalVelocity, layerThickness, layerThicknessEdge, & !{{{
-                                 density, displacedDensity, tracers, RiTopOfEdge, RiTopOfCell, err)
+   subroutine ocn_vmix_get_rich_numbers(meshPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, layerThicknessEdge, & !{{{
+                                 density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err)
 
       !-----------------------------------------------------------------
       !
@@ -392,14 +396,14 @@ contains
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
 
-      integer, intent(in) :: indexT !< Input: index for temperature
-      integer, intent(in) :: indexS !< Input: index for salinity
+      integer, intent(in) :: indexTemperature !< Input: index for temperature
+      integer, intent(in) :: indexSalinity !< Input: index for salinity
 
       real (kind=RKIND), dimension(:,:), intent(in) :: normalVelocity       !< Input: horizontal velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness       !< Input: thickness
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThicknessEdge  !< Input: thickness at edge 
 
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: tracers
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: activeTracers !< Input: activeTracers
 
       !-----------------------------------------------------------------
       !

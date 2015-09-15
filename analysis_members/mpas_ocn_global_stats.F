@@ -143,7 +143,7 @@ contains
             write (fileID,'(/,a)') 'A chain of simple unix commands may be used to access a specific part of the data. For example,'
             write (fileID,'(a)') 'to view the last three values of column seven in the global average, use:'
             write (fileID,'(a)') "cat stats_avg.txt | awk '{print $7}' | tail -n3"
-  
+
          close (fileID)
       endif
 
@@ -218,6 +218,7 @@ contains
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
@@ -227,7 +228,7 @@ contains
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
       integer :: k, i, fileID
       integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
-      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
+      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_activeTracers
       character*1 timeChar
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
@@ -239,7 +240,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertAleTransportTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, verticalSumMaxes
       real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
@@ -284,12 +286,13 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
 
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
 
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
+         call mpas_pool_get_dimension(tracersPool, 'num_activeTracers', num_activeTracers)
 
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
@@ -301,7 +304,7 @@ contains
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          if(thicknessFilterActive) then
             call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 1)
             call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, 1)
@@ -504,10 +507,10 @@ contains
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
          end if
 
-         ! Tracers
-         do iTracer=1,num_tracers
+         ! active Tracers
+         do iTracer=1,num_activeTracers
             variableIndex = variableIndex + 1
-            workArray = Tracers(iTracer,:,1:nCellsSolve)
+            workArray = activeTracers(iTracer,:,1:nCellsSolve)
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                workArray, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
@@ -678,8 +681,8 @@ contains
          rms(variableIndex) = 0.0_RKIND
       end if
 
-      ! Tracers
-      do iTracer=1,num_tracers
+      ! active tracers
+      do iTracer=1,num_activeTracers
         variableIndex = variableIndex + 1
         averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)

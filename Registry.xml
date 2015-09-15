@@ -136,19 +136,21 @@
 					cvmix_convection_unit_test_value="cvmix_convection_unit_test"
 					cvmix_shear_unit_test_value="cvmix_shear_unit_test"
 					cvmx_WSwSBF_value="cvmx_WSwSBF"
-					global_realistic_value="global_realistic"
+					global_ocean_value="global_ocean"
 					internal_waves_value="internal_waves"
 					lock_exchange_value="lock_exchange"
 					overflow_value="overflow"
+					soma_value="soma"
+					iso_value="iso"
 		/>
 		<nml_option name="config_expand_sphere" type="logical" default_value="false" units="unitless"
 					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
 					possible_values=".true. or .false."
 		/>
-                <nml_option name="config_realistic_coriolis_parameter" type="logical" default_value="false" units="unitless"
-                                        description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
-                                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_realistic_coriolis_parameter" type="logical" default_value="false" units="unitless"
+					description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_write_cull_cell_mask" type="logical" default_value="true" units="unitless"
 					description="Logicial flag that controls if the cullCell field is written to output."
 					possible_values=".true. or .false."
@@ -156,6 +158,20 @@
 		<nml_option name="config_vertical_grid" type="character" default_value="uniform" units="unitless"
 					description="Name of vertical grid to use in configuration generation"
 					possible_values="'uniform', ..."
+		/>
+	</nml_record>
+	<nml_record name="CVTgenerator" mode="init">
+		<nml_option name="config_1dCVTgenerator_stretch1" type="real" default_value="1.0770" units="unitless"
+					description="Parameter for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+		<nml_option name="config_1dCVTgenerator_stretch2" type="real" default_value="1.0275" units="unitless"
+					description="Parameter for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
+		/>
+		<nml_option name="config_1dCVTgenerator_dzSeed" type="real" default_value="1.2" units="unitless"
+					description="Seed thickness of the first layer for the 1D CVT vertical grid generator."
+					possible_values="Any positive non-zero integer."
 		/>
 	</nml_record>
 
@@ -573,25 +589,13 @@
 		/>
 	</nml_record>
 	<nml_record name="forcing" mode="forward">
-		<nml_option name="config_forcing_type" type="character" default_value="off" units="unitless"
-					description="Defines the forcing type for the simulation."
-					possible_values="'restoring', 'bulk', or 'off'"
+		<nml_option name="config_use_bulk_wind_stress" type="logical" default_value=".false." units="unitless"
+					description="Controls if zonal and meridional components of windstress are used to build surfaceWindStress."
+					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
-					description="Restoring time scale for temperature, $\tau_r.$"
-					possible_values="any positive real value, but typically between 30 and 90 days."
-		/>
-		<nml_option name="config_restoreS_timescale" type="real" default_value="90.0" units="days"
-					description="Restoring time scale for salinity, $\tau_r$."
-					possible_values="any positive real value, but typically between 30 and 90 days."
-		/>
-		<nml_option name="config_restoreT_lengthscale" type="real" default_value="50.0" units="m"
-					description="Restoring length scale for temperature."
-					possible_values="any positive real value, but typically about 50 meters."
-		/>
-		<nml_option name="config_restoreS_lengthscale" type="real" default_value="50.0" units="m"
-					description="Restoring length scale for salinity."
-					possible_values="any positive real value, but typically about 50 meters."
+		<nml_option name="config_use_bulk_thickness_flux" type="logical" default_value=".false." units="unitless"
+					description="Controls if a bulk thickness flux will be computed for surface forcing."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
 					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
@@ -865,8 +869,8 @@
 	<packages>
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
-		<package name="surfaceRestoring" description="This package includes variables required for surface tracer restoring."/>
-		<package name="bulkForcing" description="This package includes varibles required for bulk surface forcing."/>
+		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
+		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
@@ -876,6 +880,7 @@
 	</packages>
 
 	<streams>
+		<!-- Init mode streams -->
 		<stream name="input_init"
 				type="input"
 				filename_template="mesh.nc"
@@ -923,6 +928,7 @@
 			<var name="fVertex"/>
 			<var name="fCell"/>
 		</stream>
+
 		<stream name="output_init"
 				type="output"
 				filename_template="ocean.nc"
@@ -931,51 +937,11 @@
 				runtime_format="single_file"
 				mode="init">
 
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="meshDensity"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="fCell"/>
+			<stream name="input_init"/>
 			<var name="refZMid"/>
-			<var_array name="tracers"/>
+			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
-			<var name="temperatureRestore"/>
-			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
@@ -988,6 +954,25 @@
 			<var name="edgeMask"/>
 			<var name="cullCell"/>
 		</stream>
+
+		<stream name="forcing_data_init"
+				type="output"
+				filename_template="init_mode_forcing_data.nc"
+				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
+
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+		</stream>
+
+		<!-- Forward mode streams -->
 		<stream name="mesh" 
 				type="input"
 				filename_template="mesh.nc"
@@ -1038,10 +1023,8 @@
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
 			<var name="restingThickness" packages="forwardMode;analysisMode"/>
-			<var name="temperatureRestore"/>
-			<var name="salinityRestore"/>
-			<var name="surfaceWindStress"/>
 		</stream>
+
 		<stream name="input" 
 				type="input"
 				filename_template="init.nc"
@@ -1050,13 +1033,14 @@
 				mode="forward;analysis">
 
 			<stream name="mesh"/>
-			<var_array name="tracers"/>
+			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
+
 		<stream name="restart"
 				type="input;output"
 				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
@@ -1069,7 +1053,7 @@
 				mode="forward;analysis">
 
 			<stream name="mesh"/>
-			<var_array name="tracers"/>
+			<var_struct name="tracers"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
@@ -1083,8 +1067,8 @@
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
-
 		</stream>
+
 		<stream name="output" 
 				type="output"
 				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
@@ -1096,7 +1080,7 @@
 				mode="forward">
 
 			<stream name="mesh"/>
-			<var_array name="tracers"/>
+			<var_struct name="tracers"/>
 			<var name="layerThickness"/>
 			<var name="ssh"/>
 			<var name="maxLevelEdgeTop"/>
@@ -1118,6 +1102,24 @@
 			<var name="volumeEdgeGlobal"/>
 			<var name="CFLNumberGlobal"/>
 		</stream>
+
+		<stream name="forcing_data"
+				type="input"
+				filename_template="forcing_data.nc"
+				input_interval="initial_only"
+				runtime_format="single_file"
+				mode="forward">
+
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+		</stream>
+
+		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"
 				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
@@ -1142,6 +1144,7 @@
 			<var name="vertAleTransportTop"/>
 			<var name="vertVelocityTop"/>
 		</stream>
+
 		<stream name="real_world"
 				type="none"
 				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1167,6 +1170,7 @@
 			<var name="surfaceBuoyancyForcing"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
+
 		<stream name="averages"
 				type="none"
 				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1196,6 +1200,7 @@
 			<var name="varVelocityZonal"/>
 			<var name="varVelocityMeridional"/>
 		</stream>
+
 		<stream name="Cartesian"
 				type="none"
 				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1225,7 +1230,7 @@
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
-			<var_array name="surfaceTracerFlux"/>
+			<var_array name="tracersSurfaceFlux"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceWindStress"/>
@@ -1249,15 +1254,19 @@
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
 			<var name="iceFraction"/>
+			<!-- TRACER-CLEAN-UP
+				swap out for 'bgcTracers' group	
 			<var name="prognosticCO2"/>
 			<var name="diagnosticCO2"/>
 			<var name="squaredWindSpeed10Meter"/>
 			<var name="CO2Flux"/>
 			<var name="DMSFlux"/>
+			-->
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
 		</stream>
+
 		<stream name="Gent_McWilliams_spherical"
 				type="none"
 				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1284,6 +1293,7 @@
 			<var name="avgGMBolusVelocityMeridional"/>
 			<var name="avgVertGMBolusVelocityTop"/>
 		</stream>
+
 		<stream name="Gent_McWilliams_Cartesian"
 				type="none"
 				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1311,18 +1321,8 @@
 			<var name="GMStreamFuncY"/>
 		</stream>
 	</streams>
+
 	<var_struct name="state" time_levs="2">
-		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
-			<var name="temperature" array_group="dynamics" units="degrees Celsius"
-				 description="potential temperature"
-			/>
-			<var name="salinity" array_group="dynamics" units="grams salt per kilogram seawater"
-				 description="salinity"
-			/>
-			<var name="tracer1" array_group="dynamics" units="na"
-				 description="tracer"
-			/>
-		</var_array>
 		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="horizonal velocity, normal component to an edge"
 		/>
@@ -1579,14 +1579,6 @@
 		<var name="cellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
 			 description="Mask on cells that determines if computations should be done on cell."
 		/>
-		<var name="temperatureRestore" type="real" dimensions="nCells" units="^\circ C"
-			 description="Temperature restoring field, for restoring temperature at the surface."
-			 packages="surfaceRestoring;initMode"
-		/>
-		<var name="salinityRestore" type="real" dimensions="nCells" units="PSU"
-			 description="Salinity restoring field, for restoring salinity at the surface."
-			 packages="surfaceRestoring;initMode"
-		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
 		/>
@@ -1614,17 +1606,6 @@
 		/>
 	</var_struct>
 	<var_struct name="tend" time_levs="1">
-		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time" packages="forwardMode">
-			<var name="tendTemperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
-				 description="time tendency of potential temperature"
-			/>
-			<var name="tendSalinity" array_group="dynamics" units="PSU s^{-1}" name_in_code="salinity"
-				 description="time tendency of salinity measured as change in practical salinity units per second"
-			/>
-			<var name="tendTracer1" array_group="dynamics" units="na" name_in_code="tracer1"
-				 description="test tracer"
-			/>
-		</var_array>
 		<var name="tendNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}" name_in_code="normalVelocity"
 			 description="time tendency of normal component of velocity"
 			 packages="forwardMode"
@@ -1657,9 +1638,6 @@
 			<var name="salinitySurfaceValue" array_group="surfaceValues" units="PSU" name_in_code="salinitySurfaceValue"
 				description="salinity extrapolated to ocean surface"
 			/>
-			<var name="tracer1SurfaceValue" array_group="surfaceValues" units="na"
-				description="Tracer of 1 extrapolated to ocean surface"
-			/>
 		</var_array>
 		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
@@ -1667,9 +1645,6 @@
 			/>
 			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" units="PSU" name_in_code="salinitySurfaceLayerValue"
 				description="salinity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
-			/>
-			<var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" units="na"
-				description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
 			/>
 		</var_array>
 		<var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" nits="m s^{-1}"
@@ -1949,9 +1924,9 @@
 			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
 		/>
-                <var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-                         description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
-                />
+		<var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
+		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
 		/>
@@ -2179,18 +2154,15 @@
 			 description="Flux of mass through the ocean surface. Positive into ocean."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var_array name="surfaceTracerFlux" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="surfaceTemperatureFlux" array_group="dynamics" units="^\circ C m s^{-1}"
-				 description="Flux of temperature through the ocean surface. Positive into ocean."
-			/>
-			<var name="surfaceSalinityFlux" array_group="dynamics" units="PSU m s^{-1}"
-				 description="Flux of salinity through the ocean surface. Positive into ocean."
-			/>
-			<var name="surfaceTracer1Flux" array_group="testing" units="percent"
-				 description="Flux of tracer1 through the ocean surface. Positive into ocean."
-			/>
-		</var_array>
 
+		<var name="windStressZonal" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="Zonal (eastward) component of wind stress at cell centers from coupler. Positive eastward."
+			 packages="windStressBulkPKG"
+		/>
+		<var name="windStressMeridional" type="real" dimensions="nCells Time" units="N m^{-2}"
+			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
+			 packages="windStressBulkPKG"
+		/>
 
 		<!-- *********************************************************************
 
@@ -2218,77 +2190,67 @@
 		/>
 
 		<!-- Input fields for coupling -->
-		<!-- Coupling fields associated with wind stress -->
-		<var name="windStressZonal" type="real" dimensions="nCells Time" units="N m^{-2}"
-			 description="Zonal (eastward) component of wind stress at cell centers from coupler. Positive eastward."
-			 packages="bulkForcing"
-		/>
-		<var name="windStressMeridional" type="real" dimensions="nCells Time" units="N m^{-2}"
-			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
-			 packages="bulkForcing"
-		/>
-
 		<!-- Coupling fields associated with heat fluxes -->
 		<var name="latentHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Latent heat flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="sensibleHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Sensible heat flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="longWaveHeatFluxUp" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Upward long wave heat flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="longWaveHeatFluxDown" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Downward long wave heat flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="seaIceHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="thicknessBulkPKG"
 		/>
 		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="seaIceFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="thicknessBulkPKG"
 		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="thicknessBulkPKG"
 		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG"
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="thicknessBulkPKG"
 		/>
 		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
+			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
 
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="percent"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
 		/>
+		<!-- Tracers that should be in BGC?
 		<var name="prognosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}"
 			 description="Prognostic CO2 at cell centers from coupler. Positive into the ocean."
 			 packages="bulkForcing"
@@ -2309,6 +2271,7 @@
 			 description="DMS Flux."
 			 packages="bulkForcing"
 		/>
+		-->
 
 		<!-- Output fields for coupling -->
 		<var name="nAccumulatedCoupled" type="integer" dimensions="Time" units="unitless"
@@ -2321,9 +2284,6 @@
 			/>
 			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" 
 				 description="Time averaged salinity extrapolated to ocean surface"
-			/>
-			<var name="avgTracer1SurfaceValue" array_group="surfaceValues" units="percent"
-				 description="Time averaged tracer1 extrapolated to ocean surface"
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
@@ -2344,6 +2304,10 @@
 		</var_array>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
+		<var name="normalThicknessFlux" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time"
+			 units="m^{2} s^{-1}"
+			 description="Flux of thickness through an edge"
+		/>
 		<var name="vorticityGradientTangentialComponent" 
 			persistence="scratch" 
 			type="real" dimensions="nVertLevels nEdges Time" 
@@ -2592,5 +2556,6 @@
 <!-- Include init mode's registry file -->
 #include "mode_init/Registry.xml"
 
+#include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
 </registry>

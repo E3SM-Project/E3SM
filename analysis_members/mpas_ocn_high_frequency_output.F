@@ -158,12 +158,13 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: highFrequencyOutputAMPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       integer :: iLevel, iLevelTarget
       integer, pointer :: nVertLevels
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
-      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, tracersAtSurface
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       err = 0
 
@@ -179,6 +180,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(domain % blocklist % structs, 'highFrequencyOutputAM', highFrequencyOutputAMPool)
 
          ! get static data from mesh pool
@@ -187,12 +189,12 @@ contains
          ! get arrays that will be 'sliced' and put into high frequency output
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell, timeLevel)
-         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
          ! get arrays that can be written to output at high freqency
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAt100m', kineticEnergyAt100m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt100m', relativeVorticityAt100m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tracersAtSurface', tracersAtSurface)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtSurface', activeTracersAtSurface)
 
          !
          ! note for future build out
@@ -212,8 +214,8 @@ contains
          ! tracer data will be converted to new tracer infrastrcture (and this line removed) before June 23 2015.
          kineticEnergyAt100m(:) = kineticEnergyCell(iLevelTarget,:)
          relativeVorticityAt100m(:) = relativeVorticityCell(iLevelTarget,:)
-         tracersAtSurface(1,:) = tracers(1,1,:)
-         tracersAtSurface(2,:) = tracers(2,1,:)
+         activeTracersAtSurface(1,:) = activeTracers(1,1,:)
+         activeTracersAtSurface(2,:) = activeTracers(2,1,:)
 
          block => block % next
       end do

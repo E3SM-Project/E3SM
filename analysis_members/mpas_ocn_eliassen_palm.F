@@ -1485,8 +1485,6 @@ contains
 
       err = 0
 
-      write(stderrUnit,*) 'ocn_finalize_eliassen_palm'
-
    end subroutine ocn_finalize_eliassen_palm!}}}
 
 

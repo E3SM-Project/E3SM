@@ -49,9 +49,11 @@ module ocn_forward_mode
    use ocn_vel_hmix
    use ocn_vel_forcing
    use ocn_vel_coriolis
+   use ocn_vel_forcing_windstress
+   use ocn_surface_bulk_forcing
 
    use ocn_tracer_hmix
-   use ocn_tracer_surface_flux
+   use ocn_tracer_surface_flux_to_tend
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_nonlocalflux
    use ocn_tracer_advection
@@ -189,6 +191,10 @@ module ocn_forward_mode
       call ocn_vel_hmix_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_vel_forcing_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_vel_forcing_windstress_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_surface_bulk_forcing_init(err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)
@@ -453,7 +459,6 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-           call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingpool, ierr, 1)
            block_ptr => block_ptr % next
          end do

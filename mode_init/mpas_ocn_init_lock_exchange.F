@@ -86,11 +86,11 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, statePool, verticalMeshPool
+      type (mpas_pool_type), pointer :: meshPool, statePool, verticalMeshPool, tracersPool
 
       character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_lock_exchange_layer_type
 
-      integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1, index_temperature, index_salinity
+      integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1, index_temperature, index_salinity, index_tracer1
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -99,7 +99,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, bottomDepth, refBottomDepthTopOfCell, refBottomDepth, vertCoordMovementWeights, dcEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
@@ -173,12 +173,14 @@ contains
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
          call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-         call mpas_pool_get_dimension(statePool, 'index_temperature', index_temperature)
-         call mpas_pool_get_dimension(statePool, 'index_salinity', index_salinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+         call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
          call mpas_pool_get_array(meshPool, 'yCell', yCell)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
@@ -187,7 +189,8 @@ contains
          call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', refBottomDepthTopOfCell)
          call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
 
-         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+         call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
@@ -200,10 +203,12 @@ contains
          do iCell = 1, nCellsSolve
             ! Set temperature, layerThickness, and restingThickness
             if ( trim(config_lock_exchange_layer_type) == 'z-level' ) then
-               if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
-                  tracers(index_temperature, :, iCell) = config_lock_exchange_south_temp
-               else
-                  tracers(index_temperature, :, iCell) = config_lock_exchange_north_temp
+               if ( associated(activeTracers) ) then
+                  if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
+                     activeTracers(index_temperature, :, iCell) = config_lock_exchange_south_temp
+                  else
+                     activeTracers(index_temperature, :, iCell) = config_lock_exchange_north_temp
+                  end if
                end if
 
                ! Set layerThickness and restingThickness
@@ -212,8 +217,10 @@ contains
                   restingThickness(k, iCell) = layerThickness(k, iCell)
                end do
             else if ( trim(config_lock_exchange_layer_type) == 'isopycnal' ) then
-               tracers(index_temperature, 1, iCell) = config_lock_exchange_north_temp
-               tracers(index_temperature, 2:nVertLevels, iCell) = config_lock_exchange_south_temp
+               if ( associated(activeTracers) ) then
+                  activeTracers(index_temperature, 1, iCell) = config_lock_exchange_north_temp
+                  activeTracers(index_temperature, 2:nVertLevels, iCell) = config_lock_exchange_south_temp
+               end if
 
                if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
                   layerThickness(1, iCell) = config_lock_exchange_isopycnal_min_thickness
@@ -227,8 +234,16 @@ contains
             end if
 
             ! Set salinity
-            tracers(index_salinity, :, iCell) = config_lock_exchange_salinity
+            if ( associated(activeTracers) ) then
+               activeTracers(index_salinity, :, iCell) = config_lock_exchange_salinity
+            end if
 
+            ! Set debugging tracer
+            if ( associated(debugTracers) ) then
+               do k = 1, nVertLevels
+                 debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+               enddo
+            end if
 
             ! Set bottomDepth
             bottomDepth(iCell) = config_lock_exchange_bottom_depth
