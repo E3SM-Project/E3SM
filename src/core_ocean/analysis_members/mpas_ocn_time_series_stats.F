@@ -107,6 +107,7 @@ module ocn_time_series_stats
   character (len=StrKIND), parameter :: FRAMEWORK_PREFIX = 'timeSeriesStats'
 
   character (len=StrKIND), parameter :: STREAM_NAME_SUFFIX = '_stream_name'
+  character (len=StrKIND), parameter :: RESTART_NAME_SUFFIX = '_restart_name'
   character (len=StrKIND), parameter :: OPERATION_SUFFIX = '_operation'
   character (len=StrKIND), parameter :: ADD_MESH_SUFFIX = '_add_mesh'
 
@@ -190,12 +191,10 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   ! TODO placeholder for some unique ID if this code is replicated
   instance = '' ! TODO to be passed in
 
-  ! TODO skip all of this if do_restart is true and a restart stream exists
-
   ! get the basic configuration of this stream
   call start_init(domain, instance, series, err) 
 
-  ! modify the stream to remove existing vars and add accumulated versions 
+  ! modify the output and restart streams and read restart
   call modify_stream(domain, instance, series, err)
 
   ! get all of the timing and configuration
@@ -203,9 +202,6 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
 
   ! set all of the alarms based on timers
   call set_alarms(domain, instance, series, alarms, err)
-
-  ! TODO have a subroutine to put all state and data into restart stream
-  ! TODO add a restart stream config option
 
   ! clean up the memory
   do v = 1, series % number_of_variables
@@ -307,7 +303,6 @@ subroutine ocn_restart_time_series_stats(domain, err)!{{{
   ! start procedure
   err = 0
 
-  ! TODO is there anything needed here?
 end subroutine ocn_restart_time_series_stats!}}}
 
 
@@ -509,7 +504,6 @@ subroutine start_init(domain, instance, series, err)
   integer :: b, v
   type (field0DChar), pointer :: srcString, dstString
   type (field0DInteger), pointer :: srcInteger, dstInteger
-  type (field0DReal), pointer :: srcReal, dstReal
  
   ! start procedure
   err = 0
@@ -707,17 +701,10 @@ subroutine start_init(domain, instance, series, err)
     call mpas_pool_get_array(domain % blocklist % allFields, &
       dstString % fieldName, series % buffers(b) % reset_alarm_ID, 1)
 
-    ! counter
-    call mpas_pool_get_field(domain % blocklist % allFields, &
-      ONE_REAL_MEMORY, srcReal, 1)
-    call mpas_duplicate_field(srcReal, dstReal)
-    dstReal % fieldName = counter_naming(storage_prefix, buf_identifier)
-    call mpas_pool_add_field(domain % blocklist % allFields, &
-      dstReal % fieldName, dstReal)
-    call mpas_pool_get_array(domain % blocklist % allFields, &
-      dstReal % fieldName, series % buffers(b) % counter, 1)
+    !
+    ! counter is not done here, because it is part of the restart stream
+    !
   end do
-
 end subroutine start_init
 
 
@@ -746,11 +733,12 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! local variables
   integer :: v, b
-  character (len=StrKIND), pointer :: stream_name
+  character (len=StrKIND), pointer :: stream_name, restart_name
+  type (field0DReal), pointer :: srcReal, dstReal
   logical, pointer :: copy_mesh
   character (len=StrKIND) :: field_name, config, op_name
-  character (len=StrKIND) :: namelist_prefix, storage_prefix, buf_identifier, &
-    buf_prefix
+  character (len=StrKIND) :: namelist_prefix, &
+    storage_prefix, buf_identifier, buf_prefix
   type (mpas_pool_field_info_type) :: info
 
   ! start procedure
@@ -763,9 +751,18 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   config = trim(namelist_prefix) // trim(STREAM_NAME_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, stream_name)
 
-  !
-  ! assign values to series and modify the stream
-  !
+  ! get restart stream
+  config = trim(namelist_prefix) // trim(RESTART_NAME_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, restart_name)
+
+  ! operator
+  if (series % operation == AVG_OP) then
+    op_name = AVG_TOKEN
+  else if (series % operation == MIN_OP) then
+    op_name = MIN_TOKEN
+  else 
+    op_name = MAX_TOKEN
+  end if
 
   ! get the old field names 
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
@@ -782,6 +779,10 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     call mpas_stream_mgr_remove_field(domain % streamManager, &
       stream_name, series % variables(v) % input_name)
   end do
+
+  !
+  ! create memory and modify the stream
+  !
 
   ! add xtime to the stream
   call mpas_stream_mgr_add_field(domain % streamManager, &
@@ -800,23 +801,38 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     end do
   end if
 
-  ! put the counters in the output stream
+  ! make restart mutable
+  call mpas_stream_mgr_set_property(domain % streamManager, &
+    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
+
+  ! add xtime to the restart
+  call mpas_stream_mgr_add_field(domain % streamManager, &
+    restart_name, TIME_STREAM, ierr=err)
+
+  ! create and put the counters in the streams
   do b = 1, series % number_of_buffers
     write(buf_identifier, '(I0)') b
 
     field_name = counter_naming(storage_prefix, buf_identifier)
-    call mpas_stream_mgr_add_field(domain % streamManager, &
-      stream_name, field_name, ierr=err)
-  end do 
 
-   ! operator
-  if (series % operation == AVG_OP) then
-    op_name = AVG_TOKEN
-  else if (series % operation == MIN_OP) then
-    op_name = MIN_TOKEN
-  else 
-    op_name = MAX_TOKEN
-  end if
+    ! allocate counter memory
+    call mpas_pool_get_field(domain % blocklist % allFields, &
+      ONE_REAL_MEMORY, srcReal, 1)
+    call mpas_duplicate_field(srcReal, dstReal)
+    dstReal % fieldName = field_name
+    call mpas_pool_add_field(domain % blocklist % allFields, &
+      dstReal % fieldName, dstReal)
+    call mpas_pool_get_array(domain % blocklist % allFields, &
+      dstReal % fieldName, series % buffers(b) % counter, 1)
+
+    ! put it in the output stream
+    call mpas_stream_mgr_add_field(domain % streamManager, &
+      stream_name, dstReal % fieldName, ierr=err)
+
+    ! put it in the restart stream
+    call mpas_stream_mgr_add_field(domain % streamManager, &
+      restart_name, dstReal % fieldName, ierr=err)
+  end do 
 
   ! set up the variables
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
@@ -839,9 +855,11 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     do b = 1, series % number_of_buffers
       write(buf_identifier, '(I0)') b
 
+      field_name = output_naming(storage_prefix, op_name, &
+        series % variables(v) % input_name, buf_identifier)
+
       ! create the name of the output var
-      series % variables(v) % output_names(b) = output_naming(storage_prefix, &
-        op_name, series % variables(v) % input_name, buf_identifier)
+      series % variables(v) % output_names(b) = field_name
 
       ! create the field and add to pool
       call add_new_field(info, &
@@ -852,8 +870,20 @@ subroutine modify_stream(domain, instance, series, err)!{{{
       ! add the field to the stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
         stream_name, series % variables(v) % output_names(b), ierr=err)
+
+      ! put it in the restart stream
+      call mpas_stream_mgr_add_field(domain % streamManager, &
+        restart_name, series % variables(v) % output_names(b), ierr=err)
     end do
   end do ! number_of_variables
+
+  ! make restart immutable
+  call mpas_stream_mgr_set_property(domain % streamManager, &
+    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
+
+  ! read the restart stream
+  call mpas_stream_mgr_read(domain % streamManager, streamID = restart_name, &
+    ierr=err)
 
 end subroutine modify_stream!}}}
 
@@ -893,6 +923,8 @@ character (len=StrKIND) function counter_naming &
   counter_naming = trim(storage_prefix) // trim(COUNTER_SUFFIX) // &
     trim(buf_identifier)
 end function counter_naming
+
+
 
 !***********************************************************************
 ! routine get_alarms
@@ -1043,16 +1075,17 @@ subroutine set_alarms(domain, instance, series, alarms, err)
   do b = 1, series % number_of_buffers
     write(buf_identifier, '(I0)') b
 
+    ! no reset on start, because it should be zero'd already
+    series % buffers(b) % reset_flag = 0
+
     ! see if we start in the future or we have already started
     if (current_time >= alarms % start_time) then
        series % buffers(b) % started_flag = 1
-       series % buffers(b) % reset_flag = 1
 
        ! no start alarm
        series % buffers(b) % start_alarm_ID = ''
     else
        series % buffers(b) % started_flag = 0
-       series % buffers(b) % reset_flag = 0
  
        ! set the start alarm
        series % buffers(b) % start_alarm_ID = trim(alarm_prefix) // &
