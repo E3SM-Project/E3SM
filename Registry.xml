@@ -598,8 +598,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
-					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
-					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."
+					description="The length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if the formation of frazil ice is allowed."
@@ -623,6 +623,10 @@
                                         description="Controls if land-ice fluxes are computed under ice shelves."
                                         possible_values=".true. or .false."
                 />
+                <nml_option name="config_compute_land_ice_fluxes_in_ocean" type="logical" default_value=".true." units="unitless"
+                                        description="Controls if land-ice fluxes are computed in MPAS-O (as opposed to in the coupler)."
+                                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins" units="unitless"
 					description="Name of land-ice flux formulation."
 					possible_values="'ISOMIP', 'Jenkins', 'HollandJenkins'"
@@ -631,6 +635,10 @@
                                         description="If .true. then uses the advection/diffusion scheme of Holland and Jenkins (1999) for ice-shelf heat fluxes"
                                         possible_values=".true. and .false."
                 />
+		<nml_option name="config_land_ice_flux_attenuation_coefficient" type="real" default_value="10.0" units="m"
+					description="The vertical length scale of exponential decay for surface fluxes under land ice."
+					possible_values="Any positive real number."
+		/>
                 <nml_option name="config_land_ice_flux_boundaryLayerThickness" type="real" default_value="10.0" units="m"
                                         description="The thickness of the sub-ice-shelf boundary layer, over which T and S will be averaged."
                                         possible_values="Any non-negative real number.  A value of 0 means that T and S are taken top level."
@@ -1029,8 +1037,7 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
                         <var name="landIceFraction"/>
-                        <var name="landIceTemperature"/>
-                        <var name="landIceHeatTransferVelocity"/>
+                        <var name="landIceSurfaceTemperature"/>
 		</stream>
 
 		<!-- Forward mode streams -->
@@ -1179,8 +1186,7 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
                         <var name="landIceFraction"/>
-                        <var name="landIceTemperature"/>
-                        <var name="landIceHeatTransferVelocity"/>
+                        <var name="landIceSurfaceTemperature"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
@@ -2121,6 +2127,29 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
+                <!-- diagnostic fields for land-ice fluxes -->
+                <var name="landIceBoundaryLayerTemperature" type="real" dimensions="nCells Time" units="C"
+                         description="The temperature averaged over the sub-ice-shelf boundary layer"
+                         packages="landIceFluxesPKG"
+                />
+                <var name="landIceBoundaryLayerSalinity" type="real" dimensions="nCells Time" units="PSU"
+                         description="The salinity averaged over the sub-ice-shelf boundary layer"
+                         packages="landIceFluxesPKG"
+                />
+                <var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
+                         description="The friction velocity $u_*$ under land ice"
+                         packages="landIceFluxesPKG"
+                />
+                <var name="landIceHeatTransferVelocity" 
+                         type="real" dimensions="nCells" units="m s^{-1}"
+                         description="friction velocity times nondimensional heat transfer coefficient"
+                         packages="landIceFluxesPKG"
+                />
+                <var name="landIceSaltTransferVelocity" 
+                         type="real" dimensions="nCells" units="m s^{-1}"
+                         description="friction velocity times nondimensional salt transfer coefficient"
+                         packages="landIceFluxesPKG"
+                />
 	</var_struct>
 	<var_struct name="average" time_levs="1">
 		<var name="nAverage" type="real" dimensions="Time" units="unitless"
@@ -2369,12 +2398,8 @@
                          description="The fraction of each cell covered by land ice"
                          packages="landIceFluxesPKG"
                 />
-                <var name="landIceTemperature"  type="real"  dimensions="nCells Time"  units="^\circ C"
-                         description="the temperature of the land ice either in the far-field or in the bottom layer, depending on config_land_ice_flux_useHollandJenkinsAdvDiff."
-                         packages="landIceFluxesPKG"
-                />
-                <var name="landIceHeatTransferVelocity"  type="real"  dimensions="nCells Time"  units="m s^{-1}"
-                         description="a combination of land-ice fields equal to kappa_ice/(0.5*dz_ice), where kappa_ice is the molecular diffusivity of heat in ice and dz_ice is the thickness of the bottom layer of ice where landIceTemperature is supplied. landIceHeatTransferVelocity is equal to zero for insulating ice."
+                <var name="landIceSurfaceTemperature" type="real" dimensions="nCells Time" units="C"
+                         description="temperature at the surface of land ice"
                          packages="landIceFluxesPKG"
                 />
                 <!-- Output fields for forcing under land ice -->
@@ -2384,18 +2409,6 @@
                 />
                 <var name="landIceInterfaceSalinity" type="real" dimensions="nCells Time" units="PSU"
                          description="The salinity at the land ice-ocean interface"
-                         packages="landIceFluxesPKG"
-                />
-                <var name="landIceBoundaryLayerTemperature" type="real" dimensions="nCells Time" units="C"
-                         description="The temperature averaged over the sub-ice-shelf boundary layer"
-                         packages="landIceFluxesPKG"
-                />
-                <var name="landIceBoundaryLayerSalinity" type="real" dimensions="nCells Time" units="PSU"
-                         description="The salinity averaged over the sub-ice-shelf boundary layer"
-                         packages="landIceFluxesPKG"
-                />
-                <var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
-                         description="The friction velocity $u_*$ under land ice"
                          packages="landIceFluxesPKG"
                 />
                 <var name="topDrag" type="real" dimensions="nEdges Time" units="N m^{-2}"
@@ -2649,16 +2662,6 @@
                          persistence="scratch" 
                          type="real" dimensions="nCells" units="PSU"
                          description="salinity averaged vertically over the sub-ice-shelf boundary layer"
-                />
-                <var name="heatTransferVelocityScratch" 
-                         persistence="scratch" 
-                         type="real" dimensions="nCells" units="m s^{-1}"
-                         description="friction velocity times nondimensional heat transfer coefficient"
-                />
-                <var name="saltTransferVelocityScratch" 
-                         persistence="scratch" 
-                         type="real" dimensions="nCells" units="m s^{-1}"
-                         description="friction velocity times nondimensional salt transfer coefficient"
                 />
                 <var name="freezeInterfaceSalinityScratch" 
                          persistence="scratch" 

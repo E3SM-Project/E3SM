@@ -277,7 +277,7 @@ contains
 
       ! Add top drag to suface stress
       call mpas_timer_start("top_drag", .false.)
-      call ocn_surface_land_ice_fluxes_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
+      call ocn_surface_land_ice_fluxes_vel(meshPool, diagnosticsPool, surfaceStress, surfaceStressMagnitude, err)
       call mpas_timer_stop("top_drag")
 
       !
