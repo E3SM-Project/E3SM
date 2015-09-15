@@ -410,7 +410,6 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-      call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
@@ -420,6 +419,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
 
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
+         call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
+
          call mpas_pool_get_field(scratchPool, 'freezeInterfaceSalinityScratch', freezeInterfaceSalinityField)
          call mpas_pool_get_field(scratchPool, 'freezeInterfaceTemperatureScratch', freezeInterfaceTemperatureField)
          call mpas_pool_get_field(scratchPool, 'freezeFreshwaterFluxScratch', freezeFreshwaterFluxField)

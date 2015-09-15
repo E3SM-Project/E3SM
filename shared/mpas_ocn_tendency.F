@@ -205,7 +205,7 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
+      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude, surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, normalVelocity, tangentialVelocity, density, potentialDensity, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
@@ -255,6 +255,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
       call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
                   
@@ -329,7 +330,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
-      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceStress, layerThicknessEdge, tend_normalVelocity, err)
+      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
       !
