@@ -33,7 +33,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CIME inputdata directory tree.  
 
 	  The recognized values are 
            "abs"  - an absolute  pathname is required

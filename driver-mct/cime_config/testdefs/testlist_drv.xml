@@ -6,9 +6,9 @@
         <machine compiler="intel " testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERI_D">
-        <machine compiler="intel" testtype="prebeta">goldbach</machine>
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">hobart</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
+        <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -18,16 +18,16 @@
         <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prealpha">eos</machine>
-        <machine compiler="intel" testtype="prebeta">eos</machine>
+        <machine compiler="cray" testtype="prebeta">eos</machine>
       </test>
       <test name="ERS_Ld3">
-        <machine compiler="pgi" testtype="prealpha">titan</machine>
-        <machine compiler="pgi" testtype="prebeta">titan</machine>
+        <machine compiler="pgi" testtype="prealpha">bluewaters</machine>
+        <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
       </test>
       <test name="ERS_N2_D_Ld3">
-        <machine compiler="intel" testtype="prebeta">goldbach</machine>
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">hobart</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
+        <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -45,9 +45,9 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
       <test name="NCK_Ld3">
-        <machine compiler="intel" testtype="prebeta">goldbach</machine>
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">hobart</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
+        <machine compiler="intel" testtype="prebeta">eos</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -58,23 +58,20 @@
     </grid>
     <grid name="f45_g37_rx1">
       <test name="CME_Ld3">
-        <machine compiler="intel" testtype="prebeta">janus</machine>
-        <machine compiler="intel" testtype="prealpha">stampede</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
-        <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="ERS_D_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
-        <machine compiler="intel" testtype="prealpha">goldbach</machine>
-        <machine compiler="pgi" testtype="prealpha">goldbach</machine>
+        <machine compiler="intel" testtype="prealpha">hobart</machine>
+        <machine compiler="pgi" testtype="prealpha">hobart</machine>
         <machine compiler="intel" testtype="prealpha">stampede</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
       </test>
       <test name="ERS_Ld3">
-        <machine compiler="intel" testtype="prealpha">goldbach</machine>
-        <machine compiler="pgi" testtype="prealpha">goldbach</machine>
-        <machine compiler="lahey" testtype="prebeta">goldbach</machine>
+        <machine compiler="intel" testtype="prealpha">hobart</machine>
+        <machine compiler="pgi" testtype="prealpha">hobart</machine>
+        <machine compiler="lahey" testtype="prebeta">hobart</machine>
       </test>
       <test name="NCK_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
@@ -87,14 +84,14 @@
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="PET_PT_Ld3">
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="cray" testtype="prebeta">eos</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="SMS_D_Ld3">
-        <machine compiler="nag" testtype="prealpha">goldbach</machine>
-        <machine compiler="nag" testtype="prebeta">goldbach</machine>
+        <machine compiler="nag" testtype="prealpha">hobart</machine>
+        <machine compiler="nag" testtype="prebeta">hobart</machine>
       </test>
     </grid>
     <grid name="ne30_f19_g16_rx1">
@@ -104,8 +101,8 @@
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
       <test name="SMS_Ld3">
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
+        <machine compiler="cray" testtype="prebeta">eos</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -125,7 +122,7 @@
   <compset name="AWAV">
     <grid name="ww3a_ww3a">
       <test name="SMS_Ld3">
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
       </test>
     </grid>
   </compset>
@@ -151,9 +148,9 @@
     </grid>
     <grid name="f19_g16">
       <test name="ERS_D_Ld3">
-        <machine compiler="intel" testtype="prealpha">goldbach</machine>
-        <machine compiler="pgi" testtype="prealpha">goldbach</machine>
-        <machine compiler="intel" testtype="prealpha">stampede</machine>
+        <machine compiler="intel" testtype="prealpha">hobart</machine>
+        <machine compiler="pgi" testtype="prealpha">hobart</machine>
+        <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
       </test>
@@ -161,26 +158,26 @@
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
       </test>
       <test name="PET_PT_Ld3">
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
+        <machine compiler="cray" testtype="prebeta">eos</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="SEQ_IOP_PFC_Ld3">
-        <machine compiler="pgi" testtype="prebeta">goldbach</machine>
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="pgi" testtype="prebeta">hobart</machine>
+        <machine compiler="cray" testtype="prebeta">eos</machine>
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
       <test name="SEQ_PFC_Ld3">
-        <machine compiler="intel" testtype="prebeta">janus</machine>
+        <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
     </grid>
     <grid name="f45_g37">
       <test name="ERS_Ld3">
-        <machine compiler="lahey" testtype="prebeta">goldbach</machine>
+        <machine compiler="lahey" testtype="prebeta">hobart</machine>
       </test>
     </grid>
     <grid name="ne30_g16">

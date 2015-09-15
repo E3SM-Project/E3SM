@@ -99,8 +99,6 @@
 
 <info_debug>$INFO_DBUG</info_debug>
 <cpl_decomp>$CPL_DECOMP</cpl_decomp>
-<flux_epbal>$CPL_EPBAL</flux_epbal>
-<flux_albav>.$CPL_ALBAV.</flux_albav> 
 <wall_time_limit>-1.0</wall_time_limit> 
 <force_stop_at>month</force_stop_at> 
 <flux_diurnal>.false.</flux_diurnal> 
