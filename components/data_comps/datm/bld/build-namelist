@@ -631,7 +631,7 @@ add_default($nl, 'dtlimit',    'val' => "$odtlimit"  );
 
 add_default($nl, 'atm_in' , 'val'=>"datm_atm_in${INST_STRING}");
 add_default($nl, 'iradsw');
-if ($DATM_MODE =~ /^CORE/ && $ATM_GRID ne "01col") {
+if ($DATM_MODE =~ /^CORE/) {
     my $factorfn = "$DIN_LOC_ROOT/atm/datm7/CORE2/COREv2.correction_factors.T62.121007.nc";
     add_default($nl, 'factorfn', 'val'=>"$factorfn" );
 }
