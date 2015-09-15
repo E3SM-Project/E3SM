@@ -2919,7 +2919,7 @@ subroutine shr_map_getWts(Xdst,Ydst,Xsrc,Ysrc,pti,ptj,ptw,pnum,units)
 
   !--- is lat/lon degrees or radians?  needed for X wraparound ---
   if (present(units)) then
-    if (trim(units) == 'degrees') then
+    if (index(units,'degrees').ne.0) then
        csize = 360._SHR_KIND_R8
     elseif (trim(units) == 'radians') then
        csize = c2*pi
