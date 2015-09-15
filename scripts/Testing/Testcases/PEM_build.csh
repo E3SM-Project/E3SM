@@ -12,8 +12,8 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1 env_mach_pes.xml
 endif
 
-./cesm_setup -clean
-./cesm_setup
+./case_setup -clean
+./case_setup
 
 ./$CASE.build
 if ($status != 0) then
@@ -68,8 +68,8 @@ if ( $NTASKS_CPL > 1 ) then
   ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL  -val $ntask
 endif
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./$CASE.build
 if ($status != 0) then

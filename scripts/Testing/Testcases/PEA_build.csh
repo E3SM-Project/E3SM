@@ -18,8 +18,8 @@ set EXEROOT = `./xmlquery EXEROOT -value`
 if(-e mpilib.original) then
   set mpiliborig=`cat mpilib.original`
   ./xmlchange -file env_build.xml -id MPILIB -val $mpiliborig
-  ./cesm_setup -clean
-  ./cesm_setup
+  ./case_setup -clean
+  ./case_setup
 else
   set MPILIB  = `./xmlquery MPILIB  -value`
   echo $MPILIB > mpilib.original
@@ -47,8 +47,8 @@ mv -f Macros Macros.1
 
 ./xmlchange -file env_build.xml -id MPILIB -val mpi-serial
 
-./cesm_setup -clean 
-./cesm_setup
+./case_setup -clean 
+./case_setup
 
 ./$CASE.clean_build
 ./$CASE.build

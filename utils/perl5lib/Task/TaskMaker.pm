@@ -17,20 +17,20 @@ use Exporter qw(import);
 sub new
 {
 	my ($class, %params) = @_;
-	if(! defined $params{'caseroot'})
+	if(! defined $params{'cimeroot'})
 	{
-		die "TaskMaker.pm: the caseroot must be set as an argument!";
+	    die "TaskMaker.pm: cimeroot must be set as an argument!";
 	}
-	
+
 	my $self = {
-		caseroot => $params{'caseroot'} || undef,
+	        cimeroot => $params{'cimeroot'} || undef,
 		removedeadtasks => $params{'removedeadtasks'} || undef,
 	};
 	bless $self, $class;
 
 	# Create a set of strings needed to pull layout information out of the config 
 	# object. 
-    my @layoutstrings = qw/ COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
+	my @layoutstrings = qw/ COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
                      COMP_ATM NTASKS_ATM NTHRDS_ATM ROOTPE_ATM PSTRID_ATM NINST_ATM
                      COMP_LND NTASKS_LND NTHRDS_LND ROOTPE_LND PSTRID_LND NINST_LND
                      COMP_ROF NTASKS_ROF NTHRDS_ROF ROOTPE_ROF PSTRID_ROF NINST_ROF
@@ -40,7 +40,7 @@ sub new
                      COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV NINST_WAV
 					 MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE /;
 	$self->{'layoutstrings'} = \@layoutstrings;
-	# Either the config was passed in, otherwise pull it from within the caseroot
+	# Either the config was passed in, otherwise pull it from within the cimeroot
 	my %config;
 	if( defined $params{'config'})
 	{
@@ -49,11 +49,11 @@ sub new
 	}
 	else
 	{
- 	    my $toolsdir = $self->{'caseroot'} . "/Tools";
-	    require ConfigCase;
-    	my $cfgref = ConfigCase->new("$self->{'caseroot'}/Tools/config_definition.xml", "env_build.xml");
-    	%config = $cfgref->getAllResolved();
-		$self->{'config'} = \%config;
+ 	    my $dir = $self->{'cimeroot'} . "/utils/perl5lib";
+	    unshift @INC, $dir;
+	    require Config::SetupTools;
+	    %config = SetupTools::getAllResolved();
+	    $self->{'config'} = \%config;
 	}
 	
 	# Use the layout strings to pull the layout information out of the config
@@ -101,19 +101,17 @@ sub max ($$) { $_[$_[0] < $_[1]] }
 sub min ($$) { $_[$_[0] > $_[1]] }
 
 #==============================================================================
-# get a new ConfigCase object, resolve the case values. 
+# Resolve the case values
 #==============================================================================
 sub _getConfig
 {
 	my $self = shift;
 
-	my $toolsdir = $self->{'caseroot'} . "/Tools";
-	require ConfigCase;
-	
-	my $config = ConfigCase->new("$self->{'caseroot'}/Tools/config_definition.xml", "$self->{'caseroot'}/env_build.xml");
-
-	$config->getAllResolved();
-	return $config;
+	my $dir = $self->{'cimeroot'} . "/utils/perl5lib";
+	unshift @INC, $dir;
+	require SetupTools;
+	my %config = SetupTools::getAllResolved();
+	return %config;
 }
 
 #==============================================================================
@@ -128,7 +126,8 @@ sub _computeValues
 	my @nthrds = @{$self->{nthrds}};
 	my @rootpe = @{$self->{rootpe}};
 	my @pstrid = @{$self->{pstrid}};
-
+	my $pes_per_node = $self->{PES_PER_NODE};
+	
 	for(my $i = 0; $i <= $#ntasks; $i++)
 	{
 		my $n = $ntasks[$i]; 
@@ -148,7 +147,7 @@ sub _computeValues
 		}
 		else
 		{
-			$totaltasks += $self->{PES_PER_NODE};
+			$totaltasks += $pes_per_node;
 		}
 	}
 	
@@ -212,7 +211,7 @@ sub _computeValues
 		$sumthreads[$c1] = $sumthreads[($c1-1)] + $maxt[($c1-1)];
 	}
 	$self->{'sumthreads'} = \@sumthreads;
-	
+
     # Compute task and thread settings for batch commands 
 	my $fullsum = 0;
 	my $sum = $maxt[0];
@@ -226,7 +225,7 @@ sub _computeValues
 	my ($taskpernode, $nodecnt);
 	for (my $c1=1; $c1 < $totaltasks; $c1++)
 	{
-		$sum = $sum + $maxt[$c1];
+	        $sum = $sum + $maxt[$c1];
 	
 		if($maxt[$c1] > $self->{'MAX_TASKS_PER_NODE'})
 		{
@@ -244,8 +243,8 @@ sub _computeValues
 		{
 			print "self Max_TASKS_PER_NODE: $self->{'MAX_TASKS_PER_NODE'}\n";
 			print "threadcount $threadcount\n";
-			if(defined $self->{'PES_PER_NODE'}){
-			    $taskpernode = min($self->{'PES_PER_NODE'},$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+			if(defined $pes_per_node){
+			    $taskpernode = min($pes_per_node,$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
 			}else{
 			    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
 			}
@@ -266,8 +265,13 @@ sub _computeValues
 	$self->{'fullsum'} = $fullsum;
 	$taskgeom = $taskgeom.")";
 	$self->{'taskgeom'} = $taskgeom;
-	$taskpernode = min($self->{'PES_PER_NODE'},$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+	if($pes_per_node > 0){
+	    $taskpernode = min($pes_per_node,$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+	}else{
+	    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
+	}
 	$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
+	
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);

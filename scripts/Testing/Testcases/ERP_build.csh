@@ -18,8 +18,8 @@ else
   cp -f env_build.xml env_build.xml.1
 endif
 
-./cesm_setup -clean -testmode
-./cesm_setup 
+./case_setup -clean -testmode
+./case_setup 
 
 #-----------------------------------------------------
 # Build with default PE layout
@@ -132,8 +132,8 @@ if ( $NTHRDS_CPL > 1 ) then
 endif
 
 # Build with half the tasks and threads
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 

@@ -8,6 +8,7 @@ use File::Basename;
 use IO::File;
 use IO::Handle;
 
+
 sub usage {
     die <<'EOF';
 
@@ -41,7 +42,7 @@ GetOptions(
 
 my $CASE	 = `./xmlquery CASE         -value `;
 my $CASEROOT	 = `./xmlquery CASEROOT	    -value `;
-my $CCSMUSER	 = `./xmlquery CCSMUSER	    -value `;
+my $USER	 = `./xmlquery USER	    -value `;
 my $CONTINUE_RUN = `./xmlquery CONTINUE_RUN -value `;
 my $RUNDIR	 = `./xmlquery RUNDIR	    -value `;
 my $RUN_TYPE	 = `./xmlquery RUN_TYPE	    -value `;
@@ -74,13 +75,15 @@ sub gettiming2 {
 
     my($fin, $fout) = @_;
 
-    my $dirs = "$CASEROOT/Tools";
-    unshift @INC, $dirs;
-    require SetupTools;
-
     # Retreve and expand all case xml variables
-    my %xml=();
     chdir $CASEROOT;
+
+    my $cimeroot  = `./xmlquery CIMEROOT  -value`;
+    my @dirs = ("$cimeroot/utils/perl5lib" );
+    unshift @INC, @dirs;
+    require Config::SetupTools;
+
+    my %xml=();
     SetupTools::getxmlvars($CASEROOT, \%xml);
     foreach my $attr (keys %xml) {
 	$xml{$attr} = SetupTools::expand_xml_var($xml{$attr}, \%xml);
@@ -160,15 +163,14 @@ sub gettiming2 {
 
     my $fh = IO::File->new($fout, '>' ) or die "can't open file: $fout\n";
 
-    print $fh "---------------- CCSM TIMING PROFILE ---------------------\n";
+    print $fh "---------------- TIMING PROFILE ---------------------\n";
 
     print $fh "  Case        : $xml{CASE}\n";
     print $fh "  LID         : $lid\n";
     print $fh "  Machine     : $xml{MACH}\n";
     print $fh "  Caseroot    : $xml{CASEROOT}\n";
     print $fh "  Timeroot    : $xml{CASEROOT}/Tools\n";
-    print $fh "  CCSM User   : $xml{CCSMUSER}\n";
-    print $fh "  CCSM Tag    : $xml{CCSM_REPOTAG}  (best guess)\n";
+    print $fh "  User        : $xml{USER}\n";
     print $fh "  Curr Date   : $date\n";
 
     print $fh "  grid        : $xml{GRID}\n";
