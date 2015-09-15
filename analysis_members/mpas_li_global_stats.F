@@ -188,7 +188,7 @@ contains
       real (kind=RKIND) ::  blockSumFloatingIceArea
       real (kind=RKIND) ::  blockSumFloatingIceVolume
 
-      print *, 'in li_compute_global_stats (start)'  ! debug
+      print *, 'in li_compute_global_stats'     
 
       err = 0
 
@@ -277,8 +277,6 @@ contains
 
          block => block % next
       end do
-
-      print *, 'in li_compute_global_stats (end)'     
 
    end subroutine li_compute_global_stats!}}}
 

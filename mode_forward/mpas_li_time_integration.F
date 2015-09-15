@@ -29,6 +29,8 @@ module li_time_integration
    use li_time_integration_fe
    use li_setup
 
+   use li_analysis_driver    ! SFP added
+
    implicit none
    private
 
@@ -197,9 +199,16 @@ module li_time_integration
          call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
          deltat_output = dtSeconds
 
-
          block => block % next
       end do
+
+      !SFP added: call analysis driver compute, etc. subroutines
+      call li_analysis_compute(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call li_analysis_restart(domain, err) 
+      err = ior(err, err_tmp)
+      call li_analysis_write(domain, err_tmp)
+      err = ior(err, err_tmp)
 
       ! === error check
       if (err > 0) then

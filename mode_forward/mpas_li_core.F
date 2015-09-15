@@ -424,15 +424,6 @@ module li_core
          endif
          err = ior(err, err_tmp)
 
-         !SFP added: call analysis driver compute, etc.
-         call li_analysis_compute(domain, err_tmp) 
-         err = ior(err, err_tmp)
-
-!         call li_analysis_restart(domain, err) 
-
-         call li_analysis_write(domain, err_tmp)
-         err = ior(err, err_tmp)
-
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
