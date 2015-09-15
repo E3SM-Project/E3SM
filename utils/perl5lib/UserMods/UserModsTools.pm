@@ -35,7 +35,7 @@ sub apply_mods {
    _apply_mods_recursively($user_mods_dir, $caseroot, $print_level, $is_test,
                           $shell_commands_filename);
 
-   _apply_shell_commands($caseroot, $shell_commands_filename, $print_level);
+   _apply_shell_commands($caseroot, $shell_commands_filename, $print_level)    if(-x "$caseroot/$shell_commands_filename");
 }
 
 # ------------------------------------------------------------------------
@@ -230,6 +230,8 @@ sub _apply_shell_commands {
    # Usage: _apply_shell_commands($caseroot, $shell_commands_filename, $print_level)
 
    my ($caseroot, $shell_commands_filename, $print_level) = @_;
+
+   die "Could not find shell script in $caseroot/$shell_commands_filename" unless (-x "$caseroot/$shell_commands_filename");
 
    chmod 0777, "$caseroot/$shell_commands_filename";
    my $cwd = getcwd(); # current working directory
