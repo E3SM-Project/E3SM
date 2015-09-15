@@ -56,8 +56,11 @@ sub main
     getOptions();
     doPreRunChecks();
     checkInputData();
-    runModel();
-    postRun();
+    for(my $cycle=0;$cycle<$config{DATA_ASSIMILATION_CYCLES};$cycle++){
+	runModel();
+	postRun();
+	DoDataAssimilation();
+    }
     resubmitCheck();
     exit(0);
 }
@@ -197,7 +200,23 @@ sub doPreRunChecks()
 	print " PRESTAGE SCRIPT STARTING\n";
 	print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
 	print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
+
+	check_DA_settings();
+
 }
+
+sub check_DA_settings
+{
+    if($config{DATA_ASSIMILATION} eq "TRUE"){
+	my $script =  $config{DATA_ASSIMILATION_SCRIPT};
+	unless (-x $script) die "DATA_ASSIMILATION_SCRIPT $script is not executable";
+	print "DATA_ASSIMILATION enabled\n";
+	print "   using script $script\n";
+	print "   and running for $config{DATA_ASSIMILATION_CYCLES}\n";
+    }
+}
+
+
 
 # -------------------------------------------------------------------------
 # we've done the preview namelists check, now we'll check on the inputdata..
@@ -466,6 +485,21 @@ sub resubmitCheck()
 
     $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
+
+sub DoDataAssimilation
+{
+
+    return unless($config{DATA_ASSIMILATION} eq "TRUE");
+    my $script =  $config{DATA_ASSIMILATION_SCRIPT};
+    if (-x $script){
+	qx( $script );
+	if($? != 0) die "$script failed";
+    }else{
+	die "$script is not executable";
+    }
+    
+}
+
 
 sub Debug
 {
