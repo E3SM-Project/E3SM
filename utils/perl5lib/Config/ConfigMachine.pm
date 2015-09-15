@@ -159,15 +159,21 @@ sub _set_machine_values
     {
 	foreach my $node (@machine_nodes) {
 	    my $name  = $node->nodeName();
+	    next if($name eq "mpirun");
+	    next if($name eq "module_system");
 	    my $value = $node->textContent();
 	    if ( ! $config->is_valid_name($name) ) { 
 		die "set_machine: invalid id $name in machine $machine file $machines_file exiting\n"; 
 	    }
 	    # allow for environment variables in the config_machines.xml file using $ENV{variablename} syntax
-	    if ($value =~/^(.*)\$ENV{(.*)}(.*)$/){
-		$value = $ENV{$2};
-		$value = $1.$value if (defined $1);
-		$value .= $3 if (defined $3);
+	    if ($value =~/^(.*)\$ENV{([^}]*)}(.*)$/){
+		if(defined $ENV{$2}){
+		    $value = $ENV{$2};
+		    $value = $1.$value if (defined $1);
+		    $value .= $3 if (defined $3);
+		}else{
+		    die "No environment setting found for $2 $name $value";
+		}
 	    }
 	    $config->set($name, $value);
 	    print "config: $name set to ".$config->get($name)."  $value\n" if($print_flag==2);
