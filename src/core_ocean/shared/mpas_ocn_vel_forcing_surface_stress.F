@@ -70,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_surface_stress_tend(meshPool, surfaceStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -79,7 +79,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceStress    !< Input: Wind stress at surface
+         surfaceStress, & !< Input: Wind stress at surface
+         surfaceFluxAttenuationCoefficient !< Input: attenuation coefficient for surface fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
@@ -110,12 +111,13 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k
+      integer :: iEdge, k, cell1, cell2
       integer, pointer :: nEdgesSolve
       integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: edgeMask
+      integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge
 
-      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress
+      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress, &
+                           attenuationCoeff
 
       real (kind=RKIND), pointer :: config_density0
 
@@ -137,15 +139,20 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       do iEdge = 1, nEdgesSolve
         zTop = 0.0_RKIND
-        transmissionCoeffTop = ocn_forcing_transmission(zTop)
+        cell1 = cellsOnEdge(iEdge,1)
+        cell2 = cellsOnEdge(iEdge,2)
+        attenuationCoeff = 0.5_RKIND * (surfaceFluxAttenuationCoefficient(cell1) &
+                                      + surfaceFluxAttenuationCoefficient(cell2))
+        transmissionCoeffTop = ocn_forcing_transmission(zTop, attenuationCoeff)
         remainingStress = 1.0_RKIND
         do k = 1, maxLevelEdgeTop(iEdge)
            zBot = zTop - layerThicknessEdge(k, iEdge)
 
-           transmissionCoeffBot = ocn_forcing_transmission(zBot)
+           transmissionCoeffBot = ocn_forcing_transmission(zBot, attenuationCoeff)
 
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 

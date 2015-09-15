@@ -452,7 +452,7 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
            call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-           call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
+           call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, ierr, 1)
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
                                                          forcingPool, scratchPool, err)
            block_ptr => block_ptr % next

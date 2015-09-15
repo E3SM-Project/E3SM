@@ -2127,6 +2127,9 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
+			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
+		/>
                 <!-- diagnostic fields for land-ice fluxes -->
                 <var name="landIceBoundaryLayerTemperature" type="real" dimensions="nCells Time" units="C"
                          description="The temperature averaged over the sub-ice-shelf boundary layer"

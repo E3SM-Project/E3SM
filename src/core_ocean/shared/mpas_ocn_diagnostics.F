@@ -143,6 +143,9 @@ contains
       real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
+      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
+      real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
+
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
@@ -155,6 +158,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -231,6 +235,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
       !
       ! Compute height on cell edges at velocity locations
       !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdge value
@@ -663,6 +668,9 @@ contains
       endif
 
 
+      ! compute the attenuation coefficient for surface fluxes
+      surfaceFluxAttenuationCoefficient(:) = config_flux_attenuation_coefficient
+
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       call computeLandIceFluxInputFields(meshPool, statePool, forcingPool, scratchPool, &
@@ -674,6 +682,8 @@ contains
 
          gradSSH(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
       end do
+
+
 
    end subroutine ocn_diagnostic_solve!}}}
 
@@ -1320,7 +1330,7 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
 
       integer :: iCell, iEdge, cell1, cell2, iLevel, i
-      integer, pointer :: nCellsSolve, nEdgesSolve
+      integer, pointer :: nCells, nEdges
 
       integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge
 
@@ -1336,7 +1346,8 @@ contains
                                     config_land_ice_flux_topDragCoeff, &
                                     config_land_ice_flux_rms_tidal_velocity, &
                                     config_land_ice_flux_jenkins_heat_transfer_coefficient, &
-                                    config_land_ice_flux_jenkins_salt_transfer_coefficient
+                                    config_land_ice_flux_jenkins_salt_transfer_coefficient, &
+                                    config_land_ice_flux_attenuation_coefficient
 
       real (kind=RKIND) :: blThickness, dz, blWeightSum, h_nu, Gamma_turb, landIceEdgeFraction, velocityMagnitude
 
@@ -1349,7 +1360,8 @@ contains
                                                   topDrag, &
                                                   topDragMagnitude, &
                                                   fCell, &
-                                                  blTempScratch, blSaltScratch
+                                                  blTempScratch, blSaltScratch, &
+                                                  surfaceFluxAttenuationCoefficient
 
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, layerThickness, normalVelocity
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -1376,19 +1388,19 @@ contains
          hollandJenkinsOn = .true.
       end if
 
-
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_topDragCoeff', config_land_ice_flux_topDragCoeff)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerThickness', config_land_ice_flux_boundaryLayerThickness)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerNeighborWeight', config_land_ice_flux_boundaryLayerNeighborWeight)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rms_tidal_velocity', config_land_ice_flux_rms_tidal_velocity)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_attenuation_coefficient', config_land_ice_flux_attenuation_coefficient)
 
       if(jenkinsOn) then
          call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_heat_transfer_coefficient', config_land_ice_flux_jenkins_heat_transfer_coefficient)
          call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_salt_transfer_coefficient', config_land_ice_flux_jenkins_salt_transfer_coefficient)
       end if
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
@@ -1413,6 +1425,7 @@ contains
         call mpas_pool_get_array(diagnosticsPool, 'landIceHeatTransferVelocity', landIceHeatTransferVelocity)
         call mpas_pool_get_array(diagnosticsPool, 'landIceSaltTransferVelocity', landIceSaltTransferVelocity)
       end if
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
 
       call mpas_pool_get_field(scratchPool, 'boundaryLayerTemperatureScratch', boundaryLayerTemperatureField)
       call mpas_pool_get_field(scratchPool, 'boundaryLayerSalinityScratch', boundaryLayerSalinityField)
@@ -1425,7 +1438,7 @@ contains
       end if
 
       ! Compute top drag
-      do iEdge = 1, nEdgesSolve
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
@@ -1439,7 +1452,7 @@ contains
       end do
 
       ! compute top drag magnitude and friction velocity at cell centers
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMagnitude(iCell) = landIceFraction(iCell) &
                                    * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
@@ -1452,7 +1465,7 @@ contains
 
 
       ! average temperature and salinity over horizontal neighbors and the sub-ice-shelf boundary layer
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          blThickness = 0.0_RKIND
          blTempScratch(iCell) = 0.0_RKIND
          blSaltScratch(iCell) = 0.0_RKIND
@@ -1468,13 +1481,13 @@ contains
            blSaltScratch(iCell) = blSaltScratch(iCell)/blThickness
          end if
       end do
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          blWeightSum = 1.0_RKIND
          landIceBoundaryLayerTemperature(iCell) = blTempScratch(iCell)
          landIceBoundaryLayerSalinity(iCell) = blSaltScratch(iCell)
          do i = 1, nEdgesOnCell(iCell)
            cell2 = cellsOnCell(i,iCell)
-           if(cell2 <= 0 .or. cell2 > nCellsSolve) cycle
+           if(cell2 <= 0 .or. cell2 > nCells) cycle
 
            landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell) &
              + config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
@@ -1489,13 +1502,13 @@ contains
       end do
 
       if(jenkinsOn) then
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             ! transfer coefficients from namelist
             landIceHeatTransferVelocity(iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_heat_transfer_coefficient
             landIceSaltTransferVelocity(iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_salt_transfer_coefficient
          end do
       else if(hollandJenkinsOn) then
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             ! friction-velocity dependent non-dimensional transfer coefficients from
             ! Holland and Jenkins 1999, (14)-(16) with eta_* = 1
             h_nu = 5.0_RKIND*nuSaltWater/landIceFrictionVelocity(iCell) ! uStar should never be zero because of tidal term
@@ -1513,6 +1526,12 @@ contains
 
       call mpas_deallocate_scratch_field(boundaryLayerTemperatureField, .true.)
       call mpas_deallocate_scratch_field(boundaryLayerSalinityField, .true.)
+
+      ! recompute the spatially-varying attenuation coefficient based on landIceFraction
+      do iCell = 1, nCells
+        surfaceFluxAttenuationCoefficient(iCell) = landIceFraction(iCell)*config_land_ice_flux_attenuation_coefficient &
+           + (1.0_RKIND - landIceFraction(iCell))*surfaceFluxAttenuationCoefficient(iCell)
+      end do
 
    !--------------------------------------------------------------------
 
