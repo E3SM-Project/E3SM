@@ -18,9 +18,10 @@ module glc_cpl_indices
 
   ! drv -> glc
 
-  integer, public :: index_x2g_Sl_tsrf(0:glc_nec_max)   = 0
-  integer, public :: index_x2g_Sl_topo(0:glc_nec_max)   = 0
-  integer, public :: index_x2g_Flgl_qice(0:glc_nec_max) = 0
+  integer, public :: index_x2g_Flgl_qice = 0 !Jer: removed multiple fields, now that these are confined to coupler
+  integer, public :: index_x2g_Fogo_qicel = 0 
+  integer, public :: index_x2g_Sl_tsrf   = 0 !Jer: removed multiple fields, now that these are confined to coupler
+  integer, public :: index_x2g_Fogo_qiceh = 0 !Jer:need to rename this everywhere...
 
   ! glc -> drv
 
@@ -32,7 +33,6 @@ module glc_cpl_indices
   integer, public :: index_g2x_Flgg_hflx(0:glc_nec_max) = 0
   integer, public :: index_g2x_Sg_icemask = 0
   integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0
-
 
 contains
 
