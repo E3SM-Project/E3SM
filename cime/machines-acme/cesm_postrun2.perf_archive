@@ -1,6 +1,7 @@
 #!/bin/csh
-# edison cesm_postrun2 script: 
-#  ./cesm_postrun2.edison with the following optional argument keyword/value pairs, in any order
+# cesm_postrun2 with performance data archiving: 
+#  ./cesm_postrun2.perf_archive with the following argument keyword/value pairs, in any order
+#   -machine <system name>
 #   -case <case name>
 #   -cesmid <$LID in cesm-lingo>
 #   -user <should be same as $LOGNAME>
@@ -10,18 +11,22 @@
 #   -save <TRUE|true|anything else>
 #   -archive <performance archive root directory>
 
-set case = $PBS_JOBNAME
-set lid = $PBS_JOBID
-set user = $LOGNAME
-set caseroot = $PBS_O_WORKDIR
-set run_dir = $PBS_O_WORKDIR/run
-set exe_dir = $PBS_O_WORKDIR/bld
-set save_timing = 'TRUE'
-set save_timing_dir = '/project/projectdirs/acme'
+set machine = 'unknown'
+set case = 'unknown'
+set lid = 'unknown'
+set user = 'unknown'
+set caseroot = '.'
+set run_dir = '.'
+set exe_dir = '.'
+set save_timing = 'FALSE'
+set save_timing_dir = '/UNSET'
 
 set i = 1
 while ($i < $#argv)
-  if    ("X$argv[$i]" == 'X-case') then
+  if      ("X$argv[$i]" == 'X-machine') then
+    @ i = $i + 1
+    set machine = $argv[$i]
+  else if ("X$argv[$i]" == 'X-case') then
     @ i = $i + 1
     set case = $argv[$i]
   else if ("X$argv[$i]" == 'X-cesmid') then
@@ -50,7 +55,7 @@ while ($i < $#argv)
 end
 
 set sdate = `date +"%Y-%m-%d %H:%M:%S"`
-echo "CESM postRun ended $sdate" >>& $caseroot/CaseStatus
+echo "CESM postrun ended $sdate" >>& $caseroot/CaseStatus
 
 if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
   cd $run_dir
@@ -124,7 +129,5 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
 
   cd $caseroot
   touch timing/timing.$lid.saved
-else
-  cd $run_dir
-  rm -rf timing
+
 endif
