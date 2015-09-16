@@ -2,7 +2,7 @@ module clm_bgc_interface_data
 !!=================================================================================================
 ! CLM BioGeoChemistry (BGC) Interface: Data Type (Variables)
 !
-! CCSI & ESD @ ORNL
+! Created by wgs @ ORNL
 !
 ! date: 8/25/2015
 !!=================================================================================================

@@ -10,7 +10,7 @@ module clm_pflotran_interfaceMod
 !          2.Lawrence Berkley National Laboratory
 !
 ! date: 2012 - 2015
-! modified (based on clm_bgc_interface): 8/28/2015, Gangsheng Wang
+! modified (based on clm_bgc_interface): 8/28/2015, wgs
 !----------------------------------------------------------------------------------------------
 
 #include "shr_assert.h"
@@ -36,7 +36,7 @@ module clm_pflotran_interfaceMod
   use decompMod           , only : bounds_type
 
   ! (dummy) variable definitions
-  !! variables below are replaced by clm_bgc_data
+  !! (wgs,8/28/2015): variables below are replaced by clm_bgc_data
 
 !  use atm2lndType         , only : atm2lnd_type
 !  use SoilStateType       , only : soilstate_type

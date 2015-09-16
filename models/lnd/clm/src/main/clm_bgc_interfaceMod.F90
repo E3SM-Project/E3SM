@@ -2,7 +2,7 @@ module clm_bgc_interfaceMod
 !!=================================================================================================
 ! CLM BioGeoChemistry (BGC) Interface
 !
-! CCSI & ESD @ ORNL
+! Created by wgs @ ORNL
 !
 ! date: 8/25/2015
 !!=================================================================================================
@@ -1443,11 +1443,11 @@ contains
         t_soisno                => temperature_vars%t_soisno_col                , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
         o2_decomp_depth_unsat   => ch4_vars%o2_decomp_depth_unsat_col           , & ! Input:  [real(r8) (:,:)  ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-        conc_o2_unsat           => ch4_vars%conc_o2_unsat_col                   , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
         o2_decomp_depth_sat     => ch4_vars%o2_decomp_depth_sat_col             , & ! Input:  [real(r8) (:,:)  ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
+        conc_o2_unsat           => ch4_vars%conc_o2_unsat_col                   , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
         conc_o2_sat             => ch4_vars%conc_o2_sat_col                     , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-        o2stress_sat            => ch4_vars%o2stress_sat_col                    , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
         o2stress_unsat          => ch4_vars%o2stress_unsat_col                  , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
+        o2stress_sat            => ch4_vars%o2stress_sat_col                    , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
 
         finundated              => ch4_vars%finundated_col                        & ! Input:  [real(r8) (:)     ]  fractional inundated area (excluding dedicated wetland columns)
          )

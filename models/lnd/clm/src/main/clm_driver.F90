@@ -902,7 +902,7 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
-print*,">>>DEBUG | CNP Balance_Check | nstep=",nstep,"; nstep_day=",nstep/48.0
+
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'

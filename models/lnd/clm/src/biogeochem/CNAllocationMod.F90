@@ -273,34 +273,20 @@ contains
     real(r8):: cnl,cnfr,cnlw,cndw                                    !C:N ratios for leaf, fine root, and wood
 
     real(r8):: curmr, curmr_ratio                                    !xsmrpool temporary variables
-    real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
-    real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+!    real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
 !    real(r8):: sminn_tot(bounds%begc:bounds%endc)
+    real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+
     real(r8) f5                                                      !grain allocation parameter
     real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
     real(r8) fleaf                                                   !fraction allocated to leaf
     real(r8) t1                                                      !temporary variable
-    integer :: nlimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for N limitation
-    real(r8):: residual_sminn_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_sminn(bounds%begc:bounds%endc)
-    integer :: nlimit_no3(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NO3 limitation
-    integer :: nlimit_nh4(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NH4 limitation
-    real(r8):: residual_smin_nh4_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_smin_no3_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_smin_nh4(bounds%begc:bounds%endc)
-    real(r8):: residual_smin_no3(bounds%begc:bounds%endc)
-    real(r8):: residual_plant_ndemand(bounds%begc:bounds%endc)
 
     !! Local P variables
     real(r8):: cpl,cpfr,cplw,cpdw                                    !C:P ratios for leaf, fine root, and wood
 !    real(r8):: cpg                                                  !C:P ratio
-    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column P demand (gN/m3/s) at a given level
+!    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column P demand (gN/m3/s) at a given level
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
-!    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
-    integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for P limitation
-    real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_sminp(bounds%begc:bounds%endc)
-    real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
 
 
     !-----------------------------------------------------------------------
@@ -957,6 +943,7 @@ contains
       end do
 !
       !!! Starting resolving N/P limitation !!!
+      !! calculate nuptake & puptake profile
       call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
       call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 
@@ -1107,8 +1094,14 @@ contains
          endif
 
          if(cnallocate_carbonnitrogen_only())then
-           actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
-           sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+         !! add loops for c,j
+            do j = 1, nlevdecomp
+                do fc=1,num_soilc
+                    c = filter_soilc(fc)
+                    actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
+                    sminp_to_plant_vr(c,j) = col_plant_pdemand(c) * puptake_prof(c,j)
+                end do
+            end do
          endif
 
          ! sum up N and P  fluxes to plant    ??????WAS sminn_to_plant(c)
@@ -1978,14 +1971,11 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
-!     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
-!     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-
-    type(cnstate_type)       , intent(in) :: cnstate_vars
-    type(nitrogenstate_type) , intent(in) :: nitrogenstate_vars
+    type(cnstate_type)       , intent(in)    :: cnstate_vars
+    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
+    real(r8)                 , intent(inout) :: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
     integer :: c,j,fc                                            !indices
-    real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: sminn_vr_loc(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: sminn_tot(bounds%begc:bounds%endc)
 
@@ -2047,14 +2037,11 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
-!     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
-!     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-
-    type(cnstate_type)       , intent(in) :: cnstate_vars
-    type(phosphorusstate_type) , intent(in) :: phosphorusstate_vars
+    type(cnstate_type)       , intent(in)    :: cnstate_vars
+    type(phosphorusstate_type),intent(in)    :: phosphorusstate_vars
+    real(r8)                 , intent(inout) :: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
     integer :: c,j,fc                                            !indices
-    real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: solutionp_tot(bounds%begc:bounds%endc)
 
 
