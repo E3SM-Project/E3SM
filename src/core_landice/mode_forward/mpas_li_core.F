@@ -290,8 +290,10 @@ module li_core
       endif
 
       !SFP added: compute analysis members on startup if option activiated
-      call li_analysis_compute_startup(domain, err_tmp)
-      err = ior(err, err_tmp)
+      call mpas_timer_start("analysis member startup calculations")
+          call li_analysis_compute_startup(domain, err_tmp)
+          err = ior(err, err_tmp)
+      call mpas_timer_stop("analysis member startup calculations")
 
       ! ===
       ! === Write Initial Output
@@ -380,6 +382,13 @@ module li_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
+         !SFP added: call analysis driver compute, etc. subroutines
+         call li_analysis_compute(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call li_analysis_restart(domain, err) 
+         err = ior(err, err_tmp)
+         call li_analysis_write(domain, err_tmp)
+         err = ior(err, err_tmp)
 
          ! ===
          ! === Write Output and/or Restart, if needed
@@ -490,13 +499,15 @@ module li_core
       call li_velocity_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
+      !SFP: added call to finalize subroutine in analysis driver 
+      call li_analysis_finalize(domain, err_tmp)
+      err = ior(err, err_tmp)
+
       call mpas_destroy_clock(domain % clock, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-      !SFP: added call to finalize subroutine in analysis driver 
-      call li_analysis_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! === error check and exit
