@@ -1040,22 +1040,26 @@ sub getShModuleCode()
 
 .  $self->{shinitpath}
 START
-        $sh .=<<"START";
+   my @attrKeys = keys %modattrvalues;
+   if($#attrKeys >= 0) {
+
+       $sh .=<<"START";
 COMPILER=`./xmlquery COMPILER -value`
 if [ -n \$CIME_REPO  ]
 then 
 START
-    foreach my $attrKey(keys %modattrvalues)
-    {
+      foreach my $attrKey(@attrKeys)
+      {
         $sh .="\t$attrKey=`./xmlquery $attrKey -value`\n";
-    }
-    $sh .= "else\n";
+      }
+      $sh .= "else\n";
     
-    foreach my $attrKey(keys %modattrvalues)
-    {
+      foreach my $attrKey(@attrKeys)
+      {
         $sh .= "\t$attrKey=\"$modattrvalues{$attrKey}\"\n"
-    }
-    $sh .= "fi\n";
+      }
+      $sh .= "fi\n";
+   }
 #  DEBUG=`./xmlquery  DEBUG         -value`
 #  OS=`./xmlquery  OS        -value`
 #  PROFILE_PAPI_ENABLE=`./xmlquery  PROFILE_PAPI_ENABLE -value`
