@@ -407,6 +407,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerSalinity', landIceBoundaryLayerSalinity)
       call mpas_pool_get_array(diagnosticsPool, 'landIceHeatTransferVelocity', landIceHeatTransferVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'landIceSaltTransferVelocity', landIceSaltTransferVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
@@ -416,7 +417,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceTemperature', landIceInterfaceTemperature)
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceSalinity', landIceInterfaceSalinity)
-      call mpas_pool_get_array(forcingPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
 
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
          call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
