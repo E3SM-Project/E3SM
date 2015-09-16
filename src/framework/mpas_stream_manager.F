@@ -647,44 +647,44 @@ module mpas_stream_manager
             else if (poolItr % memberType == MPAS_POOL_FIELD) then
                 if (poolItr % dataType == MPAS_POOL_REAL) then
                     if (poolItr % nDims == 0) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 4) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 5) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_INTEGER) then
                     if (poolItr % nDims == 0) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_CHARACTER) then
                     if (poolItr % nDims == 0) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 end if
