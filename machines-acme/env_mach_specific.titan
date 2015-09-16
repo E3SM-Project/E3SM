@@ -21,6 +21,7 @@ echo "MPILIB=$MPILIB"
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
   module rm PrgEnv-intel
+  module rm pgi
   module rm PrgEnv-pgi
   module rm PrgEnv-cray 
   module rm PrgEnv-gnu
@@ -64,6 +65,7 @@ if (-e /opt/modules/default/init/csh) then
       # NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility
       setenv CRAY_CPU_TARGET istanbul
   endif    
+
   if ( $COMPILER == "intel" ) then
       module load PrgEnv-intel 
       module switch intel intel/14.0.2.144
@@ -79,7 +81,7 @@ if (-e /opt/modules/default/init/csh) then
   endif
 
   if ( $MPILIB == "mpi-serial") then
-    module load cray-netcdf/4.3.2
+    module load cray-netcdf/4.3.3.1
   else
     module load cray-netcdf-hdf5parallel/4.3.3.1
     module load cray-parallel-netcdf/1.5.0
@@ -87,11 +89,15 @@ if (-e /opt/modules/default/init/csh) then
 
   module load subversion
   module load cmake/2.8.11.2
-# module list
 endif
+
+module list >& software_environment.txt
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
+
+limit coredumpsize unlimited
+limit stacksize unlimited
 
 # Capture logical to physics PE assignment and active environment variable
 # settings
@@ -100,8 +106,6 @@ setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
 #setenv MPICH_RANK_REORDER_DISPLAY 1
 
-limit coredumpsize unlimited
-limit stacksize unlimited
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine. 
 setenv MPSTKZ 128M 

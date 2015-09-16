@@ -309,7 +309,7 @@ sub checkInputData()
 sub runCESM()
 {
 #pw++
-        system("$config{'CASEROOT'}/Tools/cesm_prerun -machine $config{'MACH'} -compiler $config{'COMPILER'} -case $config{'CASE'} -cesmid $LID -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'} -sampling $config{'SYSLOG_N'} &");
+        system("$config{'CASEROOT'}/Tools/cesm_prerun -machine $config{'MACH'} -compiler $config{'COMPILER'} -case $config{'CASE'} -cesmid $LID -user $config{'CCSMUSER'} -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'} -sampling $config{'SYSLOG_N'} &");
 #pw--
 	chdir $config{'RUNDIR'};
 	
@@ -326,7 +326,7 @@ sub runCESM()
 	$localtime = localtime;
 	print "$localtime CESM EXECUTION HAS FINISHED\n";
 #pw++
-        qx($config{'CASEROOT'}/Tools/cesm_postrun -case $config{'CASE'} -cesmid $LID -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'});
+        qx($config{'CASEROOT'}/Tools/cesm_postrun -machine $config{'MACH'} -case $config{'CASE'} -cesmid $LID -user $config{'CCSMUSER'} -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'});
 #pw--
 }
 
@@ -437,7 +437,7 @@ sub postRun()
     }
 
 #pw++
-        qx($config{'CASEROOT'}/Tools/cesm_postrun2 -case $config{'CASE'} -cesmid $LID -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -exedir $config{'EXEROOT'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'});
+        qx($config{'CASEROOT'}/Tools/cesm_postrun2 -machine $config{'MACH'} -case $config{'CASE'} -cesmid $LID -user $config{'CCSMUSER'} -caseroot $config{'CASEROOT'} -rundir $config{'RUNDIR'} -exedir $config{'EXEROOT'} -save $config{'SAVE_TIMING'} -archive $config{'SAVE_TIMING_DIR'});
 #pw--
 	chdir $owd;
 
