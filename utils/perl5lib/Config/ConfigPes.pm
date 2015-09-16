@@ -101,14 +101,14 @@ sub _setPESmatch2
     
     my $root;
     if ($pesize_opts =~ m!^([0-9]+)x([0-9]+)D$!) {
-	$root = 0          ; $config->set('ROOTPE_ATM') = $root;
-	$root = 1 * $ntasks; $config->set('ROOTPE_LND') = $root;
-	$root = 2 * $ntasks; $config->set('ROOTPE_OCN') = $root;
-	$root = 3 * $ntasks; $config->set('ROOTPE_ICE') = $root;
-	$root = 4 * $ntasks; $config->set('ROOTPE_GLC') = $root;
-	$root = 5 * $ntasks; $config->set('ROOTPE_WAV') = $root;
-	$root = 6 * $ntasks; $config->set('ROOTPE_ROF') = $root;
-	$root = 7 * $ntasks; $config->set('ROOTPE_CPL') = $root;
+	$root = 0          ; $config->set('ROOTPE_ATM',$root);
+	$root = 1 * $ntasks; $config->set('ROOTPE_LND',$root);
+	$root = 2 * $ntasks; $config->set('ROOTPE_OCN',$root);
+	$root = 3 * $ntasks; $config->set('ROOTPE_ICE',$root);
+	$root = 4 * $ntasks; $config->set('ROOTPE_GLC',$root);
+	$root = 5 * $ntasks; $config->set('ROOTPE_WAV',$root);
+	$root = 6 * $ntasks; $config->set('ROOTPE_ROF',$root);
+	$root = 7 * $ntasks; $config->set('ROOTPE_CPL',$root);
     }
 }    
 
@@ -303,10 +303,12 @@ sub _setPESsettings
 	foreach my $child (@children) {
 	    my $name  = uc $child->nodeName(); 
 	    my $value =    $child->textContent();
-	    if ($value < 0) {
+            if ($value =~ /-?\d/){
+            if ($value < 0) {
 		$value = -($value * $pes_per_node);
 	    }
 	    $decomp{$name}  = $value;
+           }
 	}
     }
 
