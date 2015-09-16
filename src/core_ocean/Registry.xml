@@ -1227,10 +1227,10 @@
 				mode="forward">
 
 			<stream name="mesh"/>
+			<var_struct name="tracersSurfaceFlux"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
-			<var_array name="tracersSurfaceFlux"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="surfaceWindStressMagnitude"/>
 			<var name="surfaceWindStress"/>
