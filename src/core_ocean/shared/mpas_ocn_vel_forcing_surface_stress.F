@@ -143,8 +143,8 @@ contains
 
       do iEdge = 1, nEdgesSolve
         zTop = 0.0_RKIND
-        cell1 = cellsOnEdge(iEdge,1)
-        cell2 = cellsOnEdge(iEdge,2)
+        cell1 = cellsOnEdge(1,iEdge)
+        cell2 = cellsOnEdge(2,iEdge)
         attenuationCoeff = 0.5_RKIND * (surfaceFluxAttenuationCoefficient(cell1) &
                                       + surfaceFluxAttenuationCoefficient(cell2))
         transmissionCoeffTop = ocn_forcing_transmission(zTop, attenuationCoeff)

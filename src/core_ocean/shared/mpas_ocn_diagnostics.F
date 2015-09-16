@@ -1381,6 +1381,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_land_ice_fluxes', config_use_land_ice_fluxes)
       if(.not. config_use_land_ice_fluxes) return
 
+      jenkinsOn = .false.
+      hollandJenkinsOn = .false.
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
       if ( trim(config_land_ice_flux_formulation) == 'Jenkins' ) then
          jenkinsOn = .true.
@@ -1415,6 +1417,8 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexS)
 
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+
+      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTemperature', landIceBoundaryLayerTemperature)
