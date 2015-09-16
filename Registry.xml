@@ -2153,6 +2153,14 @@
                          description="friction velocity times nondimensional salt transfer coefficient"
                          packages="landIceFluxesPKG"
                 />
+                <var name="topDrag" type="real" dimensions="nEdges Time" units="N m^{-2}"
+                         description="Top drag at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
+                         packages="landIceFluxesPKG"
+                />
+                <var name="topDragMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
+                         description="Magnitude of top drag at the surface of the ocean, at cell centers."
+                         packages="landIceFluxesPKG"
+                />
 	</var_struct>
 	<var_struct name="average" time_levs="1">
 		<var name="nAverage" type="real" dimensions="Time" units="unitless"
@@ -2412,14 +2420,6 @@
                 />
                 <var name="landIceInterfaceSalinity" type="real" dimensions="nCells Time" units="PSU"
                          description="The salinity at the land ice-ocean interface"
-                         packages="landIceFluxesPKG"
-                />
-                <var name="topDrag" type="real" dimensions="nEdges Time" units="N m^{-2}"
-                         description="Top drag at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
-                         packages="landIceFluxesPKG"
-                />
-                <var name="topDragMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
-                         description="Magnitude of top drag at the surface of the ocean, at cell centers."
                          packages="landIceFluxesPKG"
                 />
                 <var name="landIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
