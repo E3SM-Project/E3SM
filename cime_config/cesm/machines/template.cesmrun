@@ -205,19 +205,6 @@ sub doPreRunChecks()
 
 }
 
-sub check_DA_settings
-{
-    if($config{DATA_ASSIMILATION} eq "TRUE"){
-	my $script =  $config{DATA_ASSIMILATION_SCRIPT};
-	unless (-x $script) die "DATA_ASSIMILATION_SCRIPT $script is not executable";
-	print "DATA_ASSIMILATION enabled\n";
-	print "   using script $script\n";
-	print "   and running for $config{DATA_ASSIMILATION_CYCLES}\n";
-    }
-}
-
-
-
 # -------------------------------------------------------------------------
 # we've done the preview namelists check, now we'll check on the inputdata..
 # -------------------------------------------------------------------------
