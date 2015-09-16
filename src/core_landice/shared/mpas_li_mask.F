@@ -99,15 +99,15 @@ module li_mask
       module procedure li_mask_is_floating_ice_intout_0d
    end interface
 
-
    interface li_mask_is_grounded_ice
       module procedure li_mask_is_grounded_ice_logout_1d
       module procedure li_mask_is_grounded_ice_logout_0d
    end interface
 
-   !SFP: added
+!! SFP: the 1d versions below have not been tested yet - activate and use at your own risk! 
+!! Also check the corresponding function below.
    interface li_mask_is_grounded_ice_int
-      module procedure li_mask_is_grounded_ice_intout_1d
+!      module procedure li_mask_is_grounded_ice_intout_1d
       module procedure li_mask_is_grounded_ice_intout_0d
    end interface
 
@@ -638,7 +638,7 @@ contains
                                 .and. (li_mask_is_ice(mask)) )
    end function li_mask_is_grounded_ice_logout_0d
 
-!! SFP: the function below has not been tested yet - activate and use at your own risk!
+!! SFP: has not been tested yet - activate and use at your own risk! Also check the corresponding interface at top.
 !   function li_mask_is_grounded_ice_intout_1d(mask)
 !      integer, dimension(:), intent(in) :: mask
 !      integer, dimension(size(mask)) :: li_mask_is_grounded_ice_intout_1d
