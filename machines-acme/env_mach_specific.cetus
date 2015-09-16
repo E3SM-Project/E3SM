@@ -24,6 +24,10 @@ source /etc/profile.d/00softenv.csh
 soft add +mpiwrapper-xl
 soft add @ibm-compilers-2014-11
 soft add +cmake
+soft add +python
+
+# Capture user's software environment for archiving with performance data
+printenv >& software_environment.txt
 
 if ( $?PERL ) then
   printenv
