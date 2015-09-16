@@ -1934,23 +1934,33 @@ contains
 
       end do ! end pft loop
 
+      !----------------------------------------------------------------
       ! now use the p2c routine to update column level soil mineral N and P uptake
       ! based on competition between N and P limitation       - XYANG
+      !! Nitrogen
+      if(suplphos == suplpNon) then !!! No supplemental Phosphorus
+        call p2c(bounds,num_soilc,filter_soilc,         &
+               sminn_to_npool(bounds%begp:bounds%endp), &
+               sminn_to_plant(bounds%begc:bounds%endc))
 
-!      call p2c(bounds,num_soilc,filter_soilc, &
-!           sminn_to_npool(bounds%begp:bounds%endp), &
-!           sminn_to_plant(bounds%begc:bounds%endc))
+        call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
+        do j = 1, nlevdecomp
+            do fc=1,num_soilc
+                c = filter_soilc(fc)
+                sminn_to_plant_vr(c,j) = sminn_to_plant(c) *  nuptake_prof(c,j)
+            end do
+        end do
+      end if
 
-      call p2c(bounds,num_soilc,filter_soilc, &
+      !! Phosphorus
+      call p2c(bounds,num_soilc,filter_soilc,       &
            sminp_to_ppool(bounds%begp:bounds%endp), &
            sminp_to_plant(bounds%begc:bounds%endc))
 
-!      call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nitrogenstate_vars, nuptake_prof)
       call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
       do j = 1, nlevdecomp
            do fc=1,num_soilc
               c = filter_soilc(fc)
-!              sminn_to_plant_vr(c,j) = sminn_to_plant(c) *  nuptake_prof(c,j)
               sminp_to_plant_vr(c,j) = sminp_to_plant(c) *  puptake_prof(c,j)
            end do
       end do
