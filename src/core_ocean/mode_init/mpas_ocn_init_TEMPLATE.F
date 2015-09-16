@@ -33,7 +33,10 @@
 !>  5. Add these lines for default namelist parsing:
 !>     in src/core_ocean/Makefile:
 !>     (cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.TEMPLATE mode=init configuration=TEMPLATE)
-!>     in src/core_ocean/Registry.xml
+!>
+!>     in src/core_ocean/Registry.xml, add your case to
+!>     nml_option name="config_init_configuration"
+!>     as 
 !>     TEMPLATE_value="TEMPLATE"
 !
 !-----------------------------------------------------------------------
