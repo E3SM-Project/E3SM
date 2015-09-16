@@ -1108,13 +1108,12 @@
         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
         <batch_system type="lsf" version="9.1">
         <queues>
-          <queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
-          <queue walltimemax="2:00" jobmin="9" jobmax="4096">small</queue>
           <queue walltimemax="12:00" jobmin="0" jobmax="16384" default="true">regular</queue>
           <queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
+          <queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
         </queues>
         <walltimes>
-          <walltime default="true">2:00</walltime>
+          <walltime default="true">1:00</walltime>
           <walltime ccsm_estcost="-1">2:00</walltime>
           <walltime ccsm_estcost="0">4:00</walltime>
           <walltime ccsm_estcost="1">8:00</walltime>

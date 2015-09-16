@@ -29,10 +29,6 @@ require Depends::Checks;
 require Module::ModuleLoader;
 require Batch::BatchUtils;
 
-# Set OMP_NUM_THREADS
-$ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
-
-
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
 #------------------------------------------------------------------------------
@@ -310,6 +306,10 @@ sub runCESM()
 	system("sleep 10");
 	my $localtime = localtime;
 	print "$localtime CESM EXECUTION BEGINS HERE\n";
+
+        # Set OMP_NUM_THREADS
+       $ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
+
 	# Run the model
 	{{ mpirun }}
 	$localtime = localtime;
