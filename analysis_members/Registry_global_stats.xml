@@ -42,6 +42,15 @@
 		<var name="groundedIceArea" type="real" dimensions="Time" units="km^2"
 			description="total grounded ice sheet area"
 		/>
+		<var name="iceThicknessMean" type="real" dimensions="Time" units="m"
+			description="spatially averaged ice thickness"
+		/>
+		<var name="iceThicknessMax" type="real" dimensions="Time" units="m"
+			description="maximum ice thickness in domain"
+		/>
+		<var name="iceThicknessMin" type="real" dimensions="Time" units="m"
+			description="minimum ice thickness in domain"
+		/>
  	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"
@@ -60,5 +69,8 @@
 			<var name="floatingIceArea"/> 
 			<var name="groundedIceVolume"/> 
 			<var name="groundedIceArea"/> 
+			<var name="iceThicknessMin"/> 
+			<var name="iceThicknessMax"/> 
+			<var name="iceThicknessMean"/>
 		</stream>
 	</streams>
