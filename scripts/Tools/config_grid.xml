@@ -1439,6 +1439,10 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <!-- ======================================================== -->
 
 <!-- ====================  -->
+<!-- GLC: CISM grids       -->
+<!-- ====================  -->
+
+<!-- ====================  -->
 <!-- GLC: gland4           -->
 <!-- ====================  -->
 
@@ -1564,6 +1568,22 @@ do not use scientific experiments; use the T62_g16 resolution instead:
    <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
    <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
 </gridmap>
+
+<!-- ====================  -->
+<!-- GLC: MPASLI grids     -->
+<!-- ====================  -->
+
+<!-- ====================  -->
+<!-- GLC: mpas.gis20km     -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="mpas.gis20km" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_mpas.gis20km_aave.150921.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_mpas.gis20km_bilin.150921.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150921.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150921.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
 
 <!-- ======================================================== -->
 <!-- GRIDS: glc to ocn mapping                                -->
