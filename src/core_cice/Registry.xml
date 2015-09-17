@@ -351,17 +351,6 @@
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
 	    <var name="surfaceTemperature"/>
-<<<<<<< HEAD
-=======
-	    <var name="iceThickness"/>
-	    <var name="snowThickness"/>
-	    <var name="iceAreaCategoryPlot"/>
-	    <var name="iceVolumeCategoryPlot"/>
-	    <var name="snowVolumeCategoryPlot"/>
-	    <var name="surfaceTemperaturePlot"/>
-	    <var name="iceThicknessPlot"/>
-	    <var name="snowThicknessPlot"/>
->>>>>>> Merged incremental remap changes from bill/cice/incremental_remap
 	    <var name="iceAreaCell"/>
 	    <var name="iceAreaVertex"/>
 	    <var name="iceVolumeCell"/>
@@ -1028,20 +1017,9 @@
 		<var name="categoryThicknessLimits"           type="real"     dimensions="nCategoriesP1"                    name_in_code="categoryThicknessLimits"/>
 	</var_struct>
 
-<<<<<<< HEAD
 	<!-- Regions -->
 	<var_struct name="regions" time_levs="1">
 		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
-=======
-	<!-- Plotting -->
-	<var_struct name="plotting" time_levs="1">
-		<var name="iceAreaCategoryPlot"               type="real"     dimensions="nCells Time"          name_in_code="iceAreaCategoryPlot"/>
-		<var name="iceVolumeCategoryPlot"             type="real"     dimensions="nCells Time"          name_in_code="iceVolumeCategoryPlot"/>
-		<var name="snowVolumeCategoryPlot"            type="real"     dimensions="nCells Time"          name_in_code="snowVolumeCategoryPlot"/>
-		<var name="surfaceTemperaturePlot"            type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperaturePlot"/>
-		<var name="iceThicknessPlot"                  type="real"     dimensions="nCells Time"          name_in_code="iceThicknessPlot"/>
-		<var name="snowThicknessPlot"                 type="real"     dimensions="nCells Time"          name_in_code="snowThicknessPlot"/>
->>>>>>> Merged incremental remap changes from bill/cice/incremental_remap
 	</var_struct>
 
 	<!-- Diagnostics -->
