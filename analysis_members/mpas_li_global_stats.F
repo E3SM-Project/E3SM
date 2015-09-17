@@ -105,8 +105,6 @@ contains
 
       err = 0
 
-      print *, 'in li_init_global_stats'     
-
    end subroutine li_init_global_stats!}}}
 
 !***********************************************************************
@@ -188,8 +186,6 @@ contains
       real (kind=RKIND) ::  blockSumFloatingIceArea
       real (kind=RKIND) ::  blockSumFloatingIceVolume
 
-      print *, 'in li_compute_global_stats'     
-
       err = 0
 
       ! initialize sums over blocks to 0
@@ -240,16 +236,6 @@ contains
             blockSumFloatingIceVolume = blockSumFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * thickness(iCell) 
 
-            ! debugging
-!            print *, 'CellMask = ', CellMask(iCell)
-!            print *, 'iceMask = ', li_mask_is_ice_int(cellMask(iCell)) 
-!            print *, 'groundedMask = ', (1 - li_mask_is_floating_ice_int(cellMask(iCell)) ) 
-!            print *, 'floatingMask = ', li_mask_is_floating_ice_int(cellMask(iCell)) 
-!            print *, 'areaCell = ', areaCell(iCell)
-!            print *, 'thickness = ', thickness(iCell)
-!            print *, 'blockSumIceArea=', blockSumIceArea
-!            print *, 'blockSumIceVolume=', blockSumIceVolume
-
          end do ! end sum over cells
 
          block => block % next
@@ -265,12 +251,12 @@ contains
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
 
       ! debugging
-      print *, 'totalIceArea=', totalIceArea
-      print *, 'totalIceVolume=', totalIceVolume
-      print *, 'groundedIceArea=', groundedIceArea
-      print *, 'groundedIceVolume=', groundedIceVolume
-      print *, 'floatingIceArea=', floatingIceArea
-      print *, 'floatingIceVolume=', floatingIceVolume
+!      print *, 'totalIceArea=', totalIceArea
+!      print *, 'totalIceVolume=', totalIceVolume
+!      print *, 'groundedIceArea=', groundedIceArea
+!      print *, 'groundedIceVolume=', groundedIceVolume
+!      print *, 'floatingIceArea=', floatingIceArea
+!      print *, 'floatingIceVolume=', floatingIceVolume
 
       ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
@@ -333,8 +319,6 @@ contains
 
       err = 0
 
-      print *, 'in li_restart_global_stats'     
-
    end subroutine li_restart_global_stats!}}}
 
 !***********************************************************************
@@ -383,8 +367,6 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-
-      print *, 'in li_finalize_global_stats'     
 
    end subroutine li_finalize_global_stats!}}}
 

@@ -9,8 +9,7 @@ module li_core
 
    use mpas_framework
    use mpas_timekeeping
-
-   use li_analysis_driver   !SFP added
+   use li_analysis_driver
 
    implicit none
    private
@@ -154,7 +153,7 @@ module li_core
          block => block % next
       end do
 
-      !SFP added: initialize analysis driver
+      ! initialize analysis driver
       call li_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
@@ -289,7 +288,7 @@ module li_core
          call mpas_timer_stop("compute_statistics")
       endif
 
-      !SFP added: compute analysis members on startup if option activiated
+      ! compute analysis members on startup if option activiated
       call mpas_timer_start("analysis member startup calculations")
           call li_analysis_compute_startup(domain, err_tmp)
           err = ior(err, err_tmp)
@@ -382,7 +381,7 @@ module li_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
-         !SFP added: call analysis driver compute, etc. subroutines
+         ! call analysis driver compute, etc. subroutines
          call li_analysis_compute(domain, err_tmp)
          err = ior(err, err_tmp)
          call li_analysis_restart(domain, err) 
@@ -499,7 +498,7 @@ module li_core
       call li_velocity_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
-      !SFP: added call to finalize subroutine in analysis driver 
+      ! call finalize subroutine in analysis driver 
       call li_analysis_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 

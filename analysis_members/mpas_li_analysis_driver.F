@@ -580,8 +580,6 @@ contains
 
       err = 0
 
-      print *, 'inside analysis driver: START of write subroutine'
-
       call mpas_timer_start('analysis_write', .false.)
 
       call mpas_pool_begin_iteration(analysisMemberList)
@@ -607,8 +605,6 @@ contains
       end do
 
       call mpas_timer_stop('analysis_write')
-
-      print *, 'inside analysis driver: END of write subroutine'
 
    end subroutine li_analysis_write!}}}
 
