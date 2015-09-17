@@ -24,7 +24,6 @@ module li_global_stats
    use mpas_timekeeping
    use mpas_stream_manager
 
-   use li_constants
    use li_mask
 
    implicit none
@@ -163,33 +162,32 @@ contains
       type (mpas_pool_type), pointer :: globalStatsAM
       type (mpas_pool_type), pointer :: geometryPool
 
+      ! arrays, vars needed from other pools for calculations here
       real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:), pointer ::  thickness 
+      real (kind=RKIND), dimension(:), pointer ::  sfcMassBal  
+      real (kind=RKIND), dimension(:), pointer ::  basalMassBal
 
       integer, dimension(:), pointer :: cellMask 
       integer, pointer :: nCellsSolve
       integer :: k, iCell
 
       ! scalars to be calculated here from global sums
-      real (kind=RKIND), pointer ::  totalIceArea 
-      real (kind=RKIND), pointer ::  totalIceVolume
-      real (kind=RKIND), pointer ::  groundedIceArea 
-      real (kind=RKIND), pointer ::  groundedIceVolume
-      real (kind=RKIND), pointer ::  floatingIceArea 
-      real (kind=RKIND), pointer ::  floatingIceVolume
-      real (kind=RKIND), pointer ::  iceThicknessMax
-      real (kind=RKIND), pointer ::  iceThicknessMin  
-      real (kind=RKIND), pointer ::  iceThicknessMean 
+      real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
+      real (kind=RKIND), pointer ::  groundedIceArea, groundedIceVolume
+      real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
+      real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean 
+      real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal 
 
       ! scalar sums over blocks
-      real (kind=RKIND) ::  blockSumIceArea
-      real (kind=RKIND) ::  blockSumIceVolume
-      real (kind=RKIND) ::  blockSumGroundedIceArea
-      real (kind=RKIND) ::  blockSumGroundedIceVolume
-      real (kind=RKIND) ::  blockSumFloatingIceArea
-      real (kind=RKIND) ::  blockSumFloatingIceVolume
-      real (kind=RKIND) ::  blockThickMin
-      real (kind=RKIND) ::  blockThickMax
+      real (kind=RKIND) ::  blockSumIceArea, blockSumIceVolume
+      real (kind=RKIND) ::  blockSumGroundedIceArea, blockSumGroundedIceVolume
+      real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
+      real (kind=RKIND) ::  blockThickMin, blockThickMax
+      real (kind=RKIND) ::  blockSumSfcMassBal, blockSumBasalMassBal
+
+      ! local parameters
+      real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
 
       err = 0
 
@@ -202,6 +200,8 @@ contains
       blockSumGroundedIceVolume = 0.0_RKIND
       blockSumFloatingIceArea = 0.0_RKIND
       blockSumFloatingIceVolume = 0.0_RKIND
+      blockSumSfcMassBal = 0.0_RKIND
+      blockSumBasalMassBal = 0.0_RKIND
 
       ! initialize max, min, mean values to 0
       blockThickMin = 0.0_RKIND
@@ -221,6 +221,8 @@ contains
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
 
          ! get values from global stats pool
          call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
@@ -232,11 +234,13 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
 
-            ! sums of ice area and volume over cells
+            ! sums of ice area and volume over cells (m^2 and m^3)
             blockSumIceArea = blockSumIceArea + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) 
             blockSumIceVolume = blockSumIceVolume + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
@@ -252,13 +256,20 @@ contains
             blockSumFloatingIceVolume = blockSumFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * thickness(iCell) 
 
-            ! max, min thickness values
+            ! max, min thickness values (m)
             if( thickness(iCell) > blockThickMax)then
                 blockThickMax = thickness(iCell)
             endif
             if( thickness(iCell) < blockThickMin .and. thickness(iCell) > 0.0_RKIND)then
                 blockThickMin = thickness(iCell)
             endif
+
+            ! sfc and basal mass balance (kg yr^{-1})
+            !SFP: These calculations need to be tested still
+            blockSumSfcMassBal = blockSumSfcMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * sfcMassBal(iCell) * scyr
+            blockSumBasalMassBal = blockSumBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+                * areaCell(iCell) * basalMassBal(iCell) * scyr
 
          end do ! end loop over cells
 
@@ -273,6 +284,8 @@ contains
       call mpas_dmpar_sum_real(dminfo, blockSumGroundedIceVolume, groundedIceVolume)
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
+      call mpas_dmpar_sum_real(dminfo, blockSumSfcMassBal, totalSfcMassBal) 
+      call mpas_dmpar_sum_real(dminfo, blockSumBasalMassBal, totalBasalMassBal) 
 
       ! find min, max, mean thickness over all procs
       call mpas_dmpar_min_real(dminfo, blockThickMin, iceThicknessMin)
