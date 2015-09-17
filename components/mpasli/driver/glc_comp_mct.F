@@ -93,6 +93,7 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
+  integer, save :: glcStdErrUnit, glcStdOutUnit
 
 !=======================================================================
 
@@ -279,9 +280,9 @@ contains
     io_system => shr_pio_getiosys(glcid)
 
     pio_iotype = shr_pio_getiotype(glcid)
-    call MPAS_io_set_iotype(pio_iotype)
+    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
 
- stdout_shr = shr_file_getUnit()
+    stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
        open(stdout_shr, file='/dev/null', position='APPEND')
@@ -301,8 +302,11 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (stdout_shr)
+    glcStdErrUnit = stdout_shr
+    glcStdOutUnit = stdout_shr
 
-    write(stderrUnit,*) '=== Beginning glc_init_mct.'
+    ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until the mpas_framework_init_phase1 call
+    write(glcStdErrUnit,*) '=== Beginning glc_init_mct.'
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
@@ -329,7 +333,7 @@ contains
     end if
 
     ! Setup packages (i.e. determine if they should be on or off)
-    ierr = domain % core % setup_packages(domain % configs, domain % packages)
+    ierr = domain % core % setup_packages(domain % configs, domain % packages, domain % iocontext)
     if ( ierr /= 0 ) then
        call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain % core % coreName))
     end if
@@ -441,7 +445,7 @@ contains
     !
     ! Set up run-time streams
     !
-    call MPAS_stream_mgr_init(domain % streamManager, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
+    call MPAS_stream_mgr_init(domain % streamManager, domain % ioContext, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
 
     call add_stream_attributes(domain % streamManager, domain)
 
@@ -725,6 +729,9 @@ contains
       logical :: solveVelo
       integer, dimension(:), pointer :: vertexMask
 
+      call mpas_io_units_set_stdout(glcStdOutUnit)
+      call mpas_io_units_set_stderr(glcStdErrUnit)
+
       err = 0
       err_tmp = 0
       globalErr = 0
@@ -862,6 +869,7 @@ contains
              call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
          endif
 
+         call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)
 
@@ -955,6 +963,8 @@ contains
 
 !-----------------------------------------------------------------------
 
+    call mpas_io_units_set_stdout(glcStdOutUnit)
+    call mpas_io_units_set_stderr(glcStdErrUnit)
 
     ! Setup I/O logs
     call shr_file_getLogUnit (shrlogunit)
