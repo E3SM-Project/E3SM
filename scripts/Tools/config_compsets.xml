@@ -34,10 +34,6 @@ Each compset is associated with five names
    - alias         (even shorter notation than shortname) (optional)
    - grid          (requirements for grid to work with the compset) (regular expression match) (optional)
    - support_level (description of the support level for this compset) (optional)
-NOTE: 
-   The glc grid specifies the ***internal*** grid used by glimmer/cism
-   from the point of view of coupling - the glc grid is assumed to be 
-   identical to the land. 
 
 =========================================
 GRID naming convention
@@ -45,9 +41,6 @@ GRID naming convention
 The long grid name has the order atm,lnd,ocn/ice,river,mask,glc 
 The following shortname is used
    a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wave
-Note that the glc grid specifies the ***internal*** grid used by glimmer/cism
-From the point of view of coupling - the glc grid is assumed to be identical
-to the land
 The notation is 
    a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
 Each grid is associated with three names
@@ -378,6 +371,9 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="TG1850_G2S" alias="TG1850IS2"  grid="gland">1850_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2P_SWAV</COMPSET>
 <COMPSET sname="TG20TR_G2S" alias="TG20TRIS2"  grid="gland">20TR_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2P_SWAV</COMPSET>
 <COMPSET sname="TGRCP8_G2S" alias="TGRCP85IS2" grid="gland">RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2P_SWAV</COMPSET>
+
+<!-- MPASLI TG compsets -->
+<COMPSET sname="TG2000_MLI"  alias="TG_MLI">2000_SATM_DLND%SCPL_SICE_SOCN_SROF_MPASLI_SWAV</COMPSET>
 
 <!-- GLC-only compsets -->
 <COMPSET sname="MPASLI_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLISIA_SWAV</COMPSET>
@@ -763,6 +759,7 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <CLM_NML_USE_CASE compset="RCP8.*_CLM"       >1850-2100_rcp8.5_transient</CLM_NML_USE_CASE> 
 <CLM_NML_USE_CASE compset="1850.*_CLM.*_CISM">1850_glacierMEC_control</CLM_NML_USE_CASE> 
 <CLM_NML_USE_CASE compset="2000.*_CLM.*_CISM">2000_glacierMEC_control</CLM_NML_USE_CASE> 
+<CLM_NML_USE_CASE compset="2000.*_CLM.*_MPASLI">2000_glacierMEC_control</CLM_NML_USE_CASE>
 <CLM_NML_USE_CASE compset="PDAY.*_CLM.*_CISM">2000_glacierMEC_control</CLM_NML_USE_CASE> 
 <CLM_NML_USE_CASE compset="4804.*_CLM.*_CISM">2000_glacierMEC_control</CLM_NML_USE_CASE> 
 <CLM_NML_USE_CASE compset="20TR.*_CLM.*_CISM">20thC_glacierMEC_transient</CLM_NML_USE_CASE> 
@@ -1249,6 +1246,13 @@ DATM%NPS   => DATM NPS forcing
 <DLND_CPLHIST_YR_START compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2006</DLND_CPLHIST_YR_START>
 <DLND_CPLHIST_YR_END   compset="RCP8.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2100</DLND_CPLHIST_YR_END>
 
+<!-- DLND settings for MPASLI -->
+<DLND_CPLHIST_DIR      compset="2000.*_DLND%SCPL.*_MPASLI" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</DLND_CPLHIST_DIR>
+<DLND_CPLHIST_CASE     compset="2000.*_DLND%SCPL.*_MPASLI" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">b.e10.BG20TRCN.f09_g16.002</DLND_CPLHIST_CASE>
+<DLND_CPLHIST_YR_ALIGN compset="2000.*_DLND%SCPL.*_MPASLI" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">   1</DLND_CPLHIST_YR_ALIGN>
+<DLND_CPLHIST_YR_START compset="2000.*_DLND%SCPL.*_MPASLI" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1976</DLND_CPLHIST_YR_START>
+<DLND_CPLHIST_YR_END   compset="2000.*_DLND%SCPL.*_MPASLI" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2005</DLND_CPLHIST_YR_END>
+
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
 <!-- Add DLND_MODE                           -->
@@ -1477,6 +1481,9 @@ DOCN%COPY => docn copy mode
 <RUN_STARTDATE compset="20TR.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1850-01-01</RUN_STARTDATE>
 <RUN_STARTDATE compset="RCP8.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">2006-01-01</RUN_STARTDATE>
 
+<!-- with MPASLI -->
+<RUN_STARTDATE compset="2000.*_DLND.*_MPASLI" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</RUN_STARTDATE>
+
 <RUN_STARTDATE compset="AR95_CAM">1995-07-18</RUN_STARTDATE>
 <START_TOD     compset="AR95_CAM">19800</START_TOD>
 
@@ -1505,6 +1512,8 @@ DOCN%COPY => docn copy mode
 <!-- Stop options for MPASLI_ONLY compset -->
 <STOP_OPTION compset="_SLND.*SOCN_.*_MPASLI">ndays</STOP_OPTION>
 <STOP_N      compset="_SLND.*SOCN_.*_MPASLI">5     </STOP_N>
+<STOP_OPTION compset="_DLND.*_MPASLI">nyears</STOP_OPTION>
+<STOP_N      compset="_DLND.*_MPASLI">10    </STOP_N>
 
 <CALENDAR compset="GEOS_">GREGORIAN</CALENDAR> 
 
@@ -1608,6 +1617,15 @@ DOCN%COPY => docn copy mode
 <GLC_NCPL compset="_DLND.*_CISM">1</GLC_NCPL>
 
 <NCPL_BASE_PERIOD compset="_DLND.*_CISM">year  </NCPL_BASE_PERIOD>
+
+<ROF_NCPL compset="_DLND.*_MPASLI">1</ROF_NCPL>
+<ATM_NCPL compset="_DLND.*_MPASLI">1</ATM_NCPL>
+<LND_NCPL compset="_DLND.*_MPASLI">1</LND_NCPL>
+<OCN_NCPL compset="_DLND.*_MPASLI">1</OCN_NCPL>
+<ICE_NCPL compset="_DLND.*_MPASLI">1</ICE_NCPL>
+<GLC_NCPL compset="_DLND.*_MPASLI">1</GLC_NCPL>
+<NCPL_BASE_PERIOD compset="_DLND.*_MPASLI">year  </NCPL_BASE_PERIOD>
+
 <NCPL_BASE_PERIOD compset="_MPASO"       >hour  </NCPL_BASE_PERIOD>
 
 <!-- coupler intervals for MPASLI-ONLY compset -->
