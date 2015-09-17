@@ -62,6 +62,7 @@ sub new
 		$self->{$layoutstring} = $config{$layoutstring};
 	}
 	
+  $self->{'EXEROOT'} = $config{'EXEROOT'};
 	
 	# set the compiler, and MAX_TASKS_PER_NODE
 	$self->{'COMPILER'} = $config{'COMPILER'};
