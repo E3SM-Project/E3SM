@@ -1265,6 +1265,7 @@ for mct, etc.
 	<SCXX>g++</SCXX>
 	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="pgi">
@@ -1298,6 +1299,7 @@ for mct, etc.
 	<SCXX>g++</SCXX>
 	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
 
 
