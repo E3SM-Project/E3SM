@@ -109,12 +109,12 @@ module cice_advection_incremental_remap
 !   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
 !   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
 
-!   integer, parameter :: ctestGlobal = 2354       ! test cell for spherical hex test case
+!   integer, parameter :: ctestGlobal = 3          ! test cell for spherical hex test case (North Pole on 2562 grid)
+!   integer, parameter :: etestGlobal = 473         ! test edge for spherical hex test case
+!   integer, parameter :: vtestGlobal = 12
+!   integer, parameter :: ctestGlobal = 2354       ! test cell for spherical hex test case (rotated)
 !   integer, parameter :: etestGlobal = 3473      ! test edge for spherical hex test case
 !   integer, parameter :: vtestGlobal = 2585
-!!   integer, parameter :: ctestGlobal = 3          ! test cell for spherical hex test case (North Pole on 2562 grid)
-!!   integer, parameter :: etestGlobal = 473         ! test edge for spherical hex test case
-!!   integer, parameter :: vtestGlobal = 473
 
    logical, parameter :: conservation_check = .true.  ! if true, check for exact conservation
    logical, parameter :: monotonicity_check = .true.  ! if true, check for tracer monotonicity
@@ -2949,6 +2949,10 @@ contains
        enddo
     endif
 
+    !Note: The zap_small_mass subroutine could be used to eliminate very small negative values
+    !      if placed above the negative-area check. For now, I am allowing very
+    !      small negative values to crash the code, since they could reveal bugs.
+
     !WHL - Optionally, zero out the ice area and tracers in cells with very small ice areas
     !TODO - Turn off this call if not needed (for example, if very small areas are zapped
     !       in the column-physics calculation).
@@ -2963,9 +2967,6 @@ contains
 
     endif
 
-    !Note: This subroutine could be used to eliminate very small negative values
-    !      if placed above the negative-area check. For now, I am allowing very
-    !      small negative values to crash the code, since they could reveal bugs.
     !WHL - debug
     if (ctestOnProc .and. block % localBlockID == ctestBlockID) then
 
@@ -5933,7 +5934,11 @@ contains
 
        ! This method requires edgeVector1 x edgeVector2 < 0.
        ! If this is not already the case, then interchange the two vectors.
+
        ! Also check that the cross product is nonzero; else the vectors are parallel and the algorithm will not work.
+       ! This can happen on a sphere for cells near the poles.
+       ! TODO - Mask out cells and edges near the poles on the spherical hex mesh?
+
        call cross_product_2d(edgeVector1, edgeVector2, &
             crossProduct)
        
@@ -7238,7 +7243,8 @@ contains
                 difference = thisTracer % globalSumFinal2D(iCat) - thisTracer % globalSumInit2D(iCat)
                 ratio = difference / thisTracer % globalSumInit2D(iCat)
                 
-                if (abs(ratio) > eps11) then
+!!                if (abs(ratio) > eps11) then
+                if (abs(ratio) > 1.e-8) then
                    write(stderrUnit,*) 'Tracer conservation error: tracer, category =', trim(thisTracer % tracerName), iCat
                    write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
                    write(stderrUnit,*) 'Difference, ratio:', difference, ratio
@@ -7276,7 +7282,8 @@ contains
                    difference = thisTracer % globalSumFinal3D(iLayer,iCat) - thisTracer % globalSumInit3D(iLayer,iCat)
                    ratio = difference/ thisTracer % globalSumInit3D(iLayer,iCat)
                    
-                   if (abs(ratio) > eps11) then
+!!                   if (abs(ratio) > eps11) then
+                   if (abs(ratio) > 1.e-8) then
                       write(stderrUnit,*) 'Tracer conservation error: tracer, category, layer =', trim(thisTracer % tracerName), iCat, iLayer
                       write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
                       write(stderrUnit,*) 'Difference, ratio:', difference, ratio
@@ -7445,7 +7452,7 @@ contains
 !>  Given the initial range of tracer values in a cell and its nearest neighbors,
 !>  verify that the new values are within this range.
 !>  Note: In rare cases, IR gives tracer values outside the range of the local max/min,
-!>        but values should always be within the range of the quasilocal max/min
+!>        but values should always be within the range of the extended max/min
 !>        computed here.
 !>  Note: This routine includes halo updates and should not be called from
 !>        inside a block loop.
@@ -7765,6 +7772,7 @@ contains
     ! Make this very small (<< eps11) so as not to sweep potential problems under the rug
 
     real(kind=RKIND), parameter :: &
+!!         smallMassThreshold = eps11
          smallMassThreshold = 1.0e-22_RKIND
 
     !WHL - This loop has pointer assignments inside loop over cells and categories, which is inefficient.
@@ -7784,21 +7792,29 @@ contains
              if (thisTracer % array2D(iCat,iCell) > 0.0_RKIND .and. &
                  thisTracer % array2D(iCat,iCell) < smallMassThreshold) then
 
-                ! zero out the mass for this category
+                !WHL - debug
+                write(stderrUnit,*) 'ZAP: iCell, iCat =', iCell, iCat
+
+                ! zero out the mass and mask for this category
                 thisTracer % array2D(iCat,iCell) = 0.0_RKIND
+                thisTracer % arrayMask2D(iCat,iCell) = 0
+
+                ! zero out all tracers too
 
                 thisTracer => thisTracer % next
 
-                ! zero out the associated tracers
                 do while (associated(thisTracer))
 
                    if (thisTracer % ndims == 2) then
 
+                      ! zero out the tracer and mask
                       thisTracer % array2D(iCat,iCell) = 0.0_RKIND
+                      thisTracer % arrayMask2D(iCat,iCell) = 0
 
                    elseif (thisTracer % ndims == 3) then
 
                       thisTracer % array3D(:,iCat,iCell) = 0.0_RKIND
+                      thisTracer % arrayMask3D(iLayer,iCat,iCell) = 0
 
                    endif
 
@@ -7825,16 +7841,17 @@ contains
                 if (thisTracer % array3D(iLayer,iCat,iCell) > 0.0_RKIND .and. &
                     thisTracer % array3D(iLayer,iCat,iCell) < smallMassThreshold) then
 
-                   ! zero out the mass for this category
+                   ! zero out the mass and mask for this category
                    thisTracer % array3D(iLayer,iCat,iCell) = 0.0_RKIND
-                   
+                   thisTracer % arrayMask3D(iLayer,iCat,iCell) = 0
+
                    ! zero out all tracers too
-                   
                    thisTracer => thisTracer % next
                    
                    do while (associated(thisTracer))
                       
                       thisTracer % array3D(iLayer,iCat,iCell) = 0.0_RKIND
+                      thisTracer % arrayMask3D(iLayer,iCat,iCell) = 0
                       
                       thisTracer => thisTracer % next
                       

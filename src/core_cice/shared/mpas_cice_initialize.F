@@ -1005,9 +1005,8 @@ contains
 
        do iCell = 1, nCells
        
-!!       if (sqrt(xCell(iCell)**2 + zCell(iCell)**2) < circle_radius .and. yCell(iCell) > 0.0_RKIND) then
           !WHL - rotated grid; put a circle of ice at the North Pole
-          if (zCell(iCell) > 0.0_RKIND .and. sqrt((zCell(iCell)-1.0_RKIND)**2 + xCell(iCell)**2) < circle_radius) then
+          if (zCell(iCell) > 0.0_RKIND .and. sqrt(xCell(iCell)**2 + yCell(iCell)**2) < circle_radius) then
           
              ! has ice
              iceAreaCategory(1,:,iCell)    = config_initial_ice_area
@@ -1031,9 +1030,8 @@ contains
 
        do iCell = 1, nCells
        
-          !!       if (sqrt(xCell(iCell)**2 + zCell(iCell)**2) < circle_radius .and. yCell(iCell) > 0.0_RKIND) then
           !WHL - unrotated grid; put a circle of ice on the equator
-          if (xCell(iCell) > 0.0_RKIND .and. sqrt((xCell(iCell)-1.0_RKIND)**2 + zCell(iCell)**2) < circle_radius) then
+          if (xCell(iCell) > 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then
           
              ! has ice
              iceAreaCategory(1,:,iCell)    = config_initial_ice_area
