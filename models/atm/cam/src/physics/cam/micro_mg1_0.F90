@@ -3656,7 +3656,7 @@ pure subroutine micro_mg_get_cols(ncol, nlev, top_lev, qcn, qin, &
   ltrue = any(qcn(:ncol,top_lev:(nlev+lev_offset)) >= qsmall, 2)
   ltrue = ltrue .or. any(qin(:ncol,top_lev:(nlev+lev_offset)) >= qsmall, 2)
 
-#if defined(CLUBB_BFB_S2) || defined(CLUBB_BFB_ALL)
+#if ! defined(CLUBB_BFB_S2) && ! defined(CLUBB_BFB_ALL)
   ltrue = .true.    ! Effectively still to pass all columns to MG1, as in default model
 #endif
 

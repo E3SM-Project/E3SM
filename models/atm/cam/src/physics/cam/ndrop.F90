@@ -1590,7 +1590,7 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
          g1=zeta(m)/eta(m)
          g1sqrt=sqrt(g1)
          g1=g1sqrt*g1
-#if defined(CLUBB_BFB_S1) || defined(CLUBB_BFB_ALL)
+#if ! defined(CLUBB_BFB_S1) && ! defined(CLUBB_BFB_ALL)
          g1=g1sqrt*g1    !Removed as a bugfix. Restored here if to be B4B with original model
 #endif
          g2=smc(m)/sqrt(eta(m)+3._r8*zeta(m))

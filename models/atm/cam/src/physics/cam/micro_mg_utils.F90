@@ -374,7 +374,7 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
      props_loc = props
 
      ! Get pgam from fit to observations of martin et al. 1994
-#if defined(CLUBB_BFB_S2) || defined(CLUBB_BFB_ALL)
+#if ! defined(CLUBB_BFB_S2) && ! defined(CLUBB_BFB_ALL)
      pgam = 0.0005714_r8*(ncic/1.e6_r8*rho) + 0.2714_r8
      pgam = 1._r8/(pgam**2) - 1._r8
      pgam = max(pgam, 2._r8)
