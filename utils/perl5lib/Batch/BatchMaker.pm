@@ -29,11 +29,11 @@ use Exporter qw(import);
 use lib '.';
 require Task::TaskMaker;
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
-my @requiredargs = qw/caseroot case machroot machine scriptsroot cimeroot/;
+my @requiredargs = qw/caseroot case machroot machine cimeroot/;
 
 #==============================================================================
 #  Class constructor.  We need to know where in the filesystem we are, 
-#  so caseroot, case, machroot, machine, scriptsroot, 
+#  so caseroot, case, machroot, machine, 
 #==============================================================================
 sub new
 {
@@ -44,7 +44,6 @@ sub new
 		compiler    => $params{'compiler'}     || undef,
 		config => $params{'config'}           || undef,
 		machine     => $params{'machine'}     || undef,
-		scriptsroot => $params{'scriptsroot'} || undef,
 	    cimeroot  => $params{'cimeroot'} || undef,
         machroot    => $params{'machroot'}    || ".",
         mpilib      => $params{'mpilib'}      || undef,
@@ -69,7 +68,7 @@ sub new
 	# we need ConfigCase, and ProjectTools. 
 	my $casetoolsdir = "$self->{'caseroot'}/Tools";
 	push(@INC, $casetoolsdir);
-	my $toolsdir = "$self->{'scriptsroot'}/ccsm_utils/Tools";
+	my $toolsdir = "$self->{'cimeroot'}/ccsm_utils/Tools";
 	push(@INC, $toolsdir);
 	require ConfigCase;
 	require ProjectTools;
