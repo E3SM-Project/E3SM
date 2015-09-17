@@ -1450,7 +1450,7 @@ contains
          velocityMagnitude = sqrt(kineticEnergyCell(1,cell1) + kineticEnergyCell(1,cell2))
          landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
-         topDrag(iEdge) = - landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
+         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
                           * velocityMagnitude * normalVelocity(1,iEdge)
 
       end do
@@ -1458,7 +1458,7 @@ contains
       ! compute top drag magnitude and friction velocity at cell centers
       do iCell = 1, nCells
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
-         topDragMagnitude(iCell) = landIceFraction(iCell) &
+         topDragMagnitude(iCell) = rho_sw * landIceFraction(iCell) &
                                    * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity (computed regardless of land-ice coverage)
