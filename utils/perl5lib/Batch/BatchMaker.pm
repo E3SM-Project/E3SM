@@ -980,6 +980,10 @@ E2
     
 }
 
+#==============================================================================
+package Batch::BatchMaker_cetus;
+use base qw (Batch::BatchMaker_mira );
+#==============================================================================
 
 package Batch::BatchMaker_gaea;
 use base qw (Batch::BatchMaker );
