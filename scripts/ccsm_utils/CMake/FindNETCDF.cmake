@@ -116,33 +116,44 @@ ENDIF ()
 
 IF (${NETCDF_REQUIRE_HDF5})
 
-  find_path(HDF5_INCLUDE_DIR
-            hdf5.h
-            PATHS ${HDF5_DIR}
-            PATH_SUFFIXES include
-            NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+  IF (HDF5_DIR)
+    find_path(HDF5_INCLUDE_DIR
+              hdf5.h
+              PATHS ${HDF5_DIR}
+              PATH_SUFFIXES include
+              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-  find_library(HDF5_LIBRARY
-               NAMES libhdf5.a hdf5
-               PATHS ${HDF5_DIR}
-               PATH_SUFFIXES lib lib64
-               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+    find_library(HDF5_LIBRARY
+                 NAMES libhdf5.a hdf5
+                 PATHS ${HDF5_DIR}
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-  find_library(HDF5hl_LIBRARY
-               NAMES libhdf5_hl.a hdf5_hl
-               PATHS ${HDF5_DIR}
-               PATH_SUFFIXES lib lib64
-               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+    find_library(HDF5hl_LIBRARY
+                 NAMES libhdf5_hl.a hdf5_hl
+                 PATHS ${HDF5_DIR}
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 
-  if(${HDF5_LIBRARY} STREQUAL "HDF5_LIBRARY-NOTFOUND" OR ${HDF5hl_LIBRARY} STREQUAL "HDF5hl_LIBRARY-NOTFOUND")
-    set(HDF5_FOUND OFF)
-    MESSAGE(FATAL_ERROR "HDF5 not found, set HDF5_DIR to appropriate installation")
+    if(${HDF5_LIBRARY} STREQUAL "HDF5_LIBRARY-NOTFOUND" OR ${HDF5hl_LIBRARY} STREQUAL "HDF5hl_LIBRARY-NOTFOUND")
+      set(HDF5_FOUND OFF)
+      MESSAGE(FATAL_ERROR "HDF5 not found, set HDF5_DIR to appropriate installation")
+    else()
+      set(HDF5_FOUND ON)
+      MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
+      set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY})
+    endif()
+
   else()
-    set(HDF5_FOUND ON)
-    MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
-    set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY})
+    FIND_PACKAGE(HDF5 COMPONENTS C HL)
+
+    if(${HDF5_FOUND})
+      MESSAGE(STATUS "Adding hdf5 libraries ")
+    set(NETCDF_C_LIBRARY ${NETCDF_C_LIBRARY} ${HDF5_LIBRARIES})
+    endif()
   endif()
+
 
   # Check to see which dependencies (ZLIB, SZIP) hdf5 has
   INCLUDE(CheckSymbolExists)
