@@ -19,7 +19,7 @@ Where
    ICE  = [CICE, DICE, SICE, SICE]
    OCN  = [POP, DOCN, SOCN, XOCN,AQUAP,MPASO]
    ROF  = [RTM, DROF, SROF, XROF]
-   GLC  = [CISM1, CISM2S, CISM2P, SGLC, XGLC, MPASLI]
+   GLC  = [CISM1, CISM2S, CISM2P, MPASLISIA, MPASLIALB, SGLC, XGLC]
    WAV  = [WW3, DWAV, SWAV, XWAV]
    BGC  = optional BGC scenario 
 The OPTIONAL %phys attributes specify submodes of the given system
@@ -379,7 +379,8 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="TGRCP8_G2S" alias="TGRCP85IS2" grid="gland">RCP8_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM2P_SWAV</COMPSET>
 
 <!-- GLC-only compsets -->
-<COMPSET sname="MPASLI_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLI_SWAV</COMPSET>
+<COMPSET sname="MPASLI_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLISIA_SWAV</COMPSET>
+<COMPSET sname="MPASLIALB_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLIALB_SWAV</COMPSET>
 
 <!-- Stubs/Dead compsets -->
 
@@ -1045,13 +1046,19 @@ CISM2S => cism2 (serial)
 feedbacks for a TG compset, this will give us additional diagnostics -->
 <GLC_TWO_WAY_COUPLING compset="_DLND.+MPASLI">TRUE</GLC_TWO_WAY_COUPLING>
 
-<desc compset="_MPASLI" >mpasli:</desc>
+<!-- Here is where whether to use Albany is determined -->
+<MPASLI_USE_ALBANY compset="_MPASLISIA">FALSE</MPASLI_USE_ALBANY>
+<MPASLI_USE_ALBANY compset="_MPASLIALB">TRUE</MPASLI_USE_ALBANY>
+
+<desc compset="_MPASLISIA" >MPAS Land Ice (shallow ice solver):</desc>
+<desc compset="_MPASLIALB" >MPAS Land Ice (Albany-FO solver):</desc>
 
 <help>
 =========================================
 MPASLI naming conventions in compset name
 =========================================
-MPASLI  => mpasli (default, SIA only)
+MPASLISIA   => native shallow ice solver
+MPASLIALBFO => external Albany First-order solver
 </help>
 
 
