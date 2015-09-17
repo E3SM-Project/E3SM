@@ -1,22 +1,22 @@
 
 
-find_path(Netcdf_INCLUDE_DIR 
+find_path(Netcdf_INCLUDE_DIR
           NAMES netcdf.h
-          PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR}
+          PATHS ${NETCDF_DIR}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(Netcdf_LIBRARY 
+find_library(Netcdf_LIBRARY
              NAMES libnetcdf.a netcdf
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(NetcdfF_LIBRARY 
+find_library(NetcdfF_LIBRARY
              NAMES libnetcdff.a netcdff
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_library(Pnetcdf_LIBRARY 
+find_library(Pnetcdf_LIBRARY
              NAMES libpnetcdf.a pnetcdf
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
@@ -26,7 +26,7 @@ find_path(Netcdf_NC_CONFIG_BIN
           HINTS ${Netcdf_INCLUDE_DIR}/../bin
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_file(NETCDF4_PAR_H netcdf_par.h 
+find_file(NETCDF4_PAR_H netcdf_par.h
           HINTS ${Netcdf_INCLUDE_DIR}
           NO_DEFAULT_PATH )
 
@@ -57,15 +57,15 @@ IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
 
   # use nc-confg --has-nc4 to determine if Netcdf depends upon HDF5
   EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4
-    RESULT_VARIABLE Homme_result
-    OUTPUT_VARIABLE Homme_output
-    ERROR_VARIABLE Homme_error
+    RESULT_VARIABLE NCCONFIG_RESULT
+    OUTPUT_VARIABLE NCCONFIG_OUTPUT
+    ERROR_VARIABLE NCCONFIG_ERROR
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  IF (${Homme_error})
+  IF (${NCCONFIG_ERROR})
     MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4 produced an error")
   ELSE ()
-    IF (${Homme_output} STREQUAL yes)
+    IF (${NCCONFIG_OUTPUT} STREQUAL yes)
       SET (NETCDF_REQUIRE_HDF5 TRUE)
       MESSAGE(STATUS "nc-config: Netcdf depends upon HDF5")
     ELSE ()
@@ -76,15 +76,15 @@ IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
 
   # use nc-confg --has-dap to determine if Netcdf depends upon CURL
   EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap
-    RESULT_VARIABLE Homme_result
-    OUTPUT_VARIABLE Homme_output
-    ERROR_VARIABLE Homme_error
+    RESULT_VARIABLE NCCONFIG_RESULT
+    OUTPUT_VARIABLE NCCONFIG_OUTPUT
+    ERROR_VARIABLE NCCONFIG_ERROR
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  IF (${Homme_error})
+  IF (${NCCONFIG_ERROR})
     MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap produced an error")
   ELSE ()
-    IF (${Homme_output} STREQUAL yes)
+    IF (${NCCONFIG_OUTPUT} STREQUAL yes)
       SET (NETCDF_REQUIRE_CURL TRUE)
       MESSAGE(STATUS "nc-config: Netcdf depends upon CURL")
     ELSE ()
@@ -99,8 +99,8 @@ ELSE ()
   MESSAGE(STATUS "nc-config not found assuming hdf5 and curl dependencies")
 ENDIF ()
 
-IF (${NETCDF_REQUIRE_CURL}) 
-  
+IF (${NETCDF_REQUIRE_CURL})
+
   # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
   #   - change the variable for consistency
   SET(CURL_ROOT ${CURL_DIR})
@@ -114,23 +114,23 @@ IF (${NETCDF_REQUIRE_CURL})
   ENDIF ()
 ENDIF ()
 
-IF (${NETCDF_REQUIRE_HDF5}) 
+IF (${NETCDF_REQUIRE_HDF5})
 
   find_path(HDF5_INCLUDE_DIR
             hdf5.h
-            PATHS ${HDF5_DIR} ${Homme_HDF5_DIR}
+            PATHS ${HDF5_DIR}
             PATH_SUFFIXES include
             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
   find_library(HDF5_LIBRARY
                NAMES libhdf5.a hdf5
-               PATHS ${HDF5_DIR} ${Homme_HDF5_DIR}
+               PATHS ${HDF5_DIR}
                PATH_SUFFIXES lib lib64
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
   find_library(HDF5hl_LIBRARY
                NAMES libhdf5_hl.a hdf5_hl
-               PATHS ${HDF5_DIR} ${Homme_HDF5_DIR}
+               PATHS ${HDF5_DIR}
                PATH_SUFFIXES lib lib64
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
@@ -156,7 +156,7 @@ IF (${NETCDF_REQUIRE_HDF5})
     #find_package(ZLIB REQUIRED)
     find_library(ZLIB_LIBRARY
                  NAMES libz.a z
-                 PATHS ${ZLIB_DIR} ${Homme_ZLIB_DIR}
+                 PATHS ${ZLIB_DIR}
                  PATH_SUFFIXES lib lib64
                  NO_SYSTEM_ENVIRONMENT_PATH)
 
@@ -181,7 +181,7 @@ IF (${NETCDF_REQUIRE_HDF5})
 
     find_library(SZIP_LIBRARY
                  NAMES libsz.a sz
-                 PATHS ${SZIP_DIR} ${Homme_SZIP_DIR}
+                 PATHS ${SZIP_DIR}
                  PATH_SUFFIXES lib lib64
                  NO_SYSTEM_ENVIRONMENT_PATH)
 
