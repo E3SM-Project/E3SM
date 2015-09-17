@@ -2901,6 +2901,19 @@
 		executable. This is currently only supported for certain machines."
 	 ></entry>
 
+  <entry id="USE_ALBANY"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_def"
+	 sdesc="TRUE implies linking to the Albany library - set automatically by XXX_USE_ALBANY options (do not edit)"
+	 ldesc="
+		Flag to turn on linking to the Albany library. Currently this is
+		used by MPASLI. Note that Albany is a C++ library, so setting this
+		variable to TRUE will involve the inclusion of C++ code in the MPASLI
+		executable. This is currently only supported for certain machines."
+	 ></entry>
+
   <entry id="GMAKE" 
 	 type="char"
 	 valid_values="" 
