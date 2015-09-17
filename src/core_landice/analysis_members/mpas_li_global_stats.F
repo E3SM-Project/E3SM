@@ -177,6 +177,9 @@ contains
       real (kind=RKIND), pointer ::  groundedIceVolume
       real (kind=RKIND), pointer ::  floatingIceArea 
       real (kind=RKIND), pointer ::  floatingIceVolume
+      real (kind=RKIND), pointer ::  iceThicknessMax
+      real (kind=RKIND), pointer ::  iceThicknessMin  
+      real (kind=RKIND), pointer ::  iceThicknessMean 
 
       ! scalar sums over blocks
       real (kind=RKIND) ::  blockSumIceArea
@@ -185,8 +188,12 @@ contains
       real (kind=RKIND) ::  blockSumGroundedIceVolume
       real (kind=RKIND) ::  blockSumFloatingIceArea
       real (kind=RKIND) ::  blockSumFloatingIceVolume
+      real (kind=RKIND) ::  blockThickMin
+      real (kind=RKIND) ::  blockThickMax
 
       err = 0
+
+      dminfo = domain % dminfo
 
       ! initialize sums over blocks to 0
       blockSumIceArea = 0.0_RKIND
@@ -196,28 +203,37 @@ contains
       blockSumFloatingIceArea = 0.0_RKIND
       blockSumFloatingIceVolume = 0.0_RKIND
 
-      dminfo = domain % dminfo
+      ! initialize max, min, mean values to 0
+      blockThickMin = 0.0_RKIND
+      blockThickMax = 0.0_RKIND
 
-      ! compute sums over blocks
+      ! loop over blocks
       block => domain % blocklist
       do while (associated(block))
 
+         ! get structs from pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'globalStatsAM', globalStatsAMPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
+         ! get values and arrays from standard pools
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
+         ! get values from global stats pool
          call mpas_pool_get_array(globalStatsAMPool, 'totalIceArea', totalIceArea)
          call mpas_pool_get_array(globalStatsAMPool, 'totalIceVolume', totalIceVolume)
          call mpas_pool_get_array(globalStatsAMPool, 'floatingIceArea', floatingIceArea)
          call mpas_pool_get_array(globalStatsAMPool, 'floatingIceVolume', floatingIceVolume)
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceArea', groundedIceArea)
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMax', iceThicknessMax)
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMin', iceThicknessMin)
+         call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
 
+         ! loop over cells
          do iCell = 1,nCellsSolve
 
             ! sums of ice area and volume over cells
@@ -236,11 +252,19 @@ contains
             blockSumFloatingIceVolume = blockSumFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * thickness(iCell) 
 
-         end do ! end sum over cells
+            ! max, min thickness values
+            if( thickness(iCell) > blockThickMax)then
+                blockThickMax = thickness(iCell)
+            endif
+            if( thickness(iCell) < blockThickMin .and. thickness(iCell) > 0.0_RKIND)then
+                blockThickMin = thickness(iCell)
+            endif
+
+         end do ! end loop over cells
 
          block => block % next
 
-      end do    ! end sum over blocks
+      end do    ! end loop over blocks
 
       ! compute sums over all procs
       call mpas_dmpar_sum_real(dminfo, blockSumIceArea, totalIceArea)
@@ -250,13 +274,10 @@ contains
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceArea, floatingIceArea)
       call mpas_dmpar_sum_real(dminfo, blockSumFloatingIceVolume, floatingIceVolume)
 
-      ! debugging
-!      print *, 'totalIceArea=', totalIceArea
-!      print *, 'totalIceVolume=', totalIceVolume
-!      print *, 'groundedIceArea=', groundedIceArea
-!      print *, 'groundedIceVolume=', groundedIceVolume
-!      print *, 'floatingIceArea=', floatingIceArea
-!      print *, 'floatingIceVolume=', floatingIceVolume
+      ! find min, max, mean thickness over all procs
+      call mpas_dmpar_min_real(dminfo, blockThickMin, iceThicknessMin)
+      call mpas_dmpar_max_real(dminfo, blockThickMax, iceThicknessMax)
+      iceThicknessMean = totalIceVolume / totalIceArea
 
       ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
