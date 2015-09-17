@@ -42,7 +42,6 @@ sub new
 	my $self = {
 	    case	=> $params{'case'}	|| undef,
 	    caseroot	=> $params{'caseroot'}	|| undef,
-	    cimeroot	=> $params{'cimeroot'}	|| undef,
 	    compiler    => $params{'compiler'}  || undef,
 	    config	=> $params{'config'}    || undef,
 	    machine     => $params{'machine'}   || undef,
