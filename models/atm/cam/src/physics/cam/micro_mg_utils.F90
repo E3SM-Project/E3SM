@@ -374,6 +374,16 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
      props_loc = props
 
      ! Get pgam from fit to observations of martin et al. 1994
+#if defined(CLUBB_BFB_S2) || defined(CLUBB_BFB_ALL)
+     pgam = 0.0005714_r8*(ncic/1.e6_r8*rho) + 0.2714_r8
+     pgam = 1._r8/(pgam**2) - 1._r8
+     pgam = max(pgam, 2._r8)
+     pgam = min(pgam, 15._r8)
+
+     ! Set coefficient for use in size_dist_param_basic.
+     props_loc%shape_coef = pi * props_loc%rho / 6._r8 * &
+          rising_factorial(pgam+1._r8, props_loc%eff_dim)
+#else
      pgam = 0.0005714_r8*1.e-6_r8*ncic*rho + 0.2714_r8
      pgam = 1._r8/(pgam**2) - 1._r8
      pgam = max(pgam, 2._r8)
@@ -387,6 +397,7 @@ elemental subroutine size_dist_param_liq(props, qcic, ncic, rho, pgam, lamc)
         props_loc%shape_coef = pi / 6._r8 * props_loc%rho * &
              rising_factorial(pgam+1._r8, props_loc%eff_dim)
      end if
+#endif
 
      ! Limit to between 2 and 50 microns mean size.
      props_loc%lambda_bounds = (pgam+1._r8)*1._r8/[50.e-6_r8, 2.e-6_r8]
