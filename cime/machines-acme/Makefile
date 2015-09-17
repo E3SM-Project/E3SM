@@ -65,11 +65,13 @@ endif
 
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
-# trilinos library.
+# trilinos library or the Albany library.
+USE_CXX = false
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
    USE_CXX = true
-else
-   USE_CXX = false
+endif
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+   USE_CXX = true
 endif
 
 ifndef MOD_SUFFIX
@@ -200,6 +202,7 @@ ifdef PNETCDF_PATH
   endif
 endif
 
+# Set Trilinos info if it is being used
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
     ifndef INC_TRILINOS
@@ -216,6 +219,24 @@ ifeq ($(strip $(USE_TRILINOS)), TRUE)
   # these variables begin with "Trilinos_"
   include $(INC_TRILINOS)/Makefile.export.Trilinos
 endif
+
+# Set Albany info if it is being used
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  ifdef ALBANY_PATH
+    ifndef INC_ALBANY
+      INC_ALBANY:=$(ALBANY_PATH)/include
+    endif
+    ifndef LIB_ALBANY
+      LIB_ALBANY:=$(ALBANY_PATH)/lib
+    endif
+  else
+    $(error ALBANY_PATH must be defined when USE_ALBANY is TRUE)
+  endif
+
+  # get the "ALBANY_LINK_LIBS" list as an env var
+  include $(ALBANY_PATH)/export_albany.in
+endif
+
 
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
@@ -302,6 +323,9 @@ ifdef INC_PNETCDF
 endif
 ifdef INC_TRILINOS
   INCLDIR += -I$(INC_TRILINOS)
+endif
+ifdef INC_ALBANY
+  INCLDIR += -I$(INC_ALBANY)
 endif
 
 ifeq ($(MODEL),driver)
@@ -437,6 +461,12 @@ endif
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   SLIBS += -L$(LIB_TRILINOS) $(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARIES)
 endif
+
+# Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
 
 # Add libraries and flags that we need on the link line when C++ code is included
 # We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,

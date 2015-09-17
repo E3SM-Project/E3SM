@@ -340,6 +340,27 @@ Valid Values: TRUE,FALSE </pre>
     </td>
     <td>env_build.xml</td>
   </tr>
+  <tr id="USE_ALBANY">
+    <td><a name="USE_ALBANY"></a>
+        <img id="USE_ALBANY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('USE_ALBANY')">USE_ALBANY</a>
+        </code>
+        <div id="USE_ALBANY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>TRUE implies linking to the Albany library - set automatically by XXX_USE_ALBANY options (do not edit) .
+Flag to turn on linking to the Albany library. Currently this is
+used by MPASLI. Note that Albany is a C++ library, so setting this
+variable to TRUE will involve the inclusion of C++ code in the CESM
+executable. This is currently only supported for certain machines.
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_build.xml</td>
+  </tr>
+
   <tr id="GMAKE_tr">
     <td><a name="GMAKE"></a>
         <img id="GMAKE_arrow" src="./images/arrow_right.gif">
