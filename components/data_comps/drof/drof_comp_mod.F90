@@ -284,6 +284,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
 
     if (trim(rof_mode) /= 'NULL') then
        rof_present = .true.
+       rofice_present = .true.
        call shr_strdata_pioinit(SDROF,rof_pio_subsys,rof_pio_iotype)
        call shr_strdata_init(SDROF,mpicom,compid,name='rof',&
             calendar=calendar)
