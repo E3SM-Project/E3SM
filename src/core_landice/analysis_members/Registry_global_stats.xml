@@ -24,22 +24,22 @@
 		<package name="globalStatsAMPKG" description="This package includes variables required for the globalStats analysis member."/>
 	</packages>
 	<var_struct name="globalStatsAM" time_levs="1" packages="globalStatsAMPKG">
-		<var name="totalIceVolume" type="real" dimensions="Time" units="km^3"
+		<var name="totalIceVolume" type="real" dimensions="Time" units="m^3"
 			description="total ice sheet volume"
 		/>
-		<var name="totalIceArea" type="real" dimensions="Time" units="km^2"
+		<var name="totalIceArea" type="real" dimensions="Time" units="m^2"
 			description="total ice sheet area"
 		/>
-		<var name="floatingIceVolume" type="real" dimensions="Time" units="km^3"
+		<var name="floatingIceVolume" type="real" dimensions="Time" units="m^3"
 			description="total floating ice sheet volume"
 		/>
-		<var name="floatingIceArea" type="real" dimensions="Time" units="km^2"
+		<var name="floatingIceArea" type="real" dimensions="Time" units="m^2"
 			description="total floating ice sheet area"
 		/>
-		<var name="groundedIceVolume" type="real" dimensions="Time" units="km^3"
+		<var name="groundedIceVolume" type="real" dimensions="Time" units="m^3"
 			description="total grounded ice sheet volume"
 		/>
-		<var name="groundedIceArea" type="real" dimensions="Time" units="km^2"
+		<var name="groundedIceArea" type="real" dimensions="Time" units="m^2"
 			description="total grounded ice sheet area"
 		/>
 		<var name="iceThicknessMean" type="real" dimensions="Time" units="m"
@@ -50,6 +50,12 @@
 		/>
 		<var name="iceThicknessMin" type="real" dimensions="Time" units="m"
 			description="minimum ice thickness in domain"
+		/>
+		<var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated surface mass balance"
+		/>
+		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance"
 		/>
  	</var_struct>
 	<streams>
@@ -72,5 +78,7 @@
 			<var name="iceThicknessMin"/> 
 			<var name="iceThicknessMax"/> 
 			<var name="iceThicknessMean"/>
+			<var name="totalSfcMassBal"/> 
+			<var name="totalBasalMassBal"/>
 		</stream>
 	</streams>
