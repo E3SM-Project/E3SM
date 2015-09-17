@@ -71,12 +71,6 @@ module component_mod
    integer  :: nthreads_GLOID, nthreads_CPLID
    logical  :: drv_threading
 
-   character(*), parameter :: subname = '(component_mod)'
-   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
-   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
-   character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
-   character(*), parameter :: F0R = "('"//subname//" : ', A, 2g23.15 )"
-
   !===============================================================================
 
 contains
@@ -104,6 +98,7 @@ contains
     !
     ! Local Variables
     integer  :: eci       ! index
+    character(*), parameter :: subname = '(component_init_pre)'
     !---------------------------------------------------------------
 
     ! initialize module variables (this is repetitive here- but does not require a different routine)
@@ -199,6 +194,8 @@ contains
     ! Local Variables
     integer :: k1, k2
     integer :: eci
+    character(*), parameter :: subname = '(component_init_cc:mct)'
+    character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
     ! **** Initialize component - this initializes  x2c_cc and c2x_cc ***
@@ -327,7 +324,9 @@ contains
     integer , pointer   :: petlist(:)
     real(R8), pointer   :: fptr(:,:)            ! pointer into    array data
     character(len=1)    :: cid
-    character(len=8196) :: mct_names_x2c, mct_names_c2x
+    character(len=8196) :: mct_names_x2c, mct_names_c2x, mct_names_dom
+    character(*), parameter :: subname = '(component_init_cc:esmf)'
+    character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
     if (present(seq_flds_x2c_fluxes) .and. present(seq_flds_c2x_fluxes)) then
@@ -522,6 +521,9 @@ contains
                 call ESMF_ArrayDestroy(c2x_cc_array, rc=rc) ! destroy the Array
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
+                call ESMF_AttributeGet(dom_cc_array, name='mct_names', value=mct_names_dom, rc=rc)
+                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
                 call ESMF_ArrayDestroy(dom_cc_array, rc=rc) ! destroy the Array
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
@@ -546,6 +548,9 @@ contains
                 if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
                 call ESMF_AttributeSet(c2x_cc_array, name="mct_names", value=trim(mct_names_c2x), rc=rc)
+                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+
+                call ESMF_AttributeSet(dom_cc_array, name="mct_names", value=trim(mct_names_dom), rc=rc)
                 if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
                 call ESMF_StateReplace(comp(eci)%x2c_cc_state, (/x2c_cc_array/), rc=rc)
@@ -634,6 +639,7 @@ contains
     integer :: eci
     integer :: rc
     integer, pointer :: petlist(:)
+    character(*), parameter :: subname = '(component_init_update_petlist)'
     !---------------------------------------------------------------
 
    ! Update petlist attribute
@@ -669,6 +675,8 @@ contains
     integer         :: eci
     integer         :: rc        ! return code
     type(mct_gGrid) :: dom_tmp   ! temporary
+    character(*), parameter :: subname = '(component_init_cx)'
+    character(*), parameter :: F0I = "('"//subname//" : ', A, 2i8 )"
     !---------------------------------------------------------------
 
     ! Initialize driver rearrangers and AVs on driver
@@ -750,7 +758,8 @@ contains
 
   !===============================================================================
 
-  subroutine component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, samegrid_ro)
+  subroutine component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
+       samegrid_ro, samegrid_lg)
 
     !---------------------------------------------------------------
     ! Description
@@ -760,7 +769,7 @@ contains
     use prep_ocn_mod,       only : prep_ocn_get_mapper_Fa2o
     use prep_lnd_mod,       only : prep_lnd_get_mapper_Sa2l
     use prep_ice_mod,       only : prep_ice_get_mapper_SFo2i
-    use prep_glc_mod,       only : prep_glc_get_mapper_SFl2g
+    use prep_glc_mod,       only : prep_glc_get_mapper_Sl2g
     use component_type_mod, only : atm, lnd, ice, ocn, rof, glc
     !
     ! Arguments
@@ -769,6 +778,7 @@ contains
     logical                  , intent(in)    :: samegrid_ao
     logical                  , intent(in)    :: samegrid_al
     logical                  , intent(in)    :: samegrid_ro
+    logical                  , intent(in)    :: samegrid_lg  ! lnd & glc on same grid
     !
     ! Local variables
     type(mct_gsmap), pointer :: gsmap_s, gsmap_d
@@ -776,13 +786,14 @@ contains
     type(seq_map)  , pointer :: mapper_Fa2o
     type(seq_map)  , pointer :: mapper_Sa2l
     type(seq_map)  , pointer :: mapper_SFo2i
-    type(seq_map)  , pointer :: mapper_SFl2g
+    type(seq_map)  , pointer :: mapper_Sl2g
     logical                  :: atm_present ! atm present flag
     logical                  :: lnd_present ! lnd present flag
     logical                  :: ocn_present ! ocn present flag
     logical                  :: ice_present ! ice present flag
     logical                  :: glc_present ! glc present flag
     integer                  :: ka,km
+    character(*), parameter :: subname = '(component_init_aream)'
     !---------------------------------------------------------------
 
     ! Note that the following is assumed to hold - all gsmaps_cx for a given 
@@ -791,7 +802,7 @@ contains
     mapper_Fa2o  => prep_ocn_get_mapper_Fa2o()
     mapper_Sa2l  => prep_lnd_get_mapper_Sa2l()
     mapper_SFo2i => prep_ice_get_mapper_SFo2i()
-    mapper_SFl2g => prep_glc_get_mapper_SFl2g()
+    mapper_Sl2g  => prep_glc_get_mapper_Sl2g()
 
     call seq_infodata_GetData( infodata, &
          atm_present=atm_present,        &
@@ -857,10 +868,19 @@ contains
     end if
 
     if (lnd_present .and. glc_present) then
-       dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
-       dom_d  => component_get_dom_cx(glc(1))   !dom_gx
+       if (samegrid_lg) then
+          dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
+          dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
-       call seq_map_map(mapper_SFl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+       else
+          gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
+          dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
+
+          call seq_map_readdata('seq_maps.rc','lnd2glc_fmapname:',mpicom_CPLID, CPLID, &
+               gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
+               string='lnd2glc aream initialization')
+       endif
     endif
 
   end subroutine component_init_aream
@@ -881,6 +901,7 @@ contains
     !
     ! Local Variables
     integer :: eci, num_inst
+    character(*), parameter :: subname = '(component_init_areacor)'
     !---------------------------------------------------------------
 
     num_inst = size(comp) 
@@ -968,6 +989,7 @@ contains
     logical  :: seq_multi_inst    ! a special case of running multiinstances on the same pes. 
     integer  :: phase, phasemin, phasemax  ! phase support
     logical  :: firstloop         ! first time around phase loop
+    character(*), parameter :: subname = '(component_run:mct)'
     !---------------------------------------------------------------
 
     num_inst = size(comp)
@@ -1095,6 +1117,7 @@ contains
     real(r8)                 :: cktime            ! delta time
     real(r8)                 :: cktime_acc(10)    ! cktime accumulator array 1 = all, 2 = atm, etc
     integer                  :: cktime_cnt(10)    ! cktime counter array
+    character(*), parameter :: subname = '(component_run:esmf)'
     !---------------------------------------------------------------
 
     num_inst = size(comp)
@@ -1165,7 +1188,10 @@ contains
           call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-
+          
+          if (present(timer_comp_run)) then
+             call t_drvstopf (trim(timer_comp_run))
+          end if
        end if
     end do
 
@@ -1200,6 +1226,7 @@ contains
     ! Local Variables
     integer :: eci
     integer :: num_inst
+    character(*), parameter :: subname = '(component_final:mct)'
     !---------------------------------------------------------------
 
     num_inst = size(comp)
@@ -1229,6 +1256,7 @@ contains
     integer             :: eci
     integer             :: rc, urc
     integer             :: num_inst
+    character(*), parameter :: subname = '(component_final:esmf)'
     !---------------------------------------------------------------
 
     num_inst = size(comp)
@@ -1273,6 +1301,7 @@ contains
     ! Local Variables
     integer :: eci
     integer :: ierr
+    character(*), parameter :: subname = '(component_exch)'
     !---------------------------------------------------------------
 
     if (present(timer_barrier))  then
@@ -1351,6 +1380,7 @@ contains
     !
     ! Local Variables
     integer :: eci
+    character(*), parameter :: subname = '(component_diag)'
     !---------------------------------------------------------------
 
     if (info_debug > 1) then
