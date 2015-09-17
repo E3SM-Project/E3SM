@@ -29,8 +29,6 @@ module li_time_integration
    use li_time_integration_fe
    use li_setup
 
-   use li_analysis_driver    ! SFP added
-
    implicit none
    private
 

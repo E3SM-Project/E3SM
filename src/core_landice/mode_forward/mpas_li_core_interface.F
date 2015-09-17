@@ -13,8 +13,7 @@ module li_core_interface
    use mpas_constants
    use mpas_io_units
    use li_core
-
-   use li_analysis_driver !SFP added
+   use li_analysis_driver
 
    public
 
@@ -124,7 +123,7 @@ module li_core_interface
          write (stdoutUnit,*) "The 'calcDiffusivity' package and associated variables have been enabled because 'config_adaptive_timestep_include_DCFL' is set to .true."
       endif
 
-      !SFP added: call to setup packages in analysis driver
+      ! call setup packages in analysis driver
       call li_analysis_setup_packages(configPool, packagePool, ierr) 
 
 
