@@ -3,6 +3,7 @@
 # Searches for inputdata files
 
 use Getopt::Long;
+use XML::LibXML;
 
 #-----------------------------------------------------------------------------------------------
 
@@ -23,19 +24,19 @@ OPTIONS
      -export                Export missing data into "inputdata",
      -prestage <prestage>   Prestage data from inputdata to prestage
      -datalistdir <dir>     Directory which will be searched for .input_data_list files
-                            Default is $CASEBUILD.  Optional.
+                            Default is $CASEROOT/Buildconf.  Optional.
      -verbose [or -v]       Print extra information. Optional.
      -help [or -h]          Print usage to STDOUT.  Optional.
 SUMMARY
 
-   This utility checks, exports and prestages necessary input data for CESM.
+   This utility checks, exports and prestages necessary input data for a model case
 
    The utility first searches for .input_data_list files in the then
    prints their locations and passes them to the caseroot
    Tools/get-input-data utility via the -flist option.
 
    Default directory to search for .input_data_list files is
-   $CASEBUILD
+   $CASEROOT/Buildconf
 
 EOF
 }# Process command-line options.
@@ -84,6 +85,7 @@ if (defined($opts{'datalistdir'})) {
     # continue
 }
 elsif (defined $ENV{'CASEBUILD'} ){
+    #TODO: this environment variable should be removed? CASEBUILD is no longer being used
     $opts{'datalistdir'} = $ENV{'CASEBUILD'};
 }
 else {
@@ -97,25 +99,25 @@ else {
 ** $ProgName - Cannot find input directory: \"$opts{'datalistdir'}\" **
 EOF
 
-# Check that the CESM inputdata root directory has been specified.
+# Check that the inputdata root directory has been specified.
 my $inputdata_rootdir = undef;
 if (defined($opts{'inputdata'})) {
     $inputdata_rootdir = $opts{'inputdata'};
 }
 else {
-    die "$ProgName - ERROR: CESM inputdata root directory must be specified by the -inputdata argument\n";
+    die "$ProgName - ERROR: inputdata root directory must be specified by the -inputdata argument\n";
 }
 
 # The inputdata root directory must be local or nfs mounted.
 (-d $inputdata_rootdir)  or  die <<EOF;
-** $ProgName - CESM inputdata root is not a directory: \"$inputdata_rootdir\" **
+** $ProgName - inputdata root is not a directory: \"$inputdata_rootdir\" **
 EOF
 
 # Check prestage dir
 if ($prestageopt) {
     $prestage_rootdir = $opts{'prestage'};
     (-d $prestage_rootdir)  or  die <<EOF;
-** $ProgName - CESM prestage dir is not a directory: \"$prestage_rootdir\" **
+** $ProgName - prestage dir is not a directory: \"$prestage_rootdir\" **
 EOF
 }
 
@@ -198,9 +200,12 @@ EOF
         }
 
         # If any values have variables in them, read in xml variables and expand
-	my @dirs = ("./Tools");
-	unshift @INC, @dirs;
-	require SetupTools;
+	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+	my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+	my $cimeroot = $nodes[0]->getAttribute('value');
+
+	unshift @INC, "$cimeroot/utils/perl5lib";
+	require Config::SetupTools;
 
         if ($fileneed =~ m/\$/) {
            print "Print expand any xml variables for: $fileneed\n";

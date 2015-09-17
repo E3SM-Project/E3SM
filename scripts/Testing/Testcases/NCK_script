@@ -20,12 +20,12 @@ else
 endif
 
 # note - if you change the env_mach_pes.xml file - should always
-# rerun the following two cesm_setup commands to ensure that the right
+# rerun the following two case_setup commands to ensure that the right
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 # Set env_run.xml settings 
 set STOP_N      = `./xmlquery STOP_N      -value`
@@ -83,8 +83,8 @@ echo "default: doing a ${STOP_N} ${STOP_OPTION} with NINST 2" >>& $TESTSTATUS_LO
 
 cp -f env_mach_pes.xml.2 env_mach_pes.xml
 cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 rm $EXEROOT/cesm.exe >& /dev/null
 cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9

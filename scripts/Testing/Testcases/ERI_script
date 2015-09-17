@@ -27,12 +27,12 @@ rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0}
 cd $CASERR1
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-./cesm_setup
+./case_setup
 
 cd $CASERR2
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-./cesm_setup
+./case_setup
 
 #---- determine run lengths needed below 
 cd $CASER0
@@ -107,6 +107,14 @@ if ($status != 0) then
     exit -1
 endif
 
+# Run the short-term archiver.. this is a short-term hack until
+# a better solution can be found.
+./$CASE.st_archive
+if($status != 0) then
+    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    exit -1
+endif
+
 # must look in short term archiving directory for cpl log files
 set CplLogFile = `ls -1t $DOUTSR1/cpl/logs/cpl.log* | head -1`
 if ( $?CplLogFile ) then
@@ -170,6 +178,14 @@ cp    ${DOUTSR1}/rest/${refdate2}-${reftod2}/*rpointer*    $RUNDIR/.
 ./$CASE.run
 if ($status != 0) then
     echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    exit -1
+endif
+
+# Run the short-term archiver.. this is a short-term hack until
+# a better solution can be found.
+./$CASE.st_archive
+if($status != 0) then
+    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
     exit -1
 endif
 

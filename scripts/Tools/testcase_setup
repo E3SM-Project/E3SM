@@ -21,6 +21,7 @@ use IO::Handle;
 # Set the directory that contains this script.
 
 my $eol = "\n";
+my $banner = '-' x 80;
 
 #-----------------------------------------------------------------------------------------------
 
@@ -74,12 +75,11 @@ if (! -e "$caseroot/xmlquery" ) {
 #-----------------------------------------------------------------------------------------------
 
 my $mach		=  `./xmlquery MACH			-value`;
-my $ccsm_machdir	=  `./xmlquery CCSM_MACHDIR		-value`;
+my $machdir	        =  `./xmlquery MACHDIR		        -value`;
 my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
 my $libroot             =  `./xmlquery LIBROOT			-value`;
-my $scriptsroot         =  `./xmlquery SCRIPTSROOT		-value`;
 my $dout_s_root         =  `./xmlquery DOUT_S_ROOT		-value`;
 my $caseroot		=  `./xmlquery CASEROOT			-value`;
 my $case		=  `./xmlquery CASE			-value`;
@@ -96,6 +96,10 @@ my $compare_baseline	=  `./xmlquery COMPARE_BASELINE		-value`;
 my $generate_baseline	=  `./xmlquery GENERATE_BASELINE	-value`;
 my $cleanup             =  `./xmlquery CLEANUP	                -value`;
 my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
+my $compiler            =  `./xmlquery COMPILER                 -value`;
+my $mpilib              =  `./xmlquery MPILIB                   -value`;
+my $build_threaded      =  `./xmlquery BUILD_THREADED           -value`;
+my $debug               =  `./xmlquery DEBUG                    -value`;
 
 # generate baseline test flag
 my $basegen_dir;
@@ -125,20 +129,35 @@ if (! $baselineroot) {
 
 chdir($caseroot); 
 
+push(@INC, "$cimeroot/utils/perl5lib/");
+require Batch::BatchMaker;
+require Task::TaskMaker;
+
 # ------------------ testcase_begin ------------------------------------------
+# -- Make batch script using the BatchMaker module --- 
 
-# create batch header for testing script
-my $batchfile = "$ENV{'HOME'}/.cesm/mkbatch.${mach}";
-if ( ! -e $batchfile ) {
-    $batchfile = "${ccsm_machdir}/mkbatch.${mach}";
-}
-my $sysmod = "env PHASE=set_batch env TESTMODE=test $batchfile";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, 
+						     cimeroot => $cimeroot,
+                                                     case     => $case,     
+						     mpilib   => $mpilib,
+						     machroot => $machdir,
+                                                     machine  => $mach,        
+						     compiler => $compiler,
+                                                     threaded => $build_threaded);
 
-# create test file
+my $batchdirectives = $batchmaker->getBatchDirectives();
+                                                     
+
+## create test file
+my $sysmod;
 my $testfile = "$caseroot/${case}.test";
 my $testfh = new IO::File;
 $testfh->open(">>$testfile") or die "can't open file: $testfile $eol";
+print $testfh "#!/bin/csh -f $eol";
+print $testfh "#$banner$eol";
+print $testfh "# This is a CESM test-specific job script$eol";
+print $testfh "#$banner$eol";
+print $testfh $batchdirectives . $eol;
 
 # cleanup option
 if ( "$cleanup" eq "TRUE" ) {
@@ -153,8 +172,11 @@ print $testfh " $eol cd $caseroot  $eol";
 my $testcase_interp = <<END_INTERP;
 
     setenv CASEROOT  $caseroot
+    setenv COMPILER  $compiler
+    setenv MPILIB    $mpilib
+    setenv DEBUG    $debug
 
-    source env_mach_specific
+    source .env_mach_specific.csh
 
     # valid test output states are:  
     #   PASS      Test passed
@@ -179,7 +201,7 @@ my $testcase_interp = <<END_INTERP;
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
     set CIMEROOT		=  $cimeroot
-    set SCRIPTSROOT             =  $scriptsroot
+    set SCRIPTSROOT             = "$cimeroot/scripts";
     set RUNDIR                  =  $rundir
     set EXEROOT                 =  $exeroot
     set LIBROOT                 =  $libroot
@@ -248,6 +270,9 @@ END_BEGIN
 
 print $testfh $testcase_begin;
 
+my $file = "${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script";
+(-f $file) or die "ERROR testcase_setup: $file does not exist \n"; 
+
 $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 
@@ -270,7 +295,7 @@ my $testcase_iop = <<'END_IOP';
     # Reset all previous settings: obtain copy of original env_run.xml file
     if ( -e env_run.orig )  then
 	cp env_run.orig env_run.xml
-	else
+    else
 	cp env_run.xml env_run.orig
     endif
     # ********turn on IOP case***************
@@ -342,7 +367,7 @@ my $testcase_end = <<'END_TEST';
 
        if ("$continue_compare" == 'yes') then
           # compare component history fiels with baseline
-          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASECMP_DIR -test_dir $RUNDIR -compare_tag $BASECMP_NAME -testcase $CASE -testcase_base $CASEBASEID -msg "baseline: compare .base file with $BASECMP_NAME file">>& $TESTSTATUS_OUT
 
 	  if (-e $BASECMP_DIR/${TESTSTATUS_LOG:t}) then
 	     set bbb1 = `grep perf $BASECMP_DIR/${TESTSTATUS_LOG:t} | grep CHECK | grep -v baseline`
@@ -415,7 +440,7 @@ my $testcase_end = <<'END_TEST';
        endif
 
        if ("$continue_generate" == 'yes') then
-          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
+          ${SCRIPTSROOT}/Tools/component_compgen_baseline.sh -baseline_dir $BASEGEN_DIR -test_dir $RUNDIR -generate_tag $BASEGEN_NAME -testcase $CASE -testcase_base $CASEBASEID >>& $TESTSTATUS_OUT
 
 	  # save last coupler log file to baseline directory
 	  cp $CplLogFile $BASEGEN_DIR/cpl.log || echo "WARNING: could not copy $CplLogFile to $BASEGEN_DIR " >>& $TESTSTATUS_LOG
@@ -448,7 +473,6 @@ my $testcase_end = <<'END_TEST';
 	 set npes = ""
 	 set tag  = "unknown"
 	 if ( $?TOTALPES)     set npes = `echo $TOTALPES`
-	 if ( $?CCSM_REPOTAG) set tag  = `echo $CCSM_REPOTAG`
 	 if ( $?BASEGEN_NAME) set tag  = `echo $BASEGEN_NAME`
 
 	 set tput = `zgrep "# simulated years "    $CplLogFile | cut -c 63-72`

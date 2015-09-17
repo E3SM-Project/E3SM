@@ -53,7 +53,7 @@ foreach my $lockedfile (@lockedfiles) {
 	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
 	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
 	} elsif ($file =~ /.*env_mach_pes.*/) {
-	    die "Invoke cesm_setup -clean followed by cesm_setup \n";
+	    die "Invoke case_setup -clean followed by case_setup \n";
 	} else {
 	    die "Cannot change $file, please recover the original copy from LockedFiles \n";
 	}

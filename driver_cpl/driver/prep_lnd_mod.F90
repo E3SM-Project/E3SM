@@ -3,6 +3,7 @@ module prep_lnd_mod
   use shr_kind_mod    , only: r8 => SHR_KIND_R8 
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
+  use shr_kind_mod    , only: cxx => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_atm, num_inst_rof, num_inst_glc
   use seq_comm_mct    , only: num_inst_lnd, num_inst_frc
@@ -17,6 +18,7 @@ module prep_lnd_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: lnd, atm, rof, glc
+  use map_glc2lnd_mod   , only: map_glc2lnd_ec
 
   implicit none
   save
@@ -40,13 +42,15 @@ module prep_lnd_mod
   public :: prep_lnd_get_mapper_Sa2l
   public :: prep_lnd_get_mapper_Fa2l
   public :: prep_lnd_get_mapper_Fr2l
-  public :: prep_lnd_get_mapper_SFg2l
+  public :: prep_lnd_get_mapper_Sg2l
+  public :: prep_lnd_get_mapper_Fg2l
 
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
 
   private :: prep_lnd_merge
+  private :: prep_lnd_set_glc2lnd_fields
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -56,7 +60,8 @@ module prep_lnd_mod
   type(seq_map), pointer :: mapper_Sa2l           ! needed in ccsm_comp_mod.F90 (setting of aream)
   type(seq_map), pointer :: mapper_Fa2l           ! needed in ccsm_comp_mod.F90 (seq_domain_check)
   type(seq_map), pointer :: mapper_Fr2l           ! needed in seq_frac_mct.F90
-  type(seq_map), pointer :: mapper_SFg2l
+  type(seq_map), pointer :: mapper_Sg2l           ! currently unused (all g2l mappings use the flux mapper)
+  type(seq_map), pointer :: mapper_Fg2l
 
   ! attribute vectors 
   type(mct_aVect), pointer :: a2x_lx(:) ! Atm export, lnd grid, cpl pes - allocated in driver
@@ -65,6 +70,16 @@ module prep_lnd_mod
 
   ! seq_comm_getData variables
   integer :: mpicom_CPLID                         ! MPI cpl communicator
+
+  ! field names and lists, for fields that need to be treated specially
+  character(len=*), parameter :: glc_frac_field = 'Sg_ice_covered'
+  character(len=*), parameter :: glc_topo_field = 'Sg_topo'
+  character(len=*), parameter :: glc_icemask_field = 'Sg_icemask'
+  ! fields mapped from glc to lnd, NOT separated by elevation class
+  character(CXX) :: glc2lnd_non_ec_fields
+  ! other fields (besides frac_field and topo_field) that are mapped from glc to lnd,
+  ! separated by elevation class
+  character(CXX) :: glc2lnd_ec_extra_fields
   !================================================================================================
 
 contains
@@ -89,6 +104,7 @@ contains
     integer                  :: eai, eri, egi, eli
     logical                  :: samegrid_al   ! samegrid atm and land
     logical                  :: samegrid_lr   ! samegrid land and rof
+    logical                  :: samegrid_lg   ! samegrid land and glc
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     logical                  :: lnd_present   ! .true. => land is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
@@ -112,7 +128,8 @@ contains
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
     allocate(mapper_Fr2l)
-    allocate(mapper_SFg2l)
+    allocate(mapper_Sg2l)
+    allocate(mapper_Fg2l)
 
     if (lnd_present) then
        
@@ -134,15 +151,17 @@ contains
        end do
        allocate(g2x_lx(num_inst_glc))
        do egi = 1,num_inst_glc
-          call mct_aVect_init(g2x_lx(egi), rList=seq_flds_g2x_fields, lsize=lsize_l)
+          call mct_aVect_init(g2x_lx(egi), rList=seq_flds_x2l_fields_from_glc, lsize=lsize_l)
           call mct_aVect_zero(g2x_lx(egi))
        end do
 
        samegrid_al = .true. 
-       samegrid_lr = .true. 
+       samegrid_lr = .true.
+       samegrid_lg = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
-
+       if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
+       
        if (rof_c2_lnd) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -175,9 +194,20 @@ contains
        if (glc_c2_lnd) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_SFg2l'
+             write(logunit,F00) 'Initializing mapper_Sg2l'
           end if
-          call seq_map_init_rearrolap(mapper_SFg2l, glc(1), lnd(1), 'mapper_SFg2l')
+          call seq_map_init_rcfile(mapper_Sg2l, glc(1), lnd(1), &
+               'seq_maps.rc','glc2lnd_smapname:','glc2lnd_smaptype:',samegrid_lg, &
+               'mapper_Sg2l initialization',esmf_map_flag)
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Fg2l'
+          end if
+          call seq_map_init_rcfile(mapper_Fg2l, glc(1), lnd(1), &
+               'seq_maps.rc','glc2lnd_fmapname:','glc2lnd_fmaptype:',samegrid_lg, &
+               'mapper_Fg2l initialization',esmf_map_flag)
+
+          call prep_lnd_set_glc2lnd_fields()
        endif
        call shr_sys_flush(logunit)
 
@@ -185,6 +215,49 @@ contains
 
   end subroutine prep_lnd_init
 
+  !================================================================================================
+
+  subroutine prep_lnd_set_glc2lnd_fields()
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Sets the module-level glc2lnd_non_ec_fields and glc2lnd_ec_extra_fields variables.
+    !
+    ! Local Variables
+    character(len=CXX) :: temp_list
+
+    character(*), parameter  :: subname = '(prep_lnd_set_glc2lnd_fields)'
+    !---------------------------------------------------------------
+
+    ! glc2lnd fields not separated by elevation class can be determined by finding fields
+    ! that exist in both the g2x_to_lnd list and the x2l_from_glc list
+    call shr_string_listIntersect(seq_flds_g2x_fields_to_lnd, &
+         seq_flds_x2l_fields_from_glc, &
+         glc2lnd_non_ec_fields)
+
+    ! glc2lnd fields separated by elevation class are all fields not determined above.
+    ! However, we also need to remove glc_frac_field and glc_topo_field from this list,
+    ! because those are handled specially, so are not expected to be in this
+    ! "extra_fields" list.
+    !
+    ! NOTE(wjs, 2015-04-24) I am going to the trouble of building this field list
+    ! dynamically, rather than simply hard-coding the necessary fields (currently just
+    ! 'Flgg_hflx'), so that new fields can be added in seq_flds_mod without needing to
+    ! change any other code.
+    call shr_string_listDiff(seq_flds_g2x_fields_to_lnd, &
+                             glc2lnd_non_ec_fields, &
+                             glc2lnd_ec_extra_fields)
+    temp_list = glc2lnd_ec_extra_fields
+    call shr_string_listDiff(temp_list, &
+                             glc_frac_field, &
+                             glc2lnd_ec_extra_fields)
+    temp_list = glc2lnd_ec_extra_fields
+    call shr_string_listDiff(temp_list, &
+                             glc_topo_field, &
+                             glc2lnd_ec_extra_fields)
+
+  end subroutine prep_lnd_set_glc2lnd_fields
+    
   !================================================================================================
 
   subroutine prep_lnd_mrg(infodata, timer_mrg)
@@ -367,7 +440,24 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
-       call seq_map_map(mapper_SFg2l, g2x_gx, g2x_lx(egi), norm=.true.)
+
+       ! Map fields that are NOT separated by elevation class on the land grid
+       !
+       ! These are mapped using a simple area-conservative remapping. (Note that we use
+       ! the flux mapper even though these contain states, because we need these icemask
+       ! fields to be mapped conservatively.)
+       call seq_map_map(mapper_Fg2l, g2x_gx, g2x_lx(egi), &
+            fldlist = glc2lnd_non_ec_fields, norm=.true.)
+       
+       ! Map fields that are separated by elevation class on the land grid
+       call map_glc2lnd_ec( &
+            g2x_g = g2x_gx, &
+            frac_field = glc_frac_field, &
+            topo_field = glc_topo_field, &
+            icemask_field = glc_icemask_field, &
+            extra_fields = glc2lnd_ec_extra_fields, &
+            mapper = mapper_Fg2l, &
+            g2x_l = g2x_lx(egi))
     enddo
     call t_drvstopf  (trim(timer))
 
@@ -405,9 +495,14 @@ contains
     prep_lnd_get_mapper_Fr2l => mapper_Fr2l  
   end function prep_lnd_get_mapper_Fr2l
 
-  function prep_lnd_get_mapper_SFg2l()
-    type(seq_map), pointer :: prep_lnd_get_mapper_SFg2l
-    prep_lnd_get_mapper_SFg2l => mapper_SFg2l  
-  end function prep_lnd_get_mapper_SFg2l
+  function prep_lnd_get_mapper_Sg2l()
+    type(seq_map), pointer :: prep_lnd_get_mapper_Sg2l
+    prep_lnd_get_mapper_Sg2l => mapper_Sg2l  
+  end function prep_lnd_get_mapper_Sg2l
 
+  function prep_lnd_get_mapper_Fg2l()
+    type(seq_map), pointer :: prep_lnd_get_mapper_Fg2l
+    prep_lnd_get_mapper_Fg2l => mapper_Fg2l  
+  end function prep_lnd_get_mapper_Fg2l
+  
 end module prep_lnd_mod

@@ -25,20 +25,25 @@
 
       public :: IndexSort
 
+      integer,parameter :: I8 = selected_int_kind (13)
+
       interface IndexSet
 	module procedure setn_
 	module procedure set_
       end interface
       interface IndexSort
 	module procedure iSortn_
+	module procedure i8Sortn_
 	module procedure rSortn_
 	module procedure dSortn_
 	module procedure cSortn_
 	module procedure iSort_
+	module procedure i8Sort_
 	module procedure rSort_
 	module procedure dSort_
 	module procedure cSort_
 	module procedure iSort1_
+	module procedure i8Sort1_
 	module procedure rSort1_
 	module procedure dSort1_
 	module procedure cSort1_
@@ -68,6 +73,8 @@
 !	obs( (/ (indx(i),i=1,No) /) ) = obs(1:No)
 !     
 ! !REVISION HISTORY:
+! 23Mar15 - Steve Goldhaber (goldy@ucar.edu)
+!   . Added interface to perform index sort on 8-byte integers
 !	15Mar00	- Jing Guo
 !		. Added interfaces without the explicit size
 !		. Added interfaces for two dimensional arrays
@@ -162,6 +169,38 @@ end subroutine set_
 
   call iSort_(indx(1:n),keys(1:n),descend,stat)
 end subroutine iSortn_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: i8Sortn_ - A stable merge index sorting of 8-byte INTs.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    subroutine i8Sortn_(n,indx,keys,descend,stat)
+      implicit none
+
+      integer,intent(in) :: n
+      integer, dimension(n), intent(inout) :: indx
+      integer(i8), dimension(n), intent(in) :: keys
+      logical, optional, intent(in)  :: descend
+      integer, optional, intent(out) :: stat
+
+! !REVISION HISTORY:
+! 23Mar15 - Steve Goldhaber (goldy@ucar.edu)
+!   . Added interface to perform index sort on 8-byte integers
+!	15Mar00	- Jing Guo
+!		. initial prototype/prolog/code
+!		. redefined for the original interface
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::i8Sortn_'
+
+  call i8Sort_(indx(1:n),keys(1:n),descend,stat)
+end subroutine i8Sortn_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -370,6 +409,123 @@ subroutine merge_(lb,lm,le)
 end subroutine merge_
 
 end subroutine iSort_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: i8Sort_ - A stable merge index sorting of 8-byte INTs.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    subroutine i8Sort_(indx,keys,descend,stat)
+      use m_stdio, only : stderr
+      use m_die,   only : die
+      implicit none
+
+      integer, dimension(:), intent(inout) :: indx
+      integer(i8), dimension(:), intent(in) :: keys
+      logical, optional, intent(in)  :: descend
+      integer, optional, intent(out) :: stat
+
+! !REVISION HISTORY:
+!   17Dec14 - goldy@ucar.edu - Added 8-byte version
+!	15Mar00	- Jing Guo
+!		. Modified the interface, by removing the explicit size
+!	02Feb99 - Jing Guo <guo@thunder> - Added if(present(stat)) ...
+! 	04Jan99 - Jing Guo <guo@thunder> - revised the prolog
+! 	09Sep97 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!EOP ___________________________________________________________________
+
+  logical :: dsnd
+  integer :: ierr
+  integer, dimension(:),allocatable :: mtmp
+  integer :: n
+
+  character(len=*),parameter :: myname_=myname//'::i8Sort_'
+
+  if(present(stat)) stat=0
+
+  n=size(indx)
+
+  allocate(mtmp(n),stat=ierr)
+  if(ierr /= 0) then
+    write(stderr,'(2a,i4)') myname_,	&
+	': allocate(mtmp(:)) error, stat =',ierr
+    if(.not.present(stat)) call die(myname_)
+    stat=ierr
+    return
+  endif
+
+  dsnd=.false.
+  if(present(descend)) dsnd=descend
+
+  call MergeSort_()
+
+  deallocate(mtmp)
+
+contains
+subroutine MergeSort_()
+  implicit none
+  integer :: mstep,lstep
+  integer :: lb,lm,le
+
+  mstep=1
+  do while(mstep < n)
+    lstep=mstep*2
+
+    lb=1
+    do while(lb < n)
+      lm=lb+mstep
+      le=min(lm-1+mstep,n)
+
+      call merge_(lb,lm,le)
+      indx(lb:le)=mtmp(lb:le)
+      lb=le+1
+    end do
+
+    mstep=lstep
+  end do
+end subroutine MergeSort_
+
+subroutine merge_(lb,lm,le)
+  integer,intent(in) :: lb,lm,le
+  integer :: l1,l2,l
+
+  l1=lb
+  l2=lm
+  do l=lb,le
+    if(l2.gt.le) then
+      mtmp(l)=indx(l1)
+      l1=l1+1
+    elseif(l1.ge.lm) then
+      mtmp(l)=indx(l2)
+      l2=l2+1
+    else
+      if(dsnd) then
+        if(keys(indx(l1)) .ge. keys(indx(l2))) then
+          mtmp(l)=indx(l1)
+          l1=l1+1
+        else
+          mtmp(l)=indx(l2)
+          l2=l2+1
+        endif
+      else
+        if(keys(indx(l1)) .le. keys(indx(l2))) then
+          mtmp(l)=indx(l1)
+          l1=l1+1
+        else
+          mtmp(l)=indx(l2)
+          l2=l2+1
+        endif
+      endif
+    endif
+  end do
+end subroutine merge_
+
+end subroutine i8Sort_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -755,7 +911,7 @@ end subroutine cSort_
   integer, dimension(:),allocatable :: mtmp
   integer :: n
 
-  character(len=*),parameter :: myname_=myname//'::iSort1_'
+  character(len=*),parameter :: myname_=myname//'::i8Sort1_'
 
   if(present(stat)) stat=0
 
@@ -837,6 +993,124 @@ subroutine merge_(lb,lm,le)
 end subroutine merge_
 
 end subroutine iSort1_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: i8Sort1_ - A stable merge index sorting of 8-byte INTs.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    subroutine i8Sort1_(indx,keys,ikey,descend,stat)
+      use m_stdio, only : stderr
+      use m_die,   only : die
+      implicit none
+
+      integer, dimension(:), intent(inout) :: indx
+      integer(i8), dimension(:,:), intent(in) :: keys
+      integer,intent(in) :: ikey
+      logical, optional, intent(in)  :: descend
+      integer, optional, intent(out) :: stat
+
+! !REVISION HISTORY:
+!   17Dec14 - goldy@ucar.edu - Added 8-byte version
+!	15Mar00	- Jing Guo
+!		. initial prototype/prolog/code
+!		. Copied code from iSort_
+!		. Extended the interface and the algorithm to handle
+!		  2-d arrays with an index.
+!EOP ___________________________________________________________________
+
+  logical :: dsnd
+  integer :: ierr
+  integer, dimension(:),allocatable :: mtmp
+  integer :: n
+
+  character(len=*),parameter :: myname_=myname//'::i8Sort1_'
+
+  if(present(stat)) stat=0
+
+  n=size(indx)
+
+  allocate(mtmp(n),stat=ierr)
+  if(ierr /= 0) then
+    write(stderr,'(2a,i4)') myname_,	&
+	': allocate(mtmp(:)) error, stat =',ierr
+    if(.not.present(stat)) call die(myname_)
+    stat=ierr
+    return
+  endif
+
+  dsnd=.false.
+  if(present(descend)) dsnd=descend
+
+  call MergeSort_()
+
+  deallocate(mtmp)
+
+contains
+subroutine MergeSort_()
+  implicit none
+  integer :: mstep,lstep
+  integer :: lb,lm,le
+
+  mstep=1
+  do while(mstep < n)
+    lstep=mstep*2
+
+    lb=1
+    do while(lb < n)
+      lm=lb+mstep
+      le=min(lm-1+mstep,n)
+
+      call merge_(lb,lm,le)
+      indx(lb:le)=mtmp(lb:le)
+      lb=le+1
+    end do
+
+    mstep=lstep
+  end do
+end subroutine MergeSort_
+
+subroutine merge_(lb,lm,le)
+  integer,intent(in) :: lb,lm,le
+  integer :: l1,l2,l
+
+  l1=lb
+  l2=lm
+  do l=lb,le
+    if(l2.gt.le) then
+      mtmp(l)=indx(l1)
+      l1=l1+1
+    elseif(l1.ge.lm) then
+      mtmp(l)=indx(l2)
+      l2=l2+1
+    else
+      if(dsnd) then
+        if(keys(ikey,indx(l1)) .ge. keys(ikey,indx(l2))) then
+          mtmp(l)=indx(l1)
+          l1=l1+1
+        else
+          mtmp(l)=indx(l2)
+          l2=l2+1
+        endif
+      else
+        if(keys(ikey,indx(l1)) .le. keys(ikey,indx(l2))) then
+          mtmp(l)=indx(l1)
+          l1=l1+1
+        else
+          mtmp(l)=indx(l2)
+          l2=l2+1
+        endif
+      endif
+    endif
+  end do
+end subroutine merge_
+
+end subroutine i8Sort1_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !

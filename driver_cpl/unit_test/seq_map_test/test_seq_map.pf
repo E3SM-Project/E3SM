@@ -10,7 +10,6 @@ module test_seq_map
   use avect_wrapper_mod
   use simple_map_mod
   use create_mapper_mod
-  use mpi_wrapper_mod, only : mpi_init_wrapper, mpi_finalize_wrapper
   use shr_kind_mod, only : r8 => shr_kind_r8
   
   implicit none
@@ -33,7 +32,6 @@ contains
   subroutine setUp(this)
     class(TestSeqMap), intent(inout) :: this
 
-    call mpi_init_wrapper()
     call mct_init()
   end subroutine setUp
 
@@ -44,11 +42,10 @@ contains
     call mct_aVect_clean(this%av_s)
     call mct_aVect_clean(this%av_d)
     call mct_clean()
-    call mpi_finalize_wrapper()
   end subroutine tearDown
     
   @Test
-  subroutine test_seqMapMap_withOneDestPt_returnsCorrectAV(this)
+  subroutine test_seqMapMap_1DestPt_returnsCorrectAV(this)
     class(TestSeqMap), intent(inout) :: this
     integer, parameter :: npts_source = 3
     integer, parameter :: npts_dest = 1
@@ -66,7 +63,7 @@ contains
     ! cells: A (50%), B (25%), C (25%)
 
     ! Set up attribute vectors
-    call create_aVect_with_data(this%av_s, &
+    call create_aVect_with_data_rows_are_points(this%av_s, &
          attr_tags = ['data'], &
          data = reshape(data_source, [npts_source,1]))
     call create_aVect_without_data(this%av_d, &
@@ -91,10 +88,10 @@ contains
          0.25_r8 * data_source(2) + &
          0.25_r8 * data_source(3)
     @assertEqual(expected_data, actual_data, tolerance=tol)
-  end subroutine test_seqMapMap_withOneDestPt_returnsCorrectAV
+  end subroutine test_seqMapMap_1DestPt_returnsCorrectAV
 
   @Test
-  subroutine test_seqMapMap_withTwoDestPts_returnsCorrectAV(this)
+  subroutine test_seqMapMap_2DestPt_returnsCorrectAV(this)
     class(TestSeqMap), intent(inout) :: this
     integer, parameter :: npts_source = 3
     integer, parameter :: npts_dest = 2
@@ -106,7 +103,7 @@ contains
     ! Setup
 
     ! Set up attribute vectors
-    call create_aVect_with_data(this%av_s, &
+    call create_aVect_with_data_rows_are_points(this%av_s, &
          attr_tags = ['data'], &
          data = reshape(data_source, [npts_source,1]))
     call create_aVect_without_data(this%av_d, &
@@ -134,6 +131,6 @@ contains
          0.5_r8 * data_source(2) + &
          0.5_r8 * data_source(3)
     @assertEqual(expected_data, actual_data, tolerance=tol)
-  end subroutine test_seqMapMap_withTwoDestPts_returnsCorrectAV
+  end subroutine test_seqMapMap_2DestPt_returnsCorrectAV
   
 end module test_seq_map
