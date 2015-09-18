@@ -505,7 +505,7 @@
 	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="C2R[68].*_CAM4.*_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">hybrid</value>
 	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05"		compset="C2R4_CAM4%SSOA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"  >hybrid</value>
 	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_WW3"        >hybrid</value>
-	<vlaue grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV"       >hybrid</value>
+	<value grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_w%ww3a"         compset="HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV"       >hybrid</value>
       </values>
     </entry>
 

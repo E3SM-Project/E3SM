@@ -449,31 +449,31 @@
 
 
     <!-- QL, 150525, ww3 grids -->
-    <grid>
+    <grid compset="(_DWAV|_XWAV|_WW3)">
       <sname>1.9x2.5_gx1v6_ww3a</sname>
       <alias>f19_g16_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-    <grid>
+    <grid compset="(_DWAV|_XWAV|_WW3)">
       <sname>T31_gx3v7_ww3a</sname>
       <alias>T31_g37_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="_DROF">
+    <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
       <sname>1.9x2.5_gx1v6_ww3a</sname>  
       <alias>f19_g16_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="_DROF">
+    <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
       <sname>T31_gx3v7_ww3a</sname>
       <alias>T31_g37_ww3></alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="(DATM|XATM|SATM)">
+    <grid compset="(DATM.+DWAV|XATM.+XWAV|SATM.+SWAV)">
       <sname>T62_gx1v6_ww3a</sname>
       <alias>T62_g16_ww3</alias>
       <lname>a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
@@ -1089,12 +1089,13 @@
       <ICE2WAV_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</ICE2WAV_SMAPNAME>
     </gridmap>
 
+
     <gridmap atm_grid="48x96" wav_grid="ww3a">
       <ATM2WAV_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_ww3a_bilin_131104.nc</ATM2WAV_SMAPNAME>
     </gridmap>
 
     <gridmap atm_grid="T62" wav_grid="ww3a">
-      <ATM2WAV_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_ww3a_bilin_150617.nc</ATM2WAV_SMAPNAME>
+      <ATM2WAV_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_ww3a_bilin.150617.nc</ATM2WAV_SMAPNAME>
     </gridmap>
 
     <gridmap atm_grid="1.9x2.5" wav_grid="ww3a">
