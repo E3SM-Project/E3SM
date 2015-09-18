@@ -1,6 +1,7 @@
 #define VARINT 1 
 #define VARREAL 1
 #define VARDOUBLE 1
+
 program pioperformance
 #ifndef NO_MPIMOD
   use mpi
@@ -361,26 +362,51 @@ contains
                       do j=1,maplen
                          if(compmap(j)>0) then
 #ifdef VARINT
+#ifdef DEBUG
+                             write(*,'(a11,i2,a9,i11,a9,i11,a9,i2)') & 
+			        ' Int    PE=',mype,'ifld=',ifld(j,nv),' ifld_in=',ifld_in(j,nv,frame),' compmap=',compmap(j)
+#endif
                             if(ifld(j,nv) /= ifld_in(j,nv,frame)) then
-                               if(errorcnt < 10) then
-                                  print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv,frame),compmap(j)
-                               endif
+                               !if(errorcnt < 10) then
+                               !   print *,__LINE__,'Int: ',mype,j,nv,ifld(j,nv),ifld_in(j,nv,frame),compmap(j)
+                               !endif
+                               write(*,*) '***ERROR:Mismatch!***'
+                               write(*,'(a11,i2,a9,i11,a9,i11,a9,i2)') & 
+			         ' Int    PE=',mype,'ifld=',ifld(j,nv),' ifld_in=',ifld_in(j,nv,frame),' compmap=',compmap(j)
+
                                errorcnt = errorcnt+1
                             endif
 #endif
 #ifdef VARREAL
+#ifdef DEBUG
+                            write(*,'(a11,i2,a9,f11.2,a9,f11.2,a9,i2)') &
+			        ' Real   PE=',mype,'rfld=',rfld(j,nv),' rfld_in=',rfld_in(j,nv,frame),' compmap=',compmap(j)
+#endif
+                            
                             if(rfld(j,nv) /= rfld_in(j,nv,frame) ) then
-                               if(errorcnt < 10) then
-                                  print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv,frame),compmap(j)
-                               endif
+                               !if(errorcnt < 10) then
+                               !   print *,__LINE__,'Real:', mype,j,nv,rfld(j,nv),rfld_in(j,nv,frame),compmap(j)
+                               !endif
+                               write(*,*) '***ERROR:Mismatch!***'
+                               write(*,'(a11,i2,a9,f11.2,a9,f11.2,a9,i2)') &
+			         ' Real   PE=',mype,'rfld=',rfld(j,nv),' rfld_in=',rfld_in(j,nv,frame),' compmap=',compmap(j)
+
                                errorcnt = errorcnt+1                           
                             endif
 #endif
 #ifdef VARDOUBLE
+#ifdef DEBUG
+                            write(*,'(a11,i2,a9,d11.4,a9,d11.4,a9,i2)') &
+			        'Double PE=',mype,'dfld=',dfld(j,nv),'dfld_in=',dfld_in(j,nv,frame),'compmap=',compmap(j)
+#endif
                             if(dfld(j,nv) /= dfld_in(j,nv,frame) ) then
-                               if(errorcnt < 10) then
-                                  print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv,frame),compmap(j)
-                               endif
+                               !if(errorcnt < 10) then
+                               !   print *,__LINE__,'Dbl:',mype,j,nv,dfld(j,nv),dfld_in(j,nv,frame),compmap(j)
+                               !endif
+                               write(*,*) '***ERROR:Mismatch!***'
+                               write(*,'(a11,i2,a9,d11.4,a9,d11.4,a9,i2)') &
+			        'Double PE=',mype,'dfld=',dfld(j,nv),'dfld_in=',dfld_in(j,nv,frame),'compmap=',compmap(j)
+
                                errorcnt = errorcnt+1
                             endif
 #endif
