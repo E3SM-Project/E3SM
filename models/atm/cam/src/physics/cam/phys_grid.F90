@@ -365,7 +365,6 @@ contains
     integer :: owner_p                    ! process owning given chunk column
     integer :: blockids(plev+1)           ! block indices
     integer :: bcids(plev+1)              ! block column indices
-    integer :: glon, glat                 ! global (lon,lat) indices
 
 
     ! column surface area (from dynamics)
@@ -399,10 +398,10 @@ contains
     type(horiz_coord_t), pointer        :: lat_coord
     type(horiz_coord_t), pointer        :: lon_coord
     integer                             :: gcols(pcols)
-    character(len=max_hcoordname_len)   :: latdimname, londimname
     character(len=max_hcoordname_len), pointer :: copy_attributes(:)
     character(len=max_hcoordname_len)   :: copy_gridname
     logical                             :: unstructured
+    real(r8)                            :: lonmin, latmin
 
     nullify(lonvals)
     nullify(latvals)
@@ -429,6 +428,8 @@ contains
     clat_d = 100000.0_r8
     clon_d = 100000.0_r8
     call get_horiz_grid_d(ngcols, clat_d_out=clat_d, clon_d_out=clon_d, lat_d_out=lat_d, lon_d_out=lon_d)
+    latmin = MINVAL(ABS(lat_d))
+    lonmin = MINVAL(ABS(lon_d))
 !!XXgoldyXX: To do: replace collection above with local physics points
 
     ! count number of "real" column indices
@@ -1018,12 +1019,25 @@ contains
       lat_coord => horiz_coord_create('lat', 'ncol', ngcols_p, 'latitude',    &
            'degrees_north', 1, size(latvals), latvals, map=coord_map)
     else
-      coord_map => grid_map(3,:)
+      ! Create a lon coord map which only writes from one of each unique lon
+      allocate(coord_map(size(grid_map, 2)))
+      where(latvals == latmin)
+        coord_map(:) = grid_map(3, :)
+      elsewhere
+        coord_map(:) = 0_iMap
+      end where
       lon_coord => horiz_coord_create('lon', 'lon', hdim1_d, 'longitude',     &
            'degrees_east', 1, size(lonvals), lonvals, map=coord_map)
-      coord_map => grid_map(4,:)
+      nullify(coord_map)
+      ! Create a lat coord map which only writes from one of each unique lat
+      allocate(coord_map(size(grid_map, 2)))
+      where(lonvals == lonmin)
+        coord_map(:) = grid_map(4, :)
+      elsewhere
+        coord_map(:) = 0_iMap
+      end where
       lat_coord => horiz_coord_create('lat', 'lat', hdim2_d, 'latitude',      &
-           'degrees_north', 1, size(latvals), latvals, coord_map)
+           'degrees_north', 1, size(latvals), latvals, map=coord_map)
     end if
     nullify(coord_map)
     call cam_grid_register('physgrid', phys_decomp, lat_coord, lon_coord,     &
@@ -3189,7 +3203,7 @@ logical function phys_grid_initialized ()
 
 !---------------------------Local workspace-----------------------------
 #if ( defined SPMD )
-   integer :: i, p                     ! loop indices
+   integer :: p                        ! loop indices
    integer :: bbuf_siz                 ! size of block_buffer
    integer :: cbuf_siz                 ! size of chunk_buffer
    integer :: lwindow                  ! placeholder for missing window
@@ -3519,7 +3533,7 @@ logical function phys_grid_initialized ()
 
 !---------------------------Local workspace-----------------------------
 #if ( defined SPMD )
-   integer :: i, p                     ! loop indices
+   integer :: p                        ! loop indices
    integer :: bbuf_siz                 ! size of block_buffer
    integer :: cbuf_siz                 ! size of chunk_buffer
    integer :: lwindow                  ! placeholder for missing window
@@ -3867,8 +3881,6 @@ logical function phys_grid_initialized ()
    integer :: jb, ib                     ! global block and columns indices
    integer :: blksiz                     ! current block size
    integer :: ntmp1, ntmp2, nlchunks     ! work variables
-   integer :: cbeg                       ! beginning longitude index for 
-                                         !  current chunk
    integer :: max_ncols                  ! upper bound on number of columns in a block
    integer :: ncols                      ! number of columns in current chunk
    logical :: error                      ! error flag 
