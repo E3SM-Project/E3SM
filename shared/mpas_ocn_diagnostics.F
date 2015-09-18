@@ -1486,22 +1486,24 @@ contains
          end if
       end do
       do iCell = 1, nCells
-         blWeightSum = 1.0_RKIND
          landIceBoundaryLayerTemperature(iCell) = blTempScratch(iCell)
          landIceBoundaryLayerSalinity(iCell) = blSaltScratch(iCell)
-         do i = 1, nEdgesOnCell(iCell)
-           cell2 = cellsOnCell(i,iCell)
-           if(cell2 <= 0 .or. cell2 > nCells) cycle
+         if(config_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
+            blWeightSum = 1.0_RKIND
+            do i = 1, nEdgesOnCell(iCell)
+               cell2 = cellsOnCell(i,iCell)
+               if(cell2 <= 0 .or. cell2 > nCells) cycle
 
-           landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell) &
-             + config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
-           landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell) &
-             + config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
-           blWeightSum = blWeightSum + config_land_ice_flux_boundaryLayerNeighborWeight
-         end do
-         if(blWeightSum > 0.0_RKIND) then
-           landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell)/blWeightSum
-           landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell)/blWeightSum
+               landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell) &
+                 + config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
+               landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell) &
+                 + config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
+               blWeightSum = blWeightSum + config_land_ice_flux_boundaryLayerNeighborWeight
+            end do
+            if(blWeightSum > 0.0_RKIND) then
+               landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell)/blWeightSum
+               landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell)/blWeightSum
+            end if
          end if
       end do
 
