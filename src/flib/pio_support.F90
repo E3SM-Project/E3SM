@@ -30,6 +30,10 @@ module pio_support
   character(len=*), parameter :: modName='pio_support'
 
 contains
+!> 
+!! @public
+!! @brief Remove null termination (C-style) from strings for Fortran.
+!<
   subroutine replace_c_null(istr)
     use iso_c_binding, only : C_NULL_CHAR
     character(len=*),intent(inout) :: istr
@@ -40,6 +44,13 @@ contains
     istr(i:len(istr))=''
   end subroutine replace_c_null
 
+!>
+!! @public
+!! @brief Abort the model for abnormal termination.
+!! @param file : File where piodie is called from.
+!! @param line : Line number where it is called.
+!! @param msg,msg2,msg3,ival1,ival2,ival3,mpirank : Optional argument for error messages.
+!<
   subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3, mpirank)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -112,6 +123,15 @@ contains
 !      Check and prints an error message
 !  if an error occured in a MPI subroutine.
 !=============================================
+!>
+!! @public
+!! @brief Check and prints an error message if an error occured in an MPI 
+!! subroutine.
+!! @param locmesg : Message to output
+!! @param errcode : MPI error code
+!! @param file : The file where the error message originated.
+!! @param line : The line number where the error message originated.
+!<
   subroutine CheckMPIreturn(locmesg, errcode, file, line)
 
      character(len=*), intent(in) :: locmesg
@@ -133,11 +153,15 @@ contains
   end subroutine CheckMPIreturn
 
 !>
-!! @defgroup pio_writedof MAPtools 
-!!  Fortran interface to write a mapping file
-!!
+!! @public
+!! @brief Fortran interface to write a mapping file
+!! @param file : The file where the decomp map will be written.
+!! @param gdims : The dimensions of the data array in memory.
+!! @param DOF : The multidimensional array of indexes that describes how 
+!! data in memory are written to a file.
+!! @param comm : The MPI comm index.
+!! @param punit : Optional argument that is no longer used.
 !<
-
   subroutine pio_writedof (file, gdims, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -178,12 +202,17 @@ contains
     err = PIOc_writemap_from_f90(trim(file)//C_NULL_CHAR, ndims, gdims, int(size(dof),C_SIZE_T), dof, comm)
 
   end subroutine pio_writedof
-!>
-!! @addtogroup pio_readdof MAPtools
-!!  Fortran interface to read a mapping file
-!!
-!<
 
+!>
+!! @public
+!! @brief Fortran interface to read a mapping file
+!! @param file : The file from where the decomp map is read.
+!! @param ndims : The number of dimensions of the data.
+!! @param gdims : The actual dimensions of the data (pointer to an integer array of length ndims).
+!! @param DOF : Pointer to an integer array where the Decomp map will be stored.
+!! @param comm : MPI comm index
+!! @param punit : Optional argument that is no longer used.
+!<
   subroutine pio_readdof (file, ndims, gdims, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
