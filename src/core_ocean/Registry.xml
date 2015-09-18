@@ -643,7 +643,7 @@
                                         description="The thickness of the sub-ice-shelf boundary layer, over which T and S will be averaged."
                                         possible_values="Any non-negative real number.  A value of 0 means that T and S are taken top level."
                 />
-                <nml_option name="config_land_ice_flux_boundaryLayerNeighborWeight" type="real" default_value="0.5" units="unitless"
+                <nml_option name="config_land_ice_flux_boundaryLayerNeighborWeight" type="real" default_value="0.0" units="unitless"
                                         description="The for horizontal neighbors used to horizontally smooth boundary layer T and S."
                                         possible_values="Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell)."
                 />
