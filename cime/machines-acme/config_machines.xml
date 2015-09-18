@@ -929,6 +929,7 @@
          <OS>BGQ</OS>
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>   jayesh -at- mcs.anl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
