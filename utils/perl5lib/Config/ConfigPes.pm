@@ -303,10 +303,12 @@ sub _setPESsettings
 	foreach my $child (@children) {
 	    my $name  = uc $child->nodeName(); 
 	    my $value =    $child->textContent();
-	    if ($value < 0) {
+            if ($value =~ /-?\d/){
+            if ($value < 0) {
 		$value = -($value * $pes_per_node);
 	    }
 	    $decomp{$name}  = $value;
+           }
 	}
     }
 

@@ -234,18 +234,46 @@ sub getTestSuiteInfo
 	}
     }
     &Debug("test path:  $testpath\n");
-    my @dirs = ( $testpath, $testpath . "../utils/perl5lib");
+	
+	# We need to find SetupTools in a path-independent manner.  
+	# so parse out the cimeroot from testspec.*.xml, 
+	# get rid of the tags, and then we have 
+    #my $testspecfile = "$testroot/testspec.$testid.$caseinfo{'mach'}.xml";
+    my $testspecfile = "$testroot/testspec.$testid.xml";
+    Debug( "testspecfile: $testspecfile\n");
+	open my $SPEC, '<', $testspecfile or die "could not open $testspecfile, $!";
+	my @testspeclines =  <$SPEC>;
+	my @cimerootlines = grep { /<cimeroot>/ } @testspeclines;
+	#my @cimerootlines = grep { /^<cimeroot>/ } <$SPEC>;
+	close $SPEC;
+	chomp @cimerootlines;
+	my $cimeroot = $cimerootlines[0];
+	if(! defined $cimeroot)
+	{
+		die "cimeroot not defined, aborting..";
+	}
+	
+	$cimeroot =~ s/<cimeroot>|<\/cimeroot>|^\s+|\s+$//g;
+	#$cimeroot =~ s/<\/cimeroot>//g;
+	Debug("cimeroot is now: |$cimeroot|");
+    #my @dirs = ( $testpath, $testpath . "../utils/perl5lib");
+    my @dirs = ( $testpath, "$cimeroot/utils/perl5lib");
     unshift @INC, @dirs;
-
+	
+	# SetupTools needs a case to work, so why not just cd to the 
+	# first test directory, and run SetupTools there?? :)
+	my $firsttestdir = $testroot . "/" . $$testlist[0];
+	Debug("first test dir: $firsttestdir");
     require Config::SetupTools;
+	chdir $firsttestdir;
 
     my %config = SetupTools::getAllResolved();
     $caseinfo{'mach'}     = $config{'MACH'};
     $caseinfo{'compiler'} = $config{'COMPILER'};
     $caseinfo{'mpilib'}   = $config{'MPILIB'};
 
-    $testspecfile = "$testroot/testspec.$testid.$caseinfo{'mach'}.xml";
-    Debug( "testspecfile: $testspecfile\n");
+	chdir $testroot;
+
     my $parser = XML::LibXML->new;
     my $spec = $parser->parse_file($testspecfile);
     my $root = $spec->getDocumentElement();
