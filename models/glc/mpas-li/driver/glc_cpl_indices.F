@@ -16,24 +16,42 @@ module glc_cpl_indices
 
 ! TODO: Comment these variables!
 
-  ! drv -> glc
+! Jer: ocean coupler links from https://acme-climate.atlassian.net/wiki/pages/viewpage.action?pageId=16253763
 
+  !!! drv -> glc
+
+  ! lnd-derived
   integer, public :: index_x2g_Flgl_qice = 0 !Jer: removed multiple fields, now that these are confined to coupler
-  integer, public :: index_x2g_Fogo_qicel = 0 
   integer, public :: index_x2g_Sl_tsrf   = 0 !Jer: removed multiple fields, now that these are confined to coupler
-  integer, public :: index_x2g_Fogo_qiceh = 0 !Jer:need to rename this everywhere...
+  
+  ! ocn-derived (but potentially coupler-mediated)
+  integer, public :: index_x2g_Fogx_qicel = 0 !Subshelf mass flux
+  integer, public :: index_x2g_Fogx_qiceh = 0 !Subshelf heat flux Jer:need to rename this everywhere, from So_tglc
+  integer, public :: index_x2g_So_phieff = 0
 
-  ! glc -> drv
+  !!! glc -> drv
 
+  ! to lnd
   integer, public :: index_g2x_Fogg_rofi = 0   ! frozen runoff -> ocn
   integer, public :: index_g2x_Figg_rofi = 0   ! frozen runoff -> ice
   integer, public :: index_g2x_Fogg_rofl = 0   ! liquid runoff -> ocn
   integer, public :: index_g2x_Sg_frac(0:glc_nec_max)   = 0
   integer, public :: index_g2x_Sg_topo(0:glc_nec_max)   = 0
   integer, public :: index_g2x_Flgg_hflx(0:glc_nec_max) = 0
-  integer, public :: index_g2x_Sg_icemask = 0
-  integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0
 
+  ! to ocn (but potentially coupler-mediated)
+
+  integer, public :: index_g2x_Sg_tbot = 0 !bottom-layer temperature
+  integer, public :: index_g2x_Sg_dztbot = 0 !distance from bottom-layer temperature to ice-ocean interface (to compute T gradient)
+  integer, public :: index_g2x_Sg_lithop = 0 !ice sheet lithostatic pressure
+
+  ! common
+
+  integer, public :: index_g2x_Sg_icemask = 0
+  integer, public :: index_g2x_Sg_icemask_grounded = 0 !grounded mask
+  integer, public :: index_g2x_Sg_icemask_floating = 0 !floating mask
+  integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0
+  
 contains
 
   subroutine glc_cpl_indices_set( )
@@ -58,56 +76,26 @@ contains
     index_g2x_Fogg_rofi = mct_avect_indexra(g2x,'Fogg_rofi',perrwith='quiet')
     index_g2x_Figg_rofi = mct_avect_indexra(g2x,'Figg_rofi',perrwith='quiet')
     index_g2x_Fogg_rofl = mct_avect_indexra(g2x,'Fogg_rofl',perrwith='quiet')
+    
+    index_g2x_Sg_tbot =   mct_avect_indexra(g2x,'Sg_tbot',perrwith='quiet')
+    index_g2x_Sg_dztbot = mct_avect_indexra(g2x,'Sg_dztbot',perrwith='quiet')
+    index_g2x_Sg_lithop = mct_avect_indexra(g2x,'Sg_lithop',perrwith='quiet')
 
-! These 3d fields may be gone after GLINT moves into the coupler.
-!    do num = 0,glc_nec_max
-!       write(cnum,'(i2.2)') num
-!       name = 'Sg_frac' // cnum
-!       index_g2x_Sg_frac(num)   = mct_avect_indexra(g2x,trim(name),perrwith='quiet') 
-!       name = 'Sg_topo' // cnum
-!       index_g2x_Sg_topo(num)   = mct_avect_indexra(g2x,trim(name),perrwith='quiet')
-!       name = 'Flgg_hflx' // cnum
-!       index_g2x_Flgg_hflx(num) = mct_avect_indexra(g2x,trim(name),perrwith='quiet')
-!       if ( index_g2x_Sg_frac(num)   == 0 .and. &
-!            index_g2x_Sg_topo(num)   == 0 .and. &
-!            index_g2x_Flgg_hflx(num) == 0 ) then
-!          exit
-!       end if
-!       glc_nec = num
-!    end do
-!    if (glc_nec == glc_nec_max) then
-!       write(6,*)'glc_cpl_indices error: glc_nec_max value has been reached ' 
-!       call shr_sys_abort ('glc_cpl_indices error: glc_nec_cpl cannot equal glc_nec_max')
-!    end if
-
-    index_g2x_Sg_icemask = mct_avect_indexra(g2x,'Sg_icemask',perrwith='quiet')
+    index_g2x_Sg_icemask =                mct_avect_indexra(g2x,'Sg_icemask',perrwith='quiet')
+    index_g2x_Sg_icemask_grounded =       mct_avect_indexra(g2x,'Sg_icemask_grounded',perrwith='quiet')
+    index_g2x_Sg_icemask_floating =       mct_avect_indexra(g2x,'Sg_icemask_floating',perrwith='quiet')
     index_g2x_Sg_icemask_coupled_fluxes = mct_avect_indexra(g2x,'Sg_icemask_coupled_fluxes',perrwith='quiet')
 
     ! drv -> glc
 
-! These 3d fields may be gone after GLINT moves into the coupler.
-!    do num = 0,glc_nec
-!       write(cnum,'(i2.2)') num
-!       name = 'Sl_tsrf' // cnum
-!       index_x2g_Sl_tsrf(num)   = mct_avect_indexra(x2g,trim(name))
-!       name = 'Sl_topo' // cnum
-!       index_x2g_Sl_topo(num)   = mct_avect_indexra(x2g,trim(name))
-!       name = 'Flgl_qice' // cnum
-!       index_x2g_Flgl_qice(num) = mct_avect_indexra(x2g,trim(name))
-!    end do
+    index_x2g_Fogx_qicel = mct_avect_indexra(x2g,'Fogx_qicel',perrwith='quiet')
+    index_x2g_Fogx_qiceh = mct_avect_indexra(x2g,'Fogx_qiceh',perrwith='quiet')
+    index_x2g_So_phieff =  mct_avect_indexra(x2g,'So_phieff',perrwith='quiet')
+
+
 
     call mct_aVect_clean(x2g)
     call mct_aVect_clean(g2x)
-
-    ! Set glc_smb
-    ! true => get surface mass balance from CLM via coupler (in multiple elev classes)
-    ! false => use PDD scheme in GLIMMER
-
-!    if (glc_nec > 0) then
-!       glc_smb = .true.
-!    else
-!       glc_smb = .false.
-!    end if
 
   end subroutine glc_cpl_indices_set
 
