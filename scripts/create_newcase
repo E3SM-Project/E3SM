@@ -764,7 +764,7 @@ sub _set_mpi_library
 	if ($config->get('NTASKS_ATM') == 1 && $config->get('NTASKS_LND') == 1 &&
 	    $config->get('NTASKS_OCN') == 1 && $config->get('NTASKS_ICE') == 1 &&
 	    $config->get('NTASKS_ROF') == 1 && $config->get('NTASKS_GLC') == 1 &&
-.	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1) 
+	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1) 
 	{ 
 	    $mpilib = "mpi-serial"; 
 	}else{
