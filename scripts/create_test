@@ -1603,7 +1603,7 @@ TESTXML
   }
 
   $testxml .= "</testlist>\n";
-  my $filename = "testspec.$opts{'testid'}.$opts{'mach'}.xml";
+  my $filename = "testspec.$opts{'testid'}.xml";
   open my $TESTSPEC, ">", "$opts{'testroot'}/$filename" or die $!;
   print $TESTSPEC $testxml;
   close $TESTSPEC;
