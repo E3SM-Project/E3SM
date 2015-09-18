@@ -42,7 +42,6 @@ sub new
 	my $self = {
 	    case	=> $params{'case'}	|| undef,
 	    caseroot	=> $params{'caseroot'}	|| undef,
-	    cimeroot	=> $params{'cimeroot'}	|| undef,
 	    compiler    => $params{'compiler'}  || undef,
 	    config	=> $params{'config'}    || undef,
 	    machine     => $params{'machine'}   || undef,
@@ -411,6 +410,18 @@ sub setWallTime()
 			$self->{'wall_time'} = $defaultelem->textContent();
 		}
 	}
+
+	my @wtmax = split(':',$self->{walltimemax});
+	my @wt = split(':',$self->{wall_time});
+
+	for(my $i=0;$i<$#wtmax;$i++){
+	    if($wtmax[$i]<$wt[$i]){
+		$self->{wall_time} = $self->{walltimemax};
+		last;
+	    }
+	    last if($wtmax[$i] > $wt[$i]);
+	}
+
 }
 
 #==============================================================================
@@ -494,7 +505,7 @@ sub setQueue()
 		my $jobmax = undef;
 		$jobmin = $qelem->getAttribute('jobmin');
 		$jobmax = $qelem->getAttribute('jobmax');
-
+                $self->{walltimemax} = $qelem->getAttribute('walltimemax');
 		# if the fullsum is between the min and max # jobs, then use this queue.  
 		if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
 		{
