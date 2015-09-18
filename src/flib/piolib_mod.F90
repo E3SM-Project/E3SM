@@ -142,9 +142,10 @@ module piolib_mod
 !>
 !! @defgroup PIO_initdecomp PIO_initdecomp
 !! @brief PIO_initdecomp is an overload interface the models decomposition to pio.
+!! @details initdecomp_1dof_bin_i8, initdecomp_1dof_nf_i4, initdecomp_2dof_bin_i4,
+!! and initdecomp_2dof_nf_i4 are all depreciated, but supported for backwards 
+!! compatibility. 
 !<
-
-
   interface PIO_initdecomp
      module procedure PIO_initdecomp_dof_i4  ! previous name: initdecomop_1dof_nf_box
      module procedure PIO_initdecomp_dof_i8  ! previous name: initdecomop_1dof_nf_box
@@ -1196,13 +1197,17 @@ contains
 !> 
 !! @public
 !! @ingroup PIO_createfile 
-!! @brief create a file using pio
+!! @brief  Create a NetCDF or PNetCDF file using PIO.
 !! @details  Input parameters are read on comp task 0 and ignored elsewhere
-!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
-!! @param file	:  the returned file descriptor
+!! @param iosystem : A defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
+!! @param file	:  The returned file descriptor
 !! @param iotype : @copydoc PIO_iotype
-!! @param fname : the name of the file to open
-!! @param amode_in : the creation mode flag. the following flags are available: PIO_clobber, PIO_noclobber. 
+!! @param fname : The name of the file to open
+!! @param amode_in : The NetCDF creation mode flag. the following flags are available: 
+!! (1) zero value or NC_NOWRITE is default and opens the file with read-only access. 
+!! (2) NC_WRITE for read-write access. 
+!! (3) NC_SHARE is used for NetCDF classic, and dangerous with this application. 
+!! (4) NC_WRITE|NC_SHARE
 !! @retval ierr @copydoc error_return
 !<
   integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
