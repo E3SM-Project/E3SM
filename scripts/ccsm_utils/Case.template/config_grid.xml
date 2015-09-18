@@ -491,8 +491,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <ROF2OCN_FMAPNAME>idmap</ROF2OCN_FMAPNAME>
 <ROF2OCN_RMAPNAME>idmap</ROF2OCN_RMAPNAME>
 <GLC2OCN_RMAPNAME>idmap</GLC2OCN_RMAPNAME>
+<GLC2OCN_SMAPNAME>idmap</GLC2OCN_SMAPNAME>
+<GLC2OCN_FMAPNAME>idmap</GLC2OCN_FMAPNAME>
 <GLC2ICE_RMAPNAME>idmap</GLC2ICE_RMAPNAME>
-
+<GLC2ICE_SMAPNAME>idmap</GLC2ICE_SMAPNAME>
+<GLC2ICE_FMAPNAME>idmap</GLC2ICE_FMAPNAME>
 <ATM2WAV_SMAPNAME>idmap</ATM2WAV_SMAPNAME>
 <OCN2WAV_SMAPNAME>idmap</OCN2WAV_SMAPNAME>
 <OCN2GLC_SMAPNAME>idmap</OCN2GLC_SMAPNAME>
@@ -520,7 +523,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <ROF2OCN_FMAPTYPE>Y</ROF2OCN_FMAPTYPE>
 <ROF2OCN_RMAPTYPE>Y</ROF2OCN_RMAPTYPE>
 <GLC2OCN_RMAPTYPE>X</GLC2OCN_RMAPTYPE>
+<GLC2OCN_SMAPTYPE>Y</GLC2OCN_SMAPTYPE>
+<GLC2OCN_FMAPTYPE>Y</GLC2OCN_FMAPTYPE>
 <GLC2ICE_RMAPTYPE>X</GLC2ICE_RMAPTYPE>
+<GLC2ICE_SMAPTYPE>X</GLC2ICE_SMAPTYPE>
+<GLC2ICE_FMAPTYPE>X</GLC2ICE_FMAPTYPE>
 
 <ATM2WAV_SMAPTYPE>Y</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE>Y</OCN2WAV_SMAPTYPE>
@@ -544,7 +551,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <ROF2OCN_FMAPTYPE BFBFLAG="TRUE">X</ROF2OCN_FMAPTYPE>
 <ROF2OCN_RMAPTYPE BFBFLAG="TRUE">X</ROF2OCN_RMAPTYPE>
 <GLC2OCN_RMAPTYPE BFBFLAG="TRUE">X</GLC2OCN_RMAPTYPE>
+<GLC2OCN_SMAPTYPE BFBFLAG="TRUE">X</GLC2OCN_SMAPTYPE>
+<GLC2OCN_FMAPTYPE BFBFLAG="TRUE">X</GLC2OCN_FMAPTYPE>
 <GLC2ICE_RMAPTYPE BFBFLAG="TRUE">X</GLC2ICE_RMAPTYPE>
+<GLC2ICE_SMAPTYPE BFBFLAG="TRUE">X</GLC2ICE_SMAPTYPE>
+<GLC2ICE_FMAPTYPE BFBFLAG="TRUE">X</GLC2ICE_FMAPTYPE>
 
 <ATM2WAV_SMAPTYPE BFBFLAG="TRUE">X</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE BFBFLAG="TRUE">X</OCN2WAV_SMAPTYPE>
@@ -1367,12 +1378,12 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 
 <!-- ======================================================== -->
-<!-- GRIDS: ocean to glc mapping                            -->
+<!-- GRIDS: ocean to glc and glc to ocean mapping             -->
 <!-- ======================================================== -->
 
-<!-- <gridmap ocn_grid="gx1v6" lnd_grid="0.9x1.25">  -->
-<!--   <OCN2GLC_FMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2GLC_FMAPNAME>   -->
-<!--   <OCN2GLC_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2GLC_SMAPNAME>  -->
+<!-- <gridmap lnd_grid="0.9x1.25" ocn_grid="gx1v6" s> -->
+<!-- <OCN2GLC_FMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2GLC_FMAPNAME> -->
+<!-- <OCN2GLC_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2GLC_SMAPNAME> -->
 <!-- </gridmap> -->
 
 </config_compset >

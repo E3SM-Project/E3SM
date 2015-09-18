@@ -350,6 +350,8 @@ module ccsm_comp_mod
    logical  :: glc_c2_lnd             ! .true.  => glc to lnd coupling on
    logical  :: glc_c2_ocn             ! .true.  => glc to ocn coupling on
    logical  :: glc_c2_ice             ! .true.  => glc to ice coupling on
+   logical  :: glcshelf_c2_ocn        ! .true.  => glc ice shelf to ocn coupling on
+   logical  :: glcshelf_c2_ice        ! .true.  => glc ice shelf to ice coupling on   
    logical  :: wav_c2_ocn             ! .true.  => wav to ocn coupling on
 
    logical  :: dead_comps             ! .true.  => dead components 
@@ -1291,6 +1293,8 @@ subroutine ccsm_init()
    glc_c2_lnd = .false.
    glc_c2_ocn = .false.
    glc_c2_ice = .false.
+   glcshelf_c2_ocn = .false.
+   glcshelf_c2_ice = .false.   
    wav_c2_ocn = .false.
 
    if (atm_present) then
@@ -1321,9 +1325,16 @@ subroutine ccsm_init()
       if (rofice_present .and. iceberg_prognostic) rof_c2_ice = .true.
    endif
    if (glc_present) then
+      !This flag determines whether glc passes info to land
       if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
-!      if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+
+      !These flags determine which way icebergs are routed
+      if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+
       if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
+      !These flags determine if ice-shelf-specific remapping occurs
+      if (ocn_prognostic) glcshelf_c2_ocn = .true.
+      if (ice_prognostic) glcshelf_c2_ice = .true.      
    endif
    if (wav_present) then
       if (ocn_prognostic) wav_c2_ocn = .true.
@@ -1400,6 +1411,8 @@ subroutine ccsm_init()
       write(logunit,F0L)'glc_c2_lnd            = ',glc_c2_lnd
       write(logunit,F0L)'glc_c2_ocn            = ',glc_c2_ocn
       write(logunit,F0L)'glc_c2_ice            = ',glc_c2_ice
+      write(logunit,F0L)'glcshelf_c2_ocn       = ',glc_c2_ocn
+      write(logunit,F0L)'glcshelf_c2_ice       = ',glc_c2_ice      
       write(logunit,F0L)'wav_c2_ocn            = ',wav_c2_ocn
 
       write(logunit,F0L)'dead components       = ',dead_comps
@@ -1510,9 +1523,9 @@ subroutine ccsm_init()
       
       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
 
-      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn) 
+      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn) 
 
-      call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
+      call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
       call prep_rof_init(infodata, lnd_c2_rof)
 
@@ -1887,12 +1900,18 @@ subroutine ccsm_init()
       if (glc_c2_ocn) then
          call prep_ocn_calc_g2x_ox(timer='driver_init_glc2ocn') 
       endif
+      if (glcshelf_c2_ocn) then
+         call prep_ocn_shelf_calc_g2x_ox(timer='driver_init_glc2ocn_shelf') 
+      endif      
       if (rof_c2_ice) then
          call prep_ice_calc_r2x_ix(timer='driver_init_rof2ice') 
       endif
       if (glc_c2_ice) then
          call prep_ice_calc_g2x_ix(timer='driver_init_glc2ice') 
       endif
+      if (glcshelf_c2_ice) then
+         call prep_ice_shelf_calc_g2x_ix(timer='driver_init_glc2ice_shelf') 
+      endif      
       if (rof_c2_lnd) then
          call prep_lnd_calc_r2x_lx(timer='driver_init_rof2lnd') 
       endif
@@ -2713,7 +2732,7 @@ end subroutine ccsm_init
             call t_drvstartf ('DRIVER_GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-	    !n Jer: get ocn inputs to glc, on glc grid
+	    !Jer: get ocn inputs to glc, on glc grid
 	    if (ocn_c2_glc) then
 	       call prep_glc_calc_o2x_gx(timer='driver_glcprep_ocn2glc')
 	    end if
@@ -3254,10 +3273,18 @@ end subroutine ccsm_init
             if (glc_c2_ice) then
                call prep_ice_calc_g2x_ix(timer='driver_glcpost_glc2ice')
             endif
+	    
+            if (glcshelf_c2_ice) then
+               call prep_ice_shelf_calc_g2x_ix(timer='driver_glcpost_glc2ice_shelf')
+            endif	    
 
             if (glc_c2_ocn) then
                call prep_ocn_calc_g2x_ox(timer='driver_glcpost_glc2ocn')
             endif
+	    
+            if (glcshelf_c2_ocn) then
+               call prep_ocn_shelf_calc_g2x_ox(timer='driver_glcpost_glc2ocn_shelf')
+            endif	    
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('DRIVER_GLCPOST',cplrun=.true.)

@@ -516,6 +516,8 @@ print ("\n");
 &prttime(' driver_glcpost_glc2lnd ' ,$coffset,$adays,$m999);
 &prttime(' driver_glcpost_glc2ice ' ,$coffset,$adays,$m999);
 &prttime(' driver_glcpost_glc2ocn ' ,$coffset,$adays,$m999);
+&prttime(' driver_glcpost_glc2ice_shelf ' ,$coffset,$adays,$m999);
+&prttime(' driver_glcpost_glc2ocn_shelf ' ,$coffset,$adays,$m999);
 print ("\n");
 &prttime(' DRIVER_ATMPOST '         ,$coffset,$adays,$m999);
 &prttime(' driver_atmpost_diagav '  ,$coffset,$adays,$m999);
