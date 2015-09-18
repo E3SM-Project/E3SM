@@ -64,7 +64,27 @@ sub main
 							      mpilib	   => $mpilib); 
     
     $batchutils->dependencyCheck("sta_ok");
+
+    check_DA_settings();
+
     $batchutils->submitJobs("sta_ok");
+
 }
+
+
+sub check_DA_settings
+{
+    if($config{DATA_ASSIMILATION} eq "TRUE"){
+	my $script = $config{DATA_ASSIMILATION_SCRIPT};
+	print "DATA_ASSIMILATION enabled\n";
+	print "   using script $script\n";
+	print "   DATA_ASSIMILATION_CYCLES = $config{DATA_ASSIMILATION_CYCLES}\n";
+    }
+}
+
+
+
+
+
 
 main(@ARGV) unless caller();
