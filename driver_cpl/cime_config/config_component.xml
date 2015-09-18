@@ -2797,7 +2797,7 @@
 
   <entry id="CCSM_BGC"> 
     <type>char</type>
-    <valid_values>one,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
+    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
     <default_value>none</default_value> 
     <values>
       <value compset="_CAM"     >CO2A</value>
