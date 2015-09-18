@@ -187,7 +187,7 @@ if (! $clean ) {
         die "ERROR cesm_setup: it is not possible to run with OpenMP if using the NAG Fortran compiler\n";
     }
 
-    my $sysmod = "./xmlchange BUILD_THREADED=$build_threaded";
+    my $sysmod = "./xmlchange -noecho BUILD_THREADED=$build_threaded";
     system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 
     if (-f "$caseroot/$case.run") {
@@ -323,6 +323,12 @@ if (! $clean ) {
 	    print "Finished testcase_setup \n";
 	}
     }
+
+    my $fh = new IO::File;
+    $fh->open(">>CaseStatus") or die "can't open file: CaseStatus\n";
+    my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
+    print $fh "cesm_setup $sdate $eol";
+    $fh->close();
 
 }
     
