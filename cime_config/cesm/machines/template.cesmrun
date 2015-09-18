@@ -54,12 +54,13 @@ my $LID;
 sub main
 {
     getOptions();
-    doPreRunChecks();
-    checkInputData();
     for(my $cycle=0;$cycle<$config{DATA_ASSIMILATION_CYCLES};$cycle++){
+	doPreRunChecks();
+	checkInputData();
 	runModel();
 	postRun();
-	DoDataAssimilation();
+	DoDataAssimilation($config{RUNDIR},$config{CASEROOT},$config{DATA_ASSIMILATION},
+	    $config{DATA_ASSIMILATION_SCRIPT},$LID,$config{LOGDIR});
     }
     resubmitCheck();
     exit(0);
@@ -80,15 +81,8 @@ sub getOptions()
 	"debug" => \$opts{'debug'},
 	#"sta_ok" => \$opts{'sta_ok'},
 	);
-}
 
-# -------------------------------------------------------------------------
-# Pre run initialization code..
-# -------------------------------------------------------------------------
-sub doPreRunChecks()
-{
-	
-    # First, get the configuration from every xml file. 
+    # First, get the configuration from xml . 
     %config = SetupTools::getAllResolved();
     $case        = $config{'CASE'};
     $caseroot    = $config{'CASEROOT'};
@@ -105,9 +99,25 @@ sub doPreRunChecks()
 	exit(1);
     }
     
+}
+
+# -------------------------------------------------------------------------
+# Pre run initialization code..
+# -------------------------------------------------------------------------
+sub doPreRunChecks()
+{
     # Change to the case root
     chdir($config{'CASEROOT'});
-    
+	
+    # Update the configuration from xml . 
+    %config = SetupTools::getAllResolved();
+    $case        = $config{'CASE'};
+    $caseroot    = $config{'CASEROOT'};
+    $compiler    = $config{'COMPILER'};
+    $machine     = $config{'MACH'};
+    $machroot    = $config{'MACHDIR'};
+    $mpilib      = $config{'MPILIB'};
+
     # Now, check for locked files. 
     Run::RunChecks->checkLockedFiles();
     
@@ -200,8 +210,6 @@ sub doPreRunChecks()
 	print " PRESTAGE SCRIPT STARTING\n";
 	print " - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}\n";
 	print " - Checking the existence of input datasets in DIN_LOC_ROOT\n";
-
-	check_DA_settings();
 
 }
 
@@ -330,6 +338,24 @@ sub runModel()
     print "$localtime MODEL EXECUTION HAS FINISHED\n";
 }
 
+sub disposeLog
+{
+    my($rundir,$caseroot,$component,$lid,$logdir) = @_;
+
+    my $logfile = "$rundir/$component.log.$lid";
+
+    if(-e $logfile){
+	qx("gzip $logfile");
+	$logfile .= ".gz";
+	if(-e $logfile){
+            copy($logfile, $logdir );
+	}
+    }
+}	    
+
+
+
+
 
 # -------------------------------------------------------------------------
 # Post-processing
@@ -410,16 +436,9 @@ sub postRun()
         }
 
         Debug("lid: $LID");
-        opendir(RUNDIR, '.') or warn "cannot open $config{'RUNDIR'}, $!";
-        my @lidlogs = grep(/.*log\.${LID}\.gz/,  readdir RUNDIR);
-        closedir RUNDIR;
-        print "lid logs @lidlogs\n";
-        Debug( "working directory: $workingdir");
-        Debug( "lid logfiles: @lidlogs");
-        foreach my $logfile(@lidlogs)
-        {
-            copy($logfile, $config{'LOGDIR'});
-        }
+	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd)){
+	    disposeLog($config{RUNDIR},$config{CASEROOT}, $comp ,$LID,$config{LOGDIR});
+	}
     }
 
     # Run the getTiming script if desired
@@ -475,16 +494,14 @@ sub resubmitCheck()
 
 sub DoDataAssimilation
 {
+    my ($rundir, $caseroot, $da, $da_script, $lid, $logdir) = @_;
 
-    return unless($config{DATA_ASSIMILATION} eq "TRUE");
-    my $script =  $config{DATA_ASSIMILATION_SCRIPT};
-    if (-x $script){
-	qx( $script );
-	if($? != 0) die "$script failed";
-    }else{
-	die "$script is not executable";
-    }
-    
+    return unless($da eq "TRUE");
+
+    qx( $da_script 1> da.log.$lid 2>&1);
+    sleep(1);
+    die "$da_script failed" unless ($? == 0);
+    disposeLog($rundir,$caseroot, 'da' ,$lid,$logdir);
 }
 
 

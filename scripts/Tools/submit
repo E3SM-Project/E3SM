@@ -75,8 +75,7 @@ sub main
 sub check_DA_settings
 {
     if($config{DATA_ASSIMILATION} eq "TRUE"){
-	my $script =  $config{DATA_ASSIMILATION_SCRIPT};
-	die "DATA_ASSIMILATION_SCRIPT $script is not executable" unless(-x $script);
+	my $script = $config{DATA_ASSIMILATION_SCRIPT};
 	print "DATA_ASSIMILATION enabled\n";
 	print "   using script $script\n";
 	print "   DATA_ASSIMILATION_CYCLES = $config{DATA_ASSIMILATION_CYCLES}\n";
