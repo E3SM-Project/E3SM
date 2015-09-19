@@ -103,4 +103,9 @@ my @lockedfiles = glob("LockedFiles/env_build*");
 foreach my $lf (@lockedfiles) {
     unlink($lf);
 }
-system("./xmlchange SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");
+system("./xmlchange -noecho SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");
+
+my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
+open my $CS, ">>", "./CaseStatus";
+print $CS "clean_build complete $sdate\n";
+close $CS;

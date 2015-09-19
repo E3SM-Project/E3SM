@@ -566,7 +566,7 @@
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.0.219</command>
+	<command name="switch">cce cce/8.4.0.223</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
@@ -1425,8 +1425,7 @@
     <batch_system type="lsf" version="9.1">
       <queues>
 	<queue walltimemax="24:00" jobmin="1" jobmax="8">caldera</queue>
-	<queue walltimemax="2:00" jobmin="9" jobmax="4096">small</queue>
-	<queue walltimemax="12:00" jobmin="0" jobmax="16384" default="true">regular</queue>
+	<queue walltimemax="12:00" jobmin="9" jobmax="16384" default="true">regular</queue>
 	<queue walltimemax="12:00" jobmin="16385" jobmax="65536">capability</queue>
       </queues>
       <walltimes>

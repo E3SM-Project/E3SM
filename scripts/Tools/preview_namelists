@@ -7,6 +7,7 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use File::Basename;
+use File::Copy;
 
 sub usage {
     die <<EOF;
@@ -184,20 +185,27 @@ if (! -d "$docdir") {
     print $fileh "   For documentation only DO NOT MODIFY";
     close $fileh;
 }
-`chmod +w $docdir/*`;
 
-`cp -p $RUNDIR/*_in_[0-9]*         $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*modelio*nml_[0-9]*	$docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*_in                $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*modelio*nml        $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*streams*txt*       $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*.stxt              $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*maps.rc            $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/cism.config*        $docdir/ >& /dev/null`;
+opendir(RD,$RUNDIR);
+my @runfiles = readdir(RD);
+closedir(RD);
+foreach my $rfile (@runfiles){
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /_in_?[0-9]?$/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /modelio/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /streams.*txt/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /stxt$/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /maps.rc$/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /cism.config/);
+}
 
 # copy over chemistry mechanism docs if they exist
 if ( -e "$CASEBUILD/camconf" ) {
-    `cp -p $CASEBUILD/camconf/chem_mech.* $docdir/ >& /dev/null`;
+    opendir(CC,"$CASEBUILD/camconf");
+    my @chemfiles = grep(/chem_mech/,readdir(CC));
+    closedir(CC);
+    foreach(@chemfiles){
+	copy("$CASEBUILD/camconf/$_","$docdir/$_");
+    }
 }
 
 my $sysmod = "chmod 444 $docdir/*";

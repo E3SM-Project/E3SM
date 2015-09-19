@@ -42,15 +42,15 @@
     ./case_setup                                                            
     to reset the pes for the run                                              
     
-    NTASKS are the total number of MPI tasks                                  
+    NTASKS are the total number of MPI tasks, a negative value in this field 
+                 indicates nodes rather than tasks.
     NTHRDS are the number of OpenMP threads per MPI task                        
     ROOTPE is the global mpi task associated with the root task               
-    of that component                                                       
-    PSTRID is the stride of MPI tasks across the global                       
+    of that component, a negative value in this field indicates nodes rather than tasks.           PSTRID is the stride of MPI tasks across the global                       
     set of pes (for now this is set to 1)                              
     NINST is the number of instances of the component (will be spread         
     evenly across NTASKS)                                               
-    
+
     for example, for a setting with                                             
     NTASKS = 8                                                              
     NTHRDS = 2                                                              
