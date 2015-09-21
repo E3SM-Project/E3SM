@@ -75,6 +75,7 @@ sub getCompsetLongname
 	$file =~ s/\$CIMEROOT/$cimeroot/;
 	$file =~ s/\$SRCROOT/$srcroot/;
 	$file =~ s/\$MODEL/$model/;
+	if (! -f $file ) {next;}
 	my $xml2 = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
 
 	# First determine if there is a match for the alias - if so stop
