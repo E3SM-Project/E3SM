@@ -53,7 +53,6 @@ module ocn_surface_bulk_forcing
    !
    !--------------------------------------------------------------------
 
-   real (kind=RKIND) :: refDensity
    logical :: bulkWindStressOn, bulkThicknessFluxOn
 
 !***********************************************************************
@@ -267,7 +266,9 @@ contains
 
       ! Build surface fluxes at cell centers
       do iCell = 1, nCells
-        surfaceThicknessFlux(iCell) = ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + riverRunoffFlux(iCell) ) / refDensity
+        surfaceThicknessFlux(iCell) = ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
+                                    + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) &
+                                    + riverRunoffFlux(iCell) ) / rho_sw
       end do
 
    end subroutine ocn_surface_bulk_forcing_thick!}}}
@@ -288,16 +289,13 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      real (kind=RKIND), pointer :: config_density0
       logical, pointer :: config_use_bulk_wind_stress, config_use_bulk_thickness_flux
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
       call mpas_pool_get_config(ocnConfigs, 'config_use_bulk_thickness_flux', config_use_bulk_thickness_flux)
 
-      refDensity = config_density0
       bulkWindStressOn = config_use_bulk_wind_stress
       bulkThicknessFluxOn = config_use_bulk_thickness_flux
 

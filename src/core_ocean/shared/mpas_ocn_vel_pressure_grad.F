@@ -618,21 +618,19 @@ contains
       ! call individual init routines for each parameterization
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND), pointer :: config_density0
       logical, pointer :: config_disable_vel_pgrad
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(ocnConfigs, 'config_common_level_weight', config_common_level_weight)
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_pgrad', config_disable_vel_pgrad)
 
       pgradOn = .true.
 
-      density0Inv = 1.0/config_density0
-      gdensity0Inv = gravity/config_density0
-      inv12 = 1.0/12.0
+      density0Inv = 1.0_RKIND / rho_sw
+      gdensity0Inv = gravity / rho_sw
+      inv12 = 1.0_RKIND / 12.0_RKIND
 
       if (config_disable_vel_pgrad) pgradOn = .false.
 

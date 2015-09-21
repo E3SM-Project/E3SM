@@ -140,7 +140,7 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
       logical, pointer :: config_use_cvmix_kpp
-      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
+      real (kind=RKIND), pointer :: config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
       if (present(timeLevelIn)) then
@@ -149,7 +149,6 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
@@ -561,7 +560,7 @@ contains
       !
       ! Brunt-Vaisala frequency (this has units of s^{-2})
       !
-      coef = -gravity / config_density0
+      coef = -gravity / rho_sw
       do iCell = 1, nCells
          BruntVaisalaFreqTop(1,iCell) = 0.0
          do k = 2, maxLevelCell(iCell)
@@ -1129,7 +1128,6 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: buoySmoothed, shearSmoothed
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
-      real (kind=RKIND), pointer :: config_density0
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -1138,7 +1136,6 @@ contains
       end if
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001_RKIND
@@ -1234,7 +1231,7 @@ contains
         surfacewindStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
 
        ! compute surface friction velocity
-         surfaceFrictionVelocity(iCell) = sqrt(surfacewindStressMagnitude(iCell) / config_density0)
+         surfaceFrictionVelocity(iCell) = sqrt(surfacewindStressMagnitude(iCell) / rho_sw)
 
        ! zero the bulk Richardson number within the ocean surface layer
        ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
@@ -1253,7 +1250,7 @@ contains
            deltaVelocitySquared = deltaVelocitySquared + factor * delU2
          enddo
 
-         buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
+         buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / rho_sw
          shearContribution = max(deltaVelocitySquared,1.0e-15_RKIND)
 
          ! store the buoyancy and resolved shear contributions to bulk Richardson number
