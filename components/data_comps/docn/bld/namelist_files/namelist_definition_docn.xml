@@ -83,12 +83,12 @@ for all input data for this strdata input.
 type="char*256(30)"  
 category="streams"
 group="shr_strdata_nml"
-valid_values="copy,bilinear,nn,nnoni,nnonj,spval">
+valid_values="copy,none,bilinear,nn,nnoni,nnonj,spval">
 array (up to 30 elements) of fill algorithms associated with the array
 of streams.  valid options are just copy (ie. no fill), special value,
 nearest neighbor, nearest neighbor in "i" direction, or nearest
 neighbor in "j" direction.
-valid values:  'copy','spval','nn','nnoni','nnonj'  
+valid values:  'copy','none','spval','nn','nnoni','nnonj'  
 default: "nn".
 </entry>
 
