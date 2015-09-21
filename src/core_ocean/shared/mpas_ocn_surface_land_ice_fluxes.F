@@ -110,6 +110,8 @@ contains
 
       err = 0
 
+      if ( .not. landIceFluxesOn ) return
+
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_land_ice_fluxes_active_tracers(meshPool, forcingPool, tracersSurfaceFlux, err)
       end if
@@ -303,6 +305,8 @@ contains
 
       err = 0
 
+      if ( .not. landIceFluxesOn ) return
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
@@ -397,6 +401,8 @@ contains
                                      freezeIceHeatFluxField
 
       err = 0
+
+      if ( .not. landIceFluxesOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', config_land_ice_flux_useHollandJenkinsAdvDiff)
