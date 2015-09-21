@@ -130,7 +130,7 @@ sub getCompsetLongname
 	    $file =~ s/\$MODEL/$model/;
 	    print " $file \n";
 	}
-	die;
+	die "Exiting";
     } else {
 	print "\n";
 	print "File specifying possible compsets: $compsets_file \n";
@@ -404,7 +404,7 @@ sub setCompsetGeneralVars
 	    my $cimeroot = $config->get('CIMEROOT');
 	    print "ERROR : $id is not a valid name in $compsets_file \n";
 	    print "*** See possible values in file $cimeroot/driver_cpl/cimeconfig/config_cime.xml ***";
-	    die;
+	    die "Exiting";
 	}
     }
 }
@@ -450,7 +450,7 @@ sub setComponent {
 	    my $desc  = $node->textContent();
 	    print "     $match: $desc \n";
 	}
-	die; 
+	die "Exiting"; 
     }
 
     # Now set the actual values of the variable
