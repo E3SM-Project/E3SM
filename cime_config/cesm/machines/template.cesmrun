@@ -473,13 +473,7 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    my $islastjob = 'FALSE';
     my $resubmit = $config{'RESUBMIT'};
-
-    if(defined $ENV{'islastjob'} && $ENV{'islastjob'} eq 'TRUE')
-    {
-        $islastjob = 'TRUE';
-    }
 
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	  => $config{'CASE'}, 
 							      caseconfig  => \%config, 
@@ -489,7 +483,7 @@ sub resubmitCheck()
                                                               machroot    => $config{'MACHDIR'}, 
 							      mpilib      => $config{'MPILIB'});
 
-    print "Resubmitting job RESUBMIT=$config{RESUBMIT}\n";
+    print "Resubmitting job RESUBMIT=$config{RESUBMIT}\n" if($config{RESUBMIT}>0 && $ENV{islastjob} eq "TRUE");
     $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
 }
 
