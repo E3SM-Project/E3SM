@@ -204,6 +204,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "    <var name=" . '"normalVelocity"' . "/>\n";
 	print $stream_file "    <var name=" . '"uReconstructX"' . "/>\n";
 	print $stream_file "    <var name=" . '"uReconstructY"' . "/>\n";
+	print $stream_file "    <var name=" . '"sfcMassBal"' . "/>\n";
 	print $stream_file "\n";
 	print $stream_file "</stream>\n";
 	print $stream_file "\n";
