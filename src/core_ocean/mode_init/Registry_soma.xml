@@ -1,4 +1,4 @@
-        <nml_record name="soma" in_defaults="true" mode="init" configuration="soma">
+        <nml_record name="soma" mode="init" configuration="soma">
                 <nml_option name="config_soma_vert_levels" type="integer" default_value="100" units="unitless"
                                         description="Number of vertical levels in SOMA."
                                         possible_values="Any positive integer. Typically 40 or larger."
