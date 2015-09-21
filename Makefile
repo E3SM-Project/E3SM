@@ -297,6 +297,10 @@ intel-nersc:
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_OMP = -openmp" \
 	"CFLAGS_OMP = -openmp" \
+	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
+	"LDFLAGS_DEBUG = -g -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
