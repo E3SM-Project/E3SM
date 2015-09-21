@@ -235,11 +235,13 @@ module ocn_time_integration_rk4
                call mpas_pool_get_array(tracersPool, trim(groupItr % memberName), tracersCur, 1)
                call mpas_pool_get_array(tracersPool, trim(groupItr % memberName), tracersNew, 2)
 
-               do iCell = 1, nCells  ! couple tracers to thickness
-                  do k = 1, maxLevelCell(iCell)
-                     tracersNew(:,k,iCell) = tracersCur(:,k,iCell) * layerThicknessCur(k,iCell)
+               if ( associated(tracersCur) .and. associated(tracersNew) ) then
+                  do iCell = 1, nCells  ! couple tracers to thickness
+                     do k = 1, maxLevelCell(iCell)
+                        tracersNew(:,k,iCell) = tracersCur(:,k,iCell) * layerThicknessCur(k,iCell)
+                     end do
                   end do
-               end do
+               end if
             end if
          end do
 
@@ -538,14 +540,16 @@ module ocn_time_integration_rk4
 
                        modifiedGroupName = trim(groupItr % memberName) // 'Tend'
                        call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
-                       do iCell = 1, nCells
-                          do k = 1, maxLevelCell(iCell)
-                          tracersGroupProvis(:,k,iCell) = ( layerThicknessCur(k,iCell) * tracersCur(:,k,iCell)  &
-                                                   + rk_substep_weights(rk_step) * tracersGroupTend(:,k,iCell) &
-                                                     ) / layerThicknessProvis(k,iCell)
-                          end do
+                       if ( associated(tracersGroupProvis) .and. associated(tracersCur) .and. associated(tracersGroupTend) ) then
+                          do iCell = 1, nCells
+                             do k = 1, maxLevelCell(iCell)
+                             tracersGroupProvis(:,k,iCell) = ( layerThicknessCur(k,iCell) * tracersCur(:,k,iCell)  &
+                                                      + rk_substep_weights(rk_step) * tracersGroupTend(:,k,iCell) &
+                                                        ) / layerThicknessProvis(k,iCell)
+                             end do
 
-                       end do
+                          end do
+                       end if
                     end if
                  end if
               end do
@@ -635,11 +639,13 @@ module ocn_time_integration_rk4
 
                     modifiedGroupName = trim(groupItr % memberName) // 'Tend'
                     call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
-                    do iCell = 1, nCells
-                       do k = 1, maxLevelCell(iCell)
-                          tracersNew(:,k,iCell) =  tracersNew(:,k,iCell) + rk_weights(rk_step) * tracersGroupTend(:,k,iCell)
+                    if ( associated(tracersNew) .and. associated(tracersGroupTend) ) then
+                       do iCell = 1, nCells
+                          do k = 1, maxLevelCell(iCell)
+                             tracersNew(:,k,iCell) =  tracersNew(:,k,iCell) + rk_weights(rk_step) * tracersGroupTend(:,k,iCell)
+                          end do
                        end do
-                    end do
+                    end if
                  end if
               end if
            end do
@@ -692,11 +698,13 @@ module ocn_time_integration_rk4
         do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
            if ( groupItr % memberType == MPAS_POOL_FIELD ) then
               call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersNew, 2)
-              do iCell = 1, nCells
-                do k = 1, maxLevelCell(iCell)
-                  tracersNew(:, k, iCell) = tracersNew(:, k, iCell) / layerThicknessNew(k, iCell)
-                end do
-              end do
+              if ( associated(tracersNew) ) then
+                 do iCell = 1, nCells
+                   do k = 1, maxLevelCell(iCell)
+                     tracersNew(:, k, iCell) = tracersNew(:, k, iCell) / layerThicknessNew(k, iCell)
+                   end do
+                 end do
+              end if
            end if
         end do
 
@@ -765,7 +773,9 @@ module ocn_time_integration_rk4
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_field(tracersPool, groupItr % memberName, tracersGroupField, 2)
-            call mpas_dmpar_exch_halo_field(tracersGroupField)
+            if ( tracersGroupField % isActive ) then
+               call mpas_dmpar_exch_halo_field(tracersGroupField)
+            end if
          end if
       end do
 
