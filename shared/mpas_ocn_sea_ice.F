@@ -117,7 +117,6 @@ contains
       real (kind=RKIND) :: referenceSalinity, iceSalinity
       real (kind=RKIND) :: freezingTemp, density_ice
       real (kind=RKIND), dimension(:), allocatable :: iceTracer
-      real (kind=RKIND), pointer :: config_density0
 
       if(.not. frazilFormationOn) return
 
@@ -126,7 +125,6 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, dim=1)
 
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
@@ -146,7 +144,7 @@ contains
             ! availableEnergyChange is:
             !     positive when frazil ice is formed
             !     negative when frazil ice can be melted
-            availableEnergyChange = config_density0 * cp_sw * layerThickness(k, iCell) &
+            availableEnergyChange = rho_sw * cp_sw * layerThickness(k, iCell) &
                                       * (freezingTemp - tracers(indexTemperature, k, iCell))
 
             ! energyChange is capped when negative.
@@ -155,9 +153,9 @@ contains
             energyChange = max(availableEnergyChange, -netEnergyChange)
 
             ! Compute temperature change in ocean cell due to energy change
-            temperatureChange = energyChange / ( config_density0 * cp_sw * layerThickness(k, iCell) )
+            temperatureChange = energyChange / ( rho_sw * cp_sw * layerThickness(k, iCell) )
             ! Compute thickness change in ocean cell due to energy change
-            thicknessChange = energyChange / ( config_density0 * latent_heat_fusion_mks )
+            thicknessChange = energyChange / ( rho_sw * latent_heat_fusion_mks )
             ! Compute thickness change in sea ice due to energy change
             iceThicknessChange = energyChange / ( density_ice * latent_heat_fusion_mks )
 
@@ -167,9 +165,9 @@ contains
                   ! computed as:
                   !    \rho_{ocn} h_{ocn}^{pre} \theta_{ocn}^{pre} = 
                   !               \rho_{ocn}^{new} h_{ocn}^{new} \theta_{ocn}^{new}  =  \rho_{si} h_{si} \theta_{si}
-                  tracers(iTracer, k, iCell) = ( config_density0 * layerThickness(k,iCell) * tracers(iTracer, k, iCell) &
+                  tracers(iTracer, k, iCell) = ( rho_sw * layerThickness(k,iCell) * tracers(iTracer, k, iCell) &
                                                - density_ice * iceThicknessChange * iceTracer(iTracer)) / &
-                                               (config_density0 * (layerThickness(k,iCell) + thicknessChange))
+                                               (rho_sw * (layerThickness(k,iCell) + thicknessChange))
                end if
             end do
 
@@ -197,7 +195,7 @@ contains
             ! availableEnergyChange is:
             !     positive when frazil ice is formed
             !     negative when frazil ice can be melted
-            availableEnergyChange = config_density0 * cp_sw * layerThickness(k, iCell) &
+            availableEnergyChange = rho_sw * cp_sw * layerThickness(k, iCell) &
                                       * (freezingTemp - tracers(indexTemperature, k, iCell))
 
             ! energyChange is capped when negative.
@@ -207,9 +205,9 @@ contains
             energyChange = max(availableEnergyChange, -seaIceEnergy(iCell))
 
             ! Compute temperature change in ocean cell due to energy change
-            temperatureChange = energyChange / ( config_density0 * cp_sw * layerThickness(k, iCell) )
+            temperatureChange = energyChange / ( rho_sw * cp_sw * layerThickness(k, iCell) )
             ! Compute thickness change in ocean cell due to energy change
-            thicknessChange = energyChange / ( config_density0 * latent_heat_fusion_mks )
+            thicknessChange = energyChange / ( rho_sw * latent_heat_fusion_mks )
             ! Compute thickness change in sea ice due to energy change
             iceThicknessChange = energyChange / ( density_ice * latent_heat_fusion_mks )
 
@@ -219,9 +217,9 @@ contains
                   ! computed as:
                   !    \rho_{ocn} h_{ocn}^{pre} \theta_{ocn}^{pre} = 
                   !               \rho_{ocn}^{new} h_{ocn}^{new} \theta_{ocn}^{new}  =  \rho_{si} h_{si} \theta_{si}
-                  tracers(iTracer, k, iCell) = ( config_density0 * layerThickness(k,iCell) * tracers(iTracer, k, iCell) &
+                  tracers(iTracer, k, iCell) = ( rho_sw * layerThickness(k,iCell) * tracers(iTracer, k, iCell) &
                                                - density_ice * iceThicknessChange * iceTracer(iTracer)) / &
-                                               (config_density0 * (layerThickness(k,iCell) + thicknessChange))
+                                               (rho_sw * (layerThickness(k,iCell) + thicknessChange))
                end if
             end do
 
