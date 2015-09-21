@@ -1146,6 +1146,11 @@ contains
          stol    = stol_alternate
          call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
                                 max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+
+         ! Reduce total run length time by the amount VSFM ran successfully
+         ! with previous solver settings
+         dtime = dtime - vsfm_mpp%sysofeqns%time
+
          call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
 
          if (.not. converged) then
@@ -1158,6 +1163,11 @@ contains
 
             ! Solve VSFM with tight solution tolerance + no reduction in kr
             stol    = stol_default
+
+            ! Reduce total run length time by the amount VSFM ran successfully
+            ! with previous solver settings
+            dtime = dtime - vsfm_mpp%sysofeqns%time
+
             call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
                                    max_it_default, max_f_default, ierr); CHKERRQ(ierr)
             call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
@@ -1167,6 +1177,11 @@ contains
                   stol    = stol_alternate
                   call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
                                          max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+
+                  ! Reduce total run length time by the amount VSFM ran successfully
+                  ! with previous solver settings
+                  dtime = dtime - vsfm_mpp%sysofeqns%time
+
                   call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
 
                   if (.not. converged) then
@@ -1254,16 +1269,16 @@ contains
 
 #if VSFM_DEBUG
       write(*,*)'VSFM-DEBUG: nstep                      = ',get_nstep()
-      write(*,*)'VSFM-DEBUG: dtime                      = ',dtime
+      write(*,*)'VSFM-DEBUG: dtime                      = ',get_step_size()
       write(*,*)'VSFM-DEBUG: change in mass between dt  = ',-(mass_beg - mass_end)
-      write(*,*)'VSFM-DEBUG: change in mass due to flux = ',total_mass_flux*dtime
-      write(*,*)'VSFM-DEBUG: Error in mass conservation = ',mass_beg - mass_end + total_mass_flux*dtime
-      write(*,*)'VSFM-DEBUG: et_flux    * dtime         = ',total_mass_flux_et*dtime
-      write(*,*)'VSFM-DEBUG: infil_flux * dtime         = ',total_mass_flux_infl*dtime
-      write(*,*)'VSFM-DEBUG: dew_flux   * dtime         = ',total_mass_flux_dew*dtime
-      write(*,*)'VSFM-DEBUG: drain_flux * dtime         = ',total_mass_flux_drain*dtime
-      write(*,*)'VSFM-DEBUG: snow_flux  * dtime         = ',total_mass_flux_snowlyr*dtime
-      write(*,*)'VSFM-DEBUG: sub_flux   * dtime         = ',total_mass_flux_sub*dtime
+      write(*,*)'VSFM-DEBUG: change in mass due to flux = ',total_mass_flux*get_step_size()
+      write(*,*)'VSFM-DEBUG: Error in mass conservation = ',mass_beg - mass_end + total_mass_flux*get_step_size()
+      write(*,*)'VSFM-DEBUG: et_flux    * dtime         = ',total_mass_flux_et*get_step_size()
+      write(*,*)'VSFM-DEBUG: infil_flux * dtime         = ',total_mass_flux_infl*get_step_size()
+      write(*,*)'VSFM-DEBUG: dew_flux   * dtime         = ',total_mass_flux_dew*get_step_size()
+      write(*,*)'VSFM-DEBUG: drain_flux * dtime         = ',total_mass_flux_drain*get_step_size()
+      write(*,*)'VSFM-DEBUG: snow_flux  * dtime         = ',total_mass_flux_snowlyr*get_step_size()
+      write(*,*)'VSFM-DEBUG: sub_flux   * dtime         = ',total_mass_flux_sub*get_step_size()
       write(*,*)'VSFM-DEBUG: total_mass_flux            = ',total_mass_flux/flux_unit_conversion
       write(*,*)'VSFM-DEBUG: et_flux                    = ',total_mass_flux_et
       write(*,*)'VSFM-DEBUG: infil_flux                 = ',total_mass_flux_infl
