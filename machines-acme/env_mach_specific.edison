@@ -78,6 +78,7 @@ endif
 
 module load perl/5.20.0
 module load cmake/2.8.11.2
+module load cray-petsc/3.5.3.0
 module list >& software_environment.txt
 
 
