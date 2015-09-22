@@ -1154,6 +1154,7 @@
     <valid_values>TRUE,FALSE</valid_values> 
     <default_value>FALSE</default_value> 
     <group>run_domain</group>
+    <file>env_run.xml</file>
     <desc>Operate on only a single point of the global grid  - DO NOT EDIT (for experts only)</desc>
   </entry>
 
@@ -1161,6 +1162,7 @@
     <type>real(1)</type>
     <default_value>-999.99</default_value> 
     <group>run_domain</group>
+    <file>env_run.xml</file>
     <desc>Latitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
   </entry>
 
@@ -1168,6 +1170,7 @@
     <type>real(1)</type>
     <default_value>-999.99</default_value> 
     <group>run_domain</group>
+    <file>env_run.xml</file>
     <desc>Longitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
   </entry>
 
