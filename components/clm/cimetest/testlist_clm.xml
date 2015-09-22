@@ -720,6 +720,46 @@
   </compset>
   <compset name="ICLM45VIC">
     <grid name="f09_g16">
+      <test name="ERS">
+        <machine compiler="gnu" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="pgi" testtype="acme_integration">blues</machine>
+        <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_integration">cascade</machine>
+        <machine compiler="nag" testtype="acme_integration">cascade</machine>
+        <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="aux_clm_ys_pgi" testmods="clm/vrtlay">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">eos</machine>
+        <machine compiler="intel" testtype="acme_integration">evergreen</machine>
+        <machine compiler="intel" testtype="acme_integration">goldbach</machine>
+        <machine compiler="nag" testtype="acme_integration">goldbach</machine>
+        <machine compiler="pgi" testtype="acme_integration">goldbach</machine>
+        <machine compiler="gnu" testtype="acme_integration">hopper</machine>
+        <machine compiler="intel" testtype="acme_integration">hopper</machine>
+        <machine compiler="pgi" testtype="acme_integration">hopper</machine>
+        <machine compiler="intel" testtype="acme_integration">janus</machine>
+        <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_integration">linux-generic</machine>
+        <machine compiler="gnu" testtype="acme_integration">mac</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_integration">penn</machine>
+        <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="pgi" testtype="aux_clm45" testmods="clm/vrtlay">yellowstone</machine>
+      </test>
       <test name="ERP_D_Ld5">
         <machine compiler="intel" testtype="aux_clm_ys_intel" testmods="clm/vrtlay">edison</machine>
         <machine compiler="intel" testtype="aux_clm45" testmods="clm/vrtlay">yellowstone</machine>
@@ -832,6 +872,46 @@
   </compset>
   <compset name="ICRUCLM45">
     <grid name="f09_g16">
+      <test name="SMS">
+        <machine compiler="gnu" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="pgi" testtype="acme_integration">blues</machine>
+        <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_integration">cascade</machine>
+        <machine compiler="nag" testtype="acme_integration">cascade</machine>
+        <machine compiler="ibm" testtype="acme_integration">cetus</machine>
+        <machine compiler="pgi" testtype="acme_integration">eastwind</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">eos</machine>
+        <machine compiler="intel" testtype="acme_integration">evergreen</machine>
+        <machine compiler="intel" testtype="acme_integration">goldbach</machine>
+        <machine compiler="nag" testtype="acme_integration">goldbach</machine>
+        <machine compiler="pgi" testtype="acme_integration">goldbach</machine>
+        <machine compiler="nag" testtype="aux_clm45" testmods="clm/af_bias_v5">goldbach</machine>
+        <machine compiler="gnu" testtype="acme_integration">hopper</machine>
+        <machine compiler="intel" testtype="acme_integration">hopper</machine>
+        <machine compiler="pgi" testtype="acme_integration">hopper</machine>
+        <machine compiler="intel" testtype="acme_integration">janus</machine>
+        <machine compiler="intel" testtype="acme_integration">lawrencium-lr2</machine>
+        <machine compiler="gnu" testtype="acme_integration">linux-generic</machine>
+        <machine compiler="gnu" testtype="acme_integration">mac</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="pgi" testtype="acme_integration">olympus</machine>
+        <machine compiler="gnu" testtype="acme_integration">penn</machine>
+        <machine compiler="intel" testtype="acme_integration">redsky</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="intel" testtype="aux_clm45" testmods="clm/af_bias_v5">yellowstone</machine>
+      </test>
       <test name="SMS_Ld1">
         <machine compiler="intel" testtype="aux_clm45" testmods="clm/af_bias_v5">yellowstone</machine>
       </test>
