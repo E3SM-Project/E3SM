@@ -221,11 +221,16 @@ contains
 
    subroutine cice_compute_regional_statistics(domain, timeLevel, err)!{{{
 
+      use cice_mesh, only: &
+           cice_interpolate_vertex_to_cell
+
       use ice_constants_colpkg, only: &
            awtvdr, &
            awtidr, &
            awtvdf, &
-           awtidf
+           awtidf, &
+           rhoi, &
+           rhos
 
       !-----------------------------------------------------------------
       !
@@ -269,6 +274,7 @@ contains
            tracersAggregatePool, &
            shortwavePool, &
            velocitySolverPool, &
+           boundaryPool, &
            regionalStatisticsAMPool
 
       integer, pointer :: &
@@ -291,7 +297,9 @@ contains
            albedoIRDiffuseCell, &
            icePressure, &
            uVelocity, &
-           vVelocity
+           vVelocity, &
+           uVelocityCell, &
+           vVelocityCell
 
       integer, dimension(:,:), pointer :: &
            regionMask
@@ -301,6 +309,8 @@ contains
            totalIceExtent, &
            totalIceVolume, &
            totalSnowVolume, &
+           totalKineticEnergy, &
+           rmsIceSpeed, &
            averageAlbedo, &
            maximumIceVolume, &
            maximumIcePressure
@@ -331,7 +341,7 @@ contains
 
       call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nRegions", nRegions)
 
-      nSums = 6
+      nSums = 8
       nMaxs = 2
 
       allocate(globalSumsIn(nRegions*nSums))
@@ -349,6 +359,8 @@ contains
          call MPAS_pool_get_subpool(block % structs, 'tracers_aggregate', tracersAggregatePool)
          call MPAS_pool_get_subpool(block % structs, 'shortwave', shortwavePool)
          call MPAS_pool_get_subpool(block % structs, 'velocity_solver', velocitySolverPool)
+         call MPAS_pool_get_subpool(block % structs, 'boundary', boundaryPool)
+         call MPAS_pool_get_subpool(block % structs, 'regionalStatisticsAM', regionalStatisticsAMPool)
 
          call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
@@ -369,6 +381,13 @@ contains
          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
 
          call MPAS_pool_get_array(regionsPool, 'regionMask', regionMask)
+
+         call MPAS_pool_get_array(regionalStatisticsAMPool, 'uVelocityCell', uVelocityCell)
+         call MPAS_pool_get_array(regionalStatisticsAMPool, 'vVelocityCell', vVelocityCell)
+
+         ! cell centre velocity for velocity statistics
+         call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, uVelocityCell, uVelocity)
+         call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, vVelocityCell, vVelocity)
 
          do iCell = 1, nCellsSolve
             do iRegion = 1, nRegions
@@ -395,10 +414,21 @@ contains
                   iSum = (iRegion-1) * nSums + 4
                   globalSumsIn(iSum) = globalSumsIn(iSum) + snowVolumeCell(iCell) * areaCell(iCell)
 
+                  ! kinetic energy
+                  iSum = (iRegion-1) * nSums + 5
+                  globalSumsIn(iSum) = globalSumsIn(iSum) + 0.5_RKIND * areaCell(iCell) * &
+                       (snowVolumeCell(iCell) * rhos + iceVolumeCell(iCell) * rhoi) * &
+                       (uVelocityCell(iCell)**2 + vVelocityCell(iCell)**2)
+
+                  ! total mass (for RMS ice speed)
+                  iSum = (iRegion-1) * nSums + 6
+                  globalSumsIn(iSum) = globalSumsIn(iSum) + areaCell(iCell) * &
+                       (snowVolumeCell(iCell) * rhos + iceVolumeCell(iCell) * rhoi)
+
                   ! average albedo
                   if (solarZenithAngleCosine(iCell) > 0.0_RKIND) then
 
-                     iSum = (iRegion-1) * nSums + 5
+                     iSum = (iRegion-1) * nSums + 7
                      globalSumsIn(iSum) = globalSumsIn(iSum) + &
                           areaCell(iCell) * &
                           (awtvdr * albedoVisibleDirectCell(iCell) + &
@@ -406,7 +436,7 @@ contains
                            awtvdf * albedoVisibleDiffuseCell(iCell) + &
                            awtidf * albedoIRDiffuseCell(iCell))
 
-                     iSum = (iRegion-1) * nSums + 6
+                     iSum = (iRegion-1) * nSums + 8
                      globalSumsIn(iSum) = globalSumsIn(iSum) + &
                           areaCell(iCell)
 
@@ -442,6 +472,8 @@ contains
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'totalIceExtent', totalIceExtent)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'totalIceVolume', totalIceVolume)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'totalSnowVolume', totalSnowVolume)
+      call MPAS_pool_get_array(regionalStatisticsAMPool, 'totalKineticEnergy', totalKineticEnergy)
+      call MPAS_pool_get_array(regionalStatisticsAMPool, 'rmsIceSpeed', rmsIceSpeed)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'averageAlbedo', averageAlbedo)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceVolume', maximumIceVolume)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIcePressure', maximumIcePressure)
@@ -452,8 +484,11 @@ contains
          totalIceExtent(iRegion)     = globalSumsOut((iRegion-1) * nSums + 2)
          totalIceVolume(iRegion)     = globalSumsOut((iRegion-1) * nSums + 3)
          totalSnowVolume(iRegion)    = globalSumsOut((iRegion-1) * nSums + 4)
-         averageAlbedo(iRegion)      = globalSumsOut((iRegion-1) * nSums + 5) / &
+         totalKineticEnergy(iRegion) = globalSumsOut((iRegion-1) * nSums + 5)
+         rmsIceSpeed(iRegion)        = globalSumsOut((iRegion-1) * nSums + 5) / &
                                        max(globalSumsOut((iRegion-1) * nSums + 6), 1e-11_RKIND)
+         averageAlbedo(iRegion)      = globalSumsOut((iRegion-1) * nSums + 7) / &
+                                       max(globalSumsOut((iRegion-1) * nSums + 8), 1e-11_RKIND)
          maximumIceVolume(iRegion)   = globalMaxsOut((iRegion-1) * nMaxs + 1)
          maximumIcePressure(iRegion) = globalMaxsOut((iRegion-1) * nMaxs + 2)
 

@@ -78,7 +78,7 @@
 	<streams>
 		<stream name="conservationCheckOutput" type="output"
 				mode="forward;analysis"
-				filename_template="conservationCheck.nc"
+				filename_template="analysis_members/conservationCheck.nc"
 				filename_interval="none"
 				output_interval="00-00-00_01:00:00"
 				packages="conservationCheckAMPKG"

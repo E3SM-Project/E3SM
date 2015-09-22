@@ -1,9 +1,9 @@
 .SUFFIXES: .F .o
-.PHONY: forward_model analysis_members
+.PHONY: model_forward analysis_members shared
 
 all: core_cice
 
-core_cice: column_package forward_model analysis_members
+core_cice: column_package shared analysis_members model_forward
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 gen_includes:
@@ -24,17 +24,21 @@ post_build:
 column_package:
 	(cd column; $(MAKE))
 
-analysis_members: column_package
+shared: column_package
+	(cd shared; $(MAKE))
+
+analysis_members: column_package shared
 	(cd analysis_members; $(MAKE))
 
-forward_model: column_package analysis_members
-	(cd forward_model; $(MAKE))
+model_forward: column_package shared analysis_members
+	(cd model_forward; $(MAKE))
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
 	(cd column; $(MAKE) clean)
-	(cd forward_model; $(MAKE) clean)
+	(cd shared; $(MAKE) clean)
 	(cd analysis_members; $(MAKE) clean)
+	(cd model_forward; $(MAKE) clean)
 	$(RM) Registry_processed.xml
 	@# Certain systems with intel compilers generate *.i files
 	@# This removes them during the clean process
