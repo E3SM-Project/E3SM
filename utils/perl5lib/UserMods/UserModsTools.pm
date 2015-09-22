@@ -35,7 +35,9 @@ sub apply_mods {
    _apply_mods_recursively($user_mods_dir, $caseroot, $print_level, $is_test,
                           $shell_commands_filename);
 
-   _apply_shell_commands($caseroot, $shell_commands_filename, $print_level)    if(-x "$caseroot/$shell_commands_filename");
+   if (-f "$caseroot/$shell_commands_filename") {
+       _apply_shell_commands($caseroot, $shell_commands_filename, $print_level);
+   }
 }
 
 # ------------------------------------------------------------------------
@@ -231,15 +233,17 @@ sub _apply_shell_commands {
 
    my ($caseroot, $shell_commands_filename, $print_level) = @_;
 
-   die "Could not find shell script in $caseroot/$shell_commands_filename" unless (-x "$caseroot/$shell_commands_filename");
-
    chmod 0777, "$caseroot/$shell_commands_filename";
+   die "Could not find shell script in $caseroot/$shell_commands_filename" unless (-x "$caseroot/$shell_commands_filename");
    my $cwd = getcwd(); # current working directory
+
    chdir "$caseroot";
    if ($print_level>=2) {
       print "Execute $shell_commands_filename.\n";
    }
-   system ("./$shell_commands_filename");
+   my $sysmod = "./$shell_commands_filename";
+   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
    chdir "$cwd";
 }
    

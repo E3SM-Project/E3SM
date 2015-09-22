@@ -578,7 +578,7 @@
 	<command name="load">craype-ivybridge</command>
       </modules>
       <modules compiler="!intel">
-	<command name="load">cray-libsci/13.0.4</command>
+	<command name="switch">cray-libsci/13.0.4</command>
       </modules>
       <modules>
 	<command name="load">cray-mpich/7.2.2</command>

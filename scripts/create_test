@@ -16,7 +16,6 @@ use File::Basename;
 use File::Copy;
 use File::Path;
 use Data::Dumper;
-
 # Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
 # If not found, print a warning message then exit.
 eval {
@@ -1248,7 +1247,7 @@ sub runCreateNewcase
     my $createnewcase = "$opts{'cimeroot'}/scripts/create_newcase $cn_args";
     if($opts{'dryrun'}){
 	print "$createnewcase\n";
-	return;
+	return 0;
     }else{
 	my $rc = open(F,"$createnewcase |");
 	my @rc = <F>;
@@ -1275,7 +1274,7 @@ sub runCreateNewcase
 	close $CS;
 
 	# Skip to the next test..
-	return;
+	return -1;
     }
     my $readmetmp = new IO::File;
     $readmetmp->open("> $caseroot/README.case.tmp") or print "can't open $caseroot/README.case.tmp";
@@ -1315,6 +1314,7 @@ sub runCreateNewcase
     open my $TESTSTATUS, ">>", "$caseroot/TestStatus" or print $!;
     print $TESTSTATUS "SFAIL $test{'case'}\n";
     close $TESTSTATUS;
+    return 0;
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1438,6 +1438,7 @@ sub testcaseSetup
 	print $TESTSTATUS "GEN ".$test->{'case'}."\n";
 	close $TESTSTATUS;
     }
+    return 0;
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1872,9 +1873,9 @@ sub doonetest{
 
     checkTestCase($testhash);
     documentTestCase($testhash);
-    runCreateNewcase($testhash);
+    my $rc = runCreateNewcase($testhash);
 
-    if(! $opts{'dryrun'}){
+    if($rc==0 && ! $opts{'dryrun'}){
 	writeEnvTestXML($testhash);
 	testcaseSetup($testhash);
 	&Debug( eval {  Dumper $testhash} );

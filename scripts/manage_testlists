@@ -1084,21 +1084,22 @@ sub formattedOutput {
        $file =~ s/\$CIMEROOT/$cimeroot/;
        $file =~ s/\$SRCROOT/$srcroot/;
        $file =~ s/\$MODEL/$model/;
-       my $compset_xml = XML::LibXML->new()->parse_file($file);
-       my @compset_nodes = $compset_xml->findnodes(".//COMPSET");
-       foreach my $compset_node (@compset_nodes) {
-	   my @name_nodes = $compset_node->childNodes();
-	   my $alias;
-	   my $lname;
-	   foreach my $name_node (@name_nodes) {
-	       my $name = $name_node->nodeName();
-	       if ($name eq 'alias') {$alias = $name_node->textContent();}
-	       if ($name eq 'lname') {$lname = $name_node->textContent();}
-	   }	       
-	   $configcompsets{$alias} = $lname;
+       if (-f $file) {
+	   my $compset_xml = XML::LibXML->new()->parse_file($file);
+	   my @compset_nodes = $compset_xml->findnodes(".//COMPSET");
+	   foreach my $compset_node (@compset_nodes) {
+	       my @name_nodes = $compset_node->childNodes();
+	       my $alias;
+	       my $lname;
+	       foreach my $name_node (@name_nodes) {
+		   my $name = $name_node->nodeName();
+		   if ($name eq 'alias') {$alias = $name_node->textContent();}
+		   if ($name eq 'lname') {$lname = $name_node->textContent();}
+	       }	       
+	       $configcompsets{$alias} = $lname;
+	   }
        }
    }
-
    my $tests = convertXMLToCIMETests($testxml);
    foreach my $test (@$tests) {
       my $compset = $test->{compset};

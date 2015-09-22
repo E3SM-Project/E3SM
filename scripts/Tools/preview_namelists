@@ -189,6 +189,10 @@ if (! -d "$docdir") {
 opendir(RD,$RUNDIR);
 my @runfiles = readdir(RD);
 closedir(RD);
+
+my $sysmod = "chmod 666 $docdir/*";
+system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+
 foreach my $rfile (@runfiles){
     copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /_in_?[0-9]?$/);
     copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /modelio/);

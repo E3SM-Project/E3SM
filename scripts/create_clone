@@ -154,6 +154,10 @@ system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -f $caseroot/*~";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
+# Need to copy back in the CaseDocs/README
+$sysmod = "cp -rp $cloneroot/CaseDocs/README $caseroot/CaseDocs/."; 
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
 # Change directory to be $caseroot
 chdir $caseroot;
 
@@ -186,7 +190,7 @@ if ($opts{'project'}) {
 }
 my $set_project = ProjectTools::set_project($project);
 if ($set_project) {
-    $sysmod = "xmlchange PROJECT=$project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange PROJECT=$project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 } 
 
 # Copy env_case.xml in locked files

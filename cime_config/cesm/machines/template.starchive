@@ -40,7 +40,7 @@ sub resubmitCheck()
 								  machine     => $config{'MACH'},
 								  machroot    => $config{'MACHDIR'}, 
 								  mpilib      => $config{'MPILIB'});
-
+	print "Resubmitting job RESUBMIT=$config{RESUBMIT}\n" if($config{RESUBMIT}>0);
         $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
     }	
 }
