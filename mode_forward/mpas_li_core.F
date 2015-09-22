@@ -148,7 +148,8 @@ module li_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call landice_init_block(block, startTimeStamp, domain % dminfo)
+         call landice_init_block(block, startTimeStamp, domain % dminfo, err_tmp)
+         err = ior(err, err_tmp)
 
          block => block % next
       end do
@@ -539,7 +540,7 @@ module li_core
 !>  This routine initializes blocks for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine landice_init_block(block, startTimeStamp, dminfo)
+   subroutine landice_init_block(block, startTimeStamp, dminfo, err)
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -571,6 +572,7 @@ module li_core
       ! output variables
       !
       !-----------------------------------------------------------------
+      integer, intent(out) :: err  !< error flag
 
       !-----------------------------------------------------------------
       !
@@ -584,7 +586,7 @@ module li_core
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_adaptive_timestep_include_DCFL
-      integer :: err, err_tmp
+      integer :: err_tmp
 
       err = 0
       err_tmp = 0
