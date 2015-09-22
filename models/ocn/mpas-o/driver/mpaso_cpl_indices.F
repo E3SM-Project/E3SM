@@ -65,14 +65,15 @@ module mpaso_cpl_indices
   integer :: index_x2o_Faxa_dstdry4    ! flux: Size 4 dust -- dry deposition
   integer :: index_x2o_Foxx_rofl       ! river runoff flux                (kg/m2/s)
   integer :: index_x2o_Foxx_rofi       ! ice runoff flux                  (kg/m2/s)
-  
-  ! drv -> ocn for calculation of ocean-ice sheet interactions
-  
-  integer :: index_x2o_Fogx_qicel
-  integer :: index_x2o_So_blit
-  integer :: index_x2o_So_blis
+
+  integer :: index_x2o_Fogx_qicelo
+  integer :: index_x2o_Fogx_qiceho
+  integer :: index_x2o_Sg_blit
+  integer :: index_x2o_Sg_blis
   integer :: index_x2o_Sg_pslv
   integer :: index_x2o_Sg_icemask
+  integer :: index_x2o_Sg_icemask_grounded
+  integer :: index_x2o_Sg_icemask_floating
   
 contains
 
@@ -141,11 +142,14 @@ contains
     index_x2o_Sa_co2diag    = mct_avect_indexra(x2o,'Sa_co2diag',perrWith='quiet')
 
     index_x2o_Fogx_qicel = mct_avect_indexra(x2o,'Fogx_qicel',perrWith='quiet')
-    index_x2o_So_blit    = mct_avect_indexra(x2o,'So_blit',perrWith='quiet')
-    index_x2o_So_blis    = mct_avect_indexra(x2o,'So_blis',perrWith='quiet')
+    index_x2o_Fogx_qiceh = mct_avect_indexra(x2o,'Fogx_qiceh',perrWith='quiet')    
+    index_x2o_Sg_blit    = mct_avect_indexra(x2o,'Sg_blit',perrWith='quiet')
+    index_x2o_Sg_blis    = mct_avect_indexra(x2o,'Sg_blis',perrWith='quiet')
     index_x2o_Sg_pslv    = mct_avect_indexra(x2o,'Sg_pslv',perrWith='quiet')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask',perrWith='quiet')
-
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating',perrWith='quiet')
+    
     call mct_aVect_clean(x2o)
     call mct_aVect_clean(o2x)
 

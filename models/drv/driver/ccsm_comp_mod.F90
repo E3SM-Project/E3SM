@@ -1523,7 +1523,7 @@ subroutine ccsm_init()
       
       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
 
-      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn) 
+      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
@@ -2709,7 +2709,7 @@ end subroutine ccsm_init
                call prep_rof_accum(timer='driver_lndpost_accl2r')
             endif
             if (lnd_c2_glc) then
-               call prep_glc_accum(timer='driver_lndpost_accl2g' )
+               call prep_glc_accum(timer='driver_lndpost_accl2g')
             endif
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2732,13 +2732,17 @@ end subroutine ccsm_init
             call t_drvstartf ('DRIVER_GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
+	    !Jer: average the accumulated fields from both lnd and ocn
+	    call prep_glc_accum_avg(timer='driver_glcprep_avg')
+	    
 	    !Jer: get ocn inputs to glc, on glc grid
 	    if (ocn_c2_glc) then
 	       call prep_glc_calc_o2x_gx(timer='driver_glcprep_ocn2glc')
 	    end if
 	    
-	    !Jer: average the accumulated fields from both lnd and ocn
-	    call prep_glc_accum_avg(timer='driver_glcprep_avg')
+	    !Jer: at this point, there needs to be the ice-shelf-flux-relevant fields on
+	    !the ice sheet grid.  So then maybe this is the place to do the call to 
+	    !"prep_glc_calc_calculate_subshelf_boundary_fluxes"
 	    
             !Jer: get lnd inputs to glc, on glc grid
             if (lnd_c2_glc) then

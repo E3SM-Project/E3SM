@@ -1082,7 +1082,7 @@ contains
        
        call seq_map_map(mapper_Rg2o, g2x_gx, g2x_ox(egi), &
             fldlist='Fogg_rofl:Fogg_rofi', norm=.true.)
-	    
+
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_g2x_ox
@@ -1109,6 +1109,9 @@ contains
        
        call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), &
             fldlist='Sg_icemask_coupled_fluxes:Sg_topg', norm=.true.)
+	    
+	    !Jer: I think here, we will be remapping back to the ocean grid, the ice shelf basal fluxes (after their 
+	    !previous calculation by the coupler
 	    
     enddo
     call t_drvstopf  (trim(timer))
