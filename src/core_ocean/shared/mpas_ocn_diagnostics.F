@@ -673,8 +673,10 @@ contains
 
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
+      call mpas_timer_start("land_ice_diagnostic_fields", .false.)
       call computeLandIceFluxInputFields(meshPool, statePool, forcingPool, scratchPool, &
                                          diagnosticsPool, timeLevel)
+      call mpas_timer_stop("land_ice_diagnostic_fields")
 
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
