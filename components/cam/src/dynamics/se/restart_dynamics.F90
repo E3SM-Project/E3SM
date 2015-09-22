@@ -337,8 +337,6 @@ CONTAINS
     use namelist_mod, only: readnl
     use constituents, only : cnst_name
     use bndry_mod,   only: bndry_exchangeV
-    use edge_mod,       only: EdgeBuffer_t, initEdgeBuffer, FreeEdgeBuffer, &
-         edgeVpack, edgeVunpack
     use cam_pio_utils, only : pio_subsystem
     use spmd_dyn, only: spmd_readnl
     use fvm_control_volume_mod, only: fvm_struct
@@ -361,7 +359,6 @@ CONTAINS
     type(fvm_struct), pointer :: fvm(:)
     integer(kind=PIO_OFFSET), parameter :: t = 1
     integer :: i, k, cnt, st, en, tl, tlQdp, ii, jj, s2d, q, j
-    type(EdgeBuffer_T) :: edgebuf
     integer :: timelevel_dimid, timelevel_chk
     integer :: npes_se
 !    type(file_desc_t) :: ncid

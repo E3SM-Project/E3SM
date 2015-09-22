@@ -1,5 +1,5 @@
 module pmgrid
-  use edge_mod, only : EdgeBuffer_t
+  use edgetype_mod, only : EdgeBuffer_t
   use dimensions_mod, only : nnodes,npart,nmpi_per_node
   use reduction_mod, only : ReductionBuffer_ordered_1d_t
   
