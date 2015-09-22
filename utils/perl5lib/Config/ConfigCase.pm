@@ -262,18 +262,19 @@ sub write_file
     } else {
 
 	my @groups;
+	my $file_xml = basename($output_xml_file);
 	foreach my $id (keys %$self) {
 	    my $file_id  = $self->{$id}->{'file'};
 	    next unless defined $file_id;
-	    my $file_xml = basename($output_xml_file);
 
 	    if ($file_id eq $file_xml) {
 		my $group = $self->{$id}->{'group'};
 		push (@groups, $group);
 	    }
 	}
-	@groups = _unique(@groups);
 	@groups = sort (@groups);
+	@groups = _unique(@groups);
+
 
 	# Write all the groups out to the target xml file
 	print $fh "\n\n";
@@ -293,7 +294,14 @@ sub write_file
 		    my $valid_values  = $self->{$id}->{'valid_values'};
 		    my $desc          = $self->{$id}->{'desc'};
 		    my $is_list_value = $self->{$id}->{'list'};
-		    write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value);
+		    my $file          = $self->{$id}->{'file'};
+		    if (defined $file) {
+			if ($file eq $file_xml) {
+			    write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value);
+			}
+		    } else {
+			die "file attribute for variable $id is not defined \n";
+		    }
 		}
 	    }
 	}
