@@ -664,7 +664,7 @@ contains
 
         !
         !  compute fields used as intent(in) to CVMix/KPP
-        call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
+        call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
       endif
 
 
@@ -674,7 +674,7 @@ contains
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
-      call computeLandIceFluxInputFields(meshPool, statePool, forcingPool, scratchPool, &
+      call ocn_compute_land_ice_flux_input_fields(meshPool, statePool, forcingPool, scratchPool, &
                                          diagnosticsPool, timeLevel)
       call mpas_timer_stop("land_ice_diagnostic_fields")
 
@@ -1088,7 +1088,7 @@ contains
 
 !***********************************************************************
 !
-!  routine computeKPPInputFields
+!  routine ocn_compute_KPP_input_fields
 !
 !> \brief   
 !>    Compute fields necessary to drive the CVMix KPP module
@@ -1104,7 +1104,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
+    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
 
       type (mpas_pool_type), intent(in) :: statePool !< Input/Output: State information
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
@@ -1297,12 +1297,12 @@ contains
       deallocate(buoySmoothed)
       deallocate(shearSmoothed)
 
-    end subroutine computeKPPInputFields!}}}
+    end subroutine ocn_compute_KPP_input_fields!}}}
 
 
 !***********************************************************************
 !
-!  routine computeLandIceFluxInputFields
+!  routine ocn_compute_land_ice_flux_input_fields
 !
 !> \brief Builds the forcing array for land-ice forcing
 !> \author Xylar Asay-Davis
@@ -1312,7 +1312,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine computeLandIceFluxInputFields(meshPool, statePool, &
+   subroutine ocn_compute_land_ice_flux_input_fields(meshPool, statePool, &
       forcingPool, scratchPool, diagnosticsPool, timeLevel)!{{{
 
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
@@ -1543,7 +1543,7 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine computeLandIceFluxInputFields!}}}
+   end subroutine ocn_compute_land_ice_flux_input_fields!}}}
 
 
 !***********************************************************************
