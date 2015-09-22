@@ -117,8 +117,6 @@ contains
 
       real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress
 
-      real (kind=RKIND), pointer :: config_density0
-
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
@@ -130,8 +128,6 @@ contains
       err = 0
 
       if ( .not. windStressOn ) return
-
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
@@ -150,7 +146,7 @@ contains
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 
            tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) &
-                         * (transmissionCoeffTop - transmissionCoeffBot) / config_density0 / layerThicknessEdge(k,iEdge)
+                         * (transmissionCoeffTop - transmissionCoeffBot) / rho_sw / layerThicknessEdge(k,iEdge)
 
            zTop = zBot
            transmissionCoeffTop = transmissionCoeffBot
@@ -159,7 +155,7 @@ contains
         if ( maxLevelEdgeTop(iEdge) > 0 .and. remainingStress > 0.0_RKIND) then
            tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) &
                          + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceWindStress(iEdge) * remainingStress &
-                         / config_density0 / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
+                         / rho_sw / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
         end if
       enddo
 

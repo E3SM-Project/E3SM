@@ -330,13 +330,12 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: coef
-      real (kind=RKIND), pointer :: config_density0, config_bkrd_vert_diff, config_bkrd_vert_visc, config_rich_mix, config_convective_diff
+      real (kind=RKIND), pointer :: config_bkrd_vert_diff, config_bkrd_vert_visc, config_rich_mix, config_convective_diff
 
       err = 0
 
       if(.not.richDiffOn) return
 
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_diff', config_bkrd_vert_diff)
       call mpas_pool_get_config(ocnConfigs, 'config_bkrd_vert_visc', config_bkrd_vert_visc)
       call mpas_pool_get_config(ocnConfigs, 'config_rich_mix', config_rich_mix)
@@ -346,7 +345,7 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-      coef = -gravity / config_density0 / 2.0
+      coef = -gravity / rho_sw / 2.0_RKIND
       do iCell = 1, nCells
          do k = 2, maxLevelCell(iCell)
             ! efficiency note: these if statements are inside iEdge and k loops.
@@ -441,14 +440,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:,:), allocatable :: ddensityTopOfCell, du2TopOfCell, &
                                                         ddensityTopOfEdge, du2TopOfEdge
-
-      real (kind=RKIND), pointer :: config_density0
-
       err = 0
 
       if ( ( .not. richViscOn ) .and. ( .not. richDiffOn ) ) return
-
-      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -470,7 +464,7 @@ contains
          du2TopOfCell(nVertLevels+1,nCells+1), du2TopOfEdge(nVertLevels+1,nEdges))
 
       ! ddensityTopOfCell(k) = $\rho^*_{k-1}-\rho_k$, where $\rho^*$ has been adiabatically displaced to level k.
-      ddensityTopOfCell = 0.0
+      ddensityTopOfCell = 0.0_RKIND
       do iCell = 1, nCells
          do k = 2, maxLevelCell(iCell)
             ddensityTopOfCell(k,iCell) = displacedDensity(k-1,iCell) - density(k,iCell)
@@ -478,7 +472,7 @@ contains
       end do
 
       ! interpolate ddensityTopOfCell to ddensityTopOfEdge
-      ddensityTopOfEdge = 0.0
+      ddensityTopOfEdge = 0.0_RKIND
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -490,7 +484,7 @@ contains
        end do
 
       ! du2TopOfEdge(k) = $u_{k-1}-u_k$
-      du2TopOfEdge=0.0
+      du2TopOfEdge=0.0_RKIND
       do iEdge = 1, nEdges
          do k = 2, maxLevelEdgeTop(iEdge)
             du2TopOfEdge(k,iEdge) = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
@@ -498,38 +492,38 @@ contains
       end do
 
       ! interpolate du2TopOfEdge to du2TopOfCell
-      du2TopOfCell = 0.0
+      du2TopOfCell = 0.0_RKIND
       do iCell = 1, nCells
-        invAreaCell = 1.0 / areaCell(iCell)
+        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
 
           do k = 2, maxLevelEdgeBot(iEdge)
-            du2TopOfCell(k, iCell) = du2TopOfCell(k, iCell) + 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * du2TopOfEdge(k, iEdge) * invAreaCell
+            du2TopOfCell(k, iCell) = du2TopOfCell(k, iCell) + 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * du2TopOfEdge(k, iEdge) * invAreaCell
           end do
         end do
       end do
 
       ! compute RiTopOfEdge using ddensityTopOfEdge and du2TopOfEdge
       ! coef = -g/density_0/2
-      RiTopOfEdge = 0.0
-      coef = -gravity / config_density0 / 2.0
+      RiTopOfEdge = 0.0_RKIND
+      coef = -gravity / rho_sw / 2.0_RKIND
       do iEdge = 1, nEdges
          do k = 2, maxLevelEdgeTop(iEdge)
             RiTopOfEdge(k,iEdge) = coef * ddensityTopOfEdge(k,iEdge) &
                * ( layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge) ) &
-               / ( du2TopOfEdge(k,iEdge) + 1e-20 )
+               / ( du2TopOfEdge(k,iEdge) + 1e-20_RKIND )
          end do
       end do
 
       ! compute RiTopOfCell using ddensityTopOfCell and du2TopOfCell
       ! coef = -g/density_0/2
-      RiTopOfCell = 0.0
+      RiTopOfCell = 0.0_RKIND
       do iCell = 1,nCells
          do k = 2,maxLevelCell(iCell)
             RiTopOfCell(k,iCell) = coef * ddensityTopOfCell(k,iCell) &
                * (layerThickness(k-1,iCell) + layerThickness(k,iCell)) &
-               / (du2TopOfCell(k,iCell) + 1e-20)
+               / (du2TopOfCell(k,iCell) + 1e-20_RKIND)
          end do
       end do
 
