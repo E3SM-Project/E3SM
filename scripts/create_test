@@ -1314,6 +1314,7 @@ sub runCreateNewcase
     open my $TESTSTATUS, ">>", "$caseroot/TestStatus" or print $!;
     print $TESTSTATUS "SFAIL $test{'case'}\n";
     close $TESTSTATUS;
+    return 0;
 }
 
 #-----------------------------------------------------------------------------------------------
