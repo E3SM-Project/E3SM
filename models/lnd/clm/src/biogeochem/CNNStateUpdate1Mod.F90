@@ -16,7 +16,7 @@ module CNNStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
   !
   implicit none
   save
@@ -391,7 +391,6 @@ contains
             ns%grainn_storage_patch(p)     = ns%grainn_storage_patch(p)    - nf%grainn_storage_to_xfer_patch(p)*dt
             ns%grainn_xfer_patch(p)        = ns%grainn_xfer_patch(p)       + nf%grainn_storage_to_xfer_patch(p)*dt
          end if
-
       end do
 
     end associate

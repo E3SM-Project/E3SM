@@ -178,7 +178,17 @@ contains
          decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_k                         =>    carbonflux_vars%decomp_k_col                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
          phr_vr                           =>    carbonflux_vars%phr_vr_col                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
-         fphr                             =>    carbonflux_vars%fphr_col                                 & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         fphr                             =>    carbonflux_vars%fphr_col                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         
+         ! debug
+         soil_n_immob_flux                =>    nitrogenflux_vars%soil_n_immob_flux                    , &
+         soil_n_immob_flux_vr             =>    nitrogenflux_vars%soil_n_immob_flux_vr                 , &
+         soil_n_grossmin_flux             =>    nitrogenflux_vars%soil_n_grossmin_flux                 , &
+         soil_p_immob_flux                =>    phosphorusflux_vars%soil_p_immob_flux                  , &
+         soil_p_immob_flux_vr             =>    phosphorusflux_vars%soil_p_immob_flux_vr               , &
+         soil_p_grossmin_flux             =>    phosphorusflux_vars%soil_p_grossmin_flux               , &
+         actual_immob_vr                  =>    nitrogenflux_vars%actual_immob_vr_col                  , &
+         actual_immob_p_vr                =>    phosphorusflux_vars%actual_immob_p_vr_col                &
          )
    
       ! set initial values for potential C and N fluxes
@@ -362,7 +372,7 @@ contains
       ! now that potential N immobilization is known, call allocation
       ! to resolve the competition between plants and soil heterotrophs
       ! for available soil mineral N resource.
-
+      
       call CNAllocation(bounds, &
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,             &
@@ -421,7 +431,7 @@ contains
       ! Only the immobilization steps are limited by fpi_vr (pmnf > 0)
       ! Also calculate denitrification losses as a simple proportion
       ! of mineralization flux.
-
+       
       do k = 1, ndecomp_cascade_transitions
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -491,8 +501,39 @@ contains
             end do
          end do
       end do
-
-
+      
+      ! debug
+      do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          soil_n_immob_flux(c) =0.0_r8
+          soil_p_immob_flux(c) = 0.0_r8
+          soil_n_grossmin_flux(c) = 0.0_r8
+          soil_p_grossmin_flux(c) = 0.0_r8
+          do j = 1,nlevdecomp
+              soil_n_immob_flux_vr(c,j) = 0.0_r8
+              soil_p_immob_flux_vr(c,j) = 0.0_r8
+          end do
+      end do
+      do k = 1, ndecomp_cascade_transitions
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+          	   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then 
+                   soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+               else
+                   soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) + -1.0*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+               end if
+               if (pmpf_decomp_cascade(c,j,k) > 0._r8) then 
+                   soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+               else
+                   soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) + -1.0*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+               end if
+          	end do
+          end do
+       end do
+       
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
          do j = 1,nlevdecomp

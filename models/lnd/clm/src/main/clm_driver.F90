@@ -114,7 +114,8 @@ module clm_driver
   use GridcellType           , only : grc                
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+            
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -450,16 +451,14 @@ contains
        ! non-bareground fluxes for all patches except lakes and urban landunits
        ! Calculate canopy temperature, latent and sensible fluxes from the canopy,
        ! and leaf water change by evapotranspiration
-
        call t_startf('canflux')
-       call CanopyFluxes(bounds_clump,                                                   &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
-            atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
-            frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
-            temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-            EDbio_vars, soil_water_retention_curve) 
+       call CanopyFluxes(bounds_clump,                                                  &
+           filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
+           atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
+           frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
+           temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
+           EDbio_vars, soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars)  
        call t_stopf('canflux')
-
        ! Fluxes for all urban landunits
 
        call t_startf('uflux')
@@ -663,8 +662,7 @@ contains
 
              ! fully prognostic canopy structure and C-N biogeochemistry
              ! - CNDV defined: prognostic biogeography; else prescribed
-             ! - crop model:  crop algorithms called from within CNEcosystemDyn
-             
+             ! - crop model:  crop algorithms called from within CNEcosystemDyn            
              call CNEcosystemDynNoLeaching(bounds_clump,                        &
                   filter(nc)%num_soilc, filter(nc)%soilc,                       &
                   filter(nc)%num_soilp, filter(nc)%soilp,                       &

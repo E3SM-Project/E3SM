@@ -17,7 +17,9 @@ module CNCStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
   use EcophysConType         , only : ecophyscon
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  use clm_varctl             , only : iulog
+  use abortutils             , only : endrun
   !
   implicit none
   save
@@ -120,7 +122,7 @@ contains
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_leaf_col(c) * dt
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
       end do
-
+      
       ! plant to litter fluxes
       do j = 1,nlevdecomp
          ! column loop
@@ -345,6 +347,58 @@ contains
             cs%grainc_storage_patch(p)     = cs%grainc_storage_patch(p)    - cf%grainc_storage_to_xfer_patch(p)*dt
             cs%grainc_xfer_patch(p)        = cs%grainc_xfer_patch(p)       + cf%grainc_storage_to_xfer_patch(p)*dt
          end if
+       ! debug
+       !if (cs%cpool_patch(p)  .ne. cs%cpool_patch(p) ) then
+       !    write(iulog,"(2I3,42E12.4)") pft%itype(p) , woody(ivt(p)), &
+       !     cf%psnsun_to_cpool_patch(p) , &
+       !     cf%psnshade_to_cpool_patch(p) , &
+    
+        !    cf%cpool_to_xsmrpool_patch(p) , &
+        !    cf%leaf_curmr_patch(p) , &
+        !    cf%froot_curmr_patch(p) , &
+        !    cf%livestem_curmr_patch(p) , &
+        !    cf%livecroot_curmr_patch(p) , &
+        !    cf%livestem_curmr_patch(p) , &
+        !    cf%grain_curmr_patch(p) , &
+            
+        !    cf%cpool_to_leafc_patch(p) , &
+        !    cf%cpool_to_leafc_storage_patch(p) , &
+        !    cf%cpool_to_frootc_patch(p) , &
+        !    cf%cpool_to_frootc_storage_patch(p) , &
+        !    cf%cpool_to_livestemc_patch(p) , &
+        !    cf%cpool_to_livestemc_storage_patch(p) , &
+        !    cf%cpool_to_deadstemc_patch(p) , &
+        !    cf%cpool_to_deadstemc_storage_patch(p) , &
+        !    cf%cpool_to_livecrootc_patch(p) , &
+        !    cf%cpool_to_livecrootc_storage_patch(p) , &
+        !    cf%cpool_to_deadcrootc_patch(p) , &
+        !    cf%cpool_to_deadcrootc_storage_patch(p) , &
+        !    cf%cpool_to_livestemc_patch(p) , &
+        !    cf%cpool_to_livestemc_storage_patch(p) , &
+        !    cf%cpool_to_grainc_patch(p) , &
+        !    cf%cpool_to_grainc_storage_patch(p) , &
+           
+        !   cf%cpool_leaf_gr_patch(p) , &
+        !   cf%cpool_froot_gr_patch(p) , &
+        !   cf%cpool_livestem_gr_patch(p) , &
+        !   cf%cpool_deadstem_gr_patch(p) , &
+        !   cf%cpool_livecroot_gr_patch(p) , &
+        !   cf%cpool_deadcroot_gr_patch(p) , &
+        !   cf%cpool_livestem_gr_patch(p) , &
+        !   cf%cpool_grain_gr_patch(p) , &
+           
+        !   cf%cpool_leaf_storage_gr_patch(p) , &
+        !   cf%cpool_froot_storage_gr_patch(p) , &
+        !   cf%cpool_livestem_storage_gr_patch(p) , &
+        !   cf%cpool_deadstem_storage_gr_patch(p) , &
+        !   cf%cpool_livecroot_storage_gr_patch(p) , &
+        !   cf%cpool_deadcroot_storage_gr_patch(p) , &
+        !   cf%cpool_livestem_storage_gr_patch(p) , &
+           
+        !   cf%cpool_grain_storage_gr_patch(p) , &
+        !   cf%cpool_to_gresp_storage_patch(p)
+        !   call endrun(msg=errMsg(__FILE__, __LINE__))
+       !end if
 
       end do ! end of patch loop
 

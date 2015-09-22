@@ -606,7 +606,6 @@ contains
         else
            farea_burned(c) = min(1._r8,baf_crop(c)+baf_peatf(c))
         end if
-
         if (use_nofire) then
            ! zero out the fire area if NOFIRE flag is on
 

@@ -39,6 +39,8 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
+  use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use clm_varctl              , only: nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -148,7 +150,13 @@ contains
     namelist /clm_inparm/ hist_wrtch4diag
 
     ! BGC info
-
+    namelist /clm_inparm/  &
+         nu_com
+    namelist /clm_inparm/  &
+         nu_com_phosphatase
+    namelist /clm_inparm/  &
+         nu_com_nfix
+         
     namelist /clm_inparm/  &
          suplnitro,suplphos
     namelist /clm_inparm/ &
@@ -260,6 +268,7 @@ contains
        end if
        
        print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
+       print*,"Q.Zhu debug nu_com,phtase,nfix ", nu_com,nu_com_phosphatase,nu_com_nfix
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
@@ -496,6 +505,9 @@ contains
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
     call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -686,10 +698,10 @@ contains
        
        write(iulog,*) '   override_bgc_restart_mismatch_dump                     : ', override_bgc_restart_mismatch_dump
     end if
-       if (suplphos /= suplpNon)then
+    if (suplphos /= suplpNon)then
           write(iulog,*) '   Supplemental Phosphorus mode is set to run over Patches: ', &
                trim(suplphos)
-       end if
+    end if
 
     if (use_cn .and. use_vertsoilc) then
        write(iulog, *) '   som_adv_flux, the advection term in soil mixing (m/s) : ', som_adv_flux

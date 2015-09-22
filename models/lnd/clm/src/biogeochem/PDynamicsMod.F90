@@ -28,6 +28,7 @@ module PDynamicsMod
   use CropType            , only : crop_type
   use ColumnType          , only : col
   use PatchType           , only : pft
+  use EcophysConType      , only : ecophyscon
   !
   implicit none
   save
@@ -40,6 +41,7 @@ module PDynamicsMod
   public :: POcclusion
   public :: PBiochemMin
   public :: PLeaching
+  public :: PBiochemMin_QZ
 
   !-----------------------------------------------------------------------
 
@@ -548,6 +550,63 @@ contains
 
   end subroutine PBiochemMin
 
+  !-----------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------
+  
+  subroutine PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
+       cnstate_vars, phosphorusstate_vars, phosphorusflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! created, Aug 2015 by Q. Zhu
+    ! update the phosphatase activity induced P release
+    !
+    ! !USES:
+    use pftvarcon              , only : noveg
+    
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
+    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    !
+    integer  :: c,fc,p,j
+    real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
+
+    !-----------------------------------------------------------------------
+
+    associate(                                                          &
+         froot_prof       => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+         biochem_pmin_vr  => phosphorusflux_vars%biochem_pmin_vr_col  , &
+         pgpp_pleafp      => phosphorusstate_vars%pgpp_pleafp_patch   , &
+         pgpp_pleafn      => phosphorusstate_vars%pgpp_pleafn_patch   , &
+         vmax_ptase_vr    => ecophyscon%vmax_ptase_vr                 , &
+         km_ptase         => ecophyscon%km_ptase                      , &
+         lamda_ptase      => ecophyscon%lamda_ptase  &! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         )
+
+    do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            biochem_pmin_vr(c,j) = 0.0_r8
+            do p = col%pfti(c), col%pftf(c)
+                if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+                    lamda_up = pgpp_pleafp(p)/pgpp_pleafn(p)
+                    biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
+                        vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                        (km_ptase + lamda_up - lamda_ptase) * froot_prof(p,j) * pft%wtcol(p)
+                end if
+            enddo
+        enddo
+    enddo 
+
+    end associate
+
+  end subroutine PBiochemMin_QZ
+  
 end module PDynamicsMod
                
                 

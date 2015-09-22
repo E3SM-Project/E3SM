@@ -477,7 +477,7 @@ contains
 
        call phosphorusflux_vars%Restart(bounds, ncid, flag='read')
        call phosphorusstate_vars%Restart(bounds, ncid, flag='read')
-
+       
        call cnstate_vars%Restart(bounds, ncid, flag='read')
 
     end if

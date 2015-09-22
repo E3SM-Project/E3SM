@@ -12,7 +12,7 @@ module PhosphorusFluxType
   use abortutils             , only : endrun
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft               
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -270,6 +270,26 @@ module PhosphorusFluxType
      real(r8), pointer :: plant_pdemand_patch                       (:)     ! P flux required to support initial GPP (gP/m2/s)
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
+
+     ! <Qing Zhu 2015>
+     real(r8), pointer :: sminp_to_plant_patch                      (:)     ! pft-level plant p uptake (gP/m2/s)
+     real(r8), pointer :: plant_pdemand_vr_patch                    (:,:)   !pft-level plant P demand
+     real(r8), pointer :: prev_leafp_to_litter_patch  				(:)     !previous timestep leaf P litterfall flux (gP/m2/s)
+     real(r8), pointer :: prev_frootp_to_litter_patch 				(:)     !previous timestep froot P litterfall flux (gP/m2/s)
+	 real(r8), pointer :: adsorb_to_labilep_vr                      (:,:)
+	 real(r8), pointer :: desorb_to_solutionp_vr                    (:,:)
+	 real(r8), pointer :: adsorb_to_labilep_col                     (:)
+	 real(r8), pointer :: desorb_to_solutionp_col                   (:)
+	 
+     ! debug
+ 	 real(r8), pointer :: plant_p_uptake_flux						(:)     ! for the purpose of mass balance check 	 
+ 	 real(r8), pointer :: soil_p_immob_flux			 				(:)     ! for the purpose of mass balance check
+ 	 real(r8), pointer :: soil_p_immob_flux_vr                      (:,:)   ! for the purpose of mass balance check
+ 	 real(r8), pointer :: soil_p_grossmin_flux			 			(:)     ! for the purpose of mass balance check
+ 	 real(r8), pointer :: smin_p_to_plant_col						(:)     ! for the purpose of mass balance check
+	 real(r8), pointer :: plant_to_litter_pflux						(:)     ! for the purpose of mass balance check
+	 real(r8), pointer :: plant_to_cwd_pflux						(:)     ! for the purpose of mass balance check
+
 
    contains
 
@@ -576,6 +596,24 @@ contains
     allocate(this%plant_pdemand_patch         (begp:endp)) ;    this%plant_pdemand_patch         (:) = nan
     allocate(this%avail_retransp_patch        (begp:endp)) ;    this%avail_retransp_patch        (:) = nan
     allocate(this%plant_palloc_patch          (begp:endp)) ;    this%plant_palloc_patch          (:) = nan
+    
+    allocate(this%sminp_to_plant_patch        (begp:endp)) ;             this%sminp_to_plant_patch        (:) = nan
+    allocate(this%plant_pdemand_vr_patch      (begp:endp,1:nlevdecomp_full)); this%plant_pdemand_vr_patch (:,:) = nan
+    allocate(this%prev_leafp_to_litter_patch  (begp:endp)) ;             this%prev_leafp_to_litter_patch  (:) = nan
+    allocate(this%prev_frootp_to_litter_patch (begp:endp)) ;             this%prev_frootp_to_litter_patch (:) = nan
+    allocate(this%adsorb_to_labilep_vr        (begc:endc,1:nlevdecomp_full)); this%adsorb_to_labilep_vr   (:,:) = nan
+    allocate(this%desorb_to_solutionp_vr      (begc:endc,1:nlevdecomp_full)); this%desorb_to_solutionp_vr (:,:) = nan
+    allocate(this%adsorb_to_labilep_col       (begc:endc)) ;	         this%adsorb_to_labilep_col      (:) = nan
+    allocate(this%desorb_to_solutionp_col     (begc:endc)) ;	         this%desorb_to_solutionp_col    (:) = nan
+    
+    ! debug
+ 	allocate(this%plant_p_uptake_flux         (begc:endc)) ;	         this%plant_p_uptake_flux  	     (:) = nan
+ 	allocate(this%soil_p_immob_flux           (begc:endc)) ;	         this%soil_p_immob_flux			 (:) = nan
+ 	allocate(this%soil_p_immob_flux_vr        (begc:endc,1:nlevdecomp_full)); this%soil_p_immob_flux_vr       (:,:) = nan
+ 	allocate(this%soil_p_grossmin_flux        (begc:endc)) ;	         this%soil_p_grossmin_flux		 (:) = nan
+	allocate(this%smin_p_to_plant_col		  (begc:endc)) ;	         this%smin_p_to_plant_col		 (:) = nan
+    allocate(this%plant_to_litter_pflux		  (begc:endc)) ;	         this%plant_to_litter_pflux		 (:) = nan
+    allocate(this%plant_to_cwd_pflux		  (begc:endc)) ;	         this%plant_to_cwd_pflux	     (:) = nan
 
   end subroutine InitAllocate
 
@@ -867,7 +905,7 @@ contains
          ptr_patch=this%retransp_to_ppool_patch)
 
     this%sminp_to_ppool_patch(begp:endp) = spval
-    call hist_addfld1d (fname='SMIPP_TO_NPOOL', units='gP/m^2/s', &
+    call hist_addfld1d (fname='SMINP_TO_PPOOL', units='gP/m^2/s', &
          avgflag='A', long_name='deployment of soil mineral P uptake', &
          ptr_patch=this%sminp_to_ppool_patch)
 
@@ -989,12 +1027,12 @@ contains
     this%wood_harvestp_patch(begp:endp) = spval
     call hist_addfld1d (fname='WOOD_HARVESTP', units='gP/m^2/s', &
          avgflag='A', long_name='wood harvest P (to product pools)', &
-         ptr_patch=this%wood_harvestp_patch)
+         ptr_patch=this%wood_harvestp_patch, default='inactive')
 
     this%fire_ploss_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total pft-level fire P loss', &
-         ptr_patch=this%fire_ploss_patch)
+         ptr_patch=this%fire_ploss_patch, default='inactive')
 
     if (crop_prog) then
        this%fert_p_patch(begp:endp) = spval
@@ -1267,14 +1305,13 @@ contains
             ptr_col=this%net_pmin_vr_col, default='inactive')
     end if
 
-
     if ( nlevdecomp_full > 1 ) then
        this%biochem_pmin_vr_col(begc:endc,:) = spval
        call hist_addfld_decomp (fname='BIOCHEM_PMIN'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
             avgflag='A', long_name='biochemical rate of P mineralization', &
             ptr_col=this%biochem_pmin_vr_col, default='inactive')
     end if
-
+         
     this%potential_immob_p_col(begc:endc) = spval
     call hist_addfld1d (fname='POTENTIAL_IMMOB_P', units='gP/m^2/s', &
          avgflag='A', long_name='potential P immobilization', &
@@ -1313,47 +1350,47 @@ contains
     this%fire_ploss_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total column-level fire P loss', &
-         ptr_col=this%fire_ploss_col)
+         ptr_col=this%fire_ploss_col, default='inactive')
 
     this%dwt_seedp_to_leaf_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SEEDP_TO_LEAF', units='gP/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level leaf', &
-         ptr_col=this%dwt_seedp_to_leaf_col)
+         ptr_col=this%dwt_seedp_to_leaf_col, default='inactive')
 
     this%dwt_seedp_to_deadstem_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SEEDP_TO_DEADSTEM', units='gP/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level deadstem', &
-         ptr_col=this%dwt_seedp_to_deadstem_col)
+         ptr_col=this%dwt_seedp_to_deadstem_col, default='inactive')
 
     this%dwt_conv_pflux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
          avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
-         ptr_col=this%dwt_conv_pflux_col)
+         ptr_col=this%dwt_conv_pflux_col, default='inactive')
 
     this%dwt_prod10p_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_col=this%dwt_prod10p_gain_col)
+         ptr_col=this%dwt_prod10p_gain_col, default='inactive')
 
     this%prod10p_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD10P_LOSS', units='gP/m^2/s', &
          avgflag='A', long_name='loss from 10-yr wood product pool', &
-         ptr_col=this%prod10p_loss_col)
+         ptr_col=this%prod10p_loss_col, default='inactive')
 
     this%dwt_prod100p_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD100P_GAIN', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 100-yr wood product pool', &
-         ptr_col=this%dwt_prod100p_gain_col)
+         ptr_col=this%dwt_prod100p_gain_col, default='inactive')
 
     this%prod100p_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD100P_LOSS', units='gP/m^2/s', &
          avgflag='A', long_name='loss from 100-yr wood product pool', &
-         ptr_col=this%prod100p_loss_col)
+         ptr_col=this%prod100p_loss_col, default='inactive')
 
     this%product_ploss_col(begc:endc) = spval
     call hist_addfld1d (fname='PRODUCT_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total P loss from wood product pools', &
-         ptr_col=this%product_ploss_col)
+         ptr_col=this%product_ploss_col, default='inactive')
 
     this%dwt_frootp_to_litr_met_p_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_MET_P', units='gP/m^2/s',  type2d='levdcmp', &
@@ -1383,7 +1420,7 @@ contains
     this%dwt_ploss_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total phosphorus loss from landcover conversion', &
-         ptr_col=this%dwt_ploss_col)
+         ptr_col=this%dwt_ploss_col, default='inactive')
 
     if (crop_prog) then
        this%fert_p_to_sminp_col(begc:endc) = spval
@@ -1401,13 +1438,23 @@ contains
     this%avail_retransp_patch(begp:endp) = spval
     call hist_addfld1d (fname='AVAIL_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='P flux available from retranslocation pool', &
-         ptr_patch=this%avail_retransp_patch, default='inactive')
+         ptr_patch=this%avail_retransp_patch, default='active')
 
     this%plant_palloc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PLANT_PALLOC', units='gP/m^2/s', &
          avgflag='A', long_name='total allocated P flux', &
-         ptr_patch=this%plant_palloc_patch, default='inactive')
-
+         ptr_patch=this%plant_palloc_patch, default='active')
+         
+    this%adsorb_to_labilep_col(begc:endc) = spval
+    call hist_addfld1d (fname='ADSORBTION_P', units='gP/m^2/s', &
+         avgflag='A', long_name='adsorb P flux', &
+         ptr_patch=this%adsorb_to_labilep_col, default='active')
+         
+    this%desorb_to_solutionp_col(begc:endc) = spval
+    call hist_addfld1d (fname='DESORPTION_P', units='gP/m^2/s', &
+         avgflag='A', long_name='desorp P flux', &
+         ptr_patch=this%desorb_to_solutionp_col, default='active')
+         
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -1462,6 +1509,9 @@ contains
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
 
+       this%prev_leafp_to_litter_patch (p)  = 0._r8 
+       this%prev_frootp_to_litter_patch(p)  = 0._r8 
+     
        if ( crop_prog )then
           this%fert_counter_patch(p)  = spval
           this%fert_p_patch(p)          = 0._r8 
@@ -1774,10 +1824,10 @@ contains
           this%harvest_p_to_litr_lig_p_col(i,j)          = value_column             
           this%harvest_p_to_cwdp_col(i,j)                = value_column  
 
-          this%primp_to_labilep_vr_col(i,j)                 = value_column
-          this%labilep_to_secondp_vr_col(i,j)                 = value_column
-          this%secondp_to_labilep_vr_col(i,j)                 = value_column
-          this%secondp_to_occlp_vr_col(i,j)                 = value_column
+          this%primp_to_labilep_vr_col(i,j)              = value_column
+          this%labilep_to_secondp_vr_col(i,j)            = value_column
+          this%secondp_to_labilep_vr_col(i,j)            = value_column
+          this%secondp_to_occlp_vr_col(i,j)              = value_column
 
           this%sminp_leached_vr_col(i,j)                 = value_column
 
@@ -1788,6 +1838,9 @@ contains
           this%gross_pmin_vr_col(i,j)                    = value_column
           this%net_pmin_vr_col(i,j)                      = value_column
           this%biochem_pmin_vr_col(i,j)                  = value_column
+          
+          this%adsorb_to_labilep_vr(i,j)                 = value_column
+          this%desorb_to_solutionp_vr(i,j)               = value_column
        end do
     end do
 
@@ -1795,32 +1848,35 @@ contains
        i = filter_column(fi)
 
        this%pdep_to_sminp_col(i)             = value_column
-       this%fert_p_to_sminp_col(i)             = value_column
+       this%fert_p_to_sminp_col(i)           = value_column
        this%hrv_deadstemp_to_prod10p_col(i)  = value_column        
        this%hrv_deadstemp_to_prod100p_col(i) = value_column      
        this%prod10p_loss_col(i)              = value_column
        this%prod100p_loss_col(i)             = value_column
        this%product_ploss_col(i)             = value_column
-       this%potential_immob_p_col(i)           = value_column
-       this%actual_immob_p_col(i)              = value_column
+       this%potential_immob_p_col(i)         = value_column
+       this%actual_immob_p_col(i)            = value_column
        this%sminp_to_plant_col(i)            = value_column
        this%supplement_to_sminp_col(i)       = value_column
        this%gross_pmin_col(i)                = value_column
        this%net_pmin_col(i)                  = value_column
-       this%biochem_pmin_col(i)                  = value_column
+       this%biochem_pmin_col(i)              = value_column
        this%primp_to_labilep_col(i)          = value_column
-       this%labilep_to_secondp_col(i)          = value_column
-       this%secondp_to_labilep_col(i)          = value_column
+       this%labilep_to_secondp_col(i)        = value_column
+       this%secondp_to_labilep_col(i)        = value_column
        this%secondp_to_occlp_col(i)          = value_column
-       this%sminp_leached_col(i)          = value_column
+       this%sminp_leached_col(i)             = value_column
        this%pinputs_col(i)                   = value_column
        this%poutputs_col(i)                  = value_column
        this%fire_ploss_col(i)                = value_column
        this%som_p_leached_col(i)             = value_column
 
        ! Zero p2c column fluxes
-       this%fire_ploss_col(i) = value_column
-       this%wood_harvestp_col(i) = value_column
+       this%fire_ploss_col(i)                = value_column
+       this%wood_harvestp_col(i)             = value_column
+       
+       this%adsorb_to_labilep_col(i)         = value_column
+       this%desorb_to_solutionp_col(i)       = value_column
     end do
 
     do k = 1, ndecomp_pools
@@ -2114,6 +2170,63 @@ contains
                this%som_p_leached_col(c) + &
                this%decomp_ppools_leached_col(c,l)
        end do
+    end do
+    
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%biochem_pmin_col(c) = 0.0_r8
+    end do
+    do j = 1, nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%biochem_pmin_col(c) = this%biochem_pmin_col(c) + &
+                this%biochem_pmin_vr_col(c,j)* dzsoi_decomp(j)
+        end do
+    end do
+    
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%adsorb_to_labilep_col(c) = 0._r8
+        this%desorb_to_solutionp_col(c) = 0._r8
+    end do
+    do j = 1, nlevdecomp
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%adsorb_to_labilep_col(c) = this%adsorb_to_labilep_col(c) + &
+                this%adsorb_to_labilep_vr(c,j)* dzsoi_decomp(j)
+            this%desorb_to_solutionp_col(c) = this%desorb_to_solutionp_col(c) + &
+                this%desorb_to_solutionp_vr(c,j)* dzsoi_decomp(j)
+        end do
+    end do
+
+    ! debug
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%actual_immob_p_col(c) = 0._r8
+        this%smin_p_to_plant_col(c) = 0._r8
+        this%plant_to_litter_pflux(c) = 0._r8
+        this%plant_to_cwd_pflux(c) = 0._r8
+        do j = 1, nlevdecomp
+            this%actual_immob_p_col(c)= this%actual_immob_p_col(c) + & 
+                this%actual_immob_p_vr_col(c,j) * dzsoi_decomp(j)
+            this%smin_p_to_plant_col(c)= this%smin_p_to_plant_col(c) + & 
+                this%sminp_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+            this%plant_to_litter_pflux(c) = &
+                this%plant_to_litter_pflux(c)  + &
+                this%phenology_p_to_litr_met_p_col(c,j)* dzsoi_decomp(j) + &
+                this%phenology_p_to_litr_cel_p_col(c,j)* dzsoi_decomp(j) + &
+                this%phenology_p_to_litr_lig_p_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_p_to_litr_met_p_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_p_to_litr_cel_p_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_p_to_litr_lig_p_col(c,j)* dzsoi_decomp(j) + &
+                this%m_p_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
+                this%m_p_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
+                this%m_p_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
+            this%plant_to_cwd_pflux(c) = &
+                this%plant_to_cwd_pflux(c) + &
+                this%gap_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j) + &
+                this%fire_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j)
+        end do
     end do
 
   end subroutine Summary

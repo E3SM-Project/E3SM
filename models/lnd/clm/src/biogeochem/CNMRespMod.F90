@@ -21,7 +21,8 @@ module CNMRespMod
   use PhotosynthesisType  , only : photosyns_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use PatchType           , only : pft                
+  use PatchType           , only : pft
+  use clm_varctl          , only : iulog
   !
   implicit none
   save
