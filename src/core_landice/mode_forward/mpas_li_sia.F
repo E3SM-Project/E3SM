@@ -188,7 +188,16 @@ contains
                 xVertex(1:nVertices), yVertex(1:nVertices), zVertex(1:nVertices), &
                 vertexIndicesField % array(1:nVertices), &
                 baryCellsOnVertex(:, 1:nVertices), baryWeightsOnVertex(:, 1:nVertices), err_tmp)
-         err = ior(err, err_tmp)
+         ! TODO: Until framework can handle periodic meshs gracefully, this will return an error
+         ! for periodic meshes.  This error means that the velocity solver will be very wrong across
+         ! the periodicity, but it will be fine everywhere else.  For now, just print a warning but
+         ! don't make this a fatal error.
+         !err = ior(err, err_tmp)
+         if (err_tmp > 0) then
+            write (stderrUnit,*) "Warning: The 'from_vertex_barycentric' option for 'config_sia_tangent_slope_calculation' " &
+                 // "does NOT work across the periodicity in periodic meshes.  However, it does work within the interior " &
+                 // "of the mesh."
+         endif
          call mpas_deallocate_scratch_field(vertexIndicesField, .true.)
       endif
 
