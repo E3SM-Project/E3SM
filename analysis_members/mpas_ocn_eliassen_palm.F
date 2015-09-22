@@ -122,7 +122,6 @@ contains
       integer, pointer :: config_AM_eliassenPalm_nBuoyancyLayers
       real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomax_buoycoor
       real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomin_buoycoor
-      real (kind=RKIND), pointer :: config_density0
 
       integer, pointer :: nSamplesEA
 
@@ -157,8 +156,6 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomin_buoycoor', &
         config_AM_eliassenPalm_rhomin_buoycoor)
       
-      call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
-      
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'eliassenPalmAM', amEPFTPool)
@@ -178,7 +175,7 @@ contains
          nBuoyancyLayers = config_AM_eliassenPalm_nBuoyancyLayers
          deltaDensity = (config_AM_eliassenPalm_rhomax_buoycoor &
             - config_AM_eliassenPalm_rhomin_buoycoor) / config_AM_eliassenPalm_nBuoyancyLayers
-         deltaBuoyancy = -gravity * deltaDensity / config_density0
+         deltaBuoyancy = -gravity * deltaDensity / rho_sw
 
          !-----------------------------------------------------------------
          ! compute density/bouyancy at top of each layer
@@ -186,7 +183,7 @@ contains
          do k = 1, nBuoyancyLayers
             potentialDensityTopRef(k) = config_AM_eliassenPalm_rhomin_buoycoor + deltaDensity * (k-1)
             buoyancyInterfaceRef(k) = -gravity &
-              * (config_AM_eliassenPalm_rhomin_buoycoor - config_density0) / config_density0 &
+              * (config_AM_eliassenPalm_rhomin_buoycoor - rho_sw) / rho_sw &
               + deltaBuoyancy * (k-1)
          end do
          k=nBuoyancyLayers
@@ -320,8 +317,6 @@ contains
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: diagnosticsPool 
 
-      real (kind=RKIND), pointer :: config_density0
-      
       !-----------------------------------------------------------------
       ! define pointers to namelist config variables local to the EPFT module
       !-----------------------------------------------------------------
@@ -527,8 +522,6 @@ contains
       ! define local work variables
       !-----------------------------------------------------------------
       integer :: nCellsGlobal, k, i
-      real(KIND=RKIND) :: rho0
-
       
       err = 0
 
@@ -553,9 +546,6 @@ contains
         config_AM_eliassenPalm_rhomin_buoycoor)
       call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomax_buoycoor', &
         config_AM_eliassenPalm_rhomax_buoycoor)
-
-      call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
-      rho0 = config_density0
       
       if(config_AM_eliassenPalm_debug) then
          write(stderrUnit, *) ' '
@@ -1146,7 +1136,7 @@ contains
          ! compute the total force from the EPFT: div(EPFT)
          !-------------------------------------------------------------
          call calculateDivEPFT(config_AM_eliassenPalm_debug, &
-            domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
+            domain % on_a_sphere, rho_sw, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, EPFT, divEPFT)
          ! decompose the vector into its components for output
          divEPFT1 = divEPFT(1,:,:)
@@ -1158,7 +1148,7 @@ contains
          wrkTensor = 0.0
          wrkTensor(1:2,1:2,:,:) = EPFT(1:2,1:2,:,:)
          call calculateDivEPFT(config_AM_eliassenPalm_debug, &
-            domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
+            domain % on_a_sphere, rho_sw, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, wrkTensor, wrkVector)
          divEPFTshear1 = wrkVector(1,:,:)
          divEPFTshear2 = wrkVector(2,:,:)
@@ -1169,7 +1159,7 @@ contains
          wrkTensor = 0.0
          wrkTensor(3,1:2,:,:) = EPFT(3,1:2,:,:)
          call calculateDivEPFT(config_AM_eliassenPalm_debug, &
-            domain % on_a_sphere, rho0, nBuoyancyLayers, nCells, nEdges, &
+            domain % on_a_sphere, rho_sw, nBuoyancyLayers, nCells, nEdges, &
             meshPool, buoyancyMidRef, sigmaEA, buoyancyMaskEA, wrkTensor, wrkVector)
          divEPFTdrag1 = wrkVector(1,:,:)
          divEPFTdrag2 = wrkVector(2,:,:)

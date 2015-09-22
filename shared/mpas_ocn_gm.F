@@ -41,7 +41,7 @@ module ocn_gm
    private :: tridiagonal_solve
 
    ! Config options
-   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc, config_standardGM_tracer_kappa, config_density0, &
+   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc, config_standardGM_tracer_kappa, &
      config_max_relative_slope, config_Redi_kappa
    logical, pointer :: config_use_standardGM
    logical, pointer :: config_disable_redi_k33
@@ -385,7 +385,7 @@ contains
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
             tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
             tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
-            rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / config_density0 * gradDensityConstZTopOfEdge(k,iEdge)
+            rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Second to next to the last rows
             do k = 3, maxLevelEdgeTop(iEdge)-1
@@ -394,7 +394,7 @@ contains
                tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
                tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
                tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
-               rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / config_density0 * gradDensityConstZTopOfEdge(k,iEdge)
+               rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
             end do
 
             ! Last row
@@ -403,7 +403,7 @@ contains
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
             tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
             tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
-            rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / config_density0 * gradDensityConstZTopOfEdge(k,iEdge)
+            rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Total number of rows
             N = maxLevelEdgeTop(iEdge) - 1
@@ -546,7 +546,6 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
       call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_max_relative_slope',config_max_relative_slope)
-      call mpas_pool_get_config(ocnConfigs, 'config_density0',config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa', config_Redi_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_use_standardGM',config_use_standardGM)
       call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_k33',config_disable_redi_k33)
