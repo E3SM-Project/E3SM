@@ -154,6 +154,10 @@ system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -f $caseroot/*~";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
+# Need to copy back in the CaseDocs/README
+$sysmod = "cp -rp $cloneroot/CaseDocs/README $caseroot/CaseDocs/."; 
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
 # Change directory to be $caseroot
 chdir $caseroot;
 
