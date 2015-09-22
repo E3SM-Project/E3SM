@@ -336,6 +336,7 @@ module mpas_geometry_utils
       if (vertexDegree /= 3) then
          write (stderrUnit,*) 'Error: Barycentric weights can only be calculated if vertexDegree is 3'
          ierr = 1
+         return
       endif
 
       triangleArea = mpas_triangle_signed_area(a, b, c, meshPool)
@@ -450,8 +451,10 @@ module mpas_geometry_utils
       logical :: in_a_triangle
       real(kind=RKIND) :: this_triangle_distance, nearest_triangle_distance
       integer :: nearest_triangle_index
+      integer :: err_tmp
 
       ierr = 0
+      err_tmp = 0
 
       nPoints = size(xPoint)
 
@@ -555,8 +558,8 @@ module mpas_geometry_utils
          triangle_c = (/ xCell(cell3), yCell(cell3), zCell(cell3) /)
 
          call mpas_calculate_barycentric_weights(point, triangle_a, triangle_b, triangle_c, meshPool,     &
-             baryWeightsOnPoints(1, iPoint), baryWeightsOnPoints(2, iPoint), baryWeightsOnPoints(3, iPoint), ierr)
-
+             baryWeightsOnPoints(1, iPoint), baryWeightsOnPoints(2, iPoint), baryWeightsOnPoints(3, iPoint), err_tmp)
+         ierr = ior(ierr, err_tmp)
       enddo
 
    end subroutine mpas_calculate_barycentric_weights_for_points !}}}
