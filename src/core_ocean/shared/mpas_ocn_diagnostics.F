@@ -1558,7 +1558,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+   subroutine ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool) !{{{
 
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostic information

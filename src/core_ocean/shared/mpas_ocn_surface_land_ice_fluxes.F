@@ -333,7 +333,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
-      forcingPool, scratchPool, err)!{{{
+      forcingPool, scratchPool, err) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -662,7 +662,7 @@ contains
     err, &
     iceTemperature, &
     iceTemperatureDistance, &
-    kappa_land_ice)
+    kappa_land_ice) !{{{
 
     !-----------------------------------------------------------------
     !
@@ -766,8 +766,7 @@ contains
 
   !--------------------------------------------------------------------
 
-  end subroutine compute_melt_fluxes
-
+  end subroutine compute_melt_fluxes !}}}
 
 
 !***********************************************************************
@@ -797,7 +796,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine compute_HJ99_melt_fluxes( &
+  subroutine compute_HJ99_melt_fluxes( & 
     oceanTemperature, &
     oceanSalinity, &
     oceanHeatTransferVelocity, &
@@ -810,7 +809,7 @@ contains
     outOceanHeatFlux, &
     outIceHeatFlux, &
     nCells, &
-    err)
+    err) !{{{
 
     !-----------------------------------------------------------------
     !
@@ -899,9 +898,12 @@ contains
 
   !--------------------------------------------------------------------
 
-  end subroutine compute_HJ99_melt_fluxes
+  end subroutine compute_HJ99_melt_fluxes !}}}
 
 
 !***********************************************************************
 
 end module ocn_surface_land_ice_fluxes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+! vim: foldmethod=marker
