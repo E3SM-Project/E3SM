@@ -1,0 +1,5 @@
+! Change hist frequency to something more appropriate for long tests, and add some snow
+! fields in order to test those history fields
+ hist_nhtfrq    = 0,-240
+ hist_mfilt     = 1,1
+ hist_fincl1   += 'SNO_EXISTENCE', 'SNO_ABS', 'SNO_T:M', 'SNO_GS:X'

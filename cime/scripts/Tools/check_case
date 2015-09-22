@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use File::Basename;
+use IO::File;
+use IO::Handle;
+
+sub usage {
+    die <<'EOF';
+
+SYNOPSIS 
+
+  check_case [options]
+
+  checks that case is set up correctly
+
+OPTIONS
+
+  -help [or -h]  Print usage to STDOUT (optional).
+
+EOF
+} 
+
+my %opts = ( );
+
+GetOptions(
+    "h|help"  => \$opts{'help'},
+    )  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+my $sysmod = "./Tools/check_lockedfiles";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+my $CASE           = `./xmlquery CASE           -value`;
+my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
+
+my $sysmod = "./preview_namelists";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+if ($BUILD_COMPLETE ne "TRUE") {
+    print "BUILD_COMPLETE is not TRUE \n" ;
+    print "Please rebuild the model interactively via calling \n";
+    print "   ./${CASE}.build \n";
+    die;
+}
+
+print "check_case OK \n";
+

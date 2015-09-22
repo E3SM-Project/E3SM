@@ -1,0 +1,260 @@
+#!/usr/bin/env perl
+#-----------------------------------------------------------------------------------------------
+#
+# xmlquery
+#
+# This utility allows the CESM user to view a field in a env_*xml file via a commandline interface.
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+#use warnings;
+#use diagnostics;
+use Cwd qw( getcwd abs_path chdir);
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+use XML::LibXML;
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+    die <<EOF;
+SYNOPSIS
+     xmlquery id [options]
+DESCRIPTION
+     allows user to view a field in a env*.xml file
+REQUIRED INPUT
+     id                   Variable name of the field to view (such as CASE, GRID or MACH)
+                          (can also be a comma-seperated list of ids to query [NO-WHITESPACE])
+                          (list to list ALL variables)
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -fileonly            Only print the filename that the field is in.
+     -valonly             Only print the value of the field.
+     -value               Only print the value of the field without any equal or identifier.
+     -noexpandxml         Do not expand any xml variables that the value is dependent on.
+     -help [or -h]        Print usage to STDOUT.
+     -verbose [or -v]     Turn on verbose echoing of what xmlquery is doing.
+
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+
+if ($#ARGV == -1) {
+    print "ERROR: no arguments sent in -- id  name is REQUIRED\n";
+    usage();
+}
+
+#-----------------------------------------------------------------------------------------------
+# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
+# descriptions to be printed to STDOUT before the error messages start.
+
+*STDOUT->autoflush();                  
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+my $cwd = getcwd();                    # current working directory
+my $cfgdir;                            # absolute pathname of directory that contains this script
+if ($ProgDir) { 
+    $cfgdir = abs_path($ProgDir);
+} else {
+    $cfgdir = $cwd;
+}
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+    fileonly		=>0,
+    valonly		=>0,
+    value	        =>0,
+    noexpandxml	        =>0,
+    help		=>0,
+    listall		=>0,
+    verbose		=>0,
+    );
+
+GetOptions(
+    "fileonly"     => \$opts{'fileonly'},
+    "valonly"      => \$opts{'valonly'},
+    "value"        => \$opts{'value'},
+    "noexpandxml"  => \$opts{'noexpandxml'},
+    "h|help"       => \$opts{'help'},
+    "v|verbose"    => \$opts{'verbose'},
+)  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Get id from anything left over
+my $idlist = shift( @ARGV );
+my @ids;
+if ( $idlist eq "list" ) {
+  $opts{'listall'} = 1;
+} else {
+  @ids = split( /,/, $idlist );
+}
+
+# Check for unparsed arguments
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
+    usage();
+}
+#
+if ($opts{'value'} && $opts{'fileonly'} ) {
+    die "value and fileonly modes can NOT both be set\n";
+}
+if ($opts{'valonly'} && $opts{'fileonly'} ) {
+    die "valonly and fileonly modes can NOT both be set\n";
+}
+
+# Define 3 print levels:
+# 0 - only issue fatal error messages
+# 1 - only informs what files are created (default)
+# 2 - verbose
+my $print = 1;
+if ($opts{'verbose'}) { $print = 2; }
+my $eol = "\n";
+
+my %cfg = ();           # build configuration
+
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the configure script.
+
+# Check for the main configuration definition file.
+my $config_def_file = "config_definition.xml";
+my $dir  = "$cfgdir/Tools";
+my $cdir = abs_path( "$cfgdir" );
+if      ( -f "$dir/$config_def_file" )  {
+   $config_def_file = "$dir/$config_def_file";
+} elsif ( -f "$cfgdir/$config_def_file" ) {
+   $dir  = $cdir;
+   $config_def_file = "$cdir/$config_def_file";
+} else {
+   die <<"EOF";
+** Cannot find configuration definition file \"$config_def_file\" in directory Tools **
+EOF
+}
+
+my $parser = XML::LibXML->new( no_blanks => 1);
+
+# search config_definition file to determine if id is a valid name
+# and exit early if id is NOT a valid name
+my $xml = $parser->parse_file($config_def_file);
+
+my @nodes = $xml->findnodes("//entry");
+if ( ! $opts{'listall'} ) {
+   foreach my $id ( @ids ) {
+       chomp($id);
+       my $match;
+       foreach my $node (@nodes) {
+	   my $id_attr = $node->getAttribute('id');
+	   chomp($id_attr);
+	   if ($id eq $id_attr) {
+	       $match = 1;
+	       last;
+	   }
+       }
+       if (! defined $match) {	
+	   die "ERROR: id $id NOT a valid name in the config_definition file\n"; 
+       }
+   }
+}
+
+#-----------------------------------------------------------------------------------------------
+my @dirs = ( "$cfgdir", "$cfgdir/Tools" );
+unshift @INC, @dirs;
+require SetupTools;
+#-----------------------------------------------------------------------------------------------
+
+# Loop over all of the files and fill the hashes
+
+my @filenames = glob( "env_*.xml" );
+my %myfile;
+my %xmlvars;
+FILELOOP:
+foreach my $file ( @filenames ) {
+   # Verify that file is NOT empty
+   if ( ! -r $file ) {
+      die "ERROR: file $file does NOT exist\n"; 
+   }
+   # Add the list of ALL *xml fields to a hash
+   my $xml = $parser->parse_file($file);
+   my @nodes = $xml->findnodes("//entry");
+   foreach my $node (@nodes) {
+       my $id_attr = $node->getAttribute('id');
+       my $val_attr = $node->getAttribute('value');
+       $xmlvars{$id_attr} = $val_attr;
+
+       # check if any of the id's input are in this file
+       if ( ! $opts{'listall'} ) {
+	   foreach my $id ( @ids ) {
+	       if ($id eq $id_attr) {
+		   $myfile{$id} = $file;
+	       }
+	   }
+       } else {
+	   # if listall option is set, add this id to id array, and add file to myfile hash
+	   push( @ids, $id_attr );
+	   $myfile{$id_attr} = $file;
+       }
+   }
+}
+
+# Report the results
+foreach my $id ( @ids ) {
+   unless (defined($myfile{$id}) ) { 
+       if ( $opts{'value'} ) {
+	   exit(1);
+       } else {
+	   die "WARNING: id $id not found in any of the files: @filenames \n"; 
+       }
+   }
+
+   if ( ! $opts{'value'} ) {
+       if ( ! $opts{'valonly'} ) {
+	   print "$myfile{$id}";
+	   print ": ";
+       }
+
+       print "$id" if $print > 0;
+
+       if ( ! $opts{'fileonly'} ) {
+	   print " = " if $print > 0;
+	   my $value = $xmlvars{$id};
+	   if ( ! $opts{'noexpandxml'} ) {
+	       $value = SetupTools::expand_xml_var( $value, \%xmlvars );
+	   }
+	   print "$value";
+       }
+       print "\n";
+
+   } else {
+       my $value = $xmlvars{$id};
+       if ( ! $opts{'noexpandxml'} ) {
+	   $value = SetupTools::expand_xml_var( $value, \%xmlvars );
+       }
+       $value =~ s/&apos;/'/g;
+       $value =~ s/&lt;/\</g;
+       print "$value";
+   }
+
+}
+if ($print>=2) { print "$ProgName done.\n"; }
+exit;
+
+

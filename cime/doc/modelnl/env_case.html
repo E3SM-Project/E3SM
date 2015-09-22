@@ -1,0 +1,810 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>CESM Component Models Namelist Definitions </title>
+  <link rel="stylesheet" type="text/css" href="/models/cesm1.0/cam/docs/namelist/nl_style_sheet.css" />
+  <script src=./showinfo.js> </script>
+</head>
+
+<body>
+
+<h2>Search or Browse env_case.xml </h2>
+<p>
+This page contains the complete list of xml variables in env_case.xml.
+They are grouped by categories designed to aid browsing.  Clicking on the name
+of a variable will display descriptive information.  If search terms
+are entered in the text box below, the list will be condensed to
+contain only matched variables.  </p>
+
+<form id="filter_form" name="filter_form" style="margin: 0px; padding: 0px;" action="javascript:void(0);">
+  <table border="0" cellpadding="2" cellspacing="1">
+    <tbody>
+      <tr>
+        <td valign="top">
+          <input id="filter_text" name="filter_text" size="40"
+                 onkeydown="if (event.keyCode==13) applyFilter(document.getElementById('filter_text').value);"
+                 type="text">
+          <input id="btn_search" value="Search Variable Names"
+                 onclick="applyFilter(document.getElementById('filter_text').value);"
+		 type="button">
+          <input id="btn_show_all" value="Show All Variable Names"
+		 onclick="clearFilter();return false;"
+                 type="button">
+          <br>
+          <label>
+            <input id="logical_operator_and" name="logical_operator" value="AND" 
+                   type="radio" checked> AND
+          </label>
+          <label>
+            <input id="logical_operator_or" name="logical_operator" value="OR"
+                   type="radio"> OR
+          </label>
+          (separate search terms with spaces)
+          <br>
+          <label>
+            <input id="search_help_text" name="search_help_text" type="checkbox"> Also search help text
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+
+<div id="filter_matches" style="visibility: hidden; margin-bottom: 10px;">
+  Found <span id="filter_matches_num"></span> standard names matching query: <span id="filter_matches_query"></span>
+</div>
+
+<p>
+
+<center>
+<input id="btn_expand_help" value="Show All Help Text" 
+       onclick="expandAllHelp();return false;"
+       type="button">
+<input id="btn_collapse_help" value="Collapse All Help Text" 
+       onclick="collapseAllHelp();return false;"
+       type="button">
+</center>
+
+<h3><span style="background-color: #00FFFF" font color="purple">env_case.xml variables (locked after create_newcase is called)</h3></span>
+<table id="env_case.xml variables (locked after create_newcase is called)_table" border="1" width="100%" cellpadding="2" cellspacing="0">
+  <th width="80%">Variable Name</th>
+  <th width="10%">File Name</th>
+  <tr id="SCIENCE_SUPPORT_tr">
+    <td><a name="SCIENCE_SUPPORT"></a>
+        <img id="SCIENCE_SUPPORT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SCIENCE_SUPPORT')">SCIENCE_SUPPORT</a>
+        </code>
+        <div id="SCIENCE_SUPPORT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case name</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CASE_tr">
+    <td><a name="CASE"></a>
+        <img id="CASE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CASE')">CASE</a>
+        </code>
+        <div id="CASE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case name</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CASEROOT_tr">
+    <td><a name="CASEROOT"></a>
+        <img id="CASEROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CASEROOT')">CASEROOT</a>
+        </code>
+        <div id="CASEROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>full pathname of case</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CIMEROOT_tr">
+    <td><a name="CIMEROOT"></a>
+        <img id="CIMEROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CIMEROOT')">CIMEROOT</a>
+        </code>
+        <div id="CIMEROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>full pathname of CESM source root directory</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="MACH_tr">
+    <td><a name="MACH"></a>
+        <img id="MACH_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('MACH')">MACH</a>
+        </code>
+        <div id="MACH_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Machine name</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_MACHDIR_tr">
+    <td><a name="CCSM_MACHDIR"></a>
+        <img id="CCSM_MACHDIR_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_MACHDIR')">CCSM_MACHDIR</a>
+        </code>
+        <div id="CCSM_MACHDIR_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Machines directory location</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="SUPPORTED_BY_tr">
+    <td><a name="SUPPORTED_BY"></a>
+        <img id="SUPPORTED_BY_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SUPPORTED_BY')">SUPPORTED_BY</a>
+        </code>
+        <div id="SUPPORTED_BY_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>current machine name support contact</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSMUSER_tr">
+    <td><a name="CCSMUSER"></a>
+        <img id="CCSMUSER_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSMUSER')">CCSMUSER</a>
+        </code>
+        <div id="CCSMUSER_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>case user name</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="PROJECT_tr">
+    <td><a name="PROJECT"></a>
+        <img id="PROJECT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('PROJECT')">PROJECT</a>
+        </code>
+        <div id="PROJECT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>project for project-sensitive build and run paths, and job scripts</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="PROJECT_REQUIRED_tr">
+    <td><a name="PROJECT_REQUIRED"></a>
+        <img id="PROJECT_REQUIRED_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('PROJECT_REQUIRED')">PROJECT_REQUIRED</a>
+        </code>
+        <div id="PROJECT_REQUIRED_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>whether the PROJECT value is required on this machine
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_ATM_tr">
+    <td><a name="COMP_ATM"></a>
+        <img id="COMP_ATM_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_ATM')">COMP_ATM</a>
+        </code>
+        <div id="COMP_ATM_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of atmospheric component 
+Valid Values: cam,wrf,datm,xatm,satm </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_LND_tr">
+    <td><a name="COMP_LND"></a>
+        <img id="COMP_LND_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_LND')">COMP_LND</a>
+        </code>
+        <div id="COMP_LND_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of land component
+Valid Values: clm,vic,dlnd,xlnd,slnd </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_ICE_tr">
+    <td><a name="COMP_ICE"></a>
+        <img id="COMP_ICE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_ICE')">COMP_ICE</a>
+        </code>
+        <div id="COMP_ICE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of sea ice component
+Valid Values: cice,dice,xice,sice </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_GLC_tr">
+    <td><a name="COMP_GLC"></a>
+        <img id="COMP_GLC_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_GLC')">COMP_GLC</a>
+        </code>
+        <div id="COMP_GLC_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of land ice-sheet component
+Valid Values: cism,xglc,sglc </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_OCN_tr">
+    <td><a name="COMP_OCN"></a>
+        <img id="COMP_OCN_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_OCN')">COMP_OCN</a>
+        </code>
+        <div id="COMP_OCN_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of ocean component
+Valid Values: pop2,docn,xocn,socn,aquap,mpas-o </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_ROF_tr">
+    <td><a name="COMP_ROF"></a>
+        <img id="COMP_ROF_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_ROF')">COMP_ROF</a>
+        </code>
+        <div id="COMP_ROF_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of river runoff component 
+Valid Values: rtm,drof,srof,xrof </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_WAV_tr">
+    <td><a name="COMP_WAV"></a>
+        <img id="COMP_WAV_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_WAV')">COMP_WAV</a>
+        </code>
+        <div id="COMP_WAV_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of wave component
+Valid Values: ww3,xwav,swav </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMP_CPL_tr">
+    <td><a name="COMP_CPL"></a>
+        <img id="COMP_CPL_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMP_CPL')">COMP_CPL</a>
+        </code>
+        <div id="COMP_CPL_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Name of coupling component
+Valid Values: cpl </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CODEROOT_tr">
+    <td><a name="CODEROOT"></a>
+        <img id="CODEROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CODEROOT')">CODEROOT</a>
+        </code>
+        <div id="CODEROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM source models directory location (setup automatically to $CIMEROOT/../components- DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="SCRIPTSROOT_tr">
+    <td><a name="SCRIPTSROOT"></a>
+        <img id="SCRIPTSROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('SCRIPTSROOT')">SCRIPTSROOT</a>
+        </code>
+        <div id="SCRIPTSROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM source scripts directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="UTILROOT_tr">
+    <td><a name="UTILROOT"></a>
+        <img id="UTILROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('UTILROOT')">UTILROOT</a>
+        </code>
+        <div id="UTILROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM source scripts utils directory location (setup automatically to $CIMEROOT/scripts/ccsm_utils - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="OS_tr">
+    <td><a name="OS"></a>
+        <img id="OS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('OS')">OS</a>
+        </code>
+        <div id="OS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>operating system for target machine</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_COMPSET_tr">
+    <td><a name="CCSM_COMPSET"></a>
+        <img id="CCSM_COMPSET_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_COMPSET')">CCSM_COMPSET</a>
+        </code>
+        <div id="CCSM_COMPSET_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM component set (for documentation only - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_LCOMPSET_tr">
+    <td><a name="CCSM_LCOMPSET"></a>
+        <img id="CCSM_LCOMPSET_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_LCOMPSET')">CCSM_LCOMPSET</a>
+        </code>
+        <div id="CCSM_LCOMPSET_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM component set, longname (for documentation only - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_SCOMPSET_tr">
+    <td><a name="CCSM_SCOMPSET"></a>
+        <img id="CCSM_SCOMPSET_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_SCOMPSET')">CCSM_SCOMPSET</a>
+        </code>
+        <div id="CCSM_SCOMPSET_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>CESM component set, shortname (for documentation only - DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_CCOST_tr">
+    <td><a name="CCSM_CCOST"></a>
+        <img id="CCSM_CCOST_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_CCOST')">CCSM_CCOST</a>
+        </code>
+        <div id="CCSM_CCOST_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>2**n relative cost of compset where B is 1 (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_GCOST_tr">
+    <td><a name="CCSM_GCOST"></a>
+        <img id="CCSM_GCOST_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_GCOST')">CCSM_GCOST</a>
+        </code>
+        <div id="CCSM_GCOST_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>2**n relative cost of grid where f19_g15 is 1 (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_MCOST_tr">
+    <td><a name="CCSM_MCOST"></a>
+        <img id="CCSM_MCOST_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_MCOST')">CCSM_MCOST</a>
+        </code>
+        <div id="CCSM_MCOST_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>2**n relative cost of machine (DO NOT EDIT)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="XMLMODE_tr">
+    <td><a name="XMLMODE"></a>
+        <img id="XMLMODE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('XMLMODE')">XMLMODE</a>
+        </code>
+        <div id="XMLMODE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>xml format option, expert removes extra comments from env xml files
+Valid Values: normal,expert </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_BASELINE_tr">
+    <td><a name="CCSM_BASELINE"></a>
+        <img id="CCSM_BASELINE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_BASELINE')">CCSM_BASELINE</a>
+        </code>
+        <div id="CCSM_BASELINE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>standard ccsm baselines directory for testing</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CCSM_CPRNC_tr">
+    <td><a name="CCSM_CPRNC"></a>
+        <img id="CCSM_CPRNC_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CCSM_CPRNC')">CCSM_CPRNC</a>
+        </code>
+        <div id="CCSM_CPRNC_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>standard location of the cprnc tool</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CASETOOLS_tr">
+    <td><a name="CASETOOLS"></a>
+        <img id="CASETOOLS_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CASETOOLS')">CASETOOLS</a>
+        </code>
+        <div id="CASETOOLS_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Case Tools directory location</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CASEBUILD_tr">
+    <td><a name="CASEBUILD"></a>
+        <img id="CASEBUILD_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CASEBUILD')">CASEBUILD</a>
+        </code>
+        <div id="CASEBUILD_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Buildconf directory location</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="NAME_tr">
+    <td><a name="NAME"></a>
+        <img id="NAME_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('NAME')">NAME</a>
+        </code>
+        <div id="NAME_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Test type name</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="DESC_tr">
+    <td><a name="DESC"></a>
+        <img id="DESC_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('DESC')">DESC</a>
+        </code>
+        <div id="DESC_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Test type descriptor</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="TESTCASE_tr">
+    <td><a name="TESTCASE"></a>
+        <img id="TESTCASE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('TESTCASE')">TESTCASE</a>
+        </code>
+        <div id="TESTCASE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Testcase short name</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CASEBASEID_tr">
+    <td><a name="CASEBASEID"></a>
+        <img id="CASEBASEID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CASEBASEID')">CASEBASEID</a>
+        </code>
+        <div id="CASEBASEID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Case base ID</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="TEST_ARGV_tr">
+    <td><a name="TEST_ARGV"></a>
+        <img id="TEST_ARGV_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('TEST_ARGV')">TEST_ARGV</a>
+        </code>
+        <div id="TEST_ARGV_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Arguments supplied to create_test</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="TEST_TESTID_tr">
+    <td><a name="TEST_TESTID"></a>
+        <img id="TEST_TESTID_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('TEST_TESTID')">TEST_TESTID</a>
+        </code>
+        <div id="TEST_TESTID_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>supplied or computed test id</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="GENERATE_BASELINE_tr">
+    <td><a name="GENERATE_BASELINE"></a>
+        <img id="GENERATE_BASELINE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('GENERATE_BASELINE')">GENERATE_BASELINE</a>
+        </code>
+        <div id="GENERATE_BASELINE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Whether to generate a baseline
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="COMPARE_BASELINE_tr">
+    <td><a name="COMPARE_BASELINE"></a>
+        <img id="COMPARE_BASELINE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('COMPARE_BASELINE')">COMPARE_BASELINE</a>
+        </code>
+        <div id="COMPARE_BASELINE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Whether to compare the baseline
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="MODEL_GEN_COMP_tr">
+    <td><a name="MODEL_GEN_COMP"></a>
+        <img id="MODEL_GEN_COMP_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('MODEL_GEN_COMP')">MODEL_GEN_COMP</a>
+        </code>
+        <div id="MODEL_GEN_COMP_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Whether to compare model component history files on compare or generate (and which model)</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="BASEGEN_CASE_tr">
+    <td><a name="BASEGEN_CASE"></a>
+        <img id="BASEGEN_CASE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BASEGEN_CASE')">BASEGEN_CASE</a>
+        </code>
+        <div id="BASEGEN_CASE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>The tagname we are comparing baselines against</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="BASECMP_CASE_tr">
+    <td><a name="BASECMP_CASE"></a>
+        <img id="BASECMP_CASE_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BASECMP_CASE')">BASECMP_CASE</a>
+        </code>
+        <div id="BASECMP_CASE_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>The tagname we are comparing baselines against</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="BASELINE_ROOT_tr">
+    <td><a name="BASELINE_ROOT"></a>
+        <img id="BASELINE_ROOT_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BASELINE_ROOT')">BASELINE_ROOT</a>
+        </code>
+        <div id="BASELINE_ROOT_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>The directory where baselines are stored</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="BASELINE_NAME_GEN_tr">
+    <td><a name="BASELINE_NAME_GEN"></a>
+        <img id="BASELINE_NAME_GEN_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BASELINE_NAME_GEN')">BASELINE_NAME_GEN</a>
+        </code>
+        <div id="BASELINE_NAME_GEN_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>The tagname we are generating baselines for</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="BASELINE_NAME_CMP_tr">
+    <td><a name="BASELINE_NAME_CMP"></a>
+        <img id="BASELINE_NAME_CMP_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('BASELINE_NAME_CMP')">BASELINE_NAME_CMP</a>
+        </code>
+        <div id="BASELINE_NAME_CMP_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>The tagname we are comparing baselines against</pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+  <tr id="CLEANUP_tr">
+    <td><a name="CLEANUP"></a>
+        <img id="CLEANUP_arrow" src="./images/arrow_right.gif">
+        <code class="varname">
+          <a href="javascript:void(0)"
+             onclick="toggleHelp('CLEANUP')">CLEANUP</a>
+        </code>
+        <div id="CLEANUP_help" style="display: none;
+             padding-left: 16px; margin-top: 4px; border-top: 1px dashed
+             #cccccc;">
+	     <pre>Whether to clean the test after it is built/run
+Valid Values: TRUE,FALSE </pre>
+        </div>
+    </td>
+    <td>env_case.xml</td>
+  </tr>
+</table>
+</body>
+</html>

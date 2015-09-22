@@ -1,0 +1,61 @@
+module character16_vector_tests
+! Module to test dynamic vector template on
+! character strings.
+
+use pfunit_mod
+
+use shr_log_mod, only: OOBMsg => shr_log_OOBMsg
+
+#define TYPE_NAME character16
+#define TYPE_DECL character(len=16)
+#define VECTOR_NAME character16_vector
+use dynamic_vector_character16, only: &
+     character16_vector
+
+implicit none
+
+character(len=16), parameter :: test_array(3) = [ &
+     "Alice           ", &
+     "Bob             ", &
+     "Charlie         " ]
+
+character(len=16), parameter :: test_array_2(5) = [&
+     "David           ", &
+     "Eve             ", &
+     "Fred            ", &
+     "Georgia         ", &
+     "Hank            " ]
+
+character(len=16), parameter :: new_val = "Irene           "
+
+interface assertEqual
+   module procedure assertEqualString_0D_1D
+   module procedure assertEqualString_1D_1D
+end interface
+
+contains
+
+! pFUnit doesn't have assertEqual routines for arrays of strings.
+subroutine assertEqualString_0D_1D(expected, found, message, location)
+  character(len=*), intent(in) :: expected
+  character(len=*), intent(in) :: found(:)
+  character(len=*), optional, intent(in) :: message
+  type (SourceLocation), optional, intent(in) :: location
+
+  call assertAll(expected == found, message, location)
+
+end subroutine assertEqualString_0D_1D
+
+subroutine assertEqualString_1D_1D(expected, found, message, location)
+  character(len=*), intent(in) :: expected(:)
+  character(len=*), intent(in) :: found(:)
+  character(len=*), optional, intent(in) :: message
+  type (SourceLocation), optional, intent(in) :: location
+
+  call assertAll(expected == found, message, location)
+
+end subroutine assertEqualString_1D_1D
+
+#include "dynamic_vector_base_tests.inc"
+
+end module character16_vector_tests

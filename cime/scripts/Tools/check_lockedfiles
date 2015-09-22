@@ -1,0 +1,63 @@
+#!/usr/bin/env perl
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use File::Basename;
+use IO::File;
+use IO::Handle;
+
+sub usage {
+    die <<'EOF';
+
+SYNOPSIS 
+
+  check_lockedfiles [options]
+
+  checks that any files in the $CASEROOT/LockedFiles directory
+  match those in the $CASEROOT directory 
+  (assumes that this utility exists in $CASEROOT/Tools)
+
+OPTIONS
+
+  -help [or -h]  Print usage to STDOUT (optional).
+
+EOF
+} 
+
+my %opts = ( );
+
+GetOptions(
+    "h|help"  => \$opts{'help'},
+    )  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+`./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0`;
+
+my @lockedfiles = glob ("./LockedFiles/*");
+foreach my $lockedfile (@lockedfiles) {
+    my $file = basename("$lockedfile");
+    $file =~ m/(.*)(\.locked)/;
+    $file = $1;
+    if (!-f $file) {
+	die "Locked file $file cannot be found";
+    }
+    my $sysmod = "cmp -s $lockedfile $file ";
+    if (system($sysmod) != 0) {
+	print "$file has been modified and is different than the LockedFiles version \n";
+	if ($file =~ /env_build/ ) {
+	    print "setting BUILD_COMPLETE to FALSE \n";
+	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
+	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
+	} elsif ($file =~ /.*env_mach_pes.*/) {
+	    die "Invoke cesm_setup -clean followed by cesm_setup \n";
+	} else {
+	    die "Cannot change $file, please recover the original copy from LockedFiles \n";
+	}
+    }
+}
+
+exit (0);
