@@ -479,6 +479,7 @@ sub loadModuleModules()
         else
         {
             $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
+	    print "   $mod->{action} $mod->{actupon} \n";
         }
 #        print "running cmd: $mod->{action} $mod->{actupon}\n";
         eval qx($cmd);
@@ -1078,7 +1079,6 @@ START
                 my $action = $child->getAttribute('name');
                 my $actupon = $child->textContent();
                 #$sh .= "module $action $actupon \n";
-                print "$self->{shcmdpath}  $action $actupon \n";
                 $sh .= "$self->{shcmdpath} $action $actupon \n";
             }
         }
