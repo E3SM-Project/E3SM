@@ -342,15 +342,19 @@ sub disposeLog
 {
     my($rundir,$caseroot,$component,$lid,$logdir) = @_;
 
-    my $logfile = "$rundir/$component.log.$lid";
+    my $logfile = "$component.log.$lid";
+
+    my $dir = getcwd;
+    chdir $rundir unless($dir eq $rundir);
 
     if(-e $logfile){
-	qx("gzip $logfile");
+	qx(gzip $logfile);
 	$logfile .= ".gz";
 	if(-e $logfile){
             copy($logfile, $logdir );
 	}
     }
+
 }	    
 
 
@@ -422,11 +426,6 @@ sub postRun()
     }
 
     chdir($rundir) or die "could not cd to $rundir";
-    qx(gzip *.$LID);
-    if($?)
-    {
-        warn "Cannot gzip log post-run, $!";
-    }
 
     if(defined $config{'LOGDIR'} && (length($config{'LOGDIR'}) > 0))
     {
@@ -496,7 +495,9 @@ sub DoDataAssimilation
     qx( $da_script 1> da.log.$lid 2>&1);
     sleep(1);
     die "$da_script failed" unless ($? == 0);
+    chdir $rundir;
     disposeLog($rundir,$caseroot, 'da' ,$lid,$logdir);
+    chdir $caseroot;
 }
 
 
