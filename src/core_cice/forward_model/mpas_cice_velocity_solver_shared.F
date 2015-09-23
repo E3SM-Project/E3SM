@@ -175,44 +175,46 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_ice_strength(&
-       nCells, &
-       nCategories, &
-       icePressure, &
-       iceAreaCell, &
-       iceVolumeCell, &
-       openWaterArea, &
-       iceAreaCategory, &
-       iceVolumeCategory, &
-       solveStress, &
-       config_use_column_package, &
-       config_use_column_vertical_thermodynamics)
+  subroutine cice_ice_strength(domain)
 
     use ice_colpkg, only: &
          colpkg_ice_strength
 
-    integer, intent(in) :: &
-         nCells, &  !< Input:
-         nCategories !< Input:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         icePressure !< Output: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         iceAreaCell, &   !< Input:
-         iceVolumeCell, & !< Input:
-         openWaterArea    !< Input:
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         tracersAggregatePool, &
+         icestatePool, &
+         tracersPool
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         iceAreaCategory, & !< Input:
-         iceVolumeCategory  !< Input:
+    real(kind=RKIND), dimension(:), pointer:: &
+         icePressure, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         openWaterArea
 
-    integer, dimension(:), intent(in) :: &
-         solveStress !< Input:
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory
 
-    logical, intent(in) :: &
-         config_use_column_package, &              !< Input:
-         config_use_column_vertical_thermodynamics !< Input:
+    integer, dimension(:), pointer :: &
+         solveStress
+
+    type(field1DReal), pointer :: &
+         icePressureField
+
+    logical, pointer :: &
+         config_use_column_package, &
+         config_use_column_vertical_thermodynamics
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCategories
 
     integer :: &
          iCell
@@ -221,46 +223,79 @@ contains
          Pstar = 2.75e4_RKIND, & ! constant in Hibler strength formula 
          Cstar = 20.0_RKIND      ! constant in Hibler strength formula 
 
-    if (.not. config_use_column_package .or. &
-       (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+    block => domain % blocklist
+    do while (associated(block))
 
-       do iCell = 1, nCells
+       call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
 
-          if (solveStress(iCell) == 1) then
+       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
 
-             icePressure(iCell) = Pstar * iceVolumeCell(iCell) * exp(-Cstar*(1.0_RKIND-iceAreaCell(iCell)))
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
 
-          else
+       call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+       call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+       call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
+
+       call MPAS_pool_get_array(icestatePool, "openWaterArea", openWaterArea)
+
+       call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
+       call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
+
+       if (.not. config_use_column_package .or. &
+            (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+
+          do iCell = 1, nCellsSolve
+
+             if (solveStress(iCell) == 1) then
+
+                icePressure(iCell) = Pstar * iceVolumeCell(iCell) * exp(-Cstar*(1.0_RKIND-iceAreaCell(iCell)))
+
+             else
+
+                icePressure(iCell) = 0.0_RKIND
+
+             endif ! solveStress
+
+          enddo ! iCell
+
+       else
+
+          do iCell = 1, nCellsSolve
 
              icePressure(iCell) = 0.0_RKIND
 
-          endif ! solveStress
+             if (solveStress(iCell) == 1) then
 
-       enddo ! iCell
+                ! this routine doesnt reset icePressure
+                call colpkg_ice_strength(&
+                     nCategories, &
+                     iceAreaCell(iCell), &
+                     iceVolumeCell(iCell), &
+                     openWaterArea(iCell), &
+                     iceAreaCategory(1,:,iCell), &
+                     iceVolumeCategory(1,:,iCell), &
+                     icePressure(iCell))
 
-    else
+             endif ! solveStress
 
-       do iCell = 1, nCells
+          enddo ! iCell
 
-          icePressure(iCell) = 0.0_RKIND
+       endif
 
-          if (solveStress(iCell) == 1) then
+       block => block % next
+    enddo
 
-             ! this routine doesnt reset icePressure
-             call colpkg_ice_strength(&
-                  nCategories, &
-                  iceAreaCell(iCell), &
-                  iceVolumeCell(iCell), &
-                  openWaterArea(iCell), &
-                  iceAreaCategory(1,:,iCell), &
-                  iceVolumeCategory(1,:,iCell), &
-                  icePressure(iCell))
-
-          endif ! solveStress
-
-       enddo ! iCell
-
-    endif
+    ! halo exchange ice strength
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
+    call MPAS_pool_get_field(velocitySolverPool, "icePressure", icePressureField)
+    call MPAS_dmpar_exch_halo_field(icePressureField)
 
   end subroutine cice_ice_strength
 
@@ -475,57 +510,40 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_solve_velocity(&
-       nPoints, &
-       solvePoints, &
-       uVelocity, &
-       vVelocity, &
-       uVelocityInitial, &
-       vVelocityInitial, &
-       mass, &
-       massCoriolisParameter, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       airStressU, &
-       airStressV, &
-       surfaceTiltForceU, &
-       surfaceTiltForceV, &
-       oceanStressU, &
-       oceanStressV, &
-       oceanStressCoeff, &
-       dtElastic, &
-       mesh)
+  subroutine cice_solve_velocity(domain)
 
-    integer, intent(in) :: &
-         nPoints !< Input:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         uVelocity, & !< Output: 
-         vVelocity    !< Output:
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         icestatePool
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         uVelocityInitial, &      !< Input:
-         vVelocityInitial, &      !< Input:
-         mass, &                  !< Input:
-         massCoriolisParameter, & !< Input:
-         stressDivergenceU, &     !< Input:
-         stressDivergenceV, &     !< Input:
-         airStressU, &            !< Input:
-         airStressV, &            !< Input:
-         surfaceTiltForceU, &     !< Input:
-         surfaceTiltForceV, &     !< Input:
-         oceanStressU, &          !< Input:
-         oceanStressV, &          !< Input: 
-         oceanStressCoeff         !< Input:
+    integer, dimension(:), pointer :: &
+         solveVelocity
 
-    real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         uVelocityInitial, &
+         vVelocityInitial, &
+         totalMassVertex, &
+         totalMassVertexfVertex, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         airStressVertexU, &
+         airStressVertexV, &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         oceanStressU, &
+         oceanStressV, &
+         oceanStressCoeff
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+    real(kind=RKIND), pointer :: &
+         elasticTimeStep
 
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
@@ -536,42 +554,77 @@ contains
     real(kind=RKIND) :: &
          solutionDenominator
 
+    integer, pointer :: &
+         nVerticesSolve
+
     integer :: &
-         iPoint
+         iVertex
 
-    do iPoint = 1, nPoints
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (solvePoints(iPoint) == 1) then
-          
-          ! U equation
-          leftMatrix(1,1) =  mass(iPoint) / dtElastic      + oceanStressCoeff(iPoint) * cosOceanTurningAngle
-          leftMatrix(1,2) = -massCoriolisParameter(iPoint) - oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-          ! V equation
-          leftMatrix(2,1) =  massCoriolisParameter(iPoint) + oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
-          leftMatrix(2,2) =  mass(iPoint) / dtElastic      + oceanStressCoeff(iPoint) * cosOceanTurningAngle
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
 
-          ! right hand side of matrix solve
-          rightHandSide(1) = stressDivergenceU(iPoint) + airStressU(iPoint) + surfaceTiltForceU(iPoint) + &
-                             oceanStressCoeff(iPoint) * oceanStressU(iPoint) + (mass(iPoint) * uVelocity(iPoint)) / dtElastic
+       call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
-          rightHandSide(2) = stressDivergenceV(iPoint) + airStressV(iPoint) + surfaceTiltForceV(iPoint) + &
-                             oceanStressCoeff(iPoint) * oceanStressV(iPoint) + (mass(iPoint) * vVelocity(iPoint)) / dtElastic
+       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocityInitial", uVelocityInitial)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocityInitial", vVelocityInitial)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexV", airStressVertexV)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+       call MPAS_pool_get_array(velocitySolverPool, "totalMassVertexfVertex", totalMassVertexfVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
 
-          ! solve the equation
-          solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
+       do iVertex = 1, nVerticesSolve
 
-          uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
-          vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
+          if (solveVelocity(iVertex) == 1) then
 
-       else
+             ! U equation
+             leftMatrix(1,1) =  totalMassVertex(iVertex) / elasticTimeStep + oceanStressCoeff(iVertex) * cosOceanTurningAngle
+             leftMatrix(1,2) = -totalMassVertexfVertex(iVertex) - &
+                  oceanStressCoeff(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,totalMassVertexfVertex(iVertex))
 
-          uVelocity(iPoint) = 0.0_RKIND
-          vVelocity(iPoint) = 0.0_RKIND
+             ! V equation
+             leftMatrix(2,1) =  totalMassVertexfVertex(iVertex) + &
+                  oceanStressCoeff(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,totalMassVertexfVertex(iVertex))
+             leftMatrix(2,2) =  totalMassVertex(iVertex) / elasticTimeStep  + oceanStressCoeff(iVertex) * cosOceanTurningAngle
 
-       endif ! solvePoints       
+             ! right hand side of matrix solve
+             rightHandSide(1) = stressDivergenceU(iVertex) + airStressVertexU(iVertex) + surfaceTiltForceU(iVertex) + &
+                  oceanStressCoeff(iVertex) * oceanStressU(iVertex) + (totalMassVertex(iVertex) * uVelocity(iVertex)) / elasticTimeStep
 
-    enddo ! iPoint
+             rightHandSide(2) = stressDivergenceV(iVertex) + airStressVertexV(iVertex) + surfaceTiltForceV(iVertex) + &
+                  oceanStressCoeff(iVertex) * oceanStressV(iVertex) + (totalMassVertex(iVertex) * vVelocity(iVertex)) / elasticTimeStep
+
+             ! solve the equation
+             solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
+
+             uVelocity(iVertex) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
+             vVelocity(iVertex) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
+
+          else
+
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
+
+          endif ! solveVelocity
+
+       enddo ! iVertex
+
+       block => block % next
+    end do
 
   end subroutine cice_solve_velocity
   
@@ -587,57 +640,40 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_solve_velocity_revised(&
-       nPoints, &
-       solvePoints, &
-       uVelocity, &
-       vVelocity, &
-       uVelocityInitial, &
-       vVelocityInitial, &
-       mass, &
-       massCoriolisParameter, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       airStressU, &
-       airStressV, &
-       surfaceTiltForceU, &
-       surfaceTiltForceV, &
-       oceanStressU, &
-       oceanStressV, &
-       oceanStressCoeff, &
-       dt, &
-       mesh)
+  subroutine cice_solve_velocity_revised(domain)
 
-    integer, intent(in) :: &
-         nPoints !< Input:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         uVelocity, & !< Output: 
-         vVelocity    !< Output:
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         icestatePool
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         uVelocityInitial, &      !< Input:
-         vVelocityInitial, &      !< Input:
-         mass, &                  !< Input:
-         massCoriolisParameter, & !< Input:
-         stressDivergenceU, &     !< Input:
-         stressDivergenceV, &     !< Input:
-         airStressU, &            !< Input:
-         airStressV, &            !< Input:
-         surfaceTiltForceU, &     !< Input:
-         surfaceTiltForceV, &     !< Input:
-         oceanStressU, &          !< Input:
-         oceanStressV, &          !< Input: 
-         oceanStressCoeff         !< Input:
+    integer, dimension(:), pointer :: &
+         solveVelocity
 
-    real(kind=RKIND), intent(in) :: &
-         dt !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         uVelocityInitial, &
+         vVelocityInitial, &
+         totalMassVertex, &
+         totalMassVertexfVertex, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         airStressVertexU, &
+         airStressVertexV, &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         oceanStressU, &
+         oceanStressV, &
+         oceanStressCoeff
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+    real(kind=RKIND), pointer :: &
+         dt
 
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
@@ -648,54 +684,187 @@ contains
     real(kind=RKIND) :: &
          solutionDenominator
 
+    integer, pointer :: &
+         nVerticesSolve
+
     integer :: &
-         iPoint
+         iVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_config(block % configs, "config_dt", dt)
  
-    do iPoint = 1, nPoints
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       if (solvePoints(iPoint) == 1) then
-          
-          ! U equation
-          leftMatrix(1,1) =  (numericalInertiaCoefficient + 1.0_RKIND) * (mass(iPoint) / dt) &
-                          +  oceanStressCoeff(iPoint) * cosOceanTurningAngle
-          leftMatrix(1,2) = -massCoriolisParameter(iPoint) &
-                          -  oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
 
-          ! V equation
-          leftMatrix(2,1) =  massCoriolisParameter(iPoint) &
-                          +  oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
-          leftMatrix(2,2) =  (numericalInertiaCoefficient + 1.0_RKIND) * (mass(iPoint) / dt) &
-                          +  oceanStressCoeff(iPoint) * cosOceanTurningAngle
+       call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
-          ! right hand side of matrix solve
-          rightHandSide(1) = stressDivergenceU(iPoint) + airStressU(iPoint) + surfaceTiltForceU(iPoint) + &
-                             oceanStressCoeff(iPoint) * oceanStressU(iPoint) + &
-                             (mass(iPoint) * (numericalInertiaCoefficient * uVelocity(iPoint) + uVelocityInitial(iPoint))) / dt
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocityInitial", uVelocityInitial)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocityInitial", vVelocityInitial)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexV", airStressVertexV)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+       call MPAS_pool_get_array(velocitySolverPool, "totalMassVertexfVertex", totalMassVertexfVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
 
-          rightHandSide(2) = stressDivergenceV(iPoint) + airStressV(iPoint) + surfaceTiltForceV(iPoint) + &
-                             oceanStressCoeff(iPoint) * oceanStressV(iPoint) + &
-                             (mass(iPoint) * (numericalInertiaCoefficient * vVelocity(iPoint) + vVelocityInitial(iPoint))) / dt
+       do iVertex = 1, nVerticesSolve
 
-          ! solve the equation
-          solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
+          if (solveVelocity(iVertex) == 1) then
 
-          uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
-          vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
-          
-       else
+             ! U equation
+             leftMatrix(1,1) =  (numericalInertiaCoefficient + 1.0_RKIND) * (totalMassVertex(iVertex) / dt) &
+                             +  oceanStressCoeff(iVertex) * cosOceanTurningAngle
+             leftMatrix(1,2) = -totalMassVertexfVertex(iVertex) &
+                             -  oceanStressCoeff(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,totalMassVertexfVertex(iVertex))
 
-          uVelocity(iPoint) = 0.0_RKIND
-          vVelocity(iPoint) = 0.0_RKIND
+             ! V equation
+             leftMatrix(2,1) =  totalMassVertexfVertex(iVertex) &
+                             +  oceanStressCoeff(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,totalMassVertexfVertex(iVertex))
+             leftMatrix(2,2) =  (numericalInertiaCoefficient + 1.0_RKIND) * (totalMassVertex(iVertex) / dt) &
+                             +  oceanStressCoeff(iVertex) * cosOceanTurningAngle
 
-       endif ! solvePoints       
+             ! right hand side of matrix solve
+             rightHandSide(1) = stressDivergenceU(iVertex) + airStressVertexU(iVertex) + surfaceTiltForceU(iVertex) + &
+                  oceanStressCoeff(iVertex) * oceanStressU(iVertex) + &
+                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * uVelocity(iVertex) + uVelocityInitial(iVertex))) / dt
 
-    enddo ! iPoint
+             rightHandSide(2) = stressDivergenceV(iVertex) + airStressVertexV(iVertex) + surfaceTiltForceV(iVertex) + &
+                  oceanStressCoeff(iVertex) * oceanStressV(iVertex) + &
+                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * vVelocity(iVertex) + vVelocityInitial(iVertex))) / dt
+
+             ! solve the equation
+             solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)
+
+             uVelocity(iVertex) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
+             vVelocity(iVertex) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
+
+          else
+
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
+
+          endif ! solveVelocity
+
+       enddo ! iVertex
+
+       block => block % next
+    end do
 
   end subroutine cice_solve_velocity_revised
-  
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  cice_air_stress
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 19th September 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_air_stress(domain)
+
+    use cice_mesh, only: &
+         cice_interpolate_cell_to_vertex
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    logical, pointer :: &
+         config_use_column_package, &
+         config_use_column_vertical_thermodynamics, &
+         config_use_air_stress
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocitySolverPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airStressVertexU, &
+         airStressVertexV, &
+         airStressCellU, &
+         airStressCellV
+
+    type(field1DReal), pointer :: &
+         airStressCellUField, &
+         airStressCellVField!, &
+
+    ! calculate the air stress
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+
+    if (.not. config_use_column_package .or. &
+         (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+       call constant_air_stress(domain)
+    endif
+
+    ! check for no air stress
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_air_stress", config_use_air_stress)
+    if (.not. config_use_air_stress) then
+       block => domain % blocklist
+       do while (associated(block))
+          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+          call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
+          call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
+          airStressCellU = 0.0_RKIND
+          airStressCellV = 0.0_RKIND
+          block => block % next
+       end do
+    endif ! .not. config_use_air_stress
+
+    ! halo exchange air stress
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
+    call MPAS_pool_get_field(velocitySolverPool, "airStressCellU", airStressCellUField)
+    call MPAS_pool_get_field(velocitySolverPool, "airStressCellV", airStressCellVField)
+    call MPAS_dmpar_exch_halo_field(airStressCellUField)
+    call MPAS_dmpar_exch_halo_field(airStressCellVField)
+
+    ! interpolate air stress
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressVertexV", airStressVertexV)
+
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            airStressVertexU, &
+            airStressCellU)
+
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            airStressVertexV, &
+            airStressCellV)
+
+       block => block % next
+    end do
+
+  end subroutine cice_air_stress
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  constant_air_stress
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -705,47 +874,70 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_air_stress(&
-       nPoints, &
-       airStressU, &
-       airStressV, &
-       uAirVelocity, &
-       vAirVelocity, &
-       airDensity, &
-       iceArea)
+  subroutine constant_air_stress(domain)
 
-    integer, intent(in) :: &
-         nPoints !< Input:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         airStressU, & !< Output: 
-         airStressV    !< Output: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uAirVelocity, & !< Input:
-         vAirVelocity, & !< Input:
-         airDensity, &   !< Input:
-         iceArea         !< Input:
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         atmosCouplingPool, &
+         tracersAggregatePool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airStressCellU, &
+         airStressCellV, &
+         uAirVelocity, &
+         vAirVelocity, &
+         airDensity, &
+         iceAreaCell
 
     real(kind=RKIND) :: &
          windSpeed
 
+    integer, pointer :: &
+         nCellsSolve
+
     integer :: &
-         iPoint
+         iCell
 
     real(kind=RKIND), parameter :: &
          airStressCoeff = 0.0012_RKIND 
 
-    do iPoint = 1, nPoints
+    block => domain % blocklist
+    do while (associated(block))
 
-       windSpeed = sqrt(uAirVelocity(iPoint)**2 + vAirVelocity(iPoint)**2)
+       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
-       airStressU(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * uAirVelocity(iPoint) * iceArea(iPoint)
-       airStressV(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * vAirVelocity(iPoint) * iceArea(iPoint)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
 
-    enddo ! iPoint
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
+       call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
 
-  end subroutine cice_air_stress
+       call MPAS_pool_get_array(atmosCouplingPool, "uAirVelocity", uAirVelocity)
+       call MPAS_pool_get_array(atmosCouplingPool, "vAirVelocity", vAirVelocity)
+       call MPAS_pool_get_array(atmosCouplingPool, "airDensity", airDensity)
+
+       call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+
+       do iCell = 1, nCellsSolve
+
+          windSpeed = sqrt(uAirVelocity(iCell)**2 + vAirVelocity(iCell)**2)
+
+          airStressCellU(iCell) = airDensity(iCell) * windSpeed * airStressCoeff * uAirVelocity(iCell) * iceAreaCell(iCell)
+          airStressCellV(iCell) = airDensity(iCell) * windSpeed * airStressCoeff * vAirVelocity(iCell) * iceAreaCell(iCell)
+
+       enddo ! iCell
+
+       block => block % next
+    end do
+
+  end subroutine constant_air_stress
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -759,53 +951,86 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_ocean_stress(&
-       nPoints, &
-       oceanStressU, &
-       oceanStressV, &
-       uOceanVelocity, &
-       vOceanVelocity, &
-       coriolisParameter, &
-       solvePoints)
+  subroutine cice_ocean_stress(domain)
 
-    integer, intent(in) :: &
-         nPoints
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressU, & !< Output: 
-         oceanStressV    !< Output: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uOceanVelocity, & !< Input:
-         vOceanVelocity, & !< Input:
-         coriolisParameter !< Input:
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         meshPool
 
-    integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         oceanStressU, &
+         oceanStressV, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
+         fVertex
+
+    integer, dimension(:), pointer :: &
+         solveVelocity
+
+    logical, pointer :: &
+         configUseOceanStress
+
+    integer, pointer :: &
+         nVerticesSolve
 
     integer :: &
-         iPoint
+         iVertex
 
-    do iPoint = 1, nPoints
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (solvePoints(iPoint) == 1) then
+       call MPAS_pool_get_config(block % configs, "config_use_ocean_stress", configUseOceanStress)
 
-          oceanStressU(iPoint) = uOceanVelocity(iPoint) * cosOceanTurningAngle - &
-                                 vOceanVelocity(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint))
-          oceanStressV(iPoint) = uOceanVelocity(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)) + &
-                                 vOceanVelocity(iPoint) * cosOceanTurningAngle
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-          !oceanStressU(iPoint) = 0.0_RKIND
-          !oceanStressV(iPoint) = 0.0_RKIND
-          
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+
+       if (configUseOceanStress) then
+
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+          call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+
+          call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+          do iVertex = 1, nVerticesSolve
+
+             if (solveVelocity(iVertex) == 1) then
+
+                oceanStressU(iVertex) = uOceanVelocityVertex(iVertex) * cosOceanTurningAngle - &
+                                        vOceanVelocityVertex(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,fVertex(iVertex))
+                oceanStressV(iVertex) = uOceanVelocityVertex(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,fVertex(iVertex)) + &
+                                        vOceanVelocityVertex(iVertex) * cosOceanTurningAngle
+
+             else
+
+                oceanStressU(iVertex) = 0.0_RKIND
+                oceanStressV(iVertex) = 0.0_RKIND
+
+             endif ! solvePoints
+
+          enddo ! iVertex
+
        else
 
-          oceanStressU(iPoint) = 0.0_RKIND
-          oceanStressV(iPoint) = 0.0_RKIND
+          ! no ocean stress
+          oceanStressU = 0.0_RKIND
+          oceanStressV = 0.0_RKIND
 
-       endif ! solvePoints
+       endif
 
-    enddo ! iPoint
+       block => block % next
+    end do
 
   end subroutine cice_ocean_stress
 
@@ -821,56 +1046,89 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_ocean_stress_coefficient(&
-       nPoints, &
-       oceanStressCoeff, &
-       uOceanVelocity, &
-       vOceanVelocity, &
-       uVelocity, &
-       vVelocity, &
-       iceArea, &
-       solvePoints) 
+  subroutine cice_ocean_stress_coefficient(domain)
 
-    integer, intent(in) :: &
-         nPoints !< Input:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressCoeff !< Output: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uOceanVelocity, & !< Input:
-         vOceanVelocity, & !< Input:
-         uVelocity, &      !< Input:
-         vVelocity, &      !< Input:
-         iceArea           !< Input:
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         icestatePool
 
-    integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         oceanStressCoeff, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
+         uVelocity, &
+         vVelocity, &
+         iceAreaVertex
+
+    integer, dimension(:), pointer :: &
+         solveVelocity
+
+    logical, pointer :: &
+         configUseOceanStress
 
     real(kind=RKIND), parameter :: &
          densityWater      = 1026.0_RKIND, &
          iceOceanDragCoeff = 0.00536_RKIND
 
+    integer, pointer :: &
+         nVerticesSolve
+
     integer :: &
-         iPoint
+         iVertex
 
-    do iPoint = 1, nPoints
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (solvePoints(iPoint) == 1) then
+       call MPAS_pool_get_config(block % configs, "config_use_ocean_stress", configUseOceanStress)
 
-          oceanStressCoeff(iPoint) = iceOceanDragCoeff * densityWater * iceArea(iPoint) * &
-                                     sqrt((uOceanVelocity(iPoint) - uVelocity(iPoint))**2 + &
-                                          (vOceanVelocity(iPoint) - vVelocity(iPoint))**2)
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-          !oceanStressCoeff(iPoint) = 0.0_RKIND
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
+
+       if (configUseOceanStress) then
+
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+          call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+          call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+
+          call MPAS_pool_get_array(icestatePool, "iceAreaVertex", iceAreaVertex)
+
+          do iVertex = 1, nVerticesSolve
+
+             if (solveVelocity(iVertex) == 1) then
+
+                oceanStressCoeff(iVertex) = iceOceanDragCoeff * densityWater * iceAreaVertex(iVertex) * &
+                     sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
+                          (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
+
+             else
+
+                oceanStressCoeff(iVertex) = 0.0_RKIND
+
+             endif
+
+          enddo ! iVertex
 
        else
 
-          oceanStressCoeff(iPoint) = 0.0_RKIND
+          ! no ocean stress
+          oceanStressCoeff = 0.0_RKIND
 
        endif
 
-    enddo ! iPoint
+       block => block % next
+    end do
 
   end subroutine cice_ocean_stress_coefficient
 
@@ -886,101 +1144,185 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_ocean_stress_final(&
-       mesh, &
-       boundary, &
-       nVerticesSolve, &
-       iceAreaVertex, &
-       coriolisParameter, &
-       uVelocity, &
-       vVelocity, &
-       uOceanVelocityVertex, &
-       vOceanVelocityVertex, &
-       oceanStressU, &
-       oceanStressV, &
-       oceanStressCoeff, &
-       oceanStressCellU, &
-       oceanStressCellV, &
-       solveVelocity)
+  subroutine cice_ocean_stress_final(domain)
 
     use cice_mesh, only: &
          cice_interpolate_vertex_to_cell
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh, &
-         boundary
+    type(domain_type), intent(inout) :: &
+         domain
 
-    integer, intent(in) :: &
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         boundaryPool, &
+         icestatePool, &
+         velocitySolverPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaVertex, &
+         fVertex, &
+         uVelocity, &
+         vVelocity, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
+         oceanStressU, &
+         oceanStressV, &
+         oceanStressCellU, &
+         oceanStressCellV, &
+         oceanStressCoeff
+
+    integer, dimension(:), pointer :: &
+         solveVelocity
+
+    type(field1DReal), pointer :: &
+         oceanStressUField, &
+         oceanStressVField
+
+    logical, pointer :: &
+         configUseOceanStress
+
+    integer, pointer :: &
          nVerticesSolve
-
-    real(kind=RKIND), dimension(:), intent(in) :: &    
-         iceAreaVertex, &        !< Input:
-         coriolisParameter, &    !< Input:
-         uVelocity, &            !< Input:
-         vVelocity, &            !< Input:
-         uOceanVelocityVertex, & !< Input:
-         vOceanVelocityVertex    !< Input:
-    
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         oceanStressU, &     !< Output: 
-         oceanStressV, &     !< Output:
-         oceanStressCellU, & !< Output:
-         oceanStressCellV, & !< Output: 
-         oceanStressCoeff    !< Output: 
-
-    integer, dimension(:), intent(in) :: &
-         solveVelocity !< Input:
-
-    real(kind=RKIND) :: &
-         oceanIceRelativeVelocity
-
-    real(kind=RKIND), dimension(:), allocatable :: &
-         oceanStressUVertexTmp, &
-         oceanStressVVertexTmp
 
     integer :: &
          iVertex
 
-    call cice_ocean_stress_coefficient(&
-         nVerticesSolve, &
-         oceanStressCoeff, &
-         uOceanVelocityVertex, &
-         vOceanVelocityVertex, &
-         uVelocity, &
-         vVelocity, &
-         iceAreaVertex, &
-         solveVelocity)
+    ! get ocean stress coefficient
+    call cice_ocean_stress_coefficient(domain)
 
-    allocate(oceanStressUVertexTmp(nVerticesSolve))
-    allocate(oceanStressVVertexTmp(nVerticesSolve))
+    ! use stress config
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_ocean_stress", configUseOceanStress)
 
-    do iVertex = 1, nVerticesSolve
+    ! get ocean stress on vertices
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (solveVelocity(iVertex) == 1) then
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-          oceanStressU(iVertex) = oceanStressCoeff(iVertex) * ((uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * cosOceanTurningAngle &
-                                                             - (vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iVertex)))
-          oceanStressV(iVertex) = oceanStressCoeff(iVertex) * ((vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * cosOceanTurningAngle &
-                                                             + (uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iVertex)))
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
 
-          oceanStressUVertexTmp(iVertex) = oceanStressU(iVertex) / iceAreaVertex(iVertex)
-          oceanStressVVertexTmp(iVertex) = oceanStressV(iVertex) / iceAreaVertex(iVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellU", oceanStressCellU)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellV", oceanStressCellV)
+
+       if (configUseOceanStress) then
+
+          call MPAS_pool_get_dimension(meshPool, "nVerticesSolve", nVerticesSolve)
+
+          call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+          call MPAS_pool_get_array(icestatePool, "iceAreaVertex", iceAreaVertex)
+
+          call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+          call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+
+          do iVertex = 1, nVerticesSolve
+
+             if (solveVelocity(iVertex) == 1) then
+
+                oceanStressU(iVertex) = oceanStressCoeff(iVertex) * ((uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * cosOceanTurningAngle &
+                                                                   - (vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,fVertex(iVertex)))
+                oceanStressV(iVertex) = oceanStressCoeff(iVertex) * ((vOceanVelocityVertex(iVertex) - vVelocity(iVertex)) * cosOceanTurningAngle &
+                                                                   + (uOceanVelocityVertex(iVertex) - uVelocity(iVertex)) * sinOceanTurningAngle * sign(1.0_RKIND,fVertex(iVertex)))
+
+                oceanStressU(iVertex) = oceanStressU(iVertex) / iceAreaVertex(iVertex)
+                oceanStressV(iVertex) = oceanStressV(iVertex) / iceAreaVertex(iVertex)
+
+             else
+
+                oceanStressU(iVertex) = 0.0_RKIND
+                oceanStressV(iVertex) = 0.0_RKIND
+
+             endif ! solveVelocity
+
+          enddo ! iVertex
 
        else
 
-          oceanStressU(iVertex) = 0.0_RKIND
-          oceanStressV(iVertex) = 0.0_RKIND
+          ! no ocean stress
+          oceanStressU = 0.0_RKIND
+          oceanStressV = 0.0_RKIND
 
-       endif ! solveVelocity
+       endif
 
-    enddo ! iVertex
+       block => block % next
+    end do
 
-    ! interpolate stress to cells
-    call cice_interpolate_vertex_to_cell(mesh, boundary, oceanStressCellU, oceanStressUVertexTmp)
-    call cice_interpolate_vertex_to_cell(mesh, boundary, oceanStressCellV, oceanStressVVertexTmp)
+    ! get ocean stress on cells
+    if (configUseOceanStress) then
 
-    deallocate(oceanStressUVertexTmp)
-    deallocate(oceanStressVVertexTmp)
+       ! halo exchange ocean stress
+       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_field(velocitySolverPool, "oceanStressU", oceanStressUField)
+       call MPAS_pool_get_field(velocitySolverPool, "oceanStressV", oceanStressVField)
+
+       call MPAS_dmpar_exch_halo_field(oceanStressUField)
+       call MPAS_dmpar_exch_halo_field(oceanStressVField)
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+
+          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+          call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
+          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+          call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+
+          call MPAS_pool_get_array(icestatePool, "iceAreaVertex", iceAreaVertex)
+
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellU", oceanStressCellU)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellV", oceanStressCellV)
+
+          ! interpolate ocean stress to cells
+          call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellU, oceanStressU)
+          call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, oceanStressCellV, oceanStressV)
+
+          ! multiply ocean stress back by ice area
+          do iVertex = 1, nVerticesSolve
+
+             if (solveVelocity(iVertex) == 1) then
+
+                oceanStressU(iVertex) = oceanStressU(iVertex) * iceAreaVertex(iVertex)
+                oceanStressV(iVertex) = oceanStressV(iVertex) * iceAreaVertex(iVertex)
+
+             endif ! solveVelocity
+
+          enddo ! iVertex
+
+          block => block % next
+       end do
+
+    else
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellU", oceanStressCellU)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellV", oceanStressCellV)
+
+          oceanStressCellU = 0.0_RKIND
+          oceanStressCellV = 0.0_RKIND
+
+          block => block % next
+       end do
+
+    endif ! configUseOceanStress
 
   end subroutine cice_ocean_stress_final
   
@@ -996,53 +1338,89 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_surface_tilt(&
-       nPoints, &
-       surfaceTiltForceU, &
-       surfaceTiltForceV, &
-       uOceanVelocity, &
-       vOceanVelocity, &
-       totalMass, &
-       coriolisParameter, &
-       solvePoints)
+  subroutine cice_surface_tilt(domain)
 
-    integer, intent(in) :: &
-         nPoints
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         surfaceTiltForceU, & !< Output: 
-         surfaceTiltForceV    !< Output: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uOceanVelocity, & !< Input:
-         vOceanVelocity, & !< Input:
-         totalMass, &      !< Input:
-         coriolisParameter !< Input:
+    type(MPAS_pool_type), pointer :: &
+         icestatePool, &
+         velocitySolverPool, &
+         meshPool
 
-    integer, dimension(:), intent(in) :: &
-         solvePoints !< Input:
+    real(kind=RKIND), dimension(:), pointer:: &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
+         totalMassVertex, &
+         fVertex
+
+    integer, dimension(:), pointer :: &
+         solveVelocity
+
+    logical, pointer :: &
+         configUseSurfaceTilt
+
+    integer, pointer :: &
+         nVerticesSolve
 
     integer :: &
-         iPoint
+         iVertex
 
-    do iPoint = 1, nPoints
+    block => domain % blocklist
+    do while (associated(block))
 
-       if (solvePoints(iPoint) == 1) then
+       call MPAS_pool_get_config(block % configs, "config_use_surface_tilt", configUseSurfaceTilt)
 
-          surfaceTiltForceU(iPoint) = -coriolisParameter(iPoint) * totalMass(iPoint) * vOceanVelocity(iPoint)
-          surfaceTiltForceV(iPoint) =  coriolisParameter(iPoint) * totalMass(iPoint) * uOceanVelocity(iPoint)
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-          !surfaceTiltForceU(iPoint) = 0.0_RKIND
-          !surfaceTiltForceV(iPoint) = 0.0_RKIND
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+
+       if (configUseSurfaceTilt) then
+
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+          call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+
+          call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
+
+          call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+          do iVertex = 1, nVerticesSolve
+
+             if (solveVelocity(iVertex) == 1) then
+
+                surfaceTiltForceU(iVertex) = -fVertex(iVertex) * totalMassVertex(iVertex) * vOceanVelocityVertex(iVertex)
+                surfaceTiltForceV(iVertex) =  fVertex(iVertex) * totalMassVertex(iVertex) * uOceanVelocityVertex(iVertex)
+
+             else
+
+                surfaceTiltForceU(iVertex) = 0.0_RKIND
+                surfaceTiltForceV(iVertex) = 0.0_RKIND
+
+             endif ! solveVelocity
+
+          enddo ! iVertex
 
        else
 
-          surfaceTiltForceU(iPoint) = 0.0_RKIND
-          surfaceTiltForceV(iPoint) = 0.0_RKIND
+          ! no surface tilt
+          surfaceTiltForceU = 0.0_RKIND
+          surfaceTiltForceV = 0.0_RKIND
 
-       endif ! solvePoints
+       endif
 
-    enddo ! iPoint
+       block => block % next
+    end do
 
   end subroutine cice_surface_tilt
 
@@ -1058,30 +1436,51 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_coriolis_force_coefficient(&
-       nPoints, &
-       totalMassCoriolisParameter, &
-       totalMass, &
-       coriolisParameter)
+  subroutine cice_coriolis_force_coefficient(domain)
 
-    integer, intent(in) :: &
-         nPoints
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         totalMassCoriolisParameter !< Output: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         totalMass, &      !< Input:
-         coriolisParameter !< Input:
+    type(MPAS_pool_type), pointer :: &
+         icestatePool, &
+         velocitySolverPool, &
+         meshPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         totalMassVertexfVertex, &
+         totalMassVertex, &
+         fVertex
+
+    integer, pointer :: &
+         nVerticesSolve
 
     integer :: &
-         iPoint
+         iVertex
 
-    do iPoint = 1, nPoints
+    block => domain % blocklist
+    do while (associated(block))
 
-       totalMassCoriolisParameter(iPoint) = totalMass(iPoint) * coriolisParameter(iPoint)
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
-    enddo ! iPoint
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "totalMassVertexfVertex", totalMassVertexfVertex)
+       call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+       do iVertex = 1, nVerticesSolve
+
+          totalMassVertexfVertex(iVertex) = totalMassVertex(iVertex) * fVertex(iVertex)
+
+       enddo ! iVertex
+
+       block => block % next
+    end do
 
   end subroutine cice_coriolis_force_coefficient
 

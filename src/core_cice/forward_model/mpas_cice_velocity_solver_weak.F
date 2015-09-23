@@ -110,49 +110,26 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_internal_stress_weak(&
-       mesh, &
-       velocity_weak, &
-       uVelocity, &
-       vVelocity, &
-       icePressure, &
-       replacementPressure, &
-       dtElastic, &
-       dt, &
-       evpDamping, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       solveStress, &
-       solveVelocity)!{{{
+  subroutine cice_internal_stress_weak(domain)!{{{
 
-    type (MPAS_pool_type), pointer :: &
-         mesh, & !< Input/Output: 
-         velocity_weak !< Input/Output: 
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input: 
-         vVelocity    !< Input: 
+    type(block_type), pointer :: &
+         block
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         icePressure, &      !< Input/Output: 
-         replacementPressure !< Input/Output: 
-
-    real(kind=RKIND), intent(in) :: &
-         dtElastic, & !< Input: 
-         dt           !< Input: 
-         
-    logical, intent(in) :: &
-         evpDamping !< Input: 
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
-
-    integer, dimension(:), intent(in) :: &
-         solveStress, & !< Input: 
-         solveVelocity  !< Input: 
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityWeakPool, &
+         velocitySolverPool
 
     real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         icePressure, &
+         replacementPressure, &
+         stressDivergenceU, &
+         stressDivergenceV, &
          strain11, &
          strain22, &
          strain12, &
@@ -162,57 +139,91 @@ contains
          latCellRotated, &
          latVertexRotated
 
+    real(kind=RKIND), pointer :: &
+         elasticTimeStep, &
+         dt
+
+    logical, pointer :: &
+         revisedEVP
+
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
          normalVectorTriangle
 
-    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
-    call MPAS_pool_get_array(velocity_weak, "strain11", strain11)
-    call MPAS_pool_get_array(velocity_weak, "strain22", strain22)
-    call MPAS_pool_get_array(velocity_weak, "strain12", strain12)
-    call MPAS_pool_get_array(velocity_weak, "stress11", stress11)
-    call MPAS_pool_get_array(velocity_weak, "stress22", stress22)
-    call MPAS_pool_get_array(velocity_weak, "stress12", stress12)
+    block => domain % blocklist
+    do while (associated(block))
 
-    call cice_strain_tensor_weak(&
-         mesh, &
-         strain11, &
-         strain22, &
-         strain12, &
-         uVelocity, &
-         vVelocity, &
-         normalVectorPolygon, &
-         latCellRotated, &
-         solveStress)
-    
-    call cice_stress_tensor_weak(&
-         mesh, &
-         stress11, &
-         stress22, &
-         stress12, &
-         strain11, &
-         strain22, &
-         strain12, &
-         icePressure, &
-         replacementPressure, &
-         solveStress, &       
-         dtElastic, &
-         dt, &
-         evpDamping)
+       call MPAS_pool_get_config(block % configs, "config_dt", dt)
+       call MPAS_pool_get_config(block % configs, "config_revised_evp", revisedEVP)
 
-    call cice_stress_divergence_weak(&
-         mesh, &
-         stressDivergenceU, &
-         stressDivergenceV, &
-         stress11, &
-         stress22, &
-         stress12, &
-         normalVectorTriangle, &
-         latVertexRotated, &
-         solveVelocity)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
+       call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
+       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
+       call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
+
+       call cice_strain_tensor_weak(&
+            meshPool, &
+            strain11, &
+            strain22, &
+            strain12, &
+            uVelocity, &
+            vVelocity, &
+            normalVectorPolygon, &
+            latCellRotated, &
+            solveStress)
+
+       call cice_stress_tensor_weak(&
+            meshPool, &
+            stress11, &
+            stress22, &
+            stress12, &
+            strain11, &
+            strain22, &
+            strain12, &
+            icePressure, &
+            replacementPressure, &
+            solveStress, &
+            elasticTimeStep, &
+            dt, &
+            revisedEVP)
+
+       call cice_stress_divergence_weak(&
+            meshPool, &
+            stressDivergenceU, &
+            stressDivergenceV, &
+            stress11, &
+            stress22, &
+            stress12, &
+            normalVectorTriangle, &
+            latVertexRotated, &
+            solveVelocity)
+
+       block => block % next
+    end do
 
   end subroutine cice_internal_stress_weak!}}}
 

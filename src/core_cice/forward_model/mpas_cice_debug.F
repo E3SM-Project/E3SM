@@ -40,7 +40,8 @@ module cice_debug
        cice_debug_write_out_fields, &
        cice_writeout_configs, &
        cice_debug_write_out_field, &
-       cice_debug_rotate_winds
+       cice_debug_rotate_winds, &
+       cice_debug_processor_number
 
   integer, private :: &
        iObject = 2, &
@@ -3563,6 +3564,46 @@ contains
 
   end subroutine cice_debug_rotate_winds
  
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_processor_number
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_processor_number(domain)
+
+    type(domain_type) :: domain
+
+    real(kind=RKIND) :: proc_id
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: diagnosticsPool
+
+    real(kind=RKIND), dimension(:), pointer :: processorNumber
+
+    proc_id = real(domain % dminfo % my_proc_id, RKIND)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+
+       call MPAS_pool_get_array(diagnosticsPool, "processorNumber", processorNumber)
+
+       processorNumber = proc_id
+
+       block => block % next
+    enddo
+
+  end subroutine cice_debug_processor_number
+
 !-----------------------------------------------------------------------
 
 end module cice_debug

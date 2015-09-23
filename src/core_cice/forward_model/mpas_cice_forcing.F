@@ -63,11 +63,20 @@ contains
 
     type (domain_type) :: domain
 
-    ! init the atmospheric forcing
-    call init_atmospheric_forcing(domain)
+    logical, pointer :: &
+         config_use_forcing
 
-    ! init the ocean forcing
-    call init_oceanic_forcing(domain)
+    call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+
+    if (config_use_forcing) then
+
+       ! init the atmospheric forcing
+       call init_atmospheric_forcing(domain)
+
+       ! init the ocean forcing
+       call init_oceanic_forcing(domain)
+
+    endif
 
   end subroutine cice_forcing_init
 
@@ -297,16 +306,25 @@ contains
     logical, intent(in) :: &
          firstTimeStep
 
-    call atmospheric_forcing(&
-         streamManager, &
-         domain, &
-         simulationClock)
+    logical, pointer :: &
+         config_use_forcing
 
-    call oceanic_forcing(&
-         streamManager, &
-         domain, &
-         simulationClock, &
-         firstTimeStep)
+    call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+
+    if (config_use_forcing) then
+
+       call atmospheric_forcing(&
+            streamManager, &
+            domain, &
+            simulationClock)
+
+       call oceanic_forcing(&
+            streamManager, &
+            domain, &
+            simulationClock, &
+            firstTimeStep)
+
+    endif
 
   end subroutine cice_forcing_get
 
@@ -435,7 +453,7 @@ contains
          currentForcingTime
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     integer :: &
          iCell
@@ -446,7 +464,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
     call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
     call MPAS_pool_get_array(mesh, "lonCell", lonCell)    
     call MPAS_pool_get_array(mesh, "latCell", latCell)   
@@ -478,7 +496,7 @@ contains
          "cice_atmospheric_forcing_sixhrly", &
          currentForcingTime)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        ! limit air temperature values where ice is present
        if (iceAreaCell(iCell) > 0.1_RKIND) then
@@ -501,7 +519,7 @@ contains
          airSpecificHumidity, &
          currentForcingTime)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        shortwaveVisibleDirectDown(iCell)  = shortwaveDown(iCell) * fracShortwaveVisibleDirect
        shortwaveVisibleDiffuseDown(iCell) = shortwaveDown(iCell) * fracShortwaveVisibleDiffuse
@@ -535,7 +553,7 @@ contains
          airSpecificHumidity, &
          airTemperature)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        ! precipitation
        call precipitation(&
@@ -593,7 +611,7 @@ contains
          config_rotate_cartesian_grid
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     integer :: &
          iCell
@@ -605,7 +623,7 @@ contains
     call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
     call MPAS_pool_get_array(mesh, "latCell", latCell)
     call MPAS_pool_get_array(mesh, "lonCell", lonCell)
@@ -623,7 +641,7 @@ contains
     call MPAS_pool_get_array(atmosForcing, "windSpeed", windSpeed)
     call MPAS_pool_get_array(atmosForcing, "shortwaveDown", shortwaveDown)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        ! wind speed
        windSpeed(iCell) = sqrt(uAirVelocity(iCell)**2 + vAirVelocity(iCell)**2)
@@ -692,7 +710,7 @@ contains
          airStressCoefficient
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     integer :: &
          iCell
@@ -701,7 +719,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
     call MPAS_pool_get_array(atmosCoupling, "airDensity", airDensity)
     call MPAS_pool_get_array(atmosCoupling, "uAirVelocity", uAirVelocity)
@@ -713,7 +731,7 @@ contains
     call MPAS_pool_get_array(atmosForcing, "uAirStress", uAirStress)
     call MPAS_pool_get_array(atmosForcing, "vAirStress", vAirStress)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        ! transfer coefficients
        sensibleTransferCoefficient(iCell) = 1.20e-3_RKIND * ciceAirSpecificHeat       * airDensity(iCell) * windSpeed(iCell)
@@ -1428,6 +1446,7 @@ contains
          sphere_radius
 
     integer, pointer :: &
+         nCellsSolve, &
          nCells
 
     integer :: &
@@ -1440,6 +1459,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
@@ -1447,7 +1467,7 @@ contains
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
-    do iCell = 1, nCells
+    do iCell = 1, nCellsSolve
 
        ! ensure physical realism
        seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
@@ -1461,7 +1481,7 @@ contains
     ! only update sea surface temperature on first non-restart timestep
     if (firstTimeStep .and. .not. config_do_restart) then
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsSolve
 
           ! sea surface temperature
           seaSurfaceTemperature(iCell) = max(seaSurfaceTemperature(iCell), seaFreezingTemperature(iCell))
@@ -1484,6 +1504,7 @@ contains
 
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
+    ! make rotated ocean velocity available across all cells
     do iCell = 1, nCells
 
        call cice_latlon_vector_rotation_forward(&
@@ -1691,10 +1712,19 @@ contains
     character(len=strKIND), pointer :: &
          config_forcing_restart_file
 
-    call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
+    logical, pointer :: &
+         config_use_forcing
 
-    call MPAS_forcing_write_restart_times(ciceForcingGroups, config_forcing_restart_file)
+    call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+
+    if (config_use_forcing) then
+
+       call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
+
+       call MPAS_forcing_write_restart_times(ciceForcingGroups, config_forcing_restart_file)
     
+    endif
+
   end subroutine cice_forcing_write_restart
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
