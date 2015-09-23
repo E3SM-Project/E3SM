@@ -71,11 +71,9 @@ contains
 
     logical, pointer :: &
          config_use_advection, &
-         config_use_forcing, &
          config_do_restart
 
     call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
-    call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     block => domain % blocklist
@@ -92,13 +90,13 @@ contains
 
     ! init coupler fluxes
     call initialize_coupler_fields(domain)
- 
+
     ! initialize forcing
     call cice_forcing_init(domain)
 
     ! init dynamics
     call cice_init_velocity_solver(domain)
-    
+
     ! init advection
     if (config_use_advection) then
        block => domain % blocklist
@@ -1619,11 +1617,20 @@ contains
     type(field3DReal), pointer :: &
          normalVectorTriangleField
 
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_weak", velocity_weak_fields)
+    logical, pointer :: &
+         pkgWeakActive
 
-    call MPAS_pool_get_field(velocity_weak_fields, "normalVectorTriangle", normalVectorTriangleField)
+    call MPAS_pool_get_package(domain % blocklist % packages, "pkgWeakActive", pkgWeakActive)
 
-    call MPAS_dmpar_exch_halo_field(normalVectorTriangleField)
+    if (pkgWeakActive) then
+
+       call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_weak", velocity_weak_fields)
+
+       call MPAS_pool_get_field(velocity_weak_fields, "normalVectorTriangle", normalVectorTriangleField)
+
+       call MPAS_dmpar_exch_halo_field(normalVectorTriangleField)
+
+    endif
 
   end subroutine initial_halo_exchanges
 

@@ -88,6 +88,9 @@
 		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="variational" possible_values="'weak' or 'variational'"/>
 		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress"  possible_values="'wachspress' or 'pwl'"/>
 		<nml_option name="config_revised_evp"                 type="logical"	   default_value="false"       possible_values="true or false"/>		
+		<nml_option name="config_use_air_stress"                 type="logical"	   default_value="true"       possible_values="true or false"/>
+		<nml_option name="config_use_ocean_stress"                 type="logical"	   default_value="true"       possible_values="true or false"/>
+		<nml_option name="config_use_surface_tilt"                 type="logical"	   default_value="true"       possible_values="true or false"/>
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
@@ -292,7 +295,6 @@
 	    <var name="airStressVertexV"/>
 	    <var name="airStressCellU"/>
 	    <var name="airStressCellV"/>
-	    <var name="blockIDout"/>
 	  </stream>
 
 	  <stream name="output" 				

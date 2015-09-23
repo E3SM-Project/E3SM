@@ -111,47 +111,37 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_internal_stress_variational(&
-       mesh, &
-       velocity_variational, &
-       uVelocity, &
-       vVelocity, &
-       icePressure, &
-       replacementPressure, &
-       dtElastic, &
-       dt, &
-       revisedEVP, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       solveStress, &
-       solveVelocity)!{{{
+  subroutine cice_internal_stress_variational(domain)!{{{
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
 
     type (MPAS_pool_type), pointer :: &
-         mesh, &   !< Input/Output: 
-         velocity_variational !< Input/Output: 
+         meshPool, &
+         velocityVariationalPool, &
+         velocitySolverPool
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, & !< Input:
-         vVelocity    !< Input: 
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         icePressure, &
+         replacementPressure, &
+         stressDivergenceU, &
+         stressDivergenceV
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         icePressure, &      !< Input/Output: 
-         replacementPressure !< Input/Output: 
+    real(kind=RKIND), pointer :: &
+         elasticTimeStep, &
+         dt
 
-    real(kind=RKIND), intent(in) :: &
-         dtElastic, & !< Input: 
-         dt           !< Input: 
-         
-    logical, intent(in) :: &
-         revisedEVP !< Input: 
+    logical, pointer :: &
+         revisedEVP
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output: 
-         stressDivergenceV    !< Output: 
-
-    integer, dimension(:), intent(in) :: &
-         solveStress, & !< Input: 
-         solveVelocity  !< Input: 
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity
 
     integer, dimension(:,:), pointer :: &
          cellVerticesAtVertex
@@ -174,61 +164,84 @@ contains
          basisIntegralsV, &
          basisIntegralsMetric
 
-    call MPAS_pool_get_array(velocity_variational, "strain11", strain11)
-    call MPAS_pool_get_array(velocity_variational, "strain22", strain22)
-    call MPAS_pool_get_array(velocity_variational, "strain12", strain12)
-    call MPAS_pool_get_array(velocity_variational, "stress11", stress11)
-    call MPAS_pool_get_array(velocity_variational, "stress22", stress22)
-    call MPAS_pool_get_array(velocity_variational, "stress12", stress12)
-    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
-    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
-    call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
-    call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
-    call MPAS_pool_get_array(velocity_variational, "basisIntegralsV", basisIntegralsV)
-    call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_config(block % configs, "config_dt", dt)
+       call MPAS_pool_get_config(block % configs, "config_revised_evp", revisedEVP)
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
+       call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
+       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+
+       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
+       call MPAS_pool_get_array(velocityVariationalPool, "cellVerticesAtVertex", cellVerticesAtVertex)
+       call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientU", basisGradientU)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientV", basisGradientV)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsU", basisIntegralsU)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
+
+       call cice_strain_tensor_variational(&
+            meshPool, &
+            strain11, &
+            strain22, &
+            strain12, &
+            uVelocity, &
+            vVelocity, &
+            basisGradientU, &
+            basisGradientV, &
+            tanLatVertexRotatedOverRadius, &
+            solveStress)
+
+       call cice_stress_tensor_variational(&
+            meshPool, &
+            stress11, &
+            stress22, &
+            stress12, &
+            strain11, &
+            strain22, &
+            strain12, &
+            icePressure, &
+            replacementPressure, &
+            solveStress, &
+            elasticTimeStep, &
+            dt, &
+            revisedEVP)
+
+       call cice_stress_divergence_variational(&
+            meshPool, &
+            stressDivergenceU, &
+            stressDivergenceV, &
+            stress11, &
+            stress22, &
+            stress12, &
+            basisIntegralsU, &
+            basisIntegralsV, &
+            basisIntegralsMetric, &
+            tanLatVertexRotatedOverRadius, &
+            cellVerticesAtVertex, &
+            solveVelocity)
     
-    call cice_strain_tensor_variational(&
-         mesh, &
-         strain11, &
-         strain22, &
-         strain12, &
-         uVelocity, &
-         vVelocity, &
-         basisGradientU, &
-         basisGradientV, &
-         tanLatVertexRotatedOverRadius, &
-         solveStress)
-    
-    call cice_stress_tensor_variational(&
-         mesh, &
-         stress11, &
-         stress22, &
-         stress12, &
-         strain11, & 
-         strain22, &
-         strain12, &
-         icePressure, &
-         replacementPressure, &
-         solveStress, &
-         dtElastic, &
-         dt, &
-         revisedEVP)
-    
-    call cice_stress_divergence_variational(&
-         mesh, &
-         stressDivergenceU, &
-         stressDivergenceV, &
-         stress11, &
-         stress22, &
-         stress12, &
-         basisIntegralsU, &
-         basisIntegralsV, &
-         basisIntegralsMetric, &
-         tanLatVertexRotatedOverRadius, &
-         cellVerticesAtVertex, &
-         solveVelocity)
-    
+       block => block % next
+    end do
+
   end subroutine cice_internal_stress_variational!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

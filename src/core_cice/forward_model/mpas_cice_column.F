@@ -2519,7 +2519,7 @@ contains
          iceAgeTendencyTransport
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
     
     integer :: &
          iCell
@@ -2547,7 +2547,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
        call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
 
-       call MPAS_pool_get_dimension(tracers_aggregate, "nCells", nCells)
+       call MPAS_pool_get_dimension(tracers_aggregate, "nCellsSolve", nCellsSolve)
 
        call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
        call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
@@ -2557,7 +2557,7 @@ contains
        call MPAS_pool_get_array(diagnostics, "iceVolumeTendencyTransport", iceVolumeTendencyTransport)
        call MPAS_pool_get_array(diagnostics, "iceAgeTendencyTransport", iceAgeTendencyTransport)
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsSolve
 
           iceAreaTendencyTransport(iCell) = &
                (iceAreaCell(iCell) - iceAreaTendencyTransport(iCell)) / dt
@@ -2821,7 +2821,7 @@ contains
          config_dt
 
     integer, pointer :: &
-         nCells, &
+         nCellsSolve, &
          nCategories
 
     integer :: &
@@ -2846,7 +2846,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ponds", ponds)
        call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxes)
 
-       call MPAS_pool_get_dimension(tracers, "nCells", nCells)
+       call MPAS_pool_get_dimension(tracers, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(tracers, "nCategories", nCategories)
 
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
@@ -2886,7 +2886,7 @@ contains
 
        call MPAS_pool_get_array(oceanFluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsSolve
 
           !-------------------------------------------------------------------
           ! aggregate albedos
@@ -3029,7 +3029,7 @@ contains
          iceAreaInverse
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     integer :: &
          iCell
@@ -3045,7 +3045,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
        call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxes)
 
-       call MPAS_pool_get_dimension(tracersAggregate, "nCells", nCells)
+       call MPAS_pool_get_dimension(tracersAggregate, "nCellsSolve", nCellsSolve)
 
        call MPAS_pool_get_array(tracersAggregate, "iceAreaCell", iceAreaCell)
 
@@ -3075,7 +3075,7 @@ contains
        call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsSolve
 
           if (iceAreaCell(iCell) > 0.0_RKIND) then
 
@@ -3212,7 +3212,7 @@ contains
          iCell
 
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
@@ -3227,7 +3227,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxes)
        call MPAS_pool_get_subpool(block % structs, "ocean_atmosphere", oceanAtmosphere)
 
-       call MPAS_pool_get_dimension(oceanCoupling, "nCells", nCells)
+       call MPAS_pool_get_dimension(oceanCoupling, "nCellsSolve", nCellsSolve)
 
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
@@ -3270,7 +3270,7 @@ contains
        call MPAS_pool_get_array(oceanAtmosphere, "latentHeatFluxOcean", latentHeatFluxOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "evaporativeHeatFluxOcean", evaporativeHeatFluxOcean)
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsSolve
 
           call colpkg_atm_boundary(&
                'ocn', &
