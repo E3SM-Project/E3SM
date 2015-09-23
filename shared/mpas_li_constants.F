@@ -22,7 +22,7 @@ module li_constants
    use mpas_derived_types
    use mpas_kind_types
 
-#ifdef MPAS_CESM
+#ifdef MPAS_ESM_SHR_CONST
    use shr_const_mod, only: &
           cp_ice => SHR_CONST_CPICE,&
           latent_heat_ice => SHR_CONST_LATICE,&
