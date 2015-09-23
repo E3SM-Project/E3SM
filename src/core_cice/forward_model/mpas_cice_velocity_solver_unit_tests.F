@@ -119,7 +119,7 @@ contains
     use cice_constants, only: &
          ciceRadiansToDegrees
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
     
     type(domain_type) :: &
@@ -1024,7 +1024,7 @@ contains
     use cice_constants, only: &
          ciceRadiansToDegrees
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
 
     type(domain_type), intent(inout) :: &
@@ -1915,7 +1915,7 @@ contains
   subroutine cice_constitutive_relationship_unit_test(&
        domain)!{{{
 
-    use cice_velocity_solver_shared, only: &
+    use cice_velocity_solver_constitutive_relation, only: &
          cice_evp_constitutive_relation, &
          cice_evp_constitutive_relation_revised, &         
          cice_init_evp

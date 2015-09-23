@@ -81,8 +81,8 @@ contains
   subroutine rescale_mesh(&
        domain)!{{{
 
-    use mpas_constants, only: &
-         a ! This is the excellently named Earth Radius - couldn't you tell?
+    use cice_constants, only: &
+         earthRadius
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -154,7 +154,7 @@ contains
           call mpas_pool_get_config(meshPool, 'sphere_radius', oldRadius)
 
           ! get the new radius
-          newRadius = a
+          newRadius = earthRadius
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -238,7 +238,7 @@ contains
           end do
 
           ! reset sphere_radius
-          oldRadius = a
+          oldRadius = earthRadius
 
        endif
 
@@ -262,7 +262,7 @@ contains
   subroutine coriolis_parameter(&
        domain)!{{{
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          omega
 
     type (domain_type), intent(inout) :: &
@@ -3226,7 +3226,7 @@ contains
 
   subroutine cice_test_mesh_conversions(domain)
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
 
     type(domain_type) :: domain

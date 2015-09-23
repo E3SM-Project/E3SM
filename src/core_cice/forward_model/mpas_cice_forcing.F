@@ -417,7 +417,8 @@ contains
     use cice_constants, only: &
          ciceFreshWaterFreezingPoint
 
-    use mpas_constants, only: pii
+    use cice_constants, only: &
+         pii
 
     type (block_type), pointer :: block
 
@@ -1032,7 +1033,7 @@ contains
          ciceDegreesToRadians, &
          ciceSecondsPerDay
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
 
     real(kind=RKIND), dimension(:), intent(out) :: &

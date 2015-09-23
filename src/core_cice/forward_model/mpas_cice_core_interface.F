@@ -10,7 +10,6 @@ module cice_core_interface
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_constants
    use mpas_io_units
    use cice_core
    use cice_analysis_driver

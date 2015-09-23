@@ -44,9 +44,6 @@ contains
          cice_stress_divergence_operator_unit_test, &
          cice_constitutive_relationship_unit_test
 
-    use cice_therm_zerolayer, only: &
-         cice_zero_layer_thermo_semtner_unit_test
-
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
 
@@ -66,8 +63,6 @@ contains
        call cice_stress_divergence_operator_unit_test(domain, trim(config_unit_test_subtype))
     case ("constitutive relationship")
        call cice_constitutive_relationship_unit_test(domain)
-    case ("semtner 1d thermo test")
-       call cice_zero_layer_thermo_semtner_unit_test()
     case default
        write(*,*) "Unit test unknown!"
        write(*,*) "config_unit_test_type:", trim(config_unit_test_type)

@@ -1644,7 +1644,7 @@ contains
 
   subroutine cice_plot_spherical_latlon(mesh, array, filename, tag)!{{{
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
 
     type(MPAS_pool_type), pointer, intent(in) :: &
@@ -2755,7 +2755,8 @@ contains
 
   subroutine cice_debug_write_out_field(domain, poolname, fieldname, cicename)
 
-    use mpas_constants
+    use cice_constants, only: &
+         pii
 
     type(domain_type) :: domain
 

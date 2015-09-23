@@ -383,7 +383,7 @@ contains
        dt, &
        revisedEVP)!{{{
     
-    use cice_velocity_solver_shared, only: &
+    use cice_velocity_solver_constitutive_relation, only: &
          cice_evp_constitutive_relation, &
          cice_evp_constitutive_relation_revised
 
@@ -674,7 +674,7 @@ contains
 
   subroutine cice_final_divergence_shear_variational(block)
 
-    use cice_velocity_solver_shared, only: &
+    use cice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
     
     type(block_type), intent(inout) :: &

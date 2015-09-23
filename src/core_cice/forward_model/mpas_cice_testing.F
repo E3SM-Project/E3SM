@@ -58,7 +58,7 @@ contains
        vVelocity, &
        interiorVertex)
     
-    use mpas_constants, only: omega
+    use cice_constants, only: omega
     use cice_constants, only: ciceDegreesToRadians
     use cice_debug, only: cice_init_ijpop_from_ivertex
 
@@ -362,7 +362,7 @@ contains
        yin, &
        time)
 
-    use mpas_constants, only: pii
+    use cice_constants, only: pii
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uAirVelocity, &
