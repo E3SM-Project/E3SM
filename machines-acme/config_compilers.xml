@@ -559,7 +559,7 @@ for mct, etc.
   <MPIFC> ftn </MPIFC>
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_08242015/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="mac">
