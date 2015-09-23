@@ -1427,7 +1427,7 @@ contains
        integer :: iEdge
        integer :: xInd1, xInd2, yInd1, yInd2
 
-       real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge, angleEdge, surfaceWindStress
+       real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge, angleEdge, surfaceStress
 
        integer, pointer :: nEdgesSolve, nEdges
 
@@ -1451,7 +1451,7 @@ contains
           call mpas_pool_get_array(meshPool, 'lonEdge', lonEdge)
           call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
 
-          call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
+          call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
 
           if (config_global_ocean_windstress_method .eq. "nearest_neighbor") then
              do iEdge = 1, nEdgesSolve
@@ -1482,7 +1482,7 @@ contains
                 zonalWind = zonalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
                 meridionalWind = meridionalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
 
-                surfaceWindStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
+                surfaceStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
              end do
 
           elseif (config_global_ocean_windstress_method .eq. "bilinear_interpolation") then
@@ -1565,7 +1565,7 @@ contains
                      + coef12* meridionalWindIC % array(xInd1, yInd2) &
                      + coef22* meridionalWindIC % array(xInd2, yInd2) )
 
-                surfaceWindStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
+                surfaceStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
 
              end do
 

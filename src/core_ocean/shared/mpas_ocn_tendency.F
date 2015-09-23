@@ -28,6 +28,7 @@ module ocn_tendency
    use ocn_constants
 
    use ocn_surface_bulk_forcing
+   use ocn_surface_land_ice_fluxes
 
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
@@ -135,13 +136,19 @@ contains
       ! height tendency: start accumulating tendency terms
       !
       tend_layerThickness = 0.0
+      surfaceThicknessFlux(:) = 0.0_RKIND
 
       if(config_disable_thick_all_tend) return
 
-      ! Build windstress array from bulk
+      ! Build suface mass flux array from bulk
       call mpas_timer_start("bulk_thick", .false.)
       call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
       call mpas_timer_stop("bulk_thick")
+
+      ! Build suface thickness flux array from land ice
+      call mpas_timer_start("land_ice_thick", .false.)
+      call ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
+      call mpas_timer_stop("land_ice_thick")
 
       !
       ! height tendency: horizontal advection term -\nabla\cdot ( hu)
@@ -198,7 +205,7 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
+      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude, surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, normalVelocity, tangentialVelocity, density, potentialDensity, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
@@ -248,23 +255,31 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
       call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
                   
-      call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
-      call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
+      call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
       !
       ! velocity tendency: start accumulating tendency terms
       !
       tend_normalVelocity(:,:) = 0.0
+      surfaceStress(:) = 0.0_RKIND
+      surfaceStressMagnitude(:) = 0.0_RKIND
 
       if(config_disable_vel_all_tend) return
 
-      ! Build bulk forcing windstress
+      ! Build bulk forcing suface stress
       call mpas_timer_start("bulk_ws", .false.)
-      call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceWindStress, surfaceWindStressMagnitude, err)
+      call ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)
       call mpas_timer_stop("bulk_ws")
+
+      ! Add top drag to suface stress
+      call mpas_timer_start("top_drag", .false.)
+      call ocn_surface_land_ice_fluxes_vel(meshPool, diagnosticsPool, surfaceStress, surfaceStressMagnitude, err)
+      call mpas_timer_stop("top_drag")
 
       !
       ! velocity tendency: nonlinear Coriolis term and grad of kinetic energy
@@ -315,7 +330,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
-      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceWindStress, layerThicknessEdge, tend_normalVelocity, err)
+      call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
       !
@@ -547,11 +562,11 @@ contains
                      call mpas_timer_stop("surface_restoring_" // trim(groupItr % memberName))
                  endif
 
-               ! land-ice / ocean interface flux
-               ! this is a flux at the top ocean surface -- so these fluxes should be added into tracerGroupSurfaceFlux
-               ! if (put correct logic here, only 'active' when coupling is turned on)
-               !    call ocn_tracer_landIce_ocean_coupling(tracerGroup, tracerGroupSurfaceFlux)
-               ! endif
+               ! tracer fluxes at the land-ice / ocean interface
+               ! this is a flux at the top ocean surface -- so these fluxes are added into tracerGroupSurfaceFlux
+               call mpas_timer_start("land_ice_" // trim(groupItr % memberName), .false.)
+               call ocn_surface_land_ice_fluxes_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroupSurfaceFlux, err)
+               call mpas_timer_stop("land_ice_" // trim(groupItr % memberName))
 
                !
                ! other additions to tracerGroupSurfaceFlux should be added here

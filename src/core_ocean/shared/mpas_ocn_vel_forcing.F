@@ -25,7 +25,7 @@ module ocn_vel_forcing
    use ocn_constants
    use ocn_forcing
 
-   use ocn_vel_forcing_windstress
+   use ocn_vel_forcing_surface_stress
    use ocn_vel_forcing_rayleigh
 
    implicit none
@@ -75,7 +75,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, &
+                                   surfaceStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,7 +88,8 @@ contains
          normalVelocity    !< Input: Normal velocity at edges
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceWindStress     !< Input: Wind stress at surface of normal velocity at edges
+         surfaceFluxAttenuationCoefficient, & !< Input: attenuation coefficient for surface fluxes at cell centers
+         surfaceStress     !< Input: surface stress at edges
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
@@ -128,7 +130,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      call ocn_vel_forcing_windstress_tend(meshPool, surfaceWindStress, layerThicknessEdge, tend, err1)
+      call ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, &
+                                               surfaceStress, layerThicknessEdge, tend, err1)
       call ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err2)
 
       err = ior(err1, err2)
@@ -166,7 +169,7 @@ contains
 
       integer :: err1, err2
 
-      call ocn_vel_forcing_windstress_init(err1)
+      call ocn_vel_forcing_surface_stress_init(err1)
       call ocn_vel_forcing_rayleigh_init(err2)
 
       err = ior(err1, err2)

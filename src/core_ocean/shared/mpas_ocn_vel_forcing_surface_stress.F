@@ -7,18 +7,18 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_vel_forcing_windstress
+!  ocn_vel_forcing_surface_stress
 !
-!> \brief MPAS ocean wind stress
+!> \brief MPAS ocean surface stress
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
 !>  This module contains the routine for computing 
-!>  tendencies from wind stress.  
+!>  tendencies from surface stress.  
 !
 !-----------------------------------------------------------------------
 
-module ocn_vel_forcing_windstress
+module ocn_vel_forcing_surface_stress
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -42,8 +42,8 @@ module ocn_vel_forcing_windstress
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_vel_forcing_windstress_tend, &
-             ocn_vel_forcing_windstress_init
+   public :: ocn_vel_forcing_surface_stress_tend, &
+             ocn_vel_forcing_surface_stress_init
 
    !--------------------------------------------------------------------
    !
@@ -51,7 +51,7 @@ module ocn_vel_forcing_windstress
    !
    !--------------------------------------------------------------------
 
-   logical :: windStressOn
+   logical :: surfaceStressOn
 
 !***********************************************************************
 
@@ -59,18 +59,18 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_vel_forcing_windstress_tend
+!  routine ocn_vel_forcing_surface_stress_tend
 !
-!> \brief   Computes tendency term from wind stress
+!> \brief   Computes tendency term from surface stress
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    15 September 2011
 !> \details 
-!>  This routine computes the wind stress tendency for momentum
+!>  This routine computes the surface stress tendency for momentum
 !>  based on current state.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_windstress_tend(meshPool, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -79,7 +79,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceWindStress    !< Input: Wind stress at surface
+         surfaceStress, & !< Input: Wind stress at surface
+         surfaceFluxAttenuationCoefficient !< Input: attenuation coefficient for surface fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
@@ -110,12 +111,13 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k
+      integer :: iEdge, k, cell1, cell2
       integer, pointer :: nEdgesSolve
       integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: edgeMask
+      integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge
 
-      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress
+      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress, &
+                           attenuationCoeff
 
       !-----------------------------------------------------------------
       !
@@ -127,25 +129,30 @@ contains
 
       err = 0
 
-      if ( .not. windStressOn ) return
+      if ( .not. surfaceStressOn ) return
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       do iEdge = 1, nEdgesSolve
         zTop = 0.0_RKIND
-        transmissionCoeffTop = ocn_forcing_transmission(zTop)
+        cell1 = cellsOnEdge(1,iEdge)
+        cell2 = cellsOnEdge(2,iEdge)
+        attenuationCoeff = 0.5_RKIND * (surfaceFluxAttenuationCoefficient(cell1) &
+                                      + surfaceFluxAttenuationCoefficient(cell2))
+        transmissionCoeffTop = ocn_forcing_transmission(zTop, attenuationCoeff)
         remainingStress = 1.0_RKIND
         do k = 1, maxLevelEdgeTop(iEdge)
            zBot = zTop - layerThicknessEdge(k, iEdge)
 
-           transmissionCoeffBot = ocn_forcing_transmission(zBot)
+           transmissionCoeffBot = ocn_forcing_transmission(zBot, attenuationCoeff)
 
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 
-           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) &
+           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceStress(iEdge) &
                          * (transmissionCoeffTop - transmissionCoeffBot) / rho_sw / layerThicknessEdge(k,iEdge)
 
            zTop = zBot
@@ -154,7 +161,7 @@ contains
 
         if ( maxLevelEdgeTop(iEdge) > 0 .and. remainingStress > 0.0_RKIND) then
            tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) &
-                         + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceWindStress(iEdge) * remainingStress &
+                         + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceStress(iEdge) * remainingStress &
                          / rho_sw / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
         end if
       enddo
@@ -162,22 +169,22 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_forcing_windstress_tend!}}}
+   end subroutine ocn_vel_forcing_surface_stress_tend!}}}
 
 !***********************************************************************
 !
-!  routine ocn_vel_forcing_windstress_init
+!  routine ocn_vel_forcing_surface_stress_init
 !
-!> \brief   Initializes ocean wind stress forcing
+!> \brief   Initializes ocean surface stress forcing
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
 !> \details 
-!>  This routine initializes quantities related to wind stress 
+!>  This routine initializes quantities related to surface stress 
 !>  in the ocean. 
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_windstress_init(err)!{{{
+   subroutine ocn_vel_forcing_surface_stress_init(err)!{{{
 
    !--------------------------------------------------------------------
 
@@ -189,23 +196,23 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_vel_windstress
+      logical, pointer :: config_disable_vel_surface_stress
 
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_windstress', config_disable_vel_windstress)
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_surface_stress', config_disable_vel_surface_stress)
 
-      windStressOn = .true.
+      surfaceStressOn = .true.
 
-      if(config_disable_vel_windstress) windStressOn = .false.
+      if(config_disable_vel_surface_stress) surfaceStressOn = .false.
 
       err = 0
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_forcing_windstress_init!}}}
+   end subroutine ocn_vel_forcing_surface_stress_init!}}}
 
 !***********************************************************************
 
-end module ocn_vel_forcing_windstress
+end module ocn_vel_forcing_surface_stress
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
