@@ -14,12 +14,18 @@ module cice_constants
 
   use mpas_derived_types
 
-  use mpas_constants, only: &
-       pii
-
   private
   save
   
+  real (kind=RKIND), parameter, public :: &
+       pii = 3.141592653589793
+
+  real (kind=RKIND), parameter, public :: &
+       earthRadius = 6371229.0
+
+   real (kind=RKIND), parameter, public :: &
+        omega   = 7.29212e-5 !< Constant: Angular rotation rate of the Earth [s-1]
+
   real(kind=RKIND), parameter, public :: &
        ciceDegreesToRadians = pii / 180.0_RKIND, &
        ciceRadiansToDegrees = 180.0_RKIND / pii

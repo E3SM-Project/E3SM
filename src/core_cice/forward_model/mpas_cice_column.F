@@ -1855,7 +1855,7 @@ contains
 
     use ice_colpkg, only: colpkg_step_radiation
 
-    use mpas_constants, only: pii
+    use cice_constants, only: pii
 
     type(domain_type), intent(inout) :: domain
 

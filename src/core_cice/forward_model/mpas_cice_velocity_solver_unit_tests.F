@@ -119,7 +119,7 @@ contains
     use cice_constants, only: &
          ciceRadiansToDegrees
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
     
     type(domain_type) :: &
@@ -1024,7 +1024,7 @@ contains
     use cice_constants, only: &
          ciceRadiansToDegrees
 
-    use mpas_constants, only: &
+    use cice_constants, only: &
          pii
 
     type(domain_type), intent(inout) :: &
