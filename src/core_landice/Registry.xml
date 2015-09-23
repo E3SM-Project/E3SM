@@ -320,7 +320,6 @@
 			<var name="meshDensity"/>
 		</stream>
 
-
 		<stream name="input"
 				type="input"
 				immutable="true"
@@ -790,5 +789,6 @@ is the value of that variable from the *previous* time level!
 
 <!-- ======================================================================= -->
 
+#include "analysis_members/Registry_analysis_members.xml"
 
 </registry>

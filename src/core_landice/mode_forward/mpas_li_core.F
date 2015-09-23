@@ -9,6 +9,7 @@ module li_core
 
    use mpas_framework
    use mpas_timekeeping
+   use li_analysis_driver
 
    implicit none
    private
@@ -173,11 +174,15 @@ module li_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call landice_init_block(block, domain % dminfo)
+         call landice_init_block(block, domain % dminfo, err_tmp)
+         err = ior(err, err_tmp)
 
          block => block % next
       end do
 
+      ! initialize analysis driver
+      call li_analysis_init(domain, err_tmp)
+      err = ior(err, err_tmp)
 
       ! check for errors and exit
 
@@ -310,6 +315,12 @@ module li_core
          call mpas_timer_stop("compute_statistics")
       endif
 
+      ! compute analysis members on startup if option activiated
+      call mpas_timer_start("analysis member startup calculations")
+          call li_analysis_compute_startup(domain, err_tmp)
+          err = ior(err, err_tmp)
+      call mpas_timer_stop("analysis member startup calculations")
+
       ! ===
       ! === Write Initial Output
       ! ===
@@ -397,6 +408,13 @@ module li_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
+         ! call analysis driver compute, restart, write subroutines (note: alarms and timers are handled by the analysis member code) 
+         call li_analysis_compute(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call li_analysis_restart(domain, err) 
+         err = ior(err, err_tmp)
+         call li_analysis_write(domain, err_tmp)
+         err = ior(err, err_tmp)
 
          ! ===
          ! === Write Output and/or Restart, if needed
@@ -507,10 +525,16 @@ module li_core
       call li_velocity_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
+      ! call finalize subroutine in analysis driver 
+      call li_analysis_finalize(domain, err_tmp)
+      err = ior(err, err_tmp)
+
       call mpas_destroy_clock(domain % clock, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+      err = ior(err, err_tmp)
 
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -542,7 +566,7 @@ module li_core
 !>  This routine initializes blocks for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine landice_init_block(block, dminfo)
+   subroutine landice_init_block(block, dminfo, err)
 
       use mpas_derived_types
       use mpas_pool_routines
@@ -573,6 +597,7 @@ module li_core
       ! output variables
       !
       !-----------------------------------------------------------------
+      integer, intent(out) :: err  !< error flag
 
       !-----------------------------------------------------------------
       !
@@ -585,7 +610,7 @@ module li_core
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_adaptive_timestep_include_DCFL
-      integer :: err, err_tmp
+      integer :: err_tmp
 
       err = 0
       err_tmp = 0
