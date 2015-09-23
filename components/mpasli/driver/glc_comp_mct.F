@@ -581,6 +581,55 @@ contains
 
 !-----------------------------------------------------------------------
 !
+!   get initial state from driver
+!
+!-----------------------------------------------------------------------
+
+! GLC CURRENTLY DOES NOT REQUIRE IMPORT OF THE INITIAL STATE
+!    call glc_import_mct(x2g_g, errorCode)
+!    if (errorCode /= 0) then
+!       call mpas_dmpar_global_abort('ERROR in glc_import_mct')
+!    endif
+
+! MPAS-O builds forcing arrays, which we don't have
+!    ! Build forcing arrays.
+!    block_ptr => domain % blocklist
+!    do while(associated(block_ptr))
+!        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+!        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+!        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+!        call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
+!        call ocn_forcing_build_transmission_array(meshPool, statePool, forcingPool, ierr, 1)
+!        block_ptr => block_ptr % next
+!    end do
+
+!-----------------------------------------------------------------------
+!
+!   Calculate initial state in MPASLI (velocity, upperSurface, masks, etc.)
+!
+!-----------------------------------------------------------------------
+    err_tmp = li_core_initial_solve(domain)
+    ierr = ior(ierr,err_tmp)  ! li_core_finalize would abort if there was an error, but being safe.
+
+
+    itimestep = 0  ! Initialize this module, save counter variable
+
+! MPAS-O handles an average pool here, which we don't have
+!    block_ptr => domain % blocklist
+!    do while(associated(block_ptr))
+!      call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
+!      call ocn_time_average_init(averagePool)
+!      block_ptr => block_ptr % next
+!    end do
+
+!    call ocn_analysis_compute_startup(domain, stream_manager, ierr) 
+
+    ! Reset all output alarms, to prevent initial time step from writing any output, unless it's ringing.
+    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
+
+!-----------------------------------------------------------------------
+!
 !   send initial state to driver
 !
 !-----------------------------------------------------------------------
@@ -609,48 +658,6 @@ contains
 
     call seq_infodata_PutData( infodata, glc_prognostic=.true.)
 
-!-----------------------------------------------------------------------
-!
-!   get initial state from driver
-!
-!-----------------------------------------------------------------------
-
-    call glc_import_mct(x2g_g % rAttr, errorCode)
-    if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in glc_import_mct')
-    endif
-
-! MPAS-O builds forcing arrays, which we don't have
-!    ! Build forcing arrays.
-!    block_ptr => domain % blocklist
-!    do while(associated(block_ptr))
-!        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-!        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-!        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-!        call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
-!        call ocn_forcing_build_transmission_array(meshPool, statePool, forcingPool, ierr, 1)
-!        block_ptr => block_ptr % next
-!    end do
-
-    currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    write(stderrUnit,*) 'Initial time ', trim(timeStamp)
-
-    itimestep = 0
-
-! MPAS-O handles an average pool here, which we don't have
-!    block_ptr => domain % blocklist
-!    do while(associated(block_ptr))
-!      call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
-!      call ocn_time_average_init(averagePool)
-!      block_ptr => block_ptr % next
-!    end do
-
-!    call ocn_analysis_compute_startup(domain, stream_manager, ierr) 
-
-    ! Reset all output alarms, to prevent initial time step from writing any output, unless it's ringing.
-    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
 !----------------------------------------------------------------------------
 !
@@ -716,7 +723,6 @@ contains
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MPASLI
-      integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       integer, pointer :: config_stats_interval   !< interval (number oftimesteps) for writing stats
@@ -760,16 +766,6 @@ contains
       call glc_import_mct(x2g_g % rAttr, err_tmp)
       err = ior(err,err_tmp)
 
-      ! Handle writing initial state
-      call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
-      if (config_write_output_on_startup) then
-              call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
-          err = ior(err,err_tmp)
-
-          ! Reset config to false, so we don't write the state every coupling interval.
-          config_write_output_on_startup = .false.
-      endif
-
       ! Initialize time average fields
 !      block_ptr => domain % blocklist
 !      do while(associated(block_ptr))
@@ -778,7 +774,6 @@ contains
 !        block_ptr => block_ptr % next
 !      end do
 
-      itimestep = 0  ! We may want to initialize this in init and make it a module, save variable
 
       ! During integration, time level 1 stores the model state to be solved.
       ! For a variables with a second time level, it is the previous value.
