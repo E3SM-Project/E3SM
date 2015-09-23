@@ -77,25 +77,17 @@ OPTIONS
      -mach <name>         Specify a machine (required).
      -compiler <name>     Specify a compiler for the target machine (optional)
                           default: default compiler for the target machine
-     -mpilib <name>       Specify a mpi librar for the target machine (optional)
-                          default: default mpi library for the target machine
+     -mpilib <name>       Specify a mpi library for the target machine (optional)
+                          default:  mpi-serial 
      -mach_dir <path>     Specify the locations of the Machines directory (optional).
 
      -output_dir <path>   default: current working directory
      -output_format <value> Output format can be make or cmake.
                           default: make
      -help [or -h]        Print usage to STDOUT (optional).
-     -list                Only list valid values for machines and compilers (optional).
      -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
      -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
      
-
-     The following arguments are required for a generic machine. Otherwise, they will be ignored. 
-
-     -scratchroot <name>           executable directory (EXEROOT will be scratchroot/CASE) (char)
-     -din_loc_root <name>          input data root directory (char)
-     -max_tasks_per_node <value>   maximum mpi tasks per machine node (integer)
-
 EXAMPLES
 
   ./configure -mach bluefire -compiler ibm
