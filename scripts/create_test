@@ -1751,8 +1751,8 @@ sub namelistCompare
 	    mkpath $genpath, 1, 0775;
 	    print "Couldnt create Baseline directory $genpath" unless -d "$genpath/CaseDocs"; 
 	}
-        system("cp -r $buildconfpath $genpath");
-        system("cp $buildconfpath/../user_nl* $genpath") ;
+        system("cp -fr $buildconfpath $genpath");
+        system("cp -f $buildconfpath/../user_nl* $genpath") ;
     }
 }
 
