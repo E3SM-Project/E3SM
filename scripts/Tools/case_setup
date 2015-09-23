@@ -27,10 +27,9 @@ USAGE
 OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -clean               Removes the batch run script for target machine	
-                          Removes the Macros file for the target machine and target MPI library
                           If the testmode argument is present then keep the test 
 			  test script if it is present - otherwise remove it
-                          The user_nl_xxx files are never removed by case_setup - 
+                          The user_nl_xxx and Macros files are never removed by case_setup - 
                           you must remove them manually
      -testmode            Keeps the test script when the -clean argument is used
 EOF
@@ -357,8 +356,6 @@ if ($clean) {
 
     # remove relevant files from $caseroot
     $sysmod = "rm ./${case}.run";
-    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
-    $sysmod = "rm Macros*";
     system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
 
     # remove relevant files from $caseroot/LockedFiels
