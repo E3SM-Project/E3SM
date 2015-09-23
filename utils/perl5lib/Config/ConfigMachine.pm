@@ -47,9 +47,9 @@ sub setMachineFile
 	$machine = $1;
     }
 
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
-    my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]");
-    if (@nodes) {
+    my $machxml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
+    my @machnodes = $machxml->findnodes(".//machine[\@MACH=\"$machine\"]");
+    if (@machnodes) {
 	print "Found machine \"$machine\" in $machines_file \n";
     } else {
 	print "ERROR ConfigMachine::setMachineFile: no match for machine $machine :\n";
@@ -64,7 +64,7 @@ sub setMachineFile
 sub setMachineValues
 {
     # Set the parameters for the specified machine.  
-    my ($file_config, $primary_component, $machine, $compiler, $print_flag, $config) = @_;
+    my ( $file_config, $primary_component, $machine, $compiler, $print_flag, $config) = @_;
 
     my $model = $config->get('MODEL');
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
@@ -95,7 +95,7 @@ sub setMachineValues
 	my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/COMPILERS");
 	my $compilers = $nodes[0]->textContent();
 	my @compilers = split(/,/,$compilers);
-	my $compiler = $compilers[0];
+	$compiler = $compilers[0];
 	$config->set('COMPILER', "$compiler");
     }	
     $config->set('MACH'         ,  $machine);

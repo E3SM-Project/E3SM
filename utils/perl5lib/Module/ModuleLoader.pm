@@ -814,8 +814,7 @@ source  $self->{cshinitpath}
 START
 
     $csh .=<<"START";
-set COMPILER = `./xmlquery COMPILER -value`
-if(\$status == 0) then
+if( -x "./xmlquery") then
 START
 
     foreach my $attrKey(keys %modattrvalues)
@@ -1045,8 +1044,7 @@ START
    if($#attrKeys >= 0) {
 
        $sh .=<<"START";
-COMPILER=`./xmlquery COMPILER -value`
-if [ -n \$CIME_REPO  ]
+if [ -x ./xmlquery  ]
 then 
 START
       foreach my $attrKey(@attrKeys)
