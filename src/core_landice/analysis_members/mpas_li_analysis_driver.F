@@ -535,8 +535,6 @@ contains
 !> \details
 !>  This routine calls all output writing subroutines required for the
 !>  MPAS-Land Ice analysis driver.
-!>  At this time this is just a stub, and all analysis output is written
-!>  to the output file specified by config_output_name.
 !
 !-----------------------------------------------------------------------
 

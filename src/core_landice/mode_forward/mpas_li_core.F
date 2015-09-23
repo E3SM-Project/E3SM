@@ -382,7 +382,7 @@ module li_core
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
-         ! call analysis driver compute, etc. subroutines
+         ! call analysis driver compute, restart, write subroutines (note: alarms and timers are handled by the analysis member code) 
          call li_analysis_compute(domain, err_tmp)
          err = ior(err, err_tmp)
          call li_analysis_restart(domain, err) 
