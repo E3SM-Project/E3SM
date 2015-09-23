@@ -61,6 +61,7 @@ interface
      type(C_PTR), value :: fillvalue
    end function PIOc_write_darray
 end interface
+
 interface
    integer(C_INT) function PIOc_write_darray_multi(ncid, vid, ioid, nvars, arraylen, array, fillvalue) &
         bind(C,name="PIOc_write_darray_multi")
@@ -312,8 +313,7 @@ contains
 ! This code is required due to a bug in gfortran 4.7.2
 #if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
     {VTYPE}, allocatable :: acopy(:)
-    integer :: isize 
-
+    integer :: isize
     isize= size(array)
     allocate(acopy(isize))
     acopy = reshape(array,(/isize/))

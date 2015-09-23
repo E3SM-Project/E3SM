@@ -1,6 +1,7 @@
 #define VARINT 1 
 #define VARREAL 1
 #define VARDOUBLE 1
+#define DEBUG 1
 
 program pioperformance
 #ifndef NO_MPIMOD

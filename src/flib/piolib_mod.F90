@@ -326,7 +326,7 @@ contains
 !! @ingroup PIO_setdebuglevel
 !! @brief sets the level of debug information output to stdout by pio 
 !! @details
-!! @param level : default value is 0, allowed values 0-3
+!! @param level : default value is 0, allowed values 0-6
 !<
   subroutine setdebuglevel(level)
     integer(i4), intent(in) :: level	
