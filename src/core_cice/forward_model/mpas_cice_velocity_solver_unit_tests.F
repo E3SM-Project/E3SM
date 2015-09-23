@@ -1915,7 +1915,7 @@ contains
   subroutine cice_constitutive_relationship_unit_test(&
        domain)!{{{
 
-    use cice_velocity_solver_shared, only: &
+    use cice_velocity_solver_constitutive_relation, only: &
          cice_evp_constitutive_relation, &
          cice_evp_constitutive_relation_revised, &         
          cice_init_evp
