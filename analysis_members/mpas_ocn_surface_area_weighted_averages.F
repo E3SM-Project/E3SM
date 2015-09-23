@@ -190,7 +190,7 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: seaIceSalinityFlux
-      real (kind=RKIND), dimension(:), pointer :: surfaceWindStressMagnitude
+      real (kind=RKIND), dimension(:), pointer :: surfaceStressMagnitude
       real (kind=RKIND), dimension(:), pointer :: windStressZonal
       real (kind=RKIND), dimension(:), pointer :: windStressMeridional
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure
@@ -331,7 +331,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
          call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
-         call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
+         call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
          call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
@@ -363,7 +363,7 @@ contains
          workArray(17,:) = activeTracersSurfaceFlux(indexTemperature,:)
          workArray(18,:) = activeTracersSurfaceFlux(indexSalinity,:)
          if (activeTracersBulkRestoringPKG) workArray(19,:) = seaIceSalinityFlux(:)
-         workArray(20,:) = surfaceWindStressMagnitude(:)
+         workArray(20,:) = surfaceStressMagnitude(:)
          if (activeTracersBulkRestoringPKG) workArray(21,:) = windStressZonal(:)
          if (activeTracersBulkRestoringPKG) workArray(22,:) = windStressMeridional(:)
          workArray(23,:) = seaSurfacePressure(:)

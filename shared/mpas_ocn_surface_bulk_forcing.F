@@ -125,7 +125,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceWindStress, surfaceWindStressMagnitude, err)!{{{
+   subroutine ocn_surface_bulk_forcing_vel(meshPool, forcingPool, surfaceStress, surfaceStressMagnitude, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -140,8 +140,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND), dimension(:), intent(inout) :: surfaceWindStress, & !< Input/Output: Array for surface windStress
-                                                        surfaceWindStressMagnitude !< Input/Output: Array for magnitude of wind stress
+      real (kind=RKIND), dimension(:), intent(inout) :: surfaceStress, & !< Input/Output: Array for surface stress
+                                                        surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
 
       !-----------------------------------------------------------------
       !
@@ -179,7 +179,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
 
-      ! Convert CESM wind stress to MPAS-O windstress
+      ! Convert CESM wind stress to MPAS-O wind stress
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
@@ -187,13 +187,13 @@ contains
         zonalAverage = 0.5 * (windStressZonal(cell1) + windStressZonal(cell2))
         meridionalAverage = 0.5 * (windStressMeridional(cell1) + windStressMeridional(cell2))
 
-        surfaceWindStress(iEdge) = cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
+        surfaceStress(iEdge) = surfaceStress(iEdge) + cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
       end do
 
 
       ! Build surface fluxes at cell centers
       do iCell = 1, nCells
-        surfaceWindStressMagnitude(iCell) = sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
+        surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
       end do
 
    end subroutine ocn_surface_bulk_forcing_vel!}}}
@@ -266,7 +266,7 @@ contains
 
       ! Build surface fluxes at cell centers
       do iCell = 1, nCells
-        surfaceThicknessFlux(iCell) = ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
+        surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
                                     + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) &
                                     + riverRunoffFlux(iCell) ) / rho_sw
       end do
