@@ -56,9 +56,6 @@ contains
     use cice_advection, only: &
          cice_run_advection
 
-    use cice_therm_zerolayer, only: &
-         cice_zerolayer_thermodynamics
-
     use cice_diagnostics, only: &
          cice_run_diagnostics
 
@@ -96,8 +93,7 @@ contains
 
     logical, pointer :: &
          config_perform_unit_test, &
-         config_use_advection, &
-         config_use_vertical_thermodynamics
+         config_use_advection
 
     call cice_debug_write_out_fields(domain, "cice_timestep", 1)
 
@@ -110,7 +106,6 @@ contains
     configs => domain % configs
 
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
-    call MPAS_pool_get_config(configs, "config_use_vertical_thermodynamics", config_use_vertical_thermodynamics)
     call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
 
     if (config_perform_unit_test) then
@@ -122,19 +117,6 @@ contains
     call mpas_timer_start("Column")
     call cice_column_predynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column")
-
-    ! zero layer thermodynamics
-    !call mpas_timer_start("thermodynamics")
-    !if (config_use_vertical_thermodynamics) then
-
-    !   block => domain % blocklist
-    !   do while (associated(block))
-    !      call cice_zerolayer_thermodynamics(block, clock)
-    !      block => block % next
-    !   end do
-       
-    !endif
-    !call mpas_timer_stop("thermodynamics")
 
     ! velocity solve
     call mpas_timer_start("Velocity solve")
