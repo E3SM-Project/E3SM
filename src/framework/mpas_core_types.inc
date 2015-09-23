@@ -21,11 +21,13 @@
    end interface
 
    abstract interface
-      function mpas_setup_packages_function(configs, packages) result(iErr)
+      function mpas_setup_packages_function(configs, packages, iocontext) result(iErr)
          import mpas_pool_type
+		 import mpas_io_context_type
 
          type (mpas_pool_type), intent(inout) :: configs
          type (mpas_pool_type), intent(inout) :: packages
+         type (mpas_io_context_type), intent(inout) :: iocontext
          integer :: iErr
       end function mpas_setup_packages_function
    end interface
