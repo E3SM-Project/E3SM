@@ -31,10 +31,7 @@ __TEST_SUITES = {
 			 'SMS.hcru_hcru.I1850CRUCLM45CN']
                         ),
     "acme_integration" : ("acme_developer",
-                          ["ERB.ne16_g37.B1850C5",
-                           "ERB.f45_g37.B1850C5",
-                           "ERH.f45_g37.B1850C5",
-                           "ERS.ne30_g16.B1850C5",
+                          ["ERS.ne30_g16.B1850C5",
                            "ERS.f19_f19.FAMIPC5",
                            "ERS.ne16_g37.B1850C5",
                            "ERS.f09_g16.ICLM45VIC",
