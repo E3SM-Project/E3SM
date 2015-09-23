@@ -43,7 +43,7 @@ my $grid_prefix = '';
 my $decomp_prefix = '';
 
 if ( $GLC_GRID eq 'mpas.gis20km' ) {
-	$grid_date .= '150505';
+	$grid_date .= '150922';
 	$grid_prefix .= 'gis20km';
 	$decomp_prefix .= 'mpasli.graph.info.';
 }
