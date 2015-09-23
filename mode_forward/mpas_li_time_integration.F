@@ -197,7 +197,6 @@ module li_time_integration
          call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
          deltat_output = dtSeconds
 
-
          block => block % next
       end do
 
