@@ -212,6 +212,9 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
   else
     $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
   endif
+
+  # Get the "PETSC_LIB" list an env var
+  include $(PETSC_PATH)/conf/variables
 endif
 
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
