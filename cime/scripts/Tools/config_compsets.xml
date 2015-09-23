@@ -359,6 +359,9 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="I_2000_CLM45_GLCMECPD_CISM1"  alias="ICLM45GLCMEC"  grid="gland">2000_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_CISM1_SWAV_TEST</COMPSET>
 
 
+<!---IG compsets with MPASLI -->
+<COMPSET sname="I_2000_GLC_MPASLI"               alias="IGCLM45_MLI">2000_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_MPASLI_SWAV</COMPSET>
+
 <!---TG compsets -->
 
 <COMPSET sname="TG2000_G1"  alias="TG"         grid="gland">2000_SATM_DLND%SCPL_SICE_SOCN_SROF_CISM1_SWAV</COMPSET>
@@ -802,6 +805,7 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 
 <CLM_FORCE_COLDSTART compset="_CLM.+CISM"        >on</CLM_FORCE_COLDSTART>
 <CLM_FORCE_COLDSTART compset="4804.*_CLM.*_CISM1">off</CLM_FORCE_COLDSTART>
+<CLM_FORCE_COLDSTART compset="_CLM.+MPASLI"        >on</CLM_FORCE_COLDSTART>
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
