@@ -14,7 +14,7 @@ if (-e /usr/share/Modules/init/csh) then
   if ($COMPILER == "intel") then
     module unload intel
     module unload openmpi-intel
-    module load intel/13.0
+    module load intel/intel-15.0.3.187
     module load openmpi-intel/1.6
   endif
 
