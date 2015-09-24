@@ -41,6 +41,7 @@ module ocn_tendency
    use ocn_tracer_ideal_age
    use ocn_tracer_TTD
    use ocn_tracer_surface_flux_to_tend
+   use ocn_tracer_ecosys
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -379,7 +380,7 @@ contains
 
       ! scalar pointers
       integer :: nTracerGroup
-      integer, pointer :: nVertLevels, nEdges, nCellsSolve, indexTemperature
+      integer, pointer :: nVertLevels, nEdges, nCellsSolve, indexTemperature, indexSalinity
       logical, pointer :: config_disable_tr_all_tend, config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup, config_use_tracerGroup_surface_bulk_forcing, config_use_tracerGroup_surface_restoring, &
                           config_use_tracerGroup_interior_restoring, config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
@@ -412,6 +413,9 @@ contains
       !
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         tracerGroup, tracerGroupTend, vertNonLocalFlux
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+        activeTracers  !  need T, S for ecosys
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
 
@@ -454,6 +458,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       !
       ! get configure options
@@ -547,6 +552,24 @@ contains
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("bulk_" // trim(groupItr % memberName))
                end if
+
+               !
+               ! compute ecosystem source-sink tendencies and net surface fluxes
+               ! NOTE: must be called before ocn_tracer_surface_flux_tend
+               !
+               if ( trim(groupItr % memberName) == 'ecosysTracers' ) then
+                  call mpas_timer_start("ecosys source-sink", .false.)
+                  call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
+                  call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, forcingPool, nTracerGroup, &
+                     nCellsSolve, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature,    &
+                     indexSalinity, tracerGroupTend, err)
+                  call mpas_timer_stop("ecosys source-sink")
+
+                  call mpas_timer_start("ecosys surface flux", .false.)
+                  call ocn_tracer_ecosys_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
+                  call mpas_timer_stop("ecosys surface flux")
+               endif
 
                !
                ! ocean surface restoring
