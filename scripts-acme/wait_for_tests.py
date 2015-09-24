@@ -59,7 +59,7 @@ def get_test_time(test_path):
 ###############################################################################
 def get_test_output(test_path):
 ###############################################################################
-    output_file = os.path.join(test_path, "TestStatus.out")
+    output_file = os.path.join(test_path, "TestStatus.log")
     if (os.path.exists(output_file)):
         return open(output_file, 'r').read()
     else:
