@@ -2899,7 +2899,7 @@ contains
   subroutine mpas_vector_R3Cell_to_Edge(vectorCell, meshPool, &
         vectorEdge)
 
-      real, dimension(:,:,:), intent(in) :: vectorCell
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: vectorCell
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       real (kind=RKIND), dimension(:,:,:), intent(out) :: vectorEdge
 
