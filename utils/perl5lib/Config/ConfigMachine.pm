@@ -73,12 +73,12 @@ sub setMachineValues
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
     my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]");
     if (@nodes) {
-	print "Found machine \"$machine\" in $machines_file \n";
+	$logger->info( "Found machine \"$machine\" in $machines_file ");
     } else {
-	print "ERROR ConfigMachine::setMachineValues: no match for machine $machine :\n";
-	print "  - possible machine values are \n";
+	$logger->fatal("ERROR ConfigMachine::setMachineValues: no match for machine $machine :");
+	$logger->fatal("  - possible machine values are ");
 	listMachines( "$machines_file" );
-	die "Exiting \n";
+	$logger->logdie( "Exiting ");
     }	    
 
     if (defined $compiler) {

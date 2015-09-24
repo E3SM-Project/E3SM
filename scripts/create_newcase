@@ -226,15 +226,12 @@ Log::Log4perl->easy_init({level=>$level,
 
 my $logger = Log::Log4perl::get_logger();
 
-$logger->debug(Dumper(\%opts));
-
-
 # Global variables
 my $model;
 my $case;
 my $caseroot; # set in _check_input_options
-my $compset;  # set in _check_input_options
 my $grid;     # set in _check_input_options
+my $compset; # set in _check_input_options
 my $compiler; # set in _check_input_options
 my $confopts; # set in _set_confopts 
 my $mach_dir;
@@ -255,7 +252,7 @@ $logger->info( "Setting configuration directory to $cfgdir\n");
 # *** Check input
 #------------------------------------------------------------------------------------------
 # Note that check_input_options will use the global hash opts
-_check_input_options (\%opts);
+_check_input_options ();
 
 #------------------------------------------------------------------------------------------
 # *** Determine user_mods_dir ***
@@ -507,7 +504,6 @@ if ($run_refcase ne 'case.std') {
 my $file = $config->get('GRIDS_SPEC_FILE');
 ConfigCompsetGrid::printGridCompsetInfo($file, $config);
 
-my $compset = $config->get('COMPSET');
 $logger->info( "Compset specifier: $compset."); 
 $logger->info( "Grid is valid for this compset. "); 
 
@@ -647,7 +643,6 @@ sub _check_input_options
 	}else{
 	    $mach_dir => "$cimeroot/cime_config/${model}/machines",
 	}
-
 	# Check for manditory machine input
 	if ($opts{'mach'}) {
 	    $machine = $opts{'mach'};
@@ -813,7 +808,9 @@ sub _create_caseroot
     my ($caseroot, $cimeroot, $config) = @_;
 
     $logger->info( "Creating $caseroot ");
-    mkpath ("$caseroot") or $logger->logdie("Failed to create $caseroot directory");
+    if(! -e $caseroot){
+	mkdir ("$caseroot") or $logger->logdie("Failed to create $caseroot directory");
+    }
     chdir ("$caseroot");
 
     # Create relevant directories in $caseroot
