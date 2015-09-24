@@ -66,7 +66,7 @@
       filename_template="restarts/timeFiltersRestart.$Y-$M-$D_$h.nc"
       filename_interval="01-00-00_00:00:00"
       input_interval="initial_only"
-      output_interval="00-00-01_00:00:00"
+      output_interval="stream:restart:output_interval"
       packages="timeFiltersAMPKG"
       clobber_mode="truncate"
       runtime_format="single_file">
