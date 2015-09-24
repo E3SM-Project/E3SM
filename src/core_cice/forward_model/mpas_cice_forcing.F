@@ -26,7 +26,10 @@ module cice_forcing
        cice_forcing_init, &
        cice_forcing_get, &
        cice_forcing_write_restart, &
-       cice_reset_coupler_fluxes
+       cice_reset_coupler_fluxes,  &
+       post_atmospheric_coupling,  &
+       post_atmospheric_forcing,   &
+       post_oceanic_coupling
 
   type (MPAS_forcing_group_type), pointer :: ciceForcingGroups 
 
@@ -662,11 +665,11 @@ contains
             config_rotate_cartesian_grid)
 
        ! shortwave - comment out for bit for bit tests
-       !shortwaveDown(iCell) = &
-       !     shortwaveVisibleDirectDown(iCell) + &
-       !     shortwaveVisibleDiffuseDown(iCell) + &
-       !     shortwaveIRDirectDown(iCell) + &
-       !     shortwaveIRDiffuseDown(iCell)
+       shortwaveDown(iCell) = &
+            shortwaveVisibleDirectDown(iCell) + &
+            shortwaveVisibleDiffuseDown(iCell) + &
+            shortwaveIRDirectDown(iCell) + &
+            shortwaveIRDiffuseDown(iCell)
        
     enddo ! iCell
 
@@ -1383,6 +1386,8 @@ contains
           call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
        end select
 
+       call post_oceanic_coupling(block)
+
        block => block % next
     end do
 
@@ -1405,9 +1410,6 @@ contains
     use ice_colpkg, only: &
          colpkg_sea_freezing_temperature
 
-    use cice_mesh, only: &
-         cice_latlon_vector_rotation_forward
-
     type (block_type), pointer :: block
 
     logical, intent(in) :: &
@@ -1423,28 +1425,11 @@ contains
          oceanMixedLayerDepth, &
          seaFreezingTemperature
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         uOceanVelocity, &
-         vOceanVelocity, &
-         seaSurfaceTiltU, &
-         seaSurfaceTiltV
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         latCell, &
-         lonCell, &
-         xCell, &
-         yCell, &
-         zCell
-
     character(len=strKIND), pointer :: &
          config_sea_freezing_temperature_type
 
     logical, pointer :: &
-         config_do_restart, &
-         config_rotate_cartesian_grid
-
-    real(kind=RKIND), pointer :: &
-         sphere_radius
+         config_do_restart
 
     integer, pointer :: &
          nCellsSolve, &
@@ -1455,7 +1440,6 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(block % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
-    call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
@@ -1490,6 +1474,63 @@ contains
        enddo ! iCell
 
     endif
+
+  end subroutine prepare_oceanic_coupling_variables_ncar
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  post_oceanic_coupling
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine post_oceanic_coupling(block)
+
+    use cice_mesh, only: &
+         cice_latlon_vector_rotation_forward
+
+    type (block_type), pointer :: block
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         ocean_coupling
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         seaSurfaceTiltU, &
+         seaSurfaceTiltV
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         lonCell, &
+         xCell, &
+         yCell, &
+         zCell
+
+    logical, pointer :: &
+         config_rotate_cartesian_grid
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh) 
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     ! rotate currents from geographical
     call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
@@ -1536,7 +1577,7 @@ contains
 
     enddo ! iCell
 
-  end subroutine prepare_oceanic_coupling_variables_ncar
+  end subroutine post_oceanic_coupling
 
 !-----------------------------------------------------------------------
 ! coupler fluxes initialization

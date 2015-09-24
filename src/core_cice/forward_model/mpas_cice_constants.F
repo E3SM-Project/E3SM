@@ -26,6 +26,8 @@ module cice_constants
    real (kind=RKIND), parameter, public :: &
         omega   = 7.29212e-5 !< Constant: Angular rotation rate of the Earth [s-1]
 
+  character (len=*), public, parameter :: coupleAlarmID = 'coupling'
+
   real(kind=RKIND), parameter, public :: &
        ciceDegreesToRadians = pii / 180.0_RKIND, &
        ciceRadiansToDegrees = 180.0_RKIND / pii
