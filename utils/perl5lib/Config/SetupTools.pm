@@ -4,6 +4,12 @@ my $pkg_nm = 'SetupTools';
 use strict;
 use XML::LibXML;
 use Data::Dumper;
+use Log::Log4perl qw(get_logger);
+my $logger;
+
+BEGIN{
+    $logger = get_logger();
+}
 #-----------------------------------------------------------------------------------------------
 # SYNOPSIS
 # 
@@ -156,7 +162,7 @@ sub set_compiler
     # Parse the config_compiler.xml file into a Macros file for the
     # given machine and compiler. Search the user's ~/.cime directory
     # first, then use the standard compiler file if it is not available.
-    my ($os,$compiler_file, $compiler, $machine, $mpilib, $print, $macrosfile, $output_format) = @_;
+    my ($os,$compiler_file, $compiler, $machine, $mpilib, $macrosfile, $output_format) = @_;
 
     # Read compiler xml 
     my @compiler_settings;
@@ -228,10 +234,10 @@ sub set_compiler
 		} else {
 		    $macros->{$name}=$value;
 		}
-		print "$basename+=$value\n" if($print>1);
+		$logger->info("$basename+=$value\n");
 	    } else {
 		$macros->{$name}=$value;
-		print "$name:=$value\n" if($print>1);
+		$logger->info( "$name:=$value\n");
 	    }
 	}else{
 	    my $key;
@@ -250,17 +256,17 @@ sub set_compiler
     $macros->{ADD_CPPDEFS} .= " -D$os -DCPR$compcpp ";
 
     if(! defined($macros->{MPI_PATH}) && defined($ENV{MPI_PATH})){
-      print "Setting MPI_PATH from Environment\n";
-      $macros->{MPI_PATH}=$ENV{MPI_PATH};
+	$logger->warn( "Setting MPI_PATH from Environment\n");
+	$macros->{MPI_PATH}=$ENV{MPI_PATH};
     }
     if(! defined($macros->{NETCDF_PATH}) && defined($ENV{NETCDF_PATH})){
-      print "Setting NETCDF_PATH from Environment\n";
+      $logger->warn( "Setting NETCDF_PATH from Environment\n");
       $macros->{NETCDF_PATH}=$ENV{NETCDF_PATH};
     }
 
     #    print Dumper($macros);
     $output_format="make" unless defined($output_format);
-    open MACROS,">$macrosfile" or die "Could not open file $macrosfile to write";
+    open MACROS,">$macrosfile" or $logger->logdie ("Could not open file $macrosfile to write");
     print MACROS "#\n# COMPILER=$compiler\n";
     print MACROS "# OS=$os\n";
     print MACROS "# MACH=$machine\n";
@@ -534,7 +540,7 @@ sub _resolveValues
     # the value can come from the 
     if($value =~ /(\$[\w_]+)/)
     {
-	#print "in _resolveValues: value: $value\n";
+	$logger->debug( "in _resolveValues: value: $value\n");
 	my $unresolved = $1;
 	
 	#print "need to resolve: $unresolved\n";
@@ -553,7 +559,7 @@ sub _resolveValues
 		    my $rid = $r->getAttribute('id');
 		    my $rvalue = $r->getAttribute('value');
 		    $value =~ s/\$$needed/$rvalue/g;
-		    #print "value after substitution: $value\n";
+		    $logger->debug( "value after substitution: $value\n");
 		}
 	    }
 	}
@@ -577,7 +583,7 @@ sub _resolveValues
     }
     else
     {
-	#print "returning $value\n";
+	$logger->debug( "returning $value\n");
 	return $value;
     }
 }

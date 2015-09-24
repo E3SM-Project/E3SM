@@ -15,21 +15,6 @@ BEGIN{
     $logger = get_logger();
 }
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    $logger->logdie("
-  The perl module XML::LibXML is needed for XML parsing in the CIME script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.");  
-    exit(1);
-}
-
 #-----------------------------------------------------------------------------------------------
 sub setMachineFile
 {
