@@ -426,6 +426,8 @@ contains
 
   end subroutine prep_ocn_accum_avg
 
+
+
   !================================================================================================
 
   subroutine prep_ocn_mrg(infodata, fractions_ox, xao_ox, timer_mrg)
@@ -1108,10 +1110,10 @@ contains
        g2x_gx => component_get_c2x_cx(glc(egi))
        
        call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), &
-            fldlist='Sg_icemask_coupled_fluxes:Sg_topg', norm=.true.)
-	    
-	    !Jer: I think here, we will be remapping back to the ocean grid, the ice shelf basal fluxes (after their 
-	    !previous calculation by the coupler
+            fldlist='Sg_icemask_coupled_fluxes:Sg_topg:Sg_blis:Sg_blit', norm=.true.)
+
+       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi), &
+            fldlist='Fogx_qiceho:Fogx_qicelo',norm=.true.)
 	    
     enddo
     call t_drvstopf  (trim(timer))
@@ -1160,7 +1162,7 @@ contains
 
   function prep_ocn_get_g2x_ox()
     type(mct_aVect), pointer :: prep_ocn_get_g2x_ox(:)
-    prep_ocn_get_g2x_ox => g2x_ox(:)   
+    prep_ocn_get_g2x_ox => g2x_ox(:)
   end function prep_ocn_get_g2x_ox
 
   function prep_ocn_get_w2x_ox()

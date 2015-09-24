@@ -1902,7 +1902,7 @@ subroutine ccsm_init()
       endif
       if (glcshelf_c2_ocn) then
          call prep_ocn_shelf_calc_g2x_ox(timer='driver_init_glc2ocn_shelf') 
-      endif      
+      endif
       if (rof_c2_ice) then
          call prep_ice_calc_r2x_ix(timer='driver_init_rof2ice') 
       endif
@@ -2217,12 +2217,14 @@ end subroutine ccsm_init
             call ccsm_comp_barriers(mpicom=mpicom_CPLID, timer='DRIVER_OCNPREP_BARRIER')
             call t_drvstartf ('DRIVER_OCNPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+\
+	    call prep_glc_calculate_subshelf_boundary_fluxes !Jer: tentative location of call to subshelf flux routine.  Is stuff written here overwritten by next call to prep_ocn_accum_avg?
 
             ! finish accumulating ocean inputs
             ! reset the value of x2o_ox with the value in x2oacc_ox 
             ! (module variable in prep_ocn_mod)
             call prep_ocn_accum_avg(timer_accum='driver_ocnprep_avg')
-
+	    
             call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
                  info_debug=info_debug, timer_diag='driver_ocnprep_diagav')
 
@@ -2721,7 +2723,7 @@ end subroutine ccsm_init
       !| GLC SETUP-SEND
       !----------------------------------------------------------
 
-      if (glc_present .and. glcrun_alarm) then
+      if (glc_present .and. glcrun_alarm) then !Jer: this only triggers on the GLC coupling timestep.  Not on ocean timestep.
 
          !----------------------------------------------------
          !| glc prep-merge

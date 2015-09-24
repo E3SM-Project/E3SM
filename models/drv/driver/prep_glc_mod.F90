@@ -117,7 +117,6 @@ contains
     character(CL)                    :: ocn_gnam      ! ocn grid    
     type(mct_avect), pointer         :: l2x_lx  
     type(mct_avect), pointer         :: x2g_gx
-    type(mct_avect), pointer         :: o2x_ox
     type(mct_avect), pointer         :: g2x_gx 
           
     character(*), parameter          :: subname = '(prep_glc_init)'
@@ -363,9 +362,6 @@ contains
     noflds = mct_aVect_nRattr(o2x_g)
 
     if (first_time) then
-        
-	index_o2x_So_tglc = mct_aVect_indexRA(x2g_g,'So_tglc')
-	index_x2g_So_tglc = mct_aVect_indexRA(o2x_g,'So_tglc')
 	
 	!Jer: document fields being passed to GLC
        allocate(mrgstr(ngflds))
@@ -472,71 +468,80 @@ contains
 
     ! Local Variables
 
-    integer :: gsize, egi, n, err
-
+    integer :: gsize, n, err
+    type(mct_aVect), pointer :: o2x_ox ! Ocn export, ocn grid, cpl pes
+    type(mct_aVect), pointer :: x2g_gx ! Glc import, glc grid, cpl pes
+    type(mct_aVect), pointer :: g2x_gx ! Glc import, glc grid, cpl pes    
     !---------------------------------------------------------------
 
-    gsize = mct_aVect_lsize(x2g_gx)
+    gsize = mct_aVect_lsize(o2x_gx)
     err = 0
+
+    o2x_ox => component_get_c2x_cx(ocn(1))
+    g2x_gx => component_get_c2x_cx(glc(1))
+    x2g_gx => component_get_x2c_cx(glc(1))
+
     
-    do egi = 1,num_inst_glc
-      
-      for n=1:gsize
-        !Extract coupler fields used as input to compute_melt_fluxes to local arrays...
-	
-        oceanTemperature(n)	     = x2g_gx(egi)%rAttr(index_x2g_So_blt,n)
-	oceanSalinity(n)	     = x2g_gx(egi)%rAttr(index_x2g_So_bls,n)
-	oceanHeatTransferVelocity(n) = x2g_gx(egi)%rAttr(index_x2g_So_htv,n)
-	oceanSaltTransferVelocity(n) = x2g_gx(egi)%rAttr(index_x2g_So_hsv,n)
-	interfacePressure(n)	     = x2g_gx(egi)%rAttr(index_x2g_So_phieff,n)
-	
-	iceTemperature(n)	     = g2x_gx(egi)%rAttr(index_g2x_Sg_tbot,n)
-	iceTemperatureDistance(n)    = g2x_gx(egi)%rAttr(index_g2x_Sg_dztbot,n)
-	
-	!...and initialize local compute_melt_fluxes output arrays.
-	outInterfaceSalinity(n)     = 0.0_r8
-        outInterfaceTemperature(n)  = 0.0_r8
-        outFreshwaterFlux(n)	     = 0.0_r8
-	outOceanHeatFlux(n)	     = 0.0_r8
-	outIceHeatFlux(n)	     = 0.0_r8
-      end
-    
-      call compute_melt_fluxes(oceanTemperature,&
-                               oceanSalinity,&
-                               oceanHeatTransferVelocity,&
-                               oceanSaltTransferVelocity,&
-                               interfacePressure,&
-                               outInterfaceSalinity,&
-                               outInterfaceTemperature,&
-                               outFreshwaterFlux,&
-                               outOceanHeatFlux,&
-                               outIceHeatFlux,&
-                               gsize,&
-                               err,&
-                               iceTemperature,&
-                               iceTemperatureDistance,&
-                               SHR_CONST_KAPPA_LAND_ICE &
-                               )
-      
-      for n=1:gsize
-      
-        !Assign outputs from compute_melt_fluxes back into coupler attributes
-	
-	g2x_gx(egi)%rAttr(index_g2x_Sg_blis,n) = outInterfaceSalinity(n)      !to ocean
-        g2x_gx(egi)%rAttr(index_g2x_Sg_blit,n) = outInterfaceTemperature(n)   !to ocean
-	g2x_gx(egi)%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)      !to ocean
-        g2x_gx(egi)%rAttr(index_g2x_Fogx_qicelo,n) = outFreshwaterFlux(n)     !to ocean... need unit conversion?
-	x2g_gx(egi)%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)        !to ice sheet
-        x2g_gx(egi)%rAttr(index_x2g_Fogx_qiceli,n) = outFreshwaterFlux(n)     !to ice sheet... need unit conversion?
-	
-      end
-      
+    !TO DO: CONSIDER HOW ENSEMBLES ARE GOING TO BE IMPLEMENTED
+
+    !Remap relevant ocean variables to ice sheet grid.  Done here so it happens within ocean coupling interval.
+    call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
+    fldlist='So_blt:So_bls:So_htv:So_hsv:So_phieff',norm=.true.)
+
+    for n=1:gsize
+      !Extract coupler fields used as input to compute_melt_fluxes to local arrays...
+
+      oceanTemperature(n)	     = o2x_gx%rAttr(index_o2x_So_blt,n)
+      oceanSalinity(n)	     =         o2x_gx%rAttr(index_o2x_So_bls,n)
+      oceanHeatTransferVelocity(n) =   o2x_gx%rAttr(index_o2x_So_htv,n)
+      oceanSaltTransferVelocity(n) =   o2x_gx%rAttr(index_o2x_So_hsv,n)
+      interfacePressure(n)	     = o2x_gx%rAttr(index_o2x_So_phieff,n)
+
+      iceTemperature(n)	     =         g2x_gx%rAttr(index_g2x_Sg_tbot,n)
+      iceTemperatureDistance(n)    =   g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
+
+      !...and initialize local compute_melt_fluxes output arrays.
+      outInterfaceSalinity(n)     = 0.0_r8
+      outInterfaceTemperature(n)  = 0.0_r8
+      outFreshwaterFlux(n)	  = 0.0_r8
+      outOceanHeatFlux(n)	  = 0.0_r8
+      outIceHeatFlux(n)	          = 0.0_r8
     end
- 
+
+    call compute_melt_fluxes(oceanTemperature,&
+                             oceanSalinity,&
+                             oceanHeatTransferVelocity,&
+                             oceanSaltTransferVelocity,&
+                             interfacePressure,&
+                             outInterfaceSalinity,&
+                             outInterfaceTemperature,&
+                             outFreshwaterFlux,&
+                             outOceanHeatFlux,&
+                             outIceHeatFlux,&
+                             gsize,&
+                             err,&
+                             iceTemperature,&
+                             iceTemperatureDistance,&
+                             SHR_CONST_KAPPA_LAND_ICE)
+
+    for n=1:gsize
+      !Assign outputs from compute_melt_fluxes back into coupler attributes
+      g2x_gx%rAttr(index_g2x_Sg_blis,n) = outInterfaceSalinity(n)    !to ocean
+      g2x_gx%rAttr(index_g2x_Sg_blit,n) = outInterfaceTemperature(n) !to ocean
+      g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)    !to ocean
+      g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)= outFreshwaterFlux(n)   !to ocean... need unit conversion?
+      
+      !For latter two: still need averaging and unit conversion presumably...
+      x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) + outIceHeatFlux(n)!to ice sheet 
+      x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) + outFreshwaterFlux(n)!to ice sheet
+    end
+
+    !Remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
+
     character(*), parameter :: subname = '(prep_glc_calc_l2x_gx)'
     !---------------------------------------------------------------
 
-  end subroutine prep_glc_calc_calculate_subshelf_boundary_fluxes
+  end subroutine prep_glc_calculate_subshelf_boundary_fluxes
 
   !================================================================================================
 
