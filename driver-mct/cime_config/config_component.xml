@@ -3277,6 +3277,33 @@
     <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
   </entry>
 
+  <!-- Data Assimilation type stuff -->
+
+  <entry id="DATA_ASSIMILATION">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
+  </entry>
+  <entry id="DATA_ASSIMILATION_CYCLES">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>1</default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc> Number of model run - data assimilation steps to complete </desc>
+  </entry>
+  <entry id="DATA_ASSIMILATION_SCRIPT">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>external_tools</group>
+    <file>env_run.xml</file>
+    <desc>External script to be run after model completion</desc>
+  </entry>
+  
   <description>
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
