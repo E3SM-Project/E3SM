@@ -79,13 +79,15 @@ sub moduleInit()
     {
         $self->{modulesystemtype} = $modtype->getAttribute('type');
     }
-    
+    $self->{modulesystemtype} = 'none' unless defined $self->{modulesystemtype};
     # Get the init_path.  Module systems usually have an 'init' script for 
     # various scripting languages, we need to get this path from config_machines
     # We want to use Bourne shell for soft, there is no way to load modules via Perl 
     # for the soft environment
     my @initnodes; 
-    if($self->{modulesystemtype} eq 'soft')
+    if($self->{modulesystemtype} eq 'none'){
+	return;
+    }elsif($self->{modulesystemtype} eq 'soft')
     {
         @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'sh\']");
     }

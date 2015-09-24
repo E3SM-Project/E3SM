@@ -443,7 +443,10 @@ sub validate_variable_value
 		die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
 		    "not a valid FORTRAN type (logical, integer, real, or char).\n";
 	    }
-	    if ( $i !~ /^\s*(${compare})$/ ) {
+	    if ( $i =~ /USERDEFINED/) {
+		warn "WARNING: in $nm (package $pkg_nm): Variable name $var " .
+		    "has not been defined\n";
+	    }elsif ( $i !~ /^\s*(${compare})$/ ) {
 		die "ERROR: in $nm (package $pkg_nm): Variable name $var " .
 		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} . "\n";
 	    }
