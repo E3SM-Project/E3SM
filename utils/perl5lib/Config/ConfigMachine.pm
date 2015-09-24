@@ -260,8 +260,8 @@ sub _setPIOsettings
 	    my $matches = 0;
 	    MATCH: foreach my $attr ($value->attributes()) {
 		$attr_value = $attr->value(); 
-		my $attr_name  = $attr->name();
-		my $target = $config->get(uc $attr_name);
+		my $attr_name = uc $attr->name();
+		my $target = $config->get($attr_name);
 		if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
 		    $matches++;
 		} elsif ($target =~ m/$attr_value/) {
@@ -277,7 +277,7 @@ sub _setPIOsettings
 	    # reset $max_matches and set new value for $index_match
 	    if ($matches > $max_matches) {
 		$max_matches = $matches;
-		$index_match = $value_counter;
+		$index_match = $value_counter-1;
 	    }
 	}
 
