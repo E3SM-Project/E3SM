@@ -58,6 +58,7 @@ module ocn_forward_mode
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_nonlocalflux
    use ocn_tracer_advection
+   use ocn_tracer_ecosys
    use ocn_gm
 
    use ocn_high_freq_thickness_hmix_del2
@@ -211,6 +212,8 @@ module ocn_forward_mode
       call ocn_gm_init(err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_tracer_ecosys_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
 
       call ocn_vmix_init(domain, err_tmp)
