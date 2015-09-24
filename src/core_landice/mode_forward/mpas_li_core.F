@@ -24,7 +24,8 @@ module li_core
    public :: li_core_init, &
              li_core_run, &
              li_core_finalize, &
-             li_simulation_clock_init
+             li_simulation_clock_init, &
+             li_core_initial_solve
 
    !--------------------------------------------------------------------
    !
@@ -251,7 +252,6 @@ module li_core
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
-      logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
       ! Variables needed for printing timestamps
@@ -259,9 +259,6 @@ module li_core
       character(len=StrKIND) :: timeStamp
 
       integer :: err, err_tmp, globalErr
-      logical :: solveVelo
-
-      integer, dimension(:), pointer :: vertexMask
 
 
       err = 0
@@ -269,96 +266,17 @@ module li_core
       globalErr = 0
 
       ! Get Pool stuff that will be needed
-      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-      call mpas_pool_get_config(liConfigs, 'config_write_stats_on_startup', config_write_stats_on_startup)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       call mpas_timer_start("land ice core run")
-      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      write(stderrUnit,*) 'Initial timestep ', trim(timeStamp)
-      write(stdoutUnit,*) 'Initial timestep ', trim(timeStamp)
-
 
       ! ===
-      ! === Calculate Initial state
+      ! Solve initial state before beginning time stepping
       ! ===
-      call mpas_timer_start("initial state calculation")
-
-      ! On a restart, we already have the exact velocity field we need, 
-      ! so don't do the expensive calculation again.
-      if (config_do_restart) then
-         solveVelo = .false.
-      else
-      ! Otherwise, we need to calculate velocity for the initial state
-      !  (Note: even if the velocity is supplied, we should still calculate it
-      !   to ensure it is consistent with the current geometry/B.C.  If the 
-      !   velocity solver is iterative, the supplied field will be used as an 
-      !   initial guess, so the solution should be quick.
-         solveVelo = .true.
-      endif
-
-      call li_calculate_diagnostic_vars(domain, solveVelo=solveVelo, err=err_tmp)
-      err = ior(err, err_tmp)
-
-      call mpas_timer_stop("initial state calculation")
-
-      if (config_write_stats_on_startup) then
-         call mpas_timer_start("compute_statistics")
-         call li_compute_statistics(domain, 0)     ! itimestep = 0
-                                                   ! (itimestep is initialized below)
-         call mpas_timer_stop("compute_statistics")
-      endif
-
-      ! compute analysis members on startup if option activiated
-      call mpas_timer_start("analysis member startup calculations")
-          call li_analysis_compute_startup(domain, err_tmp)
-          err = ior(err, err_tmp)
-      call mpas_timer_stop("analysis member startup calculations")
-
-      ! ===
-      ! === Write Initial Output
-      ! ===
-      call mpas_timer_start("write output")
-
-      if (config_write_output_on_startup) then
-         call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
-      endif
-
-      call mpas_timer_stop("write output")
-
-      ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
-      ! (for those fields with multiple time levels)
-      block => domain % blocklist
-      do while(associated(block))
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_shift_time_levels(geometryPool)
-         block => block % next
-      end do
-
-      if (config_do_restart .and. (trim(config_velocity_solver) /= 'sia')) then
-         ! On a restart with the HO dycore, we need to make sure the FEM mesh will be rebuilt
-         ! on the first time step.  Force this by setting the vertexMask at the end of the
-         ! initial time to 0.  (Do this after writing output.)
-         block => domain % blocklist
-         do while(associated(block))
-            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=2)  ! Get the old vertexMask
-            vertexMask = 0
-            block => block % next
-         end do
-      endif
-
-      ! === error check and exit
-      call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
-      if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in li_core_run before time-stepping. Aborting...")
-      endif
+      err_tmp = li_core_initial_solve(domain)
+      err = ior(err,err_tmp)  ! li_core_finalize would abort if there was an error, but being safe.
 
 
       ! During integration, time level 1 stores the model state at the beginning of the
@@ -543,6 +461,172 @@ module li_core
       endif
 
    end function li_core_finalize
+   !--------------------------------------------------------------------
+
+
+
+!***********************************************************************
+!
+!  function li_core_initial_solve
+!
+!> \brief   Performs the initial diagnostic solve for the LI core
+!> \author  Matt Hoffman
+!> \date    23 September 2015
+!> \details
+!>  This routine performs the initial diagnostic solve for the LI core.
+!>  Rather than inlining these calculations, there are done in this
+!>  routine to keep them modular.
+!>  This has been made public so it can be called from an ESM.
+!
+!-----------------------------------------------------------------------
+   function li_core_initial_solve(domain) result(err)
+
+      use mpas_derived_types
+      use mpas_pool_routines
+      use mpas_kind_types
+      use mpas_stream_manager
+      use mpas_timer
+      use li_diagnostic_vars
+      use li_setup
+      use li_statistics
+      use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain   !< Input/output: Domain 
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      integer :: itimestep
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
+      character(len=StrKIND), pointer :: config_velocity_solver
+      ! Variables needed for printing timestamps
+      type (MPAS_Time_Type) :: currTime
+      character(len=StrKIND) :: timeStamp
+
+      integer :: err, err_tmp, globalErr
+      logical :: solveVelo
+
+      integer, dimension(:), pointer :: vertexMask
+
+
+      err = 0
+      err_tmp = 0
+      globalErr = 0
+
+      ! Get Pool stuff that will be needed
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
+      call mpas_pool_get_config(liConfigs, 'config_write_stats_on_startup', config_write_stats_on_startup)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+
+      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      write(stderrUnit,*) 'Initial timestep ', trim(timeStamp)
+      write(stdoutUnit,*) 'Initial timestep ', trim(timeStamp)
+
+
+      ! ===
+      ! === Calculate Initial state
+      ! ===
+      call mpas_timer_start("initial state calculation")
+
+      ! On a restart, we already have the exact velocity field we need, 
+      ! so don't do the expensive calculation again.
+      if (config_do_restart) then
+         solveVelo = .false.
+      else
+      ! Otherwise, we need to calculate velocity for the initial state
+      !  (Note: even if the velocity is supplied, we should still calculate it
+      !   to ensure it is consistent with the current geometry/B.C.  If the 
+      !   velocity solver is iterative, the supplied field will be used as an 
+      !   initial guess, so the solution should be quick.
+         solveVelo = .true.
+      endif
+
+      call li_calculate_diagnostic_vars(domain, solveVelo=solveVelo, err=err_tmp)
+      err = ior(err, err_tmp)
+
+      call mpas_timer_stop("initial state calculation")
+
+      if (config_write_stats_on_startup) then
+         call mpas_timer_start("compute_statistics")
+         call li_compute_statistics(domain, 0)     ! itimestep = 0
+                                                   ! (itimestep is initialized below)
+         call mpas_timer_stop("compute_statistics")
+      endif
+
+      ! compute analysis members on startup if option activated
+      call mpas_timer_start("analysis member startup calculations")
+          call li_analysis_compute_startup(domain, err_tmp)
+          err = ior(err, err_tmp)
+      call mpas_timer_stop("analysis member startup calculations")
+
+      ! ===
+      ! === Write Initial Output
+      ! ===
+      call mpas_timer_start("write output")
+
+      if (config_write_output_on_startup) then
+         call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
+      endif
+
+      call mpas_timer_stop("write output")
+
+      ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
+      ! (for those fields with multiple time levels)
+      block => domain % blocklist
+      do while(associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_shift_time_levels(geometryPool)
+         block => block % next
+      end do
+
+      if (config_do_restart .and. (trim(config_velocity_solver) /= 'sia')) then
+         ! On a restart with the HO dycore, we need to make sure the FEM mesh will be rebuilt
+         ! on the first time step.  Force this by setting the vertexMask at the end of the
+         ! initial time to 0.  (Do this after writing output.)
+         block => domain % blocklist
+         do while(associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=2)  ! Get the old vertexMask
+            vertexMask = 0
+            block => block % next
+         end do
+      endif
+
+      ! === error check and exit
+      call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
+      if (globalErr > 0) then
+          call mpas_dmpar_global_abort("An error has occurred in li_core_initial_solve. Aborting...")
+      endif
+
+
+   end function li_core_initial_solve
    !--------------------------------------------------------------------
 
 
