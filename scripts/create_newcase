@@ -164,7 +164,6 @@ my $commandline = "create_newcase @ARGV";
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
 my %opts = (
-    mach_dir => "$cimeroot/machines",
     user_mods_dir => undef,
     );
 GetOptions(
@@ -227,6 +226,7 @@ my $compset;  # set in _check_input_options
 my $grid;     # set in _check_input_options
 my $compiler; # set in _check_input_options
 my $confopts; # set in _set_confopts 
+my $mach_dir;
 my $machine;
 my $testname;
 my $pecount;
@@ -336,27 +336,27 @@ foreach my $element (@elements) {
 
 # Given the compset components, determine the full pathname of each component definition file
 # (all have the generic name config_component.xml) and the directories each component's buildlib and buildnml files
-foreach my $model ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') { 
+foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') { 
     FOUND1: foreach my $component (@compset_components) {
-	my $name = "CONFIG_" . $model . "_FILE";
+	my $name = "CONFIG_" . $comp . "_FILE";
 	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
 	if (@nodes) {
 	    my $value = $nodes[0]->textContent();
 	    $value =~ s/\$CIMEROOT/$cimeroot/;
 	    $value =~ s/\$SRCROOT/$srcroot/;
-	    $value =~ s/\$MODEL/$model/;
+	    $value =~ s/\$MODEL/$comp/;
 	    $config->set($name, $value);
 	    last FOUND1;
 	}
     }
     FOUND2: foreach my $component (@compset_components) {
-	my $name = "CONFIG_" . $model . "_DIR";
+	my $name = "CONFIG_" . $comp . "_DIR";
 	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
 	if (@nodes) {
 	    my $value = $nodes[0]->textContent();
 	    $value =~ s/\$CIMEROOT/$cimeroot/;
 	    $value =~ s/\$SRCROOT/$srcroot/;
-	    $value =~ s/\$MODEL/$model/;
+	    $value =~ s/\$MODEL/$comp/;
 	    $config->set($name, $value);
 	    last FOUND2;
 	}
@@ -640,6 +640,12 @@ sub _check_input_options
 	} else {
 	    die "ERROR: create_newcase must include the input argument, -res\n";
 	}
+	if($opts{mach_dir}){
+	    $mach_dir = $opts{mach_dir};
+	}else{
+	    $mach_dir => "$cimeroot/cime_config/${model}/machines",
+	}
+
 	# Check for manditory machine input
 	if ($opts{'mach'}) {
 	    $machine = $opts{'mach'};

@@ -1,0 +1,28 @@
+SYNOPSIS
+     configure [options]
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -cimeroot            Specify the toplevel cime directory.
+                          default: use CIMEROOT environment variable
+     -mach <name>         Specify a machine (required).
+     -compiler <name>     Specify a compiler for the target machine (optional)
+                          default: default compiler for the target machine
+     -mpilib <name>       Specify an mpi library for the target machine (optional)
+                          default: mpi-serial  (most of the tools are serial apps)
+     -mach_dir <path>     Specify the locations of the Machines directory (optional).
+
+     -output_dir <path>   default: current working directory
+     -output_format <value> Output format can be make or cmake.
+                          default: make
+     -help [or -h]        Print usage to STDOUT (optional).
+     -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
+     -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
+     
+EXAMPLES
+
+  ./configure -mach bluefire -compiler ibm
+  ./configure -mach generic_CNL -compiler cray
