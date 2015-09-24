@@ -27,8 +27,8 @@ sub create_namelist_infile
 {
     my ($caseroot, $user_nl_file, $namelist_infile, $infile_text) = @_;
 
-    open( file_usernl,"<${user_nl_file}"   ) or die "*** can't open file: $user_nl_file\n";
-    open( file_infile,">${namelist_infile}") or die "*** can't open file: $namelist_infile";
+    open( file_usernl,"<${user_nl_file}"   ) or $logger->logdie( "*** can't open file: $user_nl_file");
+    open( file_infile,">${namelist_infile}") or $logger->logdie( "*** can't open file: $namelist_infile");
 
     print file_infile "\&comp_inparm \n";
 
@@ -76,7 +76,7 @@ sub expand_xml_var
 
     if($value =~ /\$ENV\{(.*)\}/){
 	my $subst = $ENV{$1};
-	die "No environment variable found for $1" unless(defined $subst);
+	$logger->logdie ("No environment variable found for $1") unless(defined $subst);
 	$value =~ s/\$ENV\{*${1}\}/$subst/g;
     }
     if ($value =~ /\$\{*([\w_]+)}*(.*)$/) {
@@ -193,7 +193,7 @@ sub set_compiler
 	}	
     }
     if ($#compiler_settings <= 0) {
-	die "set_compiler: unrecognized compiler" unless($#compiler_settings);
+	$logger->logdie( "set_compiler: unrecognized compiler") unless($#compiler_settings);
     }
     # Parse the xml settings into the $macros hash structure
     # put conditional settings in the _COND_ portion of the hash
@@ -343,7 +343,7 @@ sub is_valid_value
     unless ($is_list_value) {  # this conditional is satisfied when the list attribute is false, i.e., for scalars
 	if ($value =~ /.*,.*/) {    
 	    # the pattern matches when $value contains a comma, i.e., is a list
- 	    die "Errorr is_valid_value; variable $id is a scalar but has a list value $value \n";
+ 	    $logger->logdie( "Error is_valid_value; variable $id is a scalar but has a list value $value ");
 	}
    }
 
@@ -352,11 +352,11 @@ sub is_valid_value
     if ( $valid_values ne "" ) {  
 	if ($is_list_value) {
 	    unless (_list_value_ok($value, $valid_values)) { 
-		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
+		$logger->logdie( "ERROR is_valid_value: $id has value $value which is not a valid value ");
 	    }
 	} else {
 	    unless (_value_ok($value, $valid_values)) { 
-		die "ERROR is_valid_value: $id has value $value which is not a valid value \n";
+		$logger->logdie("ERROR is_valid_value: $id has value $value which is not a valid value ");
 	    }
 	}
 
@@ -416,11 +416,11 @@ sub validate_variable_value
 
     # Ensure type hash has required variables
     if ( ref($type_ref) !~ /HASH/ ) {
-	die "ERROR: in $nm : Input type is not a HASH reference.\n";
+	$logger->logdie("ERROR: in $nm : Input type is not a HASH reference.");
     }
     foreach my $item ( "type", "validValues", "strlen" ) {
 	if ( ! exists($$type_ref{$item}) ) {
-	    die "ERROR: in $nm: Variable name $item not defined in input type hash.\n";
+	    $logger->logdie( "ERROR: in $nm: Variable name $item not defined in input type hash.");
 	}
     }
     # If string check that less than defined string length
@@ -428,8 +428,8 @@ sub validate_variable_value
     if ( $$type_ref{'type'} eq "char" ) {
 	$str_len = $$type_ref{'strlen'};
 	if ( length($value) > $str_len ) {
-	    die "ERROR: in $nm Variable name $var " .
-		"has a string element that is too long: $value\n";
+	    $logger->logdie( "ERROR: in $nm Variable name $var " .
+			     "has a string element that is too long: $value");
 	}
     }
     # If not string -- check that array size is smaller than definition
@@ -446,15 +446,15 @@ sub validate_variable_value
 	    } elsif ( $$type_ref{'type'} eq "real" ) {
 		$compare = $valreal;
 	    } else {
-		die "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
-		    "not a valid FORTRAN type (logical, integer, real, or char).\n";
+		$logger->logdie( "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
+		    "not a valid FORTRAN type (logical, integer, real, or char).");
 	    }
 	    if ( $i =~ /USERDEFINED/) {
-		warn "WARNING: in $nm (package $pkg_nm): Variable name $var " .
-		    "has not been defined\n";
+		$logger->warn ("WARNING: in $nm (package $pkg_nm): Variable name $var " .
+		    "has not been defined");
 	    }elsif ( $i !~ /^\s*(${compare})$/ ) {
-		die "ERROR: in $nm (package $pkg_nm): Variable name $var " .
-		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} . "\n";
+		$logger->logdie( "ERROR: in $nm (package $pkg_nm): Variable name $var " .
+		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} );
 	    }
 	}
     }
