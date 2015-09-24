@@ -93,15 +93,16 @@ module atm_core_interface
    !>  not allocated until after this routine has been called.
    !
    !-----------------------------------------------------------------------
-   function atm_setup_packages(configs, packages) result(ierr)
+   function atm_setup_packages(configs, packages, iocontext) result(ierr)
 
-      use mpas_derived_types, only : mpas_pool_type
+      use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
 
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
       type (mpas_pool_type), intent(inout) :: packages
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
       ierr = 0

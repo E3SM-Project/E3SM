@@ -91,6 +91,10 @@ module test_core
       call mpas_unit_test_fix_periodicity(iErr)
       call mpas_unit_test_triangle_signed_area_sphere(iErr)
 
+      call mpas_unit_test_velocity_conversion(iErr)
+      call mpas_unit_test_wachspress_hexagon(iErr)
+      call mpas_unit_test_wachspress_triangle(iErr)
+
    end function test_core_run!}}}
 
    !***********************************************************************

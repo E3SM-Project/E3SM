@@ -71,7 +71,7 @@ module mpas_block_decomp
       integer, dimension(:,:), allocatable :: sorted_local_cell_list
 
       integer :: i, global_block_id, local_block_id, owning_proc, iunit, istatus
-      integer :: blocks_per_proc
+      integer :: blocks_per_proc, err
       integer, dimension(:), pointer :: local_nvertices
       character (len=StrKIND) :: filename
 
@@ -118,19 +118,33 @@ module mpas_block_decomp
            open(unit=iunit, file=trim(filename), form='formatted', status='old', iostat=istatus)
      
            if (istatus /= 0) then
-              write(stderrUnit,*) 'Could not open block decomposition file for ',dminfo % total_blocks,' blocks.'
+              write(stderrUnit,*) 'ERROR: Could not open block decomposition file for ',dminfo % total_blocks,' blocks.'
               write(stderrUnit,*) 'Filename: ',trim(filename)
               call mpas_dmpar_abort(dminfo)
            end if
   
            local_nvertices(:) = 0
            do i=1,partial_global_graph_info % nVerticesTotal
-              read(unit=iunit, fmt=*) global_block_id
+              read(unit=iunit, fmt=*, iostat=err) global_block_id
+
+              if ( err .ne. 0 ) then
+                 write(stderrUnit, *) 'ERROR: Decomoposition file: ', trim(filename), ' contains less than ', &
+                                      partial_global_graph_info % nVerticesTotal, ' cells.'
+                 call mpas_dmpar_abort(dminfo)
+              end if
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
               local_nvertices(owning_proc+1) = local_nvertices(owning_proc+1) + 1
            end do
+
+           read(unit=iunit, fmt=*, iostat=err)
+
+           if ( err == 0 ) then
+              write(stderrUnit, *) 'ERROR: Decomposition file: ', trim(filename), ' contains more than ', &
+                                   partial_global_graph_info % nVerticesTotal, ' cells.'
+              call mpas_dmpar_abort(dminfo)
+           end if
      
-            allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
+           allocate(global_cell_list(partial_global_graph_info % nVerticesTotal))
   
            global_start(1) = 1
            do i=2,dminfo % nprocs
@@ -140,14 +154,14 @@ module mpas_block_decomp
            rewind(unit=iunit)
      
            do i=1,partial_global_graph_info % nVerticesTotal
-              read(unit=iunit, fmt=*) global_block_id
+              read(unit=iunit, fmt=*, iostat=err) global_block_id
               call mpas_get_owning_proc(dminfo, global_block_id, owning_proc)
   
               global_cell_list(global_start(owning_proc+1)) = i
               global_block_list(global_start(owning_proc+1)) = global_block_id
               global_start(owning_proc+1) = global_start(owning_proc+1) + 1
            end do
-  
+
            global_start(1) = 0
            do i=2,dminfo % nprocs
               global_start(i) = global_start(i-1) + local_nvertices(i-1)
