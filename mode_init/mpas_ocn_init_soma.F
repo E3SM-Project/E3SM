@@ -97,20 +97,20 @@ contains
       
       ! SOMA test case run-time configuration parameters
       integer, pointer :: config_soma_vert_levels
-      real, pointer :: config_eos_linear_alpha
-      real, pointer :: config_soma_surface_salinity
-      real, pointer :: config_soma_surface_temperature
-      real, pointer :: config_soma_density_difference_linear
-      real, pointer :: config_soma_thermocline_depth
-      real, pointer :: config_soma_center_latitude
-      real, pointer :: config_soma_center_longitude
-      real, pointer :: config_soma_domain_width
-      real, pointer :: config_soma_shelf_width
-      real, pointer :: config_soma_shelf_depth
-      real, pointer :: config_soma_bottom_depth
-      real, pointer :: config_soma_phi
-      real, pointer :: config_soma_ref_density
-      real, pointer :: config_soma_density_difference
+      real (kind=RKIND), pointer :: config_eos_linear_alpha
+      real (kind=RKIND), pointer :: config_soma_surface_salinity
+      real (kind=RKIND), pointer :: config_soma_surface_temperature
+      real (kind=RKIND), pointer :: config_soma_density_difference_linear
+      real (kind=RKIND), pointer :: config_soma_thermocline_depth
+      real (kind=RKIND), pointer :: config_soma_center_latitude
+      real (kind=RKIND), pointer :: config_soma_center_longitude
+      real (kind=RKIND), pointer :: config_soma_domain_width
+      real (kind=RKIND), pointer :: config_soma_shelf_width
+      real (kind=RKIND), pointer :: config_soma_shelf_depth
+      real (kind=RKIND), pointer :: config_soma_bottom_depth
+      real (kind=RKIND), pointer :: config_soma_phi
+      real (kind=RKIND), pointer :: config_soma_ref_density
+      real (kind=RKIND), pointer :: config_soma_density_difference
 
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1
