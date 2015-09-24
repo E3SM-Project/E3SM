@@ -304,10 +304,11 @@ module ocn_init_mode
 !>  configurations to ensure namelist options are set in a valid way.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_init_mode_validate_configuration(configPool, packagePool, iErr)!{{{
+   subroutine ocn_init_mode_validate_configuration(configPool, packagePool, iocontext, iErr)!{{{
 
       type (mpas_pool_type), intent(inout) :: configPool !< Input: Pool with namelist options
       type (mpas_pool_type), intent(inout) :: packagePool !< Input: Pool with packages
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer, intent(out) :: iErr !< Output: Error core
 
       logical, pointer :: cullCellsActive
@@ -325,23 +326,23 @@ module ocn_init_mode
          cullCellsActive = .true.
       end if
 
-      call ocn_init_validate_baroclinic_channel(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_baroclinic_channel(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_lock_exchange(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_lock_exchange(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_internal_waves(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_internal_waves(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_overflow(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_overflow(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_global_ocean(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_global_ocean(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_cvmix_WSwSBF(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_cvmix_WSwSBF(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_iso(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_iso(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      call ocn_init_validate_soma(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_soma(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      ! call ocn_config_TEMPLATE_validate(configPool, packagePool, iErr=err_tmp)
+      ! call ocn_config_TEMPLATE_validate(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
    end subroutine ocn_init_mode_validate_configuration!}}}
 

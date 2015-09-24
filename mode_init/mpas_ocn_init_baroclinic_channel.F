@@ -327,10 +327,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_validate_baroclinic_channel(configPool, packagePool, iErr)!{{{
+   subroutine ocn_init_validate_baroclinic_channel(configPool, packagePool, iocontext, iErr)!{{{
 
    !--------------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool, packagePool
+      type (mpas_pool_type), intent(inout) :: configPool, packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
 
       integer, intent(out) :: iErr
 
