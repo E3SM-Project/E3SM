@@ -98,7 +98,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_setup_packages(configPool, packagePool, err)!{{{
+   subroutine ocn_analysis_setup_packages(configPool, packagePool, iocontext, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -106,8 +106,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
+      type (mpas_pool_type), intent(inout) :: configPool
+      type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
 
       !-----------------------------------------------------------------
       !

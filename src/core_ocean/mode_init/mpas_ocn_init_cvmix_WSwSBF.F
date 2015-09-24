@@ -341,12 +341,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_validate_cvmix_WSwSBF(configPool, packagePool, iErr)!{{{
+   subroutine ocn_init_validate_cvmix_WSwSBF(configPool, packagePool, iocontext, iErr)!{{{
 
    !--------------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
+      type (mpas_pool_type), intent(inout) :: configPool
+      type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
+
       integer, intent(out) :: iErr
 
       character (len=StrKIND), pointer :: config_init_configuration

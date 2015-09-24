@@ -48,6 +48,7 @@ module ocn_core_interface
       core % get_mesh_stream => ocn_get_mesh_stream
       core % setup_immutable_streams => ocn_setup_immutable_streams
       core % setup_derived_dimensions => ocn_setup_derived_dimensions
+      core % setup_decomposed_dimensions => ocn_setup_decomposed_dimensions
       core % setup_block => ocn_setup_block
       core % setup_namelist => ocn_setup_namelists
 
@@ -92,12 +93,13 @@ module ocn_core_interface
    !>   *not* allocated until after this routine is called.
    !
    !-----------------------------------------------------------------------
-   function ocn_setup_packages(configPool, packagePool) result(ierr)!{{{
+   function ocn_setup_packages(configPool, packagePool, iocontext) result(ierr)!{{{
 
       use ocn_analysis_driver
 
       type (mpas_pool_type), intent(inout) :: configPool
       type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
 
       integer :: ierr
 
@@ -239,7 +241,7 @@ module ocn_core_interface
       !
       ! call into analysis member driver to set analysis member packages
       !
-      call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)
+      call ocn_analysis_setup_packages(configPool, packagePool, iocontext, err_tmp)
       ierr = ior(ierr, err_tmp)
 
 
@@ -247,7 +249,7 @@ module ocn_core_interface
       ! if in init mode, validate configuration
       !
       if ( initModeActive ) then
-         call ocn_init_mode_validate_configuration(configPool, packagePool, ierr)
+         call ocn_init_mode_validate_configuration(configPool, packagePool, iocontext, ierr)
       endif
 
       !

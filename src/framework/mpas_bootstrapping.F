@@ -142,7 +142,7 @@ module mpas_bootstrapping
       nHalos = config_num_halos
 
 
-      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, ierr=ierr)
+      inputHandle = MPAS_io_open(trim(mesh_filename), MPAS_IO_READ, mesh_iotype, domain % ioContext, ierr=ierr)
       if (ierr /= MPAS_IO_NOERR) then
          write(stderrUnit,*) ' '
          write(stderrUnit,*) '************************************************************************************'
@@ -460,7 +460,7 @@ module mpas_bootstrapping
                                               MPAS_STREAM_PROPERTY_IOTYPE, ioType, ierr = err_local)
 
             ! Try to open file
-            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, ioType, ierr = err_local)
+            inputHandle = MPAS_io_open(trim(streamFilename), MPAS_IO_READ, ioType, domain % ioContext, ierr = err_local)
 
             ! If to determine if file was opened or not.
             if ( err_local == MPAS_IO_NOERR ) then

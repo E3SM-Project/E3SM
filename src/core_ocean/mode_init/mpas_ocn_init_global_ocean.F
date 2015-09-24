@@ -187,7 +187,7 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_latlon_degrees', config_global_ocean_topography_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(topographyStream, config_global_ocean_topography_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(topographyStream, domain % iocontext, config_global_ocean_topography_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup topoLat, topoLon, and topoIC fields for stream to be read in
        topoLat % fieldName = trim(config_global_ocean_topography_lat_varname)
@@ -687,7 +687,7 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_conversion_factor', config_global_ocean_depth_conversion_factor)
 
        ! Define stream for depth levels
-       call MPAS_createStream(depthStream, config_global_ocean_depth_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(depthStream, domain % iocontext, config_global_ocean_depth_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup depth field for stream to be read in
        depthIC % fieldName = trim(config_global_ocean_depth_varname)
@@ -765,7 +765,7 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_latlon_degrees', config_global_ocean_tracer_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(tracerStream, config_global_ocean_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(tracerStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup tracerLat and tracerLon fields for stream to be read in
        tracerLat % fieldName = trim(config_global_ocean_tracer_lat_varname)
@@ -851,7 +851,7 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for temperature IC
-       call MPAS_createStream(temperatureStream, config_global_ocean_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(temperatureStream, domain % iocontext, config_global_ocean_temperature_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup temperature field for stream to be read in
        temperatureIC % fieldName = trim(config_global_ocean_temperature_varname)
@@ -914,7 +914,7 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for salinity IC
-       call MPAS_createStream(salinityStream, config_global_ocean_salinity_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(salinityStream, domain % iocontext, config_global_ocean_salinity_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup salinity field for stream to be read in
        salinityIC % fieldName = trim(config_global_ocean_salinity_varname)
@@ -1323,7 +1323,7 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_latlon_degrees', config_global_ocean_windstress_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(windstressStream, config_global_ocean_windstress_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(windstressStream, domain % iocontext, config_global_ocean_windstress_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup windLat, windLon, and windIC fields for stream to be read in
        windLat % fieldName = trim(config_global_ocean_windstress_lat_varname)
@@ -1651,11 +1651,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_validate_global_ocean(configPool, packagePool, iErr)!{{{
+   subroutine ocn_init_validate_global_ocean(configPool, packagePool, iocontext, iErr)!{{{
 
    !--------------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: configPool, packagePool
+      type (mpas_pool_type), intent(inout) :: configPool, packagePool
+      type (mpas_io_context_type), intent(inout), target :: iocontext
+
+      type (mpas_io_context_type), pointer :: iocontext_ptr
+
       integer, intent(out) :: iErr
       type (MPAS_IO_Handle_type) :: inputFile
 
@@ -1668,6 +1672,8 @@ contains
                                           config_global_ocean_windstress_nlon_dimname
 
       integer, pointer :: config_vert_levels
+
+      iocontext_ptr => iocontext
 
       iErr = 0
 
@@ -1689,27 +1695,27 @@ contains
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlat_dimname', config_global_ocean_windstress_nlat_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlon_dimname', config_global_ocean_windstress_nlon_dimname)
 
-      inputFile = MPAS_io_open(config_global_ocean_depth_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_depth_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
 
       call MPAS_io_inq_dim(inputFile, config_global_ocean_depth_dimname, nDepth, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
-      inputFile = MPAS_io_open(config_global_ocean_temperature_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_temperature_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
 
       call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlat_dimname, nLatTracer, iErr)
       call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlon_dimname, nLonTracer, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
-      inputFile = MPAS_io_open(config_global_ocean_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
 
       call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlat_dimname, nLatTopo, iErr)
       call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlon_dimname, nLonTopo, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
-      inputFile = MPAS_io_open(config_global_ocean_windstress_file, MPAS_IO_READ, MPAS_IO_NETCDF, ierr=iErr)
+      inputFile = MPAS_io_open(config_global_ocean_windstress_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
 
       call MPAS_io_inq_dim(inputFile, config_global_ocean_windstress_nlat_dimname, nLatWind, iErr)
       call MPAS_io_inq_dim(inputFile, config_global_ocean_windstress_nlon_dimname, nLonWind, iErr)
