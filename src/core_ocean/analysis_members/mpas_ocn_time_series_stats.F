@@ -200,7 +200,7 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   ! get all of the timing and configuration
   call get_alarms(domain, instance, series, alarms, err)
 
-  ! set all of the alarms based on timers
+  ! set all of the alarms and current flag state based on timers
   call set_alarms(domain, instance, series, alarms, err)
 
   ! clean up the memory
@@ -1063,30 +1063,31 @@ subroutine set_alarms(domain, instance, series, alarms, err)
   type (mpas_time_type) :: current_time, when, &
     duration_time, repeat_time, reset_time
   type (mpas_timeinterval_type) :: elapsed, zero, &
-    repeat_rem, duration_rem, reset_rem
+    repeat_rem, duration_rem, reset_rem, zero_intv
 
   ! start procedure
   alarm_prefix = trim(FRAMEWORK_PREFIX) // trim(instance)
 
   ! get current time
   current_time = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
+  call mpas_set_timeInterval(zero_intv, S=0)
 
   ! configure alarms
   do b = 1, series % number_of_buffers
     write(buf_identifier, '(I0)') b
 
-    ! no reset on start, because it should be zero'd already
+    ! zero flags
+    series % buffers(b) % started_flag = 0
     series % buffers(b) % reset_flag = 0
+    series % buffers(b) % accumulate_flag = 0
 
-    ! see if we start in the future or we have already started
+    ! set start time and flag
     if (current_time >= alarms % start_time) then
        series % buffers(b) % started_flag = 1
 
        ! no start alarm
        series % buffers(b) % start_alarm_ID = ''
     else
-       series % buffers(b) % started_flag = 0
- 
        ! set the start alarm
        series % buffers(b) % start_alarm_ID = trim(alarm_prefix) // &
          trim(START_ALARM_PREFIX) // trim(buf_identifier)
@@ -1095,55 +1096,67 @@ subroutine set_alarms(domain, instance, series, alarms, err)
          alarms % start_time, ierr=err)
      end if
 
-    !
-    ! determine next alarm times
-    !
+    ! set next reset time and flag
+    when = alarms % start_time + alarms % reset_interval
+    if (current_time >= when) then
+      elapsed = current_time - when
+      call mpas_interval_division(when, elapsed, &
+        alarms % reset_interval, reset_n, reset_rem)
 
-    ! set next duration time
+      if (reset_rem == zero_intv) then
+        ! reset right now
+        reset_time = current_time + alarms % reset_interval
+        series % buffers(b) % reset_flag = 1
+      else
+        reset_rem = alarms % reset_interval - reset_rem
+        reset_time = current_time + reset_rem
+      end if
+    else
+      reset_time = when
+    end if
+
+    ! set next duration time and flag
     when = alarms % start_time + alarms % duration_interval ! duration is offset
-    if (current_time > when) then
+    if (current_time >= when) then
       elapsed = current_time - when
       call mpas_interval_division(when, elapsed, &
         alarms % repeat_interval, & ! repeat is correct
         duration_n, duration_rem)
-      duration_rem = alarms % repeat_interval - duration_rem
-      duration_time = current_time + duration_rem ! remainder of repeat
+
+      if (duration_rem == zero_intv) then
+        ! turn off accumulation
+        duration_time = current_time + alarms % repeat_interval ! yes, repeat
+      else
+        duration_rem = alarms % repeat_interval - duration_rem ! yes, repeat
+        duration_time = current_time + duration_rem ! remainder of repeat
+      end if
     else
-      duration_time = alarms % start_time + alarms % duration_interval
-      duration_n = 0
+      duration_time = when
+      duration_n = -1
     end if
 
-    ! set next repeat time
+    ! set next repeat time and flag
     when = alarms % start_time + alarms % repeat_interval
-    if (current_time > when) then
+    if (current_time >= when) then
       elapsed = current_time - when
       call mpas_interval_division(when, elapsed, &
         alarms % repeat_interval, repeat_n, repeat_rem)
-      repeat_rem = alarms % repeat_interval - repeat_rem
-      repeat_time = current_time + repeat_rem
+
+      if (repeat_rem == zero_intv) then
+        repeat_time = current_time + alarms % repeat_interval
+      else
+        repeat_rem = alarms % repeat_interval - repeat_rem
+        repeat_time = current_time + repeat_rem
+      end if
     else
-      repeat_time = alarms % start_time + alarms % repeat_interval
-      repeat_n = 0
+      repeat_time = when
+      repeat_n = -1
     end if
 
-    ! set next reset time
-    when = alarms % start_time + alarms % reset_interval
-    if (current_time > when) then
-      elapsed = current_time - when
-      call mpas_interval_division(when, elapsed, &
-        alarms % reset_interval, reset_n, reset_rem)
-      reset_rem = alarms % reset_interval - reset_rem
-      reset_time = current_time + reset_rem
-    else
-      reset_time = alarms % start_time + alarms % reset_interval
-      reset_n = 0
-    end if
-
-    ! we're accumulating if we are in a window between duration and repeat
-    if (duration_n == repeat_n) then
+    ! accumulate now if in a window (both duration & repeat are untriggered)
+    if ((duration_n == repeat_n) .and. &
+        (series % buffers(b) % started_flag == 1)) then
       series % buffers(b) % accumulate_flag = 1
-    else
-      series % buffers(b) % accumulate_flag = 0
     end if
 
     !
@@ -1399,6 +1412,8 @@ subroutine timer_checking(series, clock, err)!{{{
         series % buffers(b) % started_flag = 1
         series % buffers(b) % reset_flag = 1
         series % buffers(b) % accumulate_flag = 1
+
+        series % buffers(b) % start_alarm_ID = ''
       end if
     end if
 
