@@ -72,9 +72,12 @@ def get_test_suites():
 ###############################################################################
 def find_all_supported_platforms():
 ###############################################################################
-    """Returns a set of all ACME supported platforms as defined in the
-XML configuration file config_machines.xml in the ACME source tree. A platform
-is defined by a triple (machine name, compiler, mpi library)."""
+    """
+    Returns a set of all ACME supported platforms as defined in the
+    XML configuration file config_machines.xml in the ACME source
+    tree. A platform is defined by a triple (machine name, compiler,
+    mpi library).
+    """
     import xml.etree.ElementTree as ET
     config_machines_xml = os.path.join(acme_util.get_cime_root(), 'machines-acme', 'config_machines.xml')
     tree = ET.parse(config_machines_xml)
@@ -82,20 +85,24 @@ is defined by a triple (machine name, compiler, mpi library)."""
     expect(root.tag == 'config_machines',
            'The given XML file is not a valid list of machine configurations.')
     platform_set = set()
+
     # Each child of this root is a machine entry.
     for machine in root:
-        expect(machine.tag == 'machine', 'Invalid machine tag: %s'%machine.tag)
-        expect('MACH' in machine.attrib, 'Invalid machine entry found')
-        mach_name = machine.attrib['MACH']
-        expect('COMPILERS' in [item.tag for item in machine],
-               'COMPILERS entry not found in machine %s'%mach_name)
-        compilers_string = machine.find('COMPILERS').text
-        compilers = [compiler.strip() for compiler in compilers_string.split(',')]
-        mpilibs_string = machine.find('MPILIBS').text
-        mpilibs = [mpilib.strip() for mpilib in mpilibs_string.split(',')]
-        for compiler in compilers:
-            for mpilib in mpilibs:
-                platform_set.add((mach_name, compiler, mpilib))
+        if (machine.tag == 'machine'):
+            expect('MACH' in machine.attrib, 'Invalid machine entry found')
+            mach_name = machine.attrib['MACH']
+            expect('COMPILERS' in [item.tag for item in machine],
+                   'COMPILERS entry not found in machine %s'%mach_name)
+            compilers_string = machine.find('COMPILERS').text
+            compilers = [compiler.strip() for compiler in compilers_string.split(',')]
+            mpilibs_string = machine.find('MPILIBS').text
+            mpilibs = [mpilib.strip() for mpilib in mpilibs_string.split(',')]
+            for compiler in compilers:
+                for mpilib in mpilibs:
+                    platform_set.add((mach_name, compiler, mpilib))
+        else:
+            warning("Ignoring unrecognized tag: '%s'" % machine.tag)
+
     return list(platform_set)
 
 ###############################################################################
@@ -117,17 +124,6 @@ def find_all_platforms(xml_file):
             platform_set.add((machine, compiler))
 
     return list(platform_set)
-
-###############################################################################
-def replace_testlist_xml(output, xml_file):
-###############################################################################
-    # manage_xml_entries creates a temporary file intended for people to manually check the
-    # changes. This made sense before revision control, but not anymore.
-    if 'now writing the new test list to' in output:
-        i1 = output.index('now writing') + len('now writing the new test list to ')
-        i2 = output.index('xml') + 3
-        new_xml_file = output[i1:i2]
-        shutil.move(new_xml_file, xml_file)
 
 ###############################################################################
 def generate_acme_test_entries(category, platforms):
@@ -160,29 +156,24 @@ def update_acme_test(xml_file, categories, platform):
             acme_util.verbose_print('pruning unsupported platform %s'%repr(p))
     platforms = [p for p in platforms if p in supported_platforms]
 
-    # Try to find the manage_xml_entries script. Assume sibling of xml_file
-    if (os.path.dirname(xml_file) == ""):
-        manage_xml_entries = os.path.join(".", "manage_xml_entries")
-    else:
-        manage_xml_entries = os.path.join(os.path.dirname(xml_file), "manage_xml_entries")
+    manage_xml_entries = os.path.join(acme_util.get_cime_root(), "scripts", "manage_testlists")
+
     expect(os.path.isfile(manage_xml_entries),
-           "Couldn't find manage_xml_entries, expect sibling of '%s'" % xml_file)
+           "Couldn't find manage_testlists, expected it to be here: '%s'" % manage_xml_entries)
 
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            output = acme_util.run_cmd('%s -removetests -category %s' % (manage_xml_entries, category), verbose=True)
+            output = acme_util.run_cmd('%s -component allactive -removetests -category %s' % (manage_xml_entries, category), verbose=True)
         else:
-            output = acme_util.run_cmd('%s -removetests -category %s -machine %s -compiler %s'
+            output = acme_util.run_cmd('%s -component allactive -removetests -category %s -machine %s -compiler %s'
                                        % (manage_xml_entries, category, platforms[0][0], platforms[0][1]), verbose=True)
-        replace_testlist_xml(output, xml_file)
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        output = acme_util.run_cmd("%s -addlist -file %s -category %s" %
+        output = acme_util.run_cmd("%s -component allactive -addlist -file %s -category %s" %
                                    (manage_xml_entries, new_test_file, category), verbose=True)
         os.unlink(new_test_file)
-        replace_testlist_xml(output, xml_file)
 
     print "SUCCESS"
