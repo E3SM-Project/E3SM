@@ -420,7 +420,14 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
 my $file = $config->get('CONFIG_DRV_FILE');
-ConfigMachine::setMachineValues($file, $pes_setby, $machine, $compiler, $print, $config);
+if(defined($opts{compiler})){
+    $config->set('COMPILER',$opts{compiler});
+}
+if(defined($opts{mpilib})){
+    $config->set('MPILIB',$opts{mpilib});
+}
+
+ConfigMachine::setMachineValues($file, $pes_setby, $machine, $print, $config);
 
 # now potentially override with unsupported user config_pes.xml file.
 # TODO - put this change in for the new create_newcase changes - these were there in the old code
@@ -442,6 +449,7 @@ if (defined $opts{'confopts'}) {
     $confopts = $opts{'confopts'};
     _set_confopts($confopts, $config);
 }
+
 
 #------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
