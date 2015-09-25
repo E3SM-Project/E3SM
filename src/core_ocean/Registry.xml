@@ -135,7 +135,7 @@
 					baroclinic_channel_value="baroclinic_channel"
 					cvmix_convection_unit_test_value="cvmix_convection_unit_test"
 					cvmix_shear_unit_test_value="cvmix_shear_unit_test"
-					cvmx_WSwSBF_value="cvmx_WSwSBF"
+					cvmix_WSwSBF_value="cvmix_WSwSBF"
 					global_ocean_value="global_ocean"
 					internal_waves_value="internal_waves"
 					lock_exchange_value="lock_exchange"
@@ -588,7 +588,7 @@
 					possible_values="Any positive value"
 		/>
 	</nml_record>
-	<nml_record name="forcing" mode="init;forward">
+	<nml_record name="forcing" mode="forward">
 		<nml_option name="config_use_bulk_wind_stress" type="logical" default_value=".false." units="unitless"
 					description="Controls if zonal and meridional components of windstress are used to build surface wind stress."
 					possible_values=".true. or .false."
@@ -1044,7 +1044,18 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
                         <var name="landIceFraction"/>
-                        <var name="landIceSurfaceTemperature"/>
+			<var name="landIceSurfaceTemperature"/>
+                        <var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
+                        <var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
+                        <var_array name="activeTracersInteriorRestoringRate" packages="activeTracersInteriorRestoringPKG"/>
+                        <var_array name="activeTracersInteriorRestoringValue" packages="activeTracersInteriorRestoringPKG"/>
+                        <var_array name="debugTracersPistonVelocity" packages="debugTracersSurfaceRestoringPKG"/>
+                        <var_array name="debugTracersSurfaceRestoringValue" packages="debugTracersSurfaceRestoringPKG"/>
+                        <var name="latentHeatFlux"/>
+                        <var name="sensibleHeatFlux"/>
+                        <var name="shortWaveHeatFlux"/>
+                        <var name="evaporationFlux"/>
+                        <var name="rainFlux"/>
 		</stream>
 
 		<!-- Forward mode streams -->
@@ -1114,6 +1125,39 @@
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
 			<var name="seaSurfacePressure"/>
+		</stream>
+                <stream name="KPP_testing"
+                                type="output"
+                                filename_template="output/KPP_test.$Y-$M-$D_$h.$m.$s.nc"
+                                filename_interval="00-01-00_00:00:00"
+                                reference_time="0000-01-01_00:00:00"
+                                clobber_mode="truncate"
+                                output_interval="0000_01:00:00" 
+				runtime_format="single_file" >
+
+                        <stream name="mesh"/>
+			<var name="xtime"/>
+			<var_struct name="tracers"/>
+                        <var name="zMid"/>
+                        <var name="zTop"/>
+                        <var name="velocityZonal"/>
+                        <var name="velocityMeridional"/>
+                        <var name="bulkRichardsonNumber"/>
+                        <var name="bulkRichardsonNumberBuoy"/>
+                        <var name="unresolvedShear"/>
+                        <var name="boundaryLayerDepth"/>
+                        <var name="boundaryLayerDepthEdge"/>
+                        <var_array name="vertNonLocalFlux"/>
+                        <var name="surfaceFrictionVelocity"/>
+                        <var name="penetrativeTemperatureFluxOBL"/>
+                        <var name="surfaceBuoyancyForcing"/>
+                        <var name="windStressZonalDiag"/>
+                        <var name="windStressMeridionalDiag"/>
+                        <var name="transportVelocityZonal"/>
+                        <var name="transportVelocityMeridional"/>
+                        <var name="RiTopOfCell"/>
+			<var name="vertViscTopOfCell"/>
+			<var name="vertDiffTopOfCell"/>
 		</stream>
 
 		<stream name="restart"
@@ -1193,7 +1237,18 @@
 			<var_struct name="tracersIdealAgeFields"/>
 			<var_struct name="tracersTTDFields"/>
                         <var name="landIceFraction"/>
-                        <var name="landIceSurfaceTemperature"/>
+			<var name="landIceSurfaceTemperature"/>
+                        <var_array name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG"/>
+                        <var_array name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG"/>
+                        <var_array name="activeTracersInteriorRestoringRate" packages="activeTracersInteriorRestoringPKG"/>
+                        <var_array name="activeTracersInteriorRestoringValue" packages="activeTracersInteriorRestoringPKG"/>
+                        <var_array name="debugTracersPistonVelocity" packages="debugTracersSurfaceRestoringPKG"/>
+                        <var_array name="debugTracersSurfaceRestoringValue" packages="debugTracersSurfaceRestoringPKG"/>
+                        <var name="latentHeatFlux"/>
+                        <var name="sensibleHeatFlux"/>
+                        <var name="shortWaveHeatFlux"/>
+                        <var name="evaporationFlux"/>
+                        <var name="rainFlux"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
