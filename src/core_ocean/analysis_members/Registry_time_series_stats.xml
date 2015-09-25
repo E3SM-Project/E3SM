@@ -53,7 +53,7 @@
 				type="character"
 				default_value="avg"
 				units="unitless"
-				description="An operation describing the reduction operations to apply to the time series."
+				description="An operation describing the statistic to apply to the time series for all variables in the output stream."
 				possible_values="An operation, where it can be 'avg', 'min', or 'max'."
 	/>
 
@@ -61,29 +61,29 @@
 				type="character"
 				default_value="initial_time"
 				units="unitless"
-				description="A list of absolute times describing when to start accumulating."
+				description="A list of absolute times describing when to start accumulating statistics. Each token indicates one statistic per variable in the output stream."
 				possible_values="A list of absolute times or 'initial_time's, separated by ;."
 	/>
 	<nml_option name="config_AM_timeSeriesStats_duration_intervals"
 				type="character"
 				default_value="repeat_interval"
 				units="unitless"
-				description="A list of time durations in d_h:m:s describing how long to accumulate."
-				possible_values="A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Must be >= compute_interval * 2. This can be larger than repeat_interval to allow for climatologies (every January, every spring, etc.)"
+				description="A list of time durations in d_h:m:s describing how long to accumulate statistics. It has to match the number of tokens in reference_times."
+				possible_values="A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be >= compute_interval * 2 and <= repeat_interval. duration_intervals < repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)"
 	/>
 	<nml_option name="config_AM_timeSeriesStats_repeat_intervals"
 				type="character"
 				default_value="reset_interval"
 				units="unitless"
-				description="A list of time durations in d_h:m:s describing the accumulation periodicity (how often to accumulate)."
-				positive_values="A list of time durations in d_h:m:s or 'reset_interval's, separated by ;. Must be <= reset_interval."
+				description="A list of time durations in d_h:m:s describing the accumulation statistic periodicity (how often to accumulate). It has to match the number of tokens in reference_times."
+				positive_values="A list of time durations in d_h:m:s or 'reset_interval's, separated by ;. Each must be <= reset_interval. This can be larger than duration_interval to allow for climatologies (every January, every spring, etc.)"
 	/>
 	<nml_option name="config_AM_timeSeriesStats_reset_intervals"
 				type="character"
 				default_value="00-00-01_00:00:00"
 				units="unitless"
-				description="A list of time durations in d_h:m:s describing the buffer reset periodicity (how often to reset accumulation). Ought to be >= output_interval (not verified by the analysis member)."
-				possible_values="A list of time durations in d_h:m:s, separated by ;."
+				description="A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times."
+				possible_values="A list of time durations in d_h:m:s, separated by ;. Ought to be >= output_interval (not verified by the analysis member)."
 	/>
 
 </nml_record>
