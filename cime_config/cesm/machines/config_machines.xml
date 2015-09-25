@@ -308,7 +308,7 @@
       </modules>
       <modules compiler="pgi">
 	<command name="load">PrgEnv-pgi</command>
-	<command name="switch">pgi pgi/14.10.0</command>
+	<command name="switch">pgi pgi/15.7.0</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu/4.2.84</command>
