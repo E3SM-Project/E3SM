@@ -106,7 +106,9 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
-      integer :: iCell, iEdge, iVertex, k
+      integer :: iCell, iEdge, iVertex, k, kML
+
+      real (kind=RKIND) :: BLdepth
 
       character (len=StrKIND), pointer :: config_init_configuration, &
                                           config_cvmix_WSwSBF_vertical_grid
@@ -130,7 +132,13 @@ contains
                                           config_cvmix_WSwSBF_salinity_gradient, &
                                           config_cvmix_WSwSBF_bottom_depth, &
                                           config_cvmix_WSwSBF_max_windstress, &
-                                          config_cvmix_WSwSBF_coriolis_parameter
+                                          config_cvmix_WSwSBF_coriolis_parameter, &
+                                          config_cvmix_WSwSBF_temperature_gradient_mixed_layer, &
+                                          config_cvmix_WSwSBF_salinity_gradient_mixed_layer, &
+                                          config_cvmix_WSwSBF_mixed_layer_depth_temperature, &
+                                          config_cvmix_WSwSBF_mixed_layer_depth_salinity,    &
+                                          config_cvmix_WSwSBF_mixed_layer_temperature_change,       &
+                                          config_cvmix_WSwSBF_mixed_layer_salinity_change
       ! assume no error
       iErr = 0
 
@@ -164,6 +172,18 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_bottom_depth', config_cvmix_WSwSBF_bottom_depth)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_max_windstress', config_cvmix_WSwSBF_max_windstress)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_coriolis_parameter', config_cvmix_WSwSBF_coriolis_parameter)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_gradient_mixed_layer', &
+                config_cvmix_WSwSBF_temperature_gradient_mixed_layer)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_gradient_mixed_layer', &
+                config_cvmix_WSwSBF_salinity_gradient_mixed_layer)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_depth_temperature', &
+                config_cvmix_WSwSBF_mixed_layer_depth_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_depth_salinity', &
+                config_cvmix_WSwSBF_mixed_layer_depth_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_temperature_change', &
+                config_cvmix_WSwSBF_mixed_layer_temperature_change)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_salinity_change', &
+                config_cvmix_WSwSBF_mixed_layer_salinity_change)
 
       ! load data that required to initialize the ocean simulation
       block_ptr => domain % blocklist
@@ -177,7 +197,7 @@ contains
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
-
+        
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -216,6 +236,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
         call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
+        
         ! Set refBottomDepth and refBottomDepthTopOfCell
         do k = 1, nVertLevels
            refBottomDepth(k) = config_cvmix_WSwSBF_bottom_depth * interfaceLocations(k+1)
@@ -224,106 +245,167 @@ contains
 
         ! Set vertCoordMovementWeights
         vertCoordMovementWeights(:) = 1.0_RKIND
-
+        
         do iCell = 1, nCellsSolve
-           ! Set temperature and salinity
-           do k = 1, nVertLevels
-              if ( associated(activeTracers) ) then
-                 temperature = config_cvmix_WSwSBF_surface_temperature + refZMid(k) * config_cvmix_WSwSBF_temperature_gradient
-                 activeTracers(index_temperature, k, iCell) = temperature
-                 salinity = config_cvmix_WSwSBF_surface_salinity + refZMid(k) * config_cvmix_WSwSBF_salinity_gradient
-                 activeTracers(index_salinity, k, iCell) = salinity
-              end if
-              
-              if ( associated(debugTracers) ) then
-                 debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
-              end if
-           end do
+           if(associated(activeTracers) ) then
 
-           ! Set layerThickness
-           do k = 1, nVertLevels
-              layerThickness(k, iCell) = config_cvmix_WSwSBF_bottom_depth * (interfaceLocations(k+1) - interfaceLocations(k))
-              restingThickness(k, iCell) = layerThickness(k, iCell)
-           end do
+           ! Loop from surface through surface layer depth
+           k=1
+       			
+           do while (k .le. nVertLevels .and. refZMid(k) > - config_cvmix_WSwSBF_mixed_layer_depth_temperature)
+              temperature = config_cvmix_WSwSBF_surface_temperature + refZMid(k) *  &
+                            config_cvmix_WSwSBF_temperature_gradient_mixed_layer
+              activeTracers(index_temperature, k, iCell) = temperature
+              k = k + 1
+           enddo
+        		
+           ! the value of k is now the first layer below the surface layer
+           if ( k > 1 ) then
+              temperature = activeTracers(index_temperature, k-1, iCell) + config_cvmix_WSwSBF_mixed_layer_temperature_change
+              activeTracers(index_temperature, k, iCell) = temperature
+              BLdepth = refZMid(k)
+           else
+              activeTracers(index_temperature, k, iCell) = config_cvmix_WSwSBF_surface_temperature
+              BLdepth = 0.0
+           endif
+                 
+           ! find the first level below the mixed layer
+           kML = k + 1
 
-           ! Set surface temperature restoring value and rate
-           ! Value in units of C, piston velocity in units of m/s
-           if ( associated(activeTracersSurfaceRestoringValue) ) then
-              activeTracersSurfaceRestoringValue(index_temperature, iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
-           end if
-           if ( associated(activeTracersPistonVelocity) ) then
-              activeTracersPistonVelocity(index_temperature, iCell) = config_cvmix_WSwSBF_temperature_piston_velocity
-           end if
-
-           ! Set surface salinity restoring value and rate
-           ! Value in units of PSU, piston velocity in units of m/s
-           if ( associated(activeTracersSurfaceRestoringValue) ) then
-              activeTracersSurfaceRestoringValue(index_salinity, iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
-           end if
-           if ( associated(activeTracersPistonVelocity) ) then
-              activeTracersPistonVelocity(index_salinity, iCell) = config_cvmix_WSwSBF_salinity_piston_velocity
-           end if
-
-           ! Set sensible heat flux
-           sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
-
-           ! Set latent heat flux
-           latentHeatFlux(iCell) = config_cvmix_WSwSBF_latent_heat_flux
-
-           ! Set shortwave heat flux
-           shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
-
-           ! Set precipation and evaporation
-           rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
-           evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
-
-           ! Set interior temperature restoring value and rate
-           do k = 1, nVertLevels
-              if ( associated(activeTracersInteriorRestoringValue) ) then
-                 activeTracersInteriorRestoringValue(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell)
-              end if
-              if ( associated(activeTracersInteriorRestoringRate) ) then
-                 activeTracersInteriorRestoringRate(index_temperature, k, iCell) = config_cvmix_WSwSBF_interior_temperature_restoring_rate
-              end if
+           ! now loop from the bottom of the mixed layer thru to the bottom of the domain
+           do k = kML, nVertLevels
+              temperature = activeTracers(index_temperature, kML-1, iCell) + (refZMid(k) - BLdepth) * &
+              config_cvmix_WSwSBF_temperature_gradient
+              activeTracers(index_temperature, k, iCell) = temperature
            enddo
 
-           ! Set interior salinity restoring value and rate
-           do k = 1, nVertLevels
-              if ( associated(activeTracersInteriorRestoringValue) ) then
-                 activeTracersInteriorRestoringValue(index_salinity, k, iCell) = activeTracers(index_salinity, k, iCell)
-              end if
-              if ( associated(activeTracersInteriorRestoringRate) ) then
-                 activeTracersInteriorRestoringRate(index_salinity, k, iCell) = config_cvmix_WSwSBF_interior_salinity_restoring_rate
-              end if
+           !
+           ! next compute the salinity profile
+           !
+
+           ! Loop from surface through surface layer depth
+           k=1
+           do while (k .le. nVertLevels .and. refZMid(k) > - config_cvmix_WSwSBF_mixed_layer_depth_salinity)
+              salinity = config_cvmix_WSwSBF_surface_salinity + refZMid(k) * config_cvmix_WSwSBF_salinity_gradient_mixed_layer
+              activeTracers(index_salinity, k, iCell) = salinity
+              k = k + 1
            enddo
-
-           ! Set Coriolis parameter
-           fCell(iCell) = config_cvmix_WSwSBF_coriolis_parameter
-
-           ! Set bottomDepth
-           bottomDepth(iCell) = config_cvmix_WSwSBF_bottom_depth
-
-           ! Set maxLevelCell
-           maxLevelCell(iCell) = nVertLevels
+             	
+           ! the value of k is now the first layer below the surface layer
+            if ( k > 1 ) then
+               salinity = activeTracers(index_salinity, k-1, iCell) + config_cvmix_WSwSBF_mixed_layer_salinity_change
+               activeTracers(index_salinity, k, iCell) = salinity
+               BLdepth = refZMid(k)
+            else
+               activeTracers(index_salinity, k, iCell) = config_cvmix_WSwSBF_surface_salinity
+               BLdepth = 0.0
+            endif
+                
+            ! find the first level below the mixed layer
+            kML = k + 1
+                
+            ! now loop from the bottom of the mixed layer thru to the bottom of the domain
+            do k = kML, nVertLevels
+               salinity = activeTracers(index_salinity, kML-1, iCell) + (refZMid(k) - BLdepth) *  &
+               config_cvmix_WSwSBF_salinity_gradient
+               activeTracers(index_salinity, k, iCell) = salinity
+            enddo
+                	
+        endif ! if (associated(activeTracer))
+       
+        ! as a place holder, have some debug tracer in the top few layers and zero below
+        if ( associated(debugTracers) ) then
+           debugTracers(index_tracer1, k, iCell) = 0.0_RKIND
+           do k=1,min(4,nVertLevels)
+              debugTracers(index_tracer1, k, iCell) = 1.0_RKIND   
+           enddo
+        endif
+      
+        ! Set layerThickness
+        do k = 1, nVertLevels
+           layerThickness(k, iCell) = config_cvmix_WSwSBF_bottom_depth * (interfaceLocations(k+1) - interfaceLocations(k))
+           restingThickness(k, iCell) = layerThickness(k, iCell)
         end do
 
-        do iCell = 1, nCellsSolve
-           windStressZonal(iCell) = config_cvmix_WSwSBF_max_windstress
-           windStressMeridional(iCell) = 0.0_RKIND
+        ! Set surface temperature restoring value and rate
+        ! Value in units of C, piston velocity in units of m/s
+        if ( associated(activeTracersSurfaceRestoringValue) ) then
+           activeTracersSurfaceRestoringValue(index_temperature, iCell) = config_cvmix_WSwSBF_surface_restoring_temperature
+        end if
+        if ( associated(activeTracersPistonVelocity) ) then
+           activeTracersPistonVelocity(index_temperature, iCell) = config_cvmix_WSwSBF_temperature_piston_velocity
+        end if
+
+        ! Set surface salinity restoring value and rate
+        ! Value in units of PSU, piston velocity in units of m/s
+        if ( associated(activeTracersSurfaceRestoringValue) ) then
+           activeTracersSurfaceRestoringValue(index_salinity, iCell) = config_cvmix_WSwSBF_surface_restoring_salinity
+        end if
+        if ( associated(activeTracersPistonVelocity) ) then
+           activeTracersPistonVelocity(index_salinity, iCell) = config_cvmix_WSwSBF_salinity_piston_velocity
+        end if
+
+        ! Set sensible heat flux
+        sensibleHeatFlux(iCell) = config_cvmix_WSwSBF_sensible_heat_flux
+
+        ! Set latent heat flux
+        latentHeatFlux(iCell) = config_cvmix_WSwSBF_latent_heat_flux
+
+        ! Set shortwave heat flux
+        shortWaveHeatFlux(iCell) = config_cvmix_WSwSBF_shortwave_heat_flux
+
+        ! Set precipation and evaporation
+        rainFlux(iCell) = config_cvmix_WSwSBF_rain_flux
+        evaporationFlux(iCell) = config_cvmix_WSwSBF_evaporation_flux
+
+        ! Set interior temperature restoring value and rate
+        do k = 1, nVertLevels
+           if ( associated(activeTracersInteriorRestoringValue) ) then
+              activeTracersInteriorRestoringValue(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell)
+           end if
+           if ( associated(activeTracersInteriorRestoringRate) ) then
+              activeTracersInteriorRestoringRate(index_temperature, k, iCell) = config_cvmix_WSwSBF_interior_temperature_restoring_rate
+           end if
         enddo
 
-        do iEdge = 1, nEdgesSolve
-           fEdge(iEdge) = config_cvmix_WSwSBF_coriolis_parameter
-        end do
- 
-        do iVertex=1, nVerticesSolve
-           fVertex(iVertex) = config_cvmix_WSwSBF_coriolis_parameter
-        end do
+        ! Set interior salinity restoring value and rate
+        do k = 1, nVertLevels
+           if ( associated(activeTracersInteriorRestoringValue) ) then
+              activeTracersInteriorRestoringValue(index_salinity, k, iCell) = activeTracers(index_salinity, k, iCell)
+           end if
+           if ( associated(activeTracersInteriorRestoringRate) ) then
+              activeTracersInteriorRestoringRate(index_salinity, k, iCell) = config_cvmix_WSwSBF_interior_salinity_restoring_rate
+           end if
+        enddo
 
-        block_ptr => block_ptr % next
-      end do
+        ! Set Coriolis parameter
+        fCell(iCell) = config_cvmix_WSwSBF_coriolis_parameter
 
-      deallocate(interfaceLocations)
+        ! Set bottomDepth
+        bottomDepth(iCell) = config_cvmix_WSwSBF_bottom_depth
+
+        ! Set maxLevelCell
+        maxLevelCell(iCell) = nVertLevels
+
+     end do  ! do iCell
+
+     do iCell = 1, nCellsSolve
+        windStressZonal(iCell) = config_cvmix_WSwSBF_max_windstress
+        windStressMeridional(iCell) = 0.0_RKIND
+     enddo
+
+     do iEdge = 1, nEdgesSolve
+        fEdge(iEdge) = config_cvmix_WSwSBF_coriolis_parameter
+     end do
+
+     do iVertex=1, nVerticesSolve
+        fVertex(iVertex) = config_cvmix_WSwSBF_coriolis_parameter
+     end do
+
+     block_ptr => block_ptr % next
+   end do
+
+   deallocate(interfaceLocations)
 
    !--------------------------------------------------------------------
 
