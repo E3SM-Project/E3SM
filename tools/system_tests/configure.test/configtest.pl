@@ -4,21 +4,7 @@ use warnings;
 use XML::LibXML;
 use Getopt::Long;
 use File::Path;
-
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    die("
-  The perl module XML::LibXML is needed for XML parsing in the CIME script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.  ");
-
-}
+use Cwd;
 #-----------------------------------------------------------------------------------------------
 if ($#ARGV == -1) {
     usage();
@@ -54,39 +40,51 @@ EXAMPLES
 EOF
 }
 my ($model, $generate, $compare, $cimeroot, $machdir, $verbose, $silent, $help);
-
-
+my $logger;
+my $loglevel = "INFO";
+my $output_dir = getcwd();
 sub options{
     GetOptions(
 	"cimeroot=s"                => \$cimeroot,
 	"model=s"                   => \$model,
 	"h|help"                    => \$help,
 	"machdir=s"                => \$machdir,
-	"s|silent"                  => \$silent,
-	"v|verbose"                 => \$verbose,
+	"loglevel=s"               => \$loglevel,
 	"generate=s"              => \$generate,
 	"compare=s"               => \$compare,
+        "output_dir=s"           => \$output_dir,
 	)  or usage();
 
+
+    if(! defined $cimeroot) {
+	$cimeroot = abs_path($ENV{CIMEROOT}) if(defined $ENV{CIMEROOT});
+    }
+    (-d "$cimeroot")  or  die "Cannot find cimeroot directory \"$cimeroot\" " ;
+
+    my @dirs = ("$cimeroot/utils/perl5lib" );
+
+    unshift @INC, @dirs;
+    require Log::Log4perl;
+
+    my $level = Log::Log4perl::Level::to_priority($loglevel);
+    Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+    $logger = Log::Log4perl::get_logger();
 # Give usage message.
     usage() if $help;
 
 
 # Check for unparsed argumentss
     if (@ARGV) {
-	print "ERROR: unrecognized arguments: @ARGV\n";
+	$logger->error( "ERROR: unrecognized arguments: @ARGV");
 	usage();
     }
     
     if (! defined $model){
 	$model = 'cesm';
     }
-    
-    if(! defined $cimeroot) {
-	$cimeroot = abs_path($ENV{CIMEROOT}) if(defined $ENV{CIMEROOT});
-    }
-    (-d "$cimeroot")  or  die "Cannot find cimeroot directory \"$cimeroot\" " ;
-    
+        
     if(! defined $machdir){
 	$machdir  = "$cimeroot/cime_config/${model}/machines";
     }
@@ -96,20 +94,26 @@ sub options{
     }
     if(defined $compare){
 	if(-d $compare){
-	    print "Compare to baseline directory $compare\n" unless($silent);
+	    $logger->info( "Compare to baseline directory $compare");
 	}else{
-	    die "Could not find baseline directory $compare";
+	    $logger->logdie ("Could not find baseline directory $compare");
 	}
     }
     if(defined $generate){
 	if(-d $generate){
-	    warn "directory $generate already exists";
+	    $logger->warn ("directory $generate already exists");
 	}else{
-	    mkdir $generate or die "Could not create directory $generate";
+	    mkdir $generate or $logger->logdie ("Could not create directory $generate");
 	}
-
     }else{
 	$generate = ".";
+    }
+    if(defined $output_dir){
+	if(-d $output_dir){
+	    $logger->warn("Output directory $output_dir already exists");
+	}else{
+	    mkdir $output_dir or $logger->logdie ("Could not create directory $generate");
+	}
     }
 }
 options();
@@ -120,7 +124,7 @@ options();
 # Machines definition file.
 my $machine_file = 'config_machines.xml';
 (-f "$machdir/$machine_file")  or  
-    die("Cannot find machine parameters file $machine_file in directory $machdir ");
+    $logger->logdie("Cannot find machine parameters file $machine_file in directory $machdir ");
     
 
 my $xml = XML::LibXML->new( )->parse_file("$machdir/$machine_file");
@@ -136,14 +140,14 @@ foreach my $node ($xml->findnodes(".//machine")){
 	    $compiler = "intel";
 	foreach my $format (qw(make cmake)){
 	    
-	    my $output_dir = "$generate/$mach/$compiler/$format";
-	    mkpath $output_dir unless(-d $output_dir);
-
-	    qx( $cimeroot/tools/configure -cimeroot $cimeroot -mach $mach -compiler $compiler -output_dir $output_dir -output_format $format);
+	    my $test_dir = "$output_dir/$mach/$compiler/$format";
+	    unless(-d $test_dir){
+		mkpath $test_dir or $logger->logdie("Could not create directory $test_dir");
+	    }
+	    qx( $cimeroot/tools/configure -cimeroot $cimeroot -mach $mach -compiler $compiler -output_dir $test_dir -output_format $format -loglevel $loglevel);
 	}
-	last;
+	    last;
     }
     last;
-
 }
 
