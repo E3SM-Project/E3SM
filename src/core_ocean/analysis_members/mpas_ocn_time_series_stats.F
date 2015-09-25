@@ -183,7 +183,7 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   integer :: v
   character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
-  type (time_series_alarms_type) :: alarms
+  type (time_series_alarms_type), allocatable, dimension(:) :: alarms
  
   ! start procedure
   err = 0
@@ -198,10 +198,12 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   call modify_stream(domain, instance, series, err)
 
   ! get all of the timing and configuration
+  allocate(alarms(series % number_of_buffers))
   call get_alarms(domain, instance, series, alarms, err)
 
   ! set all of the alarms and current flag state based on timers
   call set_alarms(domain, instance, series, alarms, err)
+  deallocate(alarms)
 
   ! clean up the memory
   do v = 1, series % number_of_variables
@@ -946,7 +948,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
 
   ! output variables
   integer, intent(out) :: err !< Output: error flag
-  type (time_series_alarms_type), intent(out) :: alarms
+  type (time_series_alarms_type), dimension(:), intent(out) :: alarms
 
   ! local variables
   character (len=StrKIND), pointer :: config_results
@@ -1009,26 +1011,26 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call mpas_set_timeInterval(zero, s=0)
 
   do b = 1, series % number_of_buffers
-    call mpas_interval_division(alarms % start_time, &
-       alarms % repeat_interval, &
-       alarms % reset_interval, n, rem) 
+    call mpas_interval_division(alarms(b) % start_time, &
+       alarms(b) % repeat_interval, &
+       alarms(b) % reset_interval, n, rem) 
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
       write(stderrUnit,*) 'Warning: repeat_interval > ' // &
         'reset_interval in time averaging analysis member ' // &
         'configuration. Truncating repeat_interval.'
-      alarms % repeat_interval = alarms % reset_interval
+      alarms(b) % repeat_interval = alarms(b) % reset_interval
     end if
 
-    call mpas_interval_division(alarms % start_time, &
-       alarms % duration_interval, &
-       alarms % repeat_interval, n, rem) 
+    call mpas_interval_division(alarms(b) % start_time, &
+       alarms(b) % duration_interval, &
+       alarms(b) % repeat_interval, n, rem) 
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
       write(stderrUnit,*) 'Warning: duration_interval > ' // &
         'repeat_interval in time averaging analysis member ' // &
         'configuration. Truncating duration_interval.'
-      alarms % repeat_interval = alarms % reset_interval
+      alarms(b) % repeat_interval = alarms(b) % reset_interval
     end if
   end do
 end subroutine get_alarms
@@ -1052,7 +1054,7 @@ subroutine set_alarms(domain, instance, series, alarms, err)
   ! input/output variables
   type (domain_type), intent(inout) :: domain
   type (time_series_type), intent(inout) :: series
-  type (time_series_alarms_type), intent(in) :: alarms
+  type (time_series_alarms_type), dimension(:), intent(inout) :: alarms
 
   ! output variables
   integer, intent(out) :: err !< Output: error flag
@@ -1082,7 +1084,7 @@ subroutine set_alarms(domain, instance, series, alarms, err)
     series % buffers(b) % accumulate_flag = 0
 
     ! set start time and flag
-    if (current_time >= alarms % start_time) then
+    if (current_time >= alarms(b) % start_time) then
        series % buffers(b) % started_flag = 1
 
        ! no start alarm
@@ -1093,22 +1095,22 @@ subroutine set_alarms(domain, instance, series, alarms, err)
          trim(START_ALARM_PREFIX) // trim(buf_identifier)
        call mpas_add_clock_alarm(domain % clock, &
          series % buffers(b) % start_alarm_ID, &
-         alarms % start_time, ierr=err)
+         alarms(b) % start_time, ierr=err)
      end if
 
     ! set next reset time and flag
-    when = alarms % start_time + alarms % reset_interval
+    when = alarms(b) % start_time + alarms(b) % reset_interval
     if (current_time >= when) then
       elapsed = current_time - when
       call mpas_interval_division(when, elapsed, &
-        alarms % reset_interval, reset_n, reset_rem)
+        alarms(b) % reset_interval, reset_n, reset_rem)
 
       if (reset_rem == zero_intv) then
         ! reset right now
-        reset_time = current_time + alarms % reset_interval
+        reset_time = current_time + alarms(b) % reset_interval
         series % buffers(b) % reset_flag = 1
       else
-        reset_rem = alarms % reset_interval - reset_rem
+        reset_rem = alarms(b) % reset_interval - reset_rem
         reset_time = current_time + reset_rem
       end if
     else
@@ -1116,18 +1118,18 @@ subroutine set_alarms(domain, instance, series, alarms, err)
     end if
 
     ! set next duration time and flag
-    when = alarms % start_time + alarms % duration_interval ! duration is offset
+    when = alarms(b) % start_time + alarms(b) % duration_interval ! is offset
     if (current_time >= when) then
       elapsed = current_time - when
       call mpas_interval_division(when, elapsed, &
-        alarms % repeat_interval, & ! repeat is correct
+        alarms(b) % repeat_interval, & ! repeat is correct
         duration_n, duration_rem)
 
       if (duration_rem == zero_intv) then
         ! turn off accumulation
-        duration_time = current_time + alarms % repeat_interval ! yes, repeat
+        duration_time = current_time + alarms(b) % repeat_interval ! repeat
       else
-        duration_rem = alarms % repeat_interval - duration_rem ! yes, repeat
+        duration_rem = alarms(b) % repeat_interval - duration_rem ! repeat
         duration_time = current_time + duration_rem ! remainder of repeat
       end if
     else
@@ -1136,16 +1138,16 @@ subroutine set_alarms(domain, instance, series, alarms, err)
     end if
 
     ! set next repeat time and flag
-    when = alarms % start_time + alarms % repeat_interval
+    when = alarms(b) % start_time + alarms(b) % repeat_interval
     if (current_time >= when) then
       elapsed = current_time - when
       call mpas_interval_division(when, elapsed, &
-        alarms % repeat_interval, repeat_n, repeat_rem)
+        alarms(b) % repeat_interval, repeat_n, repeat_rem)
 
       if (repeat_rem == zero_intv) then
-        repeat_time = current_time + alarms % repeat_interval
+        repeat_time = current_time + alarms(b) % repeat_interval
       else
-        repeat_rem = alarms % repeat_interval - repeat_rem
+        repeat_rem = alarms(b) % repeat_interval - repeat_rem
         repeat_time = current_time + repeat_rem
       end if
     else
@@ -1167,21 +1169,21 @@ subroutine set_alarms(domain, instance, series, alarms, err)
     call mpas_add_clock_alarm(domain % clock, &
       series % buffers(b) % duration_alarm_ID, &
       duration_time, & ! duration sets the offset
-      alarms % repeat_interval, ierr=err) ! but repeat is interval
+      alarms(b) % repeat_interval, ierr=err) ! but repeat is interval
 
     series % buffers(b) % repeat_alarm_ID = trim(alarm_prefix) // &
       trim(REPEAT_ALARM_PREFIX) // trim(buf_identifier)
     call mpas_add_clock_alarm(domain % clock, &
       series % buffers(b) % repeat_alarm_ID, &
       repeat_time, &
-      alarms % repeat_interval, ierr=err)
+      alarms(b) % repeat_interval, ierr=err)
 
     series % buffers(b) % reset_alarm_ID = trim(alarm_prefix) // &
       trim(RESET_ALARM_PREFIX) // trim(buf_identifier)
     call mpas_add_clock_alarm(domain % clock, &
       series % buffers(b) % reset_alarm_ID, &
       reset_time, &
-      alarms % reset_interval, ierr=err)
+      alarms(b) % reset_interval, ierr=err)
   end do
 end subroutine set_alarms
 
@@ -1256,9 +1258,9 @@ subroutine set_times(series, alarms, clock, which, config, ok, err)
   ! input/output variables
   type (time_series_type), intent(inout) :: series
   type (MPAS_Clock_type), intent(inout) :: clock
+  type (time_series_alarms_type), dimension(:), intent(inout) :: alarms
 
   ! output variables
-  type (time_series_alarms_type) :: alarms
   logical, intent(out) :: ok
   integer, intent(out) :: err 
 
@@ -1282,27 +1284,28 @@ subroutine set_times(series, alarms, clock, which, config, ok, err)
     ! set the time
     if (which == START_TIMES) then
       if (time == INITIAL_TIME_TOKEN) then
-        alarms % start_time = mpas_get_clock_time(clock, MPAS_START_TIME, err)
+        alarms(b) % start_time = &
+          mpas_get_clock_time(clock, MPAS_START_TIME, err)
       else
-        call mpas_set_time(alarms % start_time, dateTimeString=time, ierr=err)
+        call mpas_set_time(alarms(b) % start_time, &
+          dateTimeString=time, ierr=err)
       end if
     else if (which == DURATION_INTERVALS) then
       if (time == REPEAT_INTERVAL_TOKEN) then
-        alarms % duration_interval = alarms % repeat_interval
+        alarms(b) % duration_interval = alarms(b) % repeat_interval
       else
-        call mpas_set_timeInterval(alarms % duration_interval, &
+        call mpas_set_timeInterval(alarms(b) % duration_interval, &
             timeString=time, ierr=err)
       end if
     else if (which == REPEAT_INTERVALS) then
       if (time == RESET_INTERVAL_TOKEN) then
-        alarms % repeat_interval = &
-          alarms % reset_interval
+        alarms(b) % repeat_interval = alarms(b) % reset_interval
       else
-        call mpas_set_timeInterval(alarms % repeat_interval, &
+        call mpas_set_timeInterval(alarms(b) % repeat_interval, &
             timeString=time, ierr=err)
       end if
     else
-      call mpas_set_timeInterval(alarms % reset_interval, &
+      call mpas_set_timeInterval(alarms(b) % reset_interval, &
           timeString=time, ierr=err)
     end if 
 
