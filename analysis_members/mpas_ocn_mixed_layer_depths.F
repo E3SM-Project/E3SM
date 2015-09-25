@@ -163,7 +163,7 @@ contains
       type (mpas_pool_type), pointer :: mixedLayerDepthsAM
 
       ! Here are some example variables which may be needed for your analysis member
-      integer, pointer :: nVertLevels, nCellsSolve, num_tracers
+      integer, pointer :: nVertLevels, nCellsSolve
       integer :: k, iCell, i, refIndex, refLevel(1)
       integer, pointer :: index_temperature
       integer, dimension(:), pointer :: maxLevelCell
@@ -194,8 +194,6 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mixedLayerDepthsAM', mixedLayerDepthsAMPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
-      call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
       call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_Tthreshold', tThresholdFlag)
       call mpas_pool_get_config(domain % configs, 'config_AM_mixedLayerDepths_Dthreshold', dThresholdFlag)
