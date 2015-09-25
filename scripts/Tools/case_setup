@@ -52,7 +52,7 @@ GetOptions(
     "h|help"     => \$opts{'help'},
     "clean"      => \$opts{'clean'}, 	
     "testmode"   => \$opts{'testmode'}, 	
-    "loglevel"     => \$opts{'loglevel'},
+    "loglevel=s"     => \$opts{'loglevel'},
 )  or usage();
 
 # Give usage message.
@@ -312,8 +312,7 @@ if (! $clean ) {
     # Run preview namelists for scripts
     #--------------------------------------------------------------------------
     $logger->info("Running preview_namelist script ");
-    my $sysmod = "$caseroot/preview_namelists";
-    system($sysmod) == 0 or $logger->logdie("ERROR: $sysmod failed: $?");
+    qx( $caseroot/preview_namelists -loglevel $opts{loglevel} ) or $logger->logdie("ERROR: $caseroot/preview_namelists failed: $?");
     $logger->info("See ./CaseDoc for component namelists ");
     $logger->info("If an old case build already exists, might want to run ${case}.clean_build before building ");
 
