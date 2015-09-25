@@ -240,7 +240,7 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="partial_bottom_cells" mode="forward">
+	<nml_record name="partial_bottom_cells" mode="forward;init">
 		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
 					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag. The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
 					possible_values=".true. or .false."
@@ -1679,7 +1679,6 @@
 		/>
 		<var name="refLayerThickness" type="real" dimensions="nVertLevels" units="m"
 			 description="Reference layerThickness of ocean for each vertical level."
-			 packages="forwardMode;analysisMode"
 		/>
 	</var_struct>
 	<var_struct name="tend" time_levs="1">
