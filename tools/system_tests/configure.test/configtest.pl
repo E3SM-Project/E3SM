@@ -4,7 +4,9 @@ use warnings;
 use XML::LibXML;
 use Getopt::Long;
 use File::Path;
+use File::Basename qw(basename dirname);
 use Cwd;
+
 #-----------------------------------------------------------------------------------------------
 if ($#ARGV == -1) {
     usage();
@@ -27,25 +29,27 @@ OPTIONS
      -mach_dir <path>     Specify the locations of the Machines directory (optional).
      -model    <name>     Specify the cime model on which to conduct tests.
                           default: cesm
-     -generate            generate new baselines in this directory.
-     -compare             compare against baselines in this directory.
+     -baselineroot       Root directory to read or write baselines to.
+     -compare             compare against baselines in this directory (under baselineroot).
+     -generate             write new baselines to this directory (under baselineroot).
      -help [or -h]        Print usage to STDOUT (optional).
-     -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
-     -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
      
 EXAMPLES
 
-  ./configtest.pl -cimeroot /path/to/cime -compare /path/to/baselines/cime3.0.1
+  ./configtest.pl -cimeroot /path/to/cime -compare cime3.0.1 -baselineroot /path/to/baselines/
 
 EOF
 }
-my ($model, $generate, $compare, $cimeroot, $machdir, $verbose, $silent, $help);
+my ($model, $baselineroot, $generate, $compare, $cimeroot, $machdir, $verbose, $silent, $help);
 my $logger;
 my $loglevel = "INFO";
 my $output_dir = getcwd();
+my @time = localtime();
+$output_dir .= "/$time[5]$time[4]$time[3]$time[2]$time[1]";
 sub options{
     GetOptions(
 	"cimeroot=s"                => \$cimeroot,
+        "baselineroot=s"          => \$baselineroot,
 	"model=s"                   => \$model,
 	"h|help"                    => \$help,
 	"machdir=s"                => \$machdir,
@@ -65,6 +69,8 @@ sub options{
 
     unshift @INC, @dirs;
     require Log::Log4perl;
+    require File::Copy::Recursive;
+    require File::DirCompare;
 
     my $level = Log::Log4perl::Level::to_priority($loglevel);
     Log::Log4perl->easy_init({level=>$level,
@@ -88,31 +94,29 @@ sub options{
     if(! defined $machdir){
 	$machdir  = "$cimeroot/cime_config/${model}/machines";
     }
-    
+    if(!defined $baselineroot){
+	$logger->logdie("baselineroot argument must be provided");
+    }
     if(!defined $generate && !defined $compare){
-	die "At least one of the arguments generate and compare must be provided";
+	$logger->logdie( "At least one of the arguments generate and compare must be provided");
     }
     if(defined $compare){
-	if(-d $compare){
-	    $logger->info( "Compare to baseline directory $compare");
+	if(-d "$baselineroot/$compare"){
+	    $logger->info( "Compare to baseline directory $baselineroot/$compare");
 	}else{
 	    $logger->logdie ("Could not find baseline directory $compare");
 	}
     }
     if(defined $generate){
-	if(-d $generate){
-	    $logger->warn ("directory $generate already exists");
-	}else{
-	    mkdir $generate or $logger->logdie ("Could not create directory $generate");
+	if(-d "$baselineroot/$generate"){
+	    $logger->logdie ("Directory $baselineroot/$generate already exists.");
 	}
-    }else{
-	$generate = ".";
     }
     if(defined $output_dir){
 	if(-d $output_dir){
 	    $logger->warn("Output directory $output_dir already exists");
 	}else{
-	    mkdir $output_dir or $logger->logdie ("Could not create directory $generate");
+	    
 	}
     }
 }
@@ -132,12 +136,11 @@ my $xml = XML::LibXML->new( )->parse_file("$machdir/$machine_file");
 
 foreach my $node ($xml->findnodes(".//machine")){
     my $mach = $node->getAttribute("MACH");
+    next if ($mach eq "userdefined");
     my @child = $node->findnodes(".//COMPILERS");
     my @compilers = split(',',$child[0]->textContent());
     
     foreach my $compiler (@compilers){
-	    $mach = "yellowstone";
-	    $compiler = "intel";
 	foreach my $format (qw(make cmake)){
 	    
 	    my $test_dir = "$output_dir/$mach/$compiler/$format";
@@ -146,8 +149,46 @@ foreach my $node ($xml->findnodes(".//machine")){
 	    }
 	    qx( $cimeroot/tools/configure -cimeroot $cimeroot -mach $mach -compiler $compiler -output_dir $test_dir -output_format $format -loglevel $loglevel);
 	}
-	    last;
     }
-    last;
 }
 
+if(defined $generate){
+     File::Copy::Recursive::dircopy($output_dir, "$baselineroot/$generate") or $logger->logdie("Could not copy $output_dir to $baselineroot/$generate");
+}
+
+
+if(defined $compare){
+    my $result = "PASS";
+    my $filediff =0;
+    my $nobase=0;
+    my $notest = 0;
+
+
+    $logger->info("\n\nComparing $output_dir to $baselineroot/$compare");
+    File::DirCompare->compare("$output_dir","$baselineroot/$compare", 
+		     sub {
+			 my($a, $b) = @_;
+			 if( !$b){
+			     my $base = basename($a);
+			     my $dir = dirname($a);
+			     $logger->warn("  File $base only exists in $dir");
+			     $notest++;
+			 }elsif( !$a){
+			     my $base = basename($b);
+			     my $dir = dirname($b);
+			     $logger->warn("  File $base only exists in $dir");
+			     $nobase++;
+			 }else{
+			     $logger->error("  File contents for $a and $b differ.\n");
+			     $filediff++;
+			 }
+		     });
+
+    if($filediff >0){
+	print "CONFIGTEST RESULT: FAIL $notest $nobase $filediff\n";
+    }else{
+	print "CONFIGTEST RESULT: PASS\n";
+    }
+    
+
+}

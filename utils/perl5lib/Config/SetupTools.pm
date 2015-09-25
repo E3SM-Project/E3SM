@@ -3,7 +3,7 @@ my $pkg_nm = 'SetupTools';
 
 use strict;
 use XML::LibXML;
-use Data::Dumper;
+
 use Log::Log4perl qw(get_logger);
 my $logger;
 
@@ -234,10 +234,10 @@ sub set_compiler
 		} else {
 		    $macros->{$name}=$value;
 		}
-		$logger->info("$basename+=$value\n");
+		$logger->debug("$basename+=$value\n");
 	    } else {
 		$macros->{$name}=$value;
-		$logger->info( "$name:=$value\n");
+		$logger->debug( "$name:=$value\n");
 	    }
 	}else{
 	    my $key;

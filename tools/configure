@@ -241,7 +241,7 @@ my $file = $config->get('CONFIG_DRV_FILE');
 
 $config->add_config_variables($file, $srcroot, $cimeroot, $model);
 
-ConfigMachine::setMachineValues($file, "", $mach, $compiler, $config);
+ConfigMachine::setMachineValues($file, "", $mach, $config);
 
 
 # This will be the compiler argument passed in or the default if not provided
@@ -274,6 +274,8 @@ my $moduleloader = Module::ModuleLoader->new(machine  => $mach,
 
 $moduleloader->moduleInit();
 $moduleloader->writeXMLFileForCase();
+
+
 
 $moduleloader->writeCshModuleFile();
 $moduleloader->writeShModuleFile();

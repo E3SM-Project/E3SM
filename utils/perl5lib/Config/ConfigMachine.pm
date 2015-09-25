@@ -6,7 +6,6 @@ use English;
 use Cwd qw( getcwd abs_path chdir);
 use IO::File;
 use XML::LibXML;
-use Data::Dumper;
 use File::Basename;
 use Log::Log4perl qw(get_logger);
 my $logger;
@@ -174,7 +173,11 @@ sub _set_machine_values
 		    $logger->warn( "No environment setting found for $2 in $name=$value");
 		}
 	    }
-	    $config->set($name, $value);
+	    if($machine eq "userdefined" && $value =~ /USERDEFINED/){
+		$logger->warn("Value for $name not set");
+	    }else{
+		$config->set($name, $value);
+	    }
 	    $logger->debug( "config: $name set to ".$config->get($name)."  $value\n" );
 	}
     } 
