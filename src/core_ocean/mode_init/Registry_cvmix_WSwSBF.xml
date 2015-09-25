@@ -62,7 +62,31 @@
                 <nml_option name="config_cvmix_WSwSBF_salinity_gradient" type="real" default_value="0.0" units="PSU m^{-1}"
                                         description="d/dz of salinity."
                                         possible_values="Any real number"
-                />
+		/>
+		<nml_option name="config_cvmix_WSwSBF_temperature_gradient_mixed_layer" type="real" default_value="0.0" units="deg C m^{-1}"
+			                description="d/dz of temperature in mixed temperature layer"
+					possible_values="Any real number"
+		/>
+	        <nml_option name="config_cvmix_WSwSBF_salinity_gradient_mixed_layer" type="real" default_value="0.0" units="PSU m^{-1}"
+			                description="d/dz of salinity in mixed salinity layer"
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_mixed_layer_depth_temperature" type="real" default_value="0.0" units="m"
+					description="depth mixed temperature layer"
+					possible_values="Any positive real number but must be less than bottom depth"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_mixed_layer_depth_salinity" type="real" default_value="0.0" units="m"
+					description="depth mixed salinity layer"
+					possible_values="Any positive real number but less than bottom depth"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_mixed_layer_temperature_change" type="real" default_value="0.0" units="deg C"
+					description="temperature jump when moving downward across the mixed layer interface"
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_cvmix_WSwSBF_mixed_layer_salinity_change" type="real" default_value="0.0" units="PSU"
+					description="salinity jump when moving downward across the mixed layer interface"
+					possible_values="Any real number"
+		/>
                 <nml_option name="config_cvmix_WSwSBF_vertical_grid" type="character" default_value="uniform" units="unitless"
                                         description="prescription of setting the vertical resolution of the test case"
                                         possible_values="'uniform' and 'stretched100'"
