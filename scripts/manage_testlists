@@ -305,28 +305,24 @@ sub readXML
 sub writeXML
 {
 	my ($testxml) = shift;
-	my $dtformat = strftime "%d%b%Y-%H%M%S",  localtime;
 
 	my $newfilename; 
 	if ($component eq 'allactive') {
-	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive-$dtformat.xml";
+	    $newfilename = "$cimeroot/scripts/Testing/Testlistxml/testlist_allactive.xml";
 	}
 	elsif ($component eq 'drv') {
-	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv-$dtformat.xml";
+	    $newfilename = "$cimeroot/driver_cpl/cimetest/testlist_drv.xml";
 	}
 	else {
             my $dir = "$cimeroot/../components/$component/cimetest";
             if ( ! -d $dir ) {
               die "ERROR: Can not find directory: $dir\n";
             }
-	    $newfilename = "$dir/testlist_$component-$dtformat.xml";
+	    $newfilename = "$dir/testlist_$component.xml";
 	}
 	print "\n now writing the new test list to $newfilename\n";
-	print "Please carefully review and/or diff the new file against the\n";
-	print "original, and if you are satisfied with the changes, move \n";
-	print "$newfilename to \n";
-	print "$testlist\n";
-	print "as in with the unix command: \nmv $newfilename $testlist\n\n";
+	print "Please carefully review and/or git diff the new file against the\n";
+	print "original, and if you are satisfied with the changes, commit. \n";
 
 	open my $NEWTESTXML, ">", "$newfilename" or die $?;
 	my $tststring = $testxml->toString(1);
