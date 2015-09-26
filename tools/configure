@@ -17,7 +17,26 @@ use English;
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
+use Data::Dumper;
+use File::Copy;
+# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
+# If not found, print a warning message then exit. 
+eval {
+    require XML::LibXML;
+    XML::LibXML->import();
+};
+if($@)
+{
+    my $warning = <<END;
+WARNING:
+    The perl module XML::LibXML is needed for XML parsing in the CIME script system.  
+	Please contact your local systems administrators or IT staff and have them install it for 
+	you, or install the module locally.  
 
+END
+	print "$warning\n";
+    exit(1);
+}
 
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
@@ -58,25 +77,17 @@ OPTIONS
      -mach <name>         Specify a machine (required).
      -compiler <name>     Specify a compiler for the target machine (optional)
                           default: default compiler for the target machine
-     -mpilib <name>       Specify a mpi librar for the target machine (optional)
-                          default: default mpi library for the target machine
+     -mpilib <name>       Specify a mpi library for the target machine (optional)
+                          default:  mpi-serial 
      -mach_dir <path>     Specify the locations of the Machines directory (optional).
 
      -output_dir <path>   default: current working directory
      -output_format <value> Output format can be make or cmake.
                           default: make
      -help [or -h]        Print usage to STDOUT (optional).
-     -list                Only list valid values for machines and compilers (optional).
      -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
      -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
      
-
-     The following arguments are required for a generic machine. Otherwise, they will be ignored. 
-
-     -scratchroot <name>           executable directory (EXEROOT will be scratchroot/CASE) (char)
-     -din_loc_root <name>          input data root directory (char)
-     -max_tasks_per_node <value>   maximum mpi tasks per machine node (integer)
-
 EXAMPLES
 
   ./configure -mach bluefire -compiler ibm
@@ -92,11 +103,13 @@ my $commandline = "configure @ARGV";
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
 my %opts = (
+              mpilib => "mpi-serial",
               max_tasks_per_node => 1,
 	    );
 GetOptions(
     "cimeroot=s"                => \$opts{'cimeroot'},
     "compiler=s"                => \$opts{'compiler'},  
+    "model=s"                   => \$opts{'model'},
     "mpilib=s"                  => \$opts{'mpilib'},  
     "h|help"                    => \$opts{'help'},
     "list"                      => \$opts{'list'},
@@ -122,7 +135,7 @@ if (@ARGV) {
 }
 
 # Check for manditory case input if not just listing valid values
-
+my $model;
 my $mach;
 my $compiler;
 my $mpilib;
@@ -140,25 +153,32 @@ if (!$opts{'list'}) {
     if ($opts{'compiler'}) {
 	$compiler = $opts{'compiler'};
     }
+    if ($opts{'model'}) {
+	$model = $opts{'model'};
+    } else {
+	$model = 'cesm';
+    }
     if ($opts{'mpilib'}) {
 	$mpilib = $opts{'mpilib'};
     }
     if($opts{'output_format'}){
 	$output_format = $opts{'output_format'};
     }
+    if($opts{'cimeroot'}) {
+	$cimeroot = $opts{'cimeroot'};
+    }else{
+	$cimeroot = abs_path($ENV{CIMEROOT}) if(defined $ENV{CIMEROOT});
+    }
+    (-d "$cimeroot")  or  die "Cannot find cimeroot directory \"$cimeroot\" \n" ;
+
     if($opts{'mach_dir'}){
 	$machdir = $opts{'mach_dir'};
     } else {
-	$machdir  = "$cimeroot/cime_config/cesm/machines" unless defined($machdir);
+	$machdir  = "$cimeroot/cime_config/${model}/machines" unless defined($machdir);
     }
-    (-d "$machdir")  or  die " Cannot find machines directory \"$machdir\"  \n"; 
+    (-d "$machdir")  or  die " Cannot find machines directory \"$machdir\"  "; 
 }
 
-if($opts{'cimeroot'}) {
-    $cimeroot = $opts{'cimeroot'};
-}
-$cimeroot = abs_path($ENV{CIMEROOT}) unless defined($cimeroot);
-(-d "$cimeroot")  or  die "Cannot find cimeroot directory \"$cimeroot\" \n" ;
 
 my $output_dir = ".";
 $output_dir = $opts{output_dir} if defined( $opts{output_dir} );
@@ -177,8 +197,6 @@ my $print = 1;
 if ($opts{'silent'})  { $print = 0; }
 if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
-
-my %cfg = ();           # build configuration
 
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules and configuration files.
@@ -201,12 +219,13 @@ EOF
 if ($print>=2) { print "Setting configuration directory to $cimeroot/scripts$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-my @dirs = ("$cimeroot/utils/perl5lib" );
+my @dirs = ("$cimeroot/utils/perl5lib","$cimeroot/utils/perl5lib/Config" );
 
 unshift @INC, @dirs;
 require SetupTools;
 require Module::ModuleLoader;
-
+require ConfigMachine;
+require ConfigCase;
 #-----------------------------------------------------------------------------------------------
 # If just listing valid values then exit after completion of lists
 if ($opts{'list'}) {
@@ -218,95 +237,53 @@ if ($opts{'list'}) {
 }
 
 #-----------------------------------------------------------------------------------------------
-#TODO: need to completely rework this script to account for the removal of config_def_file
 # Create new config object if not just listing valid values
-my $cfg_ref = ConfigCase->new("$scriptdir/Tools/$config_def_file"); 
+my $config = ConfigCase->new(""); 
+my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
+# srcroot is not used here
+my $srcroot = "";
+$config->add_config_variables($files_spec_file, $srcroot, $cimeroot, $model);
+# todo:
+#$config->set('MACHDIR', "$machdir");
+my $file = $config->get('CONFIG_DRV_FILE');
 
-#if ($print>=2) { print "A new config reference object was created$eol";}
+$config->add_config_variables($file, $srcroot, $cimeroot, $model);
 
-# Machine parameters
-$cfg_ref->set_machine("$machdir/$machine_file", $mach, $print);
-$cfg_ref->set('MACHDIR', "$machdir");
-
-# Check that compiler request for target machine matches a supported value
-# Or set default compiler - if not provided compiler request
-my $compilers = $cfg_ref->get('COMPILERS');
-my @compilers = split ",", $compilers, -1;
-if ($compiler) {
-    my $found = 0;
-    foreach my $comp (@compilers) {
- 	if ($compiler eq $comp) {
- 	    $found = 1;
- 	}
-    }
-    if (!$found) {
- 	my $sysmod = "rm -rf $output_dir";
- 	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
- 	die "ERROR: compiler setting of $compiler does not match supported values of $compilers \n";
-    }
-}
-$cfg_ref->set('COMPILER', "$compiler");
-if ($print>=2) { print "Machine compiler specifier: $compiler.$eol"; }
-
-my $mpilibs = $cfg_ref->get('MPILIBS');
-my @mpilibs = split ",", $mpilibs, -1;
-if ($mpilib) {
-    # check that mpilib request for target machine matches a supported value
-    my $found = 0;
-    foreach my $mpi (@mpilibs) {
-	if ($mpilib eq $mpi) {
-	    $found = 1;
-	}
-    }
-    if (!$found) {
-	my $sysmod = "rm -rf $output_dir";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	die "ERROR: mpilib setting of $mpilib does not match supported values of $mpilibs \n";
-    }
-    $cfg_ref->set('MPILIB', "$mpilib");
-    if ($print>=2) { print "Machine mpilib specifier: $mpilib.$eol"; }
-} else {
-    $mpilib = $mpilibs[0];
-    $cfg_ref->set('MPILIB', "$mpilib");
-    if ($print>=2) { print "Machine mpilib specifier: $mpilib.$eol"; }
-}    
+ConfigMachine::setMachineValues($file, "", $mach, $compiler, $print, $config);
+# This will be the compiler argument passed in or the default if not provided
+$compiler = $config->get('COMPILER');
 
 if ($print>=2) { print "Machine specifier: $mach.$eol"; }
 
-SetupTools::set_compiler($cfg_ref->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, $print, "$output_dir/Macros", $output_format);
-
-my $sysmod;
-# Create machine specific environment file (env_mach_specific)
-if (-e "$machdir/env_mach_specific.$mach" ) {
-  $sysmod = "cp $machdir/env_mach_specific.$mach $output_dir/env_mach_specific";
-}else{
-  $sysmod = "touch $output_dir/env_mach_specific";
-}
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
 # Copy Depends files if they exist
 if( -e "$machdir/Depends.$mach" ) {
-  $sysmod = "cp $machdir/Depends.$mach $output_dir/";
-  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    copy("$machdir/Depends.$mach",$output_dir)
+	or die "ERROR:  copy $machdir/Depends.$mach $output_dir failed";
 }
 if( -e "$machdir/Depends.$compiler" ) {
-  $sysmod = "cp $machdir/Depends.$compiler $output_dir/";
-  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    copy("$machdir/Depends.$compiler",$output_dir)
+	or die "ERROR:  copy $machdir/Depends.$compiler $output_dir failed";
 }
 
-# Finally include a csh wrapper to load the modules and run the make
+my $dbug = $config->get("DEBUG");
 
-open(F,">$output_dir/build.csh") or die "Could not open file $output_dir/build.csh";
-print F "#!/usr/bin/env csh\n";
+my $moduleloader = Module::ModuleLoader->new(machine  => $mach, 
+					     compiler => $compiler, 
+					     mpilib   => $mpilib, 
+					     caseroot => $output_dir,
+					     debug    => $dbug, 
+					     cimeroot => $cimeroot,
+					     model    => $model);
 
-print F "#\n# Use this script to assure that modules are properly loaded before compiling\n#\n";
+$moduleloader->moduleInit();
+$moduleloader->writeXMLFileForCase();
 
-print F "setenv MPILIB ".$cfg_ref->get('MPILIB')."\n";
-print F "setenv COMPILER $compiler\n";
-print F "source env_mach_specific\n";
-print F "gmake \$*\n";
-close(F);
-chmod(0755,"$output_dir/build.csh");
+$moduleloader->writeCshModuleFile();
+$moduleloader->writeShModuleFile();
+
+
+SetupTools::set_compiler($config->get('OS'),"$machdir/$compiler_file",$compiler, $mach, $mpilib, 
+			 $print, 'Macros', $output_format);
 
 print "Successfully created auxilary build files for $mach \n\n";
 
