@@ -11,7 +11,7 @@ module ncdio_atm
   ! !USES:
 
   use pio, only: pio_offset_kind, file_desc_t, var_desc_t, pio_double,        &
-       pio_inq_dimlen, pio_inq_dimid, pio_max_var_dims,                       &
+       pio_inq_dimlen, pio_inq_dimid, pio_max_var_dims, pio_int,              &
        pio_inq_vardimid, pio_inq_varndims, io_desc_t, pio_setframe
   use shr_kind_mod,   only: r8 => shr_kind_r8
   use shr_sys_mod,    only: shr_sys_flush      ! Standardized system subroutines
@@ -34,6 +34,7 @@ module ncdio_atm
   !EOP
   !
   interface infld
+     module procedure infld_int_1d_2d
      module procedure infld_real_1d_2d
      module procedure infld_real_2d_2d
      module procedure infld_real_2d_3d
@@ -48,6 +49,173 @@ module ncdio_atm
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  !BOP
+  !
+  ! !IROUTINE: infld_int_1d_2d
+  !
+  ! !INTERFACE:
+  subroutine infld_int_1d_2d(varname, ncid, dimname1,                         &
+       dim1b, dim1e, dim2b, dim2e, field, readvar, gridname, timelevel)
+    !
+    ! !DESCRIPTION: 
+    ! Netcdf I/O of initial real field from netCDF file
+    ! Read a 1-D field (or slice) into a 2-D variable
+    !
+    ! !USES
+    !
+
+    use pio,              only: pio_get_var, pio_read_darray, pio_setdebuglevel
+    use pio,              only: PIO_MAX_NAME, pio_inquire, pio_inq_dimname
+    use cam_grid_support, only: cam_grid_check, cam_grid_get_decomp, cam_grid_id
+    use cam_pio_utils,    only: cam_pio_check_var
+
+    !
+    ! !ARGUMENTS:
+    implicit none
+    character(len=*),  intent(in)     :: varname  ! variable name
+    type(file_desc_t), intent(inout)  :: ncid     ! input unit
+    character(len=*),  intent(in)     :: dimname1 ! name of 1st array dimensions of field on file (array order)
+    integer,           intent(in)     :: dim1b    ! start of first  dimension of array to be returned
+    integer,           intent(in)     :: dim1e    ! end   of first  dimension of array to be returned
+    integer,           intent(in)     :: dim2b    ! start of second dimension of array to be returned
+    integer,           intent(in)     :: dim2e    ! end   of second dimension of array to be returned
+    integer, target,   intent(out)    :: field(dim1b:dim1e,dim2b:dim2e) ! array to be returned (decomposed or global)
+    logical,           intent(out)    :: readvar  ! true => variable is on initial dataset
+    character(len=*), optional, intent(in) :: gridname ! Name of variable's grid
+    integer, optional, intent(in)     :: timelevel
+    !
+    !EOP
+    !
+    ! !LOCAL VARIABLES:
+    type(io_desc_t), pointer  :: iodesc
+    integer                   :: grid_map  ! grid ID for data mapping
+    integer                   :: i, j      ! indices
+    integer                   :: ierr      ! error status
+    type(var_desc_t)          :: varid     ! variable id
+
+    integer                   :: arraydimsize(2) ! field dimension lengths
+    integer                   :: arraydimid      ! Dimension ID
+
+    integer                   :: ndims ! number of dimensions
+    integer                   :: dimids(PIO_MAX_VAR_DIMS) ! file variable dims
+    integer                   :: dimlens(PIO_MAX_VAR_DIMS) ! file variable shape
+
+    ! Offsets for reading global variables
+    integer                   :: strt(1) = 1 ! start ncol index for netcdf 1-d
+    integer                   :: cnt (1) = 1 ! ncol count for netcdf 1-d
+    character(len=PIO_MAX_NAME) :: tmpname
+    character(len=128)        :: errormsg
+
+    logical                   :: readvar_tmp ! if true, variable is on tape
+    character(len=32)         :: subname='INFLD_INT_1D_2D' ! subroutine name
+
+    ! For SCAM
+    real(r8)                  :: closelat, closelon
+    integer                   :: lonidx, latidx
+
+    nullify(iodesc)
+
+    !
+    !-----------------------------------------------------------------------
+    !
+    !    call pio_setdebuglevel(3)
+
+    !
+    ! Error conditions
+    !
+    if (present(gridname)) then
+      grid_map = cam_grid_id(trim(gridname))
+    else
+      grid_map = cam_grid_id('physgrid')
+    end if
+    if (.not. cam_grid_check(grid_map)) then
+      if(masterproc) then
+        if (present(gridname)) then
+          write(errormsg, *)': invalid gridname, "',trim(gridname),'", specified for field ',trim(varname)
+        else
+          write(errormsg, *)': Internal error, no "physgrid" gridname'
+        end if
+      end if
+      call endrun(trim(subname)//errormsg)
+    end if
+
+    if (debug .and. masterproc) then
+      if (present(gridname)) then
+        write(iulog, '(5a)') trim(subname),': field = ',trim(varname),', grid = ',trim(gridname)
+      else
+        write(iulog, '(4a)') trim(subname),': field = ',trim(varname),', grid = physgrid'
+      end if
+      call shr_sys_flush(iulog)
+    end if
+    !
+    ! Read netCDF file
+    !
+    !
+    ! Check if field is on file; get netCDF variable id
+    !
+    call cam_pio_check_var(ncid, varname, varid, ndims, dimids, dimlens, readvar_tmp)
+    !
+    ! If field is on file:
+    !
+    if (readvar_tmp) then
+        if (debug .and. masterproc) then
+          write(iulog, '(2a,5(i0,a))') trim(subname),': field(',              &
+               dim1b,':',dim1e,',',dim2b,':',dim2e, '), file(',dimlens(1),')'
+          call shr_sys_flush(iulog)
+        end if
+      !
+      ! Get array dimension id's and sizes
+      !
+      ierr = PIO_inq_dimid(ncid, dimname1, arraydimid)
+      arraydimsize(1) = (dim1e - dim1b + 1)
+      arraydimsize(2) = (dim2e - dim2b + 1)
+      do j = 1, 2
+        if (arraydimsize(j) /= size(field, j)) then
+          write(errormsg, *) ': Mismatch between array bounds and field size for ', &
+               trim(varname), ', dimension', j
+          call endrun(trim(subname)//errormsg)
+        end if
+      end do
+
+      if (ndims > 2) then
+        call endrun(trim(subname)//': too many dimensions for '//trim(varname))
+      else if (ndims < 1) then
+        call endrun(trim(subname)//': too few dimensions for '//trim(varname))
+      else
+        ! Check to make sure that the second dimension is time
+        if (ndims == 2) then
+          ierr = pio_inq_dimname(ncid, dimids(2), tmpname)
+          if (trim(tmpname) /= 'time') then
+            call endrun(trim(subname)//': dimension mismatch for '//trim(varname))
+          end if
+        end if
+      end if
+
+      if(ndims == 2) then
+        if(present(timelevel)) then
+          call pio_setframe(ncid, varid, int(timelevel,kind=pio_offset_kind))
+        end if
+      end if
+
+      ! NB: strt and cnt were initialized to 1
+      if (single_column) then	
+        !!XXgoldyXX: Clearly, this will not work for an unstructured dycore
+        call endrun(trim(subname)//': SCAM not supported in this configuration')
+      else
+        ! All distributed array processing
+        call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:ndims),    &
+             pio_int, iodesc)
+        call pio_read_darray(ncid, varid, iodesc, field, ierr)
+      end if
+    end if  ! end of readvar_tmp
+
+    readvar = readvar_tmp
+
+    return
+
+  end subroutine infld_int_1d_2d
 
   !-----------------------------------------------------------------------
   !BOP
