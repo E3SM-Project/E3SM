@@ -1033,18 +1033,19 @@
     </mach>
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
+    <!-- NTASKS_ATM is maxed out NTASKS_OCN overly large to fit 256 nodes on mira -->
     <mach name='mira'>
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
-	  <ntasks_atm>-224</ntasks_atm> 
+	  <ntasks_atm>-208</ntasks_atm> 
 	  <ntasks_lnd>-32</ntasks_lnd>           
 	  <ntasks_rof>-32</ntasks_rof> 
-	  <ntasks_ice>-96</ntasks_ice> 
-	  <ntasks_ocn>-4</ntasks_ocn> 
+	  <ntasks_ice>-80</ntasks_ice> 
+	  <ntasks_ocn>-48</ntasks_ocn> 
 	  <ntasks_glc>-1</ntasks_glc> 
 	  <ntasks_wav>-1</ntasks_wav> 
-	  <ntasks_cpl>-224</ntasks_cpl> 
+	  <ntasks_cpl>-208</ntasks_cpl> 
 	</ntasks>
 	<nthrds>
 	  <nthrds_atm>8</nthrds_atm>                   
@@ -1061,7 +1062,7 @@
 	  <rootpe_lnd>0</rootpe_lnd> 
 	  <rootpe_rof>-32</rootpe_rof> 
 	  <rootpe_ice>-64</rootpe_ice>    
-	  <rootpe_ocn>-224</rootpe_ocn>   
+	  <rootpe_ocn>-208</rootpe_ocn>   
 	  <rootpe_glc>0</rootpe_glc> 
 	  <rootpe_wav>0</rootpe_wav> 
 	  <rootpe_cpl>0</rootpe_cpl>                         
