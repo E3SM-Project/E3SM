@@ -1487,7 +1487,7 @@ DOCN%COPY => docn copy mode
 <STOP_N      compset="_DLND.*_CISM">10    </STOP_N>
 
 <!-- Stop options for MPASLI_ONLY compset -->
-<STOP_OPTION compset="_SLND.*SOCN_.*_MPASLI">nyears</STOP_OPTION>
+<STOP_OPTION compset="_SLND.*SOCN_.*_MPASLI">ndays</STOP_OPTION>
 <STOP_N      compset="_SLND.*SOCN_.*_MPASLI">5     </STOP_N>
 
 <CALENDAR compset="GEOS_">GREGORIAN</CALENDAR> 
@@ -1595,7 +1595,7 @@ DOCN%COPY => docn copy mode
 <NCPL_BASE_PERIOD compset="_MPASO"       >hour  </NCPL_BASE_PERIOD>
 
 <!-- coupler intervals for MPASLI-ONLY compset -->
-<NCPL_BASE_PERIOD compset="_SLND.*SOCN.*_MPASLI">year  </NCPL_BASE_PERIOD>
+<NCPL_BASE_PERIOD compset="_SLND.*SOCN.*_MPASLI">day  </NCPL_BASE_PERIOD>
 <ATM_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ATM_NCPL>
 <LND_NCPL compset="_SLND.*SOCN.*_MPASLI">1</LND_NCPL>
 <ICE_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ICE_NCPL>
