@@ -450,32 +450,32 @@
 
     <!-- QL, 150525, ww3 grids -->
     <grid compset="(_DWAV|_XWAV|_WW3)">
-      <sname>1.9x2.5_gx1v6_ww3a</sname>
-      <alias>f19_g16_ww3</alias>
+      <sname>1.9x2.5_gx1v6_r05_ww3a</sname>
+      <alias>f19_g16_r05_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
     <grid compset="(_DWAV|_XWAV|_WW3)">
-      <sname>T31_gx3v7_ww3a</sname>
-      <alias>T31_g37_ww3</alias>
+      <sname>T31_gx3v7_r05_ww3a</sname>
+      <alias>T31_g37_r05_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%ww3a</lname>
     </grid>
 
     <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
-      <sname>1.9x2.5_gx1v6_ww3a</sname>  
-      <alias>f19_g16_ww3</alias>
+      <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>  
+      <alias>f19_g16_rx1_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
     <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
-      <sname>T31_gx3v7_ww3a</sname>
-      <alias>T31_g37_ww3></alias>
+      <sname>T31_gx3v7_rx1_ww3a</sname>
+      <alias>T31_g37_rx1_ww3></alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%ww3a</lname>
     </grid>
 
     <grid compset="(DATM.+DWAV|XATM.+XWAV|SATM.+SWAV)">
-      <sname>T62_gx1v6_ww3a</sname>
-      <alias>T62_g16_ww3</alias>
+      <sname>T62_gx1v6_rx1_ww3a</sname>
+      <alias>T62_g16_rx1_ww3</alias>
       <lname>a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
