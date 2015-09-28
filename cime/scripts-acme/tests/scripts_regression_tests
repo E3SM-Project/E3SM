@@ -5,7 +5,7 @@ import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, s
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(SCRIPT_DIR)
 from acme_util import run_cmd
-import acme_util
+import acme_util, update_acme_tests
 
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
@@ -35,6 +35,9 @@ class RunUnitTests(unittest.TestCase):
 
     def test_update_acme_tests_unit_test(self):
         self.do_unit_tests("update_acme_tests")
+
+    def test_update_acme_tests_unit_test(self):
+        self.do_unit_tests("list_acme_tests")
 
     def test_wait_for_tests_unit_test(self):
         self.do_unit_tests("wait_for_tests")
@@ -412,6 +415,39 @@ class TestJenkinsGenericJob(unittest.TestCase):
 
         # Basic namelist compare should now pass again
         self.simple_test(True, "-n -b %s" % self._baseline_name)
+
+###############################################################################
+class TestUpdateACMETests(unittest.TestCase):
+###############################################################################
+
+    ###########################################################################
+    def setUp(self):
+    ###########################################################################
+        # Grab all active tests
+        self._testlist_allactive = os.path.join(acme_util.get_cime_root(), "scripts", "Testing", "Testlistxml", "testlist_allactive.xml")
+        shutil.copy2(self._testlist_allactive, ".")
+
+    ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        shutil.copy2("testlist_allactive.xml", self._testlist_allactive)
+
+    ###########################################################################
+    def test_update_acme_tests(self):
+    ###########################################################################
+        # Add some BS to acme tests
+        update_acme_tests._TEST_SUITES["acme_test_only"] = \
+            (None, [("ERS.f19_g16_rx1.A", "test/test_mod"),
+                    ("NCK.f19_g16_rx1.A", "test/test_mod")]
+             )
+
+        try:
+            update_acme_tests.update_acme_tests(self._testlist_allactive, update_acme_tests.get_test_suites())
+        except:
+            self.assertTrue(False, str(sys.exc_info()[1]))
+
+        stat = run_cmd("grep 'test/test_mod' %s" % self._testlist_allactive, ok_to_fail=True)[0]
+        self.assertEqual(stat, 0, msg="Missing test_mod")
 
 ###########################################################################
 
