@@ -695,16 +695,7 @@ sub checkOptions
     
     my $machines_file;
     $machines_file = ConfigMachine::setMachineFile($machine, $model, $cimeroot, $file_config);
-#TODO - is the following incorrect???
-#    if( defined $opts{'nlcompareonly'})
-#    {
-#	#TODO - the arguments here are wrong
-#	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, 'yellowstone', $file_config);
-#    }
-#    else
-#    {
-#	$machines_file = ConfigMachine::setMachineFile($machine, $cimeroot, $file_config);
-#    }
+
 
     # Determine baselineroot for comparisons and full pathname of cprnc
     # Allow for environment variables in the config_machines.xml file using $ENV{variablename} syntax
@@ -748,11 +739,10 @@ sub checkOptions
 	print "----------------------------------------------------------------------------\n";
 	print "Offline namelist comparision option invoked\n";
 	print "Setting autosubmit and reruntests to off!\n";
-	print "And nobatch and nobuild to on!\n";
+	print "And nobuild to on!\n";
 	print "----------------------------------------------------------------------------\n";
 
 	$opts{'autosubmit'} = 'off';
-	$opts{'nobatch'} = 'on';
 	$opts{'nobuild'} = 'on';
 	$opts{'reruntests'} = 'off';
     }
