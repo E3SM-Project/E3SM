@@ -40,7 +40,8 @@
 <config_tracer_advection>'none'</config_tracer_advection>
 
 <!-- &velocity_solver -->
-<config_velocity_solver>'sia'</config_velocity_solver>
+<config_velocity_solver mpasli_use_albany="FALSE">'sia'</config_velocity_solver>
+<config_velocity_solver mpasli_use_albany="TRUE">'FO'</config_velocity_solver>
 <config_sia_tangent_slope_calculation>'from_vertex_barycentric'</config_sia_tangent_slope_calculation>
 <config_flowParamA_calculation>'CP2010'</config_flowParamA_calculation>
 <config_do_velocity_reconstruction_for_external_dycore>.false.</config_do_velocity_reconstruction_for_external_dycore>
