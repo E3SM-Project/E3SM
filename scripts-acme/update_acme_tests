@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-"""This script recreates and acme suite within the CESM testlist.xml
+"""
+This script recreates and acme suite within the CESM testlist.xml
 file, which should be given as the only argument. It deletes any
 existing category from the XML file, draws from information within
 this file to create new test entries, and then inserts these entries
-into the XML file."""
+into the XML file.
+"""
 
 import acme_util
 from acme_util import expect
@@ -43,10 +45,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("categories", nargs="*",
                         help="The test categories to update. Default will update all. Test categories: %s" % (", ".join(update_acme_tests.get_test_suites())))
 
-    parser.add_argument("-p", "--platform", action="store", default=None, dest="platform",
+    parser.add_argument("-p", "--platform",
                         help="Only add tests for a specific platform, format=machine,compiler. Useful for adding new platforms.")
 
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+    parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
 
     args = parser.parse_args(args[1:])
@@ -75,7 +77,7 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    update_acme_tests.update_acme_test(test_list_path, categories, platform)
+    update_acme_tests.update_acme_tests(test_list_path, categories, platform)
 
 if __name__ == "__main__":
     _main_func(__doc__)
