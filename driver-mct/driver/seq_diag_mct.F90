@@ -67,6 +67,7 @@ module seq_diag_mct
    public seq_diag_sum0_mct
    public seq_diag_print_mct
    public seq_diag_avect_mct
+   public seq_diag_avloc_mct
    public seq_diag_avdiff_mct
 
 !EOP
@@ -1646,6 +1647,85 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 101  format('comm_diag ',a3,1x,a4,1x,i3,es26.19,1x,a)
 
 end subroutine seq_diag_avect_mct
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: seq_diag_avloc_mct - print local budget diagnostics
+!
+! !DESCRIPTION:
+!   Print local diagnostics for AV/ID.
+!
+! !REVISION HISTORY:
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+SUBROUTINE seq_diag_avloc_mct(av, comment)
+
+   use seq_infodata_mod
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(mct_aVect) , intent(in)           :: av
+   character(len=*), intent(in), optional :: comment
+
+!EOP
+
+   !--- local ---
+   integer(in)                      :: n,k         ! counters
+   integer(in)                      :: npts        ! number of local/global pts in AV
+   integer(in)                      :: kflds       ! number of fields in AV
+   real(r8),                pointer :: sumbuf (:)  ! sum buffer
+   type(mct_string)                 :: mstring     ! mct char type
+   character(CL)                    :: lcomment    ! should be long enough
+   character(CL)                    :: itemc       ! string converted to char
+
+   !----- formats -----
+   character(*),parameter :: subName = '(seq_diag_avloc_mct) '
+   character(*),parameter :: F00   = "('(seq_diag_avloc_mct) ',4a)"
+
+!-------------------------------------------------------------------------------
+! print instantaneous budget data
+!-------------------------------------------------------------------------------
+
+   lcomment = ''
+   if (present(comment)) then
+      lcomment=trim(comment)
+   endif
+
+   npts = mct_aVect_lsize(AV)
+   kflds = mct_aVect_nRattr(AV)
+   allocate(sumbuf(kflds))
+
+   sumbuf = 0.0_r8
+   do n = 1,npts
+   do k = 1,kflds
+!      if (.not. shr_const_isspval(AV%rAttr(k,n))) then
+         sumbuf(k) = sumbuf(k) + AV%rAttr(k,n)
+!      endif
+   enddo
+   enddo
+
+   do k = 1,kflds
+      call mct_aVect_getRList(mstring,k,AV)
+      itemc = mct_string_toChar(mstring)
+      call mct_string_clean(mstring)
+      if (len_trim(lcomment) > 0) then
+         write(logunit,100) 'xxx','sorr',k,sumbuf(k),trim(lcomment),trim(itemc)
+      else
+         write(logunit,101) 'xxx','sorr',k,sumbuf(k),trim(itemc)
+      endif
+   enddo
+   call shr_sys_flush(logunit)
+
+   deallocate(sumbuf)
+
+100  format('avloc_diag ',a3,1x,a4,1x,i3,es26.19,1x,a,1x,a)
+101  format('avloc_diag ',a3,1x,a4,1x,i3,es26.19,1x,a)
+
+end subroutine seq_diag_avloc_mct
 
 !===============================================================================
 !BOP ===========================================================================
