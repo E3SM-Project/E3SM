@@ -26,6 +26,8 @@ my $NTASKS_GLC		= `./xmlquery  NTASKS_GLC		-value`;
 my $NINST_GLC = 1; # Change if you want multiple instances... though this isn't coded yet.
 my $RUNDIR		    = `./xmlquery  RUNDIR			-value`;
 my $STREAM_NAME     = 'streams.landice';
+my $MPASLI_USE_ALBANY = `./xmlquery MPASLI_USE_ALBANY -value`;
+my $ALBANY_INPUT_NAME     = 'albany_input.xml';
 
 if (! -d "$CASEBUILD/mpasliconf" ) {
     $sysmod = "mkdir $CASEBUILD/mpasliconf";
@@ -210,6 +212,21 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 
 }
 
-exit (0);
 
+
+if ( $MPASLI_USE_ALBANY eq "TRUE" ) {
+   print "Setting up albany_input.xml file for use with MPASLI.\n";
+   # Write albany_input.xml file if there isn't one in SourceMods
+   if ( -e "$CASEROOT/SourceMods/src.mpasli/$ALBANY_INPUT_NAME" ) {
+       $sysmod = "cp $CASEROOT/SourceMods/src.mpasli/$ALBANY_INPUT_NAME $RUNDIR/$ALBANY_INPUT_NAME";
+       system($sysmod) == 0 or die "ERROR mpasli.buildnml: $sysmod fails: $?\n";
+   } else {
+       $sysmod =  "$CCSMROOT/components/mpasli/bld/build-namelist";
+       $sysmod = "cp $CCSMROOT/components/mpasli/bld/namelist_files/$ALBANY_INPUT_NAME $RUNDIR/$ALBANY_INPUT_NAME";
+       system($sysmod) == 0 or die "ERROR mpasli.buildnml: $sysmod fails: $?\n";
+   }
+}
+
+
+exit (0);
 
