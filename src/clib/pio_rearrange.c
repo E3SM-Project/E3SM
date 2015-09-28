@@ -175,6 +175,13 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
 /**
  ** @internal
 ** Create the derived MPI datatypes used for comp2io and io2comp transfers
+** @param basetype The type of data (int,real,double). 
+** @param msgcnt The number of MPI messages/tasks to use.
+** @param dlen The length of the data array.
+** @param mindex An array of indexes into the data array from the comp map
+** @param mcount The number of indexes to be put on each mpi message/task
+** @param *mfrom A pointer to the previous structure in the read/write list
+** @param mtype The final data structure sent through MPI to the read/write
 ** @endinternal
 */
 int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, const PIO_Offset mindex[],const int mcount[],
@@ -182,19 +189,31 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 {
   PIO_Offset bsizeT[msgcnt];
   int blocksize;
-  PIO_Offset lindex[dlen];
+  int numinds;
+  PIO_Offset *lindex;
+
+  numinds=0;
+  for(int j=0;j<msgcnt;j++){
+    numinds+=mcount[j];
+  }
 
   pioassert(dlen>=0,"dlen < 0",__FILE__,__LINE__);
+  pioassert(numinds>=0, "num inds < 0",__FILE__,__LINE__);
+
 
   if(mindex != NULL){
-    memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
+    // memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
+    lindex = malloc(numinds*sizeof(PIO_Offset));
+    memcpy(lindex, mindex, (size_t) (numinds*sizeof(PIO_Offset)));
   }
+
   bsizeT[0]=0;
   mtype[0] = MPI_DATATYPE_NULL;
   int pos = 0;
   int ii = 0;
   if(msgcnt>0){
-    if(mfrom == NULL){
+
+     if(mfrom == NULL){
       for(int i=0;i<msgcnt;i++){
 	if(mcount[i]>0){
 	  bsizeT[ii] = GCDblocksize(mcount[i], lindex+pos);
@@ -207,7 +226,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
     }else{
       blocksize=1;
     }
-    
+
     pos = 0;
     for(int i=0;i< msgcnt; i++){
       if(mcount[i]>0){
@@ -215,13 +234,15 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	int displace[len];
 	if(blocksize==1){
 	  if(mfrom == NULL){
-	    for(int j=0;j<len;j++)
-	      displace[j] = (int) (lindex[pos+j]);
+	    for(int j=0;j<len;j++) {
+		displace[j] = (int) (lindex[pos+j]);
+	    }
 	  }else{
 	    int k=0;
-	    for(int j=0;j<dlen;j++)
-	      if(mfrom[j]==i)
+	    for(int j=0;j<numinds;j++)
+	      if(mfrom[j]==i) {
 		displace[k++] = (int) (lindex[j]);
+	      }
 	  }
 	    
 	}else{
@@ -238,7 +259,6 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	}
 	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
 	pos+=mcount[i];
-
       }
     }
 
