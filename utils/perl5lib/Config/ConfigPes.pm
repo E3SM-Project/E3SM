@@ -123,34 +123,7 @@ sub _setPESsettings
     my $compset_longname = $config->get('COMPSET');
     my $pes_file	 = $config->get('PES_SPEC_FILE');
 
-    # temporary hash
     my %decomp;
-    $decomp{'NTASKS_ATM'} = 16;
-    $decomp{'NTASKS_LND'} = 16;
-    $decomp{'NTASKS_ICE'} = 16;
-    $decomp{'NTASKS_OCN'} = 16;
-    $decomp{'NTASKS_ROF'} = 16;
-    $decomp{'NTASKS_GLC'} = 16;
-    $decomp{'NTASKS_WAV'} = 16;
-    $decomp{'NTASKS_CPL'} = 16;
-
-    $decomp{'NTHRDS_ATM'} = 1;
-    $decomp{'NTHRDS_LND'} = 1;
-    $decomp{'NTHRDS_ICE'} = 1;
-    $decomp{'NTHRDS_OCN'} = 1;
-    $decomp{'NTHRDS_ROF'} = 1;
-    $decomp{'NTHRDS_GLC'} = 1;
-    $decomp{'NTHRDS_WAV'} = 1;
-    $decomp{'NTHRDS_CPL'} = 1;
-
-    $decomp{'ROOTPE_ATM'} = 0;
-    $decomp{'ROOTPE_LND'} = 0;
-    $decomp{'ROOTPE_ICE'} = 0;
-    $decomp{'ROOTPE_OCN'} = 0;
-    $decomp{'ROOTPE_ROF'} = 0;
-    $decomp{'ROOTPE_GLC'} = 0;
-    $decomp{'ROOTPE_WAV'} = 0;
-    $decomp{'ROOTPE_CPL'} = 0;
 
     # --------------------------------------
     # look for model grid / model machine match
@@ -203,7 +176,15 @@ sub _setPESsettings
     my $compset_match;
     my $pesize_match;
 
-    # Find nodes with grid= not 'any' and mach='any' - this override the default for $grid_match and $mach_match
+    # Find default which will be overwritten by any match below 
+    foreach my $node ($xml->findnodes(".//grid[(\@name =\"any\")]/mach[\@name =\"any\"]/pes[\@pesize =\"any\" and \@compset =\"any\"]")) {
+	next if($node->nodeType == XML_COMMENT_NODE);
+	$pe_select = $node;
+    }
+
+
+    
+        # Find nodes with grid= not 'any' and mach='any' - this override the default for $grid_match and $mach_match
     foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[\@name =\"any\"]")) {
 	next if($node->nodeType == XML_COMMENT_NODE);
 	my $grid_attr = $node->parentNode()->getAttribute('name');
@@ -301,11 +282,19 @@ sub _setPESsettings
     print "ConfigPES: compset_match is $compset_match\n"; 
     print "ConfigPES: pesize match  is $pesize_match \n"; 
     
+    _getlayout($pe_select, $config, \%decomp);
+}
+
+sub _getlayout
+{
+    my ($pe_select,$config) = @_;
+
     my $pes_per_node = $config->get('PES_PER_NODE');
     my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
     my @pes_nthrds = $pe_select->findnodes("./nthrds"); 
     my @pes_rootpe = $pe_select->findnodes("./rootpe"); 
-
+    my %decomp;
+    
     foreach my $pes (@pes_ntasks, @pes_nthrds, @pes_rootpe) {
 	next if($pes->nodeType == XML_COMMENT_NODE);
 	my @children = $pes ->childNodes();
@@ -331,7 +320,10 @@ sub _setPESsettings
 	$config->set("NTHRDS_$comp" , $nthrds);
 	$config->set("ROOTPE_$comp" , $rootpe);
     }
+
 }
+
+
 
 #-------------------------------------------------------------------------------
 sub _clean

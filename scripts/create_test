@@ -739,7 +739,7 @@ sub checkOptions
 	print "----------------------------------------------------------------------------\n";
 	print "Offline namelist comparision option invoked\n";
 	print "Setting autosubmit and reruntests to off!\n";
-	print "And nobatch and nobuild to on!\n";
+	print "And nobuild to on!\n";
 	print "----------------------------------------------------------------------------\n";
 
 	$opts{'autosubmit'} = 'off';
