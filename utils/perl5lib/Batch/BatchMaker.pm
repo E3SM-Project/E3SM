@@ -862,8 +862,9 @@ sub setTaskInfo()
 
     $self->{'mppsize'}  = $taskmaker->sumTasks();
 
-    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $maxTasksPerNode > 0)
+    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $pes_per_node > 0)
     {
+	print "mppsize = $self->{mppsize} pes_per_node=$pes_per_node \n";
 	die("odd number of tasks to handle");
 #        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
 #        $mppnodes += 1;
