@@ -314,6 +314,7 @@ contains
 #if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
     {VTYPE}, allocatable :: acopy(:)
     integer :: isize
+
     isize= size(array)
     allocate(acopy(isize))
     acopy = reshape(array,(/isize/))

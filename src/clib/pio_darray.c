@@ -102,8 +102,6 @@ void compute_buffer_init(iosystem_desc_t ios)
    ndims = iodesc->ndims;
    msg = 0;
 
-   printf("PIO_WRITE_DARRAY_NC %s %d \n",__FILE__,__LINE__);
-
    if(ios->async_interface && ! ios->ioproc){
      if(ios->comp_rank==0) 
        mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
@@ -371,8 +369,6 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
      return PIO_EBADID;
    }
    msg = 0;
-
-   printf("PIO_WRITE_DARRAY_MULTI_NC %s %d \n",__FILE__,__LINE__);
 
    if(ios->async_interface && ! ios->ioproc){
      if(ios->comp_rank==0) 
@@ -644,8 +640,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      return PIO_EBADID;
    }
     
-   printf("PIOc_WRITE_DARRAY_MULTI %s %d \n",__FILE__,__LINE__);
-
    vdesc0 = file->varlist+vid[0];
    
    pioassert(nvars>0,"nvars <= 0",__FILE__,__LINE__);
@@ -780,8 +774,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      return PIO_EBADID;
    }
    ios = file->iosystem;
-
-   printf("PIOc_WRITE_DARRAY buffer %s %d \n",__FILE__,__LINE__);
 
   vdesc = (file->varlist)+vid;
   if(vdesc == NULL)
@@ -977,8 +969,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      return PIO_EBADID;
    }
    iobuf = NULL;
-
-   printf("PIOc_WRITE_DARRAY no buf %s %d \n",__FILE__,__LINE__);
 
    ios = file->iosystem;
 
