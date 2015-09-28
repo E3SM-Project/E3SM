@@ -2742,10 +2742,6 @@ end subroutine ccsm_init
 	       call prep_glc_calc_o2x_gx(timer='driver_glcprep_ocn2glc')
 	    end if
 	    
-	    !Jer: at this point, there needs to be the ice-shelf-flux-relevant fields on
-	    !the ice sheet grid.  So then maybe this is the place to do the call to 
-	    !"prep_glc_calc_calculate_subshelf_boundary_fluxes"
-	    
             !Jer: get lnd inputs to glc, on glc grid
             if (lnd_c2_glc) then
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx

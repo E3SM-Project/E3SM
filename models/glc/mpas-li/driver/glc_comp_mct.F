@@ -1261,6 +1261,12 @@ contains
    
    integer, pointer :: nCellsSolve
 
+   type (field1DReal), pointer :: sfcMassBalField,&
+                                  basalOceanMassBalField,&
+                                  surfaceTemperatureField,&
+                                  basalOceanHeatflxField,&
+                                  OceanDensityField
+
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
                                                basalOceanMassBal,&
 					       surfaceTemperature,&
@@ -1275,35 +1281,49 @@ contains
       do while (associated(block))
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'thernal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 	 
-         call mpas_pool_get_array(geometryPool, 'sfcMassBal',sfcMassBal)
-         call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
-         call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
-         !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+	 
+         call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
+         call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)
+         call mpas_pool_get_field(thermalPool, 'surfaceTemperature',surfaceTemperatureField)
+         call mpas_pool_get_field(thermalPool, 'basalOceanHeatflx',basalOceanHeatflxField)
+         call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField)
+	 
+	 sfcMassBal => sfcMassBalField % array  
+         basalOceanMassBal => basalOceanMassBalField % array
+         surfaceTemperature => surfaceTemperatureField % array 
+         basalOceanHeatflx => basalOceanHeatflxField % array
+         OceanDensity => OceanDensityField % array
 	 
 	 do i = 1, nCellsSolve
 	    n = n + 1
-	    sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-	    basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
+	    sfcMassBal(i) =         x2g_g % rAttr(index_x2g_Flgl_qice, n)
 	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-	    basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
-	    !OceanDensity (i) = x2g_g % rAttr(, n)
+	    basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
+	    basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
+	    OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_phieff, n)
 	 end do
 	 
 	 block => block % next
 	 
       end do
-    
-    
-    
-    
-    
-!Need to loop over blocks
-!Jer: Need to define local pointers to MPAS-LI arrays, get these arrays, and point to them with local pointers
-!Jer: Need to assign local pointers to x2g arrays (as in CESM)
-!Jer: then, need to re-get forcingPool fields and call maps_dmpar_exch_halo_field on them
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      
+      call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
+      call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)
+      call mpas_pool_get_field(thermalPool, 'surfaceTemperature',surfaceTemperatureField)
+      call mpas_pool_get_field(thermalPool, 'basalOceanHeatflx',basalOceanHeatflxField)
+      call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField)
+      
+      call mpas_dmpar_exch_halo_field(sfcMassBalField)
+      call mpas_dmpar_exch_halo_field(basalOceanMassBalField)
+      call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
+      call mpas_dmpar_exch_halo_field(basalOceanHeatflxField)
+      call mpas_dmpar_exch_halo_field(OceanDensityField)
 
   end subroutine glc_import_mct
 

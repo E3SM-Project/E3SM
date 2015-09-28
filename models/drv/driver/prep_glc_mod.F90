@@ -484,7 +484,7 @@ contains
     
     !TO DO: CONSIDER HOW ENSEMBLES ARE GOING TO BE IMPLEMENTED
 
-    !Remap relevant ocean variables to ice sheet grid.  Done here so it happens within ocean coupling interval.
+    !Remap relevant ocean variables to ice sheet grid.  Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
     call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
     fldlist='So_blt:So_bls:So_htv:So_hsv:So_phieff',norm=.true.)
 
