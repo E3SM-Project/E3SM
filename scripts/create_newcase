@@ -566,11 +566,13 @@ if ($opts{'project'}) {
 } else {
     $project = ProjectTools::find_project();
 }
-
-if ($config->get('PROJECT_REQUIRED') eq "TRUE") {
-    ProjectTools::check_project_required_but_unset($project);
+# skip this check if SBN test
+unless(defined $testname && $testname eq "SBN"){
+    if ($config->get('PROJECT_REQUIRED') eq "TRUE") {
+	ProjectTools::check_project_required_but_unset($project);
+    }
+    $config->set('PROJECT',$project);
 }
-$config->set('PROJECT',$project);
 #------------------------------------------------------------------------------------------
 # *** Set the mpi library 
 #------------------------------------------------------------------------------------------
