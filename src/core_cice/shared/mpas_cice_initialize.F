@@ -977,8 +977,9 @@ contains
     !          real (kind=RKIND), parameter :: a       = 1.0d0           !< Constant: Spherical Earth radius [m]
 
     real(kind=RKIND), parameter :: &
-!!!         circle_radius = 1.0e6_RKIND
-         circle_radius = 0.1_RKIND
+!!!         circle_radius = 1.0e6_RKIND  ! suitable for a grid whose radius is 6371 km
+         circle_radius = 0.1_RKIND   ! I often use this radius on the gx3 grid
+!!         circle_radius = 0.01_RKIND    ! I sometimes use a smaller radius on the gx1 grid
    
     call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
     call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
@@ -1031,8 +1032,9 @@ contains
        do iCell = 1, nCells
        
           !WHL - unrotated grid; put a circle of ice on the equator
-          if (xCell(iCell) > 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then
-          
+          if (xCell(iCell) > 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then   ! Greenwich meridian
+!          if (xCell(iCell) < 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then  ! Date Line 
+
              ! has ice
              iceAreaCategory(1,:,iCell)    = config_initial_ice_area
              iceVolumeCategory(1,:,iCell)  = config_initial_ice_volume

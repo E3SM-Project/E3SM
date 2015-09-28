@@ -32,7 +32,7 @@ module cice_advection_incremental_remap
                                                        cice_add_tracers_to_linked_list, &
                                                        cice_set_tracer_array_pointers,  &
                                                        cice_update_tracer_halo
-   
+
    implicit none
    private
    save 
@@ -108,6 +108,16 @@ module cice_advection_incremental_remap
 !   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
 !   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
 !   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
+!!   integer, parameter :: ctestGlobal = 1        ! test cell for spherical quad test case (gx3, rotated, near SP)
+!!   integer, parameter :: etestGlobal = 13898    ! test edge for spherical quad test case
+!!   integer, parameter :: vtestGlobal = 1        ! test vertex for spherical quad test case
+
+!   integer, parameter :: ctestGlobal = 51157    ! test cell for spherical quad test case (gx1, not rotated)
+!   integer, parameter :: etestGlobal = 126267    ! test edge for spherical quad test case
+!   integer, parameter :: vtestGlobal = 52059    ! test vertex for spherical quad test case
+!!   integer, parameter :: ctestGlobal = 2    ! test cell for spherical quad test case (gx1, rotated, near SP)
+!!   integer, parameter :: etestGlobal = 124953    ! test edge for spherical quad test case
+!!   integer, parameter :: vtestGlobal = 2    ! test vertex for spherical quad test case
 
 !   integer, parameter :: ctestGlobal = 3          ! test cell for spherical hex test case (North Pole on 2562 grid)
 !   integer, parameter :: etestGlobal = 473         ! test edge for spherical hex test case
@@ -120,17 +130,19 @@ module cice_advection_incremental_remap
    logical, parameter :: monotonicity_check = .true.  ! if true, check for tracer monotonicity
 
    !WHL - Change these to T to see extensive diagnostic output      
-   !      I often debug with verboseInit/Run/Construct/Geometry/Fluxes set to true.
+   !      I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
 !   logical, parameter :: verboseInit = .true.
 !   logical, parameter :: verboseRun = .true.
 !   logical, parameter :: verboseConstruct = .true.
 !   logical, parameter :: verboseGeometry = .true.
 !   logical, parameter :: verboseFluxes = .true.
+!   logical, parameter :: verboseGlobal = .true.
    logical, parameter :: verboseInit = .false.
    logical, parameter :: verboseRun = .false.
    logical, parameter :: verboseConstruct = .false.
    logical, parameter :: verboseGeometry = .false.
    logical, parameter :: verboseFluxes = .false.
+   logical, parameter :: verboseGlobal = .false.
    logical, parameter :: verboseGeomAvg = .false.
    logical, parameter :: verboseMasks = .false.
 
@@ -189,7 +201,6 @@ contains
     !TODO - can remove cellsOnEdgeSign if always = 1
     integer, dimension(:), pointer :: &
          nEdgesOnCell,      & ! number of edges for each cell
-         nEdgesOnEdge,      & ! number of edge neighbors for each edge
          remapEdge,         & ! = 1 if IR fluxes need to be computed across an edge, else = 0
                               ! (i.e., = 1 for all edges of locally owned cells)
          cellsOnEdgeSign      ! = 1 if cell 1 lies in the left half plane of the edge
@@ -209,6 +220,7 @@ contains
                               ! (i.e., those sharing a vertex with the edge)
 
     real(kind=RKIND), dimension(:), pointer :: &
+         areaCell,      &  ! cell area
          dcEdge,        &  ! distance between the 2 cell centers on each side of an edge
          dvEdge            ! distance between the 2 vertices of an edge
 
@@ -296,7 +308,6 @@ contains
 
        ! get some mesh arrays
        call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-       call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
        call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
        call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
        call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
@@ -306,6 +317,7 @@ contains
        call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
        call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
        call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
        call mpas_pool_get_array(meshPool, 'xCell', xCell)
        call mpas_pool_get_array(meshPool, 'yCell', yCell)
        call mpas_pool_get_array(meshPool, 'zCell', zCell)
@@ -593,10 +605,7 @@ contains
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'xVertexOnCell, yVertexOnCell:'
           do iVertexOnCell = 1, nEdgesOnCell(iCell)
-!!             write(stderrUnit,*) iVertexOnCell, xVertexOnCell(iVertexOnCell, iCell), yVertexOnCell(iVertexOnCell, iCell)
-                !WHL - debug - add magnitude
-                write(stderrUnit,*) iVertexOnCell, xVertexOnCell(iVertexOnCell,iCell), yVertexOnCell(iVertexOnCell,iCell), &
-                     sqrt(xVertexOnCell(iVertexOnCell,iCell)**2 + yVertexOnCell(iVertexOnCell,iCell)**2)
+             write(stderrUnit,*) iVertexOnCell, xVertexOnCell(iVertexOnCell, iCell), yVertexOnCell(iVertexOnCell, iCell)
           enddo
           
        endif   ! ctestOnProc & ctestBlockID
@@ -761,6 +770,16 @@ contains
           !  write(stderrUnit,*) iEdge, indexToEdgeID(iEdge)
        enddo
     endif
+
+    !WHL - debug - check for zero or negative cell areas
+    do iCell = 1, nCellsSolve
+       if (areaCell(iCell) <= 0.0_RKIND) then
+          write(stderrUnit,*) ' '
+          write(stderrUnit,*) 'Bad cell area, iCell, area:', iCell, areaCell(iCell)
+!!          write(stderrUnit,*) 'cellsOnCell:', cellsOnCell(:,iCell)
+          call mpas_dmpar_global_abort('Aborting with IR error')
+       endif
+    enddo
 
   end subroutine cice_init_advection_incremental_remap
 
@@ -1157,9 +1176,28 @@ contains
        enddo
     enddo   ! iCell
 
+    ! Exclude edges that do not have cell neighbors on each side.
+    ! This amounts to a no-flux condition at any global boundary
+    ! (unless halo cells exist beyond the boundary).
+
+    do iEdge = 1, nEdges
+       if (remapEdge(iEdge) == 1) then
+          do iCellOnEdge = 1, 2
+             iCell = cellsOnEdge(iCellOnEdge,iEdge)
+             if (iCell < 1 .or. iCell > nCells) then
+                remapEdge(iEdge) = 0
+                  !WHL - debug                
+!!                write(stderrUnit,*) 'Excluding edge, iedge (local, global):', iEdge, indexToEdgeID(iEdge)
+!!                write(stderrUnit,*) 'Cell neighbors:', cellsOnEdge(1,iEdge), cellsOnEdge(2,iEdge)
+                exit
+             endif   ! cell neighbor does not exist
+          enddo   ! iCellOnEdge
+       endif
+    enddo
+       
     !WHL - debug - Write out edges not used for IR
     if (verboseInit) then
-       !  write(stderrUnit,*) 'Halo edges not used for IR:'
+       !  write(stderrUnit,*) 'Edges not used for IR:'
        do iEdge = 1, nEdges
           if (remapEdge(iEdge) == 0) then
              !  write(stderrUnit,*) iEdge
@@ -1437,6 +1475,7 @@ contains
              iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge,iEdge)  ! E1 or E2
              if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! E1 (or E2) exists
                 ! look for a cell that lies on this edge and is not C1
+
                 do iCellOnEdge = 1, 2
                    iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
                    if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then ! this cell exists
@@ -1444,7 +1483,7 @@ contains
                          cellsOnEdgeRemap(iVertexOnEdge+2,iEdge) = iCellNeighbor  ! C3 or C4
                       endif
                    endif
-                enddo
+                enddo  ! iCellOnEdge
              endif  ! E1 (or E2) exists
 
              ! if E3 (or E4) exists, find the other cell (apart from C2) that lies on this edge
@@ -1458,7 +1497,9 @@ contains
                          cellsOnEdgeRemap(iVertexOnEdge+4,iEdge) = iCellNeighbor  ! C5 or C6
                       endif
                    endif
-                enddo
+
+                enddo  ! iCellOnEdge
+
              endif  ! E1 (or E2) exists
 
           enddo  ! iVertexOnEdge
@@ -2323,7 +2364,8 @@ contains
 
     do while (associated(block))
 
-       if (verboseRun) write(stderrUnit,*) 'Call incremental_remap_block'
+       if (verboseRun) &
+            write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
 
        ! do IR for this block
        call incremental_remap_block(&
@@ -2549,6 +2591,9 @@ contains
          transGlobalToEdge,   &  ! 3x3 matrix for transforming vectors from global to edge-based coordinates
          transGlobalToCell       ! 3x3 matrix for transforming vectors from global to cell-based coordinates
 
+    real(kind=RKIND), dimension(:,:), pointer ::  &
+         workCategoryCell        ! work array with dimensions (nCategories,nCells)
+
     integer :: timeLevel
 
     logical, parameter :: zapSmallMass = .true.  ! if true, remove mass values (i.e., fractional ice area in CICE)
@@ -2657,12 +2702,13 @@ contains
     call mpas_pool_get_array(incrementalRemapPool, 'transGlobalToCell',   transGlobalToCell)
     call mpas_pool_get_array(incrementalRemapPool, 'minLengthEdgesOnVertex', minLengthEdgesOnVertex)
     call mpas_pool_get_array(incrementalRemapPool, 'cellsOnEdgeSign',  cellsOnEdgeSign)
+    call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
 
     !WHL - debug - one-time diagnostics (this info can also be written at the end of each time step)
     if (first_call) then   
        first_call = .false.
        thisTracer => tracersHead
-       if (verboseRun .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
+       if (verboseGlobal .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'Cells with initial ice:'
           write(stderrUnit,*) 'iCell (local), iCell(global), ice area, xCell, yCell, zCell:'
@@ -2681,6 +2727,43 @@ contains
           endif  ! ndims
        endif   ! verbose and iceAreaCategory
     endif   ! first_call
+
+    !------------------------------------------------------------------- 
+    ! Convert the ice and snow volume to thickness.
+    ! The IR code assumes that all tracers except the first (fractional ice area,
+    !  which is a mass-like field) are true tracers, and not the product of area*tracer.
+    !
+    ! TODO: Switch iceVolume and snowVolume to iceThickness and snowThickness?
+    !       This would require some code rewrites outside the IR.
+    !------------------------------------------------------------------- 
+
+    if (verboseRun) write(stderrUnit,*) 'Convert volume to thickness'
+
+    thisTracer => tracersHead
+
+    do while (associated(thisTracer))
+
+       if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+
+          ! copy the ice area (assumed to be 2D) to a scratch array
+          ! Note: iceArea always precedes iceVolume and snowVolume in the tracer list
+
+          workCategoryCell(:,:) = thisTracer % array2D(:,:)
+
+       elseif (trim(thisTracer % tracerName) == 'iceVolumeCategory' .or. &
+               trim(thisTracer % tracerName) == 'snowVolumeCategory') then
+
+          ! convert volume to thickness
+          call volume_to_thickness(&
+               nCells,                 &
+               workCategoryCell(:,:),  &
+               thisTracer % array2D(:,:))
+
+       endif
+
+       thisTracer => thisTracer % next
+
+    enddo   ! associated(thisTracer)
 
     !------------------------------------------------------------------- 
     ! Compute masks.
@@ -2736,7 +2819,11 @@ contains
     !       The output departure points are given in global x/y/z coordinates.
     !------------------------------------------------------------------- 
 
-    if (verboseRun) write(stderrUnit,*) 'Find departure points'
+    if (verboseRun) then
+       write(stderrUnit,*) 'Find departure points'
+       write(stderrUnit,*) 'Max (uvel, vvel) =', maxval(uVelocity), maxval(vVelocity)
+       write(stderrUnit,*) 'Max (uvel, vvel)*dt =', maxval(uVelocity)*dt, maxval(vVelocity)*dt
+    endif
 
     call find_departure_points(&
          nVertices,                           &    
@@ -2973,7 +3060,7 @@ contains
        count = 0
        thisTracer => tracersHead
 
-       do while(count < 2)  ! output for first 2 tracers
+       do while(count < 3)  ! output for first 3 tracers
           count = count + 1
 
           if (verboseRun) then
@@ -3005,7 +3092,7 @@ contains
 
     !WHL - debug
     thisTracer => tracersHead
-    if (verboseRun .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
+    if (verboseGlobal .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
        write(stderrUnit,*) ' '
        write(stderrUnit,*) 'Cells with ice:'
        write(stderrUnit,*) 'iCell (local), iCell(global), ice area, xCell, yCell, zCell:'
@@ -3023,6 +3110,40 @@ contains
           enddo
        endif  ! ndims
     endif
+
+    !------------------------------------------------------------------- 
+    ! Convert the ice and snow thickness back to volume.
+    ! The IR code assumes that all tracers except the first (fractional ice area,
+    !  which is a mass-like field) are true tracers, and not the product of area*tracer.
+    !------------------------------------------------------------------- 
+
+    if (verboseRun) write(stderrUnit,*) 'Convert thickness to volume'
+
+    thisTracer => tracersHead
+
+    do while (associated(thisTracer))
+
+       if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+
+          ! copy the ice area (assumed to be 2D) to a scratch array
+          ! Note: iceArea always precedes iceVolume and snowVolume in the tracer list
+
+          workCategoryCell(:,:) = thisTracer % array2D(:,:)
+
+       elseif (trim(thisTracer % tracerName) == 'iceVolumeCategory' .or. &
+               trim(thisTracer % tracerName) == 'snowVolumeCategory') then
+
+          ! convert volume to thickness
+          call thickness_to_volume(&
+               nCells,                 &
+               workCategoryCell(:,:),  &
+               thisTracer % array2D(:,:))
+
+       endif
+
+       thisTracer => thisTracer % next
+
+    enddo   ! associated(thisTracer)
 
   end subroutine incremental_remap_block
 
@@ -6837,8 +6958,8 @@ contains
                 iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
                 ! choose the correct sign
-                ! If this is cell 1, then a positive flux across an edge removes stuff;
-                !  else a positive flux adds stuff
+                ! If this is cell 1, then a positive flux across an edge removes mass;
+                !  else a positive flux adds mass
                 if (iCell == cellsOnEdge(1,iEdge)) then
                    edgeSignOnCell = 1
                 else
@@ -6913,8 +7034,8 @@ contains
                 iEdge = edgesOnCell(iEdgeOnCell, iCell)
 
                 ! choose the correct sign
-                ! If this is cell 1, then a positive flux across an edge removes stuff;
-                !  else a positive flux adds stuff
+                ! If this is cell 1, then a positive flux across an edge removes mass;
+                !  else a positive flux adds mass
                 if (iCell == cellsOnEdge(1,iEdge)) then
                    edgeSignOnCell = 1
                 else
@@ -7499,12 +7620,19 @@ contains
     type(field2DReal), pointer :: tracerField2D
     type(field3DReal), pointer :: tracerField3D
 
+    !TODO: Remove thisFieldInfo when no longer needed (see TODO message below)
+    type(MPAS_pool_field_info_type) :: thisFieldInfo
+
+    real(kind=RKIND) :: toleranceMin  ! error tolerance below local min
+    real(kind=RKIND) :: toleranceMax  ! error tolerance above local max
+
     integer :: nCategories, nLayers
 
     integer :: iCell, iCellOnCell, iCellNeighbor, iCat, iLayer
 
     logical, parameter :: &
-         extendedMinMax = .false.  ! if true, then extend the local min/max by one layer of cells
+!         extendedMinMax = .false.  ! if true, then extend the local min/max by one layer of cells
+         extendedMinMax = .true.  ! if true, then extend the local min/max by one layer of cells
                                    ! may be necessary for complex fields with large CFL
 
     ! get pools
@@ -7538,10 +7666,29 @@ contains
              if (extendedMinMax) then      ! extend local max/min by 1 layer of neighbor cells
 
                 ! halo update for local max/min
-                call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField2D)
-                call mpas_dmpar_exch_halo_field(tracerField2D)
-                call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField2D)
-                call mpas_dmpar_exch_halo_field(tracerField2D)
+
+                !WHL - Find out how many dimensions the LocalMin field has (and assume the LocalMax field has the same number).
+                !Note: This is temporary logic associated with the fact that some fields are both formally and physically 2D,
+                !      whereas others are physically 2D but formally 3D. In the latter case, we need to get a 3D field.
+                !TODO: Once all fields that are physically 2D are also formally 2D, remove this extra logic.
+
+                call MPAS_pool_get_field_info(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', thisFieldInfo)
+
+                if (thisFieldInfo % ndims == 2) then
+
+                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField2D)
+                   call mpas_dmpar_exch_halo_field(tracerField2D)
+                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField2D)
+                   call mpas_dmpar_exch_halo_field(tracerField2D)
+
+                elseif (thisFieldInfo % ndims == 3) then
+
+                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField3D)
+                   call mpas_dmpar_exch_halo_field(tracerField3D)
+                   call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField3D)
+                   call mpas_dmpar_exch_halo_field(tracerField3D)
+                   
+                endif
 
                 ! loop over blocks
 
@@ -7594,23 +7741,29 @@ contains
                    
                       if (thisTracer % arrayMask2D(iCat,iCell) == 1) then   ! the tracer value in this cell has physical meaning
 
-                         !TODO - May need to add a tolerance of ~eps11 * magnitude of array (as in standard CICE)
-                         if (thisTracer % array2D(iCat,iCell) < thisTracer % localMin2D(iCat,iCell)) then
+                         toleranceMin = eps11 * max(1.0_RKIND, abs(thisTracer % localMin2D(iCat,iCell)))
+                         toleranceMax = eps11 * max(1.0_RKIND, abs(thisTracer % localMax2D(iCat,iCell)))
+
+                         if (thisTracer % array2D(iCat,iCell) < thisTracer % localMin2D(iCat,iCell) - toleranceMin) then
 
                             write(stderrUnit,*) ' '
                             write(stderrUnit,*) 'IR advection, monotonicity violation!'
                             write(stderrUnit,*) 'Tracer, iCat, iCell =', trim(thisTracer % tracerName), iCat, iCell
                             write(stderrUnit,*) 'Old min value in neighborhood =', thisTracer % localMin2D(iCat,iCell)
                             write(stderrUnit,*) 'New value in cell =', thisTracer % array2d(iCat,iCell)
+                            write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
+                                 thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)
                             call mpas_dmpar_global_abort('Aborting with IR error')
                             
-                         elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell)) then
+                         elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell) + toleranceMax) then
                             
                             write(stderrUnit,*) ' '
                             write(stderrUnit,*) 'IR advection, monotonicity violation!'
                             write(stderrUnit,*) 'Tracer, iCat, iCell =', trim(thisTracer % tracerName), iCat, iCell
                             write(stderrUnit,*) 'Old max value in neighborhood =', thisTracer % localMax2D(iCat,iCell) 
                             write(stderrUnit,*) 'New value in cell =', thisTracer % array2d(iCat,iCell)
+                            write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
+                                 thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)
                             call mpas_dmpar_global_abort('Aborting with IR error')
                             
                          endif
@@ -7699,22 +7852,29 @@ contains
                                     thisTracer % localMin3D(1,1,iCell), thisTracer % localMax3D(1,1,iCell)
                             endif
                             
-                            if (thisTracer % array3D(iLayer,iCat,iCell) < thisTracer % localMin3D(iLayer,iCat,iCell)) then
+                            toleranceMin = eps11 * max(1.0_RKIND, abs(thisTracer % localMin3D(iLayer,iCat,iCell)))
+                            toleranceMax = eps11 * max(1.0_RKIND, abs(thisTracer % localMax3D(iLayer,iCat,iCell)))
+
+                            if (thisTracer % array3D(iLayer,iCat,iCell) < thisTracer % localMin3D(iLayer,iCat,iCell) - toleranceMin) then
                                
                                write(stderrUnit,*) ' '
                                write(stderrUnit,*) 'IR advection, monotonicity violation!'
                                write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', trim(thisTracer % tracerName), iLayer,iCat, iCell
                                write(stderrUnit,*) 'Old min value in neighborhood =', thisTracer % localMin3D(iLayer,iCat,iCell) 
                                write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
+                               write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
+                                    thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)
                                call mpas_dmpar_global_abort('Aborting with IR error')
                                
-                            elseif (thisTracer % array3D(iLayer,iCat,iCell) > thisTracer % localMax3D(iLayer,iCat,iCell)) then
+                            elseif (thisTracer % array3D(iLayer,iCat,iCell) > thisTracer % localMax3D(iLayer,iCat,iCell) + toleranceMax) then
                                
                                write(stderrUnit,*) ' '
                                write(stderrUnit,*) 'IR advection, monotonicity violation!'
                                write(stderrUnit,*) 'Tracer, iLayer,iCat, iCell =', trim(thisTracer % tracerName), iLayer,iCat, iCell
                                write(stderrUnit,*) 'Old max value in neighborhood =', thisTracer % localMax3D(iLayer,iCat,iCell) 
                                write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
+                               write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
+                                    thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)
                                call mpas_dmpar_global_abort('Aborting with IR error')
                                
                             endif
@@ -8170,6 +8330,103 @@ contains
                                     - (vertex2(2) - vertex1(2)) * (vertex3(1) - vertex1(1)) ) )
 
   end subroutine triangle_area
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine volume_to_thickness
+!
+!> \brief  convert ice or snow volume to thickness
+!> \author William Lipscomb
+!> \date   September 2015
+!> \details
+!>  Given the area and volume of ice or snow, compute the thickness.
+!
+!-----------------------------------------------------------------------
+
+  subroutine volume_to_thickness(&
+       nCells,  &
+       area,    &
+       volumeToThickness)
+
+
+    !Note: For the current version of CICE (as of Sept. 2015), ice and snow volume are in the tracer list.
+    !      However, volume is not actually a tracer, but the product of area and thickness, where thickness is a tracer. 
+    !      This subroutine converts volume to thickness for purposes of IR.
+
+    integer, intent(in) :: &
+         nCells           ! number of cells on block 
+
+    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+         area             ! fractional area; first index is nCategories, second index is nCells
+
+    real(kind=RKIND), dimension(:,:), intent(inout) ::  &
+         volumeToThickness  ! volume = area*thickness on input; thickness on output
+
+    integer :: nCategories
+
+    integer :: iCat, iCell
+
+    nCategories = size(area,1)
+
+    do iCell = 1, nCells
+       do iCat = 1, nCategories
+
+          if (area(iCat,iCell) > 0.0_RKIND) then
+             volumeToThickness(iCat,iCell) = volumeToThickness(iCat,iCell) / area(iCat,iCell)
+          else
+             volumeToThickness(iCat,iCell) = 0.0_RKIND
+          endif
+
+       enddo
+    enddo
+
+  end subroutine volume_to_thickness
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine thickness_to_volume
+!
+!> \brief  convert ice or snow thickness to volume
+!> \author William Lipscomb
+!> \date   September 2015
+!> \details
+!>  Given the area and thickness of ice or snow, compute the volume.
+!
+!-----------------------------------------------------------------------
+
+  subroutine thickness_to_volume(&
+       nCells,     &
+       area,       &
+       thicknessToVolume)
+
+    !Note: For the current version of CICE (as of Sept. 2015), ice and snow volume are in the tracer list.
+    !      However, volume is not actually a tracer, but the product of area and thickness, where thickness is a tracer. 
+    !      This subroutine converts thickness back to volume for purposes of IR.
+
+    integer, intent(in) :: &
+         nCells           ! number of cells on block 
+
+    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+         area             ! fractional area; first index is nCategories, second index is nCells
+
+    real(kind=RKIND), dimension(:,:), intent(inout) ::  &
+         thicknessToVolume   ! thickness on input; volume = area*thickness on output
+
+    integer :: nCategories
+
+    integer :: iCat, iCell
+
+    nCategories = size(area,1)
+
+    do iCell = 1, nCells
+       do iCat = 1, nCategories
+
+          thicknessToVolume(iCat,iCell) = area(iCat,iCell) * thicknessToVolume(iCat,iCell)
+
+       enddo
+    enddo
+
+  end subroutine thickness_to_volume
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
