@@ -1,0 +1,112 @@
+	<nml_record name="AM_regionalStats" mode="forward;analysis">
+		<nml_option name="config_AM_regionalStats_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, landice analysis member regionalStats is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_regionalStats_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_regionalStats_stream_name" type="character" default_value="regionalStatsOutput" units="unitless"
+			description="Name of the stream that the regionalStats analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_regionalStats_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_regionalStats_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<packages>
+		<package name="regionalStatsAMPKG" description="This package includes variables required for the regionalStats analysis member."/>
+	</packages>
+	<var_struct name="regionalStatsAM" time_levs="1" packages="regionalStatsAMPKG">
+		<var name="WAISIceVolume" type="real" dimensions="Time" units="m^3"
+			description="total ice sheet volume"
+		/>
+		<var name="WAISIceArea" type="real" dimensions="Time" units="m^2"
+			description="total ice sheet area"
+		/>
+		<var name="WAISfloatingIceVolume" type="real" dimensions="Time" units="m^3"
+			description="total floating ice sheet volume"
+		/>
+		<var name="WAISfloatingIceArea" type="real" dimensions="Time" units="m^2"
+			description="total floating ice sheet area"
+		/>
+		<var name="WAISgroundedIceVolume" type="real" dimensions="Time" units="m^3"
+			description="total grounded ice sheet volume"
+		/>
+		<var name="WAISgroundedIceArea" type="real" dimensions="Time" units="m^2"
+			description="total grounded ice sheet area"
+		/>
+		<var name="EAISIceVolume" type="real" dimensions="Time" units="m^3"
+			description="total ice sheet volume"
+		/>
+		<var name="EAISIceArea" type="real" dimensions="Time" units="m^2"
+			description="total ice sheet area"
+		/>
+		<var name="EAISfloatingIceVolume" type="real" dimensions="Time" units="m^3"
+			description="total floating ice sheet volume"
+		/>
+		<var name="EAISfloatingIceArea" type="real" dimensions="Time" units="m^2"
+			description="total floating ice sheet area"
+		/>
+		<var name="EAISgroundedIceVolume" type="real" dimensions="Time" units="m^3"
+			description="total grounded ice sheet volume"
+		/>
+		<var name="EAISgroundedIceArea" type="real" dimensions="Time" units="m^2"
+			description="total grounded ice sheet area"
+		/>
+		<var name="WAIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance for the West Antarctic Ice Sheet"
+		/>
+		<var name="EAIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance for the East Antarctic Ice Sheet"
+		/>
+		<var name="FRIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance for the Filchner-Ronne Ice Shelf"
+		/>
+		<var name="RossIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance for the Ross Ice Shelf"
+		/>
+		<var name="AmeryIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance for the Amery Ice Shelf"
+		/>
+		<var name="PineIslandThwaitesIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated basal mass balance for the Pine Island & Thwaites Ice Shelves"
+		/>
+ 	</var_struct>
+	<streams>
+		<stream name="regionalStatsOutput" type="output"
+				mode="forward;analysis"
+				filename_template="regionalStats.nc"
+				filename_interval="01-00-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="regionalStatsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/> 
+			<var name="WAISIceVolume"/> 
+			<var name="WAISIceArea"/> 
+            <var name="WAISfloatingIceVolume"/>
+            <var name="WAISgroundedIceVolume"/>
+            <var name="WAISfloatingIceArea"/>
+            <var name="WAISgroundedIceArea"/>
+			<var name="EAISIceVolume"/> 
+			<var name="EAISIceArea"/> 
+            <var name="EAISfloatingIceVolume"/>
+            <var name="EAISgroundedIceVolume"/>
+            <var name="EAISfloatingIceArea"/>
+            <var name="EAISgroundedIceArea"/>
+			<var name="WAIStotalBasalMassBal"/>
+			<var name="EAIStotalBasalMassBal"/>
+			<var name="FRIStotalBasalMassBal"/>
+			<var name="RossIStotalBasalMassBal"/>
+			<var name="AmeryIStotalBasalMassBal"/>
+			<var name="PineIslandThwaitesIStotalBasalMassBal"/>
+		</stream>
+	</streams>
