@@ -491,6 +491,7 @@
     </files>
   </comp_archive_spec>
 
+  <!-- QL, 150629, support history file with suffix 'hi' -->
   <comp_archive_spec name="ww3">
     <rootdir>wav</rootdir>
     <multi_instance>y</multi_instance>
@@ -510,7 +511,7 @@
 	<dispose>y</dispose> 
 	<keepLast>n</keepLast>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".hi\.+">      
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>n</keepLast>
@@ -532,7 +533,7 @@
 	<dispose>y</dispose> 
 	<keepLast>y</keepLast>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".hi\.+">      
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>n</keepLast>
@@ -622,6 +623,7 @@
     </files>
   </comp_archive_spec>
 
+  <!-- QL, 150629, support history file with suffix 'hi' -->
   <comp_archive_spec name="cpl"> 
     <rootdir>cpl</rootdir>
     <multi_instance>n</multi_instance>
@@ -642,6 +644,11 @@
 	<keepLast>n</keepLast>
       </file_extension>
       <file_extension suffix=".h\w*">
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".hi\w*">
 	<subdir>hist</subdir> 
 	<dispose>n</dispose> 
 	<keepLast>n</keepLast>

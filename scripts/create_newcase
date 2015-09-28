@@ -411,6 +411,7 @@ my @setup_comp_files;
 foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE', 
 		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
     my $file = $config->get($name);	
+    (-f $file) || die "ERROR create_newcase: config_file $file does not exist";
     $config->add_config_variables($file, $srcroot, $cimeroot);
     ConfigCompsetGrid::setComponent($file, $config);
 }
