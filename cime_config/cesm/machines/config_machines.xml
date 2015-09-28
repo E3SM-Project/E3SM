@@ -308,7 +308,7 @@
       </modules>
       <modules compiler="pgi">
 	<command name="load">PrgEnv-pgi</command>
-	<command name="switch">pgi pgi/14.10.0</command>
+	<command name="switch">pgi pgi/15.7.0</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu/4.2.84</command>
@@ -578,7 +578,7 @@
 	<command name="load">craype-ivybridge</command>
       </modules>
       <modules compiler="!intel">
-	<command name="load">cray-libsci/13.0.4</command>
+	<command name="switch">cray-libsci/13.0.4</command>
       </modules>
       <modules>
 	<command name="load">cray-mpich/7.2.2</command>

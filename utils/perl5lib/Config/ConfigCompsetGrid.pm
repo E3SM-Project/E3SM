@@ -461,6 +461,8 @@ sub setComponent {
 	my $name     = $variable_node->getAttribute('id');
 	my @additive = $variable_node->findnodes("./values[\@additive=\"yes\"]");
 	my @merge    = $variable_node->findnodes("./values[\@merge=\"yes\"]");
+
+
 	foreach my $value_node ($variable_node->findnodes('./values/value')) {
 	    if ($value_node->nodeType() == XML_COMMENT_NODE) {
 		# do nothing
@@ -481,16 +483,16 @@ sub setComponent {
 			$match = 'yes';
 		    }
 		}
-		
+
 		if ($match eq 'yes') {
-		    if ($config->is_valid_name($name)) {
-			# do nothing
-		    } else {
+		    unless ($config->is_valid_name($name)) {
 			die "ERROR ConfigCompsetGrid::setComponent: $name is not a valid name \n";
 		    }
 
 		    my $input_val = $value_node->textContent();
 		    my $current_val = $config->get($name);
+
+
 		    if (@additive) {
 			$new_val = _setComponentAdditiveNewVal($current_val, $input_val);
 		    } elsif (@merge) {
@@ -500,6 +502,7 @@ sub setComponent {
 		    }
 		    $newxml{$name} = $new_val; 
 		    $config->set($name, $new_val);
+
 		}
 	    }
 	}
@@ -649,6 +652,7 @@ sub _setComponentAdditiveNewVal
     my ($current_val, $input_val) = @_;
 
     my $new_val;
+    # if $current_val is not empty
     if ($current_val !~ m/^\s*$/)  { 
 	$new_val = $current_val;
 	
@@ -658,19 +662,17 @@ sub _setComponentAdditiveNewVal
 	# Note that the '-' will be stripped off.
 	my @nameopts = split(/(?:^|\s)-/, $input_val);
 	my @curopts  = split(/(?:^|\s)-/, $current_val);
-	
+
 	# First item in each array will be space or empty string, so
 	# remove it with shift.
 	shift @nameopts;
 	shift @curopts;
-	
 	# Iterate through new options
 	foreach my $nameopt (@nameopts) {
-	    
 	    # Grab option name.
 	    my ($optname) = $nameopt =~ m/^(\w+)\s/;
+	    my $name_found = 0;
 	    if (defined $optname) {
-		my $name_found = 0;
 	    
 		# Check current options for values to replace.
 		foreach my $curopt (@curopts) {
@@ -680,10 +682,10 @@ sub _setComponentAdditiveNewVal
 			$new_val =~ s/$curopt/$nameopt /;
 		    }
 		}
-		# If the new option was not found in existing options, append it.
-		if ( ! $name_found) {
-		    $new_val = "$new_val -$nameopt";
-		}
+	    }
+	    # If the new option was not found in existing options, append it.
+	    if ( ! $name_found) {
+		$new_val = "$new_val -$nameopt";
 	    }
 	}
 

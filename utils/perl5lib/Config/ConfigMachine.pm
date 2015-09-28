@@ -47,9 +47,9 @@ sub setMachineFile
 	$machine = $1;
     }
 
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
-    my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]");
-    if (@nodes) {
+    my $machxml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
+    my @machnodes = $machxml->findnodes(".//machine[\@MACH=\"$machine\"]");
+    if (@machnodes) {
 	print "Found machine \"$machine\" in $machines_file \n";
     } else {
 	print "ERROR ConfigMachine::setMachineFile: no match for machine $machine :\n";
@@ -64,7 +64,7 @@ sub setMachineFile
 sub setMachineValues
 {
     # Set the parameters for the specified machine.  
-    my ($file_config, $primary_component, $machine, $compiler, $print_flag, $config) = @_;
+    my ( $file_config, $primary_component, $machine, $print_flag, $config) = @_;
 
     my $model = $config->get('MODEL');
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
@@ -75,7 +75,7 @@ sub setMachineValues
     # First Check if the target machine is supported
     if ($machine =~ /(.*)_(.*)/){
 	$machine  = $1;
-	$compiler = $2 unless defined($compiler);
+	$config->set('COMPILER', "$2");
     }
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
@@ -88,15 +88,22 @@ sub setMachineValues
 	listMachines( "$machines_file" );
 	die "Exiting \n";
     }	    
+    my $compiler = $config->get('COMPILER');
+    my $mpilib = $config->get('MPILIB');
 
-    if (defined $compiler) {
-	$config->set('COMPILER', "$compiler");
-    } else {
+    if (!defined $compiler) {
 	my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/COMPILERS");
 	my $compilers = $nodes[0]->textContent();
 	my @compilers = split(/,/,$compilers);
-	my $compiler = $compilers[0];
+	$compiler = $compilers[0];
 	$config->set('COMPILER', "$compiler");
+    }	
+    if (!defined $mpilib) {
+	my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/MPILIBS");
+	my $mpilibs = $nodes[0]->textContent();
+	my @mpilibs = split(/,/,$mpilibs);
+	$mpilib = $mpilibs[0];
+	$config->set('MPILIB', "$mpilib");
     }	
     $config->set('MACH'         ,  $machine);
     $config->set('MACHINES_FILE', "$machines_file");
@@ -176,7 +183,7 @@ sub _set_machine_values
 		}
 	    }
 	    $config->set($name, $value);
-	    print "config: $name set to ".$config->get($name)."  $value\n" if($print_flag==2);
+	    print "config: $name set to ".$config->get($name)."  $value\n" ;
 	}
     } 
     else 
@@ -246,6 +253,7 @@ sub _setPIOsettings
 
     foreach my $entry ($xml->findnodes(".//entry")) {
 	my $id = $entry->getAttribute('id');
+	my $default;
 
 	# Loop over each value node for the given entry node
 	my $index_match   = -1;
@@ -258,10 +266,15 @@ sub _setPIOsettings
 	    $value_counter++;
 	    my $attr_value;
 	    my $matches = 0;
-	    MATCH: foreach my $attr ($value->attributes()) {
+	    my @attributes = $value->attributes();
+            #
+	    if($#attributes<0){
+		$default = $value->textContent();
+	    }
+	    MATCH: foreach my $attr (@attributes) {
 		$attr_value = $attr->value(); 
-		my $attr_name = uc $attr->name();
-		my $target = $config->get($attr_name);
+		my $attr_name  =uc $attr->name();
+		my $target = $config->get( $attr_name);
 		if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
 		    $matches++;
 		} elsif ($target =~ m/$attr_value/) {
@@ -285,7 +298,10 @@ sub _setPIOsettings
 	if ($index_match > -1) {
 	    my $newval = $values[$index_match]->textContent();
 	    $config->set($id, $newval);
+	}elsif(defined $default){
+	    $config->set($id, $default);
 	}
+
     }
 }
 

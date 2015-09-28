@@ -479,6 +479,7 @@ sub loadModuleModules()
         else
         {
             $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
+	    print "   $mod->{action} $mod->{actupon} \n";
         }
 #        print "running cmd: $mod->{action} $mod->{actupon}\n";
         eval qx($cmd);
@@ -813,8 +814,7 @@ source  $self->{cshinitpath}
 START
 
     $csh .=<<"START";
-set COMPILER = `./xmlquery COMPILER -value`
-if(\$status == 0) then
+if( -x "./xmlquery") then
 START
 
     foreach my $attrKey(keys %modattrvalues)
@@ -1044,8 +1044,7 @@ START
    if($#attrKeys >= 0) {
 
        $sh .=<<"START";
-COMPILER=`./xmlquery COMPILER -value`
-if [ -n \$CIME_REPO  ]
+if [ -x ./xmlquery  ]
 then 
 START
       foreach my $attrKey(@attrKeys)
@@ -1078,7 +1077,6 @@ START
                 my $action = $child->getAttribute('name');
                 my $actupon = $child->textContent();
                 #$sh .= "module $action $actupon \n";
-                print "$self->{shcmdpath}  $action $actupon \n";
                 $sh .= "$self->{shcmdpath} $action $actupon \n";
             }
         }
