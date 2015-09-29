@@ -29,8 +29,8 @@ my $debug       = $config{'DEBUG'};
 my $lastjobid = undef;
 sub opts()
 {
-    GetOptions( "resubmit=s" => \$opts{'resubmit'},
-                "scriptname=s", => \$opts{'scriptname'});
+    GetOptions( "resubmit" => \$opts{'resubmit'},
+                "scriptname=s" => \$opts{'scriptname'});
 }
 
 sub main
@@ -72,7 +72,6 @@ sub main
 							      machroot	   => $machroot, 
 							      mpilib	   => $mpilib); 
     
-    $batchutils->dependencyCheck();
 
     if(defined $opts{'resubmit'})
     {
@@ -88,6 +87,7 @@ sub main
     }
     else
     {
+        $batchutils->dependencyCheck();
         check_DA_settings();
         `./xmlchange RUN_WITH_SUBMIT=TRUE`;
         $batchutils->submitJobs();
@@ -119,4 +119,4 @@ sub doResubmit()
     $batchutils->doResubmit($scriptname);
 }
 
-main(@ARGV) unless caller();
+main(@ARGV) ;

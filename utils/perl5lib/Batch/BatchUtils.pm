@@ -10,6 +10,7 @@ use strict;
 use warnings;
 package Batch::BatchUtils;
 use Cwd;
+use Data::Dumper;
 use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
@@ -161,11 +162,14 @@ sub submitJobs()
 	{
 		foreach my $jobname(@{$depqueue{$jobnum}})
 		{
+            print "jobname: $jobname\n";
+            print "lastjobseqnum $lastjobseqnum\n";
 			my $islastjob = 0;
 			$islastjob = 1 if ($jobnum == $lastjobseqnum);
 			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob);
 		}
 	}
+    print "in submitJobs\n";
 }
 
 #==============================================================================
@@ -226,21 +230,19 @@ sub doResubmit()
 
     my %config = %{$self->{caseconfig}};
     my $lastjobname;
-    if($config{DOUT_S} eq 'TRUE' && $config{DOUT_L_MS} eq 'TRUE')
+    if($config{DOUT_S} eq 'TRUE')
     {
-        $lastjobname = $config{CASE} . ".lt_archive";
-    }
-    elsif($config{DOUT_S} eq 'TRUE' && $config{DOUT_L_MS} eq 'TRUE')
-    {
-        $lastjobname = $config{CASE} . ".st_archive";
+        $lastjobname =  "st_archive";
     }
     else
     {
-        $lastjobname = $config{CASE} . ".run";
+        $lastjobname = "run";
     }
     #my $scriptsuffix = (split(/\./, $scriptname))[-1];
+    print "in doResubmit: lastjobname: $lastjobname\n";
     if($config{'RESUBMIT'} > 0 && $scriptname =~ /$lastjobname/)
     {
+        print "resubmitting jobs...\n";
         $self->dependencyCheck($scriptname);
         $self->submitJobs($scriptname);
         my $newresubmit = $config{'RESUBMIT'} - 1;
@@ -248,7 +250,7 @@ sub doResubmit()
         chdir $config{'CASEROOT'};
         if($config{COMP_RUN_BARRIERS} ne "TRUE") 
         {
-            `./xmlchange CONTINUE_RUN=TRUE"`;
+            `./xmlchange CONTINUE_RUN=TRUE`;
         }
         `./xmlchange RESUBMIT=$newresubmit`;
         chdir $owd;
@@ -296,6 +298,8 @@ sub dependencyCheck()
 	my $self = shift;
 	my $scriptname = shift;;
 	my %config = %{$self->{'caseconfig'}};
+    
+    $self->{dependencyqueue} = undef;
 	# we always want to run the test or run again..
 	if(-e "$config{'CASE'}.test")
 	{
@@ -315,11 +319,6 @@ sub dependencyCheck()
 		my $jobname = "$config{'CASE'}.st_archive";
 		$self->addDependentJob($jobname);
 	}
-    if($config{'DOUT_L_MS'} eq 'TRUE')
-    {
-        my $jobname = "$config{'CASE'}.lt_archive";
-        $self->addDependentJob($jobname);
-    }
 	
 }
 
@@ -332,6 +331,7 @@ sub addDependentJob()
 	# Either a string with the job name or an array of job names
 	my $jobref = shift;
 	my $jobcounter = 0;
+    print Dumper $jobref;
 	
 	# set up the dependency hash if not done.  
 	if(! defined $self->{dependencyqueue})
