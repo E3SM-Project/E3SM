@@ -1229,7 +1229,9 @@ contains
              call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
              call mpas_pool_get_field(tracersPool, 'activeTracers', activeTracersField,1)
 
-             call mpas_dmpar_exch_halo_field(activeTracersField)
+             if ( activeTracersField % isActive ) then
+                call mpas_dmpar_exch_halo_field(activeTracersField)
+             end if
 
           end do ! iSmooth
 
