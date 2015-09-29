@@ -232,7 +232,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="BHISTC5L45BGC">
+  <compset name="B1850C5L45BGC">
     <grid name="ne120_g16">
       <test name="ERS_Ld9">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>

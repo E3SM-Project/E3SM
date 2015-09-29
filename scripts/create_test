@@ -932,6 +932,7 @@ sub ParseTestName
   &Debug( "test string: $teststring");
   my $testhash;
   
+  $testhash->{'status'}="SFAIL";
 
   if($teststring =~ /^([\w-]+)\.([\w-]+)\.([\w-]+)\.([\w-]+)\.(.+)$/ )
   {
@@ -1384,7 +1385,7 @@ sub testcaseSetup
     my $caseroot = $opts{'testroot'}."/".$test->{'case'};
     my %xmlvars = ();
     my $sysmod;
-
+    
     SetupTools::getxmlvars($caseroot, \%xmlvars);
     #&Debug("XMLVARS:");
     #&Debug( eval { Dumper \%xmlvars} );
@@ -1421,6 +1422,8 @@ sub testcaseSetup
     &Debug("sysmod is $sysmod");
     system($sysmod) == 0 or warn "$sysmod failed: $?\n";
 
+    
+    
     if($? != 0)
     {
 	$test->{'status'}="SFAIL";
@@ -1636,7 +1639,6 @@ sub testBuildSubmit
 sub namelistCompareSuite
 {
     my @testspec = @_;
-    #print Dumper \@testspec;
 
     print "Now comparing namelists for the suite...\n"if ($opts{'compare'});
     my $currentdir = getcwd();
