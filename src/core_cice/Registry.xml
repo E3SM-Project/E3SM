@@ -352,7 +352,7 @@
         <!-- forcing streams -->
 	<stream name="LYqSixHourlyForcing"
 	    type="input"
-	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_six_hourly.$Y.nc"
+	    filename_template="120km/LYq_six_hourly.$Y.nc"
 	    filename_interval="0001-00-00_00:00:00"
 	    input_interval="none"
 	    immutable="true">
@@ -363,7 +363,7 @@
 	</stream>
 	<stream name="LYqMonthlyForcing"
 	    type="input"
-	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_monthly.nc"
+	    filename_template="LYq_monthly.nc"
 	    filename_interval="none"
 	    input_interval="none"
 	    immutable="true">
@@ -372,7 +372,7 @@
 	</stream>
 	<stream name="NCARMonthlySSTForcing"
 	    type="input"
-	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_monthly.nc"
+	    filename_template="oceanmixed_ice_depth_mpas.nc"
 	    filename_interval="none"
 	    input_interval="none"
 	    immutable="true">
@@ -380,7 +380,7 @@
 	</stream>
 	<stream name="NCARMonthlyForcing"
 	    type="input"
-	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_monthly.nc"
+	    filename_template="oceanmixed_ice_depth_mpas.nc"
 	    filename_interval="none"
 	    input_interval="none"
 	    immutable="true">
@@ -583,9 +583,6 @@
 		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"                   name_in_code="latentTransferCoefficient"/>
 		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="uPOPAlongGridVector"/>
 		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="vPOPAlongGridVector"/>
-		<var name="airReferenceTemperature2m"         type="real"     dimensions="nCells"                   name_in_code="airReferenceTemperature2m"/>
-		<var name="airReferenceHumidity2m"            type="real"     dimensions="nCells"                   name_in_code="airReferenceHumidity2m"/>
-		<var name="airReferenceSpeed10m"              type="real"     dimensions="nCells"                   name_in_code="airReferenceSpeed10m"/>
 	</var_struct>
 
 	<!--alternative atmos forcing -->

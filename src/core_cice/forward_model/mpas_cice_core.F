@@ -10,6 +10,7 @@ module cice_core
    use mpas_framework
    use mpas_timekeeping
    use cice_analysis_driver
+   use cice_column
 
    private
    public :: &
@@ -292,6 +293,9 @@ module cice_core
          call mpas_timer_start("time integration")
          call mpas_timestep(domain, itimestep, dt, timeStamp)
          call mpas_timer_stop("time integration")
+
+         ! reinitialize fluxes
+         call cice_column_reinitialize_fluxes(domain)
 
          ! update the restart_timestamp file with the new time if needed
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
