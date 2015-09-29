@@ -479,7 +479,9 @@ module ocn_time_integration_rk4
         do while ( mpas_pool_get_next_member(tracersTendPool, groupItr) )
            if ( groupItr % memberType == MPAS_POOL_FIELD ) then
               call mpas_pool_get_field(tracersTendPool, trim(groupItr % memberName), tracersGroupField)
-              call mpas_dmpar_exch_halo_field(tracersGroupField)
+              if ( tracersGroupField % isActive ) then
+                 call mpas_dmpar_exch_halo_field(tracersGroupField)
+              end if
            end if
         end do
 
