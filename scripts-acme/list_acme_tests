@@ -11,7 +11,7 @@ acme_util.check_minimum_python_version(2, 7)
 
 import update_acme_tests
 
-import sys, argparse, os
+import sys, argparse, os, doctest
 
 ###############################################################################
 def parse_command_line(args, description):
