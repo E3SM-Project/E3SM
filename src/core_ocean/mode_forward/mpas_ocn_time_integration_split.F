@@ -1278,7 +1278,9 @@ module ocn_time_integration_split
             if ( groupItr % memberType == MPAS_POOL_FIELD ) then
                call mpas_pool_get_field(tracersTendPool, groupItr % memberName, tracersGroupField)
 
-               call mpas_dmpar_exch_halo_field(tracersGroupField)
+               if ( tracersGroupField % isActive ) then
+                  call mpas_dmpar_exch_halo_field(tracersGroupField)
+               end if
             end if
          end do
          call mpas_timer_stop("se halo tracers", timer_halo_tracers)
@@ -1536,7 +1538,10 @@ module ocn_time_integration_split
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_field(tracersPool, groupItr % memberName, tracersGroupField, 2)
-            call mpas_dmpar_exch_halo_field(tracersGroupField)
+
+            if ( tracersGroupField % isActive ) then
+               call mpas_dmpar_exch_halo_field(tracersGroupField)
+            end if
          end if
       end do
       call mpas_timer_stop("se implicit vert mix halos")
