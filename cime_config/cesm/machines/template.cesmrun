@@ -100,7 +100,7 @@ sub getOptions()
     }
     else
     {
-        `./xmlchange RUN_WITH_SUBMIT`;
+        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
     }
     
 }
@@ -482,7 +482,7 @@ sub resubmitCheck()
     chdir $config{'CASEROOT'};
     my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.run";
     print "running resubmit check $resubmitcommand\n";
-    qx("$resubmitcommand") or warn "could not run CESM submit script, $! $?";
+    qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
     chdir $cwd;
 }
 

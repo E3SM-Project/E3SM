@@ -36,7 +36,7 @@ sub resubmitCheck()
     chdir $config{CASEROOT};
     my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.st_archive";
     print "running resubmit check $resubmitcommand\n";
-    qx("$resubmitcommand") or warn "could not run CESM submit script, $! $?";
+    qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
     chdir $cwd;
 }
 	
