@@ -35,7 +35,8 @@ contains
     use constituents, only: cnst_name, cnst_read_iv, qmin
     use dimensions_mod,     only: nelemd, nlev, np
     use dof_mod, only           : putUniquePoints
-    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer, EdgeBuffer_t
+    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
+    use edgetype_mod, only : EdgeBuffer_t
     use ncdio_atm, only : infld
     use shr_vmath_mod, only: shr_vmath_log
     use hycoef,           only: ps0
@@ -287,34 +288,34 @@ contains
     ! once we've read all the fields we do a boundary exchange to 
     ! update the redundent columns in the dynamics
     if(iam < par%nprocs) then
-       call initEdgeBuffer(edge, (3+pcnst)*nlev+2)
+       call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
     end if
     do ie=1,nelemd
        kptr=0
-       call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,elem(ie)%desc)
+       call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
        kptr=kptr+1
-       call edgeVpack(edge, elem(ie)%state%phis,1,kptr,elem(ie)%desc)
+       call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
        kptr=kptr+1
-       call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,elem(ie)%desc)
+       call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-       call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,elem(ie)%desc)
+       call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
        kptr=kptr+nlev
-       call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,elem(ie)%desc)
+       call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
     if(iam < par%nprocs) then
        call bndry_exchangeV(par,edge)
     end if
     do ie=1,nelemd
        kptr=0
-       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
        kptr=kptr+1
-       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
        kptr=kptr+1
-       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
        kptr=kptr+2*nlev
-       call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
        kptr=kptr+nlev
-       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
     end do
 
 !$omp parallel do private(ie, t, m_cnst)
