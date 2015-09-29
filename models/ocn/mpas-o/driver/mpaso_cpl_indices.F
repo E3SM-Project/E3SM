@@ -70,7 +70,7 @@ module mpaso_cpl_indices
   integer :: index_x2o_Fogx_qiceho
   integer :: index_x2o_Sg_blit
   integer :: index_x2o_Sg_blis
-  integer :: index_x2o_Sg_pslv
+  integer :: index_x2o_Sg_lithop
   integer :: index_x2o_Sg_icemask
   integer :: index_x2o_Sg_icemask_grounded
   integer :: index_x2o_Sg_icemask_floating
@@ -141,11 +141,11 @@ contains
     index_x2o_Sa_co2prog    = mct_avect_indexra(x2o,'Sa_co2prog',perrWith='quiet')
     index_x2o_Sa_co2diag    = mct_avect_indexra(x2o,'Sa_co2diag',perrWith='quiet')
 
-    index_x2o_Fogx_qicelo = mct_avect_indexra(x2o,'Fogx_qicel',perrWith='quiet')
-    index_x2o_Fogx_qiceho = mct_avect_indexra(x2o,'Fogx_qiceh',perrWith='quiet')    
+    index_x2o_Fogx_qicelo = mct_avect_indexra(x2o,'Fogx_qicelo',perrWith='quiet')
+    index_x2o_Fogx_qiceho = mct_avect_indexra(x2o,'Fogx_qiceho',perrWith='quiet')    
     index_x2o_Sg_blit    = mct_avect_indexra(x2o,'Sg_blit',perrWith='quiet')
     index_x2o_Sg_blis    = mct_avect_indexra(x2o,'Sg_blis',perrWith='quiet')
-    index_x2o_Sg_pslv    = mct_avect_indexra(x2o,'Sg_pslv',perrWith='quiet')
+    index_x2o_Sg_lithop  = mct_avect_indexra(x2o,'Sg_lithop',perrWith='quiet')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask',perrWith='quiet')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded',perrWith='quiet')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating',perrWith='quiet')

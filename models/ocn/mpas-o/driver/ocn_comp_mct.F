@@ -1258,7 +1258,14 @@ contains
                                   riverRunoffFluxField, iceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
                                   seaSurfacePressureField, iceFractionField, &
-                                  squaredWindSpeed10MeterField
+                                  squaredWindSpeed10MeterField ,&
+
+				  landIceFreshwaterFluxField, &
+				  landIceHeatFluxField, &
+				  landIceInterfaceTemperatureField, &
+				  landIceInterfaceSalinityField, &
+				  landIceFractionField
+				  !landIcePressureField
 
    real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional, &
                                                latentHeatFlux, sensibleHeatFlux, &
@@ -1270,8 +1277,14 @@ contains
                                                riverRunoffFlux, iceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
                                                seaSurfacePressure, iceFraction, &
-                                               squaredWindSpeed10Meter
-   
+                                               squaredWindSpeed10Meter,&
+					       
+					       landIceFreshwaterFlux, &
+					       landIceHeatFlux, &
+					       landIceInterfaceTemperature, &
+					       landIceInterfaceSalinity, &
+					       landIceFraction
+					       !landIcePressure					       
    logical, pointer :: bulkForcingActive
 
 !----------------------------------------------------------------------- 
@@ -1319,6 +1332,14 @@ contains
          call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
          call mpas_pool_get_field(forcingPool, 'squaredWindSpeed10Meter', squaredWindSpeed10MeterField)
          call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+	 
+	 call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
+	 call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
+	 call mpas_pool_get_field(forcingPool, 'landIceInterfaceTemperature', landIceInterfaceTemperatureField)
+	 call mpas_pool_get_field(forcingPool, 'landIceInterfaceSalinity', landIceInterfaceSalinityField)
+	 call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+	 !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
+	 
 
          windStressZonal => windStressZonalField % array
          windStressMeridional => windStressMeridionalField % array
@@ -1340,6 +1361,13 @@ contains
          squaredWindSpeed10Meter => squaredWindSpeed10MeterField % array
          iceRunoffFlux => iceRunoffFluxField % array
 
+         landIceFreshwaterFlux => landIceFreshwaterFluxField % array
+         landIceHeatFlux => landIceHeatFluxField % array
+         landIceInterfaceTemperature => landIceInterfaceTemperatureField % array
+         landIceInterfaceSalinity => landIceInterfaceSalinityField % array
+         landIceFraction => landIceFractionField % array
+	 !landIcePressure => landIcePressureField % array
+	 
          do i = 1, nCellsSolve
            n = n + 1
            windStressZonal(i) = x2o_o % rAttr(index_x2o_Foxx_taux, n)
@@ -1368,6 +1396,13 @@ contains
 !          prognosticCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2prog, n)
 !          diagnosticCO2(i) = x2o_o % rAttr(index_x2o_Sa_co2diag, n)
            squaredWindSpeed10Meter(i) = x2o_o % rAttr(index_x2o_So_duu10n, n)
+
+           landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
+           landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
+           landIceInterfaceTemperature(i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
+           landIceInterfaceSalinity(i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
+           landIceFraction(i) = x2o_o % rAttr(index_x2o_Sg_icemask, n)
+           !landIcePressure(i) = x2o_o % rAttr(index_x2o_Sg_lithop, n)
 
            if(iceRunoffFlux(n) < 0.0_RKIND) then
                call shr_sys_abort ('Error: incoming rofi_F is negative')
@@ -1400,6 +1435,12 @@ contains
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'squaredWindSpeed10Meter', squaredWindSpeed10MeterField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceInterfaceTemperature', landIceInterfaceTemperatureField)
+      call mpas_pool_get_field(forcingPool, 'landIceInterfaceSalinity', landIceInterfaceSalinityField)
+      call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+      !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)	   
 
       call mpas_dmpar_exch_halo_field(windStressMeridionalField)
       call mpas_dmpar_exch_halo_field(windStressZonalField)
@@ -1421,6 +1462,13 @@ contains
 !     call mpas_dmpar_exch_halo_field(prognosticCO2Field)
 !     call mpas_dmpar_exch_halo_field(diagnosticCO2Field)
 !     call mpas_dmpar_exch_halo_field(squaredWindSpeed10MeterField)
+      call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
+      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)      
+      call mpas_dmpar_exch_halo_field(landIceInterfaceTemperatureField)      
+      call mpas_dmpar_exch_halo_field(landIceInterfaceSalinityField)      
+      call mpas_dmpar_exch_halo_field(landIceFractionField)      
+!      call mpas_dmpar_exch_halo_field(landIcePressureField)      
+      
    end if
 
 !-----------------------------------------------------------------------
@@ -1463,12 +1511,20 @@ contains
 
    type (block_type), pointer :: block_ptr
 
-   type (mpas_pool_type), pointer :: meshPool, forcingPool
+   type (mpas_pool_type), pointer :: meshPool, forcingPool, diagnosticsPool
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, CO2Flux, DMSFlux, surfaceUpwardCO2Flux
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient
+   real (kind=RKIND), dimension(:), pointer :: landIceBoundaryLayerTemperature, &
+                                               landIceBoundaryLayerSalinity, &
+                                               landIceHeatTransferVelocity, &
+                                               landIceSaltTransferVelocity!, &
+					       !effectiveDensityInLandIce
 
    logical, pointer :: frazilIceActive
+
+!!!JER: USE THIS MPAS NAME FOR EFFECTIVE DENSITY:: effectiveDensityInLandIce
+
 
    errorcode = 0
 
@@ -1479,6 +1535,7 @@ contains
    do while(associated(block_ptr))
      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+     call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)     
 
      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
@@ -1492,12 +1549,19 @@ contains
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
      call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
+     
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
      end if
 !    call mpas_pool_get_array(forcingPool, 'CO2Flux', CO2Flux)
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
+
+     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerTemperature',landIceBoundaryLayerTemperature)
+     call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerSalinity',landIceBoundaryLayerSalinity)
+     call mpas_pool_get_array(diagnosticsPool,'landIceHeatTransferVelocity',landIceHeatTransferVelocity)
+     call mpas_pool_get_array(diagnosticsPool,'landIceSaltTransferVelocity',landIceSaltTransferVelocity)
+!     call mpas_pool_get_array(diagnosticsPool,'effectiveDensityInLandIce',effectiveDensityInLandIce)
 
      do i = 1, nCellsSolve
        n = n + 1
@@ -1519,6 +1583,13 @@ contains
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
+
+       o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
+       o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)       
+       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)       
+       o2x_o % rAttr(index_o2x_So_hsv, n) = landIceSaltTransferVelocity(i)       
+!       o2x_o % rAttr(index_o2x_So_phieff, n) = effectiveDensityInLandIce(i)       
+
      end do
 
      block_ptr => block_ptr % next
