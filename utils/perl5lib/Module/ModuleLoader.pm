@@ -819,7 +819,7 @@ START
 
     foreach my $attrKey(keys %modattrvalues)
     {
-        $csh .= "\tset $attrKey = `xmlquery $attrKey -value`\n";
+        $csh .= "\tset $attrKey = `./xmlquery $attrKey -value`\n";
     }
     $csh .= "else\n";
 
