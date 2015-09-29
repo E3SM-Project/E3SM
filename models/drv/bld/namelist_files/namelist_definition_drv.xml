@@ -1686,6 +1686,53 @@ category="performance"
 group="prof_inparm">
 </entry>
 
+<entry 
+id="profile_outpe_num"
+type="integer"
+category="performance" 
+group="prof_inparm">
+</entry>
+
+<entry 
+id="profile_papi_enable"
+type="logical"
+category="performance" 
+group="prof_inparm">
+</entry>
+
+<!-- =========================== -->
+<!-- group papi_inparm           -->
+<!--  in perf_mod.F90            -->
+<!-- =========================== -->
+
+<entry 
+id="papi_ctr1_str"
+type="char*64"
+category="performance" 
+group="papi_inparm">
+</entry>
+
+<entry 
+id="papi_ctr2_str"
+type="char*64"
+category="performance" 
+group="papi_inparm">
+</entry>
+
+<entry 
+id="papi_ctr3_str"
+type="char*64"
+category="performance" 
+group="papi_inparm">
+</entry>
+
+<entry 
+id="papi_ctr4_str"
+type="char*64"
+category="performance" 
+group="papi_inparm">
+</entry>
+
 <!-- =========================== -->
 <!-- group pio_default_inparm    -->
 <!-- =========================== -->

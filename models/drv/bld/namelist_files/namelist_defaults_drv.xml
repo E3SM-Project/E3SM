@@ -128,6 +128,17 @@
 <profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
 
 <profile_ovhd_measurement>.false.</profile_ovhd_measurement>
+<profile_outpe_num>1</profile_outpe_num>
+<profile_papi_enable>.false.</profile_papi_enable>
+
+<!-- =========================================  -->
+<!--- prof_inparm                               -->
+<!-- =========================================  -->
+
+<papi_ctr1_str>PAPI_FP_OPS</papi_ctr1_str>
+<papi_ctr2_str>PAPI_NO_CTR</papi_ctr2_str>
+<papi_ctr3_str>PAPI_NO_CTR</papi_ctr3_str>
+<papi_ctr4_str>PAPI_NO_CTR</papi_ctr4_str>
 
 <!-- =========================================  -->
 <!--- pio_default_inparm                        -->
