@@ -66,16 +66,16 @@
 		<var name="EAIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance for the East Antarctic Ice Sheet"
 		/>
-		<var name="FRIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="FRISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance for the Filchner-Ronne Ice Shelf"
 		/>
-		<var name="RossIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="RossISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance for the Ross Ice Shelf"
 		/>
-		<var name="AmeryIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="AmeryISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance for the Amery Ice Shelf"
 		/>
-		<var name="PineIslandThwaitesIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
+		<var name="PineIslandThwaitesISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance for the Pine Island & Thwaites Ice Shelves"
 		/>
  	</var_struct>
@@ -104,9 +104,9 @@
             <var name="EAISgroundedIceArea"/>
 			<var name="WAIStotalBasalMassBal"/>
 			<var name="EAIStotalBasalMassBal"/>
-			<var name="FRIStotalBasalMassBal"/>
-			<var name="RossIStotalBasalMassBal"/>
-			<var name="AmeryIStotalBasalMassBal"/>
-			<var name="PineIslandThwaitesIStotalBasalMassBal"/>
+			<var name="FRISBasalMassBal"/>
+			<var name="RossISBasalMassBal"/>
+			<var name="AmeryISBasalMassBal"/>
+			<var name="PineIslandThwaitesISBasalMassBal"/>
 		</stream>
 	</streams>
