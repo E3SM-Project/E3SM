@@ -4,10 +4,12 @@ use strict;
 use warnings;
 use Data::Dumper;
 use XML::LibXML;
+use Getopt::Long;
 
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
 my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
 my $cimeroot = $nodes[0]->getAttribute('value');
+my %opts;
 
 unshift @INC, "$cimeroot/utils/perl5lib";
 require Config::SetupTools;
@@ -25,9 +27,16 @@ my $model       = $config{'MODEL'};
 my $debug       = $config{'DEBUG'};
 
 my $lastjobid = undef;
+sub opts()
+{
+    GetOptions( "resubmit=s" => \$opts{'resubmit'},
+                "scriptname=s", => \$opts{'scriptname'});
+}
 
 sub main
 {
+    # Get options, if any..
+    &opts();
     # Check the case only once..
     print "checking the case..\n";
     open(my $CHECKCASE, "-|", "./check_case");
@@ -63,14 +72,28 @@ sub main
 							      machroot	   => $machroot, 
 							      mpilib	   => $mpilib); 
     
-    $batchutils->dependencyCheck("sta_ok");
+    $batchutils->dependencyCheck();
 
-    check_DA_settings();
-
-    $batchutils->submitJobs("sta_ok");
+    if(defined $opts{'resubmit'})
+    {
+        if(! defined $opts{'scriptname'})
+        {
+            die "$config{'CASE'}.submit: resubmit option given without scriptname provided, aborting!";
+        }
+        else
+        {
+            `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+            $batchutils->doResubmit($opts{'scriptname'});
+        }
+    }
+    else
+    {
+        check_DA_settings();
+        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+        $batchutils->submitJobs();
+    }
 
 }
-
 
 sub check_DA_settings
 {
@@ -82,9 +105,18 @@ sub check_DA_settings
     }
 }
 
-
-
-
-
+sub doResubmit()
+{
+    my $scriptname = shift;
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'},
+                                                              caseconfig => \%config,
+                                                              cimeroot => $config{'CIMEROOT'},
+                                                              compiler => $config{'COMPILER'},
+                                                              machine =>  $config{'MACH'},
+                                                              machroot => $config{'MACHDIR'},
+                                                              mpilib   => $config{'MPILIB'} );
+    
+    $batchutils->doResubmit($scriptname);
+}
 
 main(@ARGV) unless caller();

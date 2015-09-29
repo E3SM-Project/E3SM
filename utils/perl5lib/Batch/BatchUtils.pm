@@ -152,7 +152,7 @@ sub getJobID()
 sub submitJobs()
 {
 	my $self = shift;
-	my $sta_ok = shift;
+	my $scriptname = shift;
 	my $depjobid = undef;
 	
 	my %depqueue = %{$self->{dependencyqueue}};
@@ -163,7 +163,7 @@ sub submitJobs()
 		{
 			my $islastjob = 0;
 			$islastjob = 1 if ($jobnum == $lastjobseqnum);
-			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
+			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob);
 		}
 	}
 }
@@ -179,7 +179,6 @@ sub submitSingleJob()
 	my $scriptname = shift;
 	my $dependentJobId = shift;
 	my $islastjob = shift;
-	my $sta_ok = shift;
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
@@ -189,25 +188,6 @@ sub submitSingleJob()
 	    $submitargs = '' ;
 	}
 
-	if($islastjob)
-	{
-		$ENV{'islastjob'} = 'TRUE';
-	}
-	else
-	{
-		$ENV{'islastjob'} = 'FALSE';
-	}
-	#my $sta_argument = '';
-	if(defined $sta_ok)
-	{
-		#$sta_argument = " -F \"--sta_ok\"";
-		$ENV{'sta_ok'} = 'TRUE';
-	}
-	else
-	{
-		#$ENV{'sta_ok'} = 'FALSE';
-		delete $ENV{'sta_ok'};
-	}
 	print "Submitting job script: $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
 	chdir $config{'CASEROOT'};
@@ -241,34 +221,68 @@ sub submitSingleJob()
 #==============================================================================
 sub doResubmit()
 {
-    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+    #my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+    my ($self, $scriptname) = @_;
 
-	
-    # If the islastjob flag is true, and resubmit is > 0,  do the dependency
-    # check and job resubmission again 
-    if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
+    my %config = %{$self->{caseconfig}};
+    my $lastjobname;
+    if($config{DOUT_S} eq 'TRUE' && $config{DOUT_L_MS} eq 'TRUE')
     {
-	    my %config = %{$self->{caseconfig}};
-	    $self->dependencyCheck("sta_ok");
-	    $self->submitJobs("sta_ok");		
-	    my $newresubmit = $config{'RESUBMIT'} - 1;
-	    my $owd = getcwd;
-	    chdir $config{'CASEROOT'};
-	    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
-		`./xmlchange CONTINUE_RUN=TRUE`;
-	    }
-
-	    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-	    if($?)
-	    {
-	    	print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
-	    }
-	    chdir $owd;
+        $lastjobname = $config{CASE} . ".lt_archive";
     }
-    else    
+    elsif($config{DOUT_S} eq 'TRUE' && $config{DOUT_L_MS} eq 'TRUE')
+    {
+        $lastjobname = $config{CASE} . ".st_archive";
+    }
+    else
+    {
+        $lastjobname = $config{CASE} . ".run";
+    }
+    #my $scriptsuffix = (split(/\./, $scriptname))[-1];
+    if($config{'RESUBMIT'} > 0 && $scriptname =~ /$lastjobname/)
+    {
+        $self->dependencyCheck($scriptname);
+        $self->submitJobs($scriptname);
+        my $newresubmit = $config{'RESUBMIT'} - 1;
+        my $owd = getcwd;
+        chdir $config{'CASEROOT'};
+        if($config{COMP_RUN_BARRIERS} ne "TRUE") 
+        {
+            `./xmlchange CONTINUE_RUN=TRUE"`;
+        }
+        `./xmlchange RESUBMIT=$newresubmit`;
+        chdir $owd;
+    }
+    else
     {
         return;
     }
+	
+    ## If the islastjob flag is true, and resubmit is > 0,  do the dependency
+    ## check and job resubmission again 
+    #if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
+    #{
+	#    my %config = %{$self->{caseconfig}};
+	#    $self->dependencyCheck("sta_ok");
+	#    $self->submitJobs("sta_ok");		
+	#    my $newresubmit = $config{'RESUBMIT'} - 1;
+	#    my $owd = getcwd;
+	#    chdir $config{'CASEROOT'};
+	#    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
+	#	`./xmlchange CONTINUE_RUN=TRUE`;
+	#    }
+
+	#    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+	#    if($?)
+	#    {
+	#    	print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
+	#    }
+	#    chdir $owd;
+    #}
+    #else    
+    #{
+    #    return;
+    #}
 	
 }
 
@@ -280,7 +294,7 @@ sub doResubmit()
 sub dependencyCheck()
 {
 	my $self = shift;
-	my $sta_ok;
+	my $scriptname = shift;;
 	my %config = %{$self->{'caseconfig'}};
 	# we always want to run the test or run again..
 	if(-e "$config{'CASE'}.test")
@@ -301,6 +315,11 @@ sub dependencyCheck()
 		my $jobname = "$config{'CASE'}.st_archive";
 		$self->addDependentJob($jobname);
 	}
+    if($config{'DOUT_L_MS'} eq 'TRUE')
+    {
+        my $jobname = "$config{'CASE'}.lt_archive";
+        $self->addDependentJob($jobname);
+    }
 	
 }
 
