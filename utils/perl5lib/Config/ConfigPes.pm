@@ -282,13 +282,6 @@ sub _setPESsettings
     print "ConfigPES: compset_match is $compset_match\n"; 
     print "ConfigPES: pesize match  is $pesize_match \n"; 
     
-    _getlayout($pe_select, $config, \%decomp);
-}
-
-sub _getlayout
-{
-    my ($pe_select,$config) = @_;
-
     my $pes_per_node = $config->get('PES_PER_NODE');
     my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
     my @pes_nthrds = $pe_select->findnodes("./nthrds"); 
@@ -310,12 +303,33 @@ sub _getlayout
            }
 	}
     }
+    if(!defined $decomp{NTASKS_ATM} || ! defined $decomp{NTHRDS_ATM} || !defined $decomp{ROOTPE_ATM}){
+	die("NO pelayout found");
+    }
 
+
+    
     foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL") {
+	if($comp ne "ATM"){
+	    if(!defined $decomp{"NTASKS_$comp"}){
+		$decomp{"NTASKS_$comp"} = $decomp{NTASKS_ATM};
+		warn "No Match found for NTASKS_$comp, using $decomp{NTASKS_ATM}";
+	    }
+	    if(!defined $decomp{"NTHRDS_$comp"}){
+		$decomp{"NTHRDS_$comp"} = $decomp{NTHRDS_ATM};
+		warn "No Match found for NTHRDS_$comp, using $decomp{NTHRDS_ATM}";
+	    }
+	    if(!defined $decomp{"ROOTPE_$comp"}){
+		$decomp{"ROOTPE_$comp"} = $decomp{ROOTPE_ATM};
+		warn "No Match found for ROOTPE_$comp, using $decomp{ROOTPE_ATM}";
+	    }
+	}
+	    
+
 	my $ntasks = _clean($decomp{"NTASKS_$comp"});
 	my $nthrds = _clean($decomp{"NTHRDS_$comp"});
 	my $rootpe = _clean($decomp{"ROOTPE_$comp"});
-
+	
 	$config->set("NTASKS_$comp" , $ntasks);
 	$config->set("NTHRDS_$comp" , $nthrds);
 	$config->set("ROOTPE_$comp" , $rootpe);
@@ -329,6 +343,7 @@ sub _getlayout
 sub _clean
 {
     my ($name) = @_;
+  
     $name =~ s/^\s+//; # strip any leading whitespace 
     $name =~ s/\s+$//; # strip any trailing whitespace
     return ($name);

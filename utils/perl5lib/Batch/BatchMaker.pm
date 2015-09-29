@@ -410,16 +410,17 @@ sub setWallTime()
 			$self->{'wall_time'} = $defaultelem->textContent();
 		}
 	}
+	if(defined $self->{walltimemax}){
+	    my @wtmax = split(':',$self->{walltimemax});
+	    my @wt = split(':',$self->{wall_time});
 
-	my @wtmax = split(':',$self->{walltimemax});
-	my @wt = split(':',$self->{wall_time});
-
-	for(my $i=0;$i<$#wtmax;$i++){
-	    if($wtmax[$i]<$wt[$i]){
-		$self->{wall_time} = $self->{walltimemax};
-		last;
+	    for(my $i=0;$i<$#wtmax;$i++){
+		if($wtmax[$i]<$wt[$i]){
+		    $self->{wall_time} = $self->{walltimemax};
+		    last;
+		}
+		last if($wtmax[$i] > $wt[$i]);
 	    }
-	    last if($wtmax[$i] > $wt[$i]);
 	}
 
 }
@@ -862,8 +863,9 @@ sub setTaskInfo()
 
     $self->{'mppsize'}  = $taskmaker->sumTasks();
 
-    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $maxTasksPerNode > 0)
+    if($self->{mppsize} > $pes_per_node && $self->{'mppsize'} % $pes_per_node > 0)
     {
+	print "mppsize = $self->{mppsize} pes_per_node=$pes_per_node \n";
 	die("odd number of tasks to handle");
 #        my $mppnodes = POSIX::floor($self->{'mppsize'} / $maxTasksPerNode);
 #        $mppnodes += 1;

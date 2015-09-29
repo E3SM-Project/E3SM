@@ -694,7 +694,9 @@
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <batch_system type="pbs" version="x.y">
       <queues>
-	<queue jobmin="1" jobmax="9999" default="true">batch</queue>
+	<queue jobmin="1" jobmax="4200" walltimemax="24:00:00" >batch</queue>
+	<queue jobmin="4201" jobmax="8400" walltimemax="12:00:00" >batch</queue>
+	<queue jobmin="8401" jobmax="16800" walltimemax="24:00:00" >batch</queue>
       </queues>
       <walltimes>
 	<walltime default="true">01:15:00</walltime>
