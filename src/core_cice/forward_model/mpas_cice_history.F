@@ -21,7 +21,10 @@ module cice_history
   save
 
   public :: &
-       cice_init_history_thermodynamics
+       cice_init_history_thermodynamics, &
+!nj-bgc+
+       cice_init_history_biogeochemistry
+!nj-bgc-
 
 contains
 
@@ -123,6 +126,78 @@ contains
 
   end subroutine cice_init_history_thermodynamics
 
+!nj-bgc+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!> \brief
+!> \author Nicole Jeffery LANL
+!> \date   21 September 2015
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_init_history_biogeochemistry(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         biogeochemistry
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         primaryProduction, &
+         netSpecificAlgalGrowthRate, &
+         netbrineheight, &
+         zSalinityFlux, &
+         zSalinityGDFlux
+         
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         oceanBioFluxes, &
+         atmosIceBioFluxes, &
+         SnowIceBioFluxes, &
+         totalverticalBiologyIce, &
+         totalverticalBiologySnow
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         bioTracerShortwave
+
+         
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+
+       call MPAS_pool_get_array(biogeochemistry, "primaryProduction", primaryProduction)
+       call MPAS_pool_get_array(biogeochemistry, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
+       call MPAS_pool_get_array(biogeochemistry, "netbrineheight", netbrineheight)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes", atmosIceBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "SnowIceBioFluxes", SnowIceBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologyIce", totalverticalBiologyIce)
+       call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologySnow", totalverticalBiologySnow)
+       call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
+
+       primaryProduction = 0.0_RKIND
+       netSpecificAlgalGrowthRate = 0.0_RKIND
+       netbrineheight = 0.0_RKIND
+       zSalinityFlux = 0.0_RKIND
+       zSalinityGDFlux = 0.0_RKIND
+       oceanBioFluxes = 0.0_RKIND
+       atmosIceBioFluxes = 0.0_RKIND
+       SnowIceBioFluxes = 0.0_RKIND
+       totalverticalBiologyIce = 0.0_RKIND
+       totalverticalBiologySnow = 0.0_RKIND
+       bioTracerShortwave = 0.0_RKIND
+       
+       block => block % next
+    enddo
+
+  end subroutine cice_init_history_biogeochemistry
+!nj-bgc-
 !-----------------------------------------------------------------------
 
 end module cice_history

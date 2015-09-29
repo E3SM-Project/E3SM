@@ -244,8 +244,7 @@ module cice_core_interface
           config_use_cesm_meltponds, &
           config_use_level_meltponds, &
           config_use_topo_meltponds, &
-          config_use_aerosols, &
-          config_use_brine
+          config_use_aerosols
 
      logical, pointer :: &
           pkgColumnTracerIceAgeActive, &
@@ -278,33 +277,33 @@ module cice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_column_package", config_use_column_package)
      call MPAS_pool_get_config(configPool, "config_use_column_shortwave", config_use_column_shortwave)
      call MPAS_pool_get_config(configPool, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
-     !call MPAS_pool_get_config(configPool, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+     call MPAS_pool_get_config(configPool, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
      call MPAS_pool_get_config(configPool, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
      call MPAS_pool_get_config(configPool, "config_use_column_ridging", config_use_column_ridging)
 
      call MPAS_pool_get_package(packagePool, "pkgColumnShortwaveActive", pkgColumnShortwaveActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnVerticalThermodynamicsActive", pkgColumnVerticalThermodynamicsActive)
-     !call MPAS_pool_get_package(packagePool, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
+     call MPAS_pool_get_package(packagePool, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnITDThermodynamicsActive", pkgColumnITDThermodynamicsActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnRidgingActive", pkgColumnRidgingActive)
 
      pkgColumnShortwaveActive              = config_use_column_shortwave
      pkgColumnVerticalThermodynamicsActive = config_use_column_vertical_thermodynamics
-     !pkgColumnBiogeochemistryActive        = config_use_column_biogeochemistry
+     pkgColumnBiogeochemistryActive        = config_use_column_biogeochemistry
      pkgColumnITDThermodynamicsActive      = config_use_column_itd_thermodynamics
      pkgColumnRidgingActive                = config_use_column_ridging
 
      if (.not. config_use_column_package) then
         pkgColumnShortwaveActive              = .false.
         pkgColumnVerticalThermodynamicsActive = .false.
-        !pkgColumnBiogeochemistryActive        = .false.
+        pkgColumnBiogeochemistryActive        = .false.
         pkgColumnITDThermodynamicsActive      = .false.
         pkgColumnRidgingActive                = .false.
      endif
 
      pkgColumnShortwaveActive              = .true.
      pkgColumnVerticalThermodynamicsActive = .true.
-     !pkgColumnBiogeochemistryActive        = .true.                                                                                                               
+     pkgColumnBiogeochemistryActive        = .true.                                                                                                               
      pkgColumnITDThermodynamicsActive      = .true.
      pkgColumnRidgingActive                = .true.
 
@@ -328,7 +327,6 @@ module cice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_topo_meltponds", config_use_topo_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_aerosols", config_use_aerosols)
-     call MPAS_pool_get_config(configPool, "config_use_brine", config_use_brine)
 
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerIceAgeActive", pkgColumnTracerIceAgeActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerFirstYearIceActive", pkgColumnTracerFirstYearIceActive)

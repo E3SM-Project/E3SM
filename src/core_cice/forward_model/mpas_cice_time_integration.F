@@ -74,7 +74,10 @@ contains
          cice_column_reinitialize_fluxes
 
     use cice_history, only: &
-         cice_init_history_thermodynamics
+         cice_init_history_thermodynamics, &
+!nj-bgc+
+         cice_init_history_biogeochemistry
+!nj-bgc-
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -106,6 +109,10 @@ contains
     ! init history variables
     call cice_init_history_thermodynamics(domain)
 
+!nj-bgc+
+    ! init biogeochemistry history variables 
+    call cice_init_history_biogeochemistry(domain)
+!nj-bgc-
 
     configs => domain % configs
 

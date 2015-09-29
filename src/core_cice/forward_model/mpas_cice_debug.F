@@ -2308,7 +2308,10 @@ contains
     type(MPAS_pool_type), pointer :: &
          mesh, &
          tracers, &
-         plotting
+         plotting, &
+!nj-bgc+
+         biogeochemistry
+!nj-bgc-
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2322,7 +2325,16 @@ contains
          snowVolumeCategoryPlot, &
          surfaceTemperaturePlot, &
          iceThickness, &
-         snowThickness
+         snowThickness, &
+!nj-bgc+
+         netbrineheight, &
+         totalverticalSalinity, &
+         totalskeletalAlgae
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         totalverticalBiologyIce, &
+         totalverticalBiologySnow
+!nj-bgc-
 
     integer :: &
          iCell
@@ -2333,6 +2345,9 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "plotting", plotting)
+!nj-bgc+
+    call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+!nj-bgc-
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -2345,6 +2360,13 @@ contains
     call MPAS_pool_get_array(plotting, "surfaceTemperaturePlot", surfaceTemperaturePlot)
     call MPAS_pool_get_array(plotting, "iceThickness", iceThickness)
     call MPAS_pool_get_array(plotting, "snowThickness", snowThickness)
+!nj-bgc+
+    call MPAS_pool_get_array(biogeochemistry, "netbrineheight", netbrineheight)
+    call MPAS_pool_get_array(biogeochemistry, "totalskeletalAlgae", totalskeletalAlgae)
+    call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologyIce", totalverticalBiologyIce)
+    call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologySnow", totalverticalBiologySnow)
+    call MPAS_pool_get_array(biogeochemistry, "totalverticalSalinity", totalverticalSalinity)
+!nj-bgc-
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
@@ -2361,6 +2383,12 @@ contains
        else
           iceThickness(iCell)  = 0.0_RKIND
           snowThickness(iCell) = 0.0_RKIND
+!nj-bgc+
+          netbrineheight(iCell) = 0.0_RKIND
+          totalverticalSalinity(iCell) = 0.0_RKIND
+          totalverticalBiologyIce(:,iCell) = 0.0_RKIND
+          totalverticalBiologySnow(:,iCell) = 0.0_RKIND
+!nj-bgc-
        endif
     enddo ! iCell
 
@@ -2908,6 +2936,14 @@ contains
        call cice_debug_write_out_field(domain, "tracers", "pondArea", "apndn")
        call cice_debug_write_out_field(domain, "tracers", "pondDepth", "hpndn")
        call cice_debug_write_out_field(domain, "tracers", "pondLidThickness", "ipndn")
+!nj-bgc+
+       call cice_debug_write_out_field(domain, "tracers", "skeletalAlgaeConc", "bgc_N_skn")
+       call cice_debug_write_out_field(domain, "tracers", "skeletalNitrateConc", "bgc_Nit_skn")
+       call cice_debug_write_out_field(domain, "tracers", "verticalAlgaeConc", "bgc_Nn")
+       call cice_debug_write_out_field(domain, "tracers", "verticalNitrateConc", "bgc_Nitn")
+       call cice_debug_write_out_field(domain, "tracers", "brinefraction", "fbrin")
+       call cice_debug_write_out_field(domain, "tracers", "verticalSalinity", "zSaln")
+!nj-bgc-
 
        call cice_debug_write_out_field(domain, "tracers_aggregate", "iceAreaCell", "aice")
        call cice_debug_write_out_field(domain, "tracers_aggregate", "iceVolumeCell", "vice")
@@ -3328,6 +3364,25 @@ contains
     call cice_writeout_config(domain, 55, "config_use_topo_meltponds", "tr_pond_topo", "logical")
     call cice_writeout_config(domain, 55, "config_use_aerosols", "tr_aero", "logical")
     call cice_writeout_config(domain, 55, "config_use_brine", "tr_brine", "logical")
+!nj-bgc+
+    call cice_writeout_config(domain, 55, "config_use_vertical_zsalinity", "solve_zsal", "logical")
+    call cice_writeout_config(domain, 55, "config_use_vertical_biochemistry", "solve_zbgc", "logical")
+    call cice_writeout_config(domain, 55, "config_use_shortwave_bioabsorption", "dEdd_algae", "logical")
+    call cice_writeout_config(domain, 55, "config_use_vertical_tracers", "z_tracers", "logical")
+    call cice_writeout_config(domain, 55, "config_use_skeletal_biochemistry", "skl_bgc", "logical")
+    call cice_writeout_config(domain, 55, "config_use_nitrate", "tr_bgc_Nit", "logical")
+    call cice_writeout_config(domain, 55, "config_use_carbon", "tr_bgc_C", "logical")
+    call cice_writeout_config(domain, 55, "config_use_chlorophyll", "tr_bgc_chl", "logical")
+    call cice_writeout_config(domain, 55, "config_use_ammonium", "tr_bgc_Am", "logical")
+    call cice_writeout_config(domain, 55, "config_use_silicate", "tr_bgc_Sil", "logical")
+    call cice_writeout_config(domain, 55, "config_use_DMS", "tr_bgc_DMS", "logical")
+    call cice_writeout_config(domain, 55, "config_use_nonreactive", "tr_bgc_PON", "logical")
+    call cice_writeout_config(domain, 55, "config_use_humics", "tr_bgc_hum", "logical")
+    call cice_writeout_config(domain, 55, "config_use_DON", "tr_bgc_DON", "logical")
+    call cice_writeout_config(domain, 55, "config_use_iron", "tr_bgc_iron", "logical")
+    call cice_writeout_config(domain, 55, "config_use_modal_aerosols", "modal_aero", "logical")
+    call cice_writeout_config(domain, 55, "config_use_zaerosols", "tr_zaero", "logical")
+!nj-bgc-
 
     call cice_writeout_config(domain, 55, "config_shortwave_type", "shortwave", "character")
     call cice_writeout_config(domain, 55, "config_albedo_type", "albedo_type", "character")

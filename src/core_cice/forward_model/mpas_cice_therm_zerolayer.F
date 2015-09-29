@@ -1543,9 +1543,10 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          time !< Input: 
-
-    real(kind=RKIND), dimension(0:12,4), intent(out) :: &
+!nj-bgc+
+    real(kind=RKIND), dimension(0:12,4), intent(in) :: &
          MonthlyIntCoeff !< Output: 
+!nj-bgc-
 
     real(kind=RKIND), dimension(-1:14), intent(in) :: &
          semtner_data_times !< Input: 
