@@ -942,9 +942,9 @@ contains
          airSpecificHumidity, &
          airDensity, &
          airTemperature, &
-         airReferenceTemperature2m, &
-         airReferenceHumidity2m, &
-         airReferenceSpeed10m, &
+         atmosReferenceTemperature2m, &
+         atmosReferenceHumidity2m, &
+         atmosReferenceSpeed10m, &
          airOceanDragCoefficientRatio, &
          oceanDragCoefficient, &
          oceanDragCoefficientSkin, &
@@ -1151,11 +1151,11 @@ contains
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
        call MPAS_pool_get_array(atmos_coupling, "rainfallRate", rainfallRate)
        call MPAS_pool_get_array(atmos_coupling, "longwaveDown", longwaveDown)
+       call MPAS_pool_get_array(atmos_coupling, "atmosReferenceTemperature2m", atmosReferenceTemperature2m)
+       call MPAS_pool_get_array(atmos_coupling, "atmosReferenceHumidity2m", atmosReferenceHumidity2m)
+       call MPAS_pool_get_array(atmos_coupling, "atmosReferenceSpeed10m", atmosReferenceSpeed10m)
 
        call MPAS_pool_get_array(atmos_forcing, "windSpeed", windSpeed)
-       call MPAS_pool_get_array(atmos_forcing, "airReferenceTemperature2m", airReferenceTemperature2m)
-       call MPAS_pool_get_array(atmos_forcing, "airReferenceHumidity2m", airReferenceHumidity2m)
-       call MPAS_pool_get_array(atmos_forcing, "airReferenceSpeed10m", airReferenceSpeed10m)
 
        call MPAS_pool_get_array(alternative_atmos_forcing, "latentHeatFluxCouple", latentHeatFluxCouple)
        call MPAS_pool_get_array(alternative_atmos_forcing, "sensibleHeatFluxCouple", sensibleHeatFluxCouple)
@@ -1326,9 +1326,9 @@ contains
                airSpecificHumidity(iCell), &
                airDensity(iCell), &
                airTemperature(iCell), &
-               airReferenceTemperature2m(iCell), &
-               airReferenceHumidity2m(iCell), &
-               airReferenceSpeed10m(iCell), &
+               atmosReferenceTemperature2m(iCell), &
+               atmosReferenceHumidity2m(iCell), &
+               atmosReferenceSpeed10m(iCell), &
                airOceanDragCoefficientRatio(iCell), &
                oceanDragCoefficient(iCell), &
                oceanDragCoefficientSkin(iCell), &

@@ -2945,12 +2945,12 @@ contains
        call cice_debug_write_out_field(domain, "atmos_coupling", "snowfallRate", "fsnow")
        call cice_debug_write_out_field(domain, "atmos_coupling", "uAirVelocity", "uatm")
        call cice_debug_write_out_field(domain, "atmos_coupling", "vAirVelocity", "vatm")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "atmosReferenceTemperature2m", "")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "atmosReferenceHumidity2m", "")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "atmosReferenceSpeed10m", "")
 
        call cice_debug_write_out_field(domain, "atmos_forcing", "windSpeed", "wind")
        call cice_debug_write_out_field(domain, "atmos_forcing", "shortwaveDown", "fsw")
-       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceTemperature2m", "")
-       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceHumidity2m", "")
-       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceSpeed10m", "")
        !call cice_debug_write_out_field(domain, "atmos_forcing", "sensibleTransferCoefficient", "shcoef")
        !call cice_debug_write_out_field(domain, "atmos_forcing", "latentTransferCoefficient", "lhcoef")
 

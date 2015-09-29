@@ -168,9 +168,6 @@ contains
 
     call cice_debug_write_out_fields(domain, "cice_timestep", 2)
 
-    ! reinitialize fluxes
-    call cice_column_reinitialize_fluxes(domain)
-
 
   end subroutine cice_timestep!}}}
 
