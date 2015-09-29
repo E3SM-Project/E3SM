@@ -24,9 +24,8 @@ nu_s=          0
 hypervis_order = 2
 hypervis_subcycle = 1
 hypervis_power = 0
-!mesh_file = '/home/onguba/homme7/test/mesh_refine/grids/mountain_10_x8.g'
-mesh_file = '/home/onguba/homme7/test/mesh_refine/grids/grid_10_x8_iter10halo2.g'
-which_vlaplace=2
+mesh_file = 'mountain_10_x8.g'
+!mesh_file = '/home/onguba/homme7/test/mesh_refine/grids/grid_10_x8_iter10halo2.g'
 hypervis_scaling = 4
 /
 &solver_nl
@@ -66,8 +65,8 @@ output_start_time= 0
 output_end_time  = -1
 output_timeunits = 1
 output_frequency = 1
-interp_nlat=800
-interp_nlon=1600
+interp_nlat=601
+interp_nlon=1200
 output_varnames1 = 'geop','zeta'
 io_stride = 8
 output_type = 'netcdf'
