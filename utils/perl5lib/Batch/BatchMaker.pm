@@ -410,16 +410,17 @@ sub setWallTime()
 			$self->{'wall_time'} = $defaultelem->textContent();
 		}
 	}
+	if(defined $self->{walltimemax}){
+	    my @wtmax = split(':',$self->{walltimemax});
+	    my @wt = split(':',$self->{wall_time});
 
-	my @wtmax = split(':',$self->{walltimemax});
-	my @wt = split(':',$self->{wall_time});
-
-	for(my $i=0;$i<$#wtmax;$i++){
-	    if($wtmax[$i]<$wt[$i]){
-		$self->{wall_time} = $self->{walltimemax};
-		last;
+	    for(my $i=0;$i<$#wtmax;$i++){
+		if($wtmax[$i]<$wt[$i]){
+		    $self->{wall_time} = $self->{walltimemax};
+		    last;
+		}
+		last if($wtmax[$i] > $wt[$i]);
 	    }
-	    last if($wtmax[$i] > $wt[$i]);
 	}
 
 }
