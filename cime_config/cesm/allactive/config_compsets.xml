@@ -17,9 +17,9 @@
     LND  = [CLM40, CLM45, CLM50, SLND]
     ICE  = [CICE, DICE, SICE]
     OCN  = [DOCN, ,AQUAP, SOCN]
-    ROF  = [RTM, SROF]
+    ROF  = [RTM, MOSART, SROF]
     GLC  = [CISM1, CISM2, SGLC]
-    WAV  = [SWAV]
+    WAV  = [WW3, DWAV, XWAV, SWAV]
     BGC  = optional BGC scenario 
 
     The OPTIONAL %phys attributes specify submodes of the given system
@@ -35,6 +35,30 @@
     Each compset node can also have the following attributes
     - grid  (optional regular expression match for grid to work with the compset)
   </help>
+
+  <!-- 1850 compsets Default, Mosart, Wave for CESM2 -->
+
+  <COMPSET>
+    <alias>B1850</alias>
+    <lname>1850_CAM5_CLM50%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
+  </COMPSET>
+
+  <COMPSET>
+    <alias>BM1850</alias>
+    <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
+  </COMPSET>
+
+  <COMPSET>
+    <alias>BW1850</alias>
+    <lname>1850_CAM5_CLM50%BGC_CICE_POP2_RTM_SGLC_DWAV</lname>
+  </COMPSET>
+
+  <COMPSET>
+    <alias>BMW1850</alias>
+    <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_SGLC_DWAV</lname>
+  </COMPSET>
+
+  <!-- Other B compsets -->
 
   <compset> 
     <alias>B</alias>
