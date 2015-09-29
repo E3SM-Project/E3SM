@@ -1040,8 +1040,8 @@
       </modules>
     </module_system>
     <environment_variables>
-      <env name="MPI_TYPE_MAX">$MPI_TYPE_MAX</env>
-      <env name="OMP_DYNAMIC">$OMP_DYNAMIC</env>
+      <env name="MPI_TYPE_MAX">10000</env>
+      <env name="OMP_DYNAMIC">FALSE</env>
     </environment_variables>
   </machine>
 

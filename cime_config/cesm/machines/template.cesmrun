@@ -90,13 +90,17 @@ sub getOptions()
     $machine     = $config{'MACH'};
     $machroot    = $config{'MACHDIR'};
     $mpilib      = $config{'MPILIB'};
-    if($config{'DOUT_S'} eq 'TRUE' && ! defined $ENV{'sta_ok'} )
+    if($config{'RUN_WITH_SUBMIT'} eq 'FALSE' )
     {
-	print "You are not calling the run script via the submit script. \n";
-	print "As a result, short-term archiving will not be called automatically. \n";
-	print "Please submit your run by running the submit script like so:   \n";
-	print "./$case.submit\n";
-	exit(1);
+	    print "You are not calling the run script via the submit script. \n";
+	    print "As a result, short-term archiving will not be called automatically. \n";
+	    print "Please submit your run by running the submit script like so:   \n";
+	    print "./$case.submit\n";
+	    exit(1);
+    }
+    else
+    {
+        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
     }
     
 }
@@ -472,18 +476,14 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    my $resubmit = $config{'RESUBMIT'};
-
-    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	  => $config{'CASE'}, 
-							      caseconfig  => \%config, 
-							      caseroot    => $config{'CASEROOT'},
-							      compiler    => $config{'COMPILER'}, 
-							      machine	  => $config{'MACH'},
-                                                              machroot    => $config{'MACHDIR'}, 
-							      mpilib      => $config{'MPILIB'});
-
-    print "Resubmitting job RESUBMIT=$config{RESUBMIT}\n" if($config{RESUBMIT}>0 && $ENV{islastjob} eq "TRUE");
-    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
+    my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+    
+    my $cwd = getcwd;
+    chdir $config{'CASEROOT'};
+    my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.run";
+    print "running resubmit check $resubmitcommand\n";
+    qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
+    chdir $cwd;
 }
 
 sub DoDataAssimilation

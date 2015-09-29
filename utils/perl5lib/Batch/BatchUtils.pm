@@ -10,6 +10,7 @@ use strict;
 use warnings;
 package Batch::BatchUtils;
 use Cwd;
+use Data::Dumper;
 use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
@@ -152,7 +153,7 @@ sub getJobID()
 sub submitJobs()
 {
 	my $self = shift;
-	my $sta_ok = shift;
+	my $scriptname = shift;
 	my $depjobid = undef;
 	
 	my %depqueue = %{$self->{dependencyqueue}};
@@ -161,11 +162,14 @@ sub submitJobs()
 	{
 		foreach my $jobname(@{$depqueue{$jobnum}})
 		{
+            print "jobname: $jobname\n";
+            print "lastjobseqnum $lastjobseqnum\n";
 			my $islastjob = 0;
 			$islastjob = 1 if ($jobnum == $lastjobseqnum);
-			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
+			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob);
 		}
 	}
+    print "in submitJobs\n";
 }
 
 #==============================================================================
@@ -179,7 +183,6 @@ sub submitSingleJob()
 	my $scriptname = shift;
 	my $dependentJobId = shift;
 	my $islastjob = shift;
-	my $sta_ok = shift;
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
@@ -189,25 +192,6 @@ sub submitSingleJob()
 	    $submitargs = '' ;
 	}
 
-	if($islastjob)
-	{
-		$ENV{'islastjob'} = 'TRUE';
-	}
-	else
-	{
-		$ENV{'islastjob'} = 'FALSE';
-	}
-	#my $sta_argument = '';
-	if(defined $sta_ok)
-	{
-		#$sta_argument = " -F \"--sta_ok\"";
-		$ENV{'sta_ok'} = 'TRUE';
-	}
-	else
-	{
-		#$ENV{'sta_ok'} = 'FALSE';
-		delete $ENV{'sta_ok'};
-	}
 	print "Submitting job script: $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
 	chdir $config{'CASEROOT'};
@@ -234,41 +218,81 @@ sub submitSingleJob()
 	return $jobid;
 }
 
+sub _decrementResubmitCounter()
+{
+    my ($self,$config) = @_;
+    my $newresubmit = $config->{'RESUBMIT'} - 1;
+    my $owd = getcwd;
+    chdir $config->{'CASEROOT'};
+    if($config->{COMP_RUN_BARRIERS} ne "TRUE") 
+    {
+	`./xmlchange CONTINUE_RUN=TRUE`;
+    }
+    `./xmlchange RESUBMIT=$newresubmit`;
+    if($?)
+    {
+	print "could not execute ./xmlchange RESUBMIT=$newresubmit\n";
+    }
 
+}
 #==============================================================================
 # Base class doResubmit
 # Check to see if the next set of jobs needs to be submitted.  
 #==============================================================================
 sub doResubmit()
 {
-    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+    #my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+    my ($self, $scriptname) = @_;
 
-	
-    # If the islastjob flag is true, and resubmit is > 0,  do the dependency
-    # check and job resubmission again 
-    if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
+    my %config = %{$self->{caseconfig}};
+    my $lastjobname;
+    if($config{DOUT_S} eq 'TRUE')
     {
-	    my %config = %{$self->{caseconfig}};
-	    $self->dependencyCheck("sta_ok");
-	    $self->submitJobs("sta_ok");		
-	    my $newresubmit = $config{'RESUBMIT'} - 1;
-	    my $owd = getcwd;
-	    chdir $config{'CASEROOT'};
-	    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
-		`./xmlchange CONTINUE_RUN=TRUE`;
-	    }
-
-	    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-	    if($?)
-	    {
-	    	print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
-	    }
-	    chdir $owd;
+        $lastjobname =  "st_archive";
     }
-    else    
+    else
+    {
+        $lastjobname = "run";
+    }
+    #my $scriptsuffix = (split(/\./, $scriptname))[-1];
+    print "in doResubmit: lastjobname: $lastjobname\n";
+    if($config{'RESUBMIT'} > 0 && $scriptname =~ /$lastjobname/)
+    {
+        print "resubmitting jobs...\n";
+        $self->dependencyCheck($scriptname);
+        $self->submitJobs($scriptname);
+	$self->_decrementResubmitCounter(\%config);
+    }
+    else
     {
         return;
     }
+	
+    ## If the islastjob flag is true, and resubmit is > 0,  do the dependency
+    ## check and job resubmission again 
+    #if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
+    #{
+	#    my %config = %{$self->{caseconfig}};
+	#    $self->dependencyCheck("sta_ok");
+	#    $self->submitJobs("sta_ok");		
+	#    my $newresubmit = $config{'RESUBMIT'} - 1;
+	#    my $owd = getcwd;
+	#    chdir $config{'CASEROOT'};
+	#    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
+	#	`./xmlchange CONTINUE_RUN=TRUE`;
+	#    }
+
+	#    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+	#    if($?)
+	#    {
+	#    	print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
+	#    }
+	#    chdir $owd;
+    #}
+    #else    
+    #{
+    #    return;
+    #}
 	
 }
 
@@ -280,8 +304,10 @@ sub doResubmit()
 sub dependencyCheck()
 {
 	my $self = shift;
-	my $sta_ok;
+	my $scriptname = shift;;
 	my %config = %{$self->{'caseconfig'}};
+    
+    $self->{dependencyqueue} = undef;
 	# we always want to run the test or run again..
 	if(-e "$config{'CASE'}.test")
 	{
@@ -313,6 +339,7 @@ sub addDependentJob()
 	# Either a string with the job name or an array of job names
 	my $jobref = shift;
 	my $jobcounter = 0;
+    print Dumper $jobref;
 	
 	# set up the dependency hash if not done.  
 	if(! defined $self->{dependencyqueue})
@@ -523,7 +550,7 @@ sub getBatchSystemType()
 # Mira/ALCF specific BatchUtils class, since the workflow for ALCF has to be 
 # completely different. 
 # Current workflow: 
-# Run on Mira or Cetus.  When done, ssh over to tukeylogin1 and submit 
+# Run on Mira or Cetus.  When done, ssh over to cooleylogin1 and submit 
 # the short-term archive run.  If we need to continue and resubmit, we will then 
 # ssh back to either Mira or Cetus and resubmit the run.  
 #==============================================================================
@@ -539,9 +566,7 @@ use Cwd;
 #==============================================================================
 sub submitJobs()
 {
-    my $self = shift;
-    my $sta_ok = shift;
-    my $depjobid = shift;
+    my ($self,$scriptname) = @_;
 
     my %depqueue = %{$self->{dependencyqueue}};
 
@@ -553,7 +578,7 @@ sub submitJobs()
     my $firstjobname = $$firstjobarray[0];
 
     # submit the run, and nothing else. 
-    $depjobid = $self->submitSingleJob($firstjobname, $depjobid, 0, $sta_ok);
+    $self->submitSingleJob($firstjobname);
 }
 
 #==============================================================================
@@ -568,9 +593,9 @@ sub submitSingleJob()
 {
     my $self = shift;
     my $scriptname = shift;
-    my $dependentJobId = shift;
-    my $islastjob = shift;
-    my $sta_ok = shift;
+#    my $dependentJobId = shift;
+#    my $islastjob = shift;
+#    my $sta_ok = shift;
     my $workflowhostfile = "./workflowhostfile";
     if(! -e $workflowhostfile)
     {
@@ -590,21 +615,12 @@ sub submitSingleJob()
       
     my $dependarg = '';
     my $submitargs = '';
-    $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+    $submitargs = $self->getSubmitArguments($scriptname);
     if(! defined $submitargs && length($submitargs <= 0))
     {
         $submitargs = '';
     }
 
-    if(defined $sta_ok)
-    {
-        $submitargs .= " --env sta_ok=TRUE ";   
-    }
-    if(defined $islastjob)
-    {
-        $submitargs .= " --env islastjob=TRUE ";
-    }
-    
     print "Submitting job script $scriptname\n";
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
     print "Runcmd: $runcmd\n";
@@ -628,51 +644,27 @@ sub submitSingleJob()
 }
 #==============================================================================
 # Mira-specific doResubmit call.  If this is called from the run, then we 
-# have to ssh over to tukey and run the short-term archiver. 
+# have to ssh over to cooley and run the short-term archiver. 
 # If called from the short-term archiver, 
 #==============================================================================
 sub doResubmit()
 {
-    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+    my ($self, $scriptname) = @_;
 
     my %config = %{$self->{'caseconfig'}};
-    if(defined $sta_ok)
-    {
-        $ENV{'sta_ok'} = 'TRUE';
-    }
-    else
-    {
-        delete $ENV{'sta_ok'};
-    }
     
     #If we're NOT doing short-term archiving, and we need to resubmit, then we need to resubmit JUST the run.  
-    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE' && $config{'DOUT_S'} eq 'FALSE')
+    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0  && $config{'DOUT_S'} eq 'FALSE')
     {
         chdir $config{'CASEROOT'};
         my $submitargs = $self->getSubmitArguments($scriptname);
-        #if($config{'RESUBMIT'} > 0)
-        if($islastjob)
-        {
-            $submitargs .= " --env islastjob=TRUE";
-        } 
-         
-        if(defined $sta_ok)
-        {
-            $submitargs .= " --env sta_ok=TRUE";
-        }
         
         my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname";
         
         qx($runcmd) or die "coult not exec command $runcmd, $!";
-        my $newresubmit = $config{'RESUBMIT'} - 1;
-        #my $owd = getcwd;
-        #chdir $config{'CASEROOT'};
-        `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-        if($?)
-        {
-            print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
-        }
+
         #chdir $owd;
+	$self->_decrementResubmitCounter(\%config);
 
     }
 
@@ -687,7 +679,7 @@ sub doResubmit()
         
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         
-        my $runcmd = "ssh tukeylogin1 $submitstuff";
+        my $runcmd = "ssh cooleylogin1 $submitstuff";
     
         qx($runcmd) or die " could not exec cmd $runcmd, $! $?";
         
@@ -695,54 +687,34 @@ sub doResubmit()
 
     
     # If we're post run and we need to run the short-term archiver AND resubmit, then run the short-term archiver
-    # on tukey
-    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE' && $config{'DOUT_S'} eq 'TRUE')
+    # on cooley
+    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0 && $config{'DOUT_S'} eq 'TRUE')
     {
         chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
         $starchivescript =~ s/run/st_archive/g;
         
         my $submitargs = $self->getSubmitArguments($starchivescript);
-        if($config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE')
-        {
-            $submitargs .= " --env islastjob=TRUE ";
-        }
-        if(defined $sta_ok)
-        {
-            $submitargs .= " --env sta_ok=TRUE";
-        }
             
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
-        #my $cmd = "ssh tukeylogin1 qsub  -A Atmos -t 60 -n 1 -q default --mode script ./$starchivescript";
-        my $runcmd = "ssh tukeylogin1 $submitstuff";
+        #my $cmd = "ssh cooleylogin1 qsub  -A Atmos -t 60 -n 1 -q default --mode script ./$starchivescript";
+        my $runcmd = "ssh cooleylogin1 $submitstuff";
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
+	$self->_decrementResubmitCounter(\%config);
     }
 
 	# If we're being called by the short-term archiver, and we actually need to resubmit
-	# something, then ssh from the tukey compute nodes to tukeylogin1, then ssh back to 
+	# something, then ssh from the cooley compute nodes to cooleylogin1, then ssh back to 
     # either mira or cetuslac1, and resubmit the run. 
-    if($scriptname =~ /archive/ && $islastjob eq 'TRUE' && $resubmit > 0)
+    if($scriptname =~ /archive/ && $config{RESUBMIT} > 0)
     {
         chdir $config{'CASEROOT'};
-        my $newresubmit = $config{'RESUBMIT'} - 1;
-        my $owd = getcwd;
-        chdir $config{'CASEROOT'};
-        `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-        chdir $owd;
         
         my $runscript = $scriptname;
         $runscript =~ s/st_archive/run/g;
         
         my $submitargs = $self->getSubmitArguments($runscript);
     
-        if($config{'RESUBMIT'} > 0 && $config{'CONTINUE_RUN'} eq 'TRUE')
-        {
-            $submitargs .= " --env islastjob=TRUE";
-        }
-        if(defined $sta_ok)
-        {
-            $submitargs .= " --env sta_ok=TRUE";
-        }
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $runscript";
         open (my $W, "<", "./workflowhostfile" ) or die "could not open workflow host file, $!";
         my $text = <$W>;
@@ -756,22 +728,13 @@ sub doResubmit()
         {
             $runhost = "cetuslac1";
         }
-        my $runcmd = "ssh tukeylogin1 ssh $runhost $submitstuff ";
+        my $runcmd = "ssh cooleylogin1 ssh $runhost $submitstuff ";
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
         if($?)
         {
             print "could not execute runcmd $runcmd, $! $?\n";
             exit(1);
         }
-        $newresubmit = $config{'RESUBMIT'} - 1;
-        #$owd = getcwd;
-        #chdir $config{'CASEROOT'};
-        `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-        if($?)
-        {
-            print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
-        }
-        #chdir $owd;
         
     }
     
