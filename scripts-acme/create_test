@@ -140,8 +140,25 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
         args.clean, args.compare, args.generate, args.baseline_name, args.namelists_only, args.project, args.test_id
 
 ###############################################################################
-def get_tests_from_args(testargs):
+def get_full_test_name(test, machine, compiler, testmod=None):
 ###############################################################################
+    if (test.count(".") == 2):
+        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod)
+    elif (test.count(".") == 3):
+        return "%s%s" % (test, "" if testmod is None else ".%s" % testmod)
+    elif (test.count(".") == 4):
+        return test
+    else:
+        expect(False, "Could not parse test entry: '%s'" % test)
+
+###############################################################################
+def get_tests_from_args(testargs, machine, compiler):
+###############################################################################
+    """
+    Return full test names in the form:
+    TESTCASE.GRID.COMPSET.MACHINE_COMPILER.TESTMODS
+    Testmods are optional
+    """
     acme_test_suites = update_acme_tests.get_test_suites()
 
     tests_to_run = set()
@@ -151,19 +168,21 @@ def get_tests_from_args(testargs):
         if (testarg.startswith("^")):
             negations.add(testarg)
         elif (testarg in acme_test_suites):
-            tests_to_run.update(update_acme_tests.get_test_suite(testarg))
-        elif (testarg.count(".") == 2):
-            tests_to_run.add(testarg)
+            for test, testmod in update_acme_tests.get_test_suite(testarg):
+                tests_to_run.add(get_full_test_name(test, machine, compiler, testmod))
         else:
-            expect(False, "Could not handle argument '%s'" % testarg)
+            tests_to_run.add(get_full_test_name(test, machine, compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
-            tests_to_run.difference_update(update_acme_tests.get_test_suite(negation))
-        elif (negation.count(".") == 2):
-            tests_to_run.remove(negation)
+            for test, testmod in update_acme_tests.get_test_suite(negation):
+                fullname = get_full_test_name(test, machine, compiler, testmod)
+                if (fullname in tests_to_run):
+                    tests_to_run.remove(fullname)
         else:
-            expect(False, "Could not handle argument '%s'" % negation)
+            fullname = get_full_test_name(negation, machine, compiler)
+            if (fullname in tests_to_run):
+                tests_to_run.remove(fullname)
 
     return tests_to_run
 
@@ -172,18 +191,16 @@ def create_test(testargs, compiler, no_run=False, no_build=False, no_batch=False
                 baseline_root=None, clean=False, compare=False, generate=False,
                 baseline_name=None, namelists_only=False, project=None, test_id=None):
 ###############################################################################
-    tests_to_run = get_tests_from_args(testargs)
-
     machine = acme_util.probe_machine_name()
 
-    expect(len(tests_to_run) > 0, "No tests to run")
+    tests_to_run = get_tests_from_args(testargs, machine, compiler)
 
-    full_test_names = ["%s.%s_%s\n" % (item, machine, compiler) for item in tests_to_run]
+    expect(len(tests_to_run) > 0, "No tests to run")
 
     testlist_file = tempfile.mktemp()
 
     fd = open(testlist_file, "w")
-    fd.writelines(full_test_names)
+    fd.write("\n".join(tests_to_run))
     fd.close()
 
     create_test_cmd = "./create_test -input_list %s -mach %s" % (testlist_file, machine)
