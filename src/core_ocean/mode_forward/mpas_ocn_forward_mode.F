@@ -234,9 +234,6 @@ module ocn_forward_mode
       call ocn_sea_ice_init(nVertLevels, err_tmp)
       ierr = ior(ierr, err_tmp)
 
-      call ocn_analysis_init(domain, err_tmp)
-      ierr = ior(ierr, err_tmp)
-
       call mpas_timer_init(domain)
 
       if(ierr.eq.1) then
@@ -308,6 +305,13 @@ module ocn_forward_mode
          call mpas_timer_start("test suite", .false., testSuiteTimer)
          call ocn_test_suite(domain,ierr)
          call mpas_timer_stop("test suite", testSuiteTimer)
+      endif
+
+      call ocn_analysis_init(domain, err_tmp)
+      ierr = ior(ierr, err_tmp)
+
+      if(ierr.eq.1) then
+          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the analysis members in the MPAS-Ocean forward mode')
       endif
 
    end function ocn_forward_mode_init!}}}

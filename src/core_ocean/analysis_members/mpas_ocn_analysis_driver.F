@@ -364,18 +364,17 @@ contains
                call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                call mpas_timer_stop(timerName)
                err = ior(err, err_tmp)
+            end if
 
-               if ( config_AM_write_on_startup ) then
-                  configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
-                  call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
-                  if ( config_AM_stream_name /= 'none' ) then
-                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, forceWriteNow=.true., ierr=err_tmp)
-                  end if
+            if ( config_AM_write_on_startup ) then
+               configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
+               call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+               if ( config_AM_stream_name /= 'none' ) then
+                  call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, forceWriteNow=.true., ierr=err_tmp)
                end if
-            else
-               if ( config_AM_write_on_startup ) then
+               if (.not. config_AM_compute_on_startup) then
                   write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
-                                        // poolItr % memberName(1:nameLength) // '. Skipping output...'
+                    // poolItr % memberName(1:nameLength) // '.'
                end if
             end if
          end if
