@@ -11,16 +11,7 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 
-#-----------------------------------------------------------------------------------------------
-# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
-# descriptions to be printed to STDOUT before the error messages start.
 
-*STDOUT->autoflush();                  
-
-#-----------------------------------------------------------------------------------------------
-# Set the directory that contains this script.
-
-my $eol = "\n";
 my $banner = '-' x 80;
 
 #-----------------------------------------------------------------------------------------------
@@ -41,42 +32,58 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
-my %opts = ();
+my %opts = (loglevel=>"INFO");
 
 GetOptions(
     "h|help"     => \$opts{'help'},
+    "loglevel"  => \$opts{'loglevel'},
     "caseroot=s"   => \$opts{'caseroot'}, 	
 )  or usage();
 
 # Give usage message.
 usage() if $opts{'help'};
 
+my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
+
+
+push(@INC, "$cimeroot/utils/perl5lib/");
+require Batch::BatchMaker;
+require Task::TaskMaker;
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+my    $logger = Log::Log4perl::get_logger();
+
 # Check for unparsed argumentss
 if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV $eol";
+    $logger->error( "ERROR: unrecognized arguments: @ARGV");
     usage();
 }
+
 
 # Check for required arguments
 my $caseroot;
 if ($opts{'caseroot'}) {
     $caseroot = $opts{'caseroot'};
 } else {
-    die "ERROR:  caseroot must be a supplied argument $eol";
+    $logger->logdie ("ERROR:  caseroot must be a supplied argument ");
 }
 
 # Check for presence of xmlquery in caseroot
 if (! -e "$caseroot/xmlquery" ) {
-    die "ERROR:  xmlquery is not present in $caseroot $eol";
+    $logger->logdie ("ERROR:  xmlquery is not present in $caseroot");
 }
 
 #-----------------------------------------------------------------------------------------------
 # Test case setup
 #-----------------------------------------------------------------------------------------------
 
+my $eol = "\n";
 my $mach		=  `./xmlquery MACH			-value`;
 my $machdir	        =  `./xmlquery MACHDIR		        -value`;
-my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
 my $rundir              =  `./xmlquery RUNDIR			-value`;
 my $exeroot             =  `./xmlquery EXEROOT			-value`;
 my $libroot             =  `./xmlquery LIBROOT			-value`;
@@ -129,10 +136,6 @@ if (! $baselineroot) {
 
 chdir($caseroot); 
 
-push(@INC, "$cimeroot/utils/perl5lib/");
-require Batch::BatchMaker;
-require Task::TaskMaker;
-
 # ------------------ testcase_begin ------------------------------------------
 # -- Make batch script using the BatchMaker module --- 
 
@@ -152,7 +155,7 @@ my $batchdirectives = $batchmaker->getBatchDirectives();
 my $sysmod;
 my $testfile = "$caseroot/${case}.test";
 my $testfh = new IO::File;
-$testfh->open(">>$testfile") or die "can't open file: $testfile $eol";
+$testfh->open(">>$testfile") or $logger->logdie ("can't open file: $testfile ");
 print $testfh "#!/bin/csh -f $eol";
 print $testfh "#$banner$eol";
 print $testfh "# This is a CESM test-specific job script$eol";
@@ -170,11 +173,6 @@ print $testfh " $eol cd $caseroot  $eol";
 
 # interpolate variables in following EOF block
 my $testcase_interp = <<END_INTERP;
-
-    setenv CASEROOT  $caseroot
-    setenv COMPILER  $compiler
-    setenv MPILIB    $mpilib
-    setenv DEBUG    $debug
 
     source .env_mach_specific.csh
 
@@ -271,10 +269,10 @@ END_BEGIN
 print $testfh $testcase_begin;
 
 my $file = "${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script";
-(-f $file) or die "ERROR testcase_setup: $file does not exist \n"; 
+(-f $file) or $logger->logdie ("ERROR testcase_setup: $file does not exist"); 
 
 $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 
 my $testcase_iop = <<'END_IOP';
 
@@ -318,7 +316,7 @@ if ( "${case}" =~ /.+_IOP.+/ ) {
     print $testfh $testcase_iop;
 
     $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+    system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 }
 
 my $testcase_end = <<'END_TEST';
@@ -567,10 +565,10 @@ print $testfh $testcase_end;
 $testfh->close();
 
 $sysmod= "chmod 755 $case* *pl";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $! $eol";};
+system ($sysmod); if ($? == -1) {$logger->logdie ("$sysmod failed: $!");};
 
 $sysmod = "chmod 755 $testfile";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
+system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $? ");
 
 chdir($caseroot);
 

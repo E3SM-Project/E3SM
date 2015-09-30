@@ -9,8 +9,13 @@ use strict;
 use warnings;
 use diagnostics;
 use XML::LibXML;
-use Data::Dumper;
 use Cwd;
+use Log::Log4perl qw(get_logger);
+my $logger;
+
+BEGIN{
+    $logger = get_logger();
+}
 
 #------------------------------------------------------------------------------
 # Constructor.  We need the machine, model, caseroot and optionally the compiler, 
@@ -22,15 +27,15 @@ sub new
     my ($class, %params) = @_;
     if(! defined $params{'machine'})
     {
-        die "ModuleLoader requires a machine argument";
+        $logger->logdie( "ModuleLoader requires a machine argument");
     }
     if(! defined $params{'cimeroot'})
     {
-        die "ModuleLoader requires the cimeroot";
+        $logger->logdie( "ModuleLoader requires the cimeroot");
     }
     if(! defined $params{'caseroot'})
     {
-        die "ModuleLoader requires the caseroot";
+        $logger->logdie( "ModuleLoader requires the caseroot");
     }
     my $self = {    
         machine => $params{'machine'} || undef,
@@ -58,7 +63,7 @@ sub moduleInit()
     my $machine = $self->{machine};
     if(! -e $configmachinesfile)
     {
-        die "$configmachinesfile not found\n";     
+        $logger->logdie( "$configmachinesfile not found");     
     }
     else
     {
@@ -79,13 +84,15 @@ sub moduleInit()
     {
         $self->{modulesystemtype} = $modtype->getAttribute('type');
     }
-    
+    $self->{modulesystemtype} = 'none' unless defined $self->{modulesystemtype};
     # Get the init_path.  Module systems usually have an 'init' script for 
     # various scripting languages, we need to get this path from config_machines
     # We want to use Bourne shell for soft, there is no way to load modules via Perl 
     # for the soft environment
     my @initnodes; 
-    if($self->{modulesystemtype} eq 'soft')
+    if($self->{modulesystemtype} eq 'none'){
+	return;
+    }elsif($self->{modulesystemtype} eq 'soft')
     {
         @initnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'sh\']");
     }
@@ -103,7 +110,7 @@ sub moduleInit()
     }
     if(! defined $self->{initpath})
     {
-        die "the module init path could not be found for the machine $machine\n";
+        $logger->logdie( "the module init path could not be found for the machine $machine");
     }
 
     #my @cmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path");
@@ -126,7 +133,7 @@ sub moduleInit()
     }
     if(! defined $self->{cmdpath})
     {
-        die "the module cmd path could not be found for the machine $machine\n";
+        $logger->logdie( "the module cmd path could not be found for the machine $machine");
     }
     #print "self modulesystemtype: $self->{modulesystemtype}\n";
     #print "self cmdpath: $self->{cmdpath}\n";
@@ -265,7 +272,7 @@ sub writeXMLFileForCase()
     my $newdom = XML::LibXML::Document->new("1.0");
     $newdom->setDocumentElement($newmachnode);
     my $filepath = $self->{caseroot} . "/env_mach_specific.xml";
-    $newdom->toFile($filepath, 1) || die "could not write file: ", $self->{caseroot} . ", $?\n";
+    $newdom->toFile($filepath, 1) || $logger->logdie( "could not write file: ".$self->{caseroot} . ", $?");
 }
 
 sub findModulesForCase()
@@ -278,7 +285,7 @@ sub findModulesForCase()
 
     if( ! -e $self->{machspecificfile})
     {
-        die "$self->{machspecificfile} was not found!\n";
+        $logger->logdie( "$self->{machspecificfile} was not found!");
     }
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $casemoduleparser = $parser->parse_file($self->{machspecificfile});
@@ -759,14 +766,14 @@ sub getCshModuleCode()
 
     my @cshinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'csh\']");
     
-    die "no csh init path defined for this machine!" if !@cshinitnodes;
+    $logger->logdie ("no csh init path defined for this machine!") if !@cshinitnodes;
     foreach my $node(@cshinitnodes)
     {
         $self->{cshinitpath} = $node->textContent();
     }
 
     my @cshcmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'csh\']");
-    die "no c shell ccmd_path defined for this machine!" if ! @cshcmdnodes;
+    $logger->logdie( "no c shell ccmd_path defined for this machine!") if ! @cshcmdnodes;
     foreach my $node(@cshcmdnodes)
     {
         $self->{cshcmdpath} = $node->textContent();
@@ -798,7 +805,7 @@ sub getCshModuleCode()
         }
         else
         {
-            die "could not find $attr in either the environment or in the instance variables set on the object, aborting";
+            $logger->logdie( "could not find $attr in either the environment or in the instance variables set on the object, aborting");
         }
     }
 
@@ -954,7 +961,7 @@ sub writeCshModuleFile()
     {
         $self->getCshModuleCode();
     }
-    open my $CSHFILE, ">", "$self->{caseroot}/.env_mach_specific.csh" || die " coult not open test.csh, $!";
+    open my $CSHFILE, ">", "$self->{caseroot}/.env_mach_specific.csh" || $logger->logdie( " coult not open test.csh, $!");
     print $CSHFILE $self->{cshmodulecode};
     close $CSHFILE;
 }
@@ -988,14 +995,14 @@ sub getShModuleCode()
 
     my @shinitnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/init_path[\@lang=\'sh\']");
 
-    die "no sh init path defined for this machine!" if !@shinitnodes;
+    $logger->logdie( "no sh init path defined for this machine!") if !@shinitnodes;
     foreach my $node(@shinitnodes)
     {
         $self->{shinitpath} = $node->textContent();
     }
 
     my @shcmdnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/module_system/cmd_path[\@lang=\'sh\']");
-    die "no c shell ccmd_path defined for this machine!" if ! @shcmdnodes;
+    $logger->logdie( "no sh ccmd_path defined for this machine!") if ! @shcmdnodes;
     foreach my $node(@shcmdnodes)
     {
         $self->{shcmdpath} = $node->textContent();
@@ -1026,7 +1033,7 @@ sub getShModuleCode()
         }
         else
         {
-            die "could not find $attr in either the environment or in the instance variables set on the object, aborting";
+            $logger->logdie( "could not find $attr in either the environment or in the instance variables set on the object, aborting");
         }
     }
 
@@ -1183,7 +1190,7 @@ sub writeShModuleFile
     {
         $self->getShModuleCode();
     }
-    open my $SHFILE, ">", "$self->{caseroot}/.env_mach_specific.sh" || die "could not open .env_mach_specific.sh, $!";
+    open my $SHFILE, ">", "$self->{caseroot}/.env_mach_specific.sh" || $logger->logdie( "could not open .env_mach_specific.sh, $!");
     print $SHFILE $self->{shmodulecode};
     close $SHFILE;
 }

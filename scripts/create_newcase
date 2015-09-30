@@ -164,6 +164,7 @@ my $commandline = "create_newcase @ARGV";
 #-----------------------------------------------------------------------------------------------
 # Parse command-line options.
 my %opts = (
+    loglevel => "INFO",
     user_mods_dir => undef,
     );
 GetOptions(
@@ -175,16 +176,15 @@ GetOptions(
     "mpilib=s"                  => \$opts{'mpilib'},  
     "res=s"                     => \$opts{'res'},
     "h|help"                    => \$opts{'help'},
+    "loglevel=s"             => \$opts{'loglevel'},
     "mach=s"                    => \$opts{'mach'},
     "mach_dir=s"                => \$opts{'mach_dir'},
     "model=s"                   => \$opts{'model'},
     "pecount=s"                 => \$opts{'pecount'},
     "petype=s"                  => \$opts{'petype'},
     "pes_file=s"                => \$opts{'pes_file'}, 
-    "s|silent"                  => \$opts{'silent'},
     "testname=s"                => \$opts{'testname'},
     "testlist"                  => \$opts{'testlist'},
-    "v|verbose"                 => \$opts{'verbose'},
     "xmlmode=s"                 => \$opts{'xmlmode'},
     "nowarning"                 => \$opts{'nowarning'},
     "sharedlibroot=s"           => \$opts{'sharedlibroot'},
@@ -217,13 +217,21 @@ require Project::ProjectTools;
 require UserMods::UserModsTools;
 require Testing::TestLists; 
 require Module::ModuleLoader;
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+
+my $logger = Log::Log4perl::get_logger();
 
 # Global variables
 my $model;
 my $case;
 my $caseroot; # set in _check_input_options
-my $compset;  # set in _check_input_options
 my $grid;     # set in _check_input_options
+my $compset; # set in _check_input_options
 my $compiler; # set in _check_input_options
 my $confopts; # set in _set_confopts 
 my $mach_dir;
@@ -237,28 +245,21 @@ my $mpilib;
 my $header_file;
 my $sysmod;
 
-# Define 3 print levels:
-# 0 - only issue fatal error messages
-# 1 - only informs what files are created (default)
-# 2 - verbose
-my $print = 1;
-if ($opts{'silent'})  { $print = 0; }
-if ($opts{'verbose'}) { $print = 2; }
 
-if ($print>=2) { print "Setting configuration directory to $cfgdir\n"; }
+$logger->info( "Setting configuration directory to $cfgdir\n");
 
 #------------------------------------------------------------------------------------------
 # *** Check input
 #------------------------------------------------------------------------------------------
 # Note that check_input_options will use the global hash opts
-_check_input_options (\%opts);
+_check_input_options ();
 
 #------------------------------------------------------------------------------------------
 # *** Determine user_mods_dir ***
 #------------------------------------------------------------------------------------------
 my $user_mods_dir = $opts{'user_mods_dir'};
 if ($user_mods_dir) {
-    (-d "$user_mods_dir") or  die "** Cannot find user_mods_dir directory $user_mods_dir **"
+    (-d "$user_mods_dir") or  $logger->logdie ("** Cannot find user_mods_dir directory $user_mods_dir **");
 }
 
 #------------------------------------------------------------------------------------------
@@ -298,7 +299,7 @@ if ($opts{'user_compset'}) {
     $config->set('COMPSET',$compset_longname); 
 } else {
     if (! $opts{'compset'}) {
-	die "ERROR: must set the -compset option to create_newcase \n";
+	$logger->logdie ("ERROR: must set the -compset option to create_newcase ");
     }
     #TODO - add support_level to config and query it here
     ($pes_setby, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
@@ -315,7 +316,7 @@ foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_
 	$value =~ s/\$CIMEROOT/$cimeroot/;
 	$value =~ s/\$SRCROOT/$srcroot/;
 	$value =~ s/\$MODEL/$model/;
-	(-e $value) or die  "ERROR: $value cannot be found on disk \n";
+	(-e $value) or $logger->logdie(  "ERROR: $value cannot be found on disk \n");
 	$config->set($id, $value);
     }
 }
@@ -390,7 +391,7 @@ if ($opts{'testlist'}) {
 if (defined $opts{'user_grid_file'}){
     # Determine file specifying set of supported model grids
     $file = $opts{'user_grid_file'};
-    (-f "$file")  or  die "** ERROR create_newcase: cannot find user specified grids file $file **\n";
+    (-f "$file")  or  $logger->logdie ("** ERROR create_newcase: cannot find user specified grids file $file **\n");
     $config->set('GRIDS_SPEC_FILE', "$file");
 }
 my $grid_longname = ConfigCompsetGrid::getGridLongname($grid, $config); 
@@ -420,6 +421,7 @@ foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONF
 #     set the machine parameters, including compilers
 #------------------------------------------------------------------------------------------
 my $file = $config->get('CONFIG_DRV_FILE');
+
 if(defined($opts{compiler})){
     $config->set('COMPILER',$opts{compiler});
 }
@@ -427,7 +429,7 @@ if(defined($opts{mpilib})){
     $config->set('MPILIB',$opts{mpilib});
 }
 
-ConfigMachine::setMachineValues($file, $pes_setby, $machine, $print, $config);
+ConfigMachine::setMachineValues($file, $pes_setby, $machine, $config);
 
 # now potentially override with unsupported user config_pes.xml file.
 # TODO - put this change in for the new create_newcase changes - these were there in the old code
@@ -486,7 +488,7 @@ if ($rof_comp eq 'rtm') {
     my $map_lnd2rof = $config->get('LND2ROF_FMAPNAME');
     
     if (($lnd_grid ne $rof_grid) && ($map_lnd2rof eq 'idmap')) {
-	print "No lnd2rof_fmapname exists - RTM mode set to null \n";
+	$logger->warn("No lnd2rof_fmapname exists - RTM mode set to null \n");
 	$config->set('RTM_MODE', 'NULL');     
     }
 }
@@ -498,7 +500,7 @@ if ($run_refcase ne 'case.std') {
     $config->set('RUN_TYPE','hybrid');
     $config->set('GET_REFCASE','TRUE');
     my $fh_case = new IO::File;
-    $fh_case->open(">>$caseroot/README.case") or die "can't open file: README.case\n";
+    $fh_case->open(">>$caseroot/README.case") or $logger->logdie( "can't open file: README.case\n");
     my $fh_stdout = *STDOUT;
     my @file_handles = ($fh_stdout, $fh_case);
     foreach my $fhandle (@file_handles) {
@@ -509,13 +511,11 @@ if ($run_refcase ne 'case.std') {
 
 # Print compset/grid info
 my $file = $config->get('GRIDS_SPEC_FILE');
-ConfigCompsetGrid::printGridCompsetInfo($file, $print, $config);
+ConfigCompsetGrid::printGridCompsetInfo($file, $config);
 
-if ($print >= 2) { 
-    my $compset = $config->get('COMPSET');
-    print "Compset specifier: $compset.\n"; 
-    print "Grid is valid for this compset. \n"; 
-}
+$logger->info( "Compset specifier: $compset."); 
+$logger->info( "Grid is valid for this compset. "); 
+
 
 #------------------------------------------------------------------------------------------
 # *** Inform the user of the current support level for the compset they are attempting to run.
@@ -534,11 +534,10 @@ if ( $opts{'compset'} ) {
 my $banner = '-' x 80;
 # print "$banner\n";
 if ( defined($support_level) ) {
-   print "Compset and grid support levels for this case are:\n";
-   print "$support_level\n";
+   $logger->info( "Compset and grid support levels for this case are:");
+   $logger->info( "$support_level");
 }
-print "$testsforcase\n" if(defined $testsforcase);
-# print "$banner\n";
+$logger->info( "$testsforcase") if(defined $testsforcase);
 
 #------------------------------------------------------------------------------------------
 # *** Set the testname parameters
@@ -595,14 +594,14 @@ _create_caseroot($caseroot, $cimeroot, $config);
 if ( defined($user_mods_dir) ) {
    my $is_test = 0;
    if ($testname) {$is_test = 1;}
-   UserModsTools::apply_mods($user_mods_dir, $caseroot, $print, $is_test);
+   UserModsTools::apply_mods($user_mods_dir, $caseroot, $is_test);
 }
 
 #------------------------------------------------------------------------------------------
 # finish
 #------------------------------------------------------------------------------------------
-if ($print) {print "Successfully created the case for $machine \n";}
-if ($print>=2) { print "create_xml done.\n"; }
+$logger->info( "Successfully created the case for $machine ");
+$logger->info("create_xml done.");
 exit 0;
 
 #-----------------------------------------------------------------------------------------------
@@ -616,7 +615,7 @@ sub _check_input_options
 	if ($opts{'case'}) {
 	    $case = $opts{'case'};
 	} else {
-	    die "ERROR: create_newcase must include the input argument, -case \n";
+	    $logger->logdie("ERROR: create_newcase must include the input argument, -case ");
 	}
 	if ($opts{'model'}) {
 	    $model = $opts{'model'};
@@ -624,7 +623,7 @@ sub _check_input_options
 	    $model = 'cesm';
 	}
 	if (-d $case) {
-	    die "Case directory $case already exists \n";
+	    $logger->logdie("Case directory $case already exists ");
 	}
 	mkpath($case); 
 	$caseroot = abs_path("$case");
@@ -638,29 +637,28 @@ sub _check_input_options
 	    $compset = $opts{'compset'};
 	} else {
 	    if (!$opts{'user_compset'}) {
-		die "ERROR: create_newcase must include the input argument, -compset OR user_compset\n";
+		$logger->logdie ("ERROR: create_newcase must include the input argument, -compset OR user_compset");
 	    }
 	    if (!$opts{'user_pes_setby'}) {
-		die "ERROR: if the user_compset argument is specified, the user_pes_setby argument must also be specified";
+		$logger->logdie("ERROR: if the user_compset argument is specified, the user_pes_setby argument must also be specified");
 	    }
 	}
 	# Check for mandatory grid input
 	if ($opts{'res'}) {
 	    $grid = $opts{'res'};
 	} else {
-	    die "ERROR: create_newcase must include the input argument, -res\n";
+	    $logger->logdie ("ERROR: create_newcase must include the input argument, -res");
 	}
 	if($opts{mach_dir}){
 	    $mach_dir = $opts{mach_dir};
 	}else{
 	    $mach_dir => "$cimeroot/cime_config/${model}/machines",
 	}
-
 	# Check for manditory machine input
 	if ($opts{'mach'}) {
 	    $machine = $opts{'mach'};
 	} else {
-	    die "ERROR: create_newcase must include the input argument, -mach \n";
+	    $logger->logdie ("ERROR: create_newcase must include the input argument, -mach \n");
 	}
 	# Check if machine compiler option is given
 	if ($opts{'compiler'}) {
@@ -691,30 +689,30 @@ sub _set_confopts
 
     my ($coptions, $config) = @_;
 
-    print "  confopts = $coptions\n";
+    $logger->info( "  confopts = $coptions");
     if ($coptions =~ "_D" || $coptions =~ "_ED") {
 	$config->set('DEBUG', "TRUE");
-	print "    confopts DEBUG ON \n";
+	$logger->info("    confopts DEBUG ON ");
     }
     if ($coptions =~ "_E" || $coptions =~ "_DE") {
 	$config->set('USE_ESMF_LIB', "TRUE");
 	$config->set('COMP_INTERFACE', "ESMF");
-	print "    confopts COMP_INTERFACE ESMF set \n";
+	$logger->info("    confopts COMP_INTERFACE ESMF set ");
     }
     if ($coptions =~ "_P") {
 	my $popt = $coptions;
 	$popt =~ s/.*_P([A-Za-z0-9]*)_?.*/$1/;
 	$pecount = $popt;
-	print "    confopts pecount set to $pecount \n";
+	$logger->info("    confopts pecount set to $pecount");
     }
     if ($coptions =~ "_M") {
 	my $mopt = $coptions;
 	$mopt =~ s/.*_M([A-Za-z0-9\-]*)_?.*/$1/;
 	$mpilib = $mopt;
         if($mpilib =~ /\w+/){
-  	  print "    mpilib set to $mpilib \n";
+  	  $logger->info("    mpilib set to $mpilib ");
         }else{
-	  die "M option found but no MPILIB provided";
+	  $logger->logdie( "M option found but no MPILIB provided");
         }
     }
     if ($coptions =~ "_L") {
@@ -730,12 +728,12 @@ sub _set_confopts
 	if ($loptc =~ "s") {$lopts = 'nseconds'}
 	if ($loptc =~ "n") {$lopts = 'nsteps'}
 	if ($lopts =~ "unknown") {
-	    print "$0 _L confopts run length undefined, only y m d h s n allowed\n\n";
+	    $logger->info("$0 _L confopts run length undefined, only y m d h s n allowed");
 	    exit -1;
 	}
 	$config->set('STOP_OPTION', $lopts);
 	$config->set('STOP_N', $lopti);
-	print "    confopts run length set to $lopt . $lopts . $lopti \n";
+	$logger->info("    confopts run length set to $lopt . $lopts . $lopti ");
     }
     if ($coptions =~ "_N") {
 	my $nopt = $coptions;
@@ -747,19 +745,19 @@ sub _set_confopts
 	$config->set('NINST_GLC', $nopt);
 	$config->set('NINST_ROF', $nopt);
 	$config->set('NINST_WAV', $nopt);
-	print "    confopts instances set to $nopt \n";
+	$logger->info("    confopts instances set to $nopt ");
     }
     if ($coptions =~ "_CG") {
 	$config->set('CALENDAR', "GREGORIAN");
-	print "    confopts CALENDAR set to GREGORIAN \n";
+	$logger->info("    confopts CALENDAR set to GREGORIAN ");
     }
     if ($coptions =~ "_AOA") {
 	$config->set('AOFLUX_GRID', "atm");
-	print "    confopts AOFLUX_GRID set to atm \n";
+	$logger->info("    confopts AOFLUX_GRID set to atm ");
     }
     if ($coptions =~ "_AOE") {
 	$config->set('AOFLUX_GRID', "exch");
-	print "    confopts AOFLUX_GRID set to exch \n";
+	$logger->info("    confopts AOFLUX_GRID set to exch ");
     }
 }
 
@@ -800,7 +798,7 @@ sub _set_mpi_library
 	}
 	if (!$found) {
 	    $sysmod = "rm -rf $caseroot";
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 	    die "ERROR: mpilib setting of $mpilib does not match supported values of $mpilibs \n";
 	}
     } else {
@@ -811,7 +809,7 @@ sub _set_mpi_library
 	}
     }    
     $config->set('MPILIB', "$mpilib");
-    if ($print>=2) { print "Machine mpilib specifier: $mpilib.\n"; }
+    $logger->info( "Machine mpilib specifier: $mpilib.");
 }
 
 #-------------------------------------------------------------------------------
@@ -820,8 +818,10 @@ sub _create_caseroot
     # Create caseroot directory and all necessary sub directories
     my ($caseroot, $cimeroot, $config) = @_;
 
-    print "Creating $caseroot \n";
-    mkdir ("$caseroot");
+    $logger->info( "Creating $caseroot ");
+    if(! -e $caseroot){
+	mkdir ("$caseroot") or $logger->logdie("Failed to create $caseroot directory");
+    }
     chdir ("$caseroot");
 
     # Create relevant directories in $caseroot
@@ -832,18 +832,18 @@ sub _create_caseroot
 
     # Open a new README.case file in $caseroot
     my $file = "$caseroot/README.case";
-    my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
+    my $fh = IO::File->new($file, '>' ) or $logger->logdie( "can't open file: $file\n");
     print $fh "$commandline\n\n\n";
     $fh->close;
 
     # Copy README/disclaimer file 
     #TODO - this needs to be updated
     #$sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
-    #system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     _create_caseroot_sourcemods($config);  
     _create_caseroot_tools($config);
-    _create_caseroot_files($config, $print);
+    _create_caseroot_files($config);
 }
 
 #-------------------------------------------------------------------------------
@@ -871,10 +871,10 @@ sub _create_caseroot_tools
 	); 
     foreach my $file (@files) {
 	$sysmod = "cp -p $file $caseroot"; 
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
     $sysmod = "chmod u+w $caseroot/create_production_test";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);
@@ -883,7 +883,7 @@ sub _create_caseroot_tools
     if (! -f "$mkbatch") {
 	$mkbatch = "$machines_dir/mkbatch.$machine";
     } else {
-	print "\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"\n";
+	$logger->warn("\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"");
     }
     
     # Copy relevant files into $caseroot/Tools/
@@ -901,7 +901,7 @@ sub _create_caseroot_tools
     
     foreach my $file (@files) {
 	$sysmod = "cp -p $file $caseroot/Tools/. "; 
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
 }
 
@@ -923,7 +923,7 @@ sub _create_caseroot_files
     if (! -f "$mkbatch_file") {
 	$mkbatch_file = "$machines_dir/mkbatch.$machine";
     } else {
-	print "\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"\n";
+	$logger->warn("\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"\n");
     }
 
     # Create $caseroot/Buildconf/build.pl
@@ -934,11 +934,11 @@ sub _create_caseroot_files
     
     # Create $case.clean_build
     $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     
     # Create $case.submit
     $sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     # Create machine specific module files (env_mach_specific)
     my $dbug = $config->get("DEBUG");
@@ -954,57 +954,57 @@ sub _create_caseroot_files
 
     # Create $case.l_archive
     #$sysmod = "env USER=$username CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch_file";
-    #system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     # Create $caseroot preview_namelist file
     my $file = "${caseroot}/preview_namelists"; 
     $sysmod = "cp  $cimeroot/scripts/Tools/preview_namelists $file"; 
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     $sysmod = "chmod 755 $file";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+    system ($sysmod); if ($? == -1) {$logger->logdie ("$sysmod failed: $!");}
 
     if ( -e "$machines_dir/Depends.$machine" ) {
 	$sysmod = "cp $machines_dir/Depends.$machine $caseroot/";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
     if ( -e "$machines_dir/Depends.$compiler" ) {
 	$sysmod = "cp $machines_dir/Depends.$compiler $caseroot/";
-	system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
 
     # Create env_case.xml
     my $file = $config->get('CASEFILE_HEADERS');
-    (-f $file) or die "ERROR: create_newcase case header file $file does not exist \n";
+    (-f $file) or $logger->logdie( "ERROR: create_newcase case header file $file does not exist \n");
 
     $config->write_file("$caseroot/env_case.xml", "$file", $caseroot, $cimeroot );
-    if ($print) {print "Created $caseroot/env_case.xml \n";}
+    $logger->info( "Created $caseroot/env_case.xml ");
 
     # Create env_mach_pes.xml.xml
     $config->write_file("$caseroot/env_mach_pes.xml", "$file", $caseroot, $cimeroot );  
-    if ($print) {print "Created $caseroot/env_mach_pes.xml \n";}
+    $logger->info( "Created $caseroot/env_mach_pes.xml ");
 
     # Create env_build.xml
     $config->write_file("$caseroot/env_build.xml", "$file", $caseroot, $cimeroot );
-    if ($print) {print "Created $caseroot/env_build.xml \n";}
+    $logger->info( "Created $caseroot/env_build.xml ");
 
     # Create env_run.xml
     $config->write_file("$caseroot/env_run.xml", "$file", $caseroot, $cimeroot );
-    if ($print) {print "Created $caseroot/env_run.xml \n";}
+    $logger->info( "Created $caseroot/env_run.xml ");
 
     # Create env_archive.xml
     $config->write_file("$caseroot/env_archive.xml", "$file", $caseroot, , $cimeroot, 
 			"$cimeroot/cime_config/${model}/archive.xml");
-    if ($print) {print "Created $caseroot/env_archive.xml \n";}
+    $logger->info( "Created $caseroot/env_archive.xml ");
 
     # copy env_case.xml in to locked files
     $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
-    system($sysmod) == 0 or die "ERROR: create_newcase $sysmod failed: $?\n";
-    if ($print) {print "Locking file $caseroot/env_case.xml \n";}
+    system($sysmod) == 0 or $logger->logdie( "ERROR: create_newcase $sysmod failed: $?");
+    $logger->info( "Locking file $caseroot/env_case.xml ");
 
     # also create the CaseStatus file in $caseroot
     my $file = "$caseroot/CaseStatus";
-    my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
+    my $fh = IO::File->new($file, '>' ) or $logger->logdie( "can't open file: $file\n");
     my $time = time;
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
     $year = 1900+$year;
@@ -1037,7 +1037,7 @@ sub _create_caseroot_sourcemods
 	if ($comp eq 'cism') {
 	    mkpath("$caseroot/SourceMods/src.cism/glimmer-cism");
 	    open(README, ">", "$caseroot/SourceMods/src.$comp/README") or
-		die "cannot open > $caseroot/SourceMods/src.cism/README: $!";
+		$logger->logdie( "cannot open > $caseroot/SourceMods/src.cism/README: $!");
 	    print README
 		"Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
 		"This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism.\n\n",
@@ -1070,15 +1070,15 @@ sub _set_test
 	    $config->set($id, $value);
 	}
     } else {
-	print "_set_test: no match for test $testname - possible testnames are \n";
+	$logger->warn("_set_test: no match for test $testname - possible testnames are:");
 	@nodes = $xml->findnodes(".//test");
 	foreach my $node (@nodes) {
 	    my $name = $node->getAttribute('NAME');
 	    my @child_nodes = $node->findnodes('./DESC');
 	    my $desc = $child_nodes[0]->textContent();
-	    print " $name ($desc) \n" ;
+	    $logger->warn( " $name ($desc) ") ;
 	}
-	die "_set_test: exiting\n"; 
+	$logger->logdie( "_set_test: exiting"); 
     }
 }
 
