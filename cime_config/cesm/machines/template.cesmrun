@@ -477,7 +477,10 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    if($config{DOUT_S} eq 'FALSE' && $config{RESUBMIT} > 0){
+#
+# Mira requires special logic
+#
+    if(($config{DOUT_S} eq 'FALSE' && $config{RESUBMIT} > 0) || ($config{MACH} eq "mira" && $config{DOUT_S} eq "TRUE")) {
 	my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
