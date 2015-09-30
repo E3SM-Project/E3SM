@@ -381,6 +381,9 @@ value of RUN_STARTDATE will be date2.
 <!-- GLC-only compsets -->
 <COMPSET sname="MPASLI_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLI_SWAV</COMPSET>
 
+<!-- OCN + GLC Only Compsets -->
+<COMPSET sname="MPAS_LI_O_TEST"   alias="MPAS_LI_O_TEST" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_MPASLI_SWAV</COMPSET>
+
 <!-- Stubs/Dead compsets -->
 
 <COMPSET sname="S" alias="S">2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV </COMPSET>
@@ -1602,6 +1605,16 @@ DOCN%COPY => docn copy mode
 <OCN_NCPL compset="_SLND.*SOCN.*_MPASLI">1</OCN_NCPL>
 <GLC_NCPL compset="_SLND.*SOCN.*_MPASLI">1</GLC_NCPL>
 <ROF_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ROF_NCPL>
+
+<!-- coupler intervals for MPASLI-ONLY compset -->
+<NCPL_BASE_PERIOD compset="_DATM.*_SLND.*MPASO.*_MPASLI">day  </NCPL_BASE_PERIOD>
+<ATM_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ATM_NCPL>
+<LND_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</LND_NCPL>
+<ICE_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ICE_NCPL>
+<OCN_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</OCN_NCPL>
+<GLC_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">1</GLC_NCPL>
+<ROF_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ROF_NCPL>
+
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
