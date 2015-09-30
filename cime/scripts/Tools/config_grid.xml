@@ -110,6 +110,9 @@ Each grid is associated with five names
 <!--- mpasli grids -->
 <GRID sname="0.9x1.25_gx1v6_gis20"    alias="f09_g16_g"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.gis20km_w%null</GRID>
 
+<!-- mpasli + mpas-o grids -->
+<GRID sname="T62_mpas120_gis20" alias="T62_m120_g" compset="MPASO.*_MPASLI">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%mpas.gis20km_w%null</GRID>
+
 <!-- new runoff grids for data runoff model DROF -->
 
 <GRID sname="T31_gx3v7_rx1"              alias="T31_g37_rx1"      compset="_DROF">a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</GRID> <!-- back compat -->
@@ -1133,6 +1136,10 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpas120_aave.121116.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap glc_grid="mpas.gis20km" ocn_grid="mpas120">
+  <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_mpas120_nnsmooth_150924.nc</GLC2OCN_RMAPNAME>
 </gridmap>
 
 <gridmap atm_grid="T62" ocn_grid="oEC60to30">
