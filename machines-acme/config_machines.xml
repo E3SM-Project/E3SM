@@ -847,7 +847,7 @@
          <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
          <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+         <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
          <BATCHQUERY>qstat</BATCHQUERY>
          <BATCHSUBMIT>sbatch</BATCHSUBMIT>
          <BATCHREDIRECT></BATCHREDIRECT>
