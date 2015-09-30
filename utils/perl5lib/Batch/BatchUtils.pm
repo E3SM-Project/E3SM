@@ -437,7 +437,7 @@ sub getBatchUtils
     my $machine = $params{'machine'};
     if(!defined $machine)
     {
-	die "BatchUtilsFactory: machine must be defined!";
+	$logger->logdie ("BatchUtilsFactory: machine must be defined!");
     }
     
     # Find the batch system type based on the machine. 
@@ -577,7 +577,7 @@ sub submitSingleJob()
     my $workflowhostfile = "./workflowhostfile";
     if(! -e $workflowhostfile)
     {
-        open (my $W, ">", $workflowhostfile) or die "could not open workflow host file, $!";
+        open (my $W, ">", $workflowhostfile) or $logger->logdie ("could not open workflow host file, $!");
         if(defined $ENV{'HOST'})
         {
             print $W $ENV{'HOST'} . "\n";
@@ -639,7 +639,7 @@ sub doResubmit()
         
         my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname";
         
-        qx($runcmd) or die "coult not exec command $runcmd, $!";
+        qx($runcmd) or $logger->logdie ("could not exec command $runcmd, $!");
 
         #chdir $owd;
 	$self->_decrementResubmitCounter(\%config);
@@ -659,7 +659,7 @@ sub doResubmit()
         
         my $runcmd = "ssh cooleylogin1 $submitstuff";
 	
-        qx($runcmd) or die " could not exec cmd $runcmd, $! $?";
+        qx($runcmd) or $logger->logdie (" could not exec cmd $runcmd, $! $?");
         
     }
 
@@ -676,7 +676,7 @@ sub doResubmit()
 	
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         my $runcmd = "ssh cooleylogin1 $submitstuff";
-        qx($runcmd) or die "could not exec cmd $runcmd, $!";
+        qx($runcmd) or $logger->logdie( "could not exec cmd $runcmd, $!");
 	$self->_decrementResubmitCounter(\%config);
     }
 
@@ -706,7 +706,7 @@ sub doResubmit()
             $runhost = "cetuslac1";
         }
         my $runcmd = "ssh cooleylogin1 ssh $runhost $submitstuff ";
-        qx($runcmd) or die "could not exec cmd $runcmd, $!";
+        qx($runcmd) or $logger->logdie( "could not exec cmd $runcmd, $!");
         if($?)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
@@ -759,14 +759,14 @@ sub getSubmitArguments()
 
         my $argFlag = $dependarg->getAttribute('flag');
         my $argName = $dependarg->getAttribute('name');
-        #print "flag: $argFlag\n";
+        $logger->debug( "flag: $argFlag");
         if(defined $argName && length($argName) > 0)
         {
             # Get the actual data field from the BatchMaker class. 
             my $field = $batchmaker->getField($argName);
             if(! defined $field)
             {
-                die "$argName not defined! Aborting...";
+                $logger->logdie ("$argName not defined! Aborting...");
             }
             else
             {
