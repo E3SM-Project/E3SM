@@ -1020,7 +1020,7 @@ sub ParseTestName
 
   # get configuration options for the test
   # keep the underscore at the start of the string
-  my @conftest = split(/(_)/, $testhash->{'testname'}, 3);
+  my @conftest = split(/(_)/, $testhash->{'testname'});
   $testhash->{'fullname'} = $testhash->{'testname'};
   $testhash->{'testname'} = shift @conftest;
   foreach my $coptions (@conftest){
