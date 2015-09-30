@@ -238,62 +238,17 @@ sub _decrementResubmitCounter()
 #==============================================================================
 # Base class doResubmit
 # Check to see if the next set of jobs needs to be submitted.  
-#==============================================================================
+#======================================================
+
 sub doResubmit()
 {
     #my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
     my ($self, $scriptname) = @_;
 
-    my %config = %{$self->{caseconfig}};
-    my $lastjobname;
-    if($config{DOUT_S} eq 'TRUE')
-    {
-        $lastjobname =  "st_archive";
-    }
-    else
-    {
-        $lastjobname = "run";
-    }
-    #my $scriptsuffix = (split(/\./, $scriptname))[-1];
-    print "in doResubmit: lastjobname: $lastjobname\n";
-    if($config{'RESUBMIT'} > 0 && $scriptname =~ /$lastjobname/)
-    {
-        print "resubmitting jobs...\n";
-        $self->dependencyCheck($scriptname);
-        $self->submitJobs($scriptname);
-	$self->_decrementResubmitCounter(\%config);
-    }
-    else
-    {
-        return;
-    }
-	
-    ## If the islastjob flag is true, and resubmit is > 0,  do the dependency
-    ## check and job resubmission again 
-    #if($islastjob eq 'TRUE' && $resubmit > 0 && defined $sta_ok)
-    #{
-	#    my %config = %{$self->{caseconfig}};
-	#    $self->dependencyCheck("sta_ok");
-	#    $self->submitJobs("sta_ok");		
-	#    my $newresubmit = $config{'RESUBMIT'} - 1;
-	#    my $owd = getcwd;
-	#    chdir $config{'CASEROOT'};
-	#    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
-	#	`./xmlchange CONTINUE_RUN=TRUE`;
-	#    }
-
-	#    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
-	#    if($?)
-	#    {
-	#    	print "could not execute ./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit\n";
-	#    }
-	#    chdir $owd;
-    #}
-    #else    
-    #{
-    #    return;
-    #}
-	
+    print "resubmitting jobs...\n";
+    $self->dependencyCheck($scriptname);
+    $self->submitJobs($scriptname);
+    $self->_decrementResubmitCounter($self->{config});
 }
 
 #==============================================================================

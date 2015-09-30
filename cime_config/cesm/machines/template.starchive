@@ -31,12 +31,14 @@ resubmitCheck();
 
 sub resubmitCheck()
 {
-    my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
-    my $cwd = getcwd;
-    chdir $config{CASEROOT};
-    my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.st_archive";
-    print "running resubmit check $resubmitcommand\n";
-    qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
-    chdir $cwd;
+    if($config{RESUBMIT} > 0){
+	my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+	my $cwd = getcwd;
+	chdir $config{CASEROOT};
+	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.st_archive";
+	print "running resubmit check $resubmitcommand\n";
+	qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
+	chdir $cwd;
+    }
 }
 	
