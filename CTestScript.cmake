@@ -59,6 +59,8 @@ elseif (HOSTNAME MATCHES "^edison" OR
         HOSTNAME MATCHES "^hopper" OR
         HOSTNAME MATCHES "^nid")
     set (HOSTNAME_ID "nersc")
+elseif (HOSTNAME MATCHES "^hobart")
+    set (HOSTNAME_ID "cgd")
 else ()
     set (HOSTNAME_ID "unknown")
 endif ()
