@@ -38,19 +38,20 @@ sub main
     # Get options, if any..
     &opts();
     # Check the case only once..
-    print "checking the case..\n";
-    open(my $CHECKCASE, "-|", "./check_case");
-    while(<$CHECKCASE>)
-    {
-	print "$_";
+    if(!$opts{resubmit}){
+	print "checking the case..\n";
+	open(my $CHECKCASE, "-|", "./check_case");
+	while(<$CHECKCASE>)
+	{
+	    print "$_";
+	}
+	close $CHECKCASE;
+	if($?)
+	{
+	    print "check_case failed\n";
+	    exit(-1);
+	}
     }
-    close $CHECKCASE;
-    if($?)
-    {
-        print "check_case failed\n";
-        exit(-1);
-    }
-    
     my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
 						 compiler => $compiler, 
 						 mpilib   => $mpilib, 

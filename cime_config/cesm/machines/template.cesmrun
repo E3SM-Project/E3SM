@@ -62,6 +62,7 @@ sub main
 	DoDataAssimilation($config{RUNDIR},$config{CASEROOT},$config{DATA_ASSIMILATION},
 	    $config{DATA_ASSIMILATION_SCRIPT},$LID,$config{LOGDIR});
     }
+
     resubmitCheck();
     exit(0);
 }
@@ -476,14 +477,18 @@ sub appendCaseStatus
 # check to see if we need to do resubmission from this particular job,
 sub resubmitCheck()
 {
-    my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
-    
-    my $cwd = getcwd;
-    chdir $config{'CASEROOT'};
-    my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.run";
-    print "running resubmit check $resubmitcommand\n";
-    qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
-    chdir $cwd;
+#
+# Mira requires special logic
+#
+    if(($config{DOUT_S} eq 'FALSE' && $config{RESUBMIT} > 0) || ($config{MACH} eq "mira" && $config{DOUT_S} eq "TRUE")) {
+	my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+	my $cwd = getcwd;
+	chdir $config{'CASEROOT'};
+	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.run";
+	print "running resubmit check $resubmitcommand\n";    
+	qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
+	chdir $cwd;
+    }
 }
 
 sub DoDataAssimilation
