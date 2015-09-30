@@ -16,18 +16,18 @@ SYNOPSIS
   preview_namelists  [options]
 
 OPTIONS
-  -verbose       If this is set, components (POP for now) will write out 
-                 more verbose output regarding its namelist creation
+  -loglevel  Controls the level of output from the script, 5 levels supported
+                  DEBUG (most verbose), INFO (default), WARN, ERROR, FATAL (silent)
   -dryrun    Do not attempt to load modules or create directories
 
   -help [or -h]  Print usage to STDOUT (optional).
 EOF
 } 
 
-my %opts = ( verbose => undef);
+my %opts = ( loglevel => "INFO");
 
 GetOptions(
-    "verbose" => \$opts{'verbose'},
+    "loglevel=s" => \$opts{'loglevel'},
     "dryrun" => \$opts{dryrun},
     "h|help"  => \$opts{'help'},
     )  or usage();
@@ -81,12 +81,11 @@ my $CONFIG_GLC_DIR	= dirname($CONFIG_GLC_FILE);
 my $CONFIG_WAV_DIR	= dirname($CONFIG_WAV_FILE);
 my $CONFIG_ROF_DIR	= dirname($CONFIG_ROF_FILE);
 my $CONFIG_DRV_DIR	= dirname($CONFIG_DRV_FILE);
-
+my $logger;
 my $dryrun = $opts{dryrun};
 $dryrun = 1 if ($TESTCASE eq 'SBN');
 
 if($dryrun){
-
     # DO not load modules, only create rundir 
     my $sysmod = "mkdir -p $RUNDIR";
     if(system($sysmod) != 0) {
@@ -107,7 +106,16 @@ if($dryrun){
     my $perl5lib = "$CIMEROOT/utils/perl5lib";
     push(@INC, $perl5lib);
     require Module::ModuleLoader;
+    require Log::Log4perl;
 
+    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+    Log::Log4perl->easy_init({level=>$level,
+			      layout=>'%m%n'});
+
+    $logger = Log::Log4perl::get_logger();
+
+
+    
     my $moduleloader = new Module::ModuleLoader(machine		=> "$MACH", 
 						compiler	=> "$COMPILER",
 						mpilib		=> "$MPILIB", 
@@ -126,8 +134,8 @@ if($dryrun){
     my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
     foreach my $dir (@dirs) {
 	if (! -d $dir) {
-	    my $sysmod = "mkdir -p $dir";
-	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	    mkpath($dir, 0755) or $logger->logdie("Could not create directory $dir");
+	    $logger->debug("Created directory $dir");
 	}
     }
     
@@ -135,13 +143,13 @@ if($dryrun){
     foreach my $model ( @models ){
 	my $objdir = "$EXEROOT/$model/obj"; 
 	if (! -d $objdir) {
-	    my $sysmod = "mkdir -p $objdir";
-	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	    mkpath($objdir, 0755) or $logger->logdie("Could not create directory $objdir");
+	    $logger->debug("Created directory $objdir");
 	}
 	my $libdir = "$EXEROOT/$model";
 	if (! -d $libdir) {
-	    my $sysmod = "mkdir -p $libdir";
-	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	    mkpath($libdir, 0755) or $logger->logdie("Could not create directory $libdir");
+	    $logger->debug("Created directory $libdir");
 	}
     }
 }
@@ -162,13 +170,14 @@ my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_IC
 foreach my $model (@modelsorder) {
     my $comp = $models{$model};
     my $file = "$dirs{$model}/buildnml";
-    print "     Calling $file \n";
-    if ($opts{'verbose'}) {
-	my $sysmod = "env PREVIEW_NML=1 $file $CASEROOT";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+    $logger->info( "     Calling $file ");
+#   This change requires a tag for all components, defering for the moment
+#    qx( $file -loglevel $opts{loglevel} $CASEROOT );
+
+    if ($opts{loglevel} eq "DEBUG") {
+       qx(env PREVIEW_NML=1 $file $CASEROOT);
     } else {
-	my $sysmod = "$file $CASEROOT";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+       qx($file $CASEROOT);
     }
 }
 
@@ -178,28 +187,50 @@ foreach my $model (@modelsorder) {
 
 my $docdir = "$CASEROOT/CaseDocs";
 if (! -d "$docdir") {
-    my $sysmod = "mkdir -p $docdir";
-    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
-    open my $fileh, ">", "$docdir/README" or die $!;
+    mkpath($docdir, "0755") or $logger->logdie("Could not create directory $docdir");
+    $logger->debug("Created directory $docdir");
+    open my $fileh, ">", "$docdir/README" or $logger->logdie("Failed to open $docdir/README: $!");
     print $fileh " CESM Resolved Namelist Files";
     print $fileh "   For documentation only DO NOT MODIFY";
     close $fileh;
 }
 
-opendir(RD,$RUNDIR);
+opendir(RD,$RUNDIR) or $logger->logdie("Failed to open directory $RUNDIR to read $!");
 my @runfiles = readdir(RD);
 closedir(RD);
 
 my $sysmod = "chmod 666 $docdir/*";
-system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+system($sysmod) == 0 or $logger->logdie ("ERROR preview_namelists: $sysmod failed: $?");
 
 foreach my $rfile (@runfiles){
-    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /_in_?[0-9]?$/);
-    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /modelio/);
-    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /streams.*txt/);
-    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /stxt$/);
-    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /maps.rc$/);
-    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /cism.config/);
+    my $copied=0;
+    if($rfile =~ /_in_?[0-9]?$/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /modelio/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /streams.*txt/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /stxt$/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /maps.rc$/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /cism.config/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir"); 
+	$copied = 1;
+    }
+    
+    $logger->debug("Copied $rfile to $docdir") if($copied==1);
+
 }
 
 # copy over chemistry mechanism docs if they exist
@@ -208,12 +239,13 @@ if ( -e "$CASEBUILD/camconf" ) {
     my @chemfiles = grep(/chem_mech/,readdir(CC));
     closedir(CC);
     foreach(@chemfiles){
-	copy("$CASEBUILD/camconf/$_","$docdir/$_");
+	copy("$CASEBUILD/camconf/$_","$docdir/$_") or $logger->logdie("Could not copy $_ to $docdir"); 
+	$logger->debug("Copied $CASEBUILD/camconf/$_ to $docdir") ;
     }
 }
 
 my $sysmod = "chmod 444 $docdir/*";
-system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+system($sysmod) == 0 or $logger->logdie("ERROR preview_namelists: $sysmod failed: $?");
 
 exit (0);
 

@@ -19,10 +19,18 @@ OPTIONS
      -output_format <value> Output format can be make or cmake.
                           default: make
      -help [or -h]        Print usage to STDOUT (optional).
-     -silent [or -s]      Turns on silent mode - only fatal messages issued (optional).
-     -verbose [or -v]     Turn on verbose echoing of settings made by create_newcase (optional).
+     -loglevel
      
 EXAMPLES
 
-  ./configure -mach bluefire -compiler ibm
-  ./configure -mach generic_CNL -compiler cray
+  ./configure -mach bluefire -compiler ibm -cimeroot /path/to/cime
+
+
+This tool is used to create Macros files to build CESM tools on supported machines.
+It will create a Macros file in make or cmake format along with the module support
+for the specified or default compiler.   It will also create two files 
+.env_mach_specific.csh
+.env_mach_specific.sh
+
+Before you try to run make you should source the file above appropriate for your shell
+this will set the proper environment for supported systems which use modules. 
