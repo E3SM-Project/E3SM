@@ -8,5 +8,6 @@
 #include "Registry_test_compute_interval.xml"
 #include "Registry_high_frequency_output.xml"
 #include "Registry_time_filters.xml"
+#include "Registry_lagrangian_particle_tracking.xml"
 #include "Registry_eliassen_palm.xml"
 #include "Registry_mixed_layer_depths.xml"
