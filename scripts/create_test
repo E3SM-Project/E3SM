@@ -709,7 +709,9 @@ sub checkOptions
     my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/CCSM_CPRNC");
     my $value = $nodes[0]->textContent();
     if ($value =~/^(.*)\$ENV{(.*)}(.*)$/){
-	$value = $1.$ENV{$2}.$3;
+	if(defined $ENV{$2}){
+	    $value = $1.$ENV{$2}.$3;
+	}
     }
     $opts{'cprnc'} = $value;
 

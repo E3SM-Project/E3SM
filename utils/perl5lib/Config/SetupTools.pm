@@ -76,8 +76,11 @@ sub expand_xml_var
 
     if($value =~ /\$ENV\{(.*)\}/){
 	my $subst = $ENV{$1};
-	$logger->logdie ("No environment variable found for $1") unless(defined $subst);
-	$value =~ s/\$ENV\{*${1}\}/$subst/g;
+	if(defined $subst){
+	    $value =~ s/\$ENV\{*${1}\}/$subst/g;
+	}else{
+	    $logger->warn ("No environment variable found for $1");
+	}
     }
     if ($value =~ /\$\{*([\w_]+)}*(.*)$/) {
 	my $found_xml;
