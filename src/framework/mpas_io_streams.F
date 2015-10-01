@@ -75,12 +75,13 @@ module mpas_io_streams
    contains
 
 
-   subroutine MPAS_createStream(stream, fileName, ioFormat, ioDirection, precision, &
+   subroutine MPAS_createStream(stream, ioContext, fileName, ioFormat, ioDirection, precision, &
                                 clobberRecords, clobberFiles, truncateFiles, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(out) :: stream
+      type (mpas_io_context_type), pointer :: ioContext
       character (len=*), intent(in) :: fileName
       integer, intent(in) :: ioFormat
       integer, intent(in) :: ioDirection
@@ -95,7 +96,7 @@ module mpas_io_streams
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
 
-      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, clobber_file=clobberFiles, truncate_file=truncateFiles, &
+      stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, ioContext, clobber_file=clobberFiles, truncate_file=truncateFiles, &
                                          ierr=io_err) 
       !
       ! Catch a few special errors
@@ -3745,13 +3746,14 @@ module mpas_io_streams
    end subroutine MPAS_readStreamAtt_text
 
 
-   subroutine MPAS_writeStreamAtt_0dInteger(stream, attName, attValue, ierr)
+   subroutine MPAS_writeStreamAtt_0dInteger(stream, attName, attValue, syncVal, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       character (len=*), intent(in) :: attName
       integer, intent(in) :: attValue
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -3766,20 +3768,21 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
    end subroutine MPAS_writeStreamAtt_0dInteger
 
 
-   subroutine MPAS_writeStreamAtt_1dInteger(stream, attName, attValue, ierr)
+   subroutine MPAS_writeStreamAtt_1dInteger(stream, attName, attValue, syncVal, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       character (len=*), intent(in) :: attName
       integer, dimension(:), intent(in) :: attValue
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -3794,20 +3797,21 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
    end subroutine MPAS_writeStreamAtt_1dInteger
 
 
-   subroutine MPAS_writeStreamAtt_0dReal(stream, attName, attValue, ierr)
+   subroutine MPAS_writeStreamAtt_0dReal(stream, attName, attValue, syncVal, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       character (len=*), intent(in) :: attName
       real (kind=RKIND), intent(in) :: attValue
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -3822,20 +3826,21 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
    end subroutine MPAS_writeStreamAtt_0dReal
 
 
-   subroutine MPAS_writeStreamAtt_1dReal(stream, attName, attValue, ierr)
+   subroutine MPAS_writeStreamAtt_1dReal(stream, attName, attValue, syncVal, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       character (len=*), intent(in) :: attName
       real (kind=RKIND), dimension(:), intent(in) :: attValue
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -3850,20 +3855,21 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
    end subroutine MPAS_writeStreamAtt_1dReal
 
 
-   subroutine MPAS_writeStreamAtt_text(stream, attName, attValue, ierr)
+   subroutine MPAS_writeStreamAtt_text(stream, attName, attValue, syncVal, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       character (len=*), intent(in) :: attName
       character (len=*), intent(in) :: attValue
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: io_err
@@ -3878,7 +3884,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 

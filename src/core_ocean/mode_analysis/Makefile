@@ -1,16 +1,15 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_analysis_core.o \
-       mpas_ocn_core_interface.o
+OBJS = mpas_ocn_analysis_mode.o
 
-all: $(OBJS)
+all: analysis_mode
 
-mpas_ocn_core_interface.o: mpas_ocn_analysis_core.o
+analysis_mode: $(OBJS)
 
-mpas_ocn_analysis_core.o:
+mpas_ocn_analysis_mode.o:
 
 clean:
-	$(RM) *.o *.i *.mod *.f90 libdycore.a
+	$(RM) *.o *.i *.mod *.f90
 
 .F.o:
 	$(RM) $@ $*.mod

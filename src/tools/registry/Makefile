@@ -11,7 +11,7 @@ ezxml:
 	(cd $(EZXML_PATH); $(MAKE) CFLAGS="$(CFLAGS) $(TOOL_TARGET_ARCH)")
 
 parse: ezxml $(OBJS)
-	$(CC) $(CPPFLAGS) $(EZXML_PATH)/ezxml.o  -I$(EZXML_PATH) -o $@ $(OBJS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(EZXML_PATH)/ezxml.o  -I$(EZXML_PATH) -o $@ $(OBJS)
 
 clean:
 	$(RM) *.o parse

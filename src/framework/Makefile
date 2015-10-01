@@ -1,6 +1,7 @@
 .SUFFIXES: .F .c .o
 
 DEPS := $(shell find ../core_$(CORE)/ -type f -name "*.xml" ! -name "*processed.xml")
+TYPE_DEPS := $(shell find . -type f -name "*_types.inc")
 
 OBJS = mpas_kind_types.o \
        mpas_framework.o \
@@ -45,6 +46,7 @@ mpas_framework.o: mpas_dmpar.o \
                   mpas_timer.o \
                   mpas_sort.o \
                   mpas_io_units.o \
+                  mpas_block_decomp.o \
                   mpas_stream_manager.o \
                   mpas_c_interfacing.o
 
@@ -52,11 +54,11 @@ mpas_constants.o: mpas_kind_types.o
 
 mpas_attlist.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o
 
-mpas_derived_types.o: mpas_kind_types.o mpas_constants.o
+mpas_derived_types.o: mpas_kind_types.o mpas_constants.o $(TYPE_DEPS)
 
 mpas_domain_routines.o: mpas_derived_types.o mpas_pool_routines.o
 
-mpas_field_routines.o: mpas_derived_types.o
+mpas_field_routines.o: mpas_derived_types.o duplicate_field_array.inc duplicate_field_scalar.inc
 
 mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o mpas_dmpar.o
 
@@ -72,13 +74,13 @@ mpas_timekeeping.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o mpas_
 
 mpas_timer.o: mpas_kind_types.o mpas_io_units.o mpas_dmpar.o
 
-mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o
+mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_dmpar.o
 
 mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_io_units.o mpas_block_decomp.o mpas_stream_manager.o mpas_decomp.o $(DEPS)
 
 mpas_io.o: mpas_dmpar.o mpas_io_units.o mpas_attlist.o
 
-mpas_io_streams.o: mpas_attlist.o mpas_derived_types.o mpas_timekeeping.o mpas_io.o mpas_io_units.o mpas_pool_routines.o $(DEPS)
+mpas_io_streams.o: mpas_attlist.o mpas_derived_types.o mpas_timekeeping.o mpas_io.o mpas_io_units.o mpas_pool_routines.o add_field_indices.inc $(DEPS)
 
 mpas_bootstrapping.o: mpas_derived_types.o mpas_dmpar.o mpas_block_decomp.o mpas_block_creator.o mpas_sort.o mpas_timekeeping.o mpas_io_streams.o mpas_io_units.o mpas_stream_manager.o random_id.o $(DEPS)
 

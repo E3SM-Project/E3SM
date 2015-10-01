@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceTracerFlux, tend, err)!{{{
+   subroutine ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, surfaceTracerFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -86,7 +86,7 @@ contains
         surfaceTracerFlux !< Input: surface tracer fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-        transmissionCoefficients !< Input: Coefficients for the application of surface fluxes
+        fractionAbsorbed !< Input: Coefficients for the application of surface fluxes
 
       !-----------------------------------------------------------------
       !
@@ -132,10 +132,10 @@ contains
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
         do k = 1, maxLevelCell(iCell)
-          remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
+          remainingFlux = remainingFlux - fractionAbsorbed(k, iCell)
 
           do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * transmissionCoefficients(k, iCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * fractionAbsorbed(k, iCell)
           end do
         end do
 

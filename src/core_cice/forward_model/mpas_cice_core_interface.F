@@ -43,6 +43,7 @@ module cice_core_interface
       core % get_mesh_stream => cice_get_mesh_stream
       core % setup_immutable_streams => cice_setup_immutable_streams
       core % setup_derived_dimensions => cice_setup_derived_dimensions
+      core % setup_decomposed_dimensions => cice_setup_decomposed_dimensions
       core % setup_block => cice_setup_block
       core % setup_namelist => cice_setup_namelists
 
@@ -85,7 +86,7 @@ module cice_core_interface
    !>   *not* allocated until after this routine is called.
    !
    !-----------------------------------------------------------------------
-   function cice_setup_packages(configPool, packagePool) result(ierr)!{{{
+   function cice_setup_packages(configPool, packagePool, iocontext) result(ierr)!{{{
 
       use mpas_derived_types
 
@@ -93,6 +94,8 @@ module cice_core_interface
 
       type (mpas_pool_type), intent(inout) :: configPool
       type (mpas_pool_type), intent(inout) :: packagePool
+      type (mpas_io_context_type), intent(inout) :: iocontext
+
       integer :: ierr
 
       ierr = 0

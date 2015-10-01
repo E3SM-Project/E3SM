@@ -39,6 +39,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_begin_iteration, &
               MPAS_stream_mgr_get_next_stream, &
               MPAS_stream_mgr_get_next_field, &
+              MPAS_stream_mgr_stream_exists, &
               MPAS_get_stream_filename, &
               MPAS_build_stream_filename
 
@@ -95,13 +96,14 @@ module mpas_stream_manager
     !>  clock and a pool from which fields may be drawn and added to streams.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_init(manager, clock, allFields, allPackages, allStructs, ierr)!{{{
+    subroutine MPAS_stream_mgr_init(manager, ioContext, clock, allFields, allPackages, allStructs, ierr)!{{{
 
         implicit none
 
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_init'
 
         type (MPAS_streamManager_type), pointer :: manager
+        type (MPAS_IO_context_type), pointer :: ioContext
         type (MPAS_Clock_type), pointer :: clock
         type (MPAS_Pool_type), pointer :: allFields
         type (MPAS_Pool_type), pointer :: allPackages
@@ -117,6 +119,7 @@ module mpas_stream_manager
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
 
         allocate(manager)
+        manager % ioContext => ioContext
         manager % allFields => allFields
         manager % allPackages => allPackages
         manager % allStructs => allStructs
@@ -617,44 +620,44 @@ module mpas_stream_manager
             else if (poolItr % memberType == MPAS_POOL_FIELD) then
                 if (poolItr % dataType == MPAS_POOL_REAL) then
                     if (poolItr % nDims == 0) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real0DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real1DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real2DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real3DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real3DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 4) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real4DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real4DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 5) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, real5DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, real5DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_INTEGER) then
                     if (poolItr % nDims == 0) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int0DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int1DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int1DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 2) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int2DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int2DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 3) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, int3DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, int3DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 else if (poolItr % dataType == MPAS_POOL_CHARACTER) then
                     if (poolItr % nDims == 0) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char0DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, char0DField % fieldName, packages=packages, ierr=ierr)
                     else if (poolItr % nDims == 1) then
-                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField)
+                        call mpas_pool_get_field(fieldPool, poolItr % memberName, char1DField, 1)
                         call mpas_stream_mgr_add_field(manager, streamID, char1DField % fieldName, packages=packages, ierr=ierr)
                     end if
                 end if
@@ -2479,7 +2482,7 @@ module mpas_stream_manager
             ! Build stream from pools of fields and attributes
             !
             allocate(stream % stream)
-            call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_WRITE,  &
+            call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE,  &
                                    precision=stream % precision, clobberRecords=clobberRecords, &
                                    clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
@@ -2565,7 +2568,7 @@ module mpas_stream_manager
                 !
                 ! Build new stream from pools of fields and attributes
                 !
-                call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_WRITE, &
+                call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_WRITE, &
                                        precision=stream % precision, clobberRecords=clobberRecords, &
                                        clobberFiles=clobberFiles, truncateFiles=truncateFiles, ierr=local_ierr)
                 if (local_ierr /= MPAS_STREAM_NOERR) then
@@ -2954,7 +2957,7 @@ module mpas_stream_manager
             ! Build stream from pools of fields and attributes
             !
             allocate(stream % stream)
-            call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_READ, &
+            call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_READ, &
                                    precision=stream % precision, ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
@@ -2992,7 +2995,7 @@ module mpas_stream_manager
            !
            ! Build new stream from pools of fields and attributes
            !
-           call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                if (local_ierr == MPAS_IO_ERR_NOEXIST_READ) then
                    write(err_string,'(a)') 'Stream '''//trim(stream % name)//''' attempted to read non-existent file '''//trim(stream % filename)//''''
@@ -3113,7 +3116,7 @@ module mpas_stream_manager
 
            ! If file exists, the testing stream needs to be built.
            if ( retestFile ) then
-               call mpas_createStream(testStream, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+               call mpas_createStream(testStream, manager % ioContext, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            else
                STREAM_DEBUG_WRITE(' Filename: ' COMMA trim(test_filename) COMMA ' does not exist.')
            end if
@@ -3187,7 +3190,7 @@ module mpas_stream_manager
            !
            ! Build new stream from pools of fields and attributes
            !
-           call MPAS_createStream(stream % stream, stream % filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
+           call MPAS_createStream(stream % stream, manager % ioContext, stream % filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
            if (local_ierr /= MPAS_STREAM_NOERR) then
                ierr = MPAS_STREAM_MGR_ERROR
                return
@@ -3490,19 +3493,19 @@ module mpas_stream_manager
                 if ( itr % memberType == MPAS_POOL_CONFIG) then
                     if ( itr % dataType == MPAS_POOL_REAL ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, realAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, realAtt, local_ierr)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, realAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_INTEGER ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, intAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, intAtt, local_ierr)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, intAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_CHARACTER ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, charAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, local_ierr)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_LOGICAL ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, logAtt)
                         if (logAtt) then
-                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'YES', local_ierr)
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'YES', syncVal=.false., ierr=local_ierr)
                         else
-                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'NO', local_ierr)
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'NO', syncVal=.false., ierr=local_ierr)
                         end if
                     end if
 
@@ -3517,7 +3520,7 @@ module mpas_stream_manager
             ! Generate file_id and write to stream
             !
             call gen_random(idLength, file_id)
-            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, local_ierr)
+            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, syncVal=.true., ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -4829,17 +4832,20 @@ module mpas_stream_manager
         integer, intent(out), optional :: clobberProperty                          !< Output: Interger describing the clobber mode of the stream
 
 
-        if ( associated(manager % currentStream) .and. .not. associated(manager % currentStream % next) ) then
-            validStream = .false.
-            return
-        end if
-
-        if ( .not. associated(manager % currentStream) ) then
+        if ( associated(manager % currentStream) ) then
+            if (.not. associated(manager % currentStream % next) ) then
+                validStream = .false.
+                return
+            else
+                validStream = .true.
+                manager % currentStream => manager % currentStream % next
+            end if
+        else if ( associated(manager % streams % head) ) then
            validStream = .true.
            manager % currentStream => manager % streams % head
         else
-           validStream = .true.
-           manager % currentStream => manager % currentStream % next
+           validStream = .false.
+           return
         end if
 
         if ( present(streamID) ) then
@@ -4958,6 +4964,35 @@ module mpas_stream_manager
         end if
 
     end function MPAS_stream_mgr_get_next_field !}}}
+
+
+    !-----------------------------------------------------------------------
+    !  logical function MPAS_stream_mgr_stream_exists
+    !
+    !> \brief Determine if a stream exists in a stream manager
+    !> \author Doug Jacobsen
+    !> \date   07/29/2015
+    !> \details
+    !>  This function takes a stream manager and the name of a stream, and
+    !>  returns a logical describing if the stream exists within the manager or
+    !>  not. It gives no information about if the stream will be "handled" at
+    !>  any point in time, only if it exists within the manager queried.
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_stream_exists(manager, streamID) result(validStream)!{{{
+
+       implicit none
+
+       type (MPAS_streamManager_type), intent(inout) :: manager
+       character (len=*), intent(in) :: streamID
+
+       type (mpas_stream_list_type), pointer :: streamPtr
+
+       validStream = mpas_stream_list_query(manager % streams, streamID, streamPtr)
+
+       return
+
+    end function MPAS_stream_mgr_stream_exists!}}}
  
 
 end module mpas_stream_manager

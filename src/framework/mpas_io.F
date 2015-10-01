@@ -69,20 +69,14 @@ module mpas_io
       module procedure MPAS_io_put_att_text
    end interface MPAS_io_put_att
 
-   type (iosystem_desc_t), pointer, private, save :: pio_iosystem
-   type (decomplist_type), pointer, private :: decomp_list => null()
-   type (dm_info), private :: local_dminfo
-   integer, private:: master_pio_iotype = -999
-   
-
    contains
 
 
-   subroutine MPAS_io_init(dminfo, io_task_count, io_task_stride, io_system, ierr)
+   subroutine MPAS_io_init(ioContext, io_task_count, io_task_stride, io_system, ierr)
 
       implicit none
 
-      type (dm_info), intent(in) :: dminfo
+      type (mpas_io_context_type), intent(inout) :: ioContext
       integer, intent(in) :: io_task_count
       integer, intent(in) :: io_task_stride
       type (iosystem_desc_t), optional, pointer :: io_system
@@ -91,24 +85,22 @@ module mpas_io
 !      write(stderrUnit,*) 'Called MPAS_io_init()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
-      local_dminfo = dminfo
-
       if (present(io_system)) then
-         pio_iosystem => io_system
+         ioContext % pio_iosystem => io_system
       else
 !write(stderrUnit,*) 'MGD PIO_init'
-         allocate(pio_iosystem)
-         call PIO_init(local_dminfo % my_proc_id, &     ! comp_rank
-                       local_dminfo % comm,       &     ! comp_comm
+         allocate(ioContext % pio_iosystem)
+         call PIO_init(ioContext % dminfo % my_proc_id, &  ! comp_rank
+                       ioContext % dminfo % comm,       &  ! comp_comm
                        io_task_count,             &     ! num_iotasks
                        0,                         &     ! num_aggregator
                        io_task_stride,            &     ! stride
                        PIO_rearr_box,             &     ! rearr
-                       pio_iosystem)                    ! iosystem
+                       ioContext % pio_iosystem)           ! iosystem
   
       end if
 
-      call pio_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)
+      call pio_seterrorhandling(ioContext % pio_iosystem, PIO_BCAST_ERROR)
 
    end subroutine MPAS_io_init
 
@@ -124,10 +116,11 @@ module mpas_io
 !>  This routine sets the master io type for use with PIO.
 !
 !-----------------------------------------------------------------------
-   subroutine MPAS_io_set_iotype(io_type_in, ierr)
+   subroutine MPAS_io_set_iotype(ioContext, io_type_in, ierr)
 
       implicit none
 
+      type (mpas_io_context_type), intent(inout) :: ioContext
       integer, intent(in) :: io_type_in
       integer, intent(out), optional :: ierr
 
@@ -135,7 +128,7 @@ module mpas_io
          ierr = MPAS_IO_NOERR
       end if
 
-      master_pio_iotype = io_type_in
+      ioContext % master_pio_iotype = io_type_in
 
    end subroutine MPAS_io_set_iotype
 
@@ -152,28 +145,30 @@ module mpas_io
 !>  "unset" value.
 !
 !-----------------------------------------------------------------------
-   subroutine MPAS_io_unset_iotype(ierr)
+   subroutine MPAS_io_unset_iotype(ioContext, ierr)
 
       implicit none
 
+      type (mpas_io_context_type), intent(inout) :: ioContext
       integer, intent(out), optional :: ierr
 
       if (present(ierr)) then
          ierr = MPAS_IO_NOERR
       end if
 
-      master_pio_iotype = -999
+      ioContext % master_pio_iotype = -999
 
    end subroutine MPAS_io_unset_iotype
 
    
-   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, clobber_file, truncate_file, ierr)
+   type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, ioContext, clobber_file, truncate_file, ierr)
 
       implicit none
 
       character (len=*), intent(in) :: filename
       integer, intent(in) :: mode
       integer, intent(in) :: ioformat
+      type (mpas_io_context_type), pointer :: ioContext
       logical, intent(in), optional :: clobber_file
       logical, intent(in), optional :: truncate_file
       integer, intent(out), optional :: ierr
@@ -218,9 +213,10 @@ module mpas_io
       MPAS_io_open % filename = filename
       MPAS_io_open % iomode   = mode
       MPAS_io_open % ioformat = ioformat
+      MPAS_io_open % ioContext => ioContext
 
-      if (master_pio_iotype /= -999) then
-         pio_iotype = master_pio_iotype
+      if (ioContext % master_pio_iotype /= -999) then
+         pio_iotype = ioContext % master_pio_iotype
          pio_mode = PIO_64BIT_OFFSET
       else
          if (ioformat == MPAS_IO_PNETCDF) then
@@ -240,10 +236,10 @@ module mpas_io
 
       if (mode == MPAS_IO_WRITE) then
 !write(stderrUnit,*) 'MGD PIO_createfile'
-         if (local_dminfo % my_proc_id == 0) then
+         if (ioContext % dminfo % my_proc_id == 0) then
             inquire(file=trim(filename), exist=exists)
          end if
-         call mpas_dmpar_bcast_logical(local_dminfo, exists)
+         call mpas_dmpar_bcast_logical(ioContext % dminfo, exists)
 
          ! If the file exists and we are not allowed to clobber it, return an
          !    appropriate error code
@@ -253,10 +249,10 @@ module mpas_io
          end if
  
          if (exists .and. (.not. local_truncate)) then
-            pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
+            pio_ierr = PIO_openfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_write)
             MPAS_io_open % preexisting_file = .true.
          else
-            pio_ierr = PIO_createfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
+            pio_ierr = PIO_createfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), pio_mode)
             if (exists) then
                write(stderrUnit,'(a)') 'MPAS I/O: Truncating existing data in output file '//trim(filename)
             end if
@@ -269,7 +265,7 @@ module mpas_io
             return
          end if
 !write(stderrUnit,*) 'MGD PIO_openfile'
-         pio_ierr = PIO_openfile(pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
+         pio_ierr = PIO_openfile(ioContext % pio_iosystem, MPAS_io_open % pio_file, pio_iotype, trim(filename), PIO_nowrite)
       endif
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -1030,7 +1026,7 @@ module mpas_io
 
       implicit none
 
-      type (MPAS_IO_Handle_type), intent(in) :: handle
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
       character (len=*), intent(in) :: fieldname
       integer, dimension(:), intent(in) :: indices
       integer, intent(out), optional :: ierr
@@ -1086,7 +1082,7 @@ module mpas_io
       !
       ! Check whether a suitable decomposition already exists
       !
-      decomp_cursor => decomp_list
+      decomp_cursor => handle % ioContext % decomp_list
 !if (.not. associated(decomp_cursor)) write(stderrUnit,*) 'No existing decompositions to check...'
       early_return = 0
       DECOMP_LOOP: do while (associated(decomp_cursor))
@@ -1161,7 +1157,7 @@ module mpas_io
       ! 
       ! If all tasks have set early_return to 1, then we have a usable decomposition and can return
       ! 
-      call mpas_dmpar_min_int(local_dminfo, early_return, early_return_global)
+      call mpas_dmpar_min_int(handle % ioContext % dminfo, early_return, early_return_global)
       if (early_return_global == 1) then
          return
       end if
@@ -1268,15 +1264,15 @@ module mpas_io
       end if
 
       dimlist(ndims) = field_cursor % fieldhandle % dims(ndims) % dimsize
-      call PIO_initdecomp(pio_iosystem, pio_type, dimlist, compdof, new_decomp % decomphandle % pio_iodesc)
+      call PIO_initdecomp(handle % ioContext % pio_iosystem, pio_type, dimlist, compdof, new_decomp % decomphandle % pio_iodesc)
 
       ! Add new decomposition to the list
-      if (.not. associated(decomp_list)) then
-         decomp_list => new_decomp
+      if (.not. associated(handle % ioContext % decomp_list)) then
+         handle % ioContext % decomp_list => new_decomp
 !write(stderrUnit,*) 'Adding first item to the decomp_list'
       else
-         new_decomp % next => decomp_list
-         decomp_list => new_decomp
+         new_decomp % next => handle % ioContext % decomp_list
+         handle % ioContext % decomp_list => new_decomp
 !write(stderrUnit,*) 'Adding new decomp to the head of the list'
       end if
 
@@ -3356,7 +3352,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_text
 
 
-   subroutine MPAS_io_put_att_int0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_int0d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3364,12 +3360,16 @@ module mpas_io
       character (len=*), intent(in) :: attName
       integer, intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      attValueLocal = attValue
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_int0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3482,7 +3482,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_int(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3493,7 +3499,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_int0d
 
 
-   subroutine MPAS_io_put_att_int1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_int1d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3501,12 +3507,17 @@ module mpas_io
       character (len=*), intent(in) :: attName
       integer, dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer, dimension(:), pointer :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      allocate(attValueLocal(size(attValue, dim=1)))
+      attValueLocal(:) = attValue(:)
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_int1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3628,18 +3639,26 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_ints(handle % iocontext % dminfo, size(attValueLocal, dim=1), attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
+
+      deallocate(attValueLocal)
 
       ! Maybe we should add attribute to list only after a successfull call to PIO?
 
    end subroutine MPAS_io_put_att_int1d
 
 
-   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3647,12 +3666,16 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      real (kind=RKIND) :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      attValueLocal = attValue
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_real0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3765,7 +3788,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_real(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3776,7 +3805,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_real0d
 
 
-   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3784,12 +3813,18 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      real (kind=RKIND), dimension(:), allocatable :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      allocate(attValueLocal( size(attValue, dim=1) ) )
+
+      attValueLocal(:) = attValue(:)
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_real1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3911,18 +3946,26 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_reals(handle % iocontext % dminfo, size(attValueLocal, dim=1), attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
+
+      deallocate(attValueLocal)
 
       ! Maybe we should add attribute to list only after a successfull call to PIO?
 
    end subroutine MPAS_io_put_att_real1d
 
 
-   subroutine MPAS_io_put_att_text(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_text(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3930,12 +3973,25 @@ module mpas_io
       character (len=*), intent(in) :: attName
       character (len=*), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer :: valLen
+      character (len=StrKind) :: attValueLocal, trimmedVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      valLen = len_trim(attValue)
+      trimmedVal = trim(attValue)
+
+      if ( valLen > StrKind ) then
+         write(stderrUnit, *) ' WARNING: Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. It will be cut to a length of ', StrKIND
+         attValueLocal = trimmedVal(1:StrKIND)
+      else
+         attValueLocal = trimmedVal
+      end if
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_text()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -4048,7 +4104,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_char(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
       if (pio_ierr /= PIO_noerr) then
 
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -4065,7 +4127,7 @@ module mpas_io
                return
             end if
 
-            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
             if (pio_ierr /= PIO_noerr) then
                return
             end if
@@ -4211,11 +4273,12 @@ module mpas_io
    end subroutine MPAS_io_close
 
 
-   subroutine MPAS_io_finalize(io_system, ierr)
+   subroutine MPAS_io_finalize(ioContext, finalize_iosystem, ierr)
 
       implicit none
 
-      type (iosystem_desc_t), optional, pointer :: io_system
+      type (mpas_io_context_type), pointer :: ioContext
+      logical, optional :: finalize_iosystem
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
@@ -4224,7 +4287,7 @@ module mpas_io
 !      write(stderrUnit,*) 'Called MPAS_io_finalize()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
-      decomp_cursor => decomp_list
+      decomp_cursor => ioContext % decomp_list
       do while (associated(decomp_cursor))
          decomp_del => decomp_cursor
          decomp_cursor => decomp_cursor % next
@@ -4232,19 +4295,21 @@ module mpas_io
 !if (.not. associated(decomp_del % decomphandle)) write(stderrUnit,*) 'OOPS... do not have decomphandle'
          deallocate(decomp_del % decomphandle % dims)
          deallocate(decomp_del % decomphandle % indices)
-         call PIO_freedecomp(pio_iosystem, decomp_del % decomphandle % pio_iodesc)
+         call PIO_freedecomp(ioContext % pio_iosystem, decomp_del % decomphandle % pio_iodesc)
          deallocate(decomp_del % decomphandle)
          deallocate(decomp_del)
       end do
 
 !write(stderrUnit,*) 'MGD PIO_finalize'
-      if (.not.present(io_system)) then
-        call PIO_finalize(pio_iosystem, pio_ierr)
-        if (pio_ierr /= PIO_noerr) then
-           if (present(ierr)) ierr = MPAS_IO_ERR_PIO
-           return
-        end if
-        deallocate(pio_iosystem)
+      if (present(finalize_iosystem)) then
+         if ( finalize_iosystem ) then
+           call PIO_finalize(ioContext % pio_iosystem, pio_ierr)
+           if (pio_ierr /= PIO_noerr) then
+              if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+              return
+           end if
+           deallocate(ioContext % pio_iosystem)
+         end if
       end if
 
    end subroutine MPAS_io_finalize
@@ -4304,7 +4369,7 @@ module mpas_io
             write(stderrUnit,*) 'MPAS IO Error: Unrecognized error code...'
       end select
 
-      if (fatal .and. (ierr /= MPAS_IO_NOERR)) call mpas_dmpar_abort(local_dminfo)
+      if (fatal .and. (ierr /= MPAS_IO_NOERR)) call mpas_dmpar_global_abort('ERROR In MPAS_IO')
 
    end subroutine MPAS_io_err_mesg
  

@@ -20,9 +20,12 @@ xlf:
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
+	"FFLAGS_OMP = -qsmp=omp" \
+	"CFLAGS_OMP = -qsmp=omp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
  
 ftn:
@@ -37,9 +40,12 @@ ftn:
 	"CFLAGS_OPT = -fast" \
 	"CXXFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 titan-cray:
@@ -51,9 +57,12 @@ titan-cray:
 	"FFLAGS_OPT = -s integer32 -default64 -O3 -f free -N 255 -em -ef" \
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = " \
+	"CFLAGS_OMP = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi:
@@ -72,9 +81,12 @@ pgi:
 	"CFLAGS_DEBUG = -O0 -g -traceback" \
 	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
 	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
@@ -89,9 +101,12 @@ pgi-nersc:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-llnl:
@@ -106,9 +121,12 @@ pgi-llnl:
 	"CFLAGS_OPT = -fast" \
 	"CXXFLAGS_OPT = -fast" \
 	"LDFLAGS_OPT = " \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort:
@@ -127,9 +145,12 @@ ifort:
 	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CXXFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -openmp" \
+	"CFLAGS_OMP = -openmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort-gcc:
@@ -148,9 +169,12 @@ ifort-gcc:
 	"CFLAGS_DEBUG = -g" \
 	"CXXFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"FFLAGS_OMP = -openmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gfortran:
@@ -169,9 +193,12 @@ gfortran:
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -O3 -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 g95:
@@ -186,9 +213,12 @@ g95:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pathscale-nersc:
@@ -203,9 +233,12 @@ pathscale-nersc:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 cray-nersc:
@@ -220,9 +253,12 @@ cray-nersc:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = " \
+	"CFLAGS_OMP = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gnu-nersc:
@@ -259,9 +295,16 @@ intel-nersc:
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_OMP = -openmp" \
+	"CFLAGS_OMP = -openmp" \
+	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -gen-interfaces -warn interfaces -traceback" \
+	"CFLAGS_DEBUG = -g -traceback" \
+	"CXXFLAGS_DEBUG = -g -traceback" \
+	"LDFLAGS_DEBUG = -g -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 bluegene:
@@ -280,9 +323,12 @@ bluegene:
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g" \
+	"FFLAGS_OMP = -qsmp=omp" \
+	"CFLAGS_OMP = -qsmp=omp" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES = 
@@ -372,6 +418,13 @@ SFC=$(FC_SERIAL)
 SCC=$(CC_SERIAL)
 PARALLEL_MESSAGE="Parallel version is on."
 
+ifeq "$(OPENMP)" "true"
+	FFLAGS += $(FFLAGS_OMP)
+	CFLAGS += $(CFLAGS_OMP)
+	CXXFLAGS += $(CFLAGS_OMP)
+	LDFLAGS += $(FFLAGS_OMP)
+endif #OPENMP IF
+
 ifeq "$(USE_PAPI)" "true"
 	CPPINCLUDES += -I$(PAPI)/include -D_PAPI
 	FCINCLUDES += -I$(PAPI)/include
@@ -381,9 +434,34 @@ else # USE_PAPI IF
 	PAPI_MESSAGE="Papi libraries are off."
 endif # USE_PAPI IF
 
+ifdef TIMER_LIB
+ifeq "$(TIMER_LIB)" "tau"
+	override TAU=true
+	TIMER_MESSAGE="TAU is being used for the timer interface"
+endif
+
+ifeq "$(TIMER_LIB)" "gptl"
+	override CPPFLAGS += -DMPAS_GPTL_TIMERS
+	override FCINCLUDES += -I${GPTL}/include
+	override LIBS += -L${GPTL}/lib -lgptl
+	TIMER_MESSAGE="GPTL is being used for the timer interface"
+endif
+
+ifeq "$(TIMER_LIB)" ""
+	override CPPFLAGS += -DMPAS_NATIVE_TIMERS
+	TIMER_MESSAGE="The native timer interface is being used"
+endif
+
+else # else ifdef $(TIMER_LIB)
+
+	override CPPFLAGS += -DMPAS_NATIVE_TIMERS
+	TIMER_MESSAGE="The native timer interface is being used"
+
+endif # endif ifdef $(TIMER_LIB)
+
 ifeq "$(TAU)" "true"
 	LINKER=tau_f90.sh
-	CPPINCLUDES += -DMPAS_TAU
+	CPPINCLUDES += -DMPAS_TAU -DMPAS_TAU_TIMERS
 	TAU_MESSAGE="TAU Hooks are on."
 else
 	LINKER=$(FC)
@@ -395,6 +473,12 @@ ifeq "$(GEN_F90)" "true"
 else
 	override GEN_F90=false
 	GEN_F90_MESSAGE="MPAS was built with .F files."
+endif
+
+ifeq "$(OPENMP)" "true"
+	OPENMP_MESSAGE="MPAS was built with OpenMP enabled."
+else
+	OPENMP_MESSAGE="MPAS was built without OpenMP support."
 endif
 
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
@@ -512,10 +596,12 @@ endif
 	@echo $(PARALLEL_MESSAGE)
 	@echo $(PAPI_MESSAGE)
 	@echo $(TAU_MESSAGE)
+	@echo $(OPENMP_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
+	@echo $(TIMER_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
@@ -586,6 +672,11 @@ errmsg:
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
 	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
 	@echo "    GEN_F90=true  - Generates intermediate .f90 files through CPP, and builds with them."
+	@echo "    TIMER_LIB=opt - Selects the timer library interface to be used for profiling the model. Options are:"
+	@echo "                    TIMER_LIB=native - Uses native built-in timers in MPAS"
+	@echo "                    TIMER_LIB=gptl - Uses gptl for the timer interface instead of the native interface"
+	@echo "                    TIMER_LIB=tau - Uses TAU for the timer interface instead of the native interface"
+	@echo "    OPENMP=true   - builds and links with OpenMP flags. Default is to not use OpenMP."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
