@@ -6,4 +6,5 @@
 #include "Registry_cvmix_WSwSBF.xml"
 #include "Registry_iso.xml"
 #include "Registry_soma.xml"
+#include "Registry_ecosys.xml"
 // #include "Registry_TEMPLATE.xml"
