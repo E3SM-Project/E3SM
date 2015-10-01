@@ -171,7 +171,7 @@ def get_tests_from_args(testargs, machine, compiler):
             for test, testmod in update_acme_tests.get_test_suite(testarg):
                 tests_to_run.add(get_full_test_name(test, machine, compiler, testmod))
         else:
-            tests_to_run.add(get_full_test_name(test, machine, compiler))
+            tests_to_run.add(get_full_test_name(testarg, machine, compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
