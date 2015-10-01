@@ -66,6 +66,11 @@ module mpas_bootstrapping
    !>  Attributes required to be present in the grid file:
    !>      on_a_sphere
    !>      sphere_radius
+   !>      parent_id
+   !>      mesh_spec
+   !>      is_periodic
+   !>      x_period
+   !>      y_period
    !>      ***** these are needed by mpas_block_creator_finalize_block_init()
    !>            so they can be set in the mesh pool and queried by, e.g.,
    !>            mpas_initialize_vectors()
@@ -86,7 +91,7 @@ module mpas_bootstrapping
       integer :: ierr
       type (MPAS_IO_Handle_type) :: inputHandle
 
-      character (len=StrKIND) :: c_on_a_sphere, c_is_periodic
+      character (len=StrKIND) :: c_on_a_sphere, c_is_periodic, c_parent_id, c_file_id, c_mesh_spec
       real (kind=RKIND) :: r_sphere_radius, r_x_period, r_y_period
 
       type (field1dInteger), pointer :: indexToCellIDField
@@ -277,6 +282,39 @@ module mpas_bootstrapping
          domain % sphere_radius = 1.0
       else
          domain % sphere_radius = r_sphere_radius
+      end if
+
+      !
+      ! We need to read in the file_id, parent_id, and mesh spec attributes as well, to
+      ! set them appropriately in the output files.
+      !
+      call MPAS_io_get_att(inputHandle, 'file_id', c_file_id, ierr=ierr)
+      if ( ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit, *) 'Warning: Attribute file_id not found in '//trim(mesh_filename)
+         write(stderrUnit, *) '  Using '''' for the previous file_id.'
+         c_file_id = ''
+      end if
+
+      call MPAS_io_get_att(inputHandle, 'parent_id', c_parent_id, ierr=ierr)
+      if ( ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit, *) 'Warning: Attribute parent_id not found in '//trim(mesh_filename)
+         write(stderrUnit, *) '  Setting parent_id to '''''
+         c_parent_id = ''
+      end if
+
+      if ( trim(c_file_id) == '' ) then
+         domain % parent_id = c_parent_id
+      else
+         domain % parent_id = trim(c_file_id) // NEW_LINE('A') // trim(c_parent_id)
+      end if
+
+      call MPAS_io_get_att(inputHandle, 'mesh_spec', c_mesh_spec, ierr=ierr)
+      if ( ierr /= MPAS_IO_NOERR) then
+         write(stderrUnit, *) 'Warning: Attribute mesh_spec not found in '//trim(mesh_filename)
+         write(stderrUnit, *) '  Setting mesh_spec to ''0.0'''
+         domain % mesh_spec = '0.0'
+      else
+        domain % mesh_spec = c_mesh_spec
       end if
 
       !
