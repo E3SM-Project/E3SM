@@ -486,13 +486,13 @@ sub loadModuleModules()
         else
         {
             $cmd = $self->{cmdpath} . " $mod->{action}  $mod->{actupon}";
-	    print "   $mod->{action} $mod->{actupon} \n";
+	    $logger->info( "   $mod->{action} $mod->{actupon} ");
         }
 #        print "running cmd: $mod->{action} $mod->{actupon}\n";
         eval qx($cmd);
         if($?)
         {
-            warn "module cmd $cmd died with $? $!\n";
+            $logger->warn ("module cmd $cmd died with $? $!");
         }
      }
      my %moduleenv = %{$self->{environmentvars}};

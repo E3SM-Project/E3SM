@@ -208,7 +208,7 @@ sub submitSingleJob()
     eval {
         open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
         $output = <$RUN>;
-	close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|)"
+	close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
     };
     my $exitstatus = ($?>>8);
     if($exitstatus != 0)

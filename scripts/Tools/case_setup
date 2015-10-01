@@ -312,7 +312,10 @@ if (! $clean ) {
     # Run preview namelists for scripts
     #--------------------------------------------------------------------------
     $logger->info("Running preview_namelist script ");
-    qx( $caseroot/preview_namelists -loglevel $opts{loglevel} ) or $logger->logdie("ERROR: $caseroot/preview_namelists failed: $?");
+    qx( $caseroot/preview_namelists -loglevel $opts{loglevel} );
+    if($?){
+	$logger->logdie("ERROR: $caseroot/preview_namelists failed: $?")
+    }
     $logger->info("See ./CaseDoc for component namelists ");
     $logger->info("If an old case build already exists, might want to run ${case}.clean_build before building ");
 

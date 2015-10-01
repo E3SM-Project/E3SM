@@ -4,7 +4,7 @@
 # Test suite and test creation script. 
 #===================================================================
 use strict;
-use warnings;
+
 #use diagnostics;
 use Cwd qw( getcwd abs_path chdir);
 use English;
@@ -628,10 +628,10 @@ sub checkOptions
     # if testroot doesn't exist, create it. 
     if( ! -d $opts{'testroot'})
     {
-	print "Creating testroot $opts{'testroot'}\n"; 
+	$logger->info( "Creating testroot $opts{'testroot'}"); 
 	if(! $opts{'dryrun'}){
 	    umask 0000;
-	    mkpath $opts{'testroot'}, 1, 0775 or die "trouble making $opts{'testroot'}";
+	    mkpath $opts{'testroot'}, 1, 0775 or $logger->logdie ("trouble making $opts{'testroot'}");
 	}
     }
 
@@ -643,7 +643,7 @@ sub checkOptions
     {
 	if (defined $opts{'field'} && $opts{$field} !~ /^(on|off)$/)
 	{
-	    die "option $field not set to a valid value.  Can be set to either on or off\n";
+	    $logger->logdie ("option $field not set to a valid value.  Can be set to either on or off");
 	}
     }
 
@@ -655,9 +655,8 @@ sub checkOptions
     }
     if(! -e $opts{'mach_dir'})
     {
-	print "** The machines directory $opts{'mach_dir'} doesn't exist.\n";
-	print "** Please specify a valid machines directory. \n";
-	exit(1);
+	$logger->logdie( "** The machines directory $opts{'mach_dir'} doesn't exist.
+	                             ** Please specify a valid machines directory. ");
     }
 
     if(defined $opts{'mach'})
@@ -666,7 +665,7 @@ sub checkOptions
 	{
 	    if( defined $opts{'compiler'})
 	    {
-		die "** CANNOT specify compiler both with -compiler option, and with _compiler in -mach option **\n";          
+		$logger->logdie ("** CANNOT specify compiler both with -compiler option, and with _compiler in -mach option **");          
 	    }
 	    $opts{'mach'} = $1;
 	    $opts{'compiler'} = $2;
@@ -736,11 +735,11 @@ sub checkOptions
     # et al to a set of namelist baselines. 
     if( defined $opts{'nlcompareonly'}   && (  defined $opts{'compare'} ||  defined $opts{'generate'}) )
     {
-	print "----------------------------------------------------------------------------\n";
-	print "Offline namelist comparision option invoked\n";
-	print "Setting autosubmit and reruntests to off!\n";
-	print "And nobuild to on!\n";
-	print "----------------------------------------------------------------------------\n";
+	$logger->warn( "----------------------------------------------------------------------------");
+	$logger->warn( "Offline namelist comparision option invoked");
+	$logger->warn("Setting autosubmit and reruntests to off!");
+	$logger->warn ("And nobuild to on!");
+	$logger->warn("----------------------------------------------------------------------------");
 
 	$opts{'autosubmit'} = 'off';
 	$opts{'nobuild'} = 'on';
@@ -748,17 +747,16 @@ sub checkOptions
     }
     elsif( defined $opts{'nlcompareonly'} && ! defined $opts{'compare'} && ! defined $opts{'generate'})
     {
-	print "$ProgName: to use the 'nlcompareonly' option, either the -generate or -compare options must be set\n";
-	exit(1);
+	$logger->logdie("$ProgName: to use the 'nlcompareonly' option, either the -generate or -compare options must be set");
     }
 
     # verify that required directories exist. 
-    die "** Directory cimeroot does NOT exist ($opts{cimeroot})\n"  if(! -d $opts{cimeroot});    
+    $logger->logdie ("** Directory cimeroot does NOT exist ($opts{cimeroot})")  if(! -d $opts{cimeroot});    
     if(! -d $opts{baselineroot}){
 	if(! defined $opts{'compare'} && ! defined $opts{'generate'}){
-	    warn "WARNING: Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	    $logger->warn ("WARNING: Directory baselineroot does NOT exist ($opts{baselineroot})")  if(! -d $opts{baselineroot});    
 	}else{
-	    die "** Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	   $logger->logdie( "** Directory baselineroot does NOT exist ($opts{baselineroot})")  if(! -d $opts{baselineroot});    
 	}
     }
     
@@ -792,7 +790,7 @@ sub checkTestSuiteOptions
     {
 	if (defined $opts{'field'} && $opts{$field} !~ /^(on|off)$/)
 	{
-	    die "option $field not set to a valid value.  Can be set to either on or off\n";
+	    $logger->logdie ("option $field not set to a valid value.  Can be set to either on or off");
 	}
     }
 }
@@ -806,7 +804,7 @@ sub checkSingleTestOptions
     {
 	if( ! -e $opts{'pes_file'})
 	{
-	    die "The specified pes file $opts{'pes_file'} was not found";
+	    $logger->logdie( "The specified pes file $opts{'pes_file'} was not found");
 	}
 	else
 	{
@@ -818,7 +816,7 @@ sub checkSingleTestOptions
     {
 	if(! -e $opts{'compset_file'})
 	{
-	    die "The specified compset file $opts{'compset_file'} was not found";
+	    $logger->logdie( "The specified compset file $opts{'compset_file'} was not found");
 	}
 	else
 	{
@@ -1027,9 +1025,9 @@ sub ParseTestName
 	  
 	  if(defined $mpilib ){
 	      $testhash->{'mpilib'} = $mpilib;
-	      print "    mpilib set to $1 \n";
+	      $logger->info( "    mpilib set to $1 ");
 	  }else{
-	      die "M option found but no MPILIB provided";
+	      $logger->logdie ("M option found but no MPILIB provided");
 	  }
       }else{
 	  $testhash->{'confopts'} .= $coptions;
@@ -1048,11 +1046,11 @@ sub checkTestCase
 {
   my ($testhash) = @_;
   
-  die "ERROR in $ProgName: requires testcase" if(! defined $testhash->{'testname'});
-  die "ERROR in $ProgName: requires grid"     if(! defined $testhash->{'grid'});
-  die "ERROR in $ProgName: requires compset"  if(! defined $testhash->{'compset'});
-  die "ERROR in $ProgName: requires mach"     if(! defined $testhash->{'mach'});
-  die "ERROR in $ProgName: requires compiler" if(! defined $testhash->{'compiler'});
+  $logger->logdie( "ERROR in $ProgName: requires testcase") if(! defined $testhash->{'testname'});
+  $logger->logdie( "ERROR in $ProgName: requires grid")     if(! defined $testhash->{'grid'});
+  $logger->logdie( "ERROR in $ProgName: requires compset")  if(! defined $testhash->{'compset'});
+  $logger->logdie( "ERROR in $ProgName: requires mach")     if(! defined $testhash->{'mach'});
+  $logger->logdie( "ERROR in $ProgName: requires compiler") if(! defined $testhash->{'compiler'});
   
   my $testid;
   if(! defined $opts{'testid'})
@@ -1092,8 +1090,7 @@ sub checkTestCase
       $testhash->{'baselineroot'} = $opts{'baselineroot'};
       if(! -d $opts{'baselineroot'})
       {
-        print "ERROR in $ProgName: cannot find baselineroot directory $opts{'baselineroot'}\n";
-        exit(1);
+        $logger->logdie( "ERROR in $ProgName: cannot find baselineroot directory $opts{'baselineroot'}");
       }
     }
 
@@ -1121,7 +1118,7 @@ sub checkTestCase
   {
      if( ! -e $opts{'pes_file'})
      {
-        die "ERROR: create_test: pes_file $opts{'pes_file'} does not exist!"; 
+        $logger->logdie( "ERROR: create_test: pes_file $opts{'pes_file'} does not exist!"); 
      }
      else
      {
@@ -1133,7 +1130,7 @@ sub checkTestCase
   {
      if( ! -e $opts{'compset_file'})
      {
-        die "ERROR: create_test: compset_file $opts{'compset_file'} does not exist!"; 
+        $logger->logdie( "ERROR: create_test: compset_file $opts{'compset_file'} does not exist!"); 
      }
      else
      {
@@ -1144,8 +1141,7 @@ sub checkTestCase
   my $testdirectory = "$opts{'testroot'}/$testhash->{'case'}";
   if( -e  $testdirectory)
   {
-    print "The test directory $testdirectory already exists! Aborting..\n";
-	exit(1);
+    $logger->logdie("The test directory $testdirectory already exists! Aborting..");
   }
 }
 
@@ -1236,19 +1232,19 @@ sub runCreateNewcase
     }
     my $createnewcase = "$opts{'cimeroot'}/scripts/create_newcase $cn_args";
     if($opts{'dryrun'}){
-	print "$createnewcase\n";
+        print"$createnewcase\n";
 	return 0;
     }else{
 	my $rc = open(F,"$createnewcase |");
 	my @rc = <F>;
 	close(F);
-	print @rc;
+	$logger->info( @rc);
     }
     my $exitcode = $?;
     if($exitcode != 0)
     {
-	warn "invocation of create_newcase failed:\n";
-	print "create_newcase command was $createnewcase \n";
+	$logger->warn ("invocation of create_newcase failed:");
+	$logger->warn( "create_newcase command was $createnewcase ");
 
 	# create the testroot if needed. 
 	mkdir $caseroot if(! -d $caseroot);
@@ -1400,18 +1396,18 @@ sub testcaseSetup
     if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
 	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/${case}.test_build";
 	$logger->debug("sysmod is $sysmod");
-	system($sysmod) == 0 or die "$sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
     } else {
 	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/${case}.test_build";
 	$logger->debug("sysmod is $sysmod");
-	system($sysmod) == 0 or die "$sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
     }
 
     $logger->info( "Setting up test case ");
     chdir ($caseroot);
-    $sysmod = "./case_setup";
+    $sysmod = "./case_setup -loglevel $opts{loglevel}";
     $logger->debug("sysmod is $sysmod");
-    system($sysmod) == 0 or warn "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 
     
     
@@ -1449,7 +1445,7 @@ sub ExpandTestList
     $testlistfile = abs_path($testlist);
     
     my $fh = new IO::File;
-    $fh->open("< $testlistfile") or die "ERROR: $testlistfile doesn't exist";
+    $fh->open("< $testlistfile") or $logger->logdie( "ERROR: $testlistfile doesn't exist");
     my @potentialtests = <$fh>;
     chomp @potentialtests;
     close $fh;
@@ -1470,7 +1466,7 @@ sub ExpandTestList
 	#if( $potentialtest =~  /-\w+/)
 	if( $potentialtest =~  /^\W+$/)
 	{
-	    print "found $potentialtest with arguments...\n";
+	    $logger->info( "found $potentialtest with arguments...");
 	    push(@actualtests, $potentialtest);
 	}
 	# Otherwise, split the line by whitespace
@@ -1597,7 +1593,7 @@ TESTXML
 
   $testxml .= "</testlist>\n";
   my $filename = "testspec.$opts{'testid'}.xml";
-  open my $TESTSPEC, ">", "$opts{'testroot'}/$filename" or die $!;
+  open my $TESTSPEC, ">", "$opts{'testroot'}/$filename" or $logger->logdie( $!);
   print $TESTSPEC $testxml;
   close $TESTSPEC;
   return $filename;
@@ -1631,7 +1627,7 @@ sub namelistCompareSuite
 {
     my @testspec = @_;
 
-    print "Now comparing namelists for the suite...\n"if ($opts{'compare'});
+    $logger->info( "Now comparing namelists for the suite...") if ($opts{'compare'});
     my $currentdir = getcwd();
     # Chdir to the testroot
     chdir($opts{'testroot'});
@@ -1641,17 +1637,17 @@ sub namelistCompareSuite
     {
 	if ( ! defined $testhash->{status} ) {
 	    $logger->debug( eval {  Dumper $testhash} );
-	    die "ERROR: \n testhash status is not defined\n";
+	    $logger->logdie( "ERROR: \n testhash status is not defined");
 	} 
 	if($testhash->{status} eq "GEN"){
 	   namelistCompare($testhash->{case},$testhash->{casebaseid},$testhash->{status});
 	}else{
-	    print "ERROR: Namelist generation failed for test ".$testhash->{case};
+	    $logger->error( "ERROR: Namelist generation failed for test ".$testhash->{case});
 	}
     }
     chdir($currentdir);
-    print "done comparing namelists for the suite...\n" if ($opts{'compare'});
-    print "done generating namelists for the suite...\n" if ($opts{'generate'});
+    $logger->info( "done comparing namelists for the suite...") if ($opts{'compare'});
+    $logger->info( "done generating namelists for the suite...") if ($opts{'generate'});
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1669,16 +1665,16 @@ sub namelistCompare
 	# this directory doesn't exist but it may be the root of an existing directory
 	my ($fname,$path,$suffix) = fileparse($testpath);
         $fname .= $suffix;
-	opendir(D,$path) or die "Could not open directory $path";
+	opendir(D,$path) or $logger->logdie( "Could not open directory $path");
 	my @matches = grep /^$fname/, readdir D;
 	$testpath = $path.$matches[0];
 	closedir(D);
     }
 
-    chdir($testpath) or die "couldn't change directory to $testpath\n";
+    chdir($testpath) or $logger->logdie( "couldn't change directory to $testpath");
     my $cprnml = "$testpath/Tools/compare_namelists.pl";
 
-    $logger->debug("test path is  $testpath\n");
+    $logger->debug("test path is  $testpath");
 
     my $baseroot = $opts{'baselineroot'};
     my $buildconfpath = $testpath . "/CaseDocs";
@@ -1693,7 +1689,7 @@ sub namelistCompare
 	if ($#nodes == 0) {
 	    $basecmp = $nodes[0]->getAttribute('value');
 	} else {
-	    die "ERROR create_test::namelistCompare: no nodes for entry BASECMP_CASE \n";
+	    $logger->logdie( "ERROR create_test::namelistCompare: no nodes for entry BASECMP_CASE ");
 	}
 	my $basecase = "$baseroot/$basecmp";
 
@@ -1705,18 +1701,18 @@ sub namelistCompare
 	    if ($#nodes == 0) {
 		$baselist = $nodes[0]->getAttribute('value');
 	    } else {
-		die "ERROR create_test::namelistCompare: no nodes for entry BASELINE_NAME_CMP \n";
+		$logger->logdie ("ERROR create_test::namelistCompare: no nodes for entry BASELINE_NAME_CMP ");
 	    }
 	    my $path = "$baseroot/$baselist";
             my $subd = basename($basecmp);
             $subd =~ /([^._]+)(.+)$/;
             my $testtyp = $1;
             my $testcfg = $2;
-            print "baseline directory path: $path\n";
-	    opendir(D,$path) or die "Could not open directory $path";
+            $logger->info( "baseline directory path: $path");
+	    opendir(D,$path) or $logger->logdie ("Could not open directory $path");
 	    my @matches = grep /$testcfg/, readdir D;
 	    if($#matches<0){
-		print "WARNING: No Baseline directory found for test $testpath \n";
+		$logger->warn( "WARNING: No Baseline directory found for test $testpath ");
                 $nomatch = 1;
 	    } else {
 	        $basecase = "$path/".$matches[0];
@@ -1727,10 +1723,10 @@ sub namelistCompare
         if ( ! defined($nomatch) ) {
 	    my $basecmpdir=$basecase;
 	    $basecmpdir.="/CaseDocs" if (-d "$basecase/CaseDocs");
-	    print "comparing $testpath namelists against $basecmpdir namelists..\n";
+	    $logger->info("comparing $testpath namelists against $basecmpdir namelists..");
 	    
 	    # use the namelists, etc in $test/CaseDocs for the comparison 
-	    opendir(D,$buildconfpath)  || die "Could not read directory $buildconfpath";
+	    opendir(D,$buildconfpath)  || $logger->logdie( "Could not read directory $buildconfpath");
 	    my @nmls = readdir(D);
 	    closedir(D);
 
@@ -1739,7 +1735,7 @@ sub namelistCompare
 		next if($nml =~ /README/ or $nml =~ /doc$/ or $nml =~ /prescribed$/ 
 			or $nml =~ /^\./);
 		if(! -e "$basecmpdir/$nml"){
-		    print "WARNING: no baseline file exists for $nml\n";
+		    $logger->warn("WARNING: no baseline file exists for $nml");
 		}else{
 		    my $compare_command = "$cprnml $buildconfpath/$nml $basecmpdir/$nml $test";
 		    my $output = `$compare_command`;
@@ -1748,14 +1744,14 @@ sub namelistCompare
 	    }
 	    #also compare the user_nl_* files
 	    # use the namelists, etc in $test/CaseDocs for the comparison 
-	    opendir(D,$testpath)  || die "Could not read directory $buildconfpath";
+	    opendir(D,$testpath)  || $logger->logdie( "Could not read directory $buildconfpath");
 	    @nmls = grep(/user_nl/,readdir(D));
 	    closedir(D);
 
 	    foreach my $nml (@nmls)
 	    {   
 		if(! -e "$basecase/$nml"){
-		    print "WARNING: no baseline file exists for $nml\n";
+		    $logger->warn( "WARNING: no baseline file exists for $nml");
 		}else{
 		    my $compare_command = "$cprnml $testpath/$nml $basecase/$nml $test";
 		    my $output = `$compare_command`;
@@ -1769,14 +1765,14 @@ sub namelistCompare
 	# print the compare_namelist results to TestStatus.log
 	if(defined $nlcompoutput && length $nlcompoutput > 0) 
 	{
-	    open my $STATUSLOG, ">" , "$testpath/TestStatus.log" or die $!;
+	    open my $STATUSLOG, ">" , "$testpath/TestStatus.log" or $logger->logdie( $!);
 	    print $STATUSLOG $nlcompoutput ;
 	    close $STATUSLOG;
 	    
 	    # set the status of the namelist comparison to PASS or FAIL 
 	    # if ANY of the namelist comparisons failed.  
-	    open my $STATUS, ">>", "$testpath/TestStatus" or die $!;
-	    open my $STATUSCOMP, ">", "$testpath/TestStatus.nlcomp" or die $!;
+	    open my $STATUS, ">>", "$testpath/TestStatus" or $logger->logdie( $!);
+	    open my $STATUSCOMP, ">", "$testpath/TestStatus.nlcomp" or $logger->logdie( $!);
 	    my $cprstatus;
 	    if($nlcompoutput =~ /BFAIL/)
 	    {
@@ -1807,26 +1803,26 @@ sub namelistCompare
 	    if( $suitemode != 0 || $xmlmode != 0)
 	    {
 		my $nlcomparelog= "$opts{'testroot'}/namelistcompare.$opts{'testid'}.$opts{'mach'}.log";
-		open my $NLCMPLOG, ">>", "$nlcomparelog" or die $!;
+		open my $NLCMPLOG, ">>", "$nlcomparelog" or $logger->logdie( $!);
 		print $NLCMPLOG "---------------------------------------------------------------------\n";
 		print $NLCMPLOG "$cprstatus $test\n";
 		print $NLCMPLOG $nlcompoutput;
 		print $NLCMPLOG "---------------------------------------------------------------------\n";
 		close $NLCMPLOG;
 	    }
-	    print $cprstatus;
+	    $logger->warn( $cprstatus);
 	}
     }
     if ($opts{'generate'}) {
 	my $genpath = "$baseroot/".$opts{'generate'}."/$basename";
 	if(-d $genpath){
-	    print "WARNING: Baseline directory is $genpath and already exists - WILL NOT OVERWRITE \n.";
+	    $logger->warn("WARNING: Baseline directory is $genpath and already exists - WILL NOT OVERWRITE .");
 	}else{
 	    umask 0000;
 	    mkpath $genpath, 1, 0775;
 	    system("cp -r $buildconfpath $genpath"); 
 	    system("cp $buildconfpath/../user_nl* $genpath") ;
-	    print "Couldnt create Baseline directory $genpath" unless -d "$genpath/CaseDocs"; 
+	    $logger->warn( "Couldnt create Baseline directory $genpath") unless -d "$genpath/CaseDocs"; 
 	}
     }
 }
@@ -1895,10 +1891,8 @@ sub main
             $logger->debug("test list size: $testlistsize");
             if($testlistsize == 0)
             {
-		print "No tests could be found with the test options given:\n";
-		print "xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}\n";
-		print "aborting\n";
-		exit(1);
+		$logger->logdie("No tests could be found with the test options given:
+		       xml_mach: $opts{'xml_mach'}, xml_compiler: $opts{'xml_compiler'}, xml_category: $opts{'xml_category'}");
             }
             @testlist = @nodupes;
 	    

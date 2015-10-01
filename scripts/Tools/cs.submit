@@ -12,7 +12,8 @@ use Cwd qw( getcwd chdir);
 use File::Basename;
 use Getopt::Long;
 
-my %opts;
+my %opts=(loglevel=>"INFO");
+my $logger;
 # Take the testspec.$machine.$testid.xml file, parse it, 
 # and get the names of the case directories
 # This is a copy of the routine in cs.status  - these tools should be
@@ -57,7 +58,7 @@ sub getTestStatus
       if (! -e $teststatusfile){
 	  $tests->{$testcase}{status}="FAIL";
       }else{
-	  open my $STATUS, "<", $teststatusfile or die $!;
+	  open my $STATUS, "<", $teststatusfile or $logger->logdie( $!);
 	  my @lines = <$STATUS>;
 	  close $STATUS;
 	  $tests->{$testcase}{'fullpath'} = "$testdir/$testcase";	 
@@ -82,8 +83,9 @@ sub getTestStatus
 sub getOpts
 {
 	GetOptions(
-        "testspec=s"    => \$opts{'testspec'},
-	"help|h"		=> \$opts{'help'},
+	    "loglevel=s" => \$opts{loglevel},
+	    "testspec=s"    => \$opts{'testspec'},
+	    "help|h"		=> \$opts{'help'},
 	);
 
 }
@@ -106,7 +108,7 @@ exit(0);
 
 
 getOpts();
-usage() if defined $opts{'help'};
+
 
 # find the testspec.xml. 
 my $testroot =  getcwd;
@@ -125,9 +127,6 @@ if(defined $opts{'testspec'}){
 	$testspec = $_ if(-A $_ < -A $testspec);
     }
 }
-
-
-
 # Find the scriptsroot
 open my $SPEC, "<", $testspec or die $!;
 my @speclines = grep (/scriptsroot/, <$SPEC>);
@@ -144,6 +143,17 @@ my @dirs = ( "$scriptsroot/../utils/perl5lib");
 
 unshift @INC, @dirs;
 require XML::Lite;
+require Log::Log4perl;
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+$logger = Log::Log4perl::get_logger();
+
+
+usage() if defined $opts{'help'};
+
+
 
 
 my $teststatus = getTestStatus($testspec, $testroot);
@@ -174,7 +184,7 @@ foreach my $test (keys %$teststatus){
 	    chdir($testdir);
 	    if( -e "$testdir/$test.test_build")
 	    {
-		print "building $test\n";
+		$logger->info("building $test");
 		system("./$test.test_build");
 		my $retcode = $?;
 		open my $TESTSTATUS, ">", "./TestStatus" or warn $!;
@@ -182,19 +192,19 @@ foreach my $test (keys %$teststatus){
 		{
 		    print $TESTSTATUS "CFAIL $test\n";
 		    $buildstatus = "CFAIL";
-		    print "$test build status: CFAIL\n";
+		    $logger->warn( "$test build status: CFAIL");
 		}
 		else
 		{
 		    print $TESTSTATUS "BUILD $test\n";
 		    $buildstatus = "BUILD";
-		    print "$test build status: BUILD\n";
+		    $logger->warn( "$test build status: BUILD");
 		}
 		close $TESTSTATUS;
 		
 		if( ( $autosubmit eq "on" || ! defined $autosubmit) && $buildstatus eq "BUILD") 
 		{
-		    print "submitting $test\n";
+		    $logger->info( "submitting $test");
 		    system("./$test.submit");
 		    my $submitret = $?;
 		    open $TESTSTATUS, ">", "./TestStatus" or warn $!;
@@ -213,7 +223,7 @@ foreach my $test (keys %$teststatus){
 	    }
 	    else
 	    {
-		print "$test.test_build does not exist, skipping build for $test...\n";
+		$logger->warn( "$test.test_build does not exist, skipping build for $test...");
 	    }
 	    
 	    chdir $testroot;
@@ -221,7 +231,7 @@ foreach my $test (keys %$teststatus){
 	if( $nobatch eq "on" )
 	{
 	    chdir($testdir);
-	    print "running $test\n";
+	    $logger->info( "running $test");
 	    system("./$test.test");
 	    chdir $testroot;
 	}
@@ -230,6 +240,6 @@ foreach my $test (keys %$teststatus){
 	    system("./$csstatus");
 	}
     }else{
-	print "Test $test status $status, not resubmitting\n";
+	$logger->info( "Test $test status $status, not resubmitting");
     }
 }
