@@ -342,7 +342,7 @@ module atm_time_integration
                call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
                call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
-   
+
                allocate(delsq_theta(nVertLevels,nCells+1))
                allocate(delsq_w(nVertLevels,nCells+1))
 !!               allocate(qtot(nVertLevels,nCells+1))  ! initializing this earlier in solution sequence
@@ -446,7 +446,7 @@ module atm_time_integration
 
             do small_step = 1, number_sub_steps(rk_step)
 
-      
+
                call mpas_timer_start('atm_advance_acoustic_step')
                block => domain % blocklist
                do while (associated(block))
@@ -1964,7 +1964,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: scalar_old, scalar_new, scalar_tend_save
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer, dimension(:,:), pointer :: advCellsForEdge, edgesOnCell
@@ -1977,6 +1977,8 @@ module atm_time_integration
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), pointer :: coef_3rd_order
 
+      real (kind=RKIND), dimension(nVertLevels,10) :: scalar_weight2
+      integer, dimension(10) :: ica
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -1991,6 +1993,7 @@ module atm_time_integration
       flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
+
 
       if (present(advance_density)) then
          local_advance_density = advance_density
@@ -2016,7 +2019,6 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
-      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
       call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend_save)
 
@@ -2047,17 +2049,51 @@ module atm_time_integration
 
       !  horiz_flux_arr stores the value of the scalar at the edge.
       !  a better name perhaps would be scalarEdge
+
       do iEdge=edgeStart,edgeEnd
-         horiz_flux_arr(:,:,iEdge) = 0.0
-         do j=1,nAdvCellsForEdge(iEdge)
-            iAdvCell = advCellsForEdge(j,iEdge)
-            do k=1,nVertLevels
-               scalar_weight = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)   ! Assume coef_3rd_order always >= 0
-               do iScalar=1,num_scalars
-                  horiz_flux_arr(iScalar,k,iEdge) = horiz_flux_arr(iScalar,k,iEdge) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
+
+         select case(nAdvCellsForEdge(iEdge))
+
+         case(10)
+
+            do j=1,10
+               do k=1,nVertLevels
+                  scalar_weight2(k,j) = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)
                end do
             end do
-         end do
+            do j=1,10
+               ica(j) = advCellsForEdge(j,iEdge)
+            end do
+            do k = 1,nVertLevels
+               do iScalar = 1,num_scalars
+                  horiz_flux_arr(iScalar,k,iEdge) = &
+                       scalar_weight2(k,1)  * scalar_new(iScalar,k,ica(1)) + &
+                       scalar_weight2(k,2)  * scalar_new(iScalar,k,ica(2)) + &
+                       scalar_weight2(k,3)  * scalar_new(iScalar,k,ica(3)) + &
+                       scalar_weight2(k,4)  * scalar_new(iScalar,k,ica(4)) + &
+                       scalar_weight2(k,5)  * scalar_new(iScalar,k,ica(5)) + &
+                       scalar_weight2(k,6)  * scalar_new(iScalar,k,ica(6)) + &
+                       scalar_weight2(k,7)  * scalar_new(iScalar,k,ica(7)) + &
+                       scalar_weight2(k,8)  * scalar_new(iScalar,k,ica(8)) + &
+                       scalar_weight2(k,9)  * scalar_new(iScalar,k,ica(9)) + &
+                       scalar_weight2(k,10) * scalar_new(iScalar,k,ica(10))
+               end do
+            end do
+
+         case default
+
+            horiz_flux_arr(:,:,iEdge) = 0.0
+            do j=1,nAdvCellsForEdge(iEdge)
+               iAdvCell = advCellsForEdge(j,iEdge)
+               do k=1,nVertLevels
+                  scalar_weight = adv_coefs(j,iEdge) + sign(coef_3rd_order,uhAvg(k,iEdge))*adv_coefs_3rd(j,iEdge)   ! Assume coef_3rd_order always >= 0
+                  do iScalar=1,num_scalars
+                     horiz_flux_arr(iScalar,k,iEdge) = horiz_flux_arr(iScalar,k,iEdge) + scalar_weight * scalar_new(iScalar,k,iAdvCell)
+                  end do
+               end do
+            end do
+
+         end select
       end do
 
 !$OMP BARRIER
@@ -2078,10 +2114,10 @@ module atm_time_integration
                ! here we add the horizontal flux divergence into the scalar tendency.
                ! note that the scalar tendency is modified.
                do k=1,nVertLevels
-                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)/areaCell(iCell)
+                  rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*dvEdge(iEdge)*invAreaCell(iCell)
                   do iScalar=1,num_scalars
                         scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
-                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)/areaCell(iCell)
+                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)*invAreaCell(iCell)
                   end do
                end do
                
@@ -2110,7 +2146,7 @@ module atm_time_integration
                do k=1,nVertLevels
                   do iScalar=1,num_scalars
                         scalar_tend(iScalar,k,iCell) = scalar_tend(iScalar,k,iCell) &
-                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)/areaCell(iCell)
+                               - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge)*horiz_flux_arr(iScalar,k,iEdge)*invAreaCell(iCell)
                   end do
                end do
                
