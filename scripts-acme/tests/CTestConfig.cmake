@@ -8,5 +8,6 @@ set(CTEST_DROP_LOCATION "/submit.php?project=ACME_Climate")
 set(CTEST_DROP_SITE_CDASH TRUE)
 
 set(CTEST_TEST_TIMEOUT 3600)
+set(DART_TESTING_TIMEOUT 3600)
 
 set(BUILDNAME "acme_scripts_regression")
