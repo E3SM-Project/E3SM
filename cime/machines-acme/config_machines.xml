@@ -1384,13 +1384,7 @@
             </walltimes>
          </batch_system>
          <mpirun mpilib="default">
-           <executable>aprun</executable>
-             <arguments>
-                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
-                <arg name="tasks_per_numa"> -S {{ tasks_per_numa }}</arg>
-                <arg name="tasks_per_node"> -N {{ tasks_per_node }}</arg>
-                <arg name="thread_count"> -d {{ thread_count }}</arg>
-             </arguments>
+           <executable args="default">aprun</executable>
          </mpirun>
          
 </machine>
@@ -1634,5 +1628,8 @@
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
-<default_run_suffix>$config{'EXEROOT'}/cesm.exe >> cesm.log.$LID 2>&amp;1</default_run_suffix>
+<default_run_suffix>
+  <default_run_exe>$config{'EXEROOT'}/cesm.exe </default_run_exe>
+  <default_run_misc_suffix> >> cesm.log.$LID 2>&amp;1 </default_run_misc_suffix>
+</default_run_suffix>
 </config_machines>
