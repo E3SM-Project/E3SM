@@ -11,6 +11,9 @@ MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_test_compute_interval.o \
           mpas_ocn_high_frequency_output.o \
           mpas_ocn_zonal_mean.o \
+          mpas_ocn_lagrangian_particle_tracking_interpolations.o \
+          mpas_ocn_particle_list.o \
+          mpas_ocn_lagrangian_particle_tracking.o \
           mpas_ocn_eliassen_palm.o \
           mpas_ocn_time_filters.o \
           mpas_ocn_mixed_layer_depths.o
@@ -20,6 +23,10 @@ all: $(OBJS)
 mpas_ocn_analysis_driver.o: $(MEMBERS)
 
 mpas_ocn_okubo_weiss.o: mpas_ocn_okubo_weiss_eigenvalues.o
+
+mpas_ocn_particle_list.o:
+
+mpas_ocn_lagrangian_particle_tracking.o: mpas_ocn_particle_list.o mpas_ocn_lagrangian_particle_tracking_interpolations.o 
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
