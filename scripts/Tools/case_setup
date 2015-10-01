@@ -46,12 +46,13 @@ my $eol = "\n";
 *STDOUT->autoflush();                  
 
 # Parse command-line options.
-my %opts = ();
+my %opts = (loglevel=>"INFO");
 
 GetOptions(
     "h|help"     => \$opts{'help'},
     "clean"      => \$opts{'clean'}, 	
     "testmode"   => \$opts{'testmode'}, 	
+    "loglevel=s"     => \$opts{'loglevel'},
 )  or usage();
 
 # Give usage message.
@@ -81,6 +82,13 @@ unshift @INC, @dirs;
 require Config::SetupTools;
 require Task::TaskMaker;
 require Batch::BatchMaker;
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+my $logger = Log::Log4perl::get_logger();
 
 my %xmlvars=();
 SetupTools::getxmlvars($caseroot, \%xmlvars);
@@ -89,10 +97,8 @@ SetupTools::getxmlvars($caseroot, \%xmlvars);
 my $din_loc_root = $xmlvars{'DIN_LOC_ROOT'};
 my $testcase = $xmlvars{'TESTCASE'};
 if (! -d $din_loc_root) {
-    if ($testcase eq 'SBN') {    
-     	# do nothing 
-    } else {
-	die "ERROR case_setup: inputdata root is not a directory: \"$din_loc_root\" \n";
+    if ($testcase ne 'SBN') {    
+	$logger->logdie( "ERROR case_setup: inputdata root is not a directory: \"$din_loc_root\" ");
     }
 }
 
@@ -117,10 +123,12 @@ foreach my $attr (keys %xmlvars) {
     $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 if ($fail_setup) { 
-    print "$strmacros" if(defined($strmacros));
-    print "$strbuild" if(defined($strbuild));
-    print "$strrun" if(defined($strrun));
-    die "Correct above and issue case_setup again \n";
+    my $outstr;
+    $outstr = "$strmacros\n" if(defined($strmacros));
+    $outstr .= "$strbuild\n" if(defined($strbuild));
+    $outstr .= "$strrun\n" if(defined($strrun));
+    $outstr .= "Correct above and issue case_setup again ";
+    $logger->logdie($outstr);
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -131,25 +139,25 @@ if (! $clean ) {
 
     my $mach = $xmlvars{'MACH'};
     if (! defined $mach ) {
-	die "ERROR case_setup: xml variable MACH is not set \n";
+	$logger->logdie("ERROR case_setup: xml variable MACH is not set ");
     }
     my $case = $xmlvars{'CASE'};
     if (! defined $case ) {
-	die "ERROR case_setup: xml variable CASE is not set \n";
+	$logger->logdie("ERROR case_setup: xml variable CASE is not set ");
     }
 
     #--------------------------------------------------------------------------
     # Create Macros file only if it does not exist
     #--------------------------------------------------------------------------
     if (!-f "./Macros") {
-	print "Creating Macros file for $mach$eol";
+	$logger->info( "Creating Macros file for $mach");
 	SetupTools::set_compiler("$xmlvars{OS}",
 				 "$xmlvars{MACHDIR}/config_compilers.xml",
 				 "$xmlvars{COMPILER}",
 				 "$xmlvars{MACH}", 
-				 "$xmlvars{MPILIB}", 0, 'Macros'  );
+				 "$xmlvars{MPILIB}", 'Macros'  );
     } else {
-	print "Macros script already created ...skipping$eol ";
+	$logger->info( "Macros script already created ...skipping");
     }
     # Set tasks to 1 if mpi-serial library
     if($xmlvars{MPILIB} eq "mpi-serial"){
@@ -157,7 +165,7 @@ if (! $clean ) {
 	    if($attr =~ /NTASKS_/){
 		$xmlvars{$attr}=1;
 		my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id $attr -val 1";
-		system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+		system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 		
 	    }
 	}
@@ -174,7 +182,7 @@ if (! $clean ) {
 		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
 		$xmlvars{$ntasks}=$xmlvars{$ninst};
 	    }else{
-		die "ERROR case_setup: $comp NINST value greater than $comp NTASKS";
+		$logger->logdie("ERROR case_setup: $comp NINST value greater than $comp NTASKS");
 	    }
 	}
 	if($xmlvars{$nthrds} > 1){
@@ -183,23 +191,23 @@ if (! $clean ) {
     }
 
     if ($build_threaded eq "TRUE" and $xmlvars{"COMPILER"} eq "nag") {
-        die "ERROR cesm_setup: it is not possible to run with OpenMP if using the NAG Fortran compiler\n";
+        $logger->logdie("ERROR cesm_setup: it is not possible to run with OpenMP if using the NAG Fortran compiler");
     }
 
     my $sysmod = "./xmlchange -noecho BUILD_THREADED=$build_threaded";
-    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("ERROR cesm_setup: $sysmod failed: $?");
 
     if (-f "$caseroot/$case.run") {
-	print "Machine/Decomp/Pes configuration has already been done ...skipping$eol ";
+	$logger->info( "Machine/Decomp/Pes configuration has already been done ...skipping ");
 
     } else {
 
 	my $sysmod = "./Tools/check_lockedfiles";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 	
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 	wait;
 	
         # Compute cost based on PE count
@@ -236,18 +244,18 @@ if (! $clean ) {
 	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $dcost + $lcost;
 	
 	my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_PCOST -val $pcost";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_ESTCOST -val $estcost";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 	
 	#--------------------------------------------------------------
 	# create batch file
 	#--------------------------------------------------------------
-	print "Creating batch script $case.run $eol";
+	$logger->info( "Creating batch script $case.run");
 	# Use BatchFactory to get the appropriate instance of a BatchMaker,
 	# use it to create our batch scripts
 	my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $xmlvars{'CASEROOT'},
@@ -263,11 +271,11 @@ if (! $clean ) {
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
 
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
-	print "Creating batch script $case.st_archive\n";
+	$logger->info("Creating batch script $case.st_archive");
 	$batchmaker->overrideNodeCount(1);
 
 	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
-	print "Creating batch script $case.lt_archive\n";
+	$logger->info("Creating batch script $case.lt_archive");
 	$batchmaker->overrideNodeCount(1);
 
 	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
@@ -276,8 +284,8 @@ if (! $clean ) {
 	# to check that it does not change once case_setup is invoked
 	if (! -e "LockedFiles/env_mach_pes.xml.locked") {
 	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml.locked";
-	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
-	    print "Locking file env_mach_pes.xml $eol";
+	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	    $logger->info("Locking file env_mach_pes.xml ");
 	}
     }
     
@@ -285,7 +293,7 @@ if (! $clean ) {
     # Create user_nl files for the required number of instances
     #--------------------------------------------------------------------------
     if (!-f "./user_nl_cpl") {
-	print "Creating user_nl_xxx files for components and cpl$eol";
+	$logger->info("Creating user_nl_xxx files for components and cpl");
     }
     my @models = qw( ATM LND ICE OCN GLC ROF WAV );
     # loop over models
@@ -295,7 +303,7 @@ if (! $clean ) {
 	_build_usernl_files($caseroot, $cimeroot, $model, $comp);
 	if ($comp eq "cism")  {
 	    my $sysmod = "$cimeroot/../components/cism/cime_config/cism.template $caseroot";
-	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 	}
     }
     _build_usernl_files($caseroot, $cimeroot, "drv", "cpl");
@@ -303,11 +311,10 @@ if (! $clean ) {
     #--------------------------------------------------------------------------
     # Run preview namelists for scripts
     #--------------------------------------------------------------------------
-    print "Running preview_namelist script $eol";
-    my $sysmod = "$caseroot/preview_namelists";
-    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    print "See ./CaseDoc for component namelists $eol";
-    print "If an old case build already exists, might want to run ${case}.clean_build before building $eol";
+    $logger->info("Running preview_namelist script ");
+    qx( $caseroot/preview_namelists -loglevel $opts{loglevel} ) or $logger->logdie("ERROR: $caseroot/preview_namelists failed: $?");
+    $logger->info("See ./CaseDoc for component namelists ");
+    $logger->info("If an old case build already exists, might want to run ${case}.clean_build before building ");
 
     #--------------------------------------------------------------------------
     # Create test script if appropriate
@@ -316,15 +323,15 @@ if (! $clean ) {
 	if ( -e "$caseroot/$case.test") {
 	    # do nothing
 	} else {
-	    print "Starting testcase_setup \n";
+	    $logger->info("Starting testcase_setup ");
 	    my $sysmod = "./testcase_setup -caseroot $caseroot";
-	    system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-	    print "Finished testcase_setup \n";
+	    system($sysmod) == 0 or $logger->logdie("ERROR: $sysmod failed: $?");
+	    $logger->info("Finished testcase_setup ");
 	}
     }
 
     my $fh = new IO::File;
-    $fh->open(">>CaseStatus") or die "can't open file: CaseStatus\n";
+    $fh->open(">>CaseStatus") or $logger->logdie("can't open file: CaseStatus");
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
     print $fh "cesm_setup $sdate $eol";
     $fh->close();
@@ -339,7 +346,7 @@ if ($clean) {
 
     my $case = $xmlvars{'CASE'};
     if (!-f "$caseroot/$case.run" ) {
-	print "clean option has already been invoked ...skipping $eol";
+	$logger->info("clean option has already been invoked ...skipping ");
 	exit;
     }
 	
@@ -348,45 +355,45 @@ if ($clean) {
     my $backupdir = "PESetupHist/b.${id}";
     if (!-d ${backupdir}) {
 	$sysmod = "mkdir -p ${backupdir}";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
     }
     # back up relevant files
     $sysmod = "cp ${case}.run env_build.xml env_mach_pes.xml Macros* ${backupdir}";
-    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 
     # remove relevant files from $caseroot
     $sysmod = "rm ./${case}.run";
-    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 
     # remove relevant files from $caseroot/LockedFiels
     my @files = <${caseroot}/LockedFiles/*build* ${caseroot}/LockedFiles/*mach_pes*>;
     foreach my $file (@files) {
 	$sysmod = "rm $file";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
     }
 
     # only do the following if are NOT in testmode
     if (! $testmode)  {
 	# rebuild the models (even on restart)
 	$sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
-	system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
     
 	# backup and then clean test script
 	if( -e "$caseroot/$case.test") {
 	    $sysmod = "cp ${case}.test ${backupdir}";
-	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 
 	    $sysmod = "rm ./${case}.test";
-	    system($sysmod) == 0 or die "ERROR case_setup: $sysmod failed: $?\n";
-	    print "Successfully cleaned test script $case.test $eol";
+	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	    $logger->info("Successfully cleaned test script $case.test ");
 	}
     }
 
-    print "Successfully cleaned batch script $case.run $eol";
-    print "Some files have been saved to ${backupdir}$eol";
+    $logger->info("Successfully cleaned batch script $case.run ");
+    $logger->info("Some files have been saved to ${backupdir}");
 
     my $fh = new IO::File;
-    $fh->open(">>CaseStatus") or die "can't open file: CaseStatus\n";
+    $fh->open(">>CaseStatus") or $logger->logdie("can't open file: CaseStatus");
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
     print $fh "case_setup -clean $sdate $eol";
     $fh->close();
@@ -402,12 +409,12 @@ sub _build_usernl_files {
     my $file = `./xmlquery CONFIG_${model}_FILE -value`;
     my $dir  = dirname($file);
 
-    (-d $dir) or die "ERROR _build_user_nl_files: cannot find cime_config directory $dir for component $comp\n"; 
+    (-d $dir) or $logger->logdie("ERROR _build_user_nl_files: cannot find cime_config directory $dir for component $comp"); 
 
     if ($comp eq 'cpl') {
 	if ( ! -f "$caseroot/user_nl_cpl" ) {
 	    my $sysmod = "cp $dir/user_nl_cpl $caseroot/user_nl_cpl";
-	    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+	    system($sysmod) == 0 or $logger->logdie("ERROR build_usernl_files: $sysmod failed: $?");
 	}
     } else {
 	my $NINST = `./xmlquery NINST_${model} -value`;  
@@ -419,15 +426,15 @@ sub _build_usernl_files {
 		    $inst_string = `printf _%04d $inst_counter`;
 		    if ( ! -f "$caseroot/user_nl_${comp}${inst_string}" ) {
 			my $sysmod = "cp $dir/user_nl_${comp} $caseroot/user_nl_${comp}${inst_string}";
-			system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
+			system($sysmod) == 0 or $logger->logdie("ERROR build_usernl_files: $sysmod failed: $?");
 		    }
 		    $inst_counter = $inst_counter + 1;
 		}
 	    } else {
 		if ( ! -f "$caseroot/user_nl_${comp}" ) {
-		    (-f "${dir}/user_nl_${comp}" or die "ERROR _build_usernl_files: $dir/user_nl_${comp} does not exist");
+		    (-f "${dir}/user_nl_${comp}") or $logger->logdie("ERROR _build_usernl_files: $dir/user_nl_${comp} does not exist");
 		    my $sysmod = "cp $dir/user_nl_${comp} $caseroot/user_nl_${comp}";
-		    system($sysmod) == 0 or die "ERROR _build_usernl_files: $sysmod failed: $?\n";
+		    system($sysmod) == 0 or $logger->logdie("ERROR _build_usernl_files: $sysmod failed: $?");
 		}		    
 	    }
 	}

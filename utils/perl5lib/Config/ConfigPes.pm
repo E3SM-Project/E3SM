@@ -1,5 +1,5 @@
 package ConfigPes;
-my $pkg_nm = 'ConfigPes';
+my $pkg_nm = __PACKAGE__;
 
 use strict;
 use English;
@@ -7,25 +7,13 @@ use IO::File;
 use XML::LibXML;
 use Data::Dumper;
 use ConfigCase;
+use Log::Log4perl qw(get_logger);
+my $logger;
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    my $warning = <<END;
-WARNING:
-  The perl module XML::LibXML is needed for XML parsing in the CESM script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.  
-
-END
-    print "$warning\n";
-    exit(1);
+BEGIN{
+    $logger = get_logger();
 }
+
 
 #-----------------------------------------------------------------------------------------------
 sub setPes {
@@ -38,7 +26,7 @@ sub setPes {
 
 	# Reset the pes if a pes file is specified
 	my $pes_file = $$opts_ref{'pes_file'};
-	(-f "$pes_file")  or  die "** Cannot find pes_file \"$pes_file\" ***\n";
+	(-f "$pes_file")  or  $logger->logdie("** Cannot find pes_file \"$pes_file\" ***");
 	$config->reset_setup("$pes_file");    
 
     } else {
@@ -138,25 +126,25 @@ sub _setPESsettings
 
 	if (! defined $grid->getAttribute('name')) {
 	    my $name = $grid->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n");
 	}
     }
     foreach my $mach ($xml->findnodes(".//mach")) {
 	next if($mach->nodeType == XML_COMMENT_NODE);
 	if (! defined $mach->getAttribute('name')) {
 	    my $name = $mach->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n");
 	}
     }
     foreach my $pes ($xml->findnodes(".//pes")) {
 	next if($pes->nodeType == XML_COMMENT_NODE);
 	if (! defined $pes->getAttribute('pesize')) {
 	    my $name = $pes->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"pesize\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"pesize\" in $pes_file \n\n");
 	}
 	if (! defined $pes->getAttribute('compset')) {
 	    my $name = $pes->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"compset\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"compset\" in $pes_file \n\n");
 	}
     }
 
@@ -273,14 +261,14 @@ sub _setPESsettings
 	}
     }
     if (! defined $pe_select) {
-	die "ERROR: no pes match found in $pes_file \n";
+	$logger->logdie("ERROR: no pes match found in $pes_file ");
     } 
-    print "ConfigPES: grid          is $grid_longname \n";
-    print "ConfigPES: compset       is $compset_longname \n";
-    print "ConfigPES: grid match    is $grid_match \n";
-    print "ConfigPES: machine match is $mach_match\n";
-    print "ConfigPES: compset_match is $compset_match\n"; 
-    print "ConfigPES: pesize match  is $pesize_match \n"; 
+    $logger->info("ConfigPES: grid          is $grid_longname ");
+    $logger->info("ConfigPES: compset       is $compset_longname ");
+    $logger->info("ConfigPES: grid match    is $grid_match ");
+    $logger->info("ConfigPES: machine match is $mach_match");
+    $logger->info("ConfigPES: compset_match is $compset_match"); 
+    $logger->info("ConfigPES: pesize match  is $pesize_match "); 
     
     my $pes_per_node = $config->get('PES_PER_NODE');
     my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
