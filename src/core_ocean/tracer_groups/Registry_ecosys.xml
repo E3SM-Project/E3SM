@@ -1,45 +1,45 @@
-	<nml_record name="tracer_forcing_ecosysGRP">
-		<nml_option name="config_use_ecosysGRP" type="logical" default_value=".false." units="unitless"
+	<nml_record name="tracer_forcing_ecosysTracers">
+		<nml_option name="config_use_ecosysTracers" type="logical" default_value=".false." units="unitless"
 					description="if true, the 'ecosysGRP' category is enabled for the run"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
 					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_surface_restoring" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
 					description="if true, surface restoring source is applied to tracers in 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_interior_restoring" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
 					description="if true, interior restoring source is applied to tracers in 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_exponential_decay" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
 					description="if true, exponential decay source is applied to tracers in 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
 					description="if true, idealAge forcing source is applied to tracers in 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_ttd_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
 					description="if true, transit time distribution forcing source is applied to tracers in 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_ecosysGRP_surface_value" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_ecosysTracers_surface_value" type="logical" default_value=".false." units="unitless"
 					description="if true, surface value is computed for 'ecosysGRP' category"
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
 
 	<packages>
-		<package name="ecosysGRPPKG" description="This package includes variables required to include ecosysGRP."/>
+		<package name="ecosysTracersPKG" description="This package includes variables required to include ecosysGRP."/>
 	</packages>
 
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
-			<var_array name="ecosysTracers" dimensions="nVertLevels nCells Time" type="real" packages="ecosysGRPPKG" >
+			<var_array name="ecosysTracers" dimensions="nVertLevels nCells Time" type="real" packages="ecosysTracersPKG" >
 				<!-- Add constituents of tracer group -->
                                 <var name="PO4" array_group="ecosysGRP" units="mmol m^{-3}"
                                          description="Dissolved Inorganic Phosphate"
@@ -137,7 +137,7 @@
 
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
-			<var_array name="ecosysTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="ecosysGRPPKG">
+			<var_array name="ecosysTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersPKG">
 				<!-- Add constituents of tracer group -->
                                 <var name="PO4Tend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
                                          description="Dissolved Inorganic Phosphate Tendency"
@@ -235,7 +235,7 @@
 
 	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
-			<var_array name="ecosysTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="ecosysGRPPKG">
+			<var_array name="ecosysTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="ecosysTracersPKG">
 				<!-- Add constituents of tracer group -->
                                 <var name="PO4SurfaceFlux" array_group="ecosysGRP" units="mmol m^{-3} m s^{-1}"
                                          description="Dissolved Inorganic Phosphate Surface Flux"
@@ -330,7 +330,7 @@
 			</var_array>
 		</var_struct>
 
-	        <var_struct name="ecosysAuxiliary" time_levs="1" packages="ecosysGRPPKG">
+	        <var_struct name="ecosysAuxiliary" time_levs="1" packages="ecosysTracersPKG">
                         <var name="PH_PREV_3D" type="real" dimensions="nVertLevels nCells Time" units="pH"
                                  description="pH (3D) from previous timestep"
                         />
