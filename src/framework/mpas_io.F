@@ -3352,7 +3352,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_text
 
 
-   subroutine MPAS_io_put_att_int0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_int0d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3360,12 +3360,16 @@ module mpas_io
       character (len=*), intent(in) :: attName
       integer, intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      attValueLocal = attValue
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_int0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3478,7 +3482,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_int(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3489,7 +3499,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_int0d
 
 
-   subroutine MPAS_io_put_att_int1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_int1d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3497,12 +3507,17 @@ module mpas_io
       character (len=*), intent(in) :: attName
       integer, dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer, dimension(:), pointer :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      allocate(attValueLocal(size(attValue, dim=1)))
+      attValueLocal(:) = attValue(:)
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_int1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3624,18 +3639,26 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_ints(handle % iocontext % dminfo, size(attValueLocal, dim=1), attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
+
+      deallocate(attValueLocal)
 
       ! Maybe we should add attribute to list only after a successfull call to PIO?
 
    end subroutine MPAS_io_put_att_int1d
 
 
-   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3643,12 +3666,16 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      real (kind=RKIND) :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      attValueLocal = attValue
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_real0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3761,7 +3788,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_real(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3772,7 +3805,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_real0d
 
 
-   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3780,12 +3813,18 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      real (kind=RKIND), dimension(:), allocatable :: attValueLocal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      allocate(attValueLocal( size(attValue, dim=1) ) )
+
+      attValueLocal(:) = attValue(:)
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_real1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -3907,18 +3946,26 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValue) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_reals(handle % iocontext % dminfo, size(attValueLocal, dim=1), attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
+
+      deallocate(attValueLocal)
 
       ! Maybe we should add attribute to list only after a successfull call to PIO?
 
    end subroutine MPAS_io_put_att_real1d
 
 
-   subroutine MPAS_io_put_att_text(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_put_att_text(handle, attName, attValue, fieldname, syncVal, ierr)
 
       implicit none
 
@@ -3926,12 +3973,25 @@ module mpas_io
       character (len=*), intent(in) :: attName
       character (len=*), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      logical, intent(in), optional :: syncVal
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
+      integer :: valLen
+      character (len=StrKind) :: attValueLocal, trimmedVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
+
+      valLen = len_trim(attValue)
+      trimmedVal = trim(attValue)
+
+      if ( valLen > StrKind ) then
+         write(stderrUnit, *) ' WARNING: Attribute ''' // trim(attName) // ''' has a value longer than StrKIND. It will be cut to a length of ', StrKIND
+         attValueLocal = trimmedVal(1:StrKIND)
+      else
+         attValueLocal = trimmedVal
+      end if
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_att_text()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -4044,7 +4104,13 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+      if ( present(syncVal) ) then
+         if ( syncVal ) then
+            call mpas_dmpar_bcast_char(handle % iocontext % dminfo, attValueLocal, IO_NODE)
+         end if
+      end if
+
+      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
       if (pio_ierr /= PIO_noerr) then
 
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
@@ -4061,7 +4127,7 @@ module mpas_io
                return
             end if
 
-            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValue)) 
+            pio_ierr = PIO_put_att(handle % pio_file, varid, attName, trim(attValueLocal)) 
             if (pio_ierr /= PIO_noerr) then
                return
             end if

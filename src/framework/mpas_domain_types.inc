@@ -12,15 +12,15 @@
       type (dm_info), pointer :: dminfo
 
       ! Domain specific constants
-      logical :: on_a_sphere
-      logical :: is_periodic
-      real (kind=RKIND) :: sphere_radius
-      real (kind=RKIND) :: x_period
-      real (kind=RKIND) :: y_period
-      character (len=StrKIND) :: namelist_filename !< Constant: Name of namelist file
-      character (len=StrKIND) :: streams_filename !< Constant: Name of stream configuration file
-      character (len=StrKIND) :: mesh_spec !< mesh_spec attribute, read in from input file.
-      character (len=StrKIND) :: parent_id !< parent_id attribute, read in from input file.
+      logical :: on_a_sphere = .true.
+      logical :: is_periodic = .false.
+      real (kind=RKIND) :: sphere_radius = 1.0_RKIND
+      real (kind=RKIND) :: x_period = 0.0_RKIND
+      real (kind=RKIND) :: y_period = 0.0_RKIND
+      character (len=StrKIND) :: namelist_filename = '' !< Constant: Name of namelist file
+      character (len=StrKIND) :: streams_filename = '' !< Constant: Name of stream configuration file
+      character (len=StrKIND) :: mesh_spec = '' !< mesh_spec attribute, read in from input file.
+      character (len=StrKIND) :: parent_id = '' !< parent_id attribute, read in from input file.
 
       ! Back pointer to core
       type (core_type), pointer :: core => null()
