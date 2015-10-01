@@ -164,11 +164,17 @@ module ocn_forward_mode
       else
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       end if
+
+      call mpas_stream_mgr_read(domain % streamManager, ierr=err_tmp)
+      ierr = ior(ierr, err_tmp)
+
       call mpas_timer_stop('io_read')
       call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+      ierr = ior(ierr, err_tmp)
       call mpas_timer_stop('reset_io_alarms')
 
       ! Initialize submodules before initializing blocks.
