@@ -1,5 +1,5 @@
 package ConfigCase;
-my $pkg_nm = 'ConfigCase';
+my $pkg_nm = __PACKAGE__;
 
 #-----------------------------------------------------------------------------------------------
 # SYNOPSIS
@@ -70,27 +70,16 @@ use English;
 #use warnings;
 #use diagnostics;
 use IO::File;
-use Data::Dumper;
 use XML::LibXML;
 use File::Basename;
+use Log::Log4perl qw(get_logger);
+use SetupTools;
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    my $warning = <<END;
-WARNING:
-  The perl module XML::LibXML is needed for XML parsing in the CIME script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.  
 
-END
-    print "$warning\n";
-    exit(1);
+my $logger;
+
+BEGIN{
+    $logger = get_logger();
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -112,11 +101,11 @@ sub add_config_variables
 
     my ($self, $file, $srcroot, $cimeroot, $model) = @_;
 
-    (-f $file) || die "ERROR ConfigCase.pm::add_config_variables file \'$file\' does not exist \n";
+    (-f $file) or $logger->logdie ("ERROR ConfigCase.pm::add_config_variables file \'$file\' does not exist \n");
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my @nodes = $xml->findnodes(".//entry");
     if (! @nodes) {
-	die "ERROR add_config_variables: no variable elements in file $file \n"; 
+	$logger->logdie( "ERROR add_config_variables: no variable elements in file $file \n"); 
     }
     foreach my $node (@nodes) 
     {
@@ -125,7 +114,6 @@ sub add_config_variables
 	{
 	    my $node_name  = $define_node->nodeName();
 	    my $node_value = $define_node->textContent();
-
 	    if (defined $node_value) {
 		$node_value =~ s/\$MODEL/$model/;
 		$node_value =~ s/\$CIMEROOT/$cimeroot/;
@@ -139,10 +127,11 @@ sub add_config_variables
 		} else {
 		    $self->{$id}->{$node_name} = $node_value;
 		}
+		$logger->debug("id= $id name = $node_name value = $node_value\n");
 	    }
 	}
 	if (! defined $self->{$id}->{'value'} ) {
-	    die "ERROR add_config_variables: default_value must be set for $id in $file\n";
+	    $logger->logdie( "ERROR add_config_variables: default_value must be set for $id in $file\n");
 	}
     }
 }
@@ -157,11 +146,10 @@ sub set
     # true/false return before calling the set method.
 
     my ($self, $id, $value) = @_;
-    require SetupTools;
 
     # Check that the parameter name is in the configuration definition
     unless ($self->is_valid_name($id)) { 
-	die "ERROR ConfigCase::set: $id is not a valid name \n";
+	$logger->logdie ("ERROR ConfigCase::set: $id is not a valid name \n");
     }
 
     # Get the type description hash for the variable and check that the type is valid
@@ -174,8 +162,9 @@ sub set
     if ( defined $valid_values && $valid_values ne "" ) {
 	my $value = _clean($value);
 	my $is_list_value = $self->{$id}->{'list'};
-	SetupTools::is_valid_value($id, $value, $valid_values, $is_list_value) or die
-	    "ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n";
+	SetupTools::is_valid_value($id, $value, $valid_values, $is_list_value) 
+	    or $logger->logdie(
+		"ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n");
     }
     # Add the new value to the object's internal data structure.
     $self->{$id}->{'value'} = $value;
@@ -189,8 +178,8 @@ sub get
     # Return requested value.
     my ($self, $name) = @_;
 
-    defined($self->{$name}) or die "ERROR ConfigCase.pm::get: unknown parameter name: $name\n";
-
+    defined($self->{$name}) or $logger->logde( "ERROR ConfigCase.pm::get: unknown parameter name: $name\n");
+    $logger->debug("GET: $name $self->{$name}->{value}\n");
     return $self->{$name}->{'value'};
 }
 
@@ -249,7 +238,7 @@ sub write_file
     if ($output_xml_file =~ /env_archive.xml/) {
 
 	if (! $input_xml_file ) {
-	    die "ERROR write_file: must specify input_xml_file as argument for writing out $output_xml_file \n";
+	    $logger->logdie ("ERROR write_file: must specify input_xml_file as argument for writing out $output_xml_file \n");
 	} else {
 	    open CONFIG_ARCHIVE, $input_xml_file or die $!;
 	    while (<CONFIG_ARCHIVE>) {
@@ -300,7 +289,7 @@ sub write_file
 			    write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value);
 			}
 		    } else {
-			die "file attribute for variable $id is not defined \n";
+			$logger->logdie("file attribute for variable $id is not defined \n");
 		    }
 		}
 	    }
@@ -346,7 +335,7 @@ sub _get_type
 # Return 'type' attribute for requested variable
 
     my ($self, $name) = @_;
-
+    
     return $self->{$name}->{'type'};
 }
 
@@ -369,7 +358,7 @@ sub _get_typedesc
     if ($type_def =~ /^(char|logical|integer|real)/ ) {
 	$datatype{'type'} = $1;
     } else {
-	die "ERROR: in $nm (package $pkg_nm): datatype $type_def is NOT valid for $name \n";
+	$logger->logdie ("ERROR: in $nm (package $pkg_nm): datatype $type_def is NOT valid for $name \n");
     }
     if ( $datatype{'type'} eq "char" ) {
        if ($type_def =~ /^char\*([0-9]+)/ ) {
@@ -410,7 +399,9 @@ sub _print_file_header
     my $outputfile = basename($filename);
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($headerfile);
     my @nodes = $xml->findnodes(".//file[\@name=\"$outputfile\"]/header");
-    if (! @nodes) {die " ERROR: no header nodes found for file $outputfile \n";}
+    if (! @nodes) {
+	$logger->logdie (" ERROR: no header nodes found for file $outputfile \n");
+    }
     my $text = $nodes[0]->textContent();
     chomp($text);
     print $fh "<header>\n";
@@ -443,7 +434,7 @@ sub write_docbook_master
     $fh = IO::File->new($filename, '>' ) or die "can't open file: $filename\n";
 
     my $gid;
-
+    $logger->info("Writing $filename\n");
     if ($filename =~ "case") { 
         $gid = "case";
 	print $fh "<table><title>env_case.xml variables</title>\n";

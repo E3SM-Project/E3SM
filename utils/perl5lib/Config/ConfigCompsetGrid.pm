@@ -8,24 +8,11 @@ use IO::File;
 use XML::LibXML;
 use Data::Dumper;
 use ConfigCase;
+use Log::Log4perl qw(get_logger);
+my $logger;
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    my $warning = <<END;
-WARNING:
-  The perl module XML::LibXML is needed for XML parsing in the CIME script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.  
-
-END
-    print "$warning\n";
-    exit(1);
+BEGIN{
+    $logger = get_logger();
 }
 
 # Global variable
@@ -122,20 +109,19 @@ sub getCompsetLongname
 
     }
     if (! defined $pes_setby) {
-	print "ERROR create_newcase: no compset match was found in any of the following files \n";
+	my $outstr = "ERROR create_newcase: no compset match was found in any of the following files:";
 	foreach my $node_file (@nodes) {
 	    my $file = $node_file->textContent();
 	    $file =~ s/\$CIMEROOT/$cimeroot/;
 	    $file =~ s/\$SRCROOT/$srcroot/;
 	    $file =~ s/\$MODEL/$model/;
-	    print " $file \n";
+	    $outstr .= "$file\n";
 	}
-	die "Exiting";
+	$logger->logdie ($outstr);
     } else {
-	print "\n";
-	print "File specifying possible compsets: $compsets_file \n";
-	print "Primary component (specifies possible compsets, pelayouts and pio settings): $pes_setby \n";
-	print "Compset: $compset_longname \n";
+	$logger->info( "File specifying possible compsets: $compsets_file ");
+	$logger->info( "Primary component (specifies possible compsets, pelayouts and pio settings): $pes_setby ");
+	$logger->info("Compset: $compset_longname ");
     }   
 
     return ($pes_setby, $support_level);
@@ -402,9 +388,8 @@ sub setCompsetGeneralVars
 	  }
 	} else {
 	    my $cimeroot = $config->get('CIMEROOT');
-	    print "ERROR : $id is not a valid name in $compsets_file \n";
-	    print "*** See possible values in file $cimeroot/driver_cpl/cimeconfig/config_cime.xml ***";
-	    die "Exiting";
+	    $logger->logdie( "ERROR : $id is not a valid name in $compsets_file 
+	    *** See possible values in file $cimeroot/driver_cpl/cimeconfig/config_cime.xml ***");
 	}
     }
 }
@@ -441,16 +426,16 @@ sub setComponent {
 	}
     }
     if (! defined $found_match) {
-	print "\n ERROR ConfigCompsetGrid::setComponent: no match found in desc elements in file \n";
-	print "         $setup_comp_file \n";
-	print "      for $compset_longname \n"; 
-	print "         Possible matches are: \n\n";
+	$logger->fatal( "ERROR ConfigCompsetGrid::setComponent: no match found in desc elements in file 
+	         $setup_comp_file 
+	      for $compset_longname  
+	        Possible matches are: ");
 	foreach my $node ($xml->findnodes(".//description/desc")) {
 	    my $match = $node->getAttribute('compset');
 	    my $desc  = $node->textContent();
-	    print "     $match: $desc \n";
+	    $logger->fatal("     $match: $desc ");
 	}
-	die "Exiting"; 
+	$logger->logdie ("Exiting"); 
     }
 
     # Now set the actual values of the variable
@@ -538,7 +523,7 @@ sub setComponent {
 #-------------------------------------------------------------------------------
 sub printGridCompsetInfo 
 {
-    my ($grids_file, $print_flag, $config) = @_;
+    my ($grids_file,  $config) = @_;
 
     my $caseroot	   = $config->get('CASEROOT');
     my $grid_longname	   = $config->get('GRID');
@@ -606,42 +591,39 @@ sub printGridCompsetInfo
 	}
     }
 
-    if ($print_flag) {
-	my $compset_longname = $config->get('COMPSET');
+    my $compset_longname = $config->get('COMPSET');
 
-	my $fh_case = new IO::File;
-	$fh_case->open(">>$caseroot/README.case") or die "can't open file: README.case\n";
+    my $fh_case = new IO::File;
+    $fh_case->open(">>$caseroot/README.case") or die "can't open file: README.case\n";
 
-	my $fh_stdout = *STDOUT;
-	my @file_handles = ($fh_stdout, $fh_case);
+    my $fh_stdout = *STDOUT;
+    my $outstr;
+    $outstr .= "Component set: longname \n";
+    $outstr .= "  $compset_longname \n";
+    $outstr .= "Component set Description: \n";
+    $outstr .= " $desc_comp \n";
+    $outstr .= "Grid: \n";
+    $outstr .= "  $grid_longname \n";
+    $outstr .= "  ATM_GRID = $atm_grid  NX_ATM=$atm_nx NY_ATM=$atm_ny \n";
+    $outstr .= "  LND_GRID = $lnd_grid  NX_LND=$lnd_nx NX_LND=$lnd_ny \n";
+    $outstr .= "  ICE_GRID = $ice_grid  NX_ICE=$ice_nx NX_ICE=$ice_ny \n";
+    $outstr .= "  OCN_GRID = $ocn_grid  NX_OCN=$ocn_nx NX_OCN=$ocn_ny \n";
+    $outstr .= "  ROF_GRID = $rof_grid  NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
+    $outstr .= "  GLC_GRID = $glc_grid  NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
+    $outstr .= "  WAV_GRID = $wav_grid  NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
+    $outstr .= "Grid Description: \n";
+    $outstr .= "  $desc_grid \n";
+    $outstr .= "Non-Default Options: \n";
+    my @ids = keys %newxml;
+    foreach my $id (sort @ids) {
+	my $value = $newxml{$id};
+	$outstr .=     "  $id: $value \n";
+    } 
+    print $fh_case $outstr;
+    $logger->info($outstr);
+    $fh_case->close();
+}	
 
-	foreach my $fhandle (@file_handles) {
-	    print $fhandle "Component set: longname \n";
-	    print $fhandle "  $compset_longname \n";
-	    print $fhandle "Component set Description: \n";
-	    print $fhandle " $desc_comp \n";
-	    print $fhandle "Grid: \n";
-	    print $fhandle "  $grid_longname \n";
-	    print $fhandle "  ATM_GRID = $atm_grid  NX_ATM=$atm_nx NY_ATM=$atm_ny \n";
-	    print $fhandle "  LND_GRID = $lnd_grid  NX_LND=$lnd_nx NX_LND=$lnd_ny \n";
-	    print $fhandle "  ICE_GRID = $ice_grid  NX_ICE=$ice_nx NX_ICE=$ice_ny \n";
-	    print $fhandle "  OCN_GRID = $ocn_grid  NX_OCN=$ocn_nx NX_OCN=$ocn_ny \n";
-	    print $fhandle "  ROF_GRID = $rof_grid  NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
-	    print $fhandle "  GLC_GRID = $glc_grid  NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
-	    print $fhandle "  WAV_GRID = $wav_grid  NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
-	    print $fhandle "Grid Description: \n";
-	    print $fhandle "  $desc_grid \n";
-	    print $fhandle "Non-Default Options: \n";
-	    my @ids = keys %newxml;
-	    foreach my $id (sort @ids) {
-		my $value = $newxml{$id};
-		print $fhandle     "  $id: $value \n";
-	    } 
-	    print $fhandle "\n";
-	}
-	$fh_case->close();
-    }	
-}
 
 #-----------------------------------------------------------------------------------------------
 #                               Private routines
