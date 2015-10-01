@@ -91,7 +91,7 @@ module li_statistics
      type (mpas_pool_type), pointer :: scratchPool
 
      ! mesh dimensions 
-     integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve
+     integer, pointer :: nVertLevels, nVertInterfaces, nCellsSolve, nEdgesSolve
 
      ! mesh arrays
      integer, dimension(:),   pointer :: indexToCellID, indexToEdgeID
@@ -213,6 +213,7 @@ module li_statistics
 
         ! mesh dimensions
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+        call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
@@ -378,10 +379,9 @@ module li_statistics
         iceEnergySum = iceEnergySum + localSum*rhoi*cp_ice
 
         ! normal velocity at cell edges; find the maximum magnitude
-        !TODO - If velocity is defined at layer interfaces, then nVertLevels -> nVertLevels + 1
 
         call li_compute_field_local_stats(dminfo,                               &
-                                          nVertLevels,        nEdgesSolve,      &
+                                          nVertInterfaces,        nEdgesSolve,  &
                                           normalVelocity(:,1:nEdgesSolve),      &
                                           iceEdgeMask(1:nEdgesSolve),           &
                                           localSum,                             &
@@ -409,7 +409,7 @@ module li_statistics
 
         call li_compute_field_local_stats(dminfo,                                    &
                                           1,                  nEdgesSolve,           &
-                                          normalVelocity(nVertLevels,1:nEdgesSolve), &
+                                          normalVelocity(nVertInterfaces,1:nEdgesSolve), &
                                           iceEdgeMask(1:nEdgesSolve),                &
                                           localSum,                                  &
                                           localMin,           localMax,              &
@@ -429,9 +429,8 @@ module li_statistics
         endif
 
         ! allocate and initialize some diagnostic arrays if not done already 
-        !TODO - If velocity is defined at layer interfaces, then nVertLevels -> nVertLevels + 1
         if (.not. allocated(diagnosticSpeed)) then
-           allocate(diagnosticSpeed(nVertLevels))
+           allocate(diagnosticSpeed(nVertInterfaces))
            diagnosticSpeed(:) = 0.0_RKIND
         endif
 
@@ -540,13 +539,15 @@ module li_statistics
      call mpas_dmpar_sum_real (dminfo, diagnosticSurfaceTemperature, diagnosticSurfaceTemperature)
      call mpas_dmpar_sum_real (dminfo, diagnosticBasalTemperature, diagnosticBasalTemperature)
 
-     !TODO - Change to nVertLevels + 1 if velocity lives on layer interfaces
-     allocate (workLevel(nVertLevels))
-     call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticSpeed, workLevel)
+     allocate (workLevel(nVertInterfaces))
+     call mpas_dmpar_sum_real_array(dminfo, nVertInterfaces, diagnosticSpeed, workLevel)
      diagnosticSpeed(:) = workLevel(:)
+     deallocate(workLevel)
 
+     allocate (workLevel(nVertLevels))
      call mpas_dmpar_sum_real_array(dminfo, nVertLevels, diagnosticTemperature, workLevel)
      diagnosticTemperature(:) = workLevel(:)
+     deallocate(workLevel)
      
      ! Write global and local stats to the log file
  
@@ -599,7 +600,6 @@ module li_statistics
      endif   ! my_proc_id = IO_NODE
 
      ! clean up
-     deallocate(workLevel)
      deallocate(diagnosticTemperature)
      deallocate(diagnosticSpeed)
 
