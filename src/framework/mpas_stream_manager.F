@@ -3493,19 +3493,19 @@ module mpas_stream_manager
                 if ( itr % memberType == MPAS_POOL_CONFIG) then
                     if ( itr % dataType == MPAS_POOL_REAL ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, realAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, realAtt, local_ierr)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, realAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_INTEGER ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, intAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, intAtt, local_ierr)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, intAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_CHARACTER ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, charAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, local_ierr)
+                        call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_LOGICAL ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, logAtt)
                         if (logAtt) then
-                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'YES', local_ierr)
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'YES', syncVal=.false., ierr=local_ierr)
                         else
-                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'NO', local_ierr)
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, 'NO', syncVal=.false., ierr=local_ierr)
                         end if
                     end if
 
@@ -3520,7 +3520,7 @@ module mpas_stream_manager
             ! Generate file_id and write to stream
             !
             call gen_random(idLength, file_id)
-            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, local_ierr)
+            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, syncVal=.true., ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
