@@ -53,6 +53,7 @@ module atm2lndType
      real(r8), pointer :: forc_solai_grc                (:,:) => null() ! diffuse radiation (numrad) (vis=forc_solsd, nir=forc_solld)
      real(r8), pointer :: forc_solar_grc                (:)   => null() ! incident solar radiation
      real(r8), pointer :: forc_ndep_grc                 (:)   => null() ! nitrogen deposition rate (gN/m2/s)
+     real(r8), pointer :: forc_pdep_grc                 (:)   => null() ! phosphorus deposition rate (gP/m2/s)
      real(r8), pointer :: forc_pc13o2_grc               (:)   => null() ! C13O2 partial pressure (Pa)
      real(r8), pointer :: forc_po2_grc                  (:)   => null() ! O2 partial pressure (Pa)
      real(r8), pointer :: forc_aer_grc                  (:,:) => null() ! aerosol deposition array
@@ -169,6 +170,7 @@ contains
     allocate(this%forc_solai_grc                (begg:endg,numrad)) ; this%forc_solai_grc                (:,:) = ival
     allocate(this%forc_solar_grc                (begg:endg))        ; this%forc_solar_grc                (:)   = ival
     allocate(this%forc_ndep_grc                 (begg:endg))        ; this%forc_ndep_grc                 (:)   = ival
+    allocate(this%forc_pdep_grc                 (begg:endg))        ; this%forc_pdep_grc                 (:)   = ival
     allocate(this%forc_pc13o2_grc               (begg:endg))        ; this%forc_pc13o2_grc               (:)   = ival
     allocate(this%forc_po2_grc                  (begg:endg))        ; this%forc_po2_grc                  (:)   = ival
     allocate(this%forc_aer_grc                  (begg:endg,14))     ; this%forc_aer_grc                  (:,:) = ival

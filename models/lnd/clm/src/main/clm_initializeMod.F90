@@ -391,6 +391,7 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
+    use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNEcosystemDynMod     , only : CNEcosystemDynInit 
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
@@ -945,6 +946,18 @@ contains
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
     end if
+    
+    ! ------------------------------------------------------------------------
+    ! Initialize phosphorus deposition
+    ! ------------------------------------------------------------------------
+
+    if (use_cn) then
+       call t_startf('init_pdep')
+       call pdep_init(bounds_proc)
+       call pdep_interp(bounds_proc, atm2lnd_vars)
+       call t_stopf('init_pdep')
+    end if
+ 
 
     ! ------------------------------------------------------------------------
     ! Initialize active history fields. 

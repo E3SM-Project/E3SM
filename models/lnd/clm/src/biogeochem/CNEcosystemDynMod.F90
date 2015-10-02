@@ -95,6 +95,7 @@ contains
     !
     ! !USES:
     use CNNDynamicsMod         , only: CNNDeposition,CNNFixation, CNNFert, CNSoyfix
+    use PDynamicsMod           , only: PDeposition   
     use CNMRespMod             , only: CNMResp
     use CNDecompMod            , only: CNDecompAlloc
     use CNPhenologyMod         , only: CNPhenology
@@ -221,6 +222,15 @@ contains
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, nitrogenstate_vars)
        call t_stopf('CNMResp')
+
+       ! --------------------------------------------------
+       ! Phosphorus Deposition ! X.SHI
+       ! --------------------------------------------------
+
+       call t_startf('PDeposition')
+       call PDeposition(bounds, &
+            atm2lnd_vars, phosphorusflux_vars)
+       call t_stopf('PDeposition')
 
 
        call t_startf('CNDecompAlloc')

@@ -64,6 +64,7 @@ contains
     associate(& 
          isoilorder     => cnstate_vars%isoilorder ,&
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,&
+         pdep_prof             => cnstate_vars%pdep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which P deposition is distributed through column 1/m)
          pf => phosphorusflux_vars  , &
          ps => phosphorusstate_vars   &
          )
@@ -141,7 +142,7 @@ contains
 
             ps%occlp_vr_col(c,j)   = ps%occlp_vr_col(c,j) + ( pf%secondp_to_occlp_vr_col(c,j) ) * dt
 
-            ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt
+            ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt + pf%pdep_to_sminp_col(c)*dt * pdep_prof(c,j)
          end do
       enddo
 
