@@ -12,7 +12,7 @@ use File::Basename;
 use Data::Dumper;
 use Cwd qw(abs_path);
 use POSIX qw(strftime);
-
+use Getopt::Long;
 use English;
 no if ($PERL_VERSION ge v5.18.0), 'warnings' => 'experimental::smartmatch';
 
@@ -64,8 +64,12 @@ my @bldlogs;
 
 my $LID = strftime("%y%m%d-%H%M%S", localtime);
 my $banner = "-------------------------------------------------------------------------\n";
-
+my $logger;
 #-----------------------------------------------------------------------------------------------
+ 
+my %opts = (loglevel => "INFO");
+GetOptions("loglevel=s" => \$opts{loglevel});
+
 sub main {
 
     $CASEROOT = abs_path(".");
@@ -73,19 +77,31 @@ sub main {
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 
+    $CIMEROOT		= `./xmlquery  CIMEROOT		-value `;
+    my $perl5libdir = "$CIMEROOT/utils/perl5lib";
+    push(@INC, $perl5libdir);
+    require Log::Log4perl;
+    require Module::ModuleLoader;
+    
+    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+    Log::Log4perl->easy_init({level=>$level,
+			      layout=>'%m%n'});
+
+
+    $logger = Log::Log4perl::get_logger();
+
     $CASE = `./xmlquery  CASE -value `;
     if (! -f "$CASE.run") {
-	die "ERROR: must invoke case_setup script before calling build script ";
+	$logger->logdie ("ERROR: must invoke case_setup script before calling build script ");
     }
 
     $sysmod = "./Tools/check_lockedfiles";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
     $BUILD_THREADED	= `./xmlquery  BUILD_THREADED	-value `;
     $CASEBUILD	        = `./xmlquery  CASEBUILD	-value `;
     $CASETOOLS          = `./xmlquery  CASETOOLS	-value `;
     $EXEROOT	        = `./xmlquery  EXEROOT		-value `;
-    $CIMEROOT		= `./xmlquery  CIMEROOT		-value `;
     $INCROOT		= `./xmlquery  INCROOT		-value `;
     $LIBROOT		= `./xmlquery  LIBROOT		-value `;
     $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value `;
@@ -178,9 +194,7 @@ sub main {
 	$ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
     }
 
-    my $perl5libdir = "$CIMEROOT/utils/perl5lib";
-    push(@INC, $perl5libdir);
-    require Module::ModuleLoader;
+
     my $moduleloader = Module::ModuleLoader->new(machine   => $MACH, 
 						 compiler  => $COMPILER, 
 						 mpilib	   => $MPILIB, 
@@ -192,9 +206,9 @@ sub main {
     $moduleloader->findModulesForCase();
     $moduleloader->loadModules();
 
-    print "    .... checking namelists (calling ./preview_namelists) \n";
-    $sysmod = "./preview_namelists > /dev/null";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    $logger->info("    .... checking namelists (calling ./preview_namelists) ");
+    $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
+    system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
     
     checkInputData();
     buildChecks();
@@ -206,9 +220,9 @@ sub main {
 #-----------------------------------------------------------------------------------------------
 sub checkInputData()
 {
-    print "    .... calling data prestaging  \n";
+    $logger->info( "    .... calling data prestaging  ");
 
-    chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
+    chdir "$CASEROOT" or $logger->logdie( "Could not cd to $CASEROOT: $!");
 
     my $DIN_LOC_ROOT	= `./xmlquery DIN_LOC_ROOT	-value`;
     my $GET_REFCASE	= `./xmlquery GET_REFCASE	-value`;
@@ -223,51 +237,47 @@ sub checkInputData()
 
     my @unknown = grep { /unknown/ } @inputdatacheck;
     if (@unknown) {
-	print "      Any files with \"status uknown\" below were not found in the expected \n";
-	print "      location, and are not from the input data repository. This is for \n";
-	print "      informational only; this script will not attempt to find thse files. \n";
-	print "      If these files are found or are not needed no error will result. \n";
-	map {print "$_\n" } @unknown;
+	$logger->warn ("      Any files with \"status uknown\" below were not found in the expected 
+	       location, and are not from the input data repository. This is for 
+	       informational only; this script will not attempt to find thse files. 
+	       If these files are found or are not needed no error will result.\n".map {print "$_\n" } @unknown);
     }
 	
     my @missing = grep { /missing/ } @inputdatacheck;
     if (@missing) {
-	print "Attempting to download missing data\n";
+	$logger->info("Attempting to download missing data");
 	qx(./check_input_data -inputdata $DIN_LOC_ROOT -export);
 
-	print "Now checking if required input data is in $DIN_LOC_ROOT \n";
+	$logger->info("Now checking if required input data is in $DIN_LOC_ROOT ");
 
 	@inputdatacheck = qx(./check_input_data -inputdata $DIN_LOC_ROOT -check);
 	@missing = grep { /missing/ } @inputdatacheck;
 	if (@missing) {
-	    print "The following files were not found, they are required\n";
-	    map {print "$_\n" } @missing;
-	    print "Invoke the following command to obtain them:\n";
-	    print "./check_input_data -inputdata $DIN_LOC_ROOT -export";
-	    print "\n";
-	    die;
+	    $logger->logdie( "The following files were not found, they are required".
+			     map {print "$_\n" } @missing ."\n".
+			     "Invoke the following command to obtain them:
+                	    ./check_input_data -inputdata $DIN_LOC_ROOT -export");
 	}
     }
 	
     if( ($GET_REFCASE eq 'TRUE') && ($RUN_TYPE ne 'startup') && ($CONTINUE_RUN eq 'FALSE') )  {
 	my $refdir = "${RUN_REFDIR}/${RUN_REFCASE}/${RUN_REFDATE}";
 	if (! -d "${DIN_LOC_ROOT}/${refdir}") {
-
-	    print "***************************************************************** \n";
-	    print "ccsm_prestage ERROR: $refdir is not on local disk \n";
-	    print "obtain this data from the svn input data repository \n";
-	    print "> mkdir -p $refdir \n";
-	    print "> cd $refdir \n";
-	    print "> cd ..\n";
-	    print "> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/${refdir} \n";
-	    print " or set GET_REFCASE to FALSE in env_run.xml \n";
-	    print " and prestage the restart data to $RUNDIR manually \n";
-            print " ***************************************************************** \n";
-	    die;
+	    $logger->logdie(
+	     "***************************************************************** 
+	    ccsm_prestage ERROR: $refdir is not on local disk 
+	    obtain this data from the svn input data repository 
+	    > mkdir -p $refdir 
+	    > cd $refdir 
+	    > cd ..
+	    > svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/${refdir} 
+	     or set GET_REFCASE to FALSE in env_run.xml 
+	    and prestage the restart data to $RUNDIR manually 
+            *****************************************************************" );
 
      	} else {
 
-	    print " - Prestaging REFCASE ($refdir) to $RUNDIR\n";
+	    $logger->info( " - Prestaging REFCASE ($refdir) to $RUNDIR");
 		
 	    # prestage the reference case's files.
 	    mkpath ($RUNDIR) if (! -d $RUNDIR);
@@ -278,7 +288,7 @@ sub checkInputData()
 		my $rcbaseline = basename($rcfile);
 		if(! -f "${RUNDIR}/$rcbaseline") {
 		    my $sysmod = "ln -s $rcfile $RUNDIR/.";
-		    system($sysmod) == 0 or warn "$sysmod failed: $?\n";
+		    system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 		}
 			
 		# copy the refcases' rpointer files to the run directory
@@ -286,7 +296,7 @@ sub checkInputData()
 		foreach my $rpointerfile(@rpointerfiles) {
 		    copy($rpointerfile, ${RUNDIR});
 		}
-		chdir "$RUNDIR" or die "Could not cd to $RUNDIR: $!\n";
+		chdir "$RUNDIR" or $logger->logdie ("Could not cd to $RUNDIR: $!");
 
 		my @cam2_list = glob("*.cam2.*");
 		foreach my $cam2file(@cam2_list) {
@@ -308,9 +318,9 @@ sub checkInputData()
 #-----------------------------------------------------------------------------------------------
 sub buildChecks()
 {
-    print "    .... calling build checks \n";
+    $logger->info("    .... calling build checks ");
 	
-    chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
+    chdir "$CASEROOT" or $logger->logdie("Could not cd to $CASEROOT: $!");
 	
     my $NTHRDS_CPL   = `./xmlquery  NTHRDS_CPL		-value `;
     my $NTHRDS_ATM   = `./xmlquery  NTHRDS_ATM		-value `;
@@ -355,14 +365,14 @@ sub buildChecks()
     my $smpstr = "a$atmstr"."l$lndstr"."r$rofstr"."i$icestr"."o$ocnstr". "g$glcstr"."w$wavstr"."c$cplstr";
 
     $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_VALUE -val $smpstr";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 
     $ENV{'SMP_VALUE'} = $smpstr;
 	
     my $inststr = "a$NINST_ATM"."l$NINST_LND"."r$NINST_ROF"."i$NINST_ICE"."o$NINST_OCN"."g$NINST_GLC"."w$NINST_WAV";
 
     $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_VALUE -val $inststr";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 
     $ENV{'NINST_VALUE'} = $inststr;
 	
@@ -378,71 +388,73 @@ sub buildChecks()
     }
 
     $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val $ENV{'use_trilinos'}";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 	
     if( ($NINST_BUILD ne $NINST_VALUE) && ($NINST_BUILD != 0)) {
-	print " ERROR, NINST VALUES HAVE CHANGED \n";
-	print " NINST_BUILD = $NINST_BUILD \n";
-	print " NINST_VALUE = $NINST_VALUE \n";
-	print " A manual clean of your obj directories is strongly recommended \n";
-	print " You should execute the following: \n";
-	print " ./$CASE.clean_build \n";
-	print " Then rerun the build script interactively \n";
-	print " ---- OR ---- \n";
-	print " You can override this error message at your own risk by executing:  \n";
-	print "./xmlchange -file env_build.xml -id NINST_BUILD -val 0 \n";
-	print " Then rerun the build script interactively \n";
-	die;
+	my $msg = " ERROR, NINST VALUES HAVE CHANGED \n";
+	$msg .= " NINST_BUILD = $NINST_BUILD \n";
+	$msg .= " NINST_VALUE = $NINST_VALUE \n";
+	$msg .= " A manual clean of your obj directories is strongly recommended \n";
+	$msg .= " You should execute the following: \n";
+	$msg .= " ./$CASE.clean_build \n";
+	$msg .= " Then rerun the build script interactively \n";
+	$msg .= " ---- OR ---- \n";
+	$msg .= " You can override this error message at your own risk by executing:  \n";
+	$msg .= "./xmlchange -file env_build.xml -id NINST_BUILD -val 0 \n";
+	$msg .= " Then rerun the build script interactively \n";
+	$logger->logdie($msg);
     }
 
     if ($SMP_BUILD ne $SMP_VALUE && $SMP_BUILD != 0) {
-	print "  ERROR SMP STATUS HAS CHANGED \n";
-	print "  SMP_BUILD = $SMP_BUILD \n";
-	print "  SMP_VALUE = $SMP_VALUE \n";
-	print "  A manual clean of your obj directories is strongly recommended\n";
-	print "  You should execute the following: \n";
-	print "    ./$CASE.clean_build\n";
-	print "  Then rerun the build script interactively\n";
-	print "  ---- OR ----\n";
-	print "  You can override this error message at your own risk by executing\n";
-	print "    ./xmlchange -file env_build.xml -id SMP_BUILD -val 0\n";
-	print "  Then rerun the build script interactively\n";
-	die;
+	my $msg = "  ERROR SMP STATUS HAS CHANGED \n";
+	$msg .= "  SMP_BUILD = $SMP_BUILD \n";
+	$msg .= "  SMP_VALUE = $SMP_VALUE \n";
+	$msg .= "  A manual clean of your obj directories is strongly recommended\n";
+	$msg .= "  You should execute the following: \n";
+	$msg .= "    ./$CASE.clean_build\n";
+	$msg .= "  Then rerun the build script interactively\n";
+	$msg .= "  ---- OR ----\n";
+	$msg .= "  You can override this error message at your own risk by executing\n";
+	$msg .= "    ./xmlchange -file env_build.xml -id SMP_BUILD -val 0\n";
+	$msg .= "  Then rerun the build script interactively\n";
+	$logger->logdie($msg);
     }
 
     if($BUILD_STATUS != 0) {
-	print "  ERROR env_build HAS CHANGED \n";
-	print "  A manual clean of your obj directories is strongly recommended \n";
-	print "  You should execute the following:  \n";
-	print "      ./$CASE.clean_build \n";
-	print "  Then rerun the build script interactively \n";
-	print "    ---- OR ---- \n";
-	print "  You can override this error message at your own risk by executing  \n";
-	print "      rm LockedFiles/env_build* \n";
-	print "  Then rerun the build script interactively  \n";
-	die;
+	my $msg = "  ERROR env_build HAS CHANGED \n";
+	$msg .= "  A manual clean of your obj directories is strongly recommended \n";
+	$msg .= "  You should execute the following:  \n";
+	$msg .= "      ./$CASE.clean_build \n";
+	$msg .= "  Then rerun the build script interactively \n";
+	$msg .= "    ---- OR ---- \n";
+	$msg .= "  You can override this error message at your own risk by executing  \n";
+	$msg .= "      rm LockedFiles/env_build* \n";
+	$msg .= "  Then rerun the build script interactively  \n";
+	$logger->logdie($msg);
     }
 
     if ($COMP_INTERFACE eq 'ESMF' && $USE_ESMF_LIB ne 'TRUE') {
-	print " ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE \n";
-	print " SET USE_ESMF_LIB to TRUE with  \n";
-	print "     ./xmlchange -file env_build.xml -id USE_ESMF_LIB -value TRUE \n";
-	die;
+	my $msg = " ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE \n";
+	$msg .= " SET USE_ESMF_LIB to TRUE with  \n";
+	$msg .= "     ./xmlchange -file env_build.xml -id USE_ESMF_LIB -value TRUE \n";
+	$logger->logdie($msg);
+
     }
 	
     if($MPILIB eq 'mpi-serial' && $USE_ESMF_LIB eq 'TRUE') {
-	print "  ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE \n";
-	print "    MPILIB can only be used with an ESMF library built with mpiuni on \n";
-	print "  Set USE_ESMF_LIB to FALSE with  \n";
-	print "    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE \n";
-	print "  ---- OR ---- \n";
-	print "  Make suer the ESMF_LIBDIR used was built with mipuni (or change it to one that was) \n";
-	print "  And comment out this if block in Tools/models_buildexe \n";
-	die;
+	my $msg = "  ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE \n";
+	$msg .= "    MPILIB can only be used with an ESMF library built with mpiuni on \n";
+	$msg .= "  Set USE_ESMF_LIB to FALSE with  \n";
+	$msg .= "    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE \n";
+	$msg .= "  ---- OR ---- \n";
+	$msg .= "  Make suer the ESMF_LIBDIR used was built with mipuni (or change it to one that was) \n";
+	$msg .= "  And comment out this if block in Tools/models_buildexe \n";
+	$logger->logdie($msg);
+
     }
 
     $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
     my @lockedfiles = glob("LockedFiles/env_build*");
     foreach my $lf (@lockedfiles) {
@@ -454,13 +466,13 @@ sub buildChecks()
 #-----------------------------------------------------------------------------------------------
 sub buildLibraries()
 {
-    print "    .... calling builds for utility libraries (compiler is $COMPILER) \n";
+    $logger->info("    .... calling builds for utility libraries (compiler is $COMPILER) ");
 
     chdir $EXEROOT;
 
     if ($MPILIB eq 'mpi-serial') {
 	my $sysmod = "cp -p -f $CIMEROOT/externals/mct/mpi-serial/\*.h  $LIBROOT/include/.";
-	system($sysmod) == 0 or die "$sysmod failed: $?\n";
+	system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     }
     
     my $debugdir = "nodebug";
@@ -479,16 +491,16 @@ sub buildLibraries()
     mkpath("$SHAREDPATH/include") if (! -d "$SHAREDPATH/include");
 
     my @libs = qw/mct gptl pio csm_share/;
-    print "      build libraries: @libs\n";
+    $logger->info("      build libraries: @libs");
 
     foreach my $lib(@libs) {
 	
 	mkpath("$SHAREDPATH/$lib") if (! -d "$SHAREDPATH/$lib");
-	chdir "$SHAREDPATH/$lib" or die "Could not cd to $SHAREDPATH/$lib: $!\n";
+	chdir "$SHAREDPATH/$lib" or $logger->logdie ("Could not cd to $SHAREDPATH/$lib: $!");
 
 	my $file_build = "$SHAREDPATH/$lib.bldlog.$LID";
 	my $now = localtime;
-	print "      $now $file_build\n";
+	$logger->info( "      $now $file_build");
 	open my $FB, ">", $file_build or die $!;
 	map { print $FB "$_: $ENV{$_}\n"} sort keys %ENV;
 	close $FB;
@@ -496,8 +508,7 @@ sub buildLibraries()
 	my $file = "${machines_dir}/buildlib.${lib}";
 	eval {system("$file $SHAREDPATH $CASEROOT >> $file_build 2>&1")};
 	if ($?)	{
-	    print "ERROR: buildlib.$lib failed, see $file_build\n";
-	    die "ERROR: cat $file_build\n";
+	    $logger->logdie("ERROR: buildlib.$lib failed, cat $file_build");
 	}
 	# push the file_build path into the bldlogs array..
 	push(@bldlogs, $file_build);
@@ -508,9 +519,9 @@ sub buildLibraries()
 #-----------------------------------------------------------------------------------------------
 sub buildModel()
 {
-    print "    .... calling builds for component libraries  \n";
+    $logger->info( "    .... calling builds for component libraries  ");
 
-    chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
+    chdir "$CASEROOT" or $logger->logdie ("Could not cd to $CASEROOT: $!");
 
     my $LOGDIR          = `./xmlquery LOGDIR          -value `;
 
@@ -541,22 +552,22 @@ sub buildModel()
             }
 	    for ("$CLM_CONFIG_OPTS") {
 		when (/.*clm4_0.*/) {
-		    print "         - Building clm4_0 Library \n";
+		    $logger->info( "         - Building clm4_0 Library ");
 		    $objdir = "$EXEROOT/$model/obj" ; if (! -d "$objdir") {mkpath "$objdir"};
 		    $libdir = "$EXEROOT/$model"     ; if (! -d "$libdir") {mkpath "$libdir"};
 		    $compspec = "lnd";
-		    print "       bldroot is $EXEROOT \n";
-		    print "       objdir  is $objdir \n";
-		    print "       libdir  is $libdir \n";
+		    $logger->debug( "       bldroot is $EXEROOT ");
+		    $logger->debug( "       objdir  is $objdir ");
+		    $logger->debug( "       libdir  is $libdir ");
 		} default {
-		    print "         - Building clm4_5/clm5_0 shared library \n";
+		    $logger->info( "         - Building clm4_5/clm5_0 shared library ");
 		    $bldroot = "$SHAREDPATH/$COMP_INTERFACE/$ESMFDIR/" ;
 		    $objdir  = "$bldroot/$comp/obj" ; if (! -d "$objdir") {mkpath "$objdir"};
 		    $libdir  = "$bldroot/lib"       ; if (! -d "$libdir") {mkpath "$libdir"};
 		    $compspec = "clm";
-		    print "       bldroot is $bldroot \n";
-		    print "       objdir  is $objdir \n";
-		    print "       libdir  is $libdir \n";
+		    $logger->debug( "       bldroot is $bldroot ");
+		    $logger->debug ("       objdir  is $objdir ");
+		    $logger->debug("       libdir  is $libdir");
 		}
 	    }
 
@@ -570,14 +581,14 @@ sub buildModel()
 	$ENV{'MODEL'} = $model;
 	my $file_build = "$EXEROOT/${model}.bldlog.$LID";
 	my $now = localtime;
-	print "      .... calling $dirs{$model}/buildlib \n";
-        print "           $now $file_build\n";
+	$logger->info("      .... calling $dirs{$model}/buildlib ");
+        $logger->info( "           $now $file_build");
 
 	# build the component library
-	chdir "$EXEROOT/$model" or die "Could not cd to $EXEROOT/$model: $!\n";
+	chdir "$EXEROOT/$model" or $logger->logdie ("Could not cd to $EXEROOT/$model: $!");
 
 	eval{ system("$dirs{$model}/buildlib $CASEROOT $bldroot $compspec >> $file_build 2>&1") };
-	if($?) { die "ERROR: $comp.buildlib failed, see $file_build\n";	}
+	if($?) { $logger->logdie ("ERROR: $comp.buildlib failed, see $file_build");	}
 
 	#push the file_build path into the bldlogs array..
 	push (@bldlogs, $file_build);
@@ -592,32 +603,28 @@ sub buildModel()
 
     my $file_build = "${EXEROOT}/${MODEL}.bldlog.$LID";
     my $now = localtime;
-    print "      $now $file_build\n";
+    $logger->info( "      $now $file_build");
 
     mkpath "${EXEROOT}/${MODEL}/obj" if (! -d "${EXEROOT}/${MODEL}/obj");
     mkpath "${EXEROOT}/${MODEL}"     if (! -d "${EXEROOT}/${MODEL}");
 
     # create the model executable 
-    chdir "${EXEROOT}/${MODEL}" or die "Could not cd to ${EXEROOT}/${MODEL}: $!\n";
+    chdir "${EXEROOT}/${MODEL}" or $logger->logdie ("Could not cd to ${EXEROOT}/${MODEL}: $!");
     eval{ system("$CIMEROOT/driver_cpl/cime_config/buildexe $CASEROOT >> $file_build 2>&1") };
-    if ($?) {die "ERROR: buildexe failed, see $file_build\n";}
+    if ($?) {$logger->logdie ("ERROR: buildexe failed, cat $file_build");}
 
     push(@bldlogs, $file_build);
 	
     #--- Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
     copy("${EXEROOT}/${MODEL}.exe", "${EXEROOT}/${MODEL}.exe.$LID");
-    chmod 0755, "${EXEROOT}/${MODEL}.exe.$LID" or warn "could not change perms on ${EXEROOT}/${MODEL}.exe.$LID, $?";
+    chmod 0755, "${EXEROOT}/${MODEL}.exe.$LID" or $logger->warn ("could not change perms on ${EXEROOT}/${MODEL}.exe.$LID, $?");
 	
     #copy build logs to CASEROOT/logs
     if(length($LOGDIR) > 0) {
 	if(! -d "$LOGDIR/bld") {
 	    mkpath "$LOGDIR/bld";
 	}
-	chdir "${EXEROOT}" or die "Could not cd to ${EXEROOT}: $!\n";
-	#system("gzip ${EXEROOT}/*.bldlog.$LID*");	
-	#my @gzlogs = glob("${EXEROOT}/*bldlog.$LID.*");
-	
-	#foreach my $gzlog(@gzlogs)
+	chdir "${EXEROOT}" or $logger->logdie ("Could not cd to ${EXEROOT}: $!");
 	foreach my $log(@bldlogs) {
 	    system("gzip $log");
 	}	
@@ -627,19 +634,19 @@ sub buildModel()
 	}
     }
 	
-    chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
+    chdir "$CASEROOT" or $logger->logdie("Could not cd to $CASEROOT: $!");
     
     $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
     $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
     $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_BUILD -val $SMP_VALUE";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
     $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_BUILD -val $NINST_BUILD";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
     my @files2unlink = glob("./LockedFiles/env_build*");
     foreach my $file2unlink(@files2unlink) {
@@ -648,8 +655,8 @@ sub buildModel()
 	
     foreach my $file (qw( ./env_build.xml ) ) {
 	copy($file, "./LockedFiles/$file.locked");
-	if ($?) { die "ERROR locking file $file, exiting.. ";}
-	print " .... locking file $file\n";
+	if ($?) { $logger->logdie("ERROR locking file $file, exiting.. ");}
+	$logger->info( " .... locking file $file");
     }
     
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;

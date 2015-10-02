@@ -9,7 +9,7 @@ my $pck_nm = 'UserModsTools';
 
 # Public routines:
 
-# apply_mods(user_mods_dir, caseroot, print_level, is_test)
+# apply_mods(user_mods_dir, caseroot, is_test)
 #   Applies the mods in user_mods_dir (and any other included mods directories,
 #   recursively) to the case given by caseroot
 
@@ -19,6 +19,12 @@ my $pck_nm = 'UserModsTools';
 use strict;
 use Cwd;
 use File::Spec;
+use Log::Log4perl qw(get_logger);
+my $logger;
+
+BEGIN{
+    $logger = get_logger();
+}
 
 # ------------------------------------------------------------------------
 # Public routines
@@ -27,16 +33,16 @@ use File::Spec;
 sub apply_mods {
    # Apply mods from a user_mods directory. 
    #
-   # Usage: apply_mods($user_mods_dir, $caseroot, $print_level, $is_test)
+   # Usage: apply_mods($user_mods_dir, $caseroot, $is_test)
 
-   my ($user_mods_dir, $caseroot, $print_level, $is_test) = @_;
+   my ($user_mods_dir, $caseroot, $is_test) = @_;
    my $shell_commands_filename = 'shell_commands';
 
-   _apply_mods_recursively($user_mods_dir, $caseroot, $print_level, $is_test,
+   _apply_mods_recursively($user_mods_dir, $caseroot, $is_test,
                           $shell_commands_filename);
 
    if (-f "$caseroot/$shell_commands_filename") {
-       _apply_shell_commands($caseroot, $shell_commands_filename, $print_level);
+       _apply_shell_commands($caseroot, $shell_commands_filename);
    }
 }
 
@@ -49,12 +55,12 @@ sub _apply_mods_recursively {
    # included mods directories. Note that this does not execute the xmlchange
    # commands, but instead relies on the apply_mods wrapper to do that.
    #
-   # Usage: _apply_mods_recursively($user_mods_dir, $caseroot, $print_level, $is_test, $shell_commands_filename)
+   # Usage: _apply_mods_recursively($user_mods_dir, $caseroot, $is_test, $shell_commands_filename)
    #
    # shell_commands_filename gives the name of the file in caseroot that will
    # contain the xmlchange commands (and possibly other shell commands)
 
-   my ($user_mods_dir, $caseroot, $print_level, $is_test, $shell_commands_filename) = @_;
+   my ($user_mods_dir, $caseroot, $is_test, $shell_commands_filename) = @_;
 
    # cd to the mods directory; this facilitates processing the includes
    # directories recursively, allowing for relative paths
@@ -71,10 +77,10 @@ sub _apply_mods_recursively {
    my @include_dirs = _get_include_dir_list('include_user_mods');
    foreach my $include_dir (@include_dirs) {
       if (! -d $include_dir) {
-         die "ERROR: Cannot find desired user_mods_dir to include: $include_dir";
+         $logger->logdie ("ERROR: Cannot find desired user_mods_dir to include: $include_dir");
       }
 
-      _apply_mods_recursively($include_dir, $caseroot, $print_level, $is_test, 
+      _apply_mods_recursively($include_dir, $caseroot, $is_test, 
                              $shell_commands_filename);
    }
 
@@ -89,7 +95,7 @@ sub _apply_mods_recursively {
    # SourceMod file was set in multiple places.
    # ------------------------------------------------------------------------
    
-   _apply_mods_from_current_dir($caseroot, $print_level, $is_test, $shell_commands_filename);
+   _apply_mods_from_current_dir($caseroot, $is_test, $shell_commands_filename);
 
    chdir "$cwd";
 }   
@@ -141,15 +147,15 @@ sub _apply_mods_from_current_dir {
    # execute the commands in the shell_commands file - rather, it appends
    # these commands into a file in the case directory, which can be executed later.
    #
-   # Usage: _apply_mods_from_current_dir($caseroot, $print_level, $is_test, $shell_commands_filename)
+   # Usage: _apply_mods_from_current_dir($caseroot, $is_test, $shell_commands_filename)
    #
    # shell_commands_filename gives the name of the file in caseroot that will
    # contain the xmlchange commands (and possibly other shell commands)
 
-   my ($caseroot, $print_level, $is_test, $shell_commands_filename) = @_;
+   my ($caseroot, $is_test, $shell_commands_filename) = @_;
 
    my $cwd = getcwd();
-   print "Applying mods from: $cwd\n";
+   $logger->info("Applying mods from: $cwd");
 
    my @user_nl_files = glob("user_nl*");
 
@@ -160,17 +166,15 @@ sub _apply_mods_from_current_dir {
    my @source_mods_dir = glob("SourceMods/*");
 
    if (! @user_nl_files && ! @shell_commands_files && ! @source_mods_dir) {
-      die "ERROR: There are no user_nl files, shell_commands file, or SourceMods directories";
+      $logger->logdie ("ERROR: There are no user_nl files, shell_commands file, or SourceMods directories");
    } else {
       # Append the user_nl_* files from this user_mods directory to the end of
       # the corresponding files in the case directory
       foreach my $file (@user_nl_files) {
          if (-f "$file") {
-            if ($print_level>=2) {
-               print "Append to $file.\n";
-            }
+	     $logger->debug("Append to $file.");
             my $append = "cat $file >> $caseroot/$file";
-            system($append) == 0 or die "ERROR: $append failed: $?\n";
+            system($append) == 0 or $logger->logdie ("ERROR: $append failed: $?");
          }
       }
 
@@ -182,14 +186,12 @@ sub _apply_mods_from_current_dir {
             # In principle, you could have both xmlchange_cmnds and shell_commands,
             # but that could lead to unexpected results, so don't allow that
             if ($num_commands_files_found > 1) {
-               die "ERROR: Multiple shell_commands/xmlchange_cmnds files found in the user_mods_dir; please use only one";
+               $logger->logdie ("ERROR: Multiple shell_commands/xmlchange_cmnds files found in the user_mods_dir; please use only one");
             }
 
-            if ($print_level>=2) {
-               print "Append to $shell_commands_filename.\n";
-            }
+	    $logger->debug( "Append to $shell_commands_filename.");
             my $append = "cat $file >> $caseroot/$shell_commands_filename";
-            system($append) == 0 or die "ERROR: $append failed: $?\n";
+            system($append) == 0 or $logger->logdie ("ERROR: $append failed: $?");
          }
       }
         
@@ -197,18 +199,16 @@ sub _apply_mods_from_current_dir {
       # Copy any files in SourceMods over provided the same directory exists in the case
       my $num_sourcemods_found = 0;
       foreach my $dir (@source_mods_dir) {
-         if ($print_level>=2) {
-            print "Copy $dir over.\n";
-         }
+
+	  $logger->debug("Copy $dir over.");
+
          if ( $dir =~ m/(SourceMods\/.+)/ ) {
             my $mydir = "$caseroot/$1";
             if (-d "$dir" && -d "$mydir" ) {
                foreach my $file ( glob("$dir/*") ) {
-                  if ($print_level>=2) {
-                     print "Copy $file over.\n";
-                  }
-                  my $copy = "cp $file $mydir";
-                  system($copy) == 0 or die "ERROR: $copy failed: $?\n";
+		   $logger->debug( "Copy $file over.");
+		   my $copy = "cp $file $mydir";
+                  system($copy) == 0 or $logger->logdie ("ERROR: $copy failed: $?");
                   $num_sourcemods_found += 1;
                }
             }
@@ -219,7 +219,7 @@ sub _apply_mods_from_current_dir {
          # Don't allow SourceMods in testmods, because (1) you shouldn't be
          # using SourceMods for automated tests, and (2) this likely won't
          # work correctly if multiple tests are sharing a single build.
-         die "SourceMods are not allowed in the testmods directory for automated tests";
+         $logger->logdie ("SourceMods are not allowed in the testmods directory for automated tests");
       }
    }
 }
@@ -229,20 +229,19 @@ sub _apply_mods_from_current_dir {
 sub _apply_shell_commands {
    # Applies commands in a shell_commands file
    #
-   # Usage: _apply_shell_commands($caseroot, $shell_commands_filename, $print_level)
+   # Usage: _apply_shell_commands($caseroot, $shell_commands_filename)
 
-   my ($caseroot, $shell_commands_filename, $print_level) = @_;
+   my ($caseroot, $shell_commands_filename) = @_;
 
    chmod 0777, "$caseroot/$shell_commands_filename";
-   die "Could not find shell script in $caseroot/$shell_commands_filename" unless (-x "$caseroot/$shell_commands_filename");
+   $logger->logdie ("Could not find shell script in $caseroot/$shell_commands_filename") unless (-x "$caseroot/$shell_commands_filename");
    my $cwd = getcwd(); # current working directory
 
    chdir "$caseroot";
-   if ($print_level>=2) {
-      print "Execute $shell_commands_filename.\n";
-   }
+   $logger->debug( "Execute $shell_commands_filename.");
+
    my $sysmod = "./$shell_commands_filename";
-   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+   system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 
    chdir "$cwd";
 }

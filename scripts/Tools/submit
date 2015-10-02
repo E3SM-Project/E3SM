@@ -1,47 +1,65 @@
 #!/usr/bin/env perl 
 
 use strict;
-use warnings;
-use Data::Dumper;
 use XML::LibXML;
+use Getopt::Long;
 
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
 my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
 my $cimeroot = $nodes[0]->getAttribute('value');
+my %opts=(loglevel=>"INFO");
 
 unshift @INC, "$cimeroot/utils/perl5lib";
+require Log::Log4perl;
 require Config::SetupTools;
 require Batch::BatchUtils;
 require Module::ModuleLoader;
+my $logger;
+my %config;
+# Get options, if any..
+sub opts()
+{
+    GetOptions( "resubmit" => \$opts{'resubmit'},
+                "scriptname=s"  => \$opts{'scriptname'},
+	        "loglevel=s"       => \$opts{loglevel});
+}
 
-my %config	= SetupTools::getAllResolved();
-my $machine	= $config{'MACH'};
-my $machroot	= $config{'MACHDIR'};
-my $compiler	= $config{'COMPILER'};
-my $mpilib	= $config{'MPILIB'};
-my $caseroot	= $config{'CASEROOT'};
-my $case	= $config{'CASE'};
-my $model       = $config{'MODEL'};
-my $debug       = $config{'DEBUG'};
-
-my $lastjobid = undef;
 
 sub main
 {
+    &opts();
+    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+    Log::Log4perl->easy_init({level=>$level,
+			      layout=>'%m%n'});
+    $logger = Log::Log4perl::get_logger();
+
+    %config	= SetupTools::getAllResolved();
+    my $machine	= $config{'MACH'};
+    my $machroot	= $config{'MACHDIR'};
+    my $compiler	= $config{'COMPILER'};
+    my $mpilib	= $config{'MPILIB'};
+    my $caseroot	= $config{'CASEROOT'};
+    my $case	= $config{'CASE'};
+    my $model       = $config{'MODEL'};
+    my $debug       = $config{'DEBUG'};
+
+
+
     # Check the case only once..
-    print "checking the case..\n";
-    open(my $CHECKCASE, "-|", "./check_case");
-    while(<$CHECKCASE>)
-    {
-	print "$_";
+    if(!$opts{resubmit}){
+	$logger->info( "checking the case..");
+	open(my $CHECKCASE, "-|", "./check_case");
+	while(<$CHECKCASE>)
+	{
+	    $logger->info( "$_");
+	}
+	close $CHECKCASE;
+	if($?)
+	{
+	    $logger->error( "check_case failed");
+	    exit(-1);
+	}
     }
-    close $CHECKCASE;
-    if($?)
-    {
-        print "check_case failed\n";
-        exit(-1);
-    }
-    
     my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
 						 compiler => $compiler, 
 						 mpilib   => $mpilib, 
@@ -63,28 +81,51 @@ sub main
 							      machroot	   => $machroot, 
 							      mpilib	   => $mpilib); 
     
-    $batchutils->dependencyCheck("sta_ok");
 
-    check_DA_settings();
-
-    $batchutils->submitJobs("sta_ok");
+    if(defined $opts{'resubmit'})
+    {
+        if(! defined $opts{'scriptname'})
+        {
+            $logger->logdie ("$config{'CASE'}.submit: resubmit option given without scriptname provided, aborting!");
+        }
+        else
+        {
+            `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+            $batchutils->doResubmit($opts{'scriptname'});
+        }
+    }
+    else
+    {
+        $batchutils->dependencyCheck();
+        check_DA_settings();
+        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+        $batchutils->submitJobs();
+    }
 
 }
-
 
 sub check_DA_settings
 {
     if($config{DATA_ASSIMILATION} eq "TRUE"){
 	my $script = $config{DATA_ASSIMILATION_SCRIPT};
-	print "DATA_ASSIMILATION enabled\n";
-	print "   using script $script\n";
-	print "   DATA_ASSIMILATION_CYCLES = $config{DATA_ASSIMILATION_CYCLES}\n";
+	$logger->info( "DATA_ASSIMILATION enabled");
+	$logger->info ("   using script $script");
+	$logger->info ("   DATA_ASSIMILATION_CYCLES = $config{DATA_ASSIMILATION_CYCLES}");
     }
 }
 
+sub doResubmit()
+{
+    my $scriptname = shift;
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'},
+                                                              caseconfig => \%config,
+                                                              cimeroot => $config{'CIMEROOT'},
+                                                              compiler => $config{'COMPILER'},
+                                                              machine =>  $config{'MACH'},
+                                                              machroot => $config{'MACHDIR'},
+                                                              mpilib   => $config{'MPILIB'} );
+    
+    $batchutils->doResubmit($scriptname);
+}
 
-
-
-
-
-main(@ARGV) unless caller();
+main(@ARGV) ;

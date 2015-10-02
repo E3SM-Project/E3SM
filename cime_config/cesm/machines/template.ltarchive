@@ -38,5 +38,16 @@ sub main
     chdir($config{'CASEROOT'});
     
     qx($config{'BATCHSUBMIT'} $config{'CASEROOT'}/Tools/lt_archive.sh >> ltArchiveStatus 2>&1);
+    resubmitCheck();
+}
+
+sub resubmitCheck()
+{
+    my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+    my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.lt_archive";
+    my $cwd = getcwd;
+    chdir $config{CASEROOT};
+    qx("$resubmitcommand") or warn "could not run CESM submit script, $! $?";
+    chdir $cwd;
 }
 main(@ARGV) unless caller;
