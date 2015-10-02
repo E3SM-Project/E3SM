@@ -122,7 +122,7 @@
 
   <entry id="COMP_ICE" 
 	 type="char"
-	 valid_values="cice,dice,xice,sice" 
+	 valid_values="cice,dice,xice,sice,mpas-cice"
 	 value="cice"  
 	 group="case_comp" 
 	 sdesc="Name of sea ice component"

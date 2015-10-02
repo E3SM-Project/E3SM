@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+
+<!-- cice_model -->
+<config_dt>1800.0</config_dt>
+<config_calendar_type>'gregorian_noleap'</config_calendar_type>
+<config_start_time>'2000-01-01_00:00:00'</config_start_time>
+<config_stop_time>'none'</config_stop_time>
+<config_run_duration>'0000_24:00:00'</config_run_duration>
+<config_num_halos>2</config_num_halos>
+
+<!-- io -->
+<config_pio_num_iotasks>0</config_pio_num_iotasks>
+<config_pio_stride>1</config_pio_stride>
+<config_test_case_diag>false</config_test_case_diag>
+<config_test_case_diag_type>'none'</config_test_case_diag_type>
+
+<!-- decomposition -->
+<config_block_decomp_file_prefix>'graph.info.part.'</config_block_decomp_file_prefix>
+<config_number_of_blocks>0</config_number_of_blocks>
+<config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
+<config_proc_decomp_file_prefix>'graph.info.part.'</config_proc_decomp_file_prefix>
+
+<!-- restart -->
+<config_do_restart>false</config_do_restart>
+<config_restart_timestamp_name>'restart_timestamp'</config_restart_timestamp_name>
+
+<!-- initialize -->
+<config_initial_condition_type>'cice_default'</config_initial_condition_type>
+<config_initial_ice_area>1.0</config_initial_ice_area>
+<config_initial_ice_volume>1.0</config_initial_ice_volume>
+<config_initial_snow_volume>0.0</config_initial_snow_volume>
+<config_initial_latitude_north>70.0</config_initial_latitude_north>
+<config_initial_latitude_south>-60.0</config_initial_latitude_south>
+<config_initial_velocity_type>'uniform'</config_initial_velocity_type>
+<config_initial_uvelocity>0.0</config_initial_uvelocity>
+<config_initial_vvelocity>0.0</config_initial_vvelocity>
+
+<!-- use_sections -->
+<config_use_velocity_solver>false</config_use_velocity_solver>
+<config_use_advection>false</config_use_advection>
+<config_use_forcing>false</config_use_forcing>
+<config_use_column_package>true</config_use_column_package>
+
+<!-- forcing -->
+<config_atmospheric_forcing_type>'CORE'</config_atmospheric_forcing_type>
+<config_forcing_start_time>'2000-01-01_00:00:00'</config_forcing_start_time>
+<config_forcing_cycle_start>'2000-01-01_00:00:00'</config_forcing_cycle_start>
+<config_forcing_cycle_duration>'1-00-00_00:00:00'</config_forcing_cycle_duration>
+<config_forcing_restart_file>'restart_forcing_timestamps'</config_forcing_restart_file>
+<config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
+<config_forcing_sst_type>'ncar'</config_forcing_sst_type>
+<config_update_ocean_fluxes>false</config_update_ocean_fluxes>
+<config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
+
+<!-- unit_test -->
+<config_perform_unit_test>false</config_perform_unit_test>
+<config_unit_test_type>''</config_unit_test_type>
+<config_unit_test_subtype>''</config_unit_test_subtype>
+
+<!-- velocity_solver -->
+<config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
+<config_rotate_cartesian_grid>false</config_rotate_cartesian_grid>
+<config_include_metric_terms>true</config_include_metric_terms>
+<config_elastic_subcycle_number>120</config_elastic_subcycle_number>
+<config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
+<config_variational_basis>'wachspress'</config_variational_basis>
+<config_revised_evp>false</config_revised_evp>
+
+<!-- advection -->
+<config_convert_volume_to_thickness>true</config_convert_volume_to_thickness>
+<config_limit_ice_concentration>true</config_limit_ice_concentration>
+<config_conservation_check>true</config_conservation_check>
+<config_clean_tracers>true</config_clean_tracers>
+<config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
+<config_vert_tracer_adv_order>2</config_vert_tracer_adv_order>
+<config_horiz_tracer_adv_order>2</config_horiz_tracer_adv_order>
+<config_coef_3rd_order>0.25</config_coef_3rd_order>
+<config_monotonic>.true.</config_monotonic>
+
+<!-- column_package -->
+<config_use_column_shortwave>true</config_use_column_shortwave>
+<config_use_column_vertical_thermodynamics>true</config_use_column_vertical_thermodynamics>
+<config_use_column_itd_thermodynamics>true</config_use_column_itd_thermodynamics>
+<config_use_column_ridging>true</config_use_column_ridging>
+
+<!-- column_tracers -->
+<config_use_ice_age>false</config_use_ice_age>
+<config_use_first_year_ice>false</config_use_first_year_ice>
+<config_use_level_ice>false</config_use_level_ice>
+<config_use_meltponds>false</config_use_meltponds>
+<config_use_cesm_meltponds>false</config_use_cesm_meltponds>
+<config_use_level_meltponds>false</config_use_level_meltponds>
+<config_use_topo_meltponds>false</config_use_topo_meltponds>
+<config_use_aerosols>false</config_use_aerosols>
+<config_use_brine>false</config_use_brine>
+
+<!-- shortwave -->
+<config_shortwave_type>'dEdd'</config_shortwave_type>
+<config_albedo_type>'ccsm3'</config_albedo_type>
+<config_visible_ice_albedo>0.78</config_visible_ice_albedo>
+<config_infrared_ice_albedo>0.36</config_infrared_ice_albedo>
+<config_visible_snow_albedo>0.98</config_visible_snow_albedo>
+<config_infrared_snow_albedo>0.70</config_infrared_snow_albedo>
+<config_variable_albedo_thickness_limit>0.3</config_variable_albedo_thickness_limit>
+<config_ice_shortwave_tuning_parameter>0.0</config_ice_shortwave_tuning_parameter>
+<config_pond_shortwave_tuning_parameter>0.0</config_pond_shortwave_tuning_parameter>
+<config_snow_shortwave_tuning_parameter>1.5</config_snow_shortwave_tuning_parameter>
+<config_temp_change_snow_grain_radius_change>1.5</config_temp_change_snow_grain_radius_change>
+<config_max_melting_snow_grain_radius>1500.0</config_max_melting_snow_grain_radius>
+<config_algae_absorption_coefficient>0.6</config_algae_absorption_coefficient>
+
+<!-- meltponds -->
+<config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>
+<config_pond_refreezing_type>'hlid'</config_pond_refreezing_type>
+<config_pond_flushing_timescale>1.0e-3</config_pond_flushing_timescale>
+<config_min_meltwater_retained_fraction>0.15</config_min_meltwater_retained_fraction>
+<config_max_meltwater_retained_fraction>1.0</config_max_meltwater_retained_fraction>
+<config_pond_depth_to_fraction_ratio>0.8</config_pond_depth_to_fraction_ratio>
+<config_snow_on_pond_ice_tapering_parameter>0.03</config_snow_on_pond_ice_tapering_parameter>
+<config_critical_pond_ice_thickness>0.01</config_critical_pond_ice_thickness>
+
+<!-- thermodynamics -->
+<config_thermodynamics_type>'mushy'</config_thermodynamics_type>
+<config_heat_conductivity_type>'bubbly'</config_heat_conductivity_type>
+<config_rapid_mode_channel_radius>0.5e-3</config_rapid_mode_channel_radius>
+<config_rapid_model_critical_Ra>10.0</config_rapid_model_critical_Ra>
+<config_rapid_mode_aspect_ratio>1.0</config_rapid_mode_aspect_ratio>
+<config_slow_mode_drainage_strength>-5.0e-8</config_slow_mode_drainage_strength>
+<config_slow_mode_critical_porosity>0.05</config_slow_mode_critical_porosity>
+<config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
+
+<!-- itd -->
+<config_itd_conversion_type>'linear remap'</config_itd_conversion_type>
+<config_category_bounds_type>'original'</config_category_bounds_type>
+
+<!-- ridging -->
+<config_ice_strength_formulation>'Rothrock75'</config_ice_strength_formulation>
+<config_ridging_participation_function>'exponential'</config_ridging_participation_function>
+<config_ridging_redistribution_function>'exponential'</config_ridging_redistribution_function>
+<config_ridiging_efolding_scale>3.0</config_ridiging_efolding_scale>
+<config_ratio_ridging_work_to_PE>17.0</config_ratio_ridging_work_to_PE>
+
+<!-- atmosphere -->
+<config_atmos_boundary_method>'ccsm3'</config_atmos_boundary_method>
+<config_calc_surface_stresses>true</config_calc_surface_stresses>
+<config_calc_surface_temperature>true</config_calc_surface_temperature>
+<config_use_form_drag>false</config_use_form_drag>
+<config_use_high_frequency_coupling>false</config_use_high_frequency_coupling>
+<config_boundary_layer_iteration_number>5</config_boundary_layer_iteration_number>
+
+<!-- ocean -->
+<config_use_ocean_mixed_layer>true</config_use_ocean_mixed_layer>
+<config_min_friction_velocity>0.0005</config_min_friction_velocity>
+<config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
+<config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
+
+</namelist_defaults>
