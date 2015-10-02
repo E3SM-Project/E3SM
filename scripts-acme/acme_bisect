@@ -36,7 +36,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_compiler, _, _, default_project, default_testroot, _, _ = acme_util.get_machine_info(raw=True)
+    default_compiler, _, _, default_project, default_testroot, _, _, _ = acme_util.get_machine_info(raw=True)
 
     parser.add_argument("testname", help="Name of failing test.")
 
@@ -72,14 +72,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     acme_util.set_verbosity(args.verbose)
 
     if (args.test_root == default_testroot):
-        args.test_root = acme_util.get_machine_info(project=args.project)
+        args.test_root = acme_util.get_machine_info(project=args.project)[4]
 
     return args.testname, args.testroot, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
 
 ###############################################################################
 def acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch):
 ###############################################################################
-    create_test_rel = os.path.join(get_acme_scripts_location_within_acme(), "create_test")
+    create_test_rel = os.path.join(acme_util.get_acme_scripts_location_within_acme(), "create_test")
     expect(create_test_rel, "Please run from root of repository")
 
     current_sha = acme_util.get_current_commit(short=True)
