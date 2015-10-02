@@ -49,4 +49,8 @@ clmtypeInitMod.o: clmtypeInitMod.F90
 # this takes 2 mins to compile with -qsmp=omp
 clmtype.o: clmtype.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
+ 
+# this allows CLUBBe, an updated CLUBB, to run on mira
+advance_clubb_core_module.o: advance_clubb_core_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=omp:noopt -qinitauto=7FF7FFFF $<
 ### end

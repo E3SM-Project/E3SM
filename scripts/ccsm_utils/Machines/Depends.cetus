@@ -11,4 +11,5 @@ mo_drydep.o: mo_drydep.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
 time_management.o: time_management.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
-
+advance_clubb_core_module.o: advance_clubb_core_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=omp:noopt -qinitauto=7FF7FFFF $<
