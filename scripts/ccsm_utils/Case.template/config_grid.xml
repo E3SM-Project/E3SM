@@ -110,6 +110,8 @@ Each grid is associated with five names
 <!--- mpas-li grids -->
 
 <GRID sname="0.9x1.25_gx1v6_gis20"    alias="f09_g16_g"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.gis20km_w%null</GRID>
+<GRID sname="0.9x1.25_gx1v6_ais20"    alias="f09_g16_a"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.ais20km_w%null</GRID>
+<GRID sname="oEC60to30_gx1v6_ais20"    alias="oEC_g16_a"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%oEC60to30_r%r05_m%gx1v6_g%mpas.ais20km_w%null</GRID>
 
 <!-- new runoff grids for data runoff model DROF -->
 
@@ -417,8 +419,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <!-- GLC:MPAS-LI grids -->
 <gridhorz name="mpas.gis20km">
   <support_level>Experimental, under development</support_level>
-  <nx>7425</nx>  <ny>1</ny>    
+  <nx>7425</nx>  <ny>1</ny>
   <desc>mpas.gis20km is a uniform-resolution 20km MPAS-LI grid of the Greenland Ice Sheet.  It is primarily intended for testing.</desc>
+</gridhorz>
+
+<gridhorz name="mpas.ais20km">
+  <support_level>Experimental, under development</support_level>
+  <nx>45675</nx>  <ny>1</ny>
+  <desc>mpas.ais20km is a uniform-resolution 20km MPAS-LI grid of the Antarctic Ice Sheet.  It is primarily intended for testing.</desc>
 </gridhorz>
 
 
