@@ -427,20 +427,25 @@
   <!-- Prognostic wave -->
 
   <compset>
-    <alias>BHIST_WAV</alias>
-    <lname>HIST_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_WW3</lname>
+    <alias>BHIST4_WAV</alias>
+    <lname>HIST_CAM4_CLM4%SP_CICE_POP2_RTM_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>BHISTC5_WAV</alias>
-    <lname>HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_WW3</lname>
+    <alias>BHIST_WAV</alias>
+    <lname>HIST_CAM5_CLM50%SP_CICE_POP2_RTM_SGLC_WW3</lname>
   </compset>
 
   <!-- Data wave -->
 
   <compset>
-    <alias>BHISTC5_DWAV</alias>
-    <lname>HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV%COPY</lname>
+    <alias>BHIST_DWAV</alias>
+    <lname>HIST_CAM5_CLM50%SP_CICE_POP2_RTM_SGLC_DWAV%COPY</lname>
+  </compset>
+
+  <compset>
+    <alias>BHIST4_DWAV</alias>
+    <lname>HIST_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_DWAV%COPY</lname>
   </compset>
 
   <!-- Single Column POP -->
