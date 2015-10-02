@@ -807,10 +807,6 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   call mpas_stream_mgr_set_property(domain % streamManager, &
     restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
 
-  ! add xtime to the restart
-  call mpas_stream_mgr_add_field(domain % streamManager, &
-    restart_name, TIME_STREAM, ierr=err)
-
   ! create and put the counters in the streams
   do b = 1, series % number_of_buffers
     write(buf_identifier, '(I0)') b
@@ -886,6 +882,19 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   ! read the restart stream
   call mpas_stream_mgr_read(domain % streamManager, streamID = restart_name, &
     ierr=err)
+
+  ! add xtime afterwards because we don't want to clobber the existing xtime
+  ! make restart mutable
+  call mpas_stream_mgr_set_property(domain % streamManager, &
+    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
+
+  ! add xtime to the restart
+  call mpas_stream_mgr_add_field(domain % streamManager, &
+    restart_name, TIME_STREAM, ierr=err)
+
+  ! make restart immutable
+  call mpas_stream_mgr_set_property(domain % streamManager, &
+    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
 
 end subroutine modify_stream!}}}
 
