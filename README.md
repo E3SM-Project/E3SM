@@ -8,7 +8,7 @@ For complete documentation, see our website at [http://parallelio.github.io/Para
 
 ## Nightly Test Status
 
-<iframe width="1024" height="384" src="http://my.cdash.org/index.php?project=PIO">
+<iframe width="450" height="450" src="http://my.cdash.org/index.php?project=PIO">
 </iframe>
 
 ## Dependencies
