@@ -221,7 +221,6 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
-                  
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -1336,8 +1335,7 @@ contains
 
       integer, pointer :: indexT, indexS
 
-      character (len=StrKIND), pointer :: config_land_ice_flux_formulation
-      logical, pointer :: config_use_land_ice_fluxes
+      character (len=StrKIND), pointer :: config_land_ice_flux_formulation, config_land_ice_flux_mode
 
       real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerThickness, &
                                     config_land_ice_flux_boundaryLayerNeighborWeight, &
@@ -1376,8 +1374,12 @@ contains
          xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
 
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_land_ice_fluxes', config_use_land_ice_fluxes)
-      if(.not. config_use_land_ice_fluxes) return
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      if ( (trim(config_land_ice_flux_mode) .ne. 'standalone')  &
+           .and. (trim(config_land_ice_flux_mode) .ne. 'coupled') ) then
+         return
+      end if
+
 
       jenkinsOn = .false.
       hollandJenkinsOn = .false.
